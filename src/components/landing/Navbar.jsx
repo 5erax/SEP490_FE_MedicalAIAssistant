@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const NAV_LINKS = [
   { name: "Tính năng", href: "#features" },
@@ -34,9 +35,9 @@ export function Navbar() {
         </nav>
 
         <div className="nav-actions">
-          <a href="#contact" className="btn btn-ghost">
-            Đăng nhập
-          </a>
+          <Link to="/login" className="btn btn-ghost">
+  Đăng nhập
+</Link>
           <a href="#pricing" className="btn btn-dark">
             Dùng thử miễn phí
           </a>
