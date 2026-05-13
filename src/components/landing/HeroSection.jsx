@@ -61,8 +61,8 @@ export function HeroSection() {
             <a className="btn btn-primary" href="#pricing">
               Bắt đầu miễn phí
             </a>
-            <a className="btn btn-ghost" href="#process">
-              Xem cách hoạt động
+            <a className="btn btn-ghost" href="#demo">
+              Demo nhập triệu chứng
             </a>
           </div>
 

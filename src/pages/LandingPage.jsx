@@ -3,6 +3,7 @@ import { TickerBar, FeaturesSection } from "../components/landing/FeaturesSectio
 import { HowItWorksSection, SocialProofSection } from "../components/landing/HowItWorksSection";
 import { MapSection } from "../components/landing/MapSection";
 import { PricingSection, CtaSection, FaqSection, Footer } from "../components/landing/PricingSection";
+import { SymptomDemoSection } from "../components/landing/SymptomDemoSection";
 import { Navbar } from "../components/landing/Navbar";
 
 export default function LandingPage() {
@@ -11,6 +12,7 @@ export default function LandingPage() {
       <Navbar />
       <HeroSection />
       <TickerBar />
+      <SymptomDemoSection />
       <FeaturesSection />
       <HowItWorksSection />
       <SocialProofSection />

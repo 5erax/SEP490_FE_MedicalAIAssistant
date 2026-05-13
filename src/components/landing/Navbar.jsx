@@ -1,16 +1,16 @@
 import { useState } from "react";
 
 const NAV_LINKS = [
-  { name: "Tính năng", href: "#features" },
-  { name: "Giải pháp", href: "#solutions" },
-  { name: "Quy trình", href: "#process" },
-  { name: "Bản đồ", href: "#map" },
-  { name: "Bảng giá", href: "#pricing" },
+  { name: "Tính năng", href: "/features" },
+  { name: "Demo", href: "/#demo" },
+  { name: "Quy trình", href: "/#process" },
+  { name: "Bản đồ", href: "/#map" },
+  { name: "Bảng giá", href: "/pricing" },
 ];
 
 function Logo() {
   return (
-    <a className="brand" href="#top" aria-label="MediMate AI">
+    <a className="brand" href="/" aria-label="MediMate AI">
       <span className="brand-mark">+</span>
       <span>MediMate AI</span>
     </a>
@@ -34,10 +34,10 @@ export function Navbar() {
         </nav>
 
         <div className="nav-actions">
-          <a href="#contact" className="btn btn-ghost">
+          <a href="/login" className="btn btn-ghost">
             Đăng nhập
           </a>
-          <a href="#pricing" className="btn btn-dark">
+          <a href="/signup" className="btn btn-dark">
             Dùng thử miễn phí
           </a>
         </div>
@@ -59,7 +59,7 @@ export function Navbar() {
               {link.name}
             </a>
           ))}
-          <a className="btn btn-primary" href="#pricing" onClick={() => setOpen(false)}>
+          <a className="btn btn-primary" href="/signup" onClick={() => setOpen(false)}>
             Bắt đầu miễn phí
           </a>
         </nav>

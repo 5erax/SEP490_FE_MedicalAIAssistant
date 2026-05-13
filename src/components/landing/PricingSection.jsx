@@ -6,6 +6,7 @@ const PLANS = [
     period: "mãi mãi",
     desc: "Cho người mới bắt đầu theo dõi sức khỏe cá nhân.",
     cta: "Bắt đầu ngay",
+    href: "/signup",
     features: [
       "Phân tích triệu chứng cơ bản",
       "Gợi ý chuyên khoa phù hợp",
@@ -20,6 +21,7 @@ const PLANS = [
     period: "mỗi tháng",
     desc: "Cho người cần theo dõi sức khỏe nghiêm túc hơn.",
     cta: "Dùng thử 14 ngày",
+    href: "/pricing",
     highlight: true,
     features: [
       "Phân tích nâng cao và hỏi thêm ngữ cảnh",
@@ -43,6 +45,39 @@ const FAQS = [
   {
     q: "Có dùng được cho người lớn tuổi không?",
     a: "Có. Nội dung được viết bằng tiếng Việt dễ hiểu, giao diện ưu tiên chữ rõ, thao tác ít bước và nhắc nhở theo lịch.",
+  },
+];
+
+const FOOTER_COLUMNS = [
+  {
+    title: "Sản phẩm",
+    href: "/product",
+    links: [
+      ["Tính năng", "/features"],
+      ["Bảng giá", "/pricing"],
+      ["Lộ trình", "/roadmap"],
+      ["API", "/api"],
+    ],
+  },
+  {
+    title: "Hỗ trợ",
+    href: "/support",
+    links: [
+      ["Trung tâm trợ giúp", "/help"],
+      ["Liên hệ", "/contact"],
+      ["Trạng thái hệ thống", "/status"],
+      ["Cộng đồng", "/community"],
+    ],
+  },
+  {
+    title: "Pháp lý",
+    href: "/legal",
+    links: [
+      ["Điều khoản", "/terms"],
+      ["Bảo mật", "/privacy"],
+      ["Cookie", "/cookies"],
+      ["Disclaimer y tế", "/medical-disclaimer"],
+    ],
   },
 ];
 
@@ -75,7 +110,7 @@ export function PricingSection() {
               </ul>
               <a
                 className={`btn ${plan.highlight ? "btn-primary" : "btn-ghost"}`}
-                href="#contact"
+                href={plan.href}
               >
                 {plan.cta}
               </a>
@@ -97,10 +132,10 @@ export function CtaSection() {
             <p>Miễn phí để thử, không cần thẻ tín dụng, thiết lập trong vài phút.</p>
           </div>
           <div className="hero-actions">
-            <a className="btn btn-dark" href="mailto:hello@medimate.ai">
+            <a className="btn btn-dark" href="/contact">
               Liên hệ tư vấn
             </a>
-            <a className="btn btn-ghost" href="#top">
+            <a className="btn btn-ghost" href="/#demo">
               Xem lại demo
             </a>
           </div>
@@ -132,18 +167,12 @@ export function FaqSection() {
 }
 
 export function Footer() {
-  const columns = [
-    ["Sản phẩm", "Tính năng", "Bảng giá", "Lộ trình", "API"],
-    ["Hỗ trợ", "Trung tâm trợ giúp", "Liên hệ", "Trạng thái hệ thống", "Cộng đồng"],
-    ["Pháp lý", "Điều khoản", "Bảo mật", "Cookie", "Disclaimer y tế"],
-  ];
-
   return (
     <footer className="footer">
       <div className="container">
         <div className="footer-grid">
           <div>
-            <a className="brand" href="#top">
+            <a className="brand" href="/">
               <span className="brand-mark">+</span>
               <span>MediMate AI</span>
             </a>
@@ -153,13 +182,15 @@ export function Footer() {
             </p>
           </div>
 
-          {columns.map(([title, ...links]) => (
-            <div key={title}>
-              <h4>{title}</h4>
+          {FOOTER_COLUMNS.map((column) => (
+            <div key={column.title}>
+              <h4>
+                <a href={column.href}>{column.title}</a>
+              </h4>
               <div className="footer-links">
-                {links.map((link) => (
-                  <a href="#top" key={link}>
-                    {link}
+                {column.links.map(([label, href]) => (
+                  <a href={href} key={href}>
+                    {label}
                   </a>
                 ))}
               </div>
