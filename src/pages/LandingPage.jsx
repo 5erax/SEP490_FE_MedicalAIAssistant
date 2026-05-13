@@ -1,20 +1,22 @@
 import { HeroSection } from "../components/landing/HeroSection";
 import { TickerBar, FeaturesSection } from "../components/landing/FeaturesSection";
 import { HowItWorksSection, SocialProofSection } from "../components/landing/HowItWorksSection";
-import { PricingSection, CtaSection, Footer }    from "../components/landing/PricingSection";
+import { PricingSection, CtaSection, FaqSection, Footer } from "../components/landing/PricingSection";
 import { Navbar } from "../components/landing/Navbar";
+
 export default function LandingPage() {
   return (
-    <>
+    <main className="landing-page">
+      <Navbar />
       <HeroSection />
       <TickerBar />
-      <Navbar/>
       <FeaturesSection />
       <HowItWorksSection />
       <SocialProofSection />
       <PricingSection />
+      <FaqSection />
       <CtaSection />
       <Footer />
-    </>
+    </main>
   );
 }
