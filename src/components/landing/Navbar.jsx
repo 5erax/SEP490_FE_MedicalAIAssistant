@@ -4,6 +4,7 @@ const NAV_LINKS = [
   { name: "Tính năng", href: "#features" },
   { name: "Giải pháp", href: "#solutions" },
   { name: "Quy trình", href: "#process" },
+  { name: "Bản đồ", href: "#map" },
   { name: "Bảng giá", href: "#pricing" },
 ];
 

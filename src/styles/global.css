@@ -516,6 +516,153 @@
   margin-top: 44px;
 }
 
+.map-section {
+  overflow: hidden;
+}
+
+.map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-top: 44px;
+}
+
+.map-shell {
+  min-height: 560px;
+  overflow: hidden;
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper-soft);
+  box-shadow: var(--shadow);
+}
+
+.map-shell .maplibregl-map {
+  min-height: 560px;
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+}
+
+.map-marker {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 50% 50% 50% 8px;
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 10px 24px rgba(17, 20, 18, 0.2);
+  transform: rotate(-45deg);
+}
+
+.map-marker span {
+  transform: rotate(45deg);
+}
+
+.map-marker.active {
+  background: var(--ink);
+  color: var(--lime);
+}
+
+.map-popup {
+  display: grid;
+  gap: 4px;
+  max-width: 220px;
+  color: var(--ink);
+}
+
+.map-popup strong {
+  font-size: 14px;
+}
+
+.map-popup span {
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map-popup p {
+  margin: 4px 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.map-popup small {
+  color: var(--subtle);
+  font-weight: 700;
+}
+
+.map-control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  padding: 24px;
+}
+
+.map-panel-kicker {
+  margin: 0 0 8px;
+  color: var(--lime-dark);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.map-control-panel h3 {
+  margin: 0 0 10px;
+  font-size: 24px;
+}
+
+.map-control-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.map-toggle-grid,
+.map-range-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.map-toggle,
+.map-number {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-soft);
+  padding: 9px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.map-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--lime-dark);
+}
+
+.map-number input {
+  width: 74px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: #fff;
+  padding: 7px 8px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
 .solution-card {
   min-height: 330px;
   display: flex;
@@ -764,6 +911,7 @@
   }
 
   .solutions-grid,
+  .map-layout,
   .reviews-grid,
   .faq-grid,
   .footer-grid {
@@ -805,6 +953,7 @@
   .metric-strip,
   .features-grid,
   .solutions-grid,
+  .map-layout,
   .steps-grid,
   .reviews-grid,
   .pricing-grid,
