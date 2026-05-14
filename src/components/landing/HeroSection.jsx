@@ -50,7 +50,7 @@ export function HeroSection() {
         <div>
           <p className="eyebrow">Trợ lý y khoa AI cho người Việt</p>
           <h1>
-            Chăm sóc sức khỏe <em>rõ ràng hơn</em> từ triệu chứng đầu tiên.
+            Chăm sóc sức khỏe <em>rõ ràng hơn</em> mỗi ngày.
           </h1>
           <p className="hero-copy">
             MediMate AI giúp phân tích triệu chứng, giải thích kết quả xét nghiệm,
