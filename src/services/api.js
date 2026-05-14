@@ -68,7 +68,11 @@ export async function apiRequest(path, options = {}) {
     try {
       payload = JSON.parse(text);
     } catch {
-      payload = { success: response.ok, message: text };
+      payload = {
+        success: false,
+        message:
+          "Backend không trả JSON hợp lệ. Hãy kiểm tra VITE_API_BASE_URL hoặc cấu hình deploy.",
+      };
     }
   }
   const ok = response.ok && payload.success !== false;
