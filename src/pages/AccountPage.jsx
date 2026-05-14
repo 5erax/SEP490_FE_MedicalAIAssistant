@@ -37,7 +37,13 @@ function normalizeRoles(roles = []) {
 }
 
 function hasRole(roles, role) {
-  return roles.includes(role.toLowerCase());
+  const wanted = role.toLowerCase();
+  return roles.some((current) => {
+    if (current === wanted) return true;
+    if (wanted === "admin") return ["administrator", "superadmin"].includes(current);
+    if (wanted === "staff") return ["doctor", "clinician", "medicalstaff"].includes(current);
+    return false;
+  });
 }
 
 function statusLabel(status) {
@@ -127,7 +133,7 @@ export default function AccountPage() {
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [loading, setLoading] = useState(Boolean(auth));
-  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingStaff, setSavingStaff] = useState(false);
@@ -396,9 +402,9 @@ export default function AccountPage() {
                 <span>MediMate AI</span>
               </a>
               <nav className="app-menu" aria-label="Điều hướng ứng dụng">
-                <a className={currentActor === "user" ? "active" : ""} href="#user" onClick={() => setActiveActor("user")}>User</a>
-                <a className={currentActor === "staff" ? "active" : ""} href="#staff" onClick={() => isStaff && setActiveActor("staff")}>Staff</a>
-                <a className={currentActor === "admin" ? "active" : ""} href="#admin" onClick={() => isAdmin && setActiveActor("admin")}>Admin</a>
+                <button className={currentActor === "user" ? "active" : ""} type="button" onClick={() => setActiveActor("user")}>User</button>
+                <button className={currentActor === "staff" ? "active" : ""} type="button" disabled={!isStaff} onClick={() => setActiveActor("staff")}>Staff</button>
+                <button className={currentActor === "admin" ? "active" : ""} type="button" disabled={!isAdmin} onClick={() => setActiveActor("admin")}>Admin</button>
                 <a href="/departments">Danh mục chuyên khoa</a>
                 <a href="/pricing">Premium</a>
               </nav>

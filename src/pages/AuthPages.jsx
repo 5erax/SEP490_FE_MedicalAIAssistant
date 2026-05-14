@@ -136,11 +136,8 @@ export function LoginPage() {
           autoComplete="current-password"
           required
         />
-        <div className="auth-inline-row">
-          <label className="auth-remember">
-            <input type="checkbox" />
-            <span>Ghi nhớ phiên</span>
-          </label>
+        <div className="auth-inline-row auth-link-row">
+          <span>Phiên đăng nhập được lưu trên thiết bị này sau khi xác thực.</span>
           <a href="/forgot-password">Quên mật khẩu?</a>
         </div>
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
@@ -229,11 +226,11 @@ export function SignupPage() {
         </div>
 
         <label className="api-check auth-consent">
-          <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} />
+          <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} required />
           <span>Tôi đồng ý với điều khoản sử dụng và disclaimer y tế.</span>
         </label>
 
-        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
+        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting || !accepted}>
           {submitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
         </button>
       </form>

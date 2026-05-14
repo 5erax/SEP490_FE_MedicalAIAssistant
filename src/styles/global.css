@@ -20,7 +20,7 @@
 }
 
 .landing-page {
-  overflow: hidden;
+  overflow-x: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 248, 243, 0) 480px),
     var(--bg);
@@ -86,11 +86,14 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
+  max-width: 100%;
   min-height: 48px;
   padding: 0 22px;
   border: 1.5px solid var(--ink);
   border-radius: var(--radius);
   font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
@@ -1460,6 +1463,7 @@
 .profile-list div,
 .record-card,
 .user-row {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.74);
@@ -1473,6 +1477,7 @@
   display: block;
   color: var(--ink);
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .auth-side-list span,
@@ -1485,6 +1490,7 @@
 .pagination-row span {
   color: var(--muted);
   line-height: 1.65;
+  overflow-wrap: anywhere;
 }
 
 .profile-list {
@@ -1526,6 +1532,7 @@
 
 .record-card p {
   margin: 6px 0;
+  overflow-wrap: anywhere;
 }
 
 .record-card small,
@@ -1560,7 +1567,7 @@
 
 .auth-page {
   min-height: 100svh;
-  padding: 126px 0 80px;
+  padding: 104px 0 72px;
   background:
     linear-gradient(120deg, rgba(223, 248, 237, 0.72), rgba(255, 255, 255, 0.58) 42%, rgba(170, 237, 99, 0.18)),
     var(--bg);
@@ -1568,9 +1575,9 @@
 
 .auth-layout {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(420px, 0.72fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(380px, 0.72fr);
   gap: 22px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .auth-hero-card,
@@ -1585,7 +1592,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 650px;
+  min-height: 0;
   padding: clamp(28px, 5vw, 52px);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(223, 248, 237, 0.9)),
@@ -1596,8 +1603,9 @@
   max-width: 680px;
   margin: 0;
   font-family: var(--display);
-  font-size: clamp(42px, 6vw, 70px);
+  font-size: clamp(34px, 4.8vw, 56px);
   line-height: 1.04;
+  overflow-wrap: anywhere;
 }
 
 .auth-hero-card > p:not(.eyebrow) {
@@ -1609,13 +1617,15 @@
 }
 
 .auth-card {
-  align-self: center;
+  align-self: start;
+  min-width: 0;
   padding: clamp(24px, 4vw, 34px);
 }
 
 .auth-card-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 18px;
   margin-bottom: 24px;
 }
@@ -1658,6 +1668,7 @@
 .clean-form textarea,
 .symptom-workbench textarea {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background: #fff;
@@ -1692,17 +1703,11 @@
   gap: 14px;
 }
 
-.auth-remember {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.auth-link-row span {
   color: var(--muted);
   font-size: 13px;
-  font-weight: 800;
-}
-
-.auth-remember input {
-  accent-color: var(--lime-dark);
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .auth-consent {
@@ -1713,7 +1718,7 @@
 }
 
 .auth-preview {
-  margin-top: 34px;
+  margin-top: 24px;
   overflow: hidden;
   border: 1.5px solid var(--ink);
   border-radius: 14px;
@@ -1746,6 +1751,7 @@
 
 .auth-preview-body div,
 .auth-benefits div {
+  min-width: 0;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.06);
@@ -1765,6 +1771,7 @@
   display: block;
   margin-top: 5px;
   color: #fff;
+  overflow-wrap: anywhere;
 }
 
 .auth-benefits {
@@ -1789,7 +1796,7 @@
 
 .app-page {
   min-height: 100svh;
-  padding: 98px 0 76px;
+  padding: 96px 0 76px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 248, 243, 0) 380px),
     var(--bg);
@@ -1797,7 +1804,7 @@
 
 .app-shell {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -1812,6 +1819,7 @@
   background: var(--paper);
   padding: 20px;
   box-shadow: 5px 5px 0 var(--ink);
+  min-width: 0;
 }
 
 .app-menu {
@@ -1819,19 +1827,31 @@
   gap: 8px;
 }
 
-.app-menu a {
+.app-menu a,
+.app-menu button {
+  width: 100%;
   border-radius: var(--radius);
+  border: 0;
+  background: transparent;
   color: var(--muted);
   padding: 11px 12px;
   font-weight: 900;
+  text-align: left;
   transition: background 180ms ease, color 180ms ease, transform 180ms ease;
 }
 
 .app-menu a:hover,
-.app-menu a.active {
+.app-menu button:hover:not(:disabled),
+.app-menu a.active,
+.app-menu button.active {
   background: var(--mint);
   color: var(--ink);
   transform: translateX(2px);
+}
+
+.app-menu button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .plan-card {
@@ -1856,6 +1876,7 @@
   display: block;
   margin-top: 12px;
   font-size: 24px;
+  overflow-wrap: anywhere;
 }
 
 .plan-card p {
@@ -1867,6 +1888,7 @@
 .app-main {
   display: grid;
   gap: 18px;
+  min-width: 0;
 }
 
 .app-topbar {
@@ -1880,8 +1902,9 @@
   max-width: 780px;
   margin: 0;
   font-family: var(--display);
-  font-size: clamp(34px, 5vw, 58px);
+  font-size: clamp(32px, 4.8vw, 54px);
   line-height: 1.05;
+  overflow-wrap: anywhere;
 }
 
 .app-stats {
@@ -1904,6 +1927,7 @@
   color: var(--ink);
   padding: 18px;
   text-align: left;
+  min-width: 0;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, opacity 180ms ease;
 }
 
@@ -1926,12 +1950,14 @@
 
 .actor-switcher strong {
   font-size: 20px;
+  overflow-wrap: anywhere;
 }
 
 .actor-switcher span {
   margin-top: 8px;
   color: var(--muted);
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .actor-panel {
@@ -1950,6 +1976,7 @@
 
 .app-stats article {
   padding: 18px;
+  min-width: 0;
 }
 
 .app-stats span {
@@ -1965,26 +1992,29 @@
   display: block;
   margin-top: 8px;
   font-size: 21px;
+  overflow-wrap: anywhere;
 }
 
 .app-work-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(330px, 0.72fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.74fr);
   gap: 18px;
   align-items: start;
 }
 
 .app-work-grid.secondary {
-  grid-template-columns: minmax(0, 0.85fr) minmax(360px, 0.9fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(320px, 0.88fr);
 }
 
 .app-card {
+  min-width: 0;
   padding: clamp(22px, 3vw, 28px);
 }
 
 .app-card h2 {
   margin: 0;
   font-size: 26px;
+  overflow-wrap: anywhere;
 }
 
 .symptom-workbench form {
@@ -2125,6 +2155,7 @@
 
   .app-sidebar {
     position: static;
+    grid-template-columns: 1fr;
   }
 
   .metric-strip,
@@ -2157,6 +2188,13 @@
     padding: 72px 0;
   }
 
+  .auth-page,
+  .app-page,
+  .api-page {
+    padding-top: 94px;
+    padding-bottom: 56px;
+  }
+
   .nav-links,
   .nav-actions {
     display: none;
@@ -2177,6 +2215,54 @@
 
   .hero-panel {
     padding: 12px;
+  }
+
+  .auth-hero-card,
+  .auth-card,
+  .app-sidebar,
+  .app-card,
+  .app-empty,
+  .api-panel {
+    border-radius: var(--radius);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .auth-hero-card,
+  .auth-card,
+  .app-sidebar,
+  .app-card {
+    padding: 18px;
+  }
+
+  .auth-hero-card h1,
+  .app-topbar h1 {
+    font-size: clamp(30px, 9vw, 42px);
+  }
+
+  .auth-benefits,
+  .plan-card {
+    margin-top: 18px;
+  }
+
+  .auth-preview {
+    display: none;
+  }
+
+  .panel-title-row,
+  .record-actions,
+  .pagination-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .panel-title-row .soft-badge {
+    width: fit-content;
+  }
+
+  .record-actions .btn,
+  .pagination-row .btn,
+  .hero-actions .btn {
+    width: 100%;
   }
 
   .metric-strip,
@@ -2210,6 +2296,16 @@
   .auth-inline-row,
   .app-topbar {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .auth-card-header a,
+  .auth-inline-row a {
+    width: fit-content;
+  }
+
+  .auth-link-row {
+    align-items: flex-start;
   }
 
   .feature-card.feature-wide {
@@ -2222,5 +2318,36 @@
 
   .footer-bottom {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    width: min(100% - 20px, 1180px);
+  }
+
+  .auth-page,
+  .app-page,
+  .api-page {
+    padding-top: 86px;
+  }
+
+  .auth-card-header h2,
+  .app-card h2 {
+    font-size: 24px;
+  }
+
+  .actor-switcher button {
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .app-stats article {
+    padding: 14px;
+  }
+
+  .btn {
+    min-height: 44px;
+    padding-inline: 16px;
   }
 }
