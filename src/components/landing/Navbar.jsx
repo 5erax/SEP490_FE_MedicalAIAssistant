@@ -37,8 +37,8 @@ export function Navbar() {
 
         <div className="nav-actions">
           {auth ? (
-            <a href="/account" className="btn btn-dark">
-              Tài khoản
+            <a href="/app" className="btn btn-dark">
+              Vào app
             </a>
           ) : (
             <>
@@ -71,10 +71,10 @@ export function Navbar() {
           ))}
           <a
             className="btn btn-primary"
-            href={auth ? "/account" : "/signup"}
+            href={auth ? "/app" : "/signup"}
             onClick={() => setOpen(false)}
           >
-            {auth ? "Tài khoản" : "Bắt đầu miễn phí"}
+            {auth ? "Vào app" : "Bắt đầu miễn phí"}
           </a>
         </nav>
       )}

@@ -5,33 +5,52 @@ import { authApi } from "../services/api";
 
 function ApiMessage({ message }) {
   if (!message) return null;
-  return (
-    <div className={`api-message ${message.type}`}>
-      {message.text}
-    </div>
-  );
+  return <div className={`api-message ${message.type}`}>{message.text}</div>;
 }
 
-function AuthShell({ eyebrow, title, copy, children, sideItems }) {
+function AuthShell({ mode, eyebrow, title, copy, children, benefits }) {
   return (
     <main className="landing-page">
       <Navbar />
-      <section className="api-page">
-        <div className="container api-auth-grid">
-          <div className="api-auth-copy">
+      <section className="auth-page">
+        <div className="container auth-layout">
+          <aside className="auth-hero-card">
             <p className="eyebrow">{eyebrow}</p>
             <h1>{title}</h1>
             <p>{copy}</p>
-            <div className="auth-side-list">
-              {sideItems.map((item) => (
-                <article key={item[0]}>
+
+            <div className="auth-preview">
+              <div className="auth-preview-top">
+                <span>{mode === "signup" ? "Freemium setup" : "Care workspace"}</span>
+                <strong>Live</strong>
+              </div>
+              <div className="auth-preview-body">
+                <div>
+                  <span>Gợi ý chuyên khoa</span>
+                  <strong>Nội tổng quát</strong>
+                </div>
+                <div>
+                  <span>Mức ưu tiên</span>
+                  <strong>Theo dõi trong 24h</strong>
+                </div>
+                <div>
+                  <span>Hồ sơ</span>
+                  <strong>{mode === "signup" ? "Sẵn sàng tạo" : "Đồng bộ sau đăng nhập"}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="auth-benefits">
+              {benefits.map((item) => (
+                <div key={item[0]}>
                   <strong>{item[0]}</strong>
                   <span>{item[1]}</span>
-                </article>
+                </div>
               ))}
             </div>
-          </div>
-          {children}
+          </aside>
+
+          <div className="auth-card">{children}</div>
         </div>
       </section>
       <Footer />
@@ -39,19 +58,20 @@ function AuthShell({ eyebrow, title, copy, children, sideItems }) {
   );
 }
 
-function TextField({ label, ...props }) {
+function Field({ label, hint, ...props }) {
   return (
-    <label>
-      {label}
+    <label className="clean-field">
+      <span>{label}</span>
       <input {...props} />
+      {hint && <small>{hint}</small>}
     </label>
   );
 }
 
 function SelectField({ label, children, ...props }) {
   return (
-    <label>
-      {label}
+    <label className="clean-field">
+      <span>{label}</span>
       <select {...props}>{children}</select>
     </label>
   );
@@ -68,7 +88,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       await authApi.login(form);
-      window.location.href = "/account";
+      window.location.href = "/app";
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -78,41 +98,54 @@ export function LoginPage() {
 
   return (
     <AuthShell
+      mode="login"
       eyebrow="Đăng nhập"
-      title="Vào Freemium để lưu hồ sơ và tiếp tục theo dõi."
-      copy="Tài khoản dùng JWT từ backend. Sau khi đăng nhập, token được lưu cục bộ để gọi các API cần xác thực."
-      sideItems={[
-        ["Hồ sơ cá nhân", "Xem thông tin /api/users/me"],
-        ["Chuyên khoa", "Tạo và quản lý medical departments"],
-        ["Admin", "Duyệt người dùng nếu tài khoản có quyền"],
+      title="Tiếp tục chăm sóc sức khỏe trong một workspace gọn gàng."
+      copy="Đăng nhập để mở dashboard Freemium, lưu hồ sơ và dùng các chức năng backend đã có."
+      benefits={[
+        ["JWT", "Phiên đăng nhập bảo mật"],
+        ["Profile", "Đọc và cập nhật hồ sơ"],
+        ["Admin-ready", "Mở thêm quyền khi backend cho phép"],
       ]}
     >
-      <form className="api-panel api-form" onSubmit={handleSubmit}>
-        <h2>Đăng nhập</h2>
+      <div className="auth-card-header">
+        <div>
+          <p className="eyebrow">MediMate AI</p>
+          <h2>Chào mừng trở lại</h2>
+        </div>
+        <a href="/signup">Tạo tài khoản</a>
+      </div>
+
+      <form className="clean-form" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
-        <TextField
+        <Field
           label="Email"
           type="email"
           value={form.email}
           onChange={(event) => setForm({ ...form, email: event.target.value })}
           placeholder="you@example.com"
+          autoComplete="email"
           required
         />
-        <TextField
+        <Field
           label="Mật khẩu"
           type="password"
           value={form.password}
           onChange={(event) => setForm({ ...form, password: event.target.value })}
-          placeholder="••••••••"
+          placeholder="Nhập mật khẩu"
+          autoComplete="current-password"
           required
         />
-        <button className="btn btn-primary" type="submit" disabled={submitting}>
+        <div className="auth-inline-row">
+          <label className="auth-remember">
+            <input type="checkbox" />
+            <span>Ghi nhớ phiên</span>
+          </label>
+          <a href="/forgot-password">Quên mật khẩu?</a>
+        </div>
+        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
           {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
-        <div className="form-links">
-          <a href="/forgot-password">Quên mật khẩu</a>
-          <a href="/signup">Tạo tài khoản mới</a>
-        </div>
       </form>
     </AuthShell>
   );
@@ -151,7 +184,7 @@ export function SignupPage() {
         gender: Number(form.gender),
         dateOfBirth: form.dateOfBirth || null,
       });
-      window.location.href = "/account";
+      window.location.href = "/app";
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -161,42 +194,48 @@ export function SignupPage() {
 
   return (
     <AuthShell
-      eyebrow="Dùng thử miễn phí"
-      title="Tạo tài khoản Freemium bằng API register."
-      copy="Form này gửi đúng RegisterRequest trong Swagger, gồm email, username, mật khẩu, tên hiển thị, địa chỉ, giới tính và ngày sinh."
-      sideItems={[
-        ["0đ", "Bắt đầu với gói Freemium"],
-        ["JWT", "Nhận token sau đăng ký thành công"],
-        ["Nâng cấp sau", "Khám phá Premium trên landing"],
+      mode="signup"
+      eyebrow="Freemium"
+      title="Tạo tài khoản nhẹ nhàng, vào app trong vài phút."
+      copy="Form gửi đúng RegisterRequest của backend, nhưng được sắp xếp lại để người dùng thấy ít nặng nề hơn."
+      benefits={[
+        ["0đ", "Bắt đầu miễn phí"],
+        ["Hồ sơ", "Lưu thông tin cơ bản"],
+        ["Premium", "Nâng cấp khi cần phân tích sâu"],
       ]}
     >
-      <form className="api-panel api-form" onSubmit={handleSubmit}>
-        <h2>Tạo tài khoản</h2>
+      <div className="auth-card-header">
+        <div>
+          <p className="eyebrow">Tài khoản mới</p>
+          <h2>Bắt đầu Freemium</h2>
+        </div>
+        <a href="/login">Đã có tài khoản</a>
+      </div>
+
+      <form className="clean-form" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
         <div className="form-two-cols">
-          <TextField label="Email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} required />
-          <TextField label="Tên đăng nhập" value={form.userName} onChange={(event) => update("userName", event.target.value)} required />
-          <TextField label="Tên hiển thị" value={form.displayName} onChange={(event) => update("displayName", event.target.value)} required />
-          <TextField label="Địa chỉ" value={form.address} onChange={(event) => update("address", event.target.value)} />
-          <TextField label="Mật khẩu" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} required />
-          <TextField label="Nhập lại mật khẩu" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} required />
+          <Field label="Email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} autoComplete="email" required />
+          <Field label="Tên đăng nhập" value={form.userName} onChange={(event) => update("userName", event.target.value)} autoComplete="username" required />
+          <Field label="Tên hiển thị" value={form.displayName} onChange={(event) => update("displayName", event.target.value)} required />
+          <Field label="Địa chỉ" value={form.address} onChange={(event) => update("address", event.target.value)} />
+          <Field label="Mật khẩu" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" required />
+          <Field label="Nhập lại mật khẩu" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" required />
           <SelectField label="Giới tính" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
             <option value="1">Nam</option>
             <option value="2">Nữ</option>
           </SelectField>
-          <TextField label="Ngày sinh" type="date" value={form.dateOfBirth} onChange={(event) => update("dateOfBirth", event.target.value)} />
+          <Field label="Ngày sinh" type="date" value={form.dateOfBirth} onChange={(event) => update("dateOfBirth", event.target.value)} />
         </div>
-        <label className="api-check">
+
+        <label className="api-check auth-consent">
           <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} />
           <span>Tôi đồng ý với điều khoản sử dụng và disclaimer y tế.</span>
         </label>
-        <button className="btn btn-primary" type="submit" disabled={submitting}>
-          {submitting ? "Đang tạo tài khoản..." : "Tạo tài khoản Freemium"}
+
+        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
+          {submitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
         </button>
-        <div className="form-links">
-          <a href="/login">Đã có tài khoản</a>
-          <a href="/medical-disclaimer">Đọc disclaimer y tế</a>
-        </div>
       </form>
     </AuthShell>
   );
@@ -223,25 +262,31 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthShell
+      mode="login"
       eyebrow="Khôi phục"
-      title="Nhận OTP đổi mật khẩu qua backend."
-      copy="Nhập email tài khoản. Backend sẽ xử lý OTP theo cấu hình hiện có."
-      sideItems={[
-        ["Bước 1", "Gửi email đến forgot-password"],
-        ["Bước 2", "Nhập OTP ở trang đổi mật khẩu"],
-        ["Bước 3", "Đăng nhập lại bằng mật khẩu mới"],
+      title="Lấy OTP để đặt lại mật khẩu."
+      copy="Nhập email tài khoản, sau đó dùng OTP ở bước đổi mật khẩu."
+      benefits={[
+        ["Bước 1", "Gửi email"],
+        ["Bước 2", "Nhập OTP"],
+        ["Bước 3", "Đăng nhập lại"],
       ]}
     >
-      <form className="api-panel api-form" onSubmit={handleSubmit}>
-        <h2>Quên mật khẩu</h2>
+      <div className="auth-card-header">
+        <div>
+          <p className="eyebrow">Mật khẩu</p>
+          <h2>Quên mật khẩu</h2>
+        </div>
+        <a href="/login">Đăng nhập</a>
+      </div>
+      <form className="clean-form" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
-        <TextField label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-        <button className="btn btn-primary" type="submit" disabled={submitting}>
+        <Field label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
           {submitting ? "Đang gửi..." : "Gửi OTP"}
         </button>
         <div className="form-links">
           <a href="/change-password">Tôi đã có OTP</a>
-          <a href="/login">Quay lại đăng nhập</a>
         </div>
       </form>
     </AuthShell>
@@ -273,29 +318,32 @@ export function ChangePasswordPage() {
 
   return (
     <AuthShell
+      mode="login"
       eyebrow="Đổi mật khẩu"
       title="Xác nhận OTP và đặt mật khẩu mới."
-      copy="Form này dùng endpoint /api/authentication/change-password theo Swagger."
-      sideItems={[
-        ["OTP", "Mã xác thực từ email"],
-        ["Mật khẩu mới", "Gửi newPassword và confirmNewPassword"],
-        ["Bảo mật", "Không lưu mật khẩu trên frontend"],
+      copy="Form dùng endpoint /api/authentication/change-password theo Swagger."
+      benefits={[
+        ["OTP", "Mã xác thực"],
+        ["Bảo mật", "Không lưu mật khẩu"],
+        ["Hoàn tất", "Đăng nhập lại"],
       ]}
     >
-      <form className="api-panel api-form" onSubmit={handleSubmit}>
-        <h2>Đổi mật khẩu</h2>
+      <div className="auth-card-header">
+        <div>
+          <p className="eyebrow">OTP</p>
+          <h2>Đổi mật khẩu</h2>
+        </div>
+        <a href="/forgot-password">Gửi lại OTP</a>
+      </div>
+      <form className="clean-form" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
-        <TextField label="Email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} required />
-        <TextField label="OTP" value={form.otp} onChange={(event) => update("otp", event.target.value)} required />
-        <TextField label="Mật khẩu mới" type="password" value={form.newPassword} onChange={(event) => update("newPassword", event.target.value)} required />
-        <TextField label="Nhập lại mật khẩu mới" type="password" value={form.confirmNewPassword} onChange={(event) => update("confirmNewPassword", event.target.value)} required />
-        <button className="btn btn-primary" type="submit" disabled={submitting}>
+        <Field label="Email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} required />
+        <Field label="OTP" value={form.otp} onChange={(event) => update("otp", event.target.value)} required />
+        <Field label="Mật khẩu mới" type="password" value={form.newPassword} onChange={(event) => update("newPassword", event.target.value)} required />
+        <Field label="Nhập lại mật khẩu mới" type="password" value={form.confirmNewPassword} onChange={(event) => update("confirmNewPassword", event.target.value)} required />
+        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
           {submitting ? "Đang đổi..." : "Đổi mật khẩu"}
         </button>
-        <div className="form-links">
-          <a href="/forgot-password">Gửi lại OTP</a>
-          <a href="/login">Đăng nhập</a>
-        </div>
       </form>
     </AuthShell>
   );
