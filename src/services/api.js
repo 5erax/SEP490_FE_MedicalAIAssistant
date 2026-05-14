@@ -1,7 +1,5 @@
 const DIRECT_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
-const SHOULD_USE_DIRECT_API =
-  import.meta.env.DEV || import.meta.env.VITE_API_MODE === "direct";
-const API_BASE_URL = SHOULD_USE_DIRECT_API ? DIRECT_API_BASE_URL : "";
+const API_BASE_URL = import.meta.env.DEV ? DIRECT_API_BASE_URL : "";
 const AUTH_STORAGE_KEY = "medimate.auth";
 
 function buildUrl(path) {
@@ -136,7 +134,7 @@ export const authApi = {
     return apiRequest("/api/authentication/refresh", {
       method: "POST",
       auth: true,
-    });
+    }).then(normalizeAuthResponse);
   },
 
   logout() {

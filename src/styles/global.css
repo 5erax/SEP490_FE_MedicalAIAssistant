@@ -1890,6 +1890,55 @@
   gap: 12px;
 }
 
+.actor-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.actor-switcher button {
+  min-height: 112px;
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 18px;
+  text-align: left;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, opacity 180ms ease;
+}
+
+.actor-switcher button:hover:not(:disabled),
+.actor-switcher button.active {
+  transform: translateY(-3px);
+  background: var(--mint);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.actor-switcher button:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.actor-switcher strong,
+.actor-switcher span {
+  display: block;
+}
+
+.actor-switcher strong {
+  font-size: 20px;
+}
+
+.actor-switcher span {
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.actor-panel {
+  display: grid;
+  gap: 18px;
+}
+
 .app-stats article,
 .app-card,
 .app-empty {
@@ -2145,6 +2194,7 @@
   .auth-side-list,
   .auth-benefits,
   .app-stats,
+  .actor-switcher,
   .form-two-cols,
   .record-card,
   .user-row,
