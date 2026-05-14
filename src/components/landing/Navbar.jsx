@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { getStoredAuth } from "../../services/api";
 
 const NAV_LINKS = [
   { name: "Tính năng", href: "/features" },
   { name: "Demo", href: "/#demo" },
   { name: "Quy trình", href: "/#process" },
-  { name: "Bản đồ", href: "/#map" },
+  { name: "Chuyên khoa", href: "/departments" },
   { name: "Bảng giá", href: "/pricing" },
 ];
 
@@ -19,6 +20,7 @@ function Logo() {
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const [auth] = useState(() => getStoredAuth());
 
   return (
     <header className="nav">
@@ -34,12 +36,20 @@ export function Navbar() {
         </nav>
 
         <div className="nav-actions">
-          <a href="/login" className="btn btn-ghost">
-            Đăng nhập
-          </a>
-          <a href="/signup" className="btn btn-dark">
-            Dùng thử miễn phí
-          </a>
+          {auth ? (
+            <a href="/account" className="btn btn-dark">
+              Tài khoản
+            </a>
+          ) : (
+            <>
+              <a href="/login" className="btn btn-ghost">
+                Đăng nhập
+              </a>
+              <a href="/signup" className="btn btn-dark">
+                Dùng thử miễn phí
+              </a>
+            </>
+          )}
         </div>
 
         <button
@@ -59,8 +69,12 @@ export function Navbar() {
               {link.name}
             </a>
           ))}
-          <a className="btn btn-primary" href="/signup" onClick={() => setOpen(false)}>
-            Bắt đầu miễn phí
+          <a
+            className="btn btn-primary"
+            href={auth ? "/account" : "/signup"}
+            onClick={() => setOpen(false)}
+          >
+            {auth ? "Tài khoản" : "Bắt đầu miễn phí"}
           </a>
         </nav>
       )}
