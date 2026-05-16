@@ -72,7 +72,7 @@ export async function apiRequest(path, options = {}) {
       payload = {
         success: false,
         message:
-          "Backend không trả JSON hợp lệ. Hãy kiểm tra VITE_API_BASE_URL hoặc cấu hình deploy.",
+          "Dịch vụ đang phản hồi không ổn định. Vui lòng thử lại sau.",
       };
     }
   }

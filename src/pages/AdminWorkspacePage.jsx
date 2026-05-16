@@ -48,8 +48,7 @@ function AccessDenied({ auth, roles }) {
   const path = hasRole(roles, "staff") ? "/app/staff" : "/app/patient";
 
   return (
-    <main className="landing-page">
-      <Navbar />
+    <main className="workspace-root">
       <section className="app-page">
         <div className="container app-empty">
           <p className="eyebrow">Không có quyền Admin</p>
@@ -63,7 +62,6 @@ function AccessDenied({ auth, roles }) {
           </div>
         </div>
       </section>
-      <Footer />
     </main>
   );
 }
@@ -315,8 +313,7 @@ export default function AdminWorkspacePage() {
   }
 
   return (
-    <main className="landing-page">
-      <Navbar />
+    <main className="workspace-root">
       <section className="admin-page">
         <div className="container admin-shell">
           <aside className="admin-sidebar">
@@ -333,7 +330,7 @@ export default function AdminWorkspacePage() {
             </nav>
 
             <div className="admin-session-card">
-              <span>Admin session</span>
+              <span>Phiên quản trị</span>
               <strong>{formatRoles(roles)}</strong>
               <small>{auth.email}</small>
               <button className="btn btn-dark btn-small" type="button" onClick={handleLogout}>Đăng xuất</button>
@@ -345,10 +342,10 @@ export default function AdminWorkspacePage() {
               <div>
                 <p className="eyebrow">Admin Workspace</p>
                 <h1>Quản trị MediMate AI</h1>
-                <p>Workspace riêng cho Admin, tập trung vào user, staff và chuyên khoa theo Swagger hiện có.</p>
+                <p>Quản lý tài khoản, nhân sự hỗ trợ và danh mục chuyên khoa trong một nơi rõ ràng.</p>
               </div>
               <div className="admin-top-actions">
-                <a className="btn btn-ghost btn-small" href="/app/staff">Mở Staff view</a>
+                <a className="btn btn-ghost btn-small" href="/app/staff">Xem giao diện nhân sự</a>
                 <button className="btn btn-primary btn-small" type="button" onClick={() => {
                   loadUsers();
                   loadDepartments();
@@ -362,7 +359,7 @@ export default function AdminWorkspacePage() {
               <article>
                 <span>Tổng user</span>
                 <strong>{usersLoading ? "..." : pageInfo.totalCount}</strong>
-                <small>Theo API /api/users</small>
+                <small>Tổng số tài khoản</small>
               </article>
               <article>
                 <span>Chờ duyệt</span>
@@ -377,7 +374,7 @@ export default function AdminWorkspacePage() {
               <article>
                 <span>Chuyên khoa</span>
                 <strong>{departmentsLoading ? "..." : departments.length}</strong>
-                <small>MedicalDepartments</small>
+                <small>Danh mục đang dùng</small>
               </article>
             </section>
 
@@ -398,11 +395,11 @@ export default function AdminWorkspacePage() {
                     </article>
                     <article>
                       <strong>{departments.length} chuyên khoa đang có</strong>
-                      <span>Cần dữ liệu chuyên khoa sạch trước khi nối luồng AI gợi ý khoa.</span>
+                      <span>Dữ liệu chuyên khoa rõ ràng giúp người dùng chọn đúng nơi khám hơn.</span>
                     </article>
                     <article>
-                      <strong>API khả dụng</strong>
-                      <span>Auth, Users, MedicalDepartments. Các module ERD lớn sẽ cần API bổ sung.</span>
+                      <strong>Vận hành ổn định</strong>
+                      <span>Ưu tiên duyệt tài khoản, cập nhật chuyên khoa và giữ dữ liệu nhất quán.</span>
                     </article>
                   </div>
                 </div>
@@ -437,7 +434,7 @@ export default function AdminWorkspacePage() {
               <section className="admin-panel">
                 <div className="panel-title-row">
                   <div>
-                    <p className="eyebrow">Users</p>
+                    <p className="eyebrow">Tài khoản</p>
                     <h2>Quản lý người dùng</h2>
                   </div>
                   <button className="btn btn-ghost btn-small" type="button" onClick={() => loadUsers()}>Tải lại</button>
@@ -489,10 +486,10 @@ export default function AdminWorkspacePage() {
               <section className="admin-panel">
                 <div className="panel-title-row">
                   <div>
-                    <p className="eyebrow">Staff</p>
+                    <p className="eyebrow">Nhân sự</p>
                     <h2>Tạo tài khoản staff</h2>
                   </div>
-                  <span className="soft-badge">POST /api/authentication/register/staff</span>
+                  <span className="soft-badge">Tài khoản nội bộ</span>
                 </div>
                 <ApiMessage message={staffMessage} />
                 <form className="clean-form" onSubmit={handleCreateStaff}>
@@ -537,7 +534,7 @@ export default function AdminWorkspacePage() {
                 <div className="admin-panel">
                   <div className="panel-title-row">
                     <div>
-                      <p className="eyebrow">MedicalDepartments</p>
+                    <p className="eyebrow">Chuyên khoa</p>
                       <h2>Danh mục chuyên khoa</h2>
                     </div>
                     <button className="btn btn-ghost btn-small" type="button" onClick={loadDepartments}>Tải lại</button>
@@ -598,8 +595,6 @@ export default function AdminWorkspacePage() {
           </div>
         </div>
       </section>
-      <Footer />
     </main>
   );
 }
-

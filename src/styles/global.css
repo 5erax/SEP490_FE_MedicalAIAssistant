@@ -1575,6 +1575,80 @@
   align-items: stretch;
 }
 
+.auth-layout-clean {
+  grid-template-columns: minmax(320px, 0.78fr) minmax(0, 0.82fr);
+  max-width: 1060px;
+}
+
+.auth-side-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  min-height: 620px;
+  border: 1.5px solid var(--ink);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(223, 248, 237, 0.88)),
+    var(--paper);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: clamp(28px, 5vw, 46px);
+}
+
+.auth-brand {
+  width: fit-content;
+}
+
+.auth-side-panel h1 {
+  max-width: 560px;
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(38px, 5.4vw, 62px);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.auth-side-panel p:not(.eyebrow) {
+  max-width: 560px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.auth-step-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 34px;
+}
+
+.auth-step-list div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.66);
+  padding: 13px;
+}
+
+.auth-step-list span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.auth-step-list strong {
+  overflow-wrap: anywhere;
+}
+
 .auth-hero-card,
 .auth-card {
   border: 1.5px solid var(--ink);
@@ -1612,7 +1686,13 @@
 
 .auth-card {
   align-self: center;
+  min-width: 0;
   padding: clamp(24px, 4vw, 34px);
+}
+
+.auth-card-clean {
+  align-self: center;
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .auth-card-header {
@@ -1625,6 +1705,21 @@
 .auth-card-header h2 {
   margin: 0;
   font-size: 30px;
+}
+
+.auth-card-header-clean {
+  margin-bottom: 22px;
+}
+
+.auth-card-header-clean h2 {
+  max-width: 520px;
+  line-height: 1.15;
+}
+
+.auth-card-header-clean p:not(.eyebrow) {
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
 }
 
 .auth-card-header .eyebrow {
@@ -1685,6 +1780,25 @@
 
 .auth-submit {
   width: 100%;
+}
+
+.auth-form-clean {
+  gap: 16px;
+}
+
+.auth-bottom-link {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.auth-bottom-link a {
+  color: var(--teal);
+  font-weight: 900;
 }
 
 .auth-inline-row {
@@ -1789,6 +1903,17 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 248, 243, 0) 380px),
     var(--bg);
+}
+
+.workspace-root {
+  min-width: 0;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.workspace-root .app-page {
+  padding-top: 34px;
 }
 
 .app-shell {
@@ -2088,6 +2213,235 @@
   margin-top: 4px;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.patient-tools-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.82fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.patient-map-card,
+.patient-chat-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
+  gap: 16px;
+  margin-top: 18px;
+  min-height: 380px;
+}
+
+.map-preview {
+  position: relative;
+  min-height: 380px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(17, 20, 18, 0.06) 1px, transparent 1px),
+    linear-gradient(rgba(17, 20, 18, 0.06) 1px, transparent 1px),
+    linear-gradient(135deg, #dff8ed, #f7f8f3 48%, #ffffff);
+  background-size: 42px 42px, 42px 42px, auto;
+}
+
+.map-route {
+  position: absolute;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(8, 127, 140, 0.22);
+  transform-origin: left center;
+}
+
+.route-a {
+  width: 72%;
+  left: 12%;
+  top: 48%;
+  transform: rotate(-18deg);
+}
+
+.route-b {
+  width: 54%;
+  left: 24%;
+  top: 66%;
+  transform: rotate(22deg);
+}
+
+.map-current-location {
+  position: absolute;
+  left: 48%;
+  top: 50%;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 3px 3px 0 rgba(17, 20, 18, 0.24);
+}
+
+.map-pin {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px 999px 999px 4px;
+  background: var(--lime);
+  color: var(--ink);
+  font-weight: 900;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.map-pin:hover {
+  transform: translate(-50%, -54%);
+}
+
+.map-pin {
+  transition: transform 180ms ease;
+}
+
+.facility-list {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.facility-list article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-soft);
+  padding: 13px;
+}
+
+.facility-list article > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.facility-list strong,
+.facility-list small,
+.facility-list p,
+.facility-list em {
+  display: block;
+}
+
+.facility-list small {
+  margin-top: 4px;
+  color: var(--teal);
+  font-weight: 900;
+}
+
+.facility-list p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.facility-list em {
+  margin-top: 8px;
+  color: var(--amber);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.chat-thread {
+  display: grid;
+  gap: 12px;
+  min-height: 292px;
+  max-height: 360px;
+  margin-top: 18px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-soft);
+  padding: 14px;
+}
+
+.chat-bubble {
+  max-width: 86%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px 13px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.chat-bubble.assistant {
+  justify-self: start;
+}
+
+.chat-bubble.user {
+  justify-self: end;
+  border-color: rgba(8, 127, 140, 0.32);
+  background: var(--mint);
+  color: var(--ink);
+}
+
+.quick-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.quick-prompts button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  padding: 8px 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.quick-prompts button:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.chat-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.chat-input-row input {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  padding: 13px 14px;
+  outline: none;
+}
+
+.chat-input-row input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.12);
 }
 
 .profile-card {
@@ -2394,9 +2748,12 @@
   .api-grid,
   .account-layout,
   .auth-layout,
+  .auth-layout-clean,
   .app-shell,
   .admin-shell,
   .admin-grid,
+  .patient-tools-grid,
+  .patient-map-layout,
   .app-work-grid,
   .app-work-grid.secondary {
     grid-template-columns: 1fr;
@@ -2405,6 +2762,10 @@
   .app-sidebar,
   .admin-sidebar {
     position: static;
+  }
+
+  .auth-side-panel {
+    min-height: auto;
   }
 
   .metric-strip,
@@ -2488,6 +2849,10 @@
     min-height: auto;
   }
 
+  .auth-side-panel {
+    display: none;
+  }
+
   .auth-card-header,
   .auth-inline-row,
   .app-topbar,
@@ -2495,9 +2860,35 @@
     flex-direction: column;
   }
 
+  .auth-layout-clean {
+    width: calc(100vw - 56px);
+    max-width: calc(100vw - 56px);
+    margin-inline: 14px auto;
+  }
+
+  .auth-card-clean {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 24px;
+  }
+
+  .auth-card-header-clean h2 {
+    max-width: calc(100vw - 112px);
+    font-size: 24px;
+    overflow-wrap: anywhere;
+  }
+
+  .auth-card-header-clean p:not(.eyebrow),
+  .auth-card-clean .clean-field input,
+  .auth-card-clean .clean-field select {
+    max-width: calc(100vw - 112px);
+  }
+
   .admin-top-actions,
   .admin-toolbar,
-  .admin-user-row {
+  .admin-user-row,
+  .chat-input-row {
     grid-template-columns: 1fr;
   }
 

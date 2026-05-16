@@ -12,6 +12,42 @@ const EMPTY_PROFILE = {
   phoneNumber: "",
 };
 
+const suggestedFacilities = [
+  {
+    name: "Bệnh viện Đại học Y Dược",
+    department: "Nội tổng quát",
+    distance: "2.4 km",
+    status: "Đang mở cửa",
+    address: "215 Hồng Bàng, Quận 5",
+    x: 62,
+    y: 34,
+  },
+  {
+    name: "Bệnh viện Chợ Rẫy",
+    department: "Cấp cứu",
+    distance: "3.1 km",
+    status: "Ưu tiên khi triệu chứng nặng",
+    address: "201B Nguyễn Chí Thanh, Quận 5",
+    x: 42,
+    y: 56,
+  },
+  {
+    name: "Phòng khám Gia đình",
+    department: "Khám ban đầu",
+    distance: "1.2 km",
+    status: "Còn lượt trong ngày",
+    address: "Khu vực gần bạn",
+    x: 74,
+    y: 68,
+  },
+];
+
+const quickPrompts = [
+  "Tôi bị đau đầu và sốt nhẹ 2 ngày",
+  "Tôi nên chuẩn bị gì trước khi đi khám?",
+  "Triệu chứng nào cần đi cấp cứu?",
+];
+
 function ApiMessage({ message }) {
   if (!message) return null;
   return <div className={`api-message ${message.type}`}>{message.text}</div>;
@@ -41,8 +77,8 @@ function EmptyAuth() {
       <Navbar />
       <section className="app-page">
         <div className="container app-empty">
-          <p className="eyebrow">Patient Workspace</p>
-          <h1>Bạn cần đăng nhập để mở hồ sơ cá nhân.</h1>
+          <p className="eyebrow">Hồ sơ cá nhân</p>
+          <h1>Bạn cần đăng nhập để mở không gian chăm sóc sức khỏe.</h1>
           <div className="hero-actions">
             <a className="btn btn-primary" href="/login">Đăng nhập</a>
             <a className="btn btn-ghost" href="/signup">Tạo tài khoản</a>
@@ -51,6 +87,116 @@ function EmptyAuth() {
       </section>
       <Footer />
     </main>
+  );
+}
+
+function MapPreview() {
+  return (
+    <section className="app-card patient-map-card">
+      <div className="panel-title-row">
+        <div>
+          <p className="eyebrow">Gợi ý nơi khám</p>
+          <h2>Bản đồ cơ sở y tế gần bạn</h2>
+        </div>
+        <span className="soft-badge">Sắp có</span>
+      </div>
+
+      <div className="patient-map-layout">
+        <div className="map-preview" aria-label="Bản đồ gợi ý cơ sở y tế">
+          <div className="map-route route-a" />
+          <div className="map-route route-b" />
+          <div className="map-current-location">Bạn</div>
+          {suggestedFacilities.map((facility, index) => (
+            <button
+              className="map-pin"
+              style={{ left: `${facility.x}%`, top: `${facility.y}%` }}
+              key={facility.name}
+              type="button"
+              aria-label={facility.name}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </div>
+
+        <div className="facility-list">
+          {suggestedFacilities.map((facility, index) => (
+            <article key={facility.name}>
+              <span>{index + 1}</span>
+              <div>
+                <strong>{facility.name}</strong>
+                <small>{facility.department} · {facility.distance}</small>
+                <p>{facility.address}</p>
+                <em>{facility.status}</em>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ChatAssistant() {
+  const [messages, setMessages] = useState([
+    {
+      from: "assistant",
+      text: "Bạn có thể mô tả triệu chứng, thời gian xuất hiện và mức độ khó chịu. Mình sẽ giúp bạn chuẩn bị thông tin trước khi đi khám.",
+    },
+  ]);
+  const [draft, setDraft] = useState("");
+
+  function sendMessage(event) {
+    event.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+
+    setMessages((current) => [
+      ...current,
+      { from: "user", text },
+      {
+        from: "assistant",
+        text: "Mình đã ghi nhận. Hãy theo dõi mức độ nặng hơn, thời gian kéo dài và các dấu hiệu bất thường như khó thở, đau ngực, lơ mơ hoặc sốt cao.",
+      },
+    ]);
+    setDraft("");
+  }
+
+  return (
+    <section className="app-card patient-chat-card">
+      <div className="panel-title-row">
+        <div>
+          <p className="eyebrow">Hỏi nhanh</p>
+          <h2>Trợ lý chăm sóc</h2>
+        </div>
+        <span className="soft-badge">Tham khảo</span>
+      </div>
+
+      <div className="chat-thread">
+        {messages.map((message, index) => (
+          <div className={`chat-bubble ${message.from}`} key={`${message.from}-${index}`}>
+            {message.text}
+          </div>
+        ))}
+      </div>
+
+      <div className="quick-prompts">
+        {quickPrompts.map((prompt) => (
+          <button key={prompt} type="button" onClick={() => setDraft(prompt)}>
+            {prompt}
+          </button>
+        ))}
+      </div>
+
+      <form className="chat-input-row" onSubmit={sendMessage}>
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="Mô tả triệu chứng hoặc điều bạn muốn hỏi..."
+        />
+        <button className="btn btn-primary btn-small" type="submit">Gửi</button>
+      </form>
+    </section>
   );
 }
 
@@ -115,7 +261,7 @@ export default function PatientWorkspacePage() {
   async function handleSaveProfile(event) {
     event.preventDefault();
     if (!currentUserId) {
-      setProfileMessage({ type: "error", text: "Không tìm thấy userId trong phiên đăng nhập." });
+      setProfileMessage({ type: "error", text: "Không tìm thấy tài khoản trong phiên đăng nhập." });
       return;
     }
 
@@ -148,15 +294,14 @@ export default function PatientWorkspacePage() {
   }
 
   return (
-    <main className="landing-page">
-      <Navbar />
+    <main className="workspace-root patient-workspace">
       <section className="app-page">
         <div className="container app-main">
-          <header className="app-topbar">
+          <header className="app-topbar workspace-topbar">
             <div>
-              <p className="eyebrow">Patient Workspace</p>
+              <p className="eyebrow">Không gian cá nhân</p>
               <h1>Chào {displayName}</h1>
-              <p className="muted-text">Workspace riêng cho người dùng. Các module AI triệu chứng/bệnh viện sẽ mở khi backend có API tương ứng.</p>
+              <p className="muted-text">Theo dõi hồ sơ, chuẩn bị câu hỏi khi đi khám và tìm nơi chăm sóc phù hợp.</p>
             </div>
             <button className="btn btn-dark btn-small" type="button" onClick={handleLogout}>Đăng xuất</button>
           </header>
@@ -166,19 +311,19 @@ export default function PatientWorkspacePage() {
           <div className="app-stats">
             <article>
               <span>Trạng thái</span>
-              <strong>{loading ? "Đang tải" : Number(user?.status) === 1 ? "Đã duyệt" : "Chờ duyệt"}</strong>
+              <strong>{loading ? "Đang tải" : Number(user?.status) === 1 ? "Đã xác thực" : "Đang chờ"}</strong>
             </article>
             <article>
-              <span>Role</span>
-              <strong>{roles.length ? roles.join(", ") : "user"}</strong>
+              <span>Tài khoản</span>
+              <strong>{roles.length ? roles.join(", ") : "Người dùng"}</strong>
             </article>
             <article>
               <span>Chuyên khoa</span>
               <strong>{departments.length}</strong>
             </article>
             <article>
-              <span>API hiện có</span>
-              <strong>Profile</strong>
+              <span>Gợi ý hôm nay</span>
+              <strong>{suggestedFacilities.length}</strong>
             </article>
           </div>
 
@@ -189,7 +334,7 @@ export default function PatientWorkspacePage() {
                   <p className="eyebrow">Hồ sơ</p>
                   <h2>Thông tin cá nhân</h2>
                 </div>
-                <span className="soft-badge">PUT /api/users/:id</span>
+                <span className="soft-badge">Đang lưu</span>
               </div>
               <ApiMessage message={profileMessage} />
               <Field label="Tên hiển thị">
@@ -221,14 +366,14 @@ export default function PatientWorkspacePage() {
               <div className="panel-title-row">
                 <div>
                   <p className="eyebrow">Tra cứu</p>
-                  <h2>Danh mục chuyên khoa</h2>
+                  <h2>Chuyên khoa phù hợp</h2>
                 </div>
-                <span className="soft-badge">GET</span>
+                <span className="soft-badge">Danh mục</span>
               </div>
               <ApiMessage message={departmentMessage} />
               <div className="mini-list">
-                {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa từ backend.</p>}
-                {departments.map((department) => (
+                {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa để hiển thị.</p>}
+                {departments.slice(0, 6).map((department) => (
                   <article key={department.id}>
                     <strong>{department.departmentName || "Chưa đặt tên"}</strong>
                     <span>{department.description || "Chưa có mô tả."}</span>
@@ -237,10 +382,13 @@ export default function PatientWorkspacePage() {
               </div>
             </section>
           </div>
+
+          <div className="patient-tools-grid">
+            <MapPreview />
+            <ChatAssistant />
+          </div>
         </div>
       </section>
-      <Footer />
     </main>
   );
 }
-

@@ -18,9 +18,9 @@ export default function WorkspaceRedirect() {
         <Navbar />
         <section className="app-page">
           <div className="container app-empty">
-            <p className="eyebrow">Workspace</p>
-            <h1>Bạn cần đăng nhập để mở MediMate AI.</h1>
-            <p>Hệ thống sẽ tự đưa bạn tới workspace phù hợp sau khi đăng nhập: Patient, Staff hoặc Admin.</p>
+            <p className="eyebrow">MediMate AI</p>
+            <h1>Bạn cần đăng nhập để tiếp tục.</h1>
+            <p>Sau khi đăng nhập, MediMate AI sẽ mở đúng không gian làm việc dành cho tài khoản của bạn.</p>
             <div className="hero-actions">
               <a className="btn btn-primary" href="/login">Đăng nhập</a>
               <a className="btn btn-ghost" href="/signup">Tạo tài khoản</a>
@@ -33,15 +33,13 @@ export default function WorkspaceRedirect() {
   }
 
   return (
-    <main className="landing-page">
-      <Navbar />
+    <main className="workspace-root">
       <section className="app-page">
         <div className="container app-empty">
-          <p className="eyebrow">Đang điều hướng</p>
-          <h1>Đang mở workspace phù hợp với tài khoản của bạn.</h1>
+          <p className="eyebrow">Đang mở</p>
+          <h1>Đang chuẩn bị không gian làm việc của bạn.</h1>
         </div>
       </section>
     </main>
   );
 }
-

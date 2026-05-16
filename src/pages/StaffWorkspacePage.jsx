@@ -22,11 +22,10 @@ function Field({ label, children }) {
 
 function EmptyAuth() {
   return (
-    <main className="landing-page">
-      <Navbar />
+    <main className="workspace-root">
       <section className="app-page">
         <div className="container app-empty">
-          <p className="eyebrow">Staff Workspace</p>
+          <p className="eyebrow">Không gian nhân sự</p>
           <h1>Bạn cần đăng nhập bằng tài khoản Staff hoặc Admin.</h1>
           <div className="hero-actions">
             <a className="btn btn-primary" href="/login">Đăng nhập</a>
@@ -40,8 +39,7 @@ function EmptyAuth() {
 
 function AccessDenied({ roles }) {
   return (
-    <main className="landing-page">
-      <Navbar />
+    <main className="workspace-root">
       <section className="app-page">
         <div className="container app-empty">
           <p className="eyebrow">Không có quyền Staff</p>
@@ -52,7 +50,6 @@ function AccessDenied({ roles }) {
           </div>
         </div>
       </section>
-      <Footer />
     </main>
   );
 }
@@ -184,12 +181,12 @@ export default function StaffWorkspacePage() {
         <div className="container app-main">
           <header className="app-topbar">
             <div>
-              <p className="eyebrow">Staff Workspace</p>
+              <p className="eyebrow">Không gian nhân sự</p>
               <h1>Quản lý chuyên khoa</h1>
-              <p className="muted-text">Xin chào {displayName}. Workspace này chỉ tập trung vào MedicalDepartments API hiện có.</p>
+              <p className="muted-text">Xin chào {displayName}. Cập nhật danh mục chuyên khoa để người dùng tra cứu chính xác hơn.</p>
             </div>
             <div className="record-actions">
-              {hasRole(roles, "admin") && <a className="btn btn-ghost btn-small" href="/app/admin">Admin Workspace</a>}
+              {hasRole(roles, "admin") && <a className="btn btn-ghost btn-small" href="/app/admin">Quản trị</a>}
               <button className="btn btn-dark btn-small" type="button" onClick={handleLogout}>Đăng xuất</button>
             </div>
           </header>
@@ -206,8 +203,8 @@ export default function StaffWorkspacePage() {
               <strong>{roles.length ? roles.join(", ") : "staff"}</strong>
             </article>
             <article>
-              <span>API</span>
-              <strong>CRUD</strong>
+              <span>Thao tác</span>
+              <strong>Quản lý</strong>
             </article>
             <article>
               <span>Trạng thái</span>
@@ -220,7 +217,7 @@ export default function StaffWorkspacePage() {
               <div className="panel-title-row">
                 <div>
                   <p className="eyebrow">Danh mục</p>
-                  <h2>Medical Departments</h2>
+                  <h2>Chuyên khoa</h2>
                 </div>
                 <button className="btn btn-ghost btn-small" type="button" onClick={loadDepartments}>Tải lại</button>
               </div>
@@ -277,8 +274,6 @@ export default function StaffWorkspacePage() {
           </div>
         </div>
       </section>
-      <Footer />
     </main>
   );
 }
-
