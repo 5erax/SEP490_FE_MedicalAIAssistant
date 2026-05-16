@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { authApi } from "../services/api";
+import { getWorkspacePath } from "../utils/roles";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -87,8 +88,8 @@ export function LoginPage() {
     setSubmitting(true);
     setMessage(null);
     try {
-      await authApi.login(form);
-      window.location.href = "/app";
+      const response = await authApi.login(form);
+      window.location.href = getWorkspacePath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -136,11 +137,8 @@ export function LoginPage() {
           autoComplete="current-password"
           required
         />
-        <div className="auth-inline-row">
-          <label className="auth-remember">
-            <input type="checkbox" />
-            <span>Ghi nhớ phiên</span>
-          </label>
+        <div className="auth-inline-row auth-link-row">
+          <span>Phiên đăng nhập được lưu trên thiết bị này sau khi xác thực.</span>
           <a href="/forgot-password">Quên mật khẩu?</a>
         </div>
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
@@ -179,12 +177,12 @@ export function SignupPage() {
     setSubmitting(true);
     setMessage(null);
     try {
-      await authApi.register({
+      const response = await authApi.register({
         ...form,
         gender: Number(form.gender),
         dateOfBirth: form.dateOfBirth || null,
       });
-      window.location.href = "/app";
+      window.location.href = getWorkspacePath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -229,11 +227,11 @@ export function SignupPage() {
         </div>
 
         <label className="api-check auth-consent">
-          <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} />
+          <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} required />
           <span>Tôi đồng ý với điều khoản sử dụng và disclaimer y tế.</span>
         </label>
 
-        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
+        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting || !accepted}>
           {submitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
         </button>
       </form>
