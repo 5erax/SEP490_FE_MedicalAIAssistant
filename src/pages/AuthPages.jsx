@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { authApi } from "../services/api";
+
+const GOOGLE_CLIENT_ID = "976426394148-eub0i02sbrseoob7r4lbe8ubr3bqv3n2.apps.googleusercontent.com";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -96,8 +99,28 @@ export function LoginPage() {
     }
   }
 
+  async function handleGoogleSuccess(credentialResponse) {
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      setMessage({ type: "error", text: "Google login did not return a credential." });
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      await authApi.googleLogin(credential);
+      window.location.href = "/app";
+    } catch (error) {
+      setMessage({ type: "error", text: error.message });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <AuthShell
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthShell
       mode="login"
       eyebrow="Đăng nhập"
       title="Tiếp tục chăm sóc sức khỏe trong một workspace gọn gàng."
@@ -118,6 +141,13 @@ export function LoginPage() {
 
       <form className="clean-form" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
+        <div className="google-login-wrap">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setMessage({ type: "error", text: "Google login failed. Please try again." })}
+          />
+        </div>
+        <div className="auth-divider"><span>or</span></div>
         <Field
           label="Email"
           type="email"
@@ -144,7 +174,8 @@ export function LoginPage() {
           {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
       </form>
-    </AuthShell>
+      </AuthShell>
+    </GoogleOAuthProvider>
   );
 }
 

@@ -1726,6 +1726,29 @@ section[id] {
   width: 100%;
 }
 
+.google-login-wrap {
+  display: grid;
+  width: 100%;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--subtle);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+
 .auth-inline-row {
   display: flex;
   align-items: center;
