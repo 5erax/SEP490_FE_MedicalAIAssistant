@@ -5,6 +5,7 @@ import { Footer } from "../components/landing/PricingSection";
 import { authApi } from "../services/api";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const GOOGLE_LOGIN_ENABLED = Boolean(GOOGLE_CLIENT_ID.trim());
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -119,7 +120,7 @@ export function LoginPage() {
   }
 
   return (
-    <GoogleOAuthProvider 
+    <GoogleOAuthProvider
       clientId={GOOGLE_CLIENT_ID}
       script_props={{
         async: true,
@@ -149,10 +150,16 @@ export function LoginPage() {
       <form className="clean-form" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
         <div className="google-login-wrap">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => setMessage({ type: "error", text: "Google login failed. Please try again." })}
-          />
+          {GOOGLE_LOGIN_ENABLED ? (
+            <GoogleLogin
+              ux_mode="popup"
+              use_fedcm_for_button
+              onSuccess={handleGoogleSuccess}
+              onError={() => setMessage({ type: "error", text: "Google login failed. Please try again." })}
+            />
+          ) : (
+            <ApiMessage message={{ type: "error", text: "Google Client ID is not configured." }} />
+          )}
         </div>
         <div className="auth-divider"><span>or</span></div>
         <Field

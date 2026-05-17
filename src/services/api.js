@@ -1,7 +1,6 @@
 const DIRECT_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 const API_BASE_URL = import.meta.env.DEV ? DIRECT_API_BASE_URL : "";
 const AUTH_STORAGE_KEY = "medimate.auth";
-const PUBLIC_BACKEND_URL = "https://sep490-medicalaiassistant.onrender.com";
 
 function buildUrl(path) {
   if (path.startsWith("http")) return path;
@@ -124,7 +123,7 @@ export const authApi = {
 
   async googleLogin(credential) {
     return normalizeAuthResponse(
-      await apiRequest(`${DIRECT_API_BASE_URL || PUBLIC_BACKEND_URL}/api/authentication/google`, {
+      await apiRequest("/api/authentication/google", {
         method: "POST",
         body: { credential },
       }),
