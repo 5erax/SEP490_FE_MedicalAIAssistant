@@ -4,7 +4,7 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { authApi } from "../services/api";
 
-const GOOGLE_CLIENT_ID = "976426394148-eub0i02sbrseoob7r4lbe8ubr3bqv3n2.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -119,7 +119,14 @@ export function LoginPage() {
   }
 
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider 
+      clientId={GOOGLE_CLIENT_ID}
+      script_props={{
+        async: true,
+        defer: true,
+        crossOrigin: "anonymous",
+      }}
+    >
       <AuthShell
       mode="login"
       eyebrow="Đăng nhập"
