@@ -1,7 +1,6 @@
 import LandingPage from "./pages/LandingPage";
 import StaticPage from "./pages/StaticPage";
 import WorkspaceRedirect from "./pages/WorkspaceRedirect";
-import PatientWorkspacePage from "./pages/PatientWorkspacePage";
 import StaffWorkspacePage from "./pages/StaffWorkspacePage";
 import AdminWorkspacePage from "./pages/AdminWorkspacePage";
 import ChatbotPage from "./pages/ChatbotPage";
@@ -40,7 +39,10 @@ function App() {
   if (path === "/medication") return <MedicationScanPage />;
   if (path === "/pricing") return <PricingPage />;
   if (path === "/app") return <WorkspaceRedirect />;
-  if (path === "/account" || path === "/app/patient") return <PatientWorkspacePage />;
+  if (path === "/account" || path === "/app/patient") {
+    window.history.replaceState(null, "", "/dashboard");
+    return <DashboardPage />;
+  }
   if (path === "/app/staff") return <StaffWorkspacePage />;
   if (path === "/app/admin") return <AdminWorkspacePage />;
   if (path === "/departments") return <DepartmentsPage />;
