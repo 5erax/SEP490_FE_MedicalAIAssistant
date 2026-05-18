@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
+import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
-import { authApi, clearStoredAuth, getStoredAuth, medicalDepartmentsApi } from "../services/api";
-import { normalizeRoles } from "../utils/roles";
+import {
+  authApi,
+  clearStoredAuth,
+  getStoredAuth,
+  medicalDepartmentsApi,
+  patientProfilesApi,
+  webChatbotApi,
+} from "../services/api";
 
-const EMPTY_PROFILE = {
+const EMPTY_ACCOUNT_PROFILE = {
   displayName: "",
   address: "",
   gender: "1",
@@ -12,33 +20,62 @@ const EMPTY_PROFILE = {
   phoneNumber: "",
 };
 
-const suggestedFacilities = [
+const EMPTY_PATIENT_PROFILE = {
+  bloodType: "",
+  height: "",
+  weight: "",
+  allergyNote: "",
+  chronicDiseaseNote: "",
+};
+
+const DEFAULT_VIEW_STATE = {
+  longitude: 105.846,
+  latitude: 21.026,
+  zoom: 12,
+  pitch: 30,
+  bearing: -10,
+};
+
+const FALLBACK_FACILITIES = [
   {
-    name: "Bệnh viện Đại học Y Dược",
+    id: "bach-mai",
+    name: "Bệnh viện Bạch Mai",
     department: "Nội tổng quát",
     distance: "2.4 km",
     status: "Đang mở cửa",
-    address: "215 Hồng Bàng, Quận 5",
-    x: 62,
-    y: 34,
+    address: "78 Giải Phóng, Hà Nội",
+    longitude: 105.8412,
+    latitude: 21.0017,
   },
   {
-    name: "Bệnh viện Chợ Rẫy",
-    department: "Cấp cứu",
-    distance: "3.1 km",
-    status: "Ưu tiên khi triệu chứng nặng",
-    address: "201B Nguyễn Chí Thanh, Quận 5",
-    x: 42,
-    y: 56,
+    id: "viet-duc",
+    name: "Bệnh viện Việt Đức",
+    department: "Cấp cứu & Ngoại khoa",
+    distance: "1.1 km",
+    status: "Phù hợp khi triệu chứng nặng",
+    address: "40 Tràng Thi, Hà Nội",
+    longitude: 105.8463,
+    latitude: 21.0286,
   },
   {
-    name: "Phòng khám Gia đình",
-    department: "Khám ban đầu",
-    distance: "1.2 km",
-    status: "Còn lượt trong ngày",
-    address: "Khu vực gần bạn",
-    x: 74,
-    y: 68,
+    id: "vinmec",
+    name: "Vinmec Times City",
+    department: "Khám chuyên khoa",
+    distance: "4.1 km",
+    status: "Có đặt lịch trong ngày",
+    address: "458 Minh Khai, Hà Nội",
+    longitude: 105.8675,
+    latitude: 20.9957,
+  },
+  {
+    id: "medlatec",
+    name: "Medlatec Nghĩa Dũng",
+    department: "Xét nghiệm & chẩn đoán",
+    distance: "3.2 km",
+    status: "Phù hợp xét nghiệm cơ bản",
+    address: "42 Nghĩa Dũng, Hà Nội",
+    longitude: 105.8419,
+    latitude: 21.0451,
   },
 ];
 
@@ -67,8 +104,25 @@ function toDateInput(value) {
   return String(value).slice(0, 10);
 }
 
+function numberOrNull(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
 function getUserId(user, auth) {
   return user?.userId ?? user?.identityId ?? auth?.userId ?? auth?.identityId ?? "";
+}
+
+function toPatientForm(profile) {
+  if (!profile) return EMPTY_PATIENT_PROFILE;
+  return {
+    bloodType: profile.bloodType ?? "",
+    height: profile.height ?? "",
+    weight: profile.weight ?? "",
+    allergyNote: profile.allergyNote ?? "",
+    chronicDiseaseNote: profile.chronicDiseaseNote ?? "",
+  };
 }
 
 function EmptyAuth() {
@@ -90,48 +144,103 @@ function EmptyAuth() {
   );
 }
 
-function MapPreview() {
+function PatientMap({ userLocation, viewState, setViewState, onLocate, locating }) {
+  const [selectedId, setSelectedId] = useState(FALLBACK_FACILITIES[0].id);
+
+  const selectedFacility = useMemo(
+    () => FALLBACK_FACILITIES.find((facility) => facility.id === selectedId),
+    [selectedId],
+  );
+
   return (
     <section className="app-card patient-map-card">
       <div className="panel-title-row">
         <div>
-          <p className="eyebrow">Gợi ý nơi khám</p>
-          <h2>Bản đồ cơ sở y tế gần bạn</h2>
+          <p className="eyebrow">Bản đồ</p>
+          <h2>Cơ sở y tế gần bạn</h2>
         </div>
-        <span className="soft-badge">Sắp có</span>
+        <button className="btn btn-ghost btn-small" type="button" onClick={onLocate} disabled={locating}>
+          {locating ? "Đang định vị..." : "Định vị tôi"}
+        </button>
       </div>
 
-      <div className="patient-map-layout">
-        <div className="map-preview" aria-label="Bản đồ gợi ý cơ sở y tế">
-          <div className="map-route route-a" />
-          <div className="map-route route-b" />
-          <div className="map-current-location">Bạn</div>
-          {suggestedFacilities.map((facility, index) => (
-            <button
-              className="map-pin"
-              style={{ left: `${facility.x}%`, top: `${facility.y}%` }}
-              key={facility.name}
-              type="button"
-              aria-label={facility.name}
-            >
-              {index + 1}
-            </button>
-          ))}
-        </div>
+      <div className="patient-map-live">
+        <Map
+          {...viewState}
+          onMove={(event) => setViewState(event.viewState)}
+          mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+          attributionControl={false}
+        >
+          <NavigationControl position="top-right" />
 
-        <div className="facility-list">
-          {suggestedFacilities.map((facility, index) => (
-            <article key={facility.name}>
-              <span>{index + 1}</span>
-              <div>
-                <strong>{facility.name}</strong>
-                <small>{facility.department} · {facility.distance}</small>
-                <p>{facility.address}</p>
-                <em>{facility.status}</em>
+          {userLocation && (
+            <Marker longitude={userLocation.longitude} latitude={userLocation.latitude} anchor="center">
+              <div className="user-location-marker">
+                <span />
               </div>
-            </article>
+            </Marker>
+          )}
+
+          {FALLBACK_FACILITIES.map((facility) => (
+            <Marker
+              key={facility.id}
+              longitude={facility.longitude}
+              latitude={facility.latitude}
+              anchor="bottom"
+              onClick={(event) => {
+                event.originalEvent.stopPropagation();
+                setSelectedId(facility.id);
+              }}
+            >
+              <button className={`map-marker ${selectedId === facility.id ? "active" : ""}`} type="button" aria-label={facility.name}>
+                <span>+</span>
+              </button>
+            </Marker>
           ))}
-        </div>
+
+          {selectedFacility && (
+            <Popup
+              longitude={selectedFacility.longitude}
+              latitude={selectedFacility.latitude}
+              anchor="top"
+              closeButton={false}
+              offset={18}
+            >
+              <div className="map-popup">
+                <strong>{selectedFacility.name}</strong>
+                <span>{selectedFacility.department}</span>
+                <p>{selectedFacility.address}</p>
+              </div>
+            </Popup>
+          )}
+        </Map>
+      </div>
+
+      <div className="facility-list facility-list-horizontal">
+        {FALLBACK_FACILITIES.map((facility, index) => (
+          <button
+            className={`facility-card-button ${selectedId === facility.id ? "active" : ""}`}
+            key={facility.id}
+            type="button"
+            onClick={() => {
+              setSelectedId(facility.id);
+              setViewState((current) => ({
+                ...current,
+                longitude: facility.longitude,
+                latitude: facility.latitude,
+                zoom: Math.max(current.zoom, 13),
+              }));
+            }}
+          >
+            <span>{index + 1}</span>
+            <div>
+              <strong>{facility.name}</strong>
+              <small>{facility.department} · {facility.distance}</small>
+              <p>{facility.address}</p>
+              <em>{facility.status}</em>
+            </div>
+          </button>
+        ))}
       </div>
     </section>
   );
@@ -141,25 +250,49 @@ function ChatAssistant() {
   const [messages, setMessages] = useState([
     {
       from: "assistant",
-      text: "Bạn có thể mô tả triệu chứng, thời gian xuất hiện và mức độ khó chịu. Mình sẽ giúp bạn chuẩn bị thông tin trước khi đi khám.",
+      text: "Bạn có thể mô tả triệu chứng, thời gian xuất hiện và mức độ khó chịu. MediMate AI sẽ giúp bạn chuẩn bị thông tin trước khi đi khám.",
     },
   ]);
   const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState(null);
 
-  function sendMessage(event) {
+  async function sendMessage(event) {
     event.preventDefault();
     const text = draft.trim();
-    if (!text) return;
+    if (!text || sending) return;
 
-    setMessages((current) => [
-      ...current,
-      { from: "user", text },
-      {
-        from: "assistant",
-        text: "Mình đã ghi nhận. Hãy theo dõi mức độ nặng hơn, thời gian kéo dài và các dấu hiệu bất thường như khó thở, đau ngực, lơ mơ hoặc sốt cao.",
-      },
-    ]);
+    setMessages((current) => [...current, { from: "user", text }]);
     setDraft("");
+    setSending(true);
+    setMessage(null);
+
+    try {
+      const response = await webChatbotApi.sendMessage(text);
+      const data = response.data ?? {};
+      const planText = data.recommendedPlans?.length
+        ? `\n\nGói phù hợp: ${data.recommendedPlans.map((plan) => plan.planName).filter(Boolean).join(", ")}.`
+        : "";
+      const hintText = data.needsMoreInformation ? "\n\nBạn có thể bổ sung thêm thời gian xuất hiện, mức độ đau và bệnh nền nếu có." : "";
+      setMessages((current) => [
+        ...current,
+        {
+          from: "assistant",
+          text: `${data.answer || response.message || "MediMate AI đã ghi nhận thông tin của bạn."}${hintText}${planText}`,
+        },
+      ]);
+    } catch (error) {
+      setMessage({ type: "error", text: error.message });
+      setMessages((current) => [
+        ...current,
+        {
+          from: "assistant",
+          text: "Hiện chưa thể phản hồi ngay. Bạn vẫn nên theo dõi triệu chứng và đi khám sớm nếu có dấu hiệu bất thường.",
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -169,13 +302,15 @@ function ChatAssistant() {
           <p className="eyebrow">Hỏi nhanh</p>
           <h2>Trợ lý chăm sóc</h2>
         </div>
-        <span className="soft-badge">Tham khảo</span>
+        <span className="soft-badge">{sending ? "Đang trả lời" : "Sẵn sàng"}</span>
       </div>
 
+      <ApiMessage message={message} />
+
       <div className="chat-thread">
-        {messages.map((message, index) => (
-          <div className={`chat-bubble ${message.from}`} key={`${message.from}-${index}`}>
-            {message.text}
+        {messages.map((item, index) => (
+          <div className={`chat-bubble ${item.from}`} key={`${item.from}-${index}`}>
+            {item.text}
           </div>
         ))}
       </div>
@@ -194,7 +329,9 @@ function ChatAssistant() {
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Mô tả triệu chứng hoặc điều bạn muốn hỏi..."
         />
-        <button className="btn btn-primary btn-small" type="submit">Gửi</button>
+        <button className="btn btn-primary btn-small" type="submit" disabled={sending}>
+          {sending ? "..." : "Gửi"}
+        </button>
       </form>
     </section>
   );
@@ -203,15 +340,22 @@ function ChatAssistant() {
 export default function PatientWorkspacePage() {
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [user, setUser] = useState(null);
+  const [patientProfile, setPatientProfile] = useState(null);
   const [departments, setDepartments] = useState([]);
-  const [profileForm, setProfileForm] = useState(EMPTY_PROFILE);
+  const [accountForm, setAccountForm] = useState(EMPTY_ACCOUNT_PROFILE);
+  const [patientForm, setPatientForm] = useState(EMPTY_PATIENT_PROFILE);
   const [loading, setLoading] = useState(Boolean(auth));
-  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingAccount, setSavingAccount] = useState(false);
+  const [savingPatient, setSavingPatient] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [mapViewState, setMapViewState] = useState(DEFAULT_VIEW_STATE);
   const [message, setMessage] = useState(null);
-  const [profileMessage, setProfileMessage] = useState(null);
+  const [accountMessage, setAccountMessage] = useState(null);
+  const [patientMessage, setPatientMessage] = useState(null);
   const [departmentMessage, setDepartmentMessage] = useState(null);
+  const [mapMessage, setMapMessage] = useState(null);
 
-  const roles = useMemo(() => normalizeRoles(user?.roles ?? auth?.roles ?? []), [auth, user]);
   const displayName = user?.name || user?.displayName || auth?.email?.split("@")[0] || "bạn";
   const currentUserId = getUserId(user, auth);
 
@@ -219,33 +363,52 @@ export default function PatientWorkspacePage() {
     if (!auth) return;
     let active = true;
 
-    Promise.allSettled([authApi.me(), medicalDepartmentsApi.list()])
-      .then(([profileResult, departmentResult]) => {
-        if (!active) return;
+    async function loadWorkspace() {
+      setLoading(true);
+      const [profileResult, departmentResult, patientResult] = await Promise.allSettled([
+        authApi.me(),
+        medicalDepartmentsApi.list(),
+        patientProfilesApi.list(1, 100),
+      ]);
 
-        if (profileResult.status === "fulfilled") {
-          const data = profileResult.value.data ?? {};
-          setUser(data);
-          setProfileForm({
-            displayName: data.name ?? data.displayName ?? auth.email ?? "",
-            address: data.address ?? "",
-            gender: String(data.gender ?? "1"),
-            dateOfBirth: toDateInput(data.dateOfBirth),
-            phoneNumber: data.phoneNumber ?? "",
-          });
-        } else {
-          setMessage({ type: "warning", text: profileResult.reason.message });
-        }
+      if (!active) return;
 
-        if (departmentResult.status === "fulfilled") {
-          setDepartments(departmentResult.value.data ?? []);
-        } else {
-          setDepartmentMessage({ type: "error", text: departmentResult.reason.message });
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      let resolvedUserId = auth.userId ?? auth.identityId ?? "";
+
+      if (profileResult.status === "fulfilled") {
+        const data = profileResult.value.data ?? {};
+        resolvedUserId = getUserId(data, auth);
+        setUser(data);
+        setAccountForm({
+          displayName: data.name ?? data.displayName ?? auth.email ?? "",
+          address: data.address ?? "",
+          gender: String(data.gender ?? "1"),
+          dateOfBirth: toDateInput(data.dateOfBirth),
+          phoneNumber: data.phoneNumber ?? "",
+        });
+      } else {
+        setMessage({ type: "warning", text: profileResult.reason.message });
+      }
+
+      if (departmentResult.status === "fulfilled") {
+        setDepartments(departmentResult.value.data ?? []);
+      } else {
+        setDepartmentMessage({ type: "error", text: departmentResult.reason.message });
+      }
+
+      if (patientResult.status === "fulfilled") {
+        const items = patientResult.value.data?.items ?? [];
+        const matchedProfile = items.find((item) => String(item.userId).toLowerCase() === String(resolvedUserId).toLowerCase()) ?? null;
+        setPatientProfile(matchedProfile);
+        setPatientForm(toPatientForm(matchedProfile));
+      } else {
+        setPatientMessage({ type: "warning", text: "Bạn có thể tạo hồ sơ sức khỏe cá nhân bên dưới." });
+      }
+
+      setLoading(false);
+    }
+
+    loadWorkspace();
 
     return () => {
       active = false;
@@ -254,31 +417,97 @@ export default function PatientWorkspacePage() {
 
   if (!auth) return <EmptyAuth />;
 
-  function updateProfile(key, value) {
-    setProfileForm((current) => ({ ...current, [key]: value }));
+  function updateAccountProfile(key, value) {
+    setAccountForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function handleSaveProfile(event) {
+  function updatePatientProfile(key, value) {
+    setPatientForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function handleSaveAccountProfile(event) {
     event.preventDefault();
     if (!currentUserId) {
-      setProfileMessage({ type: "error", text: "Không tìm thấy tài khoản trong phiên đăng nhập." });
+      setAccountMessage({ type: "error", text: "Không tìm thấy tài khoản trong phiên đăng nhập." });
       return;
     }
 
-    setSavingProfile(true);
-    setProfileMessage(null);
+    setSavingAccount(true);
+    setAccountMessage(null);
     try {
       const response = await authApi.updateUser(currentUserId, {
-        ...profileForm,
-        gender: Number(profileForm.gender),
-        dateOfBirth: profileForm.dateOfBirth || null,
+        ...accountForm,
+        gender: Number(accountForm.gender),
+        dateOfBirth: accountForm.dateOfBirth || null,
       });
-      setProfileMessage({ type: "success", text: response.message || "Đã cập nhật hồ sơ." });
+      setAccountMessage({ type: "success", text: response.message || "Đã cập nhật thông tin cá nhân." });
     } catch (error) {
-      setProfileMessage({ type: "error", text: error.message });
+      setAccountMessage({ type: "error", text: error.message });
     } finally {
-      setSavingProfile(false);
+      setSavingAccount(false);
     }
+  }
+
+  async function handleSavePatientProfile(event) {
+    event.preventDefault();
+    if (!currentUserId) {
+      setPatientMessage({ type: "error", text: "Không tìm thấy tài khoản trong phiên đăng nhập." });
+      return;
+    }
+
+    const payload = {
+      bloodType: patientForm.bloodType || null,
+      height: numberOrNull(patientForm.height),
+      weight: numberOrNull(patientForm.weight),
+      allergyNote: patientForm.allergyNote || null,
+      chronicDiseaseNote: patientForm.chronicDiseaseNote || null,
+    };
+
+    setSavingPatient(true);
+    setPatientMessage(null);
+    try {
+      const response = patientProfile?.id
+        ? await patientProfilesApi.update(patientProfile.id, payload)
+        : await patientProfilesApi.create({ ...payload, userId: currentUserId });
+      const savedProfile = response.data ?? null;
+      setPatientProfile(savedProfile);
+      setPatientForm(toPatientForm(savedProfile));
+      setPatientMessage({ type: "success", text: response.message || "Đã lưu hồ sơ sức khỏe." });
+    } catch (error) {
+      setPatientMessage({ type: "error", text: error.message });
+    } finally {
+      setSavingPatient(false);
+    }
+  }
+
+  function handleLocate() {
+    setMapMessage(null);
+    if (!navigator.geolocation) {
+      setMapMessage({ type: "error", text: "Trình duyệt chưa hỗ trợ định vị." });
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextLocation = {
+          longitude: position.coords.longitude,
+          latitude: position.coords.latitude,
+        };
+        setUserLocation(nextLocation);
+        setMapViewState((current) => ({
+          ...current,
+          ...nextLocation,
+          zoom: Math.max(current.zoom, 13),
+        }));
+        setLocating(false);
+      },
+      () => {
+        setMapMessage({ type: "error", text: "Không thể lấy vị trí hiện tại. Vui lòng kiểm tra quyền định vị của trình duyệt." });
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   }
 
   async function handleLogout() {
@@ -314,78 +543,119 @@ export default function PatientWorkspacePage() {
               <strong>{loading ? "Đang tải" : Number(user?.status) === 1 ? "Đã xác thực" : "Đang chờ"}</strong>
             </article>
             <article>
-              <span>Tài khoản</span>
-              <strong>{roles.length ? roles.join(", ") : "Người dùng"}</strong>
+              <span>Hồ sơ sức khỏe</span>
+              <strong>{patientProfile?.isProfileCompleted ? "Đã đủ" : patientProfile ? "Đang bổ sung" : "Chưa tạo"}</strong>
             </article>
             <article>
               <span>Chuyên khoa</span>
               <strong>{departments.length}</strong>
             </article>
             <article>
-              <span>Gợi ý hôm nay</span>
-              <strong>{suggestedFacilities.length}</strong>
+              <span>Gợi ý bản đồ</span>
+              <strong>{FALLBACK_FACILITIES.length}</strong>
             </article>
           </div>
 
-          <div className="app-work-grid">
-            <form className="app-card clean-form" onSubmit={handleSaveProfile}>
+          <div className="app-work-grid patient-profile-grid">
+            <form className="app-card clean-form" onSubmit={handleSaveAccountProfile}>
               <div className="panel-title-row">
                 <div>
-                  <p className="eyebrow">Hồ sơ</p>
+                  <p className="eyebrow">Tài khoản</p>
                   <h2>Thông tin cá nhân</h2>
                 </div>
-                <span className="soft-badge">Đang lưu</span>
+                <span className="soft-badge">Cơ bản</span>
               </div>
-              <ApiMessage message={profileMessage} />
+              <ApiMessage message={accountMessage} />
               <Field label="Tên hiển thị">
-                <input value={profileForm.displayName} onChange={(event) => updateProfile("displayName", event.target.value)} />
+                <input value={accountForm.displayName} onChange={(event) => updateAccountProfile("displayName", event.target.value)} />
               </Field>
               <Field label="Địa chỉ">
-                <input value={profileForm.address} onChange={(event) => updateProfile("address", event.target.value)} />
+                <input value={accountForm.address} onChange={(event) => updateAccountProfile("address", event.target.value)} />
               </Field>
               <div className="form-two-cols">
                 <Field label="Giới tính">
-                  <select value={profileForm.gender} onChange={(event) => updateProfile("gender", event.target.value)}>
+                  <select value={accountForm.gender} onChange={(event) => updateAccountProfile("gender", event.target.value)}>
                     <option value="1">Nam</option>
                     <option value="2">Nữ</option>
                   </select>
                 </Field>
                 <Field label="Ngày sinh">
-                  <input type="date" value={profileForm.dateOfBirth} onChange={(event) => updateProfile("dateOfBirth", event.target.value)} />
+                  <input type="date" value={accountForm.dateOfBirth} onChange={(event) => updateAccountProfile("dateOfBirth", event.target.value)} />
                 </Field>
               </div>
               <Field label="Số điện thoại">
-                <input value={profileForm.phoneNumber} onChange={(event) => updateProfile("phoneNumber", event.target.value)} />
+                <input value={accountForm.phoneNumber} onChange={(event) => updateAccountProfile("phoneNumber", event.target.value)} />
               </Field>
-              <button className="btn btn-primary" type="submit" disabled={savingProfile}>
-                {savingProfile ? "Đang lưu..." : "Lưu hồ sơ"}
+              <button className="btn btn-primary" type="submit" disabled={savingAccount}>
+                {savingAccount ? "Đang lưu..." : "Lưu thông tin"}
               </button>
             </form>
 
-            <section className="app-card">
+            <form className="app-card clean-form" onSubmit={handleSavePatientProfile}>
               <div className="panel-title-row">
                 <div>
-                  <p className="eyebrow">Tra cứu</p>
-                  <h2>Chuyên khoa phù hợp</h2>
+                  <p className="eyebrow">Sức khỏe</p>
+                  <h2>Hồ sơ bệnh nhân</h2>
                 </div>
-                <span className="soft-badge">Danh mục</span>
+                <span className="soft-badge">{patientProfile?.id ? "Cập nhật" : "Tạo mới"}</span>
               </div>
-              <ApiMessage message={departmentMessage} />
-              <div className="mini-list">
-                {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa để hiển thị.</p>}
-                {departments.slice(0, 6).map((department) => (
-                  <article key={department.id}>
-                    <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-                    <span>{department.description || "Chưa có mô tả."}</span>
-                  </article>
-                ))}
+              <ApiMessage message={patientMessage} />
+              <div className="form-three-cols">
+                <Field label="Nhóm máu">
+                  <input value={patientForm.bloodType} onChange={(event) => updatePatientProfile("bloodType", event.target.value)} placeholder="Ví dụ: O+" />
+                </Field>
+                <Field label="Chiều cao (cm)">
+                  <input type="number" min="0" step="0.1" value={patientForm.height} onChange={(event) => updatePatientProfile("height", event.target.value)} />
+                </Field>
+                <Field label="Cân nặng (kg)">
+                  <input type="number" min="0" step="0.1" value={patientForm.weight} onChange={(event) => updatePatientProfile("weight", event.target.value)} />
+                </Field>
               </div>
-            </section>
+              <Field label="Dị ứng">
+                <textarea rows={4} value={patientForm.allergyNote} onChange={(event) => updatePatientProfile("allergyNote", event.target.value)} placeholder="Thuốc, thức ăn hoặc yếu tố cần tránh..." />
+              </Field>
+              <Field label="Bệnh nền">
+                <textarea rows={4} value={patientForm.chronicDiseaseNote} onChange={(event) => updatePatientProfile("chronicDiseaseNote", event.target.value)} placeholder="Ví dụ: hen suyễn, tăng huyết áp, tiểu đường..." />
+              </Field>
+              <button className="btn btn-primary" type="submit" disabled={savingPatient}>
+                {savingPatient ? "Đang lưu..." : patientProfile?.id ? "Cập nhật hồ sơ" : "Tạo hồ sơ"}
+              </button>
+            </form>
           </div>
 
           <div className="patient-tools-grid">
-            <MapPreview />
-            <ChatAssistant />
+            <div>
+              <PatientMap
+                userLocation={userLocation}
+                viewState={mapViewState}
+                setViewState={setMapViewState}
+                onLocate={handleLocate}
+                locating={locating}
+              />
+              <ApiMessage message={mapMessage} />
+            </div>
+            <div className="patient-side-stack">
+              <ChatAssistant />
+              <section className="app-card">
+                <div className="panel-title-row">
+                  <div>
+                    <p className="eyebrow">Tra cứu</p>
+                    <h2>Chuyên khoa phù hợp</h2>
+                  </div>
+                  <span className="soft-badge">Danh mục</span>
+                </div>
+                <ApiMessage message={departmentMessage} />
+                <div className="mini-list">
+                  {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa để hiển thị.</p>}
+                  {departments.slice(0, 5).map((department) => (
+                    <article key={department.id}>
+                      <strong>{department.departmentName || "Chưa đặt tên"}</strong>
+                      <span>{department.description || "Chưa có mô tả."}</span>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       </section>

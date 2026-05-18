@@ -204,6 +204,53 @@ export const medicalDepartmentsApi = {
   },
 };
 
+export const patientProfilesApi = {
+  list(pageNumber = 1, pageSize = 50) {
+    const params = new URLSearchParams({
+      PageNumber: String(pageNumber),
+      PageSize: String(pageSize),
+    });
+    return apiRequest(`/api/patient-profiles?${params.toString()}`, { auth: true });
+  },
+
+  get(id) {
+    return apiRequest(`/api/patient-profiles/${id}`, { auth: true });
+  },
+
+  create(payload) {
+    return apiRequest("/api/patient-profiles", {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  update(id, payload) {
+    return apiRequest(`/api/patient-profiles/${id}`, {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  remove(id) {
+    return apiRequest(`/api/patient-profiles/${id}`, {
+      method: "DELETE",
+      auth: true,
+    });
+  },
+};
+
+export const webChatbotApi = {
+  sendMessage(message) {
+    return apiRequest("/api/web-chatbot/message", {
+      method: "POST",
+      body: { message },
+      auth: true,
+    });
+  },
+};
+
 export const usersApi = {
   list(pageNumber = 1, pageSize = 10) {
     const params = new URLSearchParams({

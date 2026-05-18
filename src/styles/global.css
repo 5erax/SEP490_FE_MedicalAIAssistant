@@ -2217,7 +2217,7 @@
 
 .patient-tools-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.82fr);
+  grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.78fr);
   gap: 18px;
   align-items: stretch;
 }
@@ -2226,6 +2226,54 @@
 .patient-chat-card {
   display: flex;
   flex-direction: column;
+}
+
+.patient-profile-grid {
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1fr);
+}
+
+.patient-side-stack {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.form-three-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.patient-map-live {
+  min-height: 430px;
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper-soft);
+}
+
+.patient-map-live .maplibregl-map {
+  min-height: 430px;
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+}
+
+.user-location-marker {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: rgba(29, 78, 216, 0.22);
+  box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.16);
+}
+
+.user-location-marker span {
+  width: 12px;
+  height: 12px;
+  border-radius: inherit;
+  background: var(--blue);
 }
 
 .patient-map-layout {
@@ -2317,17 +2365,37 @@
   align-content: start;
 }
 
-.facility-list article {
+.facility-list-horizontal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.facility-list article,
+.facility-card-button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--paper-soft);
+  color: var(--ink);
   padding: 13px;
+  text-align: left;
 }
 
-.facility-list article > span {
+.facility-card-button {
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.facility-card-button:hover,
+.facility-card-button.active {
+  border-color: var(--teal);
+  background: var(--mint);
+  transform: translateY(-2px);
+}
+
+.facility-list article > span,
+.facility-card-button > span {
   display: grid;
   place-items: center;
   width: 30px;
@@ -2754,6 +2822,7 @@
   .admin-grid,
   .patient-tools-grid,
   .patient-map-layout,
+  .patient-profile-grid,
   .app-work-grid,
   .app-work-grid.secondary {
     grid-template-columns: 1fr;
@@ -2787,6 +2856,10 @@
   .static-sections,
   .footer-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .facility-list-horizontal {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2838,6 +2911,7 @@
   .app-stats,
   .actor-switcher,
   .form-two-cols,
+  .form-three-cols,
   .record-card,
   .user-row,
   .app-topbar,
