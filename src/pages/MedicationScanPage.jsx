@@ -25,6 +25,10 @@ function delay(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function goTo(path) {
+  window.location.href = path;
+}
+
 function MedicationScanPage() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -86,6 +90,11 @@ function MedicationScanPage() {
     <main className="medication-page">
       <style>{styles}</style>
       <section className="scan-panel">
+        <nav className="medication-quick-nav" aria-label="Dieu huong nhanh">
+          <button type="button" onClick={() => goTo("/dashboard")}>← Trang chủ</button>
+          <button type="button" onClick={() => goTo("/chat")}>Chat AI</button>
+          <button type="button" onClick={() => goTo("/records")}>Hồ sơ y tế</button>
+        </nav>
         <p className="mini-label">Nhận diện thuốc qua ảnh</p>
         <h1>Chụp ảnh hoặc tải lên nhãn thuốc</h1>
         <label
@@ -204,6 +213,9 @@ const styles = `
 .medication-page { min-height: 100svh; display: grid; grid-template-columns: minmax(0, .9fr) minmax(360px, 1.1fr); gap: 18px; background: var(--bg); color: var(--ink); padding: 22px; }
 .scan-panel, .scan-result-panel > article, .empty-result, .med-disclaimer { border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
 .scan-panel { padding: clamp(20px, 3vw, 28px); align-self: start; }
+.medication-quick-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.medication-quick-nav button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
+.medication-quick-nav button:first-child { background: var(--lime); }
 .mini-label { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 12px; color: var(--lime-dark); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
 .mini-label::before { content: ""; width: 12px; height: 2px; background: currentColor; }
 .scan-panel h1 { margin: 0 0 16px; font-family: var(--display); font-size: clamp(30px, 5vw, 46px); line-height: 1.06; }

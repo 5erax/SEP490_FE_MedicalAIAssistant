@@ -30,6 +30,11 @@ function PricingPage() {
   return (
     <main className="pricing-page">
       <style>{styles}</style>
+      <nav className="pricing-quick-nav" aria-label="Dieu huong nhanh">
+        <button type="button" onClick={() => { window.location.href = "/dashboard"; }}>← Trang chủ</button>
+        <button type="button" onClick={() => { window.location.href = "/profile"; }}>Hồ sơ</button>
+        <button type="button" onClick={() => { window.location.href = "/chat"; }}>Chat AI</button>
+      </nav>
       <section className="pricing-hero">
         <p className="mini-label">Bảng giá</p>
         <h1>Minh bạch. Không phí ẩn. Huỷ bất cứ lúc nào.</h1>
@@ -110,6 +115,9 @@ function PricingPage() {
 
 const styles = `
 .pricing-page { min-height: 100svh; background: var(--bg); color: var(--ink); padding: 34px 20px 58px; }
+.pricing-quick-nav { width: min(960px, 100%); margin: 0 auto 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+.pricing-quick-nav button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
+.pricing-quick-nav button:first-child { background: var(--lime); }
 .pricing-hero { text-align: center; width: min(820px, 100%); margin: 0 auto; }
 .mini-label { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 14px; color: var(--lime-dark); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
 .mini-label::before { content: ""; width: 12px; height: 2px; background: currentColor; }

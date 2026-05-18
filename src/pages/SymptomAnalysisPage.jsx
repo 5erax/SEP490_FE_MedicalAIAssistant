@@ -40,7 +40,11 @@ function goTo(path) {
 
 function SymptomAnalysisPage() {
   const [step, setStep] = useState(1);
-  const [symptoms, setSymptoms] = useState("");
+  const [symptoms, setSymptoms] = useState(() => {
+    const prefill = sessionStorage.getItem("medimate.symptom.prefill");
+    if (prefill) sessionStorage.removeItem("medimate.symptom.prefill");
+    return prefill || "";
+  });
   const [severity, setSeverity] = useState("medium");
   const [duration, setDuration] = useState("");
   const [checkedQs, setCheckedQs] = useState(new Set());
@@ -98,6 +102,12 @@ function SymptomAnalysisPage() {
     <main className="symptom-page">
       <style>{styles}</style>
       <section className="symptom-shell">
+        <nav className="workspace-nav" aria-label="Dieu huong tinh nang">
+          <button type="button" onClick={() => goTo("/dashboard")}>← Trang chủ</button>
+          <button type="button" onClick={() => goTo("/chat")}>Chat AI</button>
+          <button type="button" onClick={() => goTo("/map")}>Bản đồ</button>
+          <button type="button" onClick={() => goTo("/records")}>Hồ sơ y tế</button>
+        </nav>
         <header className="symptom-stepper" aria-label="Quy trình phân tích triệu chứng">
           {["Nhập triệu chứng", "AI phân tích", "Kết quả", "Lưu"].map((label, index) => {
             const number = index + 1;
@@ -238,6 +248,9 @@ function SymptomAnalysisPage() {
 const styles = `
 .symptom-page { min-height: 100svh; background: var(--bg); color: var(--ink); padding: 24px; }
 .symptom-shell { width: min(1080px, 100%); margin: 0 auto; display: grid; gap: 18px; }
+.workspace-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.workspace-nav button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
+.workspace-nav button:first-child { background: var(--lime); }
 .symptom-stepper { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1.5px solid var(--ink); background: var(--paper); padding: 12px; box-shadow: 4px 4px 0 var(--ink); }
 .symptom-step { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--muted); }
 .symptom-step span { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; font-weight: 900; }

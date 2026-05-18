@@ -27,6 +27,10 @@ function getStatus(item) {
   return ["Bình thường", "normal"];
 }
 
+function goTo(path) {
+  window.location.href = path;
+}
+
 function MedicalRecordPage() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [activeTab, setActiveTab] = useState("detail");
@@ -77,11 +81,17 @@ function MedicalRecordPage() {
       <style>{styles}</style>
       <aside className="records-sidebar">
         <p className="mini-label">Hồ sơ y tế</p>
-        <button className="add-record" type="button">+ Thêm hồ sơ</button>
+        <button className="add-record" type="button" onClick={() => { setSelectedRecord(MOCK_RECORDS[0]); setActiveTab("files"); }}>+ Thêm hồ sơ</button>
         {renderRecordList()}
       </aside>
 
       <section className="records-content">
+        <nav className="records-quick-nav" aria-label="Dieu huong nhanh">
+          <button type="button" onClick={() => goTo("/dashboard")}>← Trang chủ</button>
+          <button type="button" onClick={() => goTo("/profile")}>Hồ sơ cá nhân</button>
+          <button type="button" onClick={() => goTo("/medication")}>Nhận diện thuốc</button>
+          <button type="button" onClick={() => goTo("/chat")}>Chat AI</button>
+        </nav>
         {renderRecordList(true)}
 
         {!selectedRecord ? (
@@ -103,7 +113,7 @@ function MedicalRecordPage() {
               </div>
               <div className="record-actions">
                 <button type="button" onClick={() => { setActiveTab("ai"); handleAnalyze(); }}>Phân tích bằng AI</button>
-                <button type="button">Tải xuống</button>
+                <button type="button" onClick={() => window.print()}>Tải xuống</button>
               </div>
             </header>
 
@@ -228,6 +238,9 @@ const styles = `
 .status.failed, .lab-status.high { background: rgba(239,111,97,.16); color: #b42318; }
 .status.ocrprocessing, .lab-status.low { background: rgba(245,158,11,.18); color: #92400e; }
 .records-content { flex: 1; min-width: 0; padding: 22px; }
+.records-quick-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.records-quick-nav button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
+.records-quick-nav button:first-child { background: var(--lime); }
 .mobile-record-list { display: none; grid-template-columns: repeat(3, minmax(190px, 1fr)); overflow-x: auto; margin: 0 0 14px; }
 .records-empty, .record-detail { min-height: calc(100svh - 44px); border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
 .records-empty { display: grid; place-items: center; align-content: center; gap: 12px; padding: 28px; text-align: center; }

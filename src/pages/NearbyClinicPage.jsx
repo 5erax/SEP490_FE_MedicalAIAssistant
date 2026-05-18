@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Map, { Marker, NavigationControl, Popup } from "react-map-gl/mapbox";
-import "mapbox-gl/dist/mapbox-gl.css";
+import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const FILTERS = [
   ["all", "Tất cả"],
@@ -75,6 +75,8 @@ const TYPE_LABELS = {
   Emergency: "Cấp cứu",
 };
 
+const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+
 function NearbyClinicPage() {
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -85,7 +87,6 @@ function NearbyClinicPage() {
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
-  const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -132,6 +133,10 @@ function NearbyClinicPage() {
     <main className="clinic-page">
       <style>{styles}</style>
       <aside className="clinic-sidebar">
+        <div className="map-page-actions">
+          <button type="button" onClick={() => { window.location.href = "/dashboard"; }}>← Trang chủ</button>
+          <button type="button" onClick={handleLocateMe}>Định vị tôi</button>
+        </div>
         <div className="clinic-search">
           <span>⌕</span>
           <input
@@ -186,61 +191,53 @@ function NearbyClinicPage() {
       </aside>
 
       <section className="map-panel">
-        {mapboxToken ? (
-          <Map
-            ref={mapRef}
-            mapboxAccessToken={mapboxToken}
-            mapStyle="mapbox://styles/mapbox/light-v11"
-            {...viewState}
-            onMove={(event) => setViewState(event.viewState)}
-            style={{ width: "100%", height: "100%" }}
-          >
-            <NavigationControl position="top-right" />
+        <Map
+          ref={mapRef}
+          mapStyle={FREE_MAP_STYLE}
+          {...viewState}
+          onMove={(event) => setViewState(event.viewState)}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <NavigationControl position="top-right" />
 
-            {userLocation && (
-              <Marker longitude={userLocation.lng} latitude={userLocation.lat}>
-                <div className="user-marker"><span /></div>
-              </Marker>
-            )}
+          {userLocation && (
+            <Marker longitude={userLocation.lng} latitude={userLocation.lat}>
+              <div className="user-marker"><span /></div>
+            </Marker>
+          )}
 
-            {filteredFacilities.map((facility) => (
-              <Marker
-                key={facility.facilityId}
-                longitude={facility.longitude}
-                latitude={facility.latitude}
-                onClick={(event) => {
-                  event.originalEvent?.stopPropagation?.();
-                  handleCardClick(facility);
-                }}
-              >
-                <div className={`clinic-marker ${selectedFacility?.facilityId === facility.facilityId ? "selected" : ""}`}>+</div>
-              </Marker>
-            ))}
+          {filteredFacilities.map((facility) => (
+            <Marker
+              key={facility.facilityId}
+              longitude={facility.longitude}
+              latitude={facility.latitude}
+              onClick={(event) => {
+                event.originalEvent?.stopPropagation?.();
+                handleCardClick(facility);
+              }}
+            >
+              <div className={`clinic-marker ${selectedFacility?.facilityId === facility.facilityId ? "selected" : ""}`}>+</div>
+            </Marker>
+          ))}
 
-            {selectedFacility && (
-              <Popup
-                longitude={selectedFacility.longitude}
-                latitude={selectedFacility.latitude}
-                onClose={() => setSelectedFacility(null)}
-                closeOnClick={false}
-                offset={28}
-                className="clinic-popup"
-              >
-                <div className="popup-card">
-                  <strong>{selectedFacility.facilityName}</strong>
-                  <span>{selectedFacility.address}</span>
-                  <span>{selectedFacility.phone}</span>
-                  <button type="button" onClick={() => openDirections(selectedFacility)}>Xem chi tiết</button>
-                </div>
-              </Popup>
-            )}
-          </Map>
-        ) : (
-          <div className="map-token-empty">
-            <strong>Bản đồ đang tạm thời chưa khả dụng</strong>
-            <span>Bạn vẫn có thể xem danh sách cơ sở y tế, gọi trước hoặc mở chỉ đường từ từng cơ sở.</span>
-          </div>
-        )}
+          {selectedFacility && (
+            <Popup
+              longitude={selectedFacility.longitude}
+              latitude={selectedFacility.latitude}
+              onClose={() => setSelectedFacility(null)}
+              closeOnClick={false}
+              offset={28}
+              className="clinic-popup"
+            >
+              <div className="popup-card">
+                <strong>{selectedFacility.facilityName}</strong>
+                <span>{selectedFacility.address}</span>
+                <span>{selectedFacility.phone}</span>
+                <button type="button" onClick={() => openDirections(selectedFacility)}>Xem chi tiết</button>
+              </div>
+            </Popup>
+          )}
+        </Map>
 
         <button className="locate-button" type="button" onClick={handleLocateMe} aria-label="Định vị tôi">⌖</button>
         {locationError && <div className="location-error">{locationError}</div>}
@@ -252,6 +249,9 @@ function NearbyClinicPage() {
 const styles = `
 .clinic-page { height: 100svh; display: flex; background: var(--bg); color: var(--ink); overflow: hidden; }
 .clinic-sidebar { width: 320px; flex: 0 0 320px; overflow-y: auto; border-right: 1.5px solid var(--ink); background: var(--paper); padding: 16px; }
+.map-page-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.map-page-actions button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 900; }
+.map-page-actions button:last-child { background: var(--lime); }
 .clinic-search { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; padding: 0 10px; }
 .clinic-search input { min-width: 0; height: 42px; border: 0; outline: none; }
 .clinic-search button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--mint); font-size: 18px; font-weight: 900; }
@@ -288,8 +288,8 @@ const styles = `
 .popup-card { min-width: 190px; display: grid; gap: 6px; color: var(--ink); }
 .popup-card strong { font-size: 14px; }
 .popup-card span { color: var(--muted); font-size: 12px; line-height: 1.4; }
-.clinic-popup .mapboxgl-popup-content { border: 1.5px solid var(--ink); border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); padding: 12px; }
-.clinic-popup .mapboxgl-popup-tip { display: none; }
+.clinic-popup .maplibregl-popup-content { border: 1.5px solid var(--ink); border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); padding: 12px; }
+.clinic-popup .maplibregl-popup-tip { display: none; }
 .locate-button { position: absolute; right: 18px; bottom: 18px; z-index: 2; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); font-size: 22px; font-weight: 900; }
 .location-error { position: absolute; right: 18px; bottom: 78px; z-index: 2; border: 1px solid rgba(239,111,97,.35); border-radius: 9px; background: #fff4f2; color: #b42318; padding: 9px 11px; font-size: 12px; font-weight: 800; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(170,237,99,.55); } 100% { box-shadow: 0 0 0 14px rgba(170,237,99,0); } }
