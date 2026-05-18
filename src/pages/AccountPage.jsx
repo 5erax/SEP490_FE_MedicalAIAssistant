@@ -9,13 +9,19 @@ import {
   usersApi,
 } from "../services/api";
 
-const SYMPTOM_SAMPLES = [
-  "Đau đầu nhẹ, nghẹt mũi, mệt mỏi từ hôm qua, chưa sốt.",
-  "Đau tức ngực khi leo cầu thang, hơi khó thở, tiền sử huyết áp.",
-  "Đau bụng âm ỉ sau ăn, buồn nôn, không tiêu chảy.",
-];
+const EMPTY_PROFILE = {
+  displayName: "",
+  address: "",
+  gender: "1",
+  dateOfBirth: "",
+  phoneNumber: "",
+};
 
-const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
+const EMPTY_DEPARTMENT = {
+  departmentName: "",
+  description: "",
+};
+
 const EMPTY_STAFF = {
   email: "",
   userName: "",
@@ -27,13 +33,28 @@ const EMPTY_STAFF = {
   dateOfBirth: "",
 };
 
+const NEXT_MODULES = [
+  ["Phân tích triệu chứng AI", "Đang chờ API SymptomAnalysisSession trong ERD."],
+  ["Gợi ý bệnh viện và bác sĩ", "Đang chờ API MedicalFacility, FacilityDepartment, Doctor."],
+  ["Hồ sơ y tế và thuốc", "Đang chờ API MedicalRecord, MedicationScan, TreatmentJourney."],
+];
+
 function ApiMessage({ message }) {
   if (!message) return null;
   return <div className={`api-message ${message.type}`}>{message.text}</div>;
 }
 
+function Field({ label, children }) {
+  return (
+    <label className="clean-field">
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+
 function normalizeRoles(roles = []) {
-  return roles.map((role) => String(role).toLowerCase());
+  return roles.map((role) => String(role).trim().toLowerCase()).filter(Boolean);
 }
 
 function hasRole(roles, role) {
@@ -46,37 +67,21 @@ function hasRole(roles, role) {
   });
 }
 
-function statusLabel(status) {
-  return status === 1 ? "Đã duyệt" : "Chờ duyệt";
+function getUserId(user, auth) {
+  return user?.userId ?? user?.identityId ?? auth?.userId ?? auth?.identityId ?? "";
 }
 
-function analyzeSymptoms(text) {
-  const value = text.toLowerCase();
+function statusLabel(status) {
+  return Number(status) === 1 ? "Đã duyệt" : "Chờ duyệt";
+}
 
-  if (value.includes("ngực") || value.includes("khó thở") || value.includes("huyết áp")) {
-    return {
-      level: "Cần ưu tiên",
-      department: "Tim mạch / Cấp cứu nếu nặng",
-      note: "Nếu đau ngực dữ dội, khó thở tăng hoặc vã mồ hôi, hãy đi cấp cứu ngay.",
-      questions: ["Cơn đau kéo dài bao lâu?", "Có lan ra tay/hàm/lưng không?", "Có tiền sử tim mạch không?"],
-    };
-  }
+function toDateInput(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
 
-  if (value.includes("bụng") || value.includes("buồn nôn") || value.includes("tiêu chảy")) {
-    return {
-      level: "Theo dõi sớm",
-      department: "Tiêu hóa",
-      note: "Ghi lại thời điểm đau, liên quan bữa ăn và dấu hiệu mất nước nếu có.",
-      questions: ["Đau vùng nào rõ nhất?", "Có sốt hoặc nôn nhiều không?", "Gần đây ăn món lạ không?"],
-    };
-  }
-
-  return {
-    level: "Theo dõi tại nhà",
-    department: "Nội tổng quát",
-    note: "Có thể theo dõi triệu chứng, nghỉ ngơi và đi khám nếu nặng lên hoặc kéo dài.",
-    questions: ["Triệu chứng bắt đầu khi nào?", "Có sốt cao không?", "Đang dùng thuốc gì?"],
-  };
+function RoleBadge({ roles }) {
+  return <span className="soft-badge">{roles.length ? roles.join(", ") : "user"}</span>;
 }
 
 function EmptyAuth() {
@@ -85,9 +90,11 @@ function EmptyAuth() {
       <Navbar />
       <section className="app-page">
         <div className="container app-empty">
-          <p className="eyebrow">Workspace</p>
-          <h1>Bạn cần đăng nhập để mở MediMate App.</h1>
-          <p>Dashboard dùng JWT để đọc hồ sơ, quản lý chuyên khoa, phê duyệt người dùng và tạo tài khoản staff theo quyền backend.</p>
+          <p className="eyebrow">MediMate App</p>
+          <h1>Bạn cần đăng nhập để mở workspace.</h1>
+          <p>
+            Sau khi đăng nhập, hệ thống sẽ mở giao diện theo quyền User, Staff hoặc Admin dựa trên JWT và role backend trả về.
+          </p>
           <div className="hero-actions">
             <a className="btn btn-primary" href="/login">Đăng nhập</a>
             <a className="btn btn-ghost" href="/signup">Tạo tài khoản</a>
@@ -99,18 +106,49 @@ function EmptyAuth() {
   );
 }
 
-function Field({ label, children }) {
+function DepartmentList({ departments, mode = "readonly", onEdit, onDelete }) {
   return (
-    <label className="clean-field">
-      <span>{label}</span>
-      {children}
-    </label>
+    <div className="record-list">
+      {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa nào từ backend.</p>}
+      {departments.map((department) => (
+        <article className="record-card" key={department.id}>
+          <div>
+            <strong>{department.departmentName || "Chưa đặt tên"}</strong>
+            <p>{department.description || "Chưa có mô tả."}</p>
+            <small>ID: {department.id}</small>
+          </div>
+          {mode === "manage" && (
+            <div className="record-actions">
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(department)}>Sửa</button>
+              <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(department.id)}>Xóa</button>
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
   );
 }
 
-function RoleBadge({ roles }) {
-  const label = roles.length ? roles.join(", ") : "User";
-  return <span className="soft-badge">{label}</span>;
+function ComingSoonCard() {
+  return (
+    <section className="app-card">
+      <div className="panel-title-row">
+        <div>
+          <p className="eyebrow">ERD modules</p>
+          <h2>Các chức năng lớn chưa có trong Swagger hiện tại</h2>
+        </div>
+        <span className="soft-badge">Disabled</span>
+      </div>
+      <div className="mini-list">
+        {NEXT_MODULES.map(([title, copy]) => (
+          <article key={title}>
+            <strong>{title}</strong>
+            <span>{copy}</span>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export default function AccountPage() {
@@ -120,37 +158,30 @@ export default function AccountPage() {
   const [users, setUsers] = useState([]);
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const [activeActor, setActiveActor] = useState("user");
-  const [symptoms, setSymptoms] = useState(SYMPTOM_SAMPLES[0]);
-  const [analysis, setAnalysis] = useState(() => analyzeSymptoms(SYMPTOM_SAMPLES[0]));
-  const [profileForm, setProfileForm] = useState({
-    displayName: "",
-    address: "",
-    gender: "1",
-    dateOfBirth: "",
-    phoneNumber: "",
-  });
+  const [profileForm, setProfileForm] = useState(EMPTY_PROFILE);
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingStaff, setSavingStaff] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [globalMessage, setGlobalMessage] = useState(null);
+  const [profileMessage, setProfileMessage] = useState(null);
   const [departmentMessage, setDepartmentMessage] = useState(null);
-  const [userMessage, setUserMessage] = useState(null);
+  const [adminMessage, setAdminMessage] = useState(null);
   const [staffMessage, setStaffMessage] = useState(null);
 
   const roles = useMemo(() => normalizeRoles(user?.roles ?? auth?.roles ?? []), [auth, user]);
-  const isStaff = hasRole(roles, "staff") || hasRole(roles, "admin");
   const isAdmin = hasRole(roles, "admin");
-  const availableActors = useMemo(() => {
-    const actors = ["user"];
-    if (isStaff) actors.push("staff");
-    if (isAdmin) actors.push("admin");
-    return actors;
-  }, [isAdmin, isStaff]);
+  const isStaff = isAdmin || hasRole(roles, "staff");
+  const currentActor = (activeActor === "admin" && !isAdmin) || (activeActor === "staff" && !isStaff)
+    ? "user"
+    : activeActor;
+  const displayName = user?.name || user?.displayName || auth?.email?.split("@")[0] || "bạn";
+  const currentUserId = getUserId(user, auth);
 
   useEffect(() => {
     if (!auth) return;
@@ -163,12 +194,15 @@ export default function AccountPage() {
         if (profileResult.status === "fulfilled") {
           const data = profileResult.value.data ?? {};
           setUser(data);
-          setProfileForm((current) => ({
-            ...current,
-            displayName: data.name ?? auth.email ?? "",
-          }));
+          setProfileForm({
+            displayName: data.name ?? data.displayName ?? auth.email ?? "",
+            address: data.address ?? "",
+            gender: String(data.gender ?? "1"),
+            dateOfBirth: toDateInput(data.dateOfBirth),
+            phoneNumber: data.phoneNumber ?? "",
+          });
         } else {
-          setMessage({ type: "warning", text: profileResult.reason.message });
+          setGlobalMessage({ type: "warning", text: profileResult.reason.message });
         }
 
         if (departmentResult.status === "fulfilled") {
@@ -178,17 +212,15 @@ export default function AccountPage() {
         }
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setLoading(false);
+        setDepartmentsLoading(false);
       });
 
     return () => {
       active = false;
     };
   }, [auth]);
-
-  const currentActor = availableActors.includes(activeActor)
-    ? activeActor
-    : availableActors[availableActors.length - 1] ?? "user";
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -207,7 +239,7 @@ export default function AccountPage() {
         });
       })
       .catch((error) => {
-        if (active) setUserMessage({ type: "error", text: error.message });
+        if (active) setAdminMessage({ type: "error", text: error.message });
       })
       .finally(() => {
         if (active) setUsersLoading(false);
@@ -218,25 +250,33 @@ export default function AccountPage() {
     };
   }, [isAdmin, pageInfo.pageSize]);
 
-  const displayName = useMemo(() => {
-    return user?.name || auth?.email?.split("@")[0] || "bạn";
-  }, [auth, user]);
-
   if (!auth) return <EmptyAuth />;
 
+  function updateProfile(key, value) {
+    setProfileForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateStaff(key, value) {
+    setStaffForm((current) => ({ ...current, [key]: value }));
+  }
+
   async function loadDepartments() {
+    setDepartmentsLoading(true);
     setDepartmentMessage(null);
     try {
       const response = await medicalDepartmentsApi.list();
       setDepartments(response.data ?? []);
     } catch (error) {
       setDepartmentMessage({ type: "error", text: error.message });
+    } finally {
+      setDepartmentsLoading(false);
     }
   }
 
   async function loadUsers(pageNumber = pageInfo.pageNumber) {
+    if (!isAdmin) return;
     setUsersLoading(true);
-    setUserMessage(null);
+    setAdminMessage(null);
     try {
       const response = await usersApi.list(pageNumber, pageInfo.pageSize);
       const data = response.data ?? {};
@@ -248,44 +288,30 @@ export default function AccountPage() {
         totalPages: data.totalPages ?? 1,
       });
     } catch (error) {
-      setUserMessage({ type: "error", text: error.message });
+      setAdminMessage({ type: "error", text: error.message });
     } finally {
       setUsersLoading(false);
     }
   }
 
-  function updateProfile(key, value) {
-    setProfileForm((current) => ({ ...current, [key]: value }));
-  }
-
-  function updateStaff(key, value) {
-    setStaffForm((current) => ({ ...current, [key]: value }));
-  }
-
-  function handleAnalyze(event) {
-    event.preventDefault();
-    setAnalysis(analyzeSymptoms(symptoms));
-  }
-
   async function handleSaveProfile(event) {
     event.preventDefault();
-    const userId = user?.userId ?? auth?.userId;
-    if (!userId) {
-      setMessage({ type: "error", text: "Không tìm thấy userId để cập nhật hồ sơ." });
+    if (!currentUserId) {
+      setProfileMessage({ type: "error", text: "Không tìm thấy userId trong phiên đăng nhập." });
       return;
     }
 
     setSavingProfile(true);
-    setMessage(null);
+    setProfileMessage(null);
     try {
-      const response = await authApi.updateUser(userId, {
+      const response = await authApi.updateUser(currentUserId, {
         ...profileForm,
         gender: Number(profileForm.gender),
         dateOfBirth: profileForm.dateOfBirth || null,
       });
-      setMessage({ type: "success", text: response.message || "Đã cập nhật hồ sơ." });
+      setProfileMessage({ type: "success", text: response.message || "Đã cập nhật hồ sơ cá nhân." });
     } catch (error) {
-      setMessage({ type: "error", text: error.message });
+      setProfileMessage({ type: "error", text: error.message });
     } finally {
       setSavingProfile(false);
     }
@@ -309,9 +335,10 @@ export default function AccountPage() {
     setSavingDepartment(true);
     setDepartmentMessage(null);
     try {
-      const response = editingDepartmentId
-        ? await medicalDepartmentsApi.update(editingDepartmentId, departmentForm)
-        : await medicalDepartmentsApi.create(departmentForm);
+      const action = editingDepartmentId
+        ? medicalDepartmentsApi.update(editingDepartmentId, departmentForm)
+        : medicalDepartmentsApi.create(departmentForm);
+      const response = await action;
       setDepartmentMessage({
         type: "success",
         text: response.message || (editingDepartmentId ? "Đã cập nhật chuyên khoa." : "Đã tạo chuyên khoa."),
@@ -326,6 +353,7 @@ export default function AccountPage() {
   }
 
   async function handleDeleteDepartment(id) {
+    if (!window.confirm("Xóa chuyên khoa này?")) return;
     setDepartmentMessage(null);
     try {
       const response = await medicalDepartmentsApi.remove(id);
@@ -337,24 +365,25 @@ export default function AccountPage() {
   }
 
   async function handleApproveUser(userId) {
-    setUserMessage(null);
+    setAdminMessage(null);
     try {
       const response = await usersApi.approve(userId);
-      setUserMessage({ type: "success", text: response.message || "Đã duyệt người dùng." });
+      setAdminMessage({ type: "success", text: response.message || "Đã duyệt người dùng." });
       await loadUsers();
     } catch (error) {
-      setUserMessage({ type: "error", text: error.message });
+      setAdminMessage({ type: "error", text: error.message });
     }
   }
 
   async function handleDeleteUser(userId) {
-    setUserMessage(null);
+    if (!window.confirm("Xóa người dùng này?")) return;
+    setAdminMessage(null);
     try {
       const response = await usersApi.remove(userId);
-      setUserMessage({ type: "success", text: response.message || "Đã xóa người dùng." });
+      setAdminMessage({ type: "success", text: response.message || "Đã xóa người dùng." });
       await loadUsers();
     } catch (error) {
-      setUserMessage({ type: "error", text: error.message });
+      setAdminMessage({ type: "error", text: error.message });
     }
   }
 
@@ -382,7 +411,7 @@ export default function AccountPage() {
     try {
       await authApi.logout();
     } catch {
-      // Local logout should still happen if the server session is already gone.
+      // Local logout remains valid if the backend session has already expired.
     } finally {
       clearStoredAuth();
       setAuth(null);
@@ -401,17 +430,19 @@ export default function AccountPage() {
                 <span className="brand-mark">+</span>
                 <span>MediMate AI</span>
               </a>
-              <nav className="app-menu" aria-label="Điều hướng ứng dụng">
-                <button className={currentActor === "user" ? "active" : ""} type="button" onClick={() => setActiveActor("user")}>User</button>
+
+              <nav className="app-menu" aria-label="Điều hướng dashboard">
+                <button className={currentActor === "user" ? "active" : ""} type="button" onClick={() => setActiveActor("user")}>Patient / User</button>
                 <button className={currentActor === "staff" ? "active" : ""} type="button" disabled={!isStaff} onClick={() => setActiveActor("staff")}>Staff</button>
                 <button className={currentActor === "admin" ? "active" : ""} type="button" disabled={!isAdmin} onClick={() => setActiveActor("admin")}>Admin</button>
-                <a href="/departments">Danh mục chuyên khoa</a>
-                <a href="/pricing">Premium</a>
+                <a href="/departments">Trang chuyên khoa</a>
+                <a href="/pricing">Gói dịch vụ</a>
               </nav>
+
               <div className="plan-card">
-                <span>Vai trò hiện tại</span>
-                <strong>{roles.length ? roles.join(", ") : "User"}</strong>
-                <p>Backend quyết định quyền thao tác. Frontend chỉ bật đúng nhóm chức năng tương ứng.</p>
+                <span>Phiên hiện tại</span>
+                <strong>{roles.length ? roles.join(", ") : "user"}</strong>
+                <p>Giao diện chỉ bật các chức năng có API trong Swagger hiện tại và role backend cho phép.</p>
                 <button className="btn btn-dark btn-small" type="button" onClick={handleLogout}>Đăng xuất</button>
               </div>
             </aside>
@@ -420,104 +451,60 @@ export default function AccountPage() {
               <header className="app-topbar">
                 <div>
                   <p className="eyebrow">Workspace</p>
-                  <h1>Chào {displayName}, chọn vai trò để làm việc.</h1>
+                  <h1>Chào {displayName}</h1>
+                  <p className="muted-text">Dashboard theo 3 actor, dùng các API hiện có: Auth, Users và MedicalDepartments.</p>
                 </div>
                 <RoleBadge roles={roles} />
               </header>
 
-              <ApiMessage message={message} />
+              <ApiMessage message={globalMessage} />
 
               <div className="actor-switcher">
                 <button className={currentActor === "user" ? "active" : ""} type="button" onClick={() => setActiveActor("user")}>
-                  <strong>User</strong>
-                  <span>Hồ sơ, demo triệu chứng, xem chuyên khoa</span>
+                  <strong>Patient / User</strong>
+                  <span>Hồ sơ cá nhân, xem danh mục chuyên khoa</span>
                 </button>
                 <button className={currentActor === "staff" ? "active" : ""} type="button" disabled={!isStaff} onClick={() => setActiveActor("staff")}>
                   <strong>Staff</strong>
-                  <span>Quản lý medical departments</span>
+                  <span>Quản lý chuyên khoa từ MedicalDepartments API</span>
                 </button>
                 <button className={currentActor === "admin" ? "active" : ""} type="button" disabled={!isAdmin} onClick={() => setActiveActor("admin")}>
                   <strong>Admin</strong>
-                  <span>Duyệt/xóa user, tạo staff</span>
+                  <span>Quản lý user và tạo tài khoản staff</span>
                 </button>
               </div>
 
               <div className="app-stats">
                 <article>
-                  <span>Hồ sơ</span>
-                  <strong>{loading ? "..." : user?.status === 1 ? "Đã duyệt" : "Chờ duyệt"}</strong>
+                  <span>Tài khoản</span>
+                  <strong>{loading ? "Đang tải" : statusLabel(user?.status)}</strong>
+                </article>
+                <article>
+                  <span>Role</span>
+                  <strong>{roles.length ? roles.join(", ") : "user"}</strong>
                 </article>
                 <article>
                   <span>Chuyên khoa</span>
-                  <strong>{departments.length || "0"}</strong>
+                  <strong>{departmentsLoading ? "..." : departments.length}</strong>
                 </article>
                 <article>
-                  <span>Người dùng</span>
-                  <strong>{isAdmin ? pageInfo.totalCount : "Role admin"}</strong>
-                </article>
-                <article>
-                  <span>Phiên JWT</span>
-                  <strong>{auth.expiresAtUtc ? "Đang hoạt động" : "Đã lưu"}</strong>
+                  <span>User backend</span>
+                  <strong>{isAdmin ? pageInfo.totalCount : "Admin only"}</strong>
                 </article>
               </div>
 
               {currentActor === "user" && (
-                <>
+                <section className="actor-panel">
                   <div className="app-work-grid">
-                    <section id="user" className="app-card symptom-workbench">
+                    <form className="app-card clean-form" onSubmit={handleSaveProfile}>
                       <div className="panel-title-row">
                         <div>
-                          <p className="eyebrow">User</p>
-                          <h2>Nhập triệu chứng</h2>
+                          <p className="eyebrow">Patient / User</p>
+                          <h2>Hồ sơ cá nhân</h2>
                         </div>
-                        <span className="soft-badge">Local preview</span>
+                        <span className="soft-badge">PUT /api/users/:userId</span>
                       </div>
-                      <form onSubmit={handleAnalyze}>
-                        <textarea
-                          value={symptoms}
-                          onChange={(event) => setSymptoms(event.target.value)}
-                          rows={6}
-                          placeholder="Mô tả triệu chứng, thời điểm xuất hiện, mức độ và bệnh nền nếu có."
-                        />
-                        <div className="demo-samples app-samples">
-                          {SYMPTOM_SAMPLES.map((sample) => (
-                            <button type="button" key={sample} onClick={() => setSymptoms(sample)}>
-                              {sample.slice(0, 34)}...
-                            </button>
-                          ))}
-                        </div>
-                        <button className="btn btn-primary" type="submit">Phân tích thử</button>
-                      </form>
-                    </section>
-
-                    <section className="app-card analysis-result-card">
-                      <p className="eyebrow">Kết quả tham khảo</p>
-                      <h2>{analysis.department}</h2>
-                      <div className="triage-level">{analysis.level}</div>
-                      <p>{analysis.note}</p>
-                      <ul>
-                        {analysis.questions.map((question) => (
-                          <li key={question}>{question}</li>
-                        ))}
-                      </ul>
-                      <a href="#department-directory">Xem danh mục chuyên khoa</a>
-                    </section>
-                  </div>
-
-                  <div className="app-work-grid secondary">
-                    <section id="department-directory" className="app-card">
-                      <div className="panel-title-row">
-                        <h2>Danh mục chuyên khoa</h2>
-                        <button className="btn btn-ghost btn-small" type="button" onClick={loadDepartments}>Tải lại</button>
-                      </div>
-                      <DepartmentList departments={departments} readonly />
-                    </section>
-
-                    <form className="app-card clean-form profile-card" onSubmit={handleSaveProfile}>
-                      <div className="panel-title-row">
-                        <h2>Hồ sơ cá nhân</h2>
-                        <span className="soft-badge">PUT /api/users/:id</span>
-                      </div>
+                      <ApiMessage message={profileMessage} />
                       <Field label="Tên hiển thị">
                         <input value={profileForm.displayName} onChange={(event) => updateProfile("displayName", event.target.value)} />
                       </Field>
@@ -542,34 +529,55 @@ export default function AccountPage() {
                         {savingProfile ? "Đang lưu..." : "Lưu hồ sơ"}
                       </button>
                     </form>
+
+                    <section className="app-card">
+                      <div className="panel-title-row">
+                        <div>
+                          <p className="eyebrow">Directory</p>
+                          <h2>Danh mục chuyên khoa</h2>
+                        </div>
+                        <button className="btn btn-ghost btn-small" type="button" onClick={loadDepartments}>Tải lại</button>
+                      </div>
+                      <ApiMessage message={departmentMessage} />
+                      {departmentsLoading ? <p className="muted-text">Đang tải chuyên khoa...</p> : <DepartmentList departments={departments} />}
+                    </section>
                   </div>
-                </>
+
+                  <ComingSoonCard />
+                </section>
               )}
 
               {currentActor === "staff" && (
-                <section id="staff" className="actor-panel">
-                  {!isStaff && <ApiMessage message={{ type: "warning", text: "Tài khoản hiện tại chưa có quyền Staff/Admin." }} />}
+                <section className="actor-panel">
                   <div className="app-work-grid secondary">
                     <section className="app-card">
                       <div className="panel-title-row">
                         <div>
                           <p className="eyebrow">Staff</p>
-                          <h2>Quản lý chuyên khoa</h2>
+                          <h2>Danh sách chuyên khoa</h2>
                         </div>
                         <button className="btn btn-ghost btn-small" type="button" onClick={loadDepartments}>Tải lại</button>
                       </div>
                       <ApiMessage message={departmentMessage} />
-                      <DepartmentList
-                        departments={departments}
-                        onEdit={startEditDepartment}
-                        onDelete={handleDeleteDepartment}
-                      />
+                      {departmentsLoading ? (
+                        <p className="muted-text">Đang tải chuyên khoa...</p>
+                      ) : (
+                        <DepartmentList
+                          departments={departments}
+                          mode="manage"
+                          onEdit={startEditDepartment}
+                          onDelete={handleDeleteDepartment}
+                        />
+                      )}
                     </section>
 
                     <form className="app-card clean-form" onSubmit={handleSaveDepartment}>
                       <div className="panel-title-row">
-                        <h2>{editingDepartmentId ? "Cập nhật chuyên khoa" : "Tạo chuyên khoa"}</h2>
-                        <span className="soft-badge">MedicalDepartments</span>
+                        <div>
+                          <p className="eyebrow">MedicalDepartments</p>
+                          <h2>{editingDepartmentId ? "Cập nhật chuyên khoa" : "Tạo chuyên khoa"}</h2>
+                        </div>
+                        <span className="soft-badge">{editingDepartmentId ? "PUT" : "POST"}</span>
                       </div>
                       <Field label="Tên chuyên khoa">
                         <input
@@ -581,18 +589,18 @@ export default function AccountPage() {
                       </Field>
                       <Field label="Mô tả">
                         <textarea
-                          rows={5}
+                          rows={6}
                           value={departmentForm.description}
                           onChange={(event) => setDepartmentForm({ ...departmentForm, description: event.target.value })}
                           placeholder="Mô tả ngắn về chuyên khoa"
                         />
                       </Field>
                       <div className="record-actions">
-                        <button className="btn btn-primary" type="submit" disabled={savingDepartment || !isStaff}>
-                          {savingDepartment ? "Đang lưu..." : editingDepartmentId ? "Lưu cập nhật" : "Tạo mới"}
+                        <button className="btn btn-primary" type="submit" disabled={savingDepartment}>
+                          {savingDepartment ? "Đang lưu..." : editingDepartmentId ? "Lưu cập nhật" : "Tạo chuyên khoa"}
                         </button>
                         {editingDepartmentId && (
-                          <button className="btn btn-ghost" type="button" onClick={resetDepartmentForm}>Hủy sửa</button>
+                          <button className="btn btn-ghost" type="button" onClick={resetDepartmentForm}>Hủy</button>
                         )}
                       </div>
                     </form>
@@ -601,18 +609,17 @@ export default function AccountPage() {
               )}
 
               {currentActor === "admin" && (
-                <section id="admin" className="actor-panel">
-                  {!isAdmin && <ApiMessage message={{ type: "warning", text: "Tài khoản hiện tại chưa có quyền Admin." }} />}
+                <section className="actor-panel">
                   <div className="app-work-grid secondary">
                     <section className="app-card">
                       <div className="panel-title-row">
                         <div>
                           <p className="eyebrow">Admin</p>
-                          <h2>Người dùng</h2>
+                          <h2>Quản lý người dùng</h2>
                         </div>
-                        <button className="btn btn-ghost btn-small" type="button" disabled={!isAdmin} onClick={() => loadUsers()}>Tải lại</button>
+                        <button className="btn btn-ghost btn-small" type="button" onClick={() => loadUsers()}>Tải lại</button>
                       </div>
-                      <ApiMessage message={userMessage} />
+                      <ApiMessage message={adminMessage} />
                       {usersLoading ? (
                         <p className="muted-text">Đang tải người dùng...</p>
                       ) : (
@@ -622,12 +629,12 @@ export default function AccountPage() {
                             <article className="user-row" key={item.identityId}>
                               <div>
                                 <strong>{item.displayName || item.email || "Người dùng"}</strong>
-                                <span>{item.email}</span>
-                                <small>{item.identityId}</small>
+                                <span>{item.email || "Chưa có email"}</span>
+                                <small>ID: {item.identityId}</small>
                               </div>
                               <div className="user-meta">
                                 <span>{statusLabel(item.status)}</span>
-                                <span>{item.isDeleted ? "Đã xóa mềm" : "Đang hoạt động"}</span>
+                                <span>{item.isDeleted ? "Đã xóa" : "Hoạt động"}</span>
                               </div>
                               <div className="record-actions">
                                 <button className="btn btn-ghost btn-small" type="button" onClick={() => handleApproveUser(item.identityId)}>Duyệt</button>
@@ -639,14 +646,17 @@ export default function AccountPage() {
                       )}
                       <div className="pagination-row">
                         <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => loadUsers(pageInfo.pageNumber - 1)}>Trước</button>
-                        <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {pageInfo.totalCount} người dùng</span>
+                        <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {pageInfo.totalCount} user</span>
                         <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => loadUsers(pageInfo.pageNumber + 1)}>Sau</button>
                       </div>
                     </section>
 
                     <form className="app-card clean-form" onSubmit={handleCreateStaff}>
                       <div className="panel-title-row">
-                        <h2>Tạo tài khoản staff</h2>
+                        <div>
+                          <p className="eyebrow">Staff account</p>
+                          <h2>Tạo tài khoản staff</h2>
+                        </div>
                         <span className="soft-badge">POST /register/staff</span>
                       </div>
                       <ApiMessage message={staffMessage} />
@@ -679,7 +689,7 @@ export default function AccountPage() {
                           <input type="date" value={staffForm.dateOfBirth} onChange={(event) => updateStaff("dateOfBirth", event.target.value)} />
                         </Field>
                       </div>
-                      <button className="btn btn-primary" type="submit" disabled={savingStaff || !isAdmin}>
+                      <button className="btn btn-primary" type="submit" disabled={savingStaff}>
                         {savingStaff ? "Đang tạo..." : "Tạo staff"}
                       </button>
                     </form>
@@ -692,28 +702,5 @@ export default function AccountPage() {
       </section>
       <Footer />
     </main>
-  );
-}
-
-function DepartmentList({ departments, readonly = false, onEdit, onDelete }) {
-  return (
-    <div className="record-list">
-      {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa nào.</p>}
-      {departments.map((department) => (
-        <article className="record-card" key={department.id}>
-          <div>
-            <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-            <p>{department.description || "Chưa có mô tả."}</p>
-            <small>{department.id}</small>
-          </div>
-          {!readonly && (
-            <div className="record-actions">
-              <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(department)}>Sửa</button>
-              <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(department.id)}>Xóa</button>
-            </div>
-          )}
-        </article>
-      ))}
-    </div>
   );
 }

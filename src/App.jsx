@@ -1,7 +1,9 @@
 import LandingPage from "./pages/LandingPage";
 import StaticPage from "./pages/StaticPage";
-import AccountPage from "./pages/AccountPage";
-import AdminUsersPage from "./pages/AdminUsersPage";
+import WorkspaceRedirect from "./pages/WorkspaceRedirect";
+import PatientWorkspacePage from "./pages/PatientWorkspacePage";
+import StaffWorkspacePage from "./pages/StaffWorkspacePage";
+import AdminWorkspacePage from "./pages/AdminWorkspacePage";
 import DepartmentsPage from "./pages/DepartmentsPage";
 import {
   ChangePasswordPage,
@@ -21,9 +23,12 @@ function App() {
   if (path === "/signup") return <SignupPage />;
   if (path === "/forgot-password") return <ForgotPasswordPage />;
   if (path === "/change-password") return <ChangePasswordPage />;
-  if (path === "/app" || path === "/account") return <AccountPage />;
+  if (path === "/app") return <WorkspaceRedirect />;
+  if (path === "/account" || path === "/app/patient") return <PatientWorkspacePage />;
+  if (path === "/app/staff") return <StaffWorkspacePage />;
+  if (path === "/app/admin") return <AdminWorkspacePage />;
   if (path === "/departments") return <DepartmentsPage />;
-  if (path === "/admin/users") return <AdminUsersPage />;
+  if (path === "/admin" || path === "/admin/users") return <AdminWorkspacePage />;
 
   return <StaticPage path={path} />;
 }
