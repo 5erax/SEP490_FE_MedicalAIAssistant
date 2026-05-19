@@ -7,6 +7,7 @@ import AdminWorkspacePage from "./pages/AdminWorkspacePage";
 import MedicalAssistantPage from "./pages/MedicalAssistantPage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import DepartmentsPage from "./pages/DepartmentsPage";
+import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
 import {
   ChangePasswordPage,
   ForgotPasswordPage,
@@ -23,6 +24,7 @@ function App() {
 
   if (path === "/login") return <LoginPage />;
   if (path === "/signup") return <SignupPage />;
+  if (path === "/staff/register" || path === "/staff-register") return <StaffRegisterPortalPage />;
   if (path === "/forgot-password") return <ForgotPasswordPage />;
   if (path === "/change-password") return <ChangePasswordPage />;
   if (path === "/app") return <WorkspaceRedirect />;
