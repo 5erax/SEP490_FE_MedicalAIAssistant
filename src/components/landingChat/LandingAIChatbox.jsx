@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { sendLandingChatMessage } from "../../services/landingChat";
+import { useChatAutoScroll } from "../../utils/useChatAutoScroll";
 import ChatInput from "./ChatInput";
 import ChatMessage from "./ChatMessage";
 import FloatingChatButton from "./FloatingChatButton";
@@ -32,6 +33,7 @@ export default function LandingAIChatbox() {
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [loading, setLoading] = useState(false);
+  const { containerRef, endRef, handleScroll } = useChatAutoScroll(`${messages.length}-${loading}-${open}`);
 
   const hasUserMessage = useMemo(() => messages.some((message) => message.from === "user"), [messages]);
 
@@ -76,11 +78,12 @@ export default function LandingAIChatbox() {
         </header>
 
         <div className="landing-chat-body">
-          <div className="landing-chat-messages" aria-live="polite">
+          <div className="landing-chat-messages" ref={containerRef} onScroll={handleScroll} aria-live="polite">
             {messages.map((message, index) => (
               <ChatMessage key={`${message.from}-${index}`} message={message} />
             ))}
             {loading && <TypingDots />}
+            <div ref={endRef} />
           </div>
 
           <SuggestionChips suggestions={QUICK_ACTIONS} disabled={loading} onSelect={handleSuggestionSelect} />
@@ -99,4 +102,3 @@ export default function LandingAIChatbox() {
     </>
   );
 }
-

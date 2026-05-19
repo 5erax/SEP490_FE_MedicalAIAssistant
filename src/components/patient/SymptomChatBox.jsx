@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { sendSymptomMessage } from "../../services/symptomChat";
+import { useChatAutoScroll } from "../../utils/useChatAutoScroll";
 
 const QUICK_SYMPTOM_PROMPTS = [
   "Tôi bị đau đầu và sốt nhẹ 2 ngày",
@@ -41,6 +42,7 @@ export default function SymptomChatBox() {
   const [message, setMessage] = useState(null);
 
   const canSend = useMemo(() => draft.trim().length > 0 && !sending, [draft, sending]);
+  const { containerRef, endRef, handleScroll } = useChatAutoScroll(`${messages.length}-${sending}`);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -87,7 +89,7 @@ export default function SymptomChatBox() {
 
       <ApiMessage message={message} />
 
-      <div className="chat-thread symptom-chat-thread" aria-live="polite">
+      <div className="chat-thread symptom-chat-thread" ref={containerRef} onScroll={handleScroll} aria-live="polite">
         {messages.length === 0 && (
           <div className="chat-empty-state">
             <strong>Bắt đầu bằng triệu chứng bạn đang gặp.</strong>
@@ -100,6 +102,7 @@ export default function SymptomChatBox() {
           </div>
         ))}
         {sending && <LoadingBubble />}
+        <div ref={endRef} />
       </div>
 
       <div className="quick-prompts">
@@ -124,4 +127,3 @@ export default function SymptomChatBox() {
     </section>
   );
 }
-

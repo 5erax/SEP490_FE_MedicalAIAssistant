@@ -1,3 +1,5 @@
+import { useChatAutoScroll } from "../../utils/useChatAutoScroll";
+
 function LoadingBubble() {
   return (
     <div className="assistant-message assistant loading">
@@ -9,8 +11,10 @@ function LoadingBubble() {
 }
 
 export default function MessageList({ messages, loading }) {
+  const { containerRef, endRef, handleScroll } = useChatAutoScroll(`${messages.length}-${loading}`);
+
   return (
-    <div className="assistant-message-list" aria-live="polite">
+    <div className="assistant-message-list" ref={containerRef} onScroll={handleScroll} aria-live="polite">
       {messages.length === 0 && (
         <div className="assistant-empty">
           <strong>Mô tả triệu chứng để nhận gợi ý ban đầu.</strong>
@@ -26,6 +30,7 @@ export default function MessageList({ messages, loading }) {
       ))}
 
       {loading && <LoadingBubble />}
+      <div ref={endRef} />
     </div>
   );
 }
