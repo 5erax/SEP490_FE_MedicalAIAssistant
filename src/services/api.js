@@ -241,16 +241,6 @@ export const patientProfilesApi = {
   },
 };
 
-export const webChatbotApi = {
-  sendMessage(message) {
-    return apiRequest("/api/web-chatbot/message", {
-      method: "POST",
-      body: { message },
-      auth: true,
-    });
-  },
-};
-
 export const usersApi = {
   list(pageNumber = 1, pageSize = 10) {
     const params = new URLSearchParams({

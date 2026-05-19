@@ -4,6 +4,7 @@ import WorkspaceRedirect from "./pages/WorkspaceRedirect";
 import PatientWorkspacePage from "./pages/PatientWorkspacePage";
 import StaffWorkspacePage from "./pages/StaffWorkspacePage";
 import AdminWorkspacePage from "./pages/AdminWorkspacePage";
+import MedicalAssistantPage from "./pages/MedicalAssistantPage";
 import DepartmentsPage from "./pages/DepartmentsPage";
 import {
   ChangePasswordPage,
@@ -27,6 +28,7 @@ function App() {
   if (path === "/account" || path === "/app/patient") return <PatientWorkspacePage />;
   if (path === "/app/staff") return <StaffWorkspacePage />;
   if (path === "/app/admin") return <AdminWorkspacePage />;
+  if (path === "/medical-assistant" || path === "/symptom-chat") return <MedicalAssistantPage />;
   if (path === "/departments") return <DepartmentsPage />;
   if (path === "/admin" || path === "/admin/users") return <AdminWorkspacePage />;
 
