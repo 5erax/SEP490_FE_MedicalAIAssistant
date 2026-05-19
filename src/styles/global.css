@@ -3337,6 +3337,188 @@
   box-shadow: 0 14px 28px rgba(17, 20, 18, 0.24);
 }
 
+.profile-setup-root {
+  min-height: 100svh;
+}
+
+.profile-setup-page {
+  min-height: 100svh;
+  padding: 34px 0 76px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 248, 243, 0) 420px),
+    var(--bg);
+}
+
+.profile-setup-shell {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.42fr) minmax(0, 0.9fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.profile-setup-intro,
+.profile-setup-form {
+  min-width: 0;
+  border: 1.5px solid var(--ink);
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.profile-setup-intro {
+  position: sticky;
+  top: 28px;
+  display: grid;
+  gap: 30px;
+  padding: clamp(24px, 3vw, 34px);
+}
+
+.profile-setup-intro h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(36px, 5vw, 54px);
+  line-height: 1.04;
+}
+
+.profile-setup-intro p:not(.eyebrow) {
+  margin: 16px 0 0;
+  color: var(--muted);
+  line-height: 1.72;
+}
+
+.profile-setup-progress {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper-soft);
+  padding: 16px;
+}
+
+.profile-setup-progress > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.profile-setup-progress span {
+  color: var(--subtle);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-setup-progress strong {
+  color: var(--teal);
+  font-size: 24px;
+}
+
+.profile-progress-bar {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: #eef2e9;
+}
+
+.profile-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--lime));
+  transition: width 220ms ease;
+}
+
+.profile-setup-form {
+  display: grid;
+  gap: 18px;
+  padding: clamp(22px, 3vw, 30px);
+}
+
+.profile-setup-heading,
+.profile-section-title,
+.profile-setup-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-setup-heading h2 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+}
+
+.profile-form-section {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper-soft);
+  padding: clamp(18px, 2.4vw, 24px);
+}
+
+.profile-section-title {
+  align-items: center;
+}
+
+.profile-section-title span {
+  color: var(--subtle);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-section-title strong {
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--teal);
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.profile-setup-field textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  padding: 12px 13px;
+  font: inherit;
+  line-height: 1.55;
+  outline: none;
+}
+
+.profile-setup-field input:focus,
+.profile-setup-field select:focus,
+.profile-setup-field textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.12);
+}
+
+.profile-setup-field.has-error input,
+.profile-setup-field.has-error select,
+.profile-setup-field.has-error textarea {
+  border-color: var(--coral);
+}
+
+.profile-setup-field small {
+  color: var(--coral);
+}
+
+.profile-setup-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+
 .profile-card {
   gap: 14px;
 }
@@ -3664,6 +3846,7 @@
   .static-form-wrap,
   .cta-band,
   .medical-assistant-shell,
+  .profile-setup-shell,
   .api-auth-grid,
   .api-grid,
   .account-layout,
@@ -3681,7 +3864,8 @@
   }
 
   .app-sidebar,
-  .admin-sidebar {
+  .admin-sidebar,
+  .profile-setup-intro {
     position: static;
   }
 
@@ -3798,7 +3982,10 @@
   .auth-card-header,
   .auth-inline-row,
   .app-topbar,
-  .admin-topbar {
+  .admin-topbar,
+  .profile-setup-heading,
+  .profile-section-title,
+  .profile-setup-actions {
     flex-direction: column;
   }
 
@@ -3889,6 +4076,19 @@
   .assistant-map-panel,
   .assistant-map-panel .maplibregl-map {
     min-height: 460px;
+  }
+
+  .profile-setup-page {
+    padding: 22px 0 58px;
+  }
+
+  .profile-setup-form,
+  .profile-setup-intro {
+    border-radius: 14px;
+  }
+
+  .profile-setup-actions .btn {
+    width: 100%;
   }
 
   .admin-top-actions .btn,

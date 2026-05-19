@@ -2,7 +2,7 @@ import { useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Navbar } from "../components/landing/Navbar";
 import { authApi } from "../services/api";
-import { getWorkspacePath } from "../utils/roles";
+import { getPostLoginPath, getWorkspacePath } from "../utils/roles";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 const GOOGLE_LOGIN_ENABLED = Boolean(GOOGLE_CLIENT_ID.trim());
@@ -113,7 +113,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.login(form);
-      window.location.href = getWorkspacePath(response.data ?? response);
+      window.location.href = getPostLoginPath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -132,7 +132,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.googleLogin(credential);
-      window.location.href = getWorkspacePath(response.data ?? response);
+      window.location.href = getPostLoginPath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
