@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { registerStaffApplication } from "../services/staffRegistration";
 
@@ -120,7 +119,6 @@ export default function StaffRegisterPortalPage() {
 
   return (
     <main className="landing-page staff-register-root">
-      <Navbar />
       <section className="staff-register-page">
         <div className="container staff-register-shell">
           <aside className="staff-register-intro">
@@ -304,7 +302,6 @@ export default function StaffRegisterPortalPage() {
                   </div>
 
                   <div className="staff-register-actions">
-                    <a className="btn btn-ghost" href="/login">Đã có tài khoản</a>
                     <button className="btn btn-primary" type="submit" disabled={submitting}>
                       {submitting ? "Đang gửi đăng ký..." : "Gửi đăng ký staff"}
                     </button>

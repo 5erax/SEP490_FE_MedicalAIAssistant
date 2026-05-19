@@ -3525,7 +3525,7 @@
 
 .staff-register-page {
   min-height: 100svh;
-  padding: 108px 0 72px;
+  padding: 34px 0 72px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 248, 243, 0) 440px),
     var(--bg);
@@ -3549,7 +3549,7 @@
 
 .staff-register-intro {
   position: sticky;
-  top: 88px;
+  top: 34px;
   display: grid;
   gap: 22px;
   max-height: calc(100svh - 112px);
@@ -4716,7 +4716,7 @@
   }
 
   .staff-register-page {
-    padding: 96px 0 58px;
+    padding: 22px 0 58px;
   }
 
   .staff-register-intro {
