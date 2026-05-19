@@ -5,6 +5,7 @@ import { MapSection } from "../components/landing/MapSection";
 import { PricingSection, CtaSection, FaqSection, Footer } from "../components/landing/PricingSection";
 import { SymptomDemoSection } from "../components/landing/SymptomDemoSection";
 import { Navbar } from "../components/landing/Navbar";
+import LandingAIChatbox from "../components/landingChat/LandingAIChatbox";
 
 export default function LandingPage() {
   return (
@@ -21,6 +22,7 @@ export default function LandingPage() {
       <FaqSection />
       <CtaSection />
       <Footer />
+      <LandingAIChatbox />
     </main>
   );
 }
