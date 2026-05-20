@@ -3,13 +3,13 @@ import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
+import SymptomChatBox from "../components/patient/SymptomChatBox";
 import {
   authApi,
   clearStoredAuth,
   getStoredAuth,
   medicalDepartmentsApi,
   patientProfilesApi,
-  webChatbotApi,
 } from "../services/api";
 
 const EMPTY_ACCOUNT_PROFILE = {
@@ -77,12 +77,6 @@ const FALLBACK_FACILITIES = [
     longitude: 105.8419,
     latitude: 21.0451,
   },
-];
-
-const quickPrompts = [
-  "Tôi bị đau đầu và sốt nhẹ 2 ngày",
-  "Tôi nên chuẩn bị gì trước khi đi khám?",
-  "Triệu chứng nào cần đi cấp cứu?",
 ];
 
 function ApiMessage({ message }) {
@@ -242,97 +236,6 @@ function PatientMap({ userLocation, viewState, setViewState, onLocate, locating 
           </button>
         ))}
       </div>
-    </section>
-  );
-}
-
-function ChatAssistant() {
-  const [messages, setMessages] = useState([
-    {
-      from: "assistant",
-      text: "Bạn có thể mô tả triệu chứng, thời gian xuất hiện và mức độ khó chịu. MediMate AI sẽ giúp bạn chuẩn bị thông tin trước khi đi khám.",
-    },
-  ]);
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState(null);
-
-  async function sendMessage(event) {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text || sending) return;
-
-    setMessages((current) => [...current, { from: "user", text }]);
-    setDraft("");
-    setSending(true);
-    setMessage(null);
-
-    try {
-      const response = await webChatbotApi.sendMessage(text);
-      const data = response.data ?? {};
-      const planText = data.recommendedPlans?.length
-        ? `\n\nGói phù hợp: ${data.recommendedPlans.map((plan) => plan.planName).filter(Boolean).join(", ")}.`
-        : "";
-      const hintText = data.needsMoreInformation ? "\n\nBạn có thể bổ sung thêm thời gian xuất hiện, mức độ đau và bệnh nền nếu có." : "";
-      setMessages((current) => [
-        ...current,
-        {
-          from: "assistant",
-          text: `${data.answer || response.message || "MediMate AI đã ghi nhận thông tin của bạn."}${hintText}${planText}`,
-        },
-      ]);
-    } catch (error) {
-      setMessage({ type: "error", text: error.message });
-      setMessages((current) => [
-        ...current,
-        {
-          from: "assistant",
-          text: "Hiện chưa thể phản hồi ngay. Bạn vẫn nên theo dõi triệu chứng và đi khám sớm nếu có dấu hiệu bất thường.",
-        },
-      ]);
-    } finally {
-      setSending(false);
-    }
-  }
-
-  return (
-    <section className="app-card patient-chat-card">
-      <div className="panel-title-row">
-        <div>
-          <p className="eyebrow">Hỏi nhanh</p>
-          <h2>Trợ lý chăm sóc</h2>
-        </div>
-        <span className="soft-badge">{sending ? "Đang trả lời" : "Sẵn sàng"}</span>
-      </div>
-
-      <ApiMessage message={message} />
-
-      <div className="chat-thread">
-        {messages.map((item, index) => (
-          <div className={`chat-bubble ${item.from}`} key={`${item.from}-${index}`}>
-            {item.text}
-          </div>
-        ))}
-      </div>
-
-      <div className="quick-prompts">
-        {quickPrompts.map((prompt) => (
-          <button key={prompt} type="button" onClick={() => setDraft(prompt)}>
-            {prompt}
-          </button>
-        ))}
-      </div>
-
-      <form className="chat-input-row" onSubmit={sendMessage}>
-        <input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Mô tả triệu chứng hoặc điều bạn muốn hỏi..."
-        />
-        <button className="btn btn-primary btn-small" type="submit" disabled={sending}>
-          {sending ? "..." : "Gửi"}
-        </button>
-      </form>
     </section>
   );
 }
@@ -635,7 +538,12 @@ export default function PatientWorkspacePage() {
               <ApiMessage message={mapMessage} />
             </div>
             <div className="patient-side-stack">
-              <ChatAssistant />
+              <div className="patient-assistant-stack">
+                <SymptomChatBox />
+                <a className="btn btn-primary patient-assistant-cta" href="/medical-assistant">
+                  Tư vấn triệu chứng nâng cao
+                </a>
+              </div>
               <section className="app-card">
                 <div className="panel-title-row">
                   <div>

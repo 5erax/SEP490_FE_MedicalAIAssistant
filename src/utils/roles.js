@@ -56,3 +56,14 @@ export function getWorkspacePath(authOrUser) {
   return "/dashboard";
 }
 
+export function shouldSetupPatientProfile(authOrUser) {
+  const roles = normalizeRoles(collectRoleValues(authOrUser));
+  const isFirstLogin = authOrUser?.isFirstLogin === true || authOrUser?.firstLogin === true;
+
+  return isFirstLogin && !hasRole(roles, "admin") && !hasRole(roles, "staff");
+}
+
+export function getPostLoginPath(authOrUser) {
+  if (shouldSetupPatientProfile(authOrUser)) return "/patient/profile/setup";
+  return getWorkspacePath(authOrUser);
+}

@@ -13,6 +13,9 @@ import NearbyClinicPage from "./pages/NearbyClinicPage";
 import PricingPage from "./pages/PricingPage";
 import SymptomAnalysisPage from "./pages/SymptomAnalysisPage";
 import UserProfilePage from "./pages/UserProfilePage";
+import MedicalAssistantPage from "./pages/MedicalAssistantPage";
+import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
+import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
 import {
   ChangePasswordPage,
   ForgotPasswordPage,
@@ -33,6 +36,7 @@ function App() {
 
   if (path === "/login") return <LoginPage />;
   if (path === "/signup") return <SignupPage />;
+  if (path === "/staff/register" || path === "/staff-register") return <StaffRegisterPortalPage />;
   if (path === "/forgot-password") return <ForgotPasswordPage />;
   if (path === "/change-password") return <ChangePasswordPage />;
   if (path === "/dashboard") return userWorkspace(<DashboardPage />);
@@ -50,6 +54,8 @@ function App() {
   }
   if (path === "/app/staff") return <StaffWorkspacePage />;
   if (path === "/app/admin") return <AdminWorkspacePage />;
+  if (path === "/medical-assistant" || path === "/symptom-chat") return <MedicalAssistantPage />;
+  if (path === "/patient/profile/setup") return <PersonalPatientProfilePage />;
   if (path === "/departments") return <DepartmentsPage />;
   if (path === "/admin" || path === "/admin/users") return <AdminWorkspacePage />;
 

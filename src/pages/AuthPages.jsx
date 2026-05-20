@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Navbar } from "../components/landing/Navbar";
 import { authApi } from "../services/api";
-import { getWorkspacePath } from "../utils/roles";
+import { getPostLoginPath, getWorkspacePath } from "../utils/roles";
 import "../styles/auth-refresh.css";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const GOOGLE_LOGIN_ENABLED = Boolean(GOOGLE_CLIENT_ID.trim());
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -110,7 +114,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.login(form);
-      window.location.href = getWorkspacePath(response.data ?? response);
+      window.location.href = getPostLoginPath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -118,10 +122,42 @@ export function LoginPage() {
     }
   }
 
-  return (
+  async function handleGoogleSuccess(credentialResponse) {
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      setMessage({ type: "error", text: "Google chưa trả thông tin đăng nhập. Vui lòng thử lại." });
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await authApi.googleLogin(credential);
+      window.location.href = getPostLoginPath(response.data ?? response);
+    } catch (error) {
+      setMessage({ type: "error", text: error.message });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const loginContent = (
     <AuthShell mode="login">
       <form className="clean-form auth-form-clean" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
+        {GOOGLE_LOGIN_ENABLED && (
+          <>
+            <div className="google-login-wrap">
+              <GoogleLogin
+                ux_mode="popup"
+                use_fedcm_for_button
+                onSuccess={handleGoogleSuccess}
+                onError={() => setMessage({ type: "error", text: "Không thể đăng nhập bằng Google. Vui lòng thử lại." })}
+              />
+            </div>
+            <div className="auth-divider"><span>hoặc</span></div>
+          </>
+        )}
         <Field
           label="Email"
           type="email"
@@ -153,6 +189,21 @@ export function LoginPage() {
         </div>
       </form>
     </AuthShell>
+  );
+
+  if (!GOOGLE_LOGIN_ENABLED) return loginContent;
+
+  return (
+    <GoogleOAuthProvider
+      clientId={GOOGLE_CLIENT_ID}
+      script_props={{
+        async: true,
+        defer: true,
+        crossOrigin: "anonymous",
+      }}
+    >
+      {loginContent}
+    </GoogleOAuthProvider>
   );
 }
 
