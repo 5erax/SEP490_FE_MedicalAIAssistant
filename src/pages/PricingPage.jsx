@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { subscriptionPlansApi } from "../services/api";
 
 const FEATURES = [
   "Phân tích triệu chứng cơ bản",
@@ -23,9 +24,30 @@ function PricingPage() {
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [openFaq, setOpenFaq] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const monthlyPrice = 149000;
+  const [apiPlans, setApiPlans] = useState([]);
+  const paidPlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) > 0), [apiPlans]);
+  const freePlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) === 0), [apiPlans]);
+  const monthlyPrice = Number(paidPlan?.price) || 149000;
   const yearlyPrice = Math.round(monthlyPrice * 0.8);
   const currentPrice = billingCycle === "yearly" ? yearlyPrice : monthlyPrice;
+
+  useEffect(() => {
+    let active = true;
+
+    subscriptionPlansApi.active()
+      .then((response) => {
+        if (!active) return;
+        setApiPlans(Array.isArray(response.data) ? response.data : []);
+      })
+      .catch(() => {
+        if (!active) return;
+        setApiPlans([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <main className="pricing-page">
@@ -47,7 +69,7 @@ function PricingPage() {
       <section className="plans-grid">
         <article className="plan-card-basic">
           <code>MIỄN PHÍ</code>
-          <h2>Cơ bản</h2>
+          <h2>{freePlan?.planName || "Cơ bản"}</h2>
           <div className="price-line"><strong>0 ₫</strong><span>/ mãi mãi</span></div>
           <p>Phù hợp để bắt đầu kiểm tra triệu chứng và tìm chuyên khoa phù hợp.</p>
           <ul>
@@ -62,7 +84,7 @@ function PricingPage() {
           <div className="premium-stripe" />
           <span className="popular">✦ PHỔ BIẾN</span>
           <code>PREMIUM</code>
-          <h2>MediMate+</h2>
+          <h2>{paidPlan?.planName || "MediMate+"}</h2>
           <div className="price-line"><strong>{formatPrice(currentPrice)}</strong><span>/ tháng</span></div>
           <p>Mở khoá tư vấn sau khám, kiểm tra thuốc và theo dõi hành trình chăm sóc sức khoẻ.</p>
           <ul>

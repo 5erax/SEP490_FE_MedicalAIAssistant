@@ -1,9 +1,5 @@
-import { apiRequest } from "./api";
+import { webChatbotApi } from "./api";
 
 export async function sendSymptomMessage(message) {
-  return apiRequest("/api/web-chatbot/message", {
-    method: "POST",
-    body: { message },
-    auth: true,
-  });
+  return webChatbotApi.message(message, { auth: true });
 }

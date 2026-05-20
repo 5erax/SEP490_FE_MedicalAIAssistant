@@ -1,4 +1,4 @@
-import { apiRequest } from "./api";
+import { webChatbotApi } from "./api";
 
 const FALLBACK_RESPONSES = [
   {
@@ -28,10 +28,7 @@ function buildFallbackAnswer(message) {
 
 export async function sendLandingChatMessage(message) {
   try {
-    const response = await apiRequest("/api/web-chatbot/message", {
-      method: "POST",
-      body: { message },
-    });
+    const response = await webChatbotApi.message(message);
 
     return {
       answer: response.data?.answer || response.message || buildFallbackAnswer(message),

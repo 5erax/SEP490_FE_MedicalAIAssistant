@@ -42,6 +42,52 @@ function normalizeAuthResponse(response) {
   return response;
 }
 
+function withPagination(pageNumber = 1, pageSize = 10) {
+  return new URLSearchParams({
+    PageNumber: String(pageNumber),
+    PageSize: String(pageSize),
+  }).toString();
+}
+
+function normalizeUserRecord(user) {
+  if (!user || typeof user !== "object") return user;
+  const id = user.id ?? user.userId ?? user.identityId ?? "";
+
+  return {
+    ...user,
+    id,
+    userId: user.userId ?? id,
+    identityId: user.identityId ?? id,
+    name: user.name ?? user.displayName ?? "",
+  };
+}
+
+function normalizePagedUsers(response) {
+  const data = response?.data;
+  if (!data?.items) return response;
+
+  return {
+    ...response,
+    data: {
+      ...data,
+      items: data.items.map(normalizeUserRecord),
+    },
+  };
+}
+
+function formatApiErrors(errors) {
+  if (!errors) return "";
+  if (Array.isArray(errors)) return errors.filter(Boolean).join(", ");
+  if (typeof errors === "string") return errors;
+  if (typeof errors === "object") {
+    return Object.values(errors)
+      .flatMap((value) => (Array.isArray(value) ? value : [value]))
+      .filter(Boolean)
+      .join(", ");
+  }
+  return "";
+}
+
 export async function apiRequest(path, options = {}) {
   const { method = "GET", body, auth = false, headers = {} } = options;
   const requestHeaders = { ...headers };
@@ -81,7 +127,8 @@ export async function apiRequest(path, options = {}) {
   if (!ok) {
     const message =
       payload?.message ||
-      payload?.errors?.join(", ") ||
+      formatApiErrors(payload?.errors) ||
+      payload?.title ||
       `Yêu cầu thất bại với mã ${response.status}`;
     const error = new Error(message);
     error.status = response.status;
@@ -159,13 +206,23 @@ export const authApi = {
   },
 
   me() {
-    return apiRequest("/api/users/me", { auth: true });
+    return apiRequest("/api/users/me", { auth: true }).then((response) => ({
+      ...response,
+      data: normalizeUserRecord(response.data),
+    }));
   },
 
   updateUser(userId, payload) {
     return apiRequest(`/api/users/${userId}`, {
       method: "PUT",
       body: payload,
+      auth: true,
+    });
+  },
+
+  approveStaff(userId) {
+    return apiRequest(`/api/authentication/${userId}/approve-staff`, {
+      method: "POST",
       auth: true,
     });
   },
@@ -206,11 +263,7 @@ export const medicalDepartmentsApi = {
 
 export const patientProfilesApi = {
   list(pageNumber = 1, pageSize = 50) {
-    const params = new URLSearchParams({
-      PageNumber: String(pageNumber),
-      PageSize: String(pageSize),
-    });
-    return apiRequest(`/api/patient-profiles?${params.toString()}`, { auth: true });
+    return apiRequest(`/api/patient-profiles?${withPagination(pageNumber, pageSize)}`, { auth: true });
   },
 
   get(id) {
@@ -243,11 +296,7 @@ export const patientProfilesApi = {
 
 export const usersApi = {
   list(pageNumber = 1, pageSize = 10) {
-    const params = new URLSearchParams({
-      PageNumber: String(pageNumber),
-      PageSize: String(pageSize),
-    });
-    return apiRequest(`/api/users?${params.toString()}`, { auth: true });
+    return apiRequest(`/api/users?${withPagination(pageNumber, pageSize)}`, { auth: true }).then(normalizePagedUsers);
   },
 
   update(userId, payload) {
@@ -266,9 +315,113 @@ export const usersApi = {
   },
 
   approve(userId) {
-    return apiRequest(`/api/users/${userId}/approve`, {
+    return apiRequest(`/api/authentication/${userId}/approve-staff`, {
       method: "POST",
       auth: true,
+    });
+  },
+};
+
+export const subscriptionPlansApi = {
+  list() {
+    return apiRequest("/api/subscription-plans");
+  },
+
+  active() {
+    return apiRequest("/api/subscription-plans/active");
+  },
+
+  get(id) {
+    return apiRequest(`/api/subscription-plans/${id}`);
+  },
+
+  create(payload) {
+    return apiRequest("/api/subscription-plans", {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  update(id, payload) {
+    return apiRequest(`/api/subscription-plans/${id}`, {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  setStatus(id, isActive) {
+    return apiRequest(`/api/subscription-plans/${id}/status`, {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    });
+  },
+
+  remove(id) {
+    return apiRequest(`/api/subscription-plans/${id}`, {
+      method: "DELETE",
+      auth: true,
+    });
+  },
+};
+
+export const aiConfigsApi = {
+  list(pageNumber = 1, pageSize = 20) {
+    return apiRequest(`/api/ai-configs?${withPagination(pageNumber, pageSize)}`, { auth: true });
+  },
+
+  active() {
+    return apiRequest("/api/ai-configs/active", { auth: true });
+  },
+
+  byTaskType(taskType) {
+    return apiRequest(`/api/ai-configs/by-task-type/${encodeURIComponent(taskType)}`, { auth: true });
+  },
+
+  get(id) {
+    return apiRequest(`/api/ai-configs/${id}`, { auth: true });
+  },
+
+  create(payload) {
+    return apiRequest("/api/ai-configs", {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  update(id, payload) {
+    return apiRequest(`/api/ai-configs/${id}`, {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  setStatus(id, isActive) {
+    return apiRequest(`/api/ai-configs/${id}/status`, {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    });
+  },
+
+  remove(id) {
+    return apiRequest(`/api/ai-configs/${id}`, {
+      method: "DELETE",
+      auth: true,
+    });
+  },
+};
+
+export const webChatbotApi = {
+  message(message, { auth = false } = {}) {
+    return apiRequest("/api/web-chatbot/message", {
+      method: "POST",
+      body: { message },
+      auth,
     });
   },
 };
