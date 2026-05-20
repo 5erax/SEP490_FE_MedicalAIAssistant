@@ -90,4 +90,3 @@ export async function getHospitalRecommendations({ symptomText }) {
     data: sortHospitalsBySymptom(MOCK_HOSPITALS, symptomText),
   };
 }
-

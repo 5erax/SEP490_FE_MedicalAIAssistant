@@ -9,4 +9,3 @@ export default function SuggestionChips({ prompts, disabled, onSelect }) {
     </div>
   );
 }
-

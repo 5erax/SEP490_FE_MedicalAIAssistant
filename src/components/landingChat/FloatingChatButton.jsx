@@ -8,4 +8,3 @@ export default function FloatingChatButton({ open, onClick }) {
     </div>
   );
 }
-

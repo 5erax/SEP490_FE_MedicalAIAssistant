@@ -24,4 +24,3 @@ export default function HospitalList({ hospitals, loading, selectedHospital, onS
     </section>
   );
 }
-

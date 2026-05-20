@@ -9,4 +9,3 @@ export default function SuggestionChips({ suggestions, disabled, onSelect }) {
     </div>
   );
 }
-

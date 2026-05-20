@@ -37,4 +37,3 @@ export default function ChatInput({ value, loading, onChange, onSubmit }) {
     </form>
   );
 }
-

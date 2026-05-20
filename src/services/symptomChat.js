@@ -7,4 +7,3 @@ export async function sendSymptomMessage(message) {
     auth: true,
   });
 }
-
