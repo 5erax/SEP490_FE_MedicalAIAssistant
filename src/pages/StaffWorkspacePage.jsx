@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { authApi, clearStoredAuth, getStoredAuth, medicalDepartmentsApi } from "../services/api";
 import { hasRole, normalizeRoles } from "../utils/roles";
+import "../styles/operator-workspace.css";
 
 const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
 
@@ -46,7 +46,7 @@ function AccessDenied({ roles }) {
           <h1>Tài khoản này không thể quản lý chuyên khoa.</h1>
           <p>Role hiện tại: {roles.length ? roles.join(", ") : "user"}.</p>
           <div className="hero-actions">
-            <a className="btn btn-primary" href="/app/patient">Mở Patient Workspace</a>
+            <a className="btn btn-primary" href="/dashboard">Mở Dashboard</a>
           </div>
         </div>
       </section>
@@ -175,10 +175,9 @@ export default function StaffWorkspacePage() {
   }
 
   return (
-    <main className="landing-page">
-      <Navbar />
-      <section className="app-page">
-        <div className="container app-main">
+    <main className="operator-workspace staff-workspace">
+      <section className="operator-page">
+        <div className="container app-main operator-main">
           <header className="app-topbar">
             <div>
               <p className="eyebrow">Không gian nhân sự</p>

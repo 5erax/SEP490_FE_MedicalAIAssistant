@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { authApi } from "../services/api";
 import { getWorkspacePath } from "../utils/roles";
+import "../styles/auth-refresh.css";
 
 function ApiMessage({ message }) {
   if (!message) return null;

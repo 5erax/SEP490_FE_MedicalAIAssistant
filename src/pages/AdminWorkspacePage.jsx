@@ -9,6 +9,7 @@ import {
   usersApi,
 } from "../services/api";
 import { hasRole, normalizeRoles } from "../utils/roles";
+import "../styles/operator-workspace.css";
 
 const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
 const EMPTY_STAFF = {
@@ -45,10 +46,10 @@ function formatRoles(roles) {
 }
 
 function AccessDenied({ auth, roles }) {
-  const path = hasRole(roles, "staff") ? "/app/staff" : "/app/patient";
+  const path = hasRole(roles, "staff") ? "/app/staff" : "/dashboard";
 
   return (
-    <main className="workspace-root">
+    <main className="workspace-root admin-operator">
       <section className="app-page">
         <div className="container app-empty">
           <p className="eyebrow">Không có quyền Admin</p>
@@ -313,7 +314,7 @@ export default function AdminWorkspacePage() {
   }
 
   return (
-    <main className="workspace-root">
+    <main className="workspace-root admin-operator">
       <section className="admin-page">
         <div className="container admin-shell">
           <aside className="admin-sidebar">
