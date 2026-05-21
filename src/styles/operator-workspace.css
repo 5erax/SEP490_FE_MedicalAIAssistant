@@ -4,6 +4,7 @@
   overflow-x: hidden;
   background:
     linear-gradient(135deg, rgba(170, 237, 99, 0.14), rgba(8, 127, 140, 0.08) 44%, transparent 76%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(244, 247, 239, 0) 340px),
     #f4f7ef;
   color: #101411;
 }
@@ -23,10 +24,11 @@
 .admin-operator .admin-topbar {
   align-items: center;
   border: 1px solid rgba(16, 20, 17, 0.14);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.82);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
   padding: clamp(20px, 3vw, 28px);
   box-shadow: 0 22px 64px rgba(16, 20, 17, 0.08);
+  backdrop-filter: blur(18px);
 }
 
 .operator-workspace .app-topbar h1,
@@ -64,9 +66,18 @@
 .admin-operator .admin-panel,
 .admin-operator .admin-sidebar {
   border: 1px solid rgba(16, 20, 17, 0.16);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.86);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 20px 56px rgba(16, 20, 17, 0.08);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.operator-workspace .app-stats article:hover,
+.admin-operator .admin-stats article:hover,
+.operator-workspace .app-card:hover,
+.admin-operator .admin-panel:hover {
+  border-color: rgba(16, 20, 17, 0.26);
+  box-shadow: 0 26px 70px rgba(16, 20, 17, 0.1);
 }
 
 .operator-workspace .app-stats article,
@@ -119,9 +130,18 @@
 .admin-operator .admin-user-row {
   min-width: 0;
   border: 1px solid rgba(16, 20, 17, 0.1);
-  border-radius: 16px;
+  border-radius: 14px;
   background: #fbfcf7;
   padding: 15px;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.operator-workspace .record-card:hover,
+.admin-operator .admin-task-list article:hover,
+.admin-operator .admin-user-row:hover {
+  transform: translateY(-2px);
+  border-color: rgba(8, 127, 140, 0.22);
+  background: #fff;
 }
 
 .operator-workspace .record-card {
@@ -168,6 +188,7 @@
   color: #101411;
   padding: 12px 13px;
   outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
 .operator-workspace .clean-field input:focus,
@@ -210,12 +231,14 @@
   padding: 0 12px;
   font-weight: 950;
   text-align: left;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
 }
 
 .admin-operator .admin-nav button:hover,
 .admin-operator .admin-nav button.active {
   background: #e6f8d9;
   color: #101411;
+  transform: translateX(2px);
 }
 
 .admin-operator .admin-session-card {
@@ -317,6 +340,90 @@
   .admin-operator .admin-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.operator-workspace,
+.admin-operator .admin-page {
+  background:
+    linear-gradient(135deg, rgba(199, 213, 163, 0.14), rgba(82, 108, 102, 0.08) 44%, transparent 76%),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.8), rgba(243, 241, 234, 0) 340px),
+    #f3f1ea;
+  color: #24231f;
+  font-family: var(--body, "Be Vietnam Pro", system-ui, sans-serif);
+}
+
+.operator-workspace .app-topbar,
+.admin-operator .admin-topbar,
+.operator-workspace .app-stats article,
+.admin-operator .admin-stats article,
+.operator-workspace .app-card,
+.admin-operator .admin-panel,
+.admin-operator .admin-sidebar,
+.operator-workspace .record-card,
+.admin-operator .admin-task-list article,
+.admin-operator .admin-user-row,
+.admin-operator .admin-session-card,
+.admin-operator .profile-list div {
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.operator-workspace .app-topbar,
+.admin-operator .admin-topbar,
+.operator-workspace .app-stats article,
+.admin-operator .admin-stats article,
+.operator-workspace .app-card,
+.admin-operator .admin-panel,
+.admin-operator .admin-sidebar {
+  background: rgba(255, 253, 248, 0.9);
+}
+
+.operator-workspace .record-card,
+.admin-operator .admin-task-list article,
+.admin-operator .admin-user-row,
+.admin-operator .profile-list div {
+  background: #f8f5ec;
+}
+
+.operator-workspace .app-topbar h1,
+.admin-operator .admin-topbar h1 {
+  font-family: var(--display, "Be Vietnam Pro", system-ui, sans-serif);
+  font-weight: 400;
+}
+
+.operator-workspace .clean-field input,
+.operator-workspace .clean-field textarea,
+.admin-operator .clean-field input,
+.admin-operator .clean-field textarea,
+.admin-operator .clean-field select,
+.admin-operator .admin-toolbar input,
+.admin-operator .admin-toolbar select {
+  border-radius: 2px;
+  background: rgba(255, 253, 248, 0.78);
+  color: #24231f;
+}
+
+.admin-operator .admin-nav button {
+  border-radius: 2px;
+}
+
+.admin-operator .admin-nav button:hover,
+.admin-operator .admin-nav button.active {
+  background: #e7eadb;
+  color: #24231f;
+}
+
+.admin-operator .admin-session-card {
+  background: #526c66;
+  color: #fffdf8;
+}
+
+.admin-operator .admin-session-card span,
+.admin-operator .soft-badge,
+.admin-operator .admin-badge-stack span {
+  border-radius: 2px;
+  background: #c7d5a3;
+  color: #24231f;
 }
 
 @media (max-width: 700px) {

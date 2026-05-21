@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Footer } from "../components/landing/PricingSection";
 import { authApi, clearStoredAuth, getStoredAuth, medicalDepartmentsApi } from "../services/api";
 import { hasRole, normalizeRoles } from "../utils/roles";
-import "../styles/operator-workspace.css";
 
 const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
 

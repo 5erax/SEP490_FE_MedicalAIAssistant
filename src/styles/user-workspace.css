@@ -1,20 +1,23 @@
 .user-shell {
-  --workspace-bg: #f4f7ef;
-  --workspace-surface: rgba(255, 255, 255, 0.86);
-  --workspace-card: #ffffff;
-  --workspace-ink: #101411;
-  --workspace-muted: rgba(16, 20, 17, 0.62);
-  --workspace-line: rgba(16, 20, 17, 0.13);
-  --workspace-lime: #aaed63;
-  --workspace-mint: #e6f8d9;
+  --workspace-bg: #f3f1ea;
+  --workspace-surface: rgba(255, 253, 248, 0.86);
+  --workspace-card: #fffdf8;
+  --workspace-ink: #24231f;
+  --workspace-muted: rgba(36, 35, 31, 0.62);
+  --workspace-line: rgba(36, 35, 31, 0.14);
+  --workspace-lime: #c7d5a3;
+  --workspace-mint: #e7eadb;
+  --workspace-teal: #526c66;
+  --workspace-shadow: none;
   min-height: 100svh;
   display: grid;
-  grid-template-columns: 278px minmax(0, 1fr);
+  grid-template-columns: 272px minmax(0, 1fr);
   background:
-    linear-gradient(135deg, rgba(170, 237, 99, 0.18), rgba(8, 127, 140, 0.08) 42%, transparent 70%),
+    linear-gradient(135deg, rgba(199, 213, 163, 0.18), rgba(82, 108, 102, 0.08) 42%, transparent 72%),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.8), rgba(243, 241, 234, 0) 360px),
     var(--workspace-bg);
   color: var(--workspace-ink);
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--body, "Be Vietnam Pro", system-ui, sans-serif);
 }
 
 .user-shell button,
@@ -30,11 +33,12 @@
   height: 100svh;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   border-right: 1px solid var(--workspace-line);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.86);
   padding: 20px 16px;
-  backdrop-filter: blur(18px);
+  box-shadow: 10px 0 36px rgba(16, 20, 17, 0.035);
+  backdrop-filter: blur(20px);
 }
 
 .user-shell-brand {
@@ -73,19 +77,23 @@
   width: 100%;
   min-height: 54px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: transparent;
   color: var(--workspace-muted);
   padding: 8px 10px;
   text-align: left;
-  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 }
 
 .user-shell-nav button:hover,
 .user-shell-nav button.active {
-  background: var(--workspace-mint);
+  background: linear-gradient(135deg, var(--workspace-mint), rgba(255, 255, 255, 0.9));
   color: var(--workspace-ink);
   transform: translateX(2px);
+}
+
+.user-shell-nav button.active {
+  box-shadow: inset 3px 0 0 var(--workspace-lime);
 }
 
 .user-shell-nav button > svg:first-child {
@@ -123,7 +131,7 @@
   gap: 9px;
   margin-top: auto;
   border: 1.5px solid var(--workspace-ink);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--workspace-ink);
   color: #fff;
   padding: 16px;
@@ -175,7 +183,7 @@
   gap: 14px;
   align-items: center;
   border-bottom: 1px solid var(--workspace-line);
-  background: rgba(244, 247, 239, 0.84);
+  background: rgba(244, 247, 239, 0.9);
   padding: 16px 22px;
   backdrop-filter: blur(20px);
 }
@@ -234,9 +242,10 @@
   align-items: center;
   gap: 9px;
   border: 1px solid var(--workspace-line);
-  border-radius: 999px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.78);
   padding: 0 14px;
+  box-shadow: 0 10px 28px rgba(16, 20, 17, 0.045);
 }
 
 .user-shell-search input {
@@ -309,10 +318,74 @@
 .user-shell-content {
   min-width: 0;
   padding: 22px;
+  animation: workspaceFadeIn 220ms ease both;
 }
 
 .user-shell-mobile-nav {
   display: none;
+}
+
+.user-shell-sidebar,
+.user-shell-topbar,
+.user-shell-mobile-nav {
+  background: rgba(243, 241, 234, 0.84);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+}
+
+.user-shell-brand {
+  font-family: var(--display, "Be Vietnam Pro", system-ui, sans-serif);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.user-shell-brand span,
+.title-icon,
+.icon-btn,
+.user-chip span {
+  border-radius: 2px;
+  background: var(--workspace-teal);
+  color: #fffdf8;
+  box-shadow: none;
+}
+
+.user-shell-nav button,
+.user-shell-plan,
+.user-shell-search,
+.user-chip,
+.logout-btn {
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.user-shell-nav button:hover,
+.user-shell-nav button.active {
+  background: rgba(231, 234, 219, 0.72);
+}
+
+.user-shell-title h1,
+.user-shell .dash-header h1 {
+  font-family: var(--display, "Be Vietnam Pro", system-ui, sans-serif);
+  font-weight: 400;
+}
+
+.user-shell-title p,
+.user-shell-nav small,
+.user-shell-plan span {
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.user-shell-plan {
+  border: 0;
+  background: var(--workspace-teal);
+  color: #fffdf8;
+}
+
+.user-shell-plan button {
+  border-radius: 2px;
+  background: #fffdf8;
+  color: var(--workspace-ink);
 }
 
 .user-shell .dash-page,
@@ -358,8 +431,15 @@
 .user-shell .faq-item,
 .user-shell .pricing-cta {
   border-color: rgba(16, 20, 17, 0.24);
-  border-radius: 18px;
-  box-shadow: 0 18px 48px rgba(16, 20, 17, 0.08);
+  border-radius: 16px;
+  box-shadow: var(--workspace-shadow);
+}
+
+.user-shell .feature-card:hover,
+.user-shell .stats-row article:hover,
+.user-shell .tool-grid button:hover {
+  border-color: rgba(16, 20, 17, 0.34);
+  box-shadow: 0 24px 68px rgba(16, 20, 17, 0.1);
 }
 
 .user-shell .dash-header h1,
@@ -368,6 +448,83 @@
 .user-shell .symptom-card h1,
 .user-shell .pricing-hero h1 {
   letter-spacing: 0;
+}
+
+.user-shell .dash-header {
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.user-shell .dash-header h1 {
+  max-width: 760px;
+  font-family: var(--display);
+  font-size: clamp(36px, 4.8vw, 58px);
+  line-height: 1.03;
+}
+
+.user-shell .dash-header p:not(.section-label) {
+  max-width: 760px;
+  margin-top: 14px;
+}
+
+.user-shell .dash-header > .outline-btn {
+  display: none;
+}
+
+.user-shell .stats-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.user-shell .stats-row article {
+  min-height: 132px;
+  display: grid;
+  align-content: start;
+}
+
+.user-shell .tool-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.user-shell .tool-grid button {
+  min-height: 142px;
+  border-color: rgba(16, 20, 17, 0.24);
+  border-radius: 16px;
+  box-shadow: var(--workspace-shadow);
+}
+
+.user-shell .main-grid {
+  gap: 18px;
+}
+
+.user-shell .feature-card textarea,
+.user-shell .mini-chat input {
+  border-color: rgba(16, 20, 17, 0.2);
+  background: rgba(255, 255, 255, 0.92);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.user-shell .feature-card textarea:focus,
+.user-shell .mini-chat input:focus {
+  border-color: var(--workspace-teal);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.12);
+  outline: none;
+}
+
+.user-shell .primary-btn,
+.user-shell .mini-chat button,
+.user-shell .stats-row button,
+.user-shell .map-preview-card span {
+  box-shadow: none;
+}
+
+.user-shell .chips button:hover {
+  border-color: rgba(8, 127, 140, 0.3);
+  background: rgba(230, 248, 217, 0.9);
+  color: var(--workspace-teal);
 }
 
 .user-shell .workspace-nav,
@@ -387,7 +544,7 @@
 
 @media (max-width: 1180px) {
   .user-shell {
-    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-columns: 238px minmax(0, 1fr);
   }
 
   .user-shell-topbar {
@@ -396,6 +553,11 @@
 
   .user-shell-search {
     display: none;
+  }
+
+  .user-shell .stats-row,
+  .user-shell .tool-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .logout-btn {
@@ -520,6 +682,34 @@
   }
 
   .user-shell .dash-header h1 {
-    font-size: 36px;
+    font-size: 34px;
+  }
+
+  .user-shell .dash-header {
+    margin-bottom: 14px;
+  }
+
+  .user-shell .stats-row,
+  .user-shell .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .user-shell .stats-row article,
+  .user-shell .tool-grid button {
+    min-width: 0;
+  }
+}
+
+@keyframes workspaceFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

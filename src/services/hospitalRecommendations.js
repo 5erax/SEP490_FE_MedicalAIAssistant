@@ -1,3 +1,5 @@
+import { medicalFacilitiesApi } from "./api";
+
 const DEFAULT_LOCATION = {
   longitude: 105.846,
   latitude: 21.026,
@@ -76,17 +78,70 @@ function sortHospitalsBySymptom(hospitals, symptomText) {
   });
 }
 
+function normalizeFacility(facility) {
+  const departments = Array.isArray(facility.departments)
+    ? facility.departments.map((department) => department.departmentName || department.name).filter(Boolean)
+    : [];
+
+  return {
+    id: facility.id || facility.facilityId || facility.facilityName,
+    facilityId: facility.id || facility.facilityId || facility.facilityName,
+    name: facility.facilityName || facility.name || "Cơ sở y tế",
+    facilityName: facility.facilityName || facility.name || "Cơ sở y tế",
+    department: departments[0] || facility.department || facility.facilityType || "Khám chuyên khoa",
+    departments,
+    specialties: departments,
+    distanceKm: facility.distanceKm ?? 0,
+    address: facility.address || "Chưa cập nhật địa chỉ",
+    phone: facility.phone || "",
+    website: facility.website || "",
+    status: facility.openingHours || (facility.isActive === false ? "Tạm ngưng" : "Đang hoạt động"),
+    openingHours: facility.openingHours || "Chưa cập nhật",
+    facilityType: facility.facilityType || "Hospital",
+    longitude: Number(facility.longitude),
+    latitude: Number(facility.latitude),
+  };
+}
+
+function getPayloadItems(response) {
+  const data = response?.data;
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+export function normalizeFacilities(response) {
+  return getPayloadItems(response)
+    .map(normalizeFacility)
+    .filter((facility) => Number.isFinite(facility.latitude) && Number.isFinite(facility.longitude));
+}
+
 export function getDefaultMapLocation() {
   return DEFAULT_LOCATION;
 }
 
 export async function getHospitalRecommendations({ symptomText }) {
-  // TODO: Replace this mock with the backend facility/map endpoint when it is exposed in Swagger.
-  await new Promise((resolve) => {
-    window.setTimeout(resolve, 420);
-  });
+  try {
+    const response = await medicalFacilitiesApi.list({
+      pageNumber: 1,
+      pageSize: 100,
+      search: symptomText,
+      isActive: true,
+    });
+    const facilities = normalizeFacilities(response);
+
+    if (facilities.length > 0) {
+      return {
+        data: sortHospitalsBySymptom(facilities, symptomText),
+        fromApi: true,
+      };
+    }
+  } catch {
+    // Fall back to curated demo data when the facility API is unavailable.
+  }
 
   return {
     data: sortHospitalsBySymptom(MOCK_HOSPITALS, symptomText),
+    fromApi: false,
   };
 }

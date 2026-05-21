@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { medicalFacilitiesApi } from "../services/api";
+import { normalizeFacilities } from "../services/hospitalRecommendations";
 
 const FILTERS = [
   ["all", "Tất cả"],
@@ -81,12 +83,48 @@ function NearbyClinicPage() {
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [facilities, setFacilities] = useState(MOCK_FACILITIES);
   const [selectedFacility, setSelectedFacility] = useState(MOCK_FACILITIES[0]);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
+  const [facilityLoading, setFacilityLoading] = useState(true);
+  const [facilitySource, setFacilitySource] = useState("demo");
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadFacilities() {
+      setFacilityLoading(true);
+      try {
+        const response = await medicalFacilitiesApi.list({ pageNumber: 1, pageSize: 100, isActive: true });
+        const apiFacilities = normalizeFacilities(response);
+
+        if (!ignore && apiFacilities.length > 0) {
+          setFacilities(apiFacilities);
+          setSelectedFacility(apiFacilities[0]);
+          setFacilitySource("api");
+          setViewState((current) => ({
+            ...current,
+            longitude: apiFacilities[0].longitude,
+            latitude: apiFacilities[0].latitude,
+            zoom: 12,
+          }));
+        }
+      } catch {
+        if (!ignore) setFacilitySource("demo");
+      } finally {
+        if (!ignore) setFacilityLoading(false);
+      }
+    }
+
+    loadFacilities();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -95,12 +133,12 @@ function NearbyClinicPage() {
 
   const filteredFacilities = useMemo(() => {
     const normalized = debouncedSearch.trim().toLowerCase();
-    return MOCK_FACILITIES.filter((facility) => {
+    return facilities.filter((facility) => {
       const matchSearch = !normalized || facility.facilityName.toLowerCase().includes(normalized) || facility.address.toLowerCase().includes(normalized);
       const matchFilter = activeFilter === "all" || facility.facilityType.toLowerCase() === activeFilter.toLowerCase();
       return matchSearch && matchFilter;
     });
-  }, [activeFilter, debouncedSearch]);
+  }, [activeFilter, debouncedSearch, facilities]);
 
   const handleCardClick = (facility) => {
     setSelectedFacility(facility);
@@ -160,7 +198,10 @@ function NearbyClinicPage() {
           ))}
         </div>
 
-        <p className="result-count">Tìm thấy {filteredFacilities.length} cơ sở</p>
+        <p className="result-count">
+          {facilityLoading ? "Đang tải cơ sở y tế..." : `Tìm thấy ${filteredFacilities.length} cơ sở`}
+          {facilitySource === "demo" && !facilityLoading ? " · dữ liệu demo" : ""}
+        </p>
 
         <div className="facility-list-panel">
           {filteredFacilities.map((facility) => (

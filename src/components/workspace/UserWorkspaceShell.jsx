@@ -14,7 +14,6 @@ import {
   UserRound,
 } from "lucide-react";
 import { clearStoredAuth, getStoredAuth } from "../../services/api";
-import "../../styles/user-workspace.css";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Tổng quan", icon: LayoutDashboard, hint: "Theo dõi hôm nay" },

@@ -9,7 +9,6 @@ import {
   usersApi,
 } from "../services/api";
 import { hasRole, normalizeRoles } from "../utils/roles";
-import "../styles/operator-workspace.css";
 
 const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
 const EMPTY_STAFF = {

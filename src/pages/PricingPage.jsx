@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { subscriptionPlansApi } from "../services/api";
 
 const FEATURES = [
   "Phân tích triệu chứng cơ bản",
@@ -19,13 +20,59 @@ function formatPrice(value) {
   return `${value.toLocaleString("vi-VN")} ₫`;
 }
 
+function getPlanFeatures(plan) {
+  if (!plan?.featureLimitJson) return [];
+
+  try {
+    const parsed = JSON.parse(plan.featureLimitJson);
+    if (Array.isArray(parsed)) return parsed.map(String);
+    if (Array.isArray(parsed?.features)) return parsed.features.map(String);
+    return Object.entries(parsed).map(([key, value]) => `${key}: ${value}`);
+  } catch {
+    return [];
+  }
+}
+
 function PricingPage() {
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [openFaq, setOpenFaq] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [apiPlans, setApiPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(true);
   const monthlyPrice = 149000;
-  const yearlyPrice = Math.round(monthlyPrice * 0.8);
-  const currentPrice = billingCycle === "yearly" ? yearlyPrice : monthlyPrice;
+  const premiumPlan = useMemo(() => {
+    return apiPlans.find((plan) => plan.isActive && Number(plan.price) > 0) || apiPlans.find((plan) => Number(plan.price) > 0);
+  }, [apiPlans]);
+  const freePlan = useMemo(() => {
+    return apiPlans.find((plan) => Number(plan.price) === 0);
+  }, [apiPlans]);
+  const premiumMonthlyPrice = Number(premiumPlan?.price) || monthlyPrice;
+  const premiumYearlyPrice = Math.round(premiumMonthlyPrice * 0.8);
+  const currentPrice = billingCycle === "yearly" ? premiumYearlyPrice : premiumMonthlyPrice;
+  const freeFeatures = getPlanFeatures(freePlan);
+  const premiumFeatures = getPlanFeatures(premiumPlan);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadPlans() {
+      setPlansLoading(true);
+      try {
+        const response = await subscriptionPlansApi.list();
+        const plans = Array.isArray(response.data) ? response.data : [];
+        if (!ignore) setApiPlans(plans);
+      } catch {
+        if (!ignore) setApiPlans([]);
+      } finally {
+        if (!ignore) setPlansLoading(false);
+      }
+    }
+
+    loadPlans();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   return (
     <main className="pricing-page">
@@ -47,11 +94,11 @@ function PricingPage() {
       <section className="plans-grid">
         <article className="plan-card-basic">
           <code>MIỄN PHÍ</code>
-          <h2>Cơ bản</h2>
+          <h2>{freePlan?.planName || "Cơ bản"}</h2>
           <div className="price-line"><strong>0 ₫</strong><span>/ mãi mãi</span></div>
           <p>Phù hợp để bắt đầu kiểm tra triệu chứng và tìm chuyên khoa phù hợp.</p>
           <ul>
-            {FEATURES.map((feature, index) => (
+            {(freeFeatures.length > 0 ? freeFeatures : FEATURES).map((feature, index) => (
               <li className={index > 2 ? "disabled" : ""} key={feature}>{index > 2 ? "×" : "✓"} {feature}</li>
             ))}
           </ul>
@@ -62,15 +109,21 @@ function PricingPage() {
           <div className="premium-stripe" />
           <span className="popular">✦ PHỔ BIẾN</span>
           <code>PREMIUM</code>
-          <h2>MediMate+</h2>
+          <h2>{premiumPlan?.planName || "MediMate+"}</h2>
           <div className="price-line"><strong>{formatPrice(currentPrice)}</strong><span>/ tháng</span></div>
           <p>Mở khoá tư vấn sau khám, kiểm tra thuốc và theo dõi hành trình chăm sóc sức khoẻ.</p>
           <ul>
-            {FEATURES.map((feature) => <li key={feature}>✓ {feature}</li>)}
+            {(premiumFeatures.length > 0 ? premiumFeatures : FEATURES).map((feature) => <li key={feature}>✓ {feature}</li>)}
           </ul>
           <button type="button" onClick={() => setShowModal(true)}>Dùng thử 14 ngày</button>
         </article>
       </section>
+
+      {!plansLoading && apiPlans.length === 0 && (
+        <section className="payment-methods">
+          Gói giá đang dùng dữ liệu mặc định vì backend chưa có subscription plan.
+        </section>
+      )}
 
       <section className="payment-methods">
         Thanh toán qua: <strong>VNPay</strong> · <strong>MoMo</strong> · <strong>Thẻ quốc tế</strong>

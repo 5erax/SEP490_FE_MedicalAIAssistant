@@ -1,0 +1,474 @@
+﻿/* Stillpoint-inspired visual system: calm Japandi editorial UI */
+body,
+.landing-page,
+.workspace-root,
+.admin-page,
+.app-page,
+.clinic-page,
+.pricing-page,
+.records-page,
+.medication-page,
+.symptom-page,
+.chatbot-page,
+.profile-page {
+  font-family: var(--body);
+}
+
+.landing-page {
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.82), rgba(243, 241, 234, 0) 520px),
+    var(--bg);
+}
+
+.section {
+  padding: clamp(92px, 13vw, 150px) 0;
+}
+
+.section-alt,
+.demo-section {
+  background: rgba(248, 245, 236, 0.68);
+  border-block: 1px solid var(--line);
+}
+
+.eyebrow,
+.mini-label,
+.section-label,
+.window-title,
+.status-dot,
+.price-badge,
+.admin-stats span,
+.app-stats span {
+  color: var(--amber);
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before,
+.mini-label::before,
+.section-label::before {
+  background: currentColor;
+  width: 36px;
+  height: 1px;
+}
+
+.section-title,
+.hero h1,
+.static-hero h1,
+.cta-band h2,
+.pricing-hero h1,
+.records-empty h1,
+.record-header h1,
+.symptom-card h1,
+.app-empty h1,
+.admin-topbar h1,
+.auth-shell-page .auth-side-panel h1,
+.auth-shell-page .auth-card-header-clean h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.hero h1 {
+  max-width: 760px;
+  font-size: clamp(58px, 10vw, 118px);
+  font-weight: 300;
+  line-height: 0.98;
+}
+
+.hero h1 em,
+.section-title em {
+  color: var(--teal);
+  font-style: italic;
+}
+
+.hero {
+  min-height: 100svh;
+  display: grid;
+  align-items: center;
+  padding: 112px 0 72px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.62), rgba(243, 241, 234, 0.22)),
+    radial-gradient(circle at 52% 42%, rgba(199, 213, 163, 0.22), transparent 34%);
+}
+
+.hero-grid {
+  grid-template-columns: minmax(0, 0.98fr) minmax(420px, 0.82fr);
+  gap: clamp(44px, 8vw, 96px);
+}
+
+.hero-copy,
+.section-copy,
+.feature-card p,
+.step-card p,
+.review-card p,
+.faq-card p,
+.map-location-panel p,
+.solution-card p,
+.auth-shell-page .auth-card-header-clean p:not(.eyebrow),
+.auth-shell-page .auth-side-panel p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+.btn,
+.nav-actions .btn,
+.demo-samples button,
+.demo-actions button,
+.map-location-card,
+.landing-chat-suggestions button,
+.assistant-suggestions button,
+.pricing-quick-nav button,
+.records-quick-nav button,
+.workspace-nav button,
+.filter-row button,
+.facility-actions button,
+.popup-card button,
+.primary-action,
+.dark-action,
+.outline-action {
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: background 360ms ease, color 360ms ease, border-color 360ms ease, transform 360ms ease;
+}
+
+.btn:hover,
+.demo-samples button:hover,
+.map-location-card:hover,
+.assistant-suggestions button:hover:not(:disabled),
+.landing-chat-suggestions button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--teal);
+}
+
+.btn-primary,
+.btn-dark,
+.filter-row button.active,
+.record-tabs button.active,
+.dark-action {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: var(--paper);
+}
+
+.btn-ghost,
+.nav-actions .btn-ghost {
+  background: transparent;
+}
+
+.nav {
+  border-bottom: 1px solid rgba(222, 216, 202, 0.72);
+  background: rgba(243, 241, 234, 0.82);
+  backdrop-filter: blur(14px);
+}
+
+.brand {
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: 500;
+}
+
+.brand-mark,
+.feature-icon,
+.avatar,
+.assistant-avatar,
+.landing-chat-avatar,
+.title-icon {
+  border-radius: 2px;
+  background: var(--teal);
+  color: var(--paper);
+  box-shadow: none;
+}
+
+.hero-panel,
+.demo-console,
+.map-shell,
+.map-location-panel,
+.feature-card,
+.step-card,
+.review-card,
+.price-card,
+.faq-card,
+.cta-band,
+.static-summary article,
+.static-section-card,
+.api-panel,
+.auth-card,
+.app-card,
+.admin-panel,
+.admin-sidebar,
+.medical-assistant-shell,
+.profile-setup-form,
+.profile-setup-intro,
+.staff-register-card,
+.staff-register-intro,
+.landing-ai-chatbox,
+.records-empty,
+.record-detail,
+.scan-panel,
+.scan-result-panel > article,
+.empty-result,
+.plan-card-basic,
+.plan-card-premium,
+.faq-item,
+.pricing-cta,
+.facility-result-card,
+.clinic-sidebar {
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: rgba(255, 253, 248, 0.84);
+  box-shadow: none;
+}
+
+.feature-card:hover,
+.step-card:hover,
+.review-card:hover,
+.price-card:hover,
+.faq-card:hover,
+.solution-card:hover {
+  transform: translateY(-4px);
+  box-shadow: none;
+  border-color: var(--line-strong);
+}
+
+.app-window,
+.analysis-card,
+.symptom-box,
+.demo-result-main,
+.demo-upgrade-grid article,
+.admin-task-list article,
+.admin-user-row,
+.record-list button,
+.mobile-record-list button,
+.detail-grid div,
+.detail-grid label,
+.interaction-list article,
+.facility-result-card,
+.profile-card,
+.plan-box {
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: rgba(248, 245, 236, 0.62);
+  box-shadow: none;
+}
+
+.feature-card,
+.step-card,
+.price-card,
+.faq-card {
+  padding: clamp(28px, 4vw, 46px);
+}
+
+.features-grid,
+.steps-grid,
+.solutions-grid,
+.reviews-grid,
+.faq-grid {
+  gap: 1px;
+  background: var(--line);
+}
+
+.features-grid > *,
+.steps-grid > *,
+.solutions-grid > *,
+.reviews-grid > *,
+.faq-grid > * {
+  margin: 0;
+}
+
+.feature-card h3,
+.step-card h3,
+.price-card h3,
+.solution-card h3,
+.map-location-panel h3,
+.plans-grid h2,
+.medicine-head h2,
+.interaction-card h2 {
+  font-family: var(--display);
+  font-size: clamp(27px, 3vw, 38px);
+  font-weight: 400;
+}
+
+.feature-dark,
+.step-card:nth-child(even),
+.price-card.highlight,
+.plan-card-premium,
+.ai-result,
+.footer,
+.ticker {
+  background: var(--teal);
+  color: var(--paper);
+}
+
+.feature-dark p,
+.step-card:nth-child(even) p,
+.price-card.highlight p,
+.plan-card-premium p,
+.footer p,
+.footer a {
+  color: rgba(255, 253, 248, 0.68);
+}
+
+.ticker {
+  border-block: 1px solid var(--teal);
+}
+
+.ticker span {
+  color: rgba(255, 253, 248, 0.78);
+  letter-spacing: 0.26em;
+}
+
+.metric-strip {
+  gap: 1px;
+  background: var(--line);
+}
+
+.metric {
+  border: 0;
+  border-radius: 0;
+  background: rgba(255, 253, 248, 0.74);
+  box-shadow: none;
+}
+
+.metric strong,
+.price strong,
+.plan-box strong {
+  font-family: var(--display);
+  font-weight: 400;
+}
+
+.trust-pill,
+.price-badge,
+.badge,
+.ready-badge,
+.type-badge,
+.department-row span,
+.drug-tags span,
+.severity,
+.lab-status,
+.status {
+  border-radius: 2px;
+  background: var(--mint);
+  color: var(--teal);
+  font-weight: 600;
+}
+
+input,
+select,
+textarea,
+.clean-field input,
+.clean-field select,
+.api-form input,
+.api-form select,
+.api-form textarea,
+.assistant-input-shell,
+.landing-chat-input,
+.clinic-search,
+.drug-input-row input {
+  border-color: var(--line);
+  border-radius: 2px;
+  background: rgba(255, 253, 248, 0.78);
+  box-shadow: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.clean-field input:focus,
+.clean-field select:focus,
+.api-form input:focus,
+.api-form select:focus,
+.api-form textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 4px rgba(82, 108, 102, 0.12);
+}
+
+.bar span,
+.progress-track span,
+.confidence-box i,
+.scan-progress span {
+  background: linear-gradient(90deg, var(--teal), var(--amber));
+}
+
+.solution-card {
+  min-height: 390px;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(36, 35, 31, 0.08), rgba(36, 35, 31, 0.62)),
+    var(--tone);
+}
+
+.cta-band,
+.pricing-cta {
+  background: var(--mint);
+  color: var(--ink);
+}
+
+.landing-chat-launcher button,
+.landing-chat-input button,
+.assistant-send-button,
+.locate-button,
+.drug-input-row button,
+.empty-result div,
+.saved-mark {
+  border-radius: 2px;
+  background: var(--teal);
+  color: var(--paper);
+  box-shadow: none;
+}
+
+.map-marker,
+.clinic-marker {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: var(--paper);
+  box-shadow: none;
+}
+
+@keyframes stillpointFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero .eyebrow,
+.hero h1,
+.hero-copy,
+.hero-actions,
+.trust-row,
+.hero-panel,
+.metric {
+  animation: stillpointFadeUp 900ms ease both;
+}
+
+.hero h1 { animation-delay: 120ms; }
+.hero-copy { animation-delay: 220ms; }
+.hero-actions { animation-delay: 320ms; }
+.trust-row { animation-delay: 420ms; }
+.hero-panel { animation-delay: 260ms; }
+
+@media (max-width: 760px) {
+  .hero {
+    min-height: auto;
+    padding-top: 112px;
+  }
+
+  .hero h1 {
+    font-size: clamp(50px, 16vw, 72px);
+  }
+}
+

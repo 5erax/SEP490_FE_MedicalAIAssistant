@@ -241,6 +241,73 @@ export const patientProfilesApi = {
   },
 };
 
+export const medicalFacilitiesApi = {
+  list({ pageNumber = 1, pageSize = 100, search = "", isActive = true } = {}) {
+    const params = new URLSearchParams({
+      PageNumber: String(pageNumber),
+      PageSize: String(pageSize),
+    });
+
+    if (search) params.set("search", search);
+    if (typeof isActive === "boolean") params.set("isActive", String(isActive));
+
+    return apiRequest(`/api/medical-facilities?${params.toString()}`);
+  },
+
+  active() {
+    return apiRequest("/api/medical-facilities/active");
+  },
+
+  get(id) {
+    return apiRequest(`/api/medical-facilities/${id}`);
+  },
+
+  create(payload) {
+    return apiRequest("/api/medical-facilities", {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  update(id, payload) {
+    return apiRequest(`/api/medical-facilities/${id}`, {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  updateStatus(id, payload) {
+    return apiRequest(`/api/medical-facilities/${id}/status`, {
+      method: "PATCH",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  remove(id) {
+    return apiRequest(`/api/medical-facilities/${id}`, {
+      method: "DELETE",
+      auth: true,
+    });
+  },
+};
+
+export const subscriptionPlansApi = {
+  list() {
+    return apiRequest("/api/subscription-plans");
+  },
+
+  active() {
+    return apiRequest("/api/subscription-plans/active");
+  },
+
+  get(id) {
+    return apiRequest(`/api/subscription-plans/${id}`);
+  },
+};
+
 export const usersApi = {
   list(pageNumber = 1, pageSize = 10) {
     const params = new URLSearchParams({
@@ -266,7 +333,7 @@ export const usersApi = {
   },
 
   approve(userId) {
-    return apiRequest(`/api/users/${userId}/approve`, {
+    return apiRequest(`/api/authentication/${userId}/approve-staff`, {
       method: "POST",
       auth: true,
     });

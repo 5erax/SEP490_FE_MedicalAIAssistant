@@ -1,22 +1,23 @@
-:root {
-  --bg: #f7f8f3;
-  --paper: #ffffff;
-  --paper-soft: #fbfcf7;
-  --ink: #111412;
-  --muted: rgba(17, 20, 18, 0.68);
-  --subtle: rgba(17, 20, 18, 0.42);
-  --line: #dde4d5;
-  --line-strong: #b9c5ad;
-  --lime: #aaed63;
-  --lime-dark: #6fab29;
-  --mint: #dff8ed;
-  --teal: #087f8c;
-  --blue: #1d4ed8;
-  --amber: #d97706;
-  --coral: #ef6f61;
-  --shadow: 0 24px 70px rgba(17, 24, 39, 0.12);
+﻿:root {
+  --bg: #f3f1ea;
+  --paper: #fffdf8;
+  --paper-soft: #f8f5ec;
+  --ink: #24231f;
+  --muted: rgba(36, 35, 31, 0.66);
+  --subtle: rgba(36, 35, 31, 0.42);
+  --line: #ded8ca;
+  --line-strong: #bcb2a0;
+  --lime: #c7d5a3;
+  --lime-dark: #6f7857;
+  --mint: #e7eadb;
+  --teal: #526c66;
+  --blue: #536c92;
+  --amber: #b67a45;
+  --coral: #b86f5c;
+  --shadow: 0 22px 70px rgba(44, 39, 31, 0.11);
   --radius: 8px;
   --display: "Be Vietnam Pro", system-ui, sans-serif;
+  --body: "Be Vietnam Pro", system-ui, sans-serif;
 }
 
 .landing-page {
@@ -4819,3 +4820,145 @@
     flex-direction: column;
   }
 }
+
+/* Override legacy inline page styles that used the old bright/neobrutalist system. */
+.dash-page,
+.clinic-page,
+.pricing-page,
+.records-page,
+.medication-page,
+.symptom-page,
+.profile-page,
+.chatbot-page {
+  background: transparent !important;
+  color: var(--ink) !important;
+  font-family: var(--body) !important;
+}
+
+.dash-page .feature-card,
+.dash-page .stats-row article,
+.dash-page .tool-grid button,
+.clinic-page .facility-result-card,
+.clinic-page .clinic-sidebar,
+.pricing-page .plan-card-basic,
+.pricing-page .plan-card-premium,
+.pricing-page .faq-item,
+.pricing-page .pricing-cta,
+.records-page .records-empty,
+.records-page .record-detail,
+.records-page .record-list button,
+.records-page .mobile-record-list button,
+.medication-page .scan-panel,
+.medication-page .scan-result-panel > article,
+.medication-page .empty-result,
+.symptom-page .symptom-card,
+.symptom-page .symptom-stepper,
+.profile-page .profile-card,
+.chatbot-page .message-bubble,
+.chatbot-page .welcome-prompts button {
+  border: 1px solid var(--line) !important;
+  border-radius: 2px !important;
+  background: rgba(255, 253, 248, 0.88) !important;
+  box-shadow: none !important;
+}
+
+.dash-page .primary-btn,
+.dash-page .mini-chat button,
+.dash-page .stats-row button,
+.dash-page .tool-grid span,
+.dash-page .map-preview-card span,
+.clinic-page .facility-actions button:last-child,
+.clinic-page .popup-card button,
+.clinic-page .locate-button,
+.clinic-page .type-badge,
+.pricing-page .billing-toggle button.active,
+.pricing-page .popular,
+.pricing-page .plan-card-premium > button,
+.pricing-page .pricing-modal button,
+.records-page .add-record,
+.records-page .record-actions button,
+.records-page .soft-empty button,
+.records-page .status.analyzed,
+.records-page .lab-status.normal,
+.medication-page .primary-action,
+.medication-page .drug-input-row button,
+.medication-page .medicine-head span,
+.symptom-page .primary-action,
+.symptom-page .symptom-step.active span,
+.symptom-page .saved-mark,
+.profile-page .lime,
+.profile-page .toast,
+.chatbot-page .send-button,
+.chatbot-page .message-row.user .message-bubble {
+  background: var(--lime) !important;
+  border-color: var(--line-strong) !important;
+  color: var(--ink) !important;
+  box-shadow: none !important;
+}
+
+.pricing-page .plan-card-premium,
+.pricing-page .pricing-cta button:first-child,
+.records-page .record-tabs button.active,
+.records-page .ai-result,
+.medication-page .dark-action,
+.symptom-page .dark-action,
+.clinic-page .filter-row button.active,
+.chatbot-page .bot-avatar,
+.chatbot-page .welcome-logo {
+  background: var(--teal) !important;
+  border-color: var(--teal) !important;
+  color: var(--paper) !important;
+}
+
+.dash-page h1,
+.dash-page h2,
+.pricing-page h1,
+.pricing-page h2,
+.records-page h1,
+.medication-page h1,
+.symptom-page h1,
+.profile-page h1,
+.chatbot-page h1 {
+  font-family: var(--display) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+}
+
+.dash-page .section-label,
+.clinic-page .result-count,
+.pricing-page .mini-label,
+.records-page .mini-label,
+.medication-page .mini-label,
+.symptom-page .mini-label {
+  color: var(--amber) !important;
+  letter-spacing: 0.24em !important;
+}
+
+.clinic-page .facility-result-card:hover,
+.clinic-page .facility-result-card.selected,
+.records-page .record-list button.active,
+.records-page .record-list button:hover,
+.chatbot-page .welcome-prompts button:hover {
+  border-color: var(--teal) !important;
+  box-shadow: none !important;
+}
+
+.dash-page textarea,
+.dash-page input,
+.clinic-page .clinic-search,
+.clinic-page input,
+.pricing-page .billing-toggle,
+.records-page textarea,
+.medication-page input,
+.symptom-page textarea,
+.symptom-page select,
+.profile-page input,
+.profile-page select,
+.profile-page textarea,
+.chatbot-page textarea {
+  border: 1px solid var(--line) !important;
+  border-radius: 2px !important;
+  background: rgba(255, 253, 248, 0.78) !important;
+  box-shadow: none !important;
+}
+

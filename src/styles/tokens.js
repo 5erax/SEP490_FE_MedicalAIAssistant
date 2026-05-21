@@ -33,7 +33,7 @@ export const C = {
 
 export const FONT = {
   body:    "'Be Vietnam Pro', sans-serif",
-  display: "'Lora', serif",
+  display: "'Be Vietnam Pro', sans-serif",
 };
 
 // px — dùng trong media query string nếu cần
