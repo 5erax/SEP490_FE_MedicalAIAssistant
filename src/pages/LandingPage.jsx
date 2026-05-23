@@ -2,8 +2,7 @@ import { HeroSection } from "../components/landing/HeroSection";
 import { TickerBar, FeaturesSection } from "../components/landing/FeaturesSection";
 import { HowItWorksSection, SocialProofSection } from "../components/landing/HowItWorksSection";
 import { MapSection } from "../components/landing/MapSection";
-import { PricingSection, CtaSection, FaqSection, Footer } from "../components/landing/PricingSection";
-import { SymptomDemoSection } from "../components/landing/SymptomDemoSection";
+import { CtaSection, FaqSection, Footer } from "../components/landing/PricingSection";
 import { Navbar } from "../components/landing/Navbar";
 import LandingAIChatbox from "../components/landingChat/LandingAIChatbox";
 
@@ -12,13 +11,11 @@ export default function LandingPage() {
     <main className="landing-page">
       <Navbar />
       <HeroSection />
+      <MapSection />
       <TickerBar />
-      <SymptomDemoSection />
       <FeaturesSection />
       <HowItWorksSection />
       <SocialProofSection />
-      <MapSection />
-      <PricingSection />
       <FaqSection />
       <CtaSection />
       <Footer />
