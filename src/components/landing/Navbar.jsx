@@ -3,9 +3,7 @@ import { getStoredAuth } from "../../services/api";
 
 const NAV_LINKS = [
   { name: "Tính năng", href: "/features" },
-  { name: "Demo", href: "/#demo" },
   { name: "Quy trình", href: "/#process" },
-  { name: "Chuyên khoa", href: "/departments" },
   { name: "Bảng giá", href: "/pricing" },
 ];
 
@@ -41,14 +39,9 @@ export function Navbar() {
               Vào app
             </a>
           ) : (
-            <>
-              <a href="/login" className="btn btn-ghost">
-                Đăng nhập
-              </a>
-              <a href="/signup" className="btn btn-dark">
-                Dùng thử miễn phí
-              </a>
-            </>
+            <a href="/login" className="btn btn-dark">
+              Đăng nhập
+            </a>
           )}
         </div>
 
@@ -71,10 +64,10 @@ export function Navbar() {
           ))}
           <a
             className="btn btn-primary"
-            href={auth ? "/app" : "/signup"}
+            href={auth ? "/app" : "/login"}
             onClick={() => setOpen(false)}
           >
-            {auth ? "Vào app" : "Bắt đầu miễn phí"}
+            {auth ? "Vào app" : "Đăng nhập"}
           </a>
         </nav>
       )}
