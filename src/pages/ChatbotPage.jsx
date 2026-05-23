@@ -243,7 +243,7 @@ const styles = `
 .typing span:nth-child(3) { animation-delay: .3s; }
 .chat-input-area { flex: 0 0 auto; min-height: 72px; display: flex; align-items: flex-end; gap: 10px; border-top: 1.5px solid var(--ink); background: var(--paper); padding: 12px 16px; }
 .chat-input-area textarea { flex: 1; max-height: 96px; resize: none; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; padding: 10px 12px; line-height: 1.45; outline: none; }
-.chat-input-area textarea:focus { box-shadow: 0 0 0 4px rgba(170, 237, 99, .28); }
+.chat-input-area textarea:focus { box-shadow: 0 0 0 4px rgba(196, 233, 149, .28); }
 .icon-button, .send-button { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; }
 .send-button { background: var(--lime); }
 .send-button:disabled { cursor: not-allowed; opacity: .45; }

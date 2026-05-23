@@ -263,7 +263,7 @@ const styles = `
 .mini-label::before { content: ""; width: 12px; height: 2px; background: currentColor; }
 .symptom-card h1 { margin: 0 0 18px; font-family: var(--display); font-size: clamp(30px, 5vw, 48px); line-height: 1.06; }
 .symptom-card textarea { width: 100%; min-height: 150px; resize: vertical; border: 1.5px solid var(--ink); border-radius: 10px; padding: 14px; line-height: 1.65; outline: none; background: var(--paper-soft); }
-.symptom-card textarea:focus, .field select:focus { box-shadow: 0 0 0 4px rgba(170, 237, 99, .28); }
+.symptom-card textarea:focus, .field select:focus { box-shadow: 0 0 0 4px rgba(196, 233, 149, .28); }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
 .chip-row button, .outline-action { border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 9px 12px; font-weight: 800; }
 .chip-row button:hover, .outline-action:hover { background: var(--mint); transform: translateY(-1px); }

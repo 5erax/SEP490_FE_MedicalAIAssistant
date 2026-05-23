@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Home, MapPin } from "lucide-react";
-import { getStoredAuth, subscriptionPlansApi } from "../services/api";
+import { getStoredAuth, hasPremiumAccess, subscriptionPlansApi } from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
 
 const FEATURES = [
@@ -24,10 +24,15 @@ function formatPrice(value) {
 
 function PricingPage() {
   const auth = getStoredAuth();
+  const shouldOpenPlanModal = Boolean(auth && (() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("upgrade") === "premium" || params.get("locked");
+  })());
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [openFaq, setOpenFaq] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(shouldOpenPlanModal);
   const [apiPlans, setApiPlans] = useState([]);
+  const isPremium = hasPremiumAccess(auth);
   const paidPlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) > 0), [apiPlans]);
   const freePlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) === 0), [apiPlans]);
   const monthlyPrice = Number(paidPlan?.price) || 149000;
@@ -51,6 +56,21 @@ function PricingPage() {
       active = false;
     };
   }, []);
+
+  function startFreePlan() {
+    window.location.href = auth ? "/dashboard" : "/signup";
+  }
+
+  function startPremiumUpgrade() {
+    trackUxEvent("pricing_trial_clicked", { billingCycle, authenticated: Boolean(auth) });
+
+    if (!auth) {
+      window.location.href = `/signup?redirect=${encodeURIComponent("/pricing?upgrade=premium")}`;
+      return;
+    }
+
+    setShowModal(true);
+  }
 
   return (
     <main className="pricing-page">
@@ -91,7 +111,7 @@ function PricingPage() {
               <li className={index > 2 ? "disabled" : ""} key={feature}>{index > 2 ? "×" : "✓"} {feature}</li>
             ))}
           </ul>
-          <button type="button" onClick={() => { window.location.href = "/signup"; }}>Bắt đầu ngay</button>
+          <button type="button" onClick={startFreePlan}>Bắt đầu ngay</button>
         </article>
 
         <article className="plan-card-premium">
@@ -104,10 +124,9 @@ function PricingPage() {
           <ul>
             {FEATURES.map((feature) => <li key={feature}>✓ {feature}</li>)}
           </ul>
-          <button type="button" onClick={() => {
-            trackUxEvent("pricing_trial_clicked", { billingCycle });
-            setShowModal(true);
-          }}>Dùng thử 14 ngày</button>
+          <button type="button" onClick={startPremiumUpgrade}>
+            {auth ? (isPremium ? "Quản lý gói hiện tại" : "Nâng cấp MediMate+") : "Đăng ký để nâng cấp"}
+          </button>
         </article>
       </section>
 
@@ -138,8 +157,8 @@ function PricingPage() {
       {showModal && (
         <div className="pricing-modal" role="dialog" aria-modal="true">
           <div>
-            <strong>MediMate+ sắp ra mắt</strong>
-            <p>Tính năng nâng cấp sẽ được mở khi cổng thanh toán hoàn tất.</p>
+            <strong>{isPremium ? "Bạn đang ở gói MediMate+" : "MediMate+ sắp ra mắt"}</strong>
+            <p>{isPremium ? "Tài khoản của bạn đã có quyền truy cập premium." : "Bạn đã đăng nhập. Tính năng nâng cấp sẽ được mở khi cổng thanh toán hoàn tất."}</p>
             <button type="button" onClick={() => setShowModal(false)}>Đã hiểu</button>
           </div>
         </div>

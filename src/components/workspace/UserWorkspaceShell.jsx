@@ -26,10 +26,9 @@ const NAV_ITEMS = [
   { path: "/profile", label: "Hồ sơ", icon: UserRound, hint: "Thông tin cá nhân" },
   { path: "/records", label: "Y bạ", icon: FileText, hint: "Kết quả & tài liệu" },
   { path: "/medication", label: "Thuốc", icon: Pill, hint: "Quét & kiểm tra" },
-  { path: "/pricing", label: "MediMate+", icon: Crown, hint: "Nâng cấp" },
 ];
 
-const FREE_PATHS = new Set(["/dashboard", "/map", "/pricing"]);
+const FREE_PATHS = new Set(["/dashboard", "/map"]);
 
 const MOBILE_ITEMS = NAV_ITEMS.slice(0, 5);
 
@@ -79,7 +78,7 @@ export default function UserWorkspaceShell({ children }) {
 
   function openPricingFromNotice() {
     setNotice(null);
-    goTo("/pricing");
+    goTo("/pricing?from=locked");
   }
 
   return (
@@ -143,7 +142,7 @@ export default function UserWorkspaceShell({ children }) {
             <button className="icon-btn" type="button" aria-label="Thông báo">
               <Bell size={18} />
             </button>
-            <button className="user-chip" type="button" onClick={() => goTo("/profile")}>
+            <button className="user-chip" type="button" onClick={() => handleNav("/profile")}>
               <span>{getInitials(displayName)}</span>
               <strong>{displayName}</strong>
             </button>

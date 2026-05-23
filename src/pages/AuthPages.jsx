@@ -14,6 +14,13 @@ function ApiMessage({ message }) {
   return <div className={`api-message ${message.type}`}>{message.text}</div>;
 }
 
+function getSafeRedirectPath() {
+  const redirect = new URLSearchParams(window.location.search).get("redirect");
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) return "";
+  if (["/login", "/signup", "/forgot-password", "/change-password"].includes(redirect)) return "";
+  return redirect;
+}
+
 const authCopy = {
   login: {
     eyebrow: "MediMate AI",
@@ -117,7 +124,7 @@ export function LoginPage() {
     try {
       const response = await authApi.login(form);
       showToast({ type: "success", title: "Đăng nhập thành công", message: "Đang mở không gian phù hợp với tài khoản của bạn." });
-      window.location.href = getPostLoginPath(response.data ?? response);
+      window.location.href = getSafeRedirectPath() || getPostLoginPath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -136,7 +143,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.googleLogin(credential);
-      window.location.href = getPostLoginPath(response.data ?? response);
+      window.location.href = getSafeRedirectPath() || getPostLoginPath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -249,7 +256,7 @@ export function SignupPage() {
         dateOfBirth: form.dateOfBirth || null,
       });
       showToast({ type: "success", title: "Tạo tài khoản thành công", message: "Đang mở workspace của bạn." });
-      window.location.href = getWorkspacePath(response.data ?? response);
+      window.location.href = getSafeRedirectPath() || getWorkspacePath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
