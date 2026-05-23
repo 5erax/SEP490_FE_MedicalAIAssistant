@@ -6,7 +6,6 @@ import StaffWorkspacePage from "./pages/StaffWorkspacePage";
 import AdminWorkspacePage from "./pages/AdminWorkspacePage";
 import ChatbotPage from "./pages/ChatbotPage";
 import DashboardPage from "./pages/DashboardPage";
-import DepartmentsPage from "./pages/DepartmentsPage";
 import MedicalRecordPage from "./pages/MedicalRecordPage";
 import MedicationScanPage from "./pages/MedicationScanPage";
 import NearbyClinicPage from "./pages/NearbyClinicPage";
@@ -43,10 +42,10 @@ function App() {
   if (path === "/profile") return userWorkspace(<UserProfilePage />);
   if (path === "/symptom") return userWorkspace(<SymptomAnalysisPage />);
   if (path === "/chat") return userWorkspace(<ChatbotPage />);
-  if (path === "/map") return userWorkspace(<NearbyClinicPage />);
+  if (path === "/map") return <NearbyClinicPage />;
   if (path === "/records") return userWorkspace(<MedicalRecordPage />);
   if (path === "/medication") return userWorkspace(<MedicationScanPage />);
-  if (path === "/pricing") return userWorkspace(<PricingPage />);
+  if (path === "/pricing") return <PricingPage />;
   if (path === "/app") return <WorkspaceRedirect />;
   if (path === "/account" || path === "/app/patient") {
     window.history.replaceState(null, "", "/dashboard");
@@ -56,7 +55,10 @@ function App() {
   if (path === "/app/admin") return <AdminWorkspacePage />;
   if (path === "/medical-assistant" || path === "/symptom-chat") return <MedicalAssistantPage />;
   if (path === "/patient/profile/setup") return <PersonalPatientProfilePage />;
-  if (path === "/departments") return <DepartmentsPage />;
+  if (path === "/departments") {
+    window.history.replaceState(null, "", "/");
+    return <LandingPage />;
+  }
   if (path === "/admin" || path === "/admin/users") return <AdminWorkspacePage />;
 
   return <StaticPage path={path} />;
