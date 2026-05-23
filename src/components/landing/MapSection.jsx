@@ -4,51 +4,51 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 const MEDICAL_LOCATIONS = [
   {
-    id: "bach-mai",
-    name: "Bệnh viện Bạch Mai",
-    type: "Bệnh viện đa khoa",
-    address: "78 Giải Phóng, Hà Nội",
-    longitude: 105.8412,
-    latitude: 21.0017,
+    id: "cho-ray",
+    name: "Bệnh viện Chợ Rẫy",
+    type: "Bệnh viện đa khoa tuyến cuối",
+    address: "201B Nguyễn Chí Thanh, Quận 5, TP.HCM",
+    longitude: 106.6602,
+    latitude: 10.7553,
     wait: "35 phút",
     distance: "2.4 km",
   },
   {
-    id: "vinmec-times-city",
-    name: "Vinmec Times City",
-    type: "Bệnh viện quốc tế",
-    address: "458 Minh Khai, Hà Nội",
-    longitude: 105.8675,
-    latitude: 20.9957,
+    id: "umc",
+    name: "BV Đại học Y Dược TP.HCM",
+    type: "Bệnh viện đa khoa",
+    address: "215 Hồng Bàng, Quận 5, TP.HCM",
+    longitude: 106.6636,
+    latitude: 10.7539,
+    wait: "25 phút",
+    distance: "2.8 km",
+  },
+  {
+    id: "tu-du",
+    name: "Bệnh viện Từ Dũ",
+    type: "Sản phụ khoa",
+    address: "284 Cống Quỳnh, Quận 1, TP.HCM",
+    longitude: 106.6867,
+    latitude: 10.7685,
     wait: "20 phút",
-    distance: "4.1 km",
+    distance: "3.5 km",
   },
   {
-    id: "medlatec",
-    name: "Medlatec Nghĩa Dũng",
-    type: "Xét nghiệm & chẩn đoán",
-    address: "42 Nghĩa Dũng, Hà Nội",
-    longitude: 105.8419,
-    latitude: 21.0451,
-    wait: "15 phút",
-    distance: "3.2 km",
-  },
-  {
-    id: "viet-duc",
-    name: "Bệnh viện Việt Đức",
-    type: "Ngoại khoa & cấp cứu",
-    address: "40 Tràng Thi, Hà Nội",
-    longitude: 105.8463,
-    latitude: 21.0286,
+    id: "children-1",
+    name: "Bệnh viện Nhi Đồng 1",
+    type: "Nhi khoa",
+    address: "341 Sư Vạn Hạnh, Quận 10, TP.HCM",
+    longitude: 106.6672,
+    latitude: 10.7682,
     wait: "30 phút",
-    distance: "1.1 km",
+    distance: "4.1 km",
   },
 ];
 
 const INITIAL_VIEW_STATE = {
-  longitude: 105.846,
-  latitude: 21.026,
-  zoom: 11.6,
+  longitude: 106.676,
+  latitude: 10.765,
+  zoom: 12.2,
   pitch: 38,
   bearing: -12,
 };
@@ -148,9 +148,6 @@ export function MapSection() {
               ))}
             </div>
 
-            <a className="btn btn-primary" href="/contact">
-              Liên hệ đặt lịch
-            </a>
           </aside>
         </div>
       </div>
