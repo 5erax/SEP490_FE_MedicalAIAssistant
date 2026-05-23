@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { medicalFacilitiesApi } from "../services/api";
 
 const FILTERS = [
   ["all", "Tất cả"],
@@ -10,7 +11,7 @@ const FILTERS = [
   ["Emergency", "Cấp cứu"],
 ];
 
-const MOCK_FACILITIES = [
+const HCMC_FACILITIES = [
   {
     facilityId: "1",
     facilityName: "Bệnh viện Chợ Rẫy",
@@ -77,11 +78,42 @@ const TYPE_LABELS = {
 
 const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
+function normalizeFacility(facility) {
+  const id = facility.facilityId ?? facility.id;
+  const departments = Array.isArray(facility.departments)
+    ? facility.departments.map((item) => item.departmentName ?? item.name ?? item).filter(Boolean)
+    : [];
+
+  return {
+    ...facility,
+    facilityId: id,
+    facilityName: facility.facilityName || facility.name || "Cơ sở y tế",
+    address: facility.address || "TP.HCM",
+    latitude: Number(facility.latitude) || 10.7756,
+    longitude: Number(facility.longitude) || 106.6941,
+    phone: facility.phone || "Đang cập nhật",
+    facilityType: facility.facilityType || "Hospital",
+    openingHours: facility.openingHours || "Đang cập nhật",
+    departments: departments.length ? departments : ["Đa khoa"],
+  };
+}
+
 function NearbyClinicPage() {
+  const [chatContext] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem("medimate.map.chat");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [facilities, setFacilities] = useState(HCMC_FACILITIES);
+  const [loadingFacilities, setLoadingFacilities] = useState(true);
+  const [apiNotice, setApiNotice] = useState("");
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
-  const [selectedFacility, setSelectedFacility] = useState(MOCK_FACILITIES[0]);
+  const [selectedFacility, setSelectedFacility] = useState(HCMC_FACILITIES[0]);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
@@ -93,14 +125,44 @@ function NearbyClinicPage() {
     return () => window.clearTimeout(timerId);
   }, [searchText]);
 
+  useEffect(() => {
+    let active = true;
+
+    medicalFacilitiesApi.active()
+      .then((response) => {
+        if (!active) return;
+        const rawFacilities = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.items)
+            ? response.data.items
+            : [];
+        const data = rawFacilities.map(normalizeFacility);
+        if (data.length) {
+          setFacilities(data);
+          setSelectedFacility(data[0]);
+        }
+        setApiNotice("");
+      })
+      .catch((error) => {
+        if (active) setApiNotice(error.message || "Đang dùng dữ liệu bệnh viện TP.HCM dự phòng.");
+      })
+      .finally(() => {
+        if (active) setLoadingFacilities(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const filteredFacilities = useMemo(() => {
     const normalized = debouncedSearch.trim().toLowerCase();
-    return MOCK_FACILITIES.filter((facility) => {
+    return facilities.filter((facility) => {
       const matchSearch = !normalized || facility.facilityName.toLowerCase().includes(normalized) || facility.address.toLowerCase().includes(normalized);
       const matchFilter = activeFilter === "all" || facility.facilityType.toLowerCase() === activeFilter.toLowerCase();
       return matchSearch && matchFilter;
     });
-  }, [activeFilter, debouncedSearch]);
+  }, [activeFilter, debouncedSearch, facilities]);
 
   const handleCardClick = (facility) => {
     setSelectedFacility(facility);
@@ -160,7 +222,8 @@ function NearbyClinicPage() {
           ))}
         </div>
 
-        <p className="result-count">Tìm thấy {filteredFacilities.length} cơ sở</p>
+        <p className="result-count">{loadingFacilities ? "Đang đồng bộ cơ sở y tế..." : `Tìm thấy ${filteredFacilities.length} cơ sở`}</p>
+        {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
 
         <div className="facility-list-panel">
           {filteredFacilities.map((facility) => (
@@ -191,6 +254,14 @@ function NearbyClinicPage() {
       </aside>
 
       <section className="map-panel">
+        {chatContext && (
+          <aside className="map-chat-context" aria-label="Khung chat gợi ý chuyên khoa">
+            <strong>Gợi ý chuyên khoa qua triệu chứng</strong>
+            <p>{chatContext.symptom}</p>
+            <span>{chatContext.answer}</span>
+          </aside>
+        )}
+
         <Map
           ref={mapRef}
           mapStyle={FREE_MAP_STYLE}
@@ -277,6 +348,10 @@ const styles = `
 .facility-actions button:last-child, .popup-card button { background: var(--lime); }
 .sidebar-note { margin-top: 14px; border: 1px solid rgba(8,127,140,.22); border-radius: 10px; background: var(--mint); padding: 12px; color: var(--muted); font-size: 12px; line-height: 1.55; font-weight: 800; }
 .map-panel { position: relative; flex: 1; min-width: 0; background: #e9eee1; }
+.map-chat-context { position: absolute; left: 18px; top: 18px; z-index: 3; width: min(420px, calc(100% - 36px)); display: grid; gap: 8px; border: 1.5px solid var(--ink); border-radius: 14px; background: rgba(255,255,255,.94); box-shadow: 4px 4px 0 var(--ink); padding: 14px; backdrop-filter: blur(14px); }
+.map-chat-context strong { font-size: 14px; }
+.map-chat-context p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.45; font-weight: 850; }
+.map-chat-context span { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .map-token-empty { height: 100%; display: grid; place-items: center; align-content: center; gap: 8px; text-align: center; background: linear-gradient(90deg, rgba(17,20,18,.06) 1px, transparent 1px), linear-gradient(rgba(17,20,18,.06) 1px, transparent 1px), #f5f7ef; background-size: 36px 36px; padding: 24px; }
 .map-token-empty strong { font-size: 24px; }
 .map-token-empty span { max-width: 420px; color: var(--muted); line-height: 1.5; }
