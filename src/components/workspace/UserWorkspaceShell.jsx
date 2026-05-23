@@ -14,11 +14,12 @@ import {
   Search,
   UserRound,
 } from "lucide-react";
+import { useState } from "react";
 import { clearStoredAuth, getStoredAuth } from "../../services/api";
 import "../../styles/user-workspace.css";
 
 const NAV_ITEMS = [
-  { path: "/dashboard", label: "AI Studio", icon: LayoutDashboard, hint: "Gợi ý chuyên khoa" },
+  { path: "/dashboard", label: "Tư vấn chuyên khoa", icon: LayoutDashboard, hint: "Gợi ý nơi khám" },
   { path: "/symptom", label: "Triệu chứng", icon: Activity, hint: "Phân tích nhanh" },
   { path: "/chat", label: "Chat AI", icon: Bot, hint: "Hỏi trợ lý" },
   { path: "/map", label: "Bản đồ", icon: MapPin, hint: "Cơ sở gần bạn" },
@@ -52,6 +53,7 @@ function getInitials(nameOrEmail = "MediMate") {
 }
 
 export default function UserWorkspaceShell({ children }) {
+  const [notice, setNotice] = useState(null);
   const auth = getStoredAuth();
   const path = getCurrentPath();
   const activeItem = NAV_ITEMS.find((item) => path === item.path) ?? NAV_ITEMS[0];
@@ -65,12 +67,19 @@ export default function UserWorkspaceShell({ children }) {
 
   function handleNav(pathToOpen) {
     if (!FREE_PATHS.has(pathToOpen)) {
-      window.alert("Tính năng này thuộc MediMate+. Vui lòng nâng cấp để mở khóa.");
-      goTo("/pricing");
+      setNotice({
+        title: "Cần nâng cấp MediMate+",
+        text: "Tính năng này nằm trong gói nâng cao. Bạn có thể xem bảng giá hoặc quay lại tư vấn chuyên khoa.",
+      });
       return;
     }
 
     goTo(pathToOpen);
+  }
+
+  function openPricingFromNotice() {
+    setNotice(null);
+    goTo("/pricing");
   }
 
   return (
@@ -158,7 +167,7 @@ export default function UserWorkspaceShell({ children }) {
               className={path === item.path ? "active" : ""}
               key={item.path}
               type="button"
-              onClick={() => goTo(item.path)}
+              onClick={() => handleNav(item.path)}
             >
               <Icon size={19} strokeWidth={2.2} />
               <span>{item.label}</span>
@@ -166,6 +175,28 @@ export default function UserWorkspaceShell({ children }) {
           );
         })}
       </nav>
+
+      {notice && (
+        <div className="app-notice-backdrop" role="presentation" onClick={() => setNotice(null)}>
+          <section
+            className="app-notice"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="app-notice-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="app-notice-icon"><Crown size={20} /></span>
+            <div>
+              <h2 id="app-notice-title">{notice.title}</h2>
+              <p>{notice.text}</p>
+            </div>
+            <div className="app-notice-actions">
+              <button type="button" onClick={() => setNotice(null)}>Để sau</button>
+              <button type="button" onClick={openPricingFromNotice}>Xem bảng giá</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

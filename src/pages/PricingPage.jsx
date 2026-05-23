@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { subscriptionPlansApi } from "../services/api";
+import { ArrowLeft, Home, MapPin } from "lucide-react";
+import { getStoredAuth, subscriptionPlansApi } from "../services/api";
 
 const FEATURES = [
   "Phân tích triệu chứng cơ bản",
@@ -21,6 +22,7 @@ function formatPrice(value) {
 }
 
 function PricingPage() {
+  const auth = getStoredAuth();
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [openFaq, setOpenFaq] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -52,6 +54,22 @@ function PricingPage() {
   return (
     <main className="pricing-page">
       <style>{styles}</style>
+      <nav className="pricing-nav" aria-label="Điều hướng bảng giá">
+        <button type="button" onClick={() => { window.location.href = auth ? "/dashboard" : "/"; }}>
+          <ArrowLeft size={18} />
+          {auth ? "Về tư vấn" : "Về trang chủ"}
+        </button>
+        <div>
+          <button type="button" onClick={() => { window.location.href = "/"; }}>
+            <Home size={17} />
+            Trang chủ
+          </button>
+          <button type="button" onClick={() => { window.location.href = "/map"; }}>
+            <MapPin size={17} />
+            Bản đồ
+          </button>
+        </div>
+      </nav>
       <section className="pricing-hero">
         <p className="mini-label">Bảng giá</p>
         <h1>Minh bạch. Không phí ẩn. Huỷ bất cứ lúc nào.</h1>
@@ -128,6 +146,10 @@ function PricingPage() {
 
 const styles = `
 .pricing-page { min-height: 100svh; background: var(--bg); color: var(--ink); padding: 34px 20px 58px; }
+.pricing-nav { width: min(960px, 100%); margin: 0 auto 28px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pricing-nav div { display: flex; gap: 8px; }
+.pricing-nav button { min-height: 40px; display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 14px; font-weight: 900; }
+.pricing-nav > button { background: var(--lime); box-shadow: 3px 3px 0 var(--ink); }
 .pricing-hero { text-align: center; width: min(820px, 100%); margin: 0 auto; }
 .mini-label { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 14px; color: var(--lime-dark); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
 .mini-label::before { content: ""; width: 12px; height: 2px; background: currentColor; }
@@ -177,6 +199,10 @@ const styles = `
 .pricing-modal button { width: 100%; background: var(--lime); }
 @media (max-width: 760px) {
   .pricing-page { padding-inline: 14px; }
+  .pricing-nav { align-items: stretch; flex-direction: column; }
+  .pricing-nav button, .pricing-nav div { width: 100%; }
+  .pricing-nav div { display: grid; grid-template-columns: 1fr 1fr; }
+  .pricing-nav button { justify-content: center; }
   .plans-grid, .pricing-cta { grid-template-columns: 1fr; }
   .billing-toggle { width: 100%; }
   .pricing-cta div:last-child, .pricing-cta button { width: 100%; }

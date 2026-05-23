@@ -122,6 +122,80 @@
   color: rgba(16, 20, 17, 0.46);
 }
 
+.app-notice-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 20, 17, 0.34);
+  padding: 18px;
+}
+
+.app-notice {
+  width: min(430px, 100%);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  border: 1.5px solid var(--workspace-ink);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--workspace-ink);
+  box-shadow: 6px 6px 0 var(--workspace-ink);
+  padding: 18px;
+}
+
+.app-notice-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--workspace-lime);
+  color: var(--workspace-ink);
+}
+
+.app-notice h2,
+.app-notice p {
+  margin: 0;
+}
+
+.app-notice h2 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.app-notice p {
+  margin-top: 7px;
+  color: var(--workspace-muted);
+  line-height: 1.55;
+}
+
+.app-notice-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.app-notice-actions button {
+  min-height: 40px;
+  border: 1.5px solid var(--workspace-ink);
+  border-radius: 10px;
+  padding: 0 14px;
+  color: var(--workspace-ink);
+  font-weight: 950;
+}
+
+.app-notice-actions button:first-child {
+  background: #fff;
+}
+
+.app-notice-actions button:last-child {
+  background: var(--workspace-lime);
+  box-shadow: 3px 3px 0 var(--workspace-ink);
+}
+
 .user-shell-plan {
   display: grid;
   gap: 9px;
