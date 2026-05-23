@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import {
@@ -152,6 +153,7 @@ function ComingSoonCard() {
 }
 
 export default function AccountPage() {
+  const { confirmAction, showToast } = useFeedback();
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [user, setUser] = useState(null);
   const [departments, setDepartments] = useState([]);
@@ -353,11 +355,18 @@ export default function AccountPage() {
   }
 
   async function handleDeleteDepartment(id) {
-    if (!window.confirm("Xóa chuyên khoa này?")) return;
+    const confirmed = await confirmAction({
+      title: "Xóa chuyên khoa?",
+      message: "Chuyên khoa sẽ bị xóa khỏi danh mục và không còn hiển thị cho người dùng.",
+      confirmLabel: "Xóa chuyên khoa",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     setDepartmentMessage(null);
     try {
       const response = await medicalDepartmentsApi.remove(id);
       setDepartmentMessage({ type: "success", text: response.message || "Đã xóa chuyên khoa." });
+      showToast({ type: "success", title: "Đã xóa chuyên khoa", message: response.message || "Danh mục đã được cập nhật." });
       await loadDepartments();
     } catch (error) {
       setDepartmentMessage({ type: "error", text: error.message });
@@ -376,11 +385,18 @@ export default function AccountPage() {
   }
 
   async function handleDeleteUser(userId) {
-    if (!window.confirm("Xóa người dùng này?")) return;
+    const confirmed = await confirmAction({
+      title: "Xóa người dùng?",
+      message: "Tài khoản này sẽ bị xóa khỏi danh sách. Hãy chắc chắn trước khi tiếp tục.",
+      confirmLabel: "Xóa người dùng",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     setAdminMessage(null);
     try {
       const response = await usersApi.remove(userId);
       setAdminMessage({ type: "success", text: response.message || "Đã xóa người dùng." });
+      showToast({ type: "success", title: "Đã xóa người dùng", message: response.message || "Danh sách đã được cập nhật." });
       await loadUsers();
     } catch (error) {
       setAdminMessage({ type: "error", text: error.message });

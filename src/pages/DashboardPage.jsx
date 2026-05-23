@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ClipboardPlus, Send } from "lucide-react";
 import { getStoredAuth, webChatbotApi } from "../services/api";
+import { trackUxEvent } from "../utils/analytics";
 
 const PROMPTS = [
   "Đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ",
@@ -25,6 +26,7 @@ export default function DashboardPage() {
 
     setLoading(true);
     setError("");
+    trackUxEvent("specialty_intake_submitted", { source: textOverride ? "quick_prompt" : "manual" });
 
     try {
       const response = await webChatbotApi.message(symptom, { auth: Boolean(auth) });

@@ -1,5 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Lora:ital,wght@0,600;0,700;1,600&display=swap");
+@import "./styles/tokens.css";
 @import "./styles/global.css";
+@import "./styles/ux-foundation.css";
 
 :root {
   font-family: "Be Vietnam Pro", system-ui, sans-serif;

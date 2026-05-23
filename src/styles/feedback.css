@@ -1,0 +1,174 @@
+.toast-region {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 110;
+  display: grid;
+  gap: 10px;
+  width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 11px;
+  align-items: start;
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 5px 5px 0 var(--ink), 0 18px 48px rgba(17, 20, 18, 0.16);
+  padding: 13px;
+}
+
+.toast > svg {
+  margin-top: 2px;
+}
+
+.toast-success > svg {
+  color: var(--success);
+}
+
+.toast-warning > svg,
+.toast-error > svg {
+  color: var(--danger);
+}
+
+.toast-info > svg {
+  color: var(--teal);
+}
+
+.toast strong,
+.toast p {
+  margin: 0;
+}
+
+.toast strong {
+  display: block;
+  font-size: 14px;
+}
+
+.toast p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.toast button {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 9px;
+  font-weight: 900;
+}
+
+.toast > button:last-child {
+  width: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.38);
+  padding: 18px;
+}
+
+.confirm-dialog {
+  width: min(460px, 100%);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 7px 7px 0 var(--ink);
+  padding: 20px;
+}
+
+.confirm-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.confirm-danger .confirm-icon {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.confirm-dialog h2,
+.confirm-dialog p {
+  margin: 0;
+}
+
+.confirm-dialog h2 {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.confirm-dialog p {
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.58;
+}
+
+.confirm-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.confirm-actions button {
+  min-height: 42px;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  color: var(--ink);
+  padding: 0 15px;
+  font-weight: 900;
+}
+
+.confirm-actions button:first-child {
+  background: #fff;
+}
+
+.confirm-actions button:last-child {
+  background: var(--danger);
+  color: #fff;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+@media (max-width: 640px) {
+  .toast-region {
+    right: 12px;
+    bottom: 88px;
+    left: 12px;
+    width: auto;
+  }
+
+  .confirm-dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

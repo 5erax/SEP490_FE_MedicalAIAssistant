@@ -194,6 +194,7 @@ function NearbyClinicPage() {
   return (
     <main className="clinic-page">
       <style>{styles}</style>
+      <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <aside className="clinic-sidebar">
         <div className="map-page-actions">
           <button type="button" onClick={() => { window.location.href = "/dashboard"; }}>← Trang chủ</button>

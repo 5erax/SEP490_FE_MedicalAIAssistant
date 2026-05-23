@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Home, MapPin } from "lucide-react";
 import { getStoredAuth, subscriptionPlansApi } from "../services/api";
+import { trackUxEvent } from "../utils/analytics";
 
 const FEATURES = [
   "Phân tích triệu chứng cơ bản",
@@ -103,7 +104,10 @@ function PricingPage() {
           <ul>
             {FEATURES.map((feature) => <li key={feature}>✓ {feature}</li>)}
           </ul>
-          <button type="button" onClick={() => setShowModal(true)}>Dùng thử 14 ngày</button>
+          <button type="button" onClick={() => {
+            trackUxEvent("pricing_trial_clicked", { billingCycle });
+            setShowModal(true);
+          }}>Dùng thử 14 ngày</button>
         </article>
       </section>
 

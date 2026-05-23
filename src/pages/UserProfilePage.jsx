@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useFeedback } from "../components/feedback/feedbackContext";
 import { getStoredAuth } from "../services/api";
 
 const mockUser = { fullName: "Nguyễn Văn Phước", email: "phuoc@gmail.com", phone: "0901234567", address: "Quận 5, TP.HCM", gender: "Nam", dateOfBirth: "1998-02-14" };
@@ -18,6 +19,7 @@ function go(path) {
 }
 
 export default function UserProfilePage() {
+  const { confirmAction, showToast } = useFeedback();
   const auth = getStoredAuth();
   const user = useMemo(() => ({ ...mockUser, fullName: auth?.displayName || auth?.name || mockUser.fullName, email: auth?.email || mockUser.email }), [auth]);
   const [activeTab, setActiveTab] = useState("info");
@@ -65,12 +67,26 @@ export default function UserProfilePage() {
     if (!validateProfile()) return;
     setIsEditing(false);
     setToast("Đã lưu thông tin!");
+    showToast({ type: "success", title: "Đã lưu thông tin", message: "Hồ sơ cá nhân đã được cập nhật." });
   }
 
   function saveMedical(event) {
     event.preventDefault();
     if (!validateMedical()) return;
     setToast("Đã lưu hồ sơ!");
+    showToast({ type: "success", title: "Đã lưu hồ sơ", message: "Thông tin sức khỏe đã được cập nhật." });
+  }
+
+  async function requestDeleteAccount() {
+    const confirmed = await confirmAction({
+      title: "Xóa tài khoản?",
+      message: "Thao tác này có thể làm mất quyền truy cập vào hồ sơ. Bạn có thể hủy và quay lại bất cứ lúc nào.",
+      confirmLabel: "Xóa tài khoản",
+      tone: "danger",
+    });
+    if (confirmed) {
+      showToast({ type: "warning", title: "Chưa kết nối API xóa", message: "Chức năng xóa tài khoản sẽ được bật khi backend hỗ trợ." });
+    }
   }
 
   return (
@@ -151,7 +167,7 @@ export default function UserProfilePage() {
               <Field label="Xác nhận mật khẩu mới"><input type="password" /></Field>
             </div>
             <button className="lime" type="button">Đổi mật khẩu</button>
-            <div className="danger"><strong>Xoá tài khoản</strong><p>Thao tác này cần được xác nhận trước khi thực hiện.</p><button type="button" onClick={() => window.confirm("Bạn chắc chắn muốn xoá tài khoản?")}>Xoá tài khoản</button></div>
+            <div className="danger"><strong>Xoá tài khoản</strong><p>Thao tác này cần được xác nhận trước khi thực hiện.</p><button type="button" onClick={requestDeleteAccount}>Xoá tài khoản</button></div>
           </section>
         )}
 
