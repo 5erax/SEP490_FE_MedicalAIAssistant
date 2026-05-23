@@ -6,6 +6,7 @@ import {
   Crown,
   FileText,
   LayoutDashboard,
+  Lock,
   LogOut,
   MapPin,
   Menu,
@@ -17,7 +18,7 @@ import { clearStoredAuth, getStoredAuth } from "../../services/api";
 import "../../styles/user-workspace.css";
 
 const NAV_ITEMS = [
-  { path: "/dashboard", label: "Tổng quan", icon: LayoutDashboard, hint: "Theo dõi hôm nay" },
+  { path: "/dashboard", label: "AI Studio", icon: LayoutDashboard, hint: "Gợi ý chuyên khoa" },
   { path: "/symptom", label: "Triệu chứng", icon: Activity, hint: "Phân tích nhanh" },
   { path: "/chat", label: "Chat AI", icon: Bot, hint: "Hỏi trợ lý" },
   { path: "/map", label: "Bản đồ", icon: MapPin, hint: "Cơ sở gần bạn" },
@@ -26,6 +27,8 @@ const NAV_ITEMS = [
   { path: "/medication", label: "Thuốc", icon: Pill, hint: "Quét & kiểm tra" },
   { path: "/pricing", label: "MediMate+", icon: Crown, hint: "Nâng cấp" },
 ];
+
+const FREE_PATHS = new Set(["/dashboard", "/map", "/pricing"]);
 
 const MOBILE_ITEMS = NAV_ITEMS.slice(0, 5);
 
@@ -60,6 +63,16 @@ export default function UserWorkspaceShell({ children }) {
     goTo("/");
   }
 
+  function handleNav(pathToOpen) {
+    if (!FREE_PATHS.has(pathToOpen)) {
+      window.alert("Tính năng này thuộc MediMate+. Vui lòng nâng cấp để mở khóa.");
+      goTo("/pricing");
+      return;
+    }
+
+    goTo(pathToOpen);
+  }
+
   return (
     <div className="user-shell">
       <aside className="user-shell-sidebar" aria-label="Điều hướng không gian cá nhân">
@@ -77,13 +90,14 @@ export default function UserWorkspaceShell({ children }) {
                 className={isActive ? "active" : ""}
                 key={item.path}
                 type="button"
-                onClick={() => goTo(item.path)}
+                onClick={() => handleNav(item.path)}
               >
                 <Icon size={18} strokeWidth={2.2} />
                 <span>
                   <strong>{item.label}</strong>
                   <small>{item.hint}</small>
                 </span>
+                {!FREE_PATHS.has(item.path) && <Lock className="nav-lock" size={14} strokeWidth={2.3} />}
                 {isActive && <ChevronRight className="nav-caret" size={16} strokeWidth={2.4} />}
               </button>
             );

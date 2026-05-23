@@ -118,6 +118,10 @@
   color: var(--workspace-ink);
 }
 
+.nav-lock {
+  color: rgba(16, 20, 17, 0.46);
+}
+
 .user-shell-plan {
   display: grid;
   gap: 9px;
