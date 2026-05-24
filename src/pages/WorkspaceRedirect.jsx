@@ -19,11 +19,11 @@ export default function WorkspaceRedirect() {
         <section className="app-page">
           <div className="container app-empty">
             <p className="eyebrow">MediMate AI</p>
-            <h1>Bạn cần đăng nhập để tiếp tục.</h1>
-            <p>Sau khi đăng nhập, MediMate AI sẽ mở đúng không gian làm việc dành cho tài khoản của bạn.</p>
+            <h1>Bạn có thể trải nghiệm trước khi đăng ký.</h1>
+            <p>Dùng tư vấn chuyên khoa và bản đồ ở chế độ khách. Khi cần lưu hồ sơ hoặc dùng tính năng nâng cao, hãy đăng nhập hoặc tạo tài khoản.</p>
             <div className="hero-actions">
-              <a className="btn btn-primary" href="/login">Đăng nhập</a>
-              <a className="btn btn-ghost" href="/signup">Tạo tài khoản</a>
+              <a className="btn btn-primary" href="/dashboard">Trải nghiệm ngay</a>
+              <a className="btn btn-ghost" href="/login">Đăng nhập</a>
             </div>
           </div>
         </section>

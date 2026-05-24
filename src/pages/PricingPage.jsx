@@ -58,7 +58,7 @@ function PricingPage() {
   }, []);
 
   function startFreePlan() {
-    window.location.href = auth ? "/dashboard" : "/signup";
+    window.location.href = "/dashboard";
   }
 
   function startPremiumUpgrade() {

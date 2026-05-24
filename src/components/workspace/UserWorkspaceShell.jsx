@@ -7,6 +7,7 @@ import {
   FileText,
   LayoutDashboard,
   Lock,
+  LogIn,
   LogOut,
   MapPin,
   Menu,
@@ -57,7 +58,7 @@ export default function UserWorkspaceShell({ children }) {
   const path = getCurrentPath();
   const activeItem = NAV_ITEMS.find((item) => path === item.path) ?? NAV_ITEMS[0];
   const ActiveIcon = activeItem.icon;
-  const displayName = auth?.displayName || auth?.name || auth?.email || "Người dùng";
+  const displayName = auth?.displayName || auth?.name || auth?.email || "Khách trải nghiệm";
 
   function logout() {
     clearStoredAuth();
@@ -68,7 +69,9 @@ export default function UserWorkspaceShell({ children }) {
     if (!FREE_PATHS.has(pathToOpen)) {
       setNotice({
         title: "Cần nâng cấp MediMate+",
-        text: "Tính năng này nằm trong gói nâng cao. Bạn có thể xem bảng giá hoặc quay lại tư vấn chuyên khoa.",
+        text: auth
+          ? "Tính năng này nằm trong gói nâng cao. Bạn có thể xem bảng giá hoặc quay lại tư vấn chuyên khoa."
+          : "Bạn vẫn có thể dùng tư vấn chuyên khoa và bản đồ. Những phần lưu hồ sơ, y bạ, thuốc và chat nâng cao cần đăng ký rồi nâng cấp MediMate+.",
       });
       return;
     }
@@ -139,17 +142,26 @@ export default function UserWorkspaceShell({ children }) {
           </div>
 
           <div className="user-shell-actions">
-            <button className="icon-btn" type="button" aria-label="Thông báo">
-              <Bell size={18} />
-            </button>
+            {auth && (
+              <button className="icon-btn" type="button" aria-label="Thông báo">
+                <Bell size={18} />
+              </button>
+            )}
             <button className="user-chip" type="button" onClick={() => handleNav("/profile")}>
               <span>{getInitials(displayName)}</span>
               <strong>{displayName}</strong>
             </button>
-            <button className="logout-btn" type="button" onClick={logout}>
-              <LogOut size={17} />
-              Đăng xuất
-            </button>
+            {auth ? (
+              <button className="logout-btn" type="button" onClick={logout}>
+                <LogOut size={17} />
+                Đăng xuất
+              </button>
+            ) : (
+              <button className="logout-btn" type="button" onClick={() => goTo("/login?redirect=/dashboard")}>
+                <LogIn size={17} />
+                Đăng nhập
+              </button>
+            )}
           </div>
         </header>
 

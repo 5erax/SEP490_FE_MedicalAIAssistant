@@ -68,7 +68,7 @@ function App() {
   if (path === "/staff/register" || path === "/staff-register") return <StaffRegisterPortalPage />;
   if (path === "/forgot-password") return <ForgotPasswordPage />;
   if (path === "/change-password") return <ChangePasswordPage />;
-  if (path === "/dashboard") return requireAuth(userWorkspace(<DashboardPage />), safeCurrentPath());
+  if (path === "/dashboard") return userWorkspace(<DashboardPage />);
   if (path === "/profile") return requirePremium(userWorkspace(<UserProfilePage />), safeCurrentPath());
   if (path === "/symptom") return requirePremium(userWorkspace(<SymptomAnalysisPage />), safeCurrentPath());
   if (path === "/chat") return requirePremium(userWorkspace(<ChatbotPage />), safeCurrentPath());
