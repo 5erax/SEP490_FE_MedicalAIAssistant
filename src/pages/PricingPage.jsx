@@ -22,6 +22,18 @@ function formatPrice(value) {
   return `${value.toLocaleString("vi-VN")} ₫`;
 }
 
+function getPlanFeatures(plan, fallback = FEATURES) {
+  if (!plan?.featureLimitJson) return fallback;
+  try {
+    const parsed = JSON.parse(plan.featureLimitJson);
+    if (Array.isArray(parsed)) return parsed.map(String);
+    if (Array.isArray(parsed.features)) return parsed.features.map(String);
+    return Object.entries(parsed).map(([key, value]) => `${key}: ${value}`);
+  } catch {
+    return fallback;
+  }
+}
+
 function PricingPage() {
   const auth = getStoredAuth();
   const shouldOpenPlanModal = Boolean(auth && (() => {
@@ -32,12 +44,20 @@ function PricingPage() {
   const [openFaq, setOpenFaq] = useState(null);
   const [showModal, setShowModal] = useState(shouldOpenPlanModal);
   const [apiPlans, setApiPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const isPremium = hasPremiumAccess(auth);
   const paidPlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) > 0), [apiPlans]);
   const freePlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) === 0), [apiPlans]);
+  const queryPlan = useMemo(() => {
+    const planId = new URLSearchParams(window.location.search).get("planId");
+    return apiPlans.find((item) => item.id === planId) ?? null;
+  }, [apiPlans]);
+  const displayPlan = selectedPlan || queryPlan || paidPlan;
   const monthlyPrice = Number(paidPlan?.price) || 149000;
   const yearlyPrice = Math.round(monthlyPrice * 0.8);
   const currentPrice = billingCycle === "yearly" ? yearlyPrice : monthlyPrice;
+  const premiumFeatures = getPlanFeatures(paidPlan);
+  const freeFeatures = getPlanFeatures(freePlan, FEATURES.slice(0, 3));
 
   useEffect(() => {
     let active = true;
@@ -61,14 +81,24 @@ function PricingPage() {
     window.location.href = "/dashboard";
   }
 
-  function startPremiumUpgrade() {
-    trackUxEvent("pricing_trial_clicked", { billingCycle, authenticated: Boolean(auth) });
+  function startPremiumUpgrade(plan = paidPlan) {
+    trackUxEvent("pricing_trial_clicked", { billingCycle, authenticated: Boolean(auth), planId: plan?.id });
 
     if (!auth) {
-      window.location.href = `/signup?redirect=${encodeURIComponent("/pricing?upgrade=premium")}`;
+      const target = `/pricing?upgrade=premium${plan?.id ? `&planId=${plan.id}` : ""}`;
+      window.location.href = `/signup?redirect=${encodeURIComponent(target)}`;
       return;
     }
 
+    const pendingPlan = plan ?? { planName: "MediMate+", price: currentPrice };
+    setSelectedPlan(pendingPlan);
+    sessionStorage.setItem("medimate.pendingPremiumPlan", JSON.stringify({
+      planId: pendingPlan.id,
+      planName: pendingPlan.planName,
+      price: pendingPlan.price ?? currentPrice,
+      billingCycle,
+      requestedAt: new Date().toISOString(),
+    }));
     setShowModal(true);
   }
 
@@ -107,8 +137,8 @@ function PricingPage() {
           <div className="price-line"><strong>0 ₫</strong><span>/ mãi mãi</span></div>
           <p>Phù hợp để bắt đầu kiểm tra triệu chứng và tìm chuyên khoa phù hợp.</p>
           <ul>
-            {FEATURES.map((feature, index) => (
-              <li className={index > 2 ? "disabled" : ""} key={feature}>{index > 2 ? "×" : "✓"} {feature}</li>
+            {FEATURES.map((feature) => (
+              <li className={freeFeatures.includes(feature) ? "" : "disabled"} key={feature}>{freeFeatures.includes(feature) ? "✓" : "×"} {feature}</li>
             ))}
           </ul>
           <button type="button" onClick={startFreePlan}>Bắt đầu ngay</button>
@@ -122,9 +152,9 @@ function PricingPage() {
           <div className="price-line"><strong>{formatPrice(currentPrice)}</strong><span>/ tháng</span></div>
           <p>Mở khoá tư vấn sau khám, kiểm tra thuốc và theo dõi hành trình chăm sóc sức khoẻ.</p>
           <ul>
-            {FEATURES.map((feature) => <li key={feature}>✓ {feature}</li>)}
+            {premiumFeatures.map((feature) => <li key={feature}>✓ {feature}</li>)}
           </ul>
-          <button type="button" onClick={startPremiumUpgrade}>
+          <button type="button" onClick={() => startPremiumUpgrade(paidPlan)}>
             {auth ? (isPremium ? "Quản lý gói hiện tại" : "Nâng cấp MediMate+") : "Đăng ký để nâng cấp"}
           </button>
         </article>
@@ -157,8 +187,12 @@ function PricingPage() {
       {showModal && (
         <div className="pricing-modal" role="dialog" aria-modal="true">
           <div>
-            <strong>{isPremium ? "Bạn đang ở gói MediMate+" : "MediMate+ sắp ra mắt"}</strong>
-            <p>{isPremium ? "Tài khoản của bạn đã có quyền truy cập premium." : "Bạn đã đăng nhập. Tính năng nâng cấp sẽ được mở khi cổng thanh toán hoàn tất."}</p>
+            <strong>{isPremium ? "Bạn đang ở gói MediMate+" : "Đã ghi nhận gói nâng cấp"}</strong>
+            <p>
+              {isPremium
+                ? "Tài khoản của bạn đã có quyền truy cập premium."
+                : `Bạn đã chọn ${displayPlan?.planName || "MediMate+"}. Backend hiện có danh mục gói, nhưng Swagger chưa có endpoint thanh toán/kích hoạt subscription cho user; FE đã lưu yêu cầu nâng cấp để tiếp tục khi cổng thanh toán được bổ sung.`}
+            </p>
             <button type="button" onClick={() => setShowModal(false)}>Đã hiểu</button>
           </div>
         </div>

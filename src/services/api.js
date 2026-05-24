@@ -97,6 +97,15 @@ function withPagination(pageNumber = 1, pageSize = 10) {
   }).toString();
 }
 
+function toQuery(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    query.set(key, String(value));
+  });
+  return query.toString();
+}
+
 function normalizeUserRecord(user) {
   if (!user || typeof user !== "object") return user;
   const id = user.id ?? user.userId ?? user.identityId ?? "";
@@ -310,12 +319,14 @@ export const medicalDepartmentsApi = {
 };
 
 export const medicalFacilitiesApi = {
-  list(pageNumber = 1, pageSize = 50) {
-    return apiRequest(`/api/medical-facilities?${withPagination(pageNumber, pageSize)}`);
+  list(pageNumber = 1, pageSize = 50, filters = {}) {
+    const query = toQuery({ PageNumber: pageNumber, PageSize: pageSize, ...filters });
+    return apiRequest(`/api/medical-facilities?${query}`);
   },
 
-  active() {
-    return apiRequest("/api/medical-facilities/active");
+  active(filters = {}) {
+    const query = toQuery(filters);
+    return apiRequest(`/api/medical-facilities/active${query ? `?${query}` : ""}`);
   },
 
   get(id) {
@@ -355,12 +366,14 @@ export const medicalFacilitiesApi = {
 };
 
 export const doctorsApi = {
-  list(pageNumber = 1, pageSize = 50) {
-    return apiRequest(`/api/doctors?${withPagination(pageNumber, pageSize)}`);
+  list(pageNumber = 1, pageSize = 50, filters = {}) {
+    const query = toQuery({ PageNumber: pageNumber, PageSize: pageSize, ...filters });
+    return apiRequest(`/api/doctors?${query}`);
   },
 
-  active() {
-    return apiRequest("/api/doctors/active");
+  active(filters = {}) {
+    const query = toQuery(filters);
+    return apiRequest(`/api/doctors/active${query ? `?${query}` : ""}`);
   },
 
   get(id) {
@@ -561,5 +574,19 @@ export const webChatbotApi = {
       body: { message },
       auth,
     });
+  },
+};
+
+export const symptomAnalysisApi = {
+  analyze(message, { disclaimerShown = true, auth = false } = {}) {
+    return apiRequest("/api/symptom-analysis/analyze", {
+      method: "POST",
+      body: { message, disclaimerShown },
+      auth,
+    });
+  },
+
+  get(sessionId, { auth = false } = {}) {
+    return apiRequest(`/api/symptom-analysis/${sessionId}`, { auth });
   },
 };

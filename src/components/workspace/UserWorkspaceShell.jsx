@@ -12,7 +12,6 @@ import {
   MapPin,
   Menu,
   Pill,
-  Search,
   UserRound,
 } from "lucide-react";
 import { useState } from "react";
@@ -134,11 +133,6 @@ export default function UserWorkspaceShell({ children }) {
               <p>Không gian cá nhân</p>
               <h1>{activeItem.label}</h1>
             </div>
-          </div>
-
-          <div className="user-shell-search" aria-label="Tìm kiếm nhanh">
-            <Search size={17} />
-            <input placeholder="Tìm hồ sơ, cơ sở y tế, thuốc..." />
           </div>
 
           <div className="user-shell-actions">

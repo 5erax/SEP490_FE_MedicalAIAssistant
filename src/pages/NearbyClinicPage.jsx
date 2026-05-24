@@ -83,6 +83,7 @@ function normalizeFacility(facility) {
   const departments = Array.isArray(facility.departments)
     ? facility.departments.map((item) => item.departmentName ?? item.name ?? item).filter(Boolean)
     : [];
+  const directDepartment = facility.departmentName ? [facility.departmentName] : [];
 
   return {
     ...facility,
@@ -94,7 +95,9 @@ function normalizeFacility(facility) {
     phone: facility.phone || "Đang cập nhật",
     facilityType: facility.facilityType || "Hospital",
     openingHours: facility.openingHours || "Đang cập nhật",
-    departments: departments.length ? departments : ["Đa khoa"],
+    departments: departments.length ? departments : directDepartment.length ? directDepartment : ["Đa khoa"],
+    confidenceScore: facility.confidenceScore,
+    priorityRank: facility.priorityRank ?? 999,
   };
 }
 
@@ -107,16 +110,26 @@ function NearbyClinicPage() {
       return null;
     }
   });
-  const [facilities, setFacilities] = useState(HCMC_FACILITIES);
-  const [loadingFacilities, setLoadingFacilities] = useState(true);
+  const analysisFacilities = useMemo(
+    () => (chatContext?.recommendedFacilities ?? []).map(normalizeFacility).sort((first, second) => first.priorityRank - second.priorityRank),
+    [chatContext],
+  );
+  const hasAnalysisFacilities = analysisFacilities.length > 0;
+  const initialFacilities = hasAnalysisFacilities ? analysisFacilities : HCMC_FACILITIES;
+  const [facilities, setFacilities] = useState(initialFacilities);
+  const [loadingFacilities, setLoadingFacilities] = useState(!hasAnalysisFacilities);
   const [apiNotice, setApiNotice] = useState("");
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
-  const [selectedFacility, setSelectedFacility] = useState(HCMC_FACILITIES[0]);
+  const [selectedFacility, setSelectedFacility] = useState(initialFacilities[0] ?? null);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
-  const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
+  const [viewState, setViewState] = useState({
+    longitude: initialFacilities[0]?.longitude ?? 106.6297,
+    latitude: initialFacilities[0]?.latitude ?? 10.8231,
+    zoom: hasAnalysisFacilities ? 13 : 12,
+  });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
 
@@ -128,7 +141,14 @@ function NearbyClinicPage() {
   useEffect(() => {
     let active = true;
 
-    medicalFacilitiesApi.active()
+    if (hasAnalysisFacilities) {
+      return () => {
+        active = false;
+      };
+    }
+
+    const topDepartmentId = chatContext?.recommendedDepartments?.[0]?.departmentId;
+    medicalFacilitiesApi.active(topDepartmentId ? { departmentId: topDepartmentId } : {})
       .then((response) => {
         if (!active) return;
         const rawFacilities = Array.isArray(response.data)
@@ -153,7 +173,7 @@ function NearbyClinicPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [chatContext, hasAnalysisFacilities]);
 
   const filteredFacilities = useMemo(() => {
     const normalized = debouncedSearch.trim().toLowerCase();
@@ -236,13 +256,16 @@ function NearbyClinicPage() {
             >
               <div className="facility-top">
                 <strong>{facility.facilityName}</strong>
-                <span className={`type-badge ${facility.facilityType.toLowerCase()}`}>{TYPE_LABELS[facility.facilityType]}</span>
+                <span className={`type-badge ${facility.facilityType.toLowerCase()}`}>{TYPE_LABELS[facility.facilityType] || facility.facilityType}</span>
               </div>
               <p>⌖ {facility.address}</p>
               <p>◷ {facility.openingHours}</p>
               <div className="department-row">
                 {facility.departments.map((department) => <span key={department}>{department}</span>)}
               </div>
+              {facility.confidenceScore !== undefined && facility.confidenceScore !== null && (
+                <p className="facility-confidence">Độ phù hợp {Math.round((Number(facility.confidenceScore) > 1 ? Number(facility.confidenceScore) : Number(facility.confidenceScore) * 100))}%</p>
+              )}
               <div className="facility-actions">
                 <button type="button" onClick={(event) => { event.stopPropagation(); window.location.href = `tel:${facility.phone.replaceAll(" ", "")}`; }}>Gọi ngay</button>
                 <button type="button" onClick={(event) => { event.stopPropagation(); openDirections(facility); }}>Chỉ đường</button>
@@ -260,6 +283,13 @@ function NearbyClinicPage() {
             <strong>Gợi ý chuyên khoa qua triệu chứng</strong>
             <p>{chatContext.symptom}</p>
             <span>{chatContext.answer}</span>
+            {chatContext.recommendedDepartments?.length > 0 && (
+              <div className="map-context-tags">
+                {chatContext.recommendedDepartments.slice(0, 3).map((department) => (
+                  <b key={department.departmentId || department.departmentName}>{department.departmentName}</b>
+                ))}
+              </div>
+            )}
           </aside>
         )}
 
@@ -344,6 +374,7 @@ const styles = `
 .facility-result-card p { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .department-row { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 2px; }
 .department-row span { flex: 0 0 auto; border-radius: 999px; background: #fff; border: 1px solid var(--line); padding: 5px 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
+.facility-confidence { color: var(--teal) !important; font-weight: 900; }
 .facility-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
 .facility-actions button, .popup-card button { border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; padding: 8px; font-size: 12px; font-weight: 900; }
 .facility-actions button:last-child, .popup-card button { background: var(--lime); }
@@ -353,6 +384,8 @@ const styles = `
 .map-chat-context strong { font-size: 14px; }
 .map-chat-context p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.45; font-weight: 850; }
 .map-chat-context span { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.map-context-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.map-context-tags b { border-radius: 999px; background: var(--mint); color: var(--teal); padding: 5px 8px; font-size: 11px; }
 .map-token-empty { height: 100%; display: grid; place-items: center; align-content: center; gap: 8px; text-align: center; background: linear-gradient(90deg, rgba(17,20,18,.06) 1px, transparent 1px), linear-gradient(rgba(17,20,18,.06) 1px, transparent 1px), #f5f7ef; background-size: 36px 36px; padding: 24px; }
 .map-token-empty strong { font-size: 24px; }
 .map-token-empty span { max-width: 420px; color: var(--muted); line-height: 1.5; }

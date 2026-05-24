@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ClipboardPlus, Send } from "lucide-react";
-import { getStoredAuth, webChatbotApi } from "../services/api";
+import { getStoredAuth, symptomAnalysisApi, webChatbotApi } from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
 
 const PROMPTS = [
@@ -12,6 +12,26 @@ const PROMPTS = [
 
 function navigate(path) {
   window.location.href = path;
+}
+
+function formatPercent(value) {
+  if (value === null || value === undefined) return "";
+  const score = Number(value);
+  if (Number.isNaN(score)) return "";
+  return `${Math.round(score > 1 ? score : score * 100)}%`;
+}
+
+function buildAnalysisSummary(data) {
+  const departments = data.recommendedDepartments ?? [];
+  const facilities = data.recommendedFacilities ?? [];
+  const topDepartment = departments[0];
+  const departmentText = topDepartment
+    ? `${topDepartment.departmentName}${topDepartment.confidenceScore ? ` (${formatPercent(topDepartment.confidenceScore)})` : ""}`
+    : "chuyên khoa phù hợp";
+  const facilityText = facilities.length ? `${facilities.length} cơ sở y tế phù hợp` : "các cơ sở y tế phù hợp";
+  const severity = data.severityLevel ? ` Mức ưu tiên: ${data.severityLevel}.` : "";
+
+  return `MediMate gợi ý ${departmentText} và đã chuẩn bị ${facilityText} trên bản đồ.${severity}`;
 }
 
 export default function DashboardPage() {
@@ -29,24 +49,41 @@ export default function DashboardPage() {
     trackUxEvent("specialty_intake_submitted", { source: textOverride ? "quick_prompt" : "manual" });
 
     try {
-      const response = await webChatbotApi.message(symptom, { auth: Boolean(auth) });
+      const response = await symptomAnalysisApi.analyze(symptom, { auth: Boolean(auth), disclaimerShown: true });
       const data = response.data ?? response;
       sessionStorage.setItem("medimate.map.chat", JSON.stringify({
         symptom,
-        answer: data.answer || "AI đã ghi nhận triệu chứng và sẽ gợi ý cơ sở phù hợp.",
-        intent: data.intent || "specialty_recommendation",
-        needsMoreInformation: Boolean(data.needsMoreInformation),
+        answer: buildAnalysisSummary(data),
+        intent: "symptom_analysis",
+        needsMoreInformation: false,
+        sessionId: data.sessionId,
+        severityLevel: data.severityLevel,
+        recommendedDepartments: data.recommendedDepartments ?? [],
+        recommendedFacilities: data.recommendedFacilities ?? [],
+        symptoms: data.symptoms ?? [],
       }));
       navigate("/map");
     } catch (apiError) {
-      sessionStorage.setItem("medimate.map.chat", JSON.stringify({
-        symptom,
-        answer: "MediMate AI đang tạm dùng luồng dự phòng. Bạn có thể xem các bệnh viện phù hợp tại bản đồ và thử gửi lại sau.",
-        intent: "fallback",
-        needsMoreInformation: false,
-      }));
-      setError(apiError.message);
-      navigate("/map");
+      try {
+        const response = await webChatbotApi.message(symptom, { auth: Boolean(auth) });
+        const data = response.data ?? response;
+        sessionStorage.setItem("medimate.map.chat", JSON.stringify({
+          symptom,
+          answer: data.answer || "AI đã ghi nhận triệu chứng và sẽ gợi ý cơ sở phù hợp.",
+          intent: data.intent || "specialty_recommendation",
+          needsMoreInformation: Boolean(data.needsMoreInformation),
+        }));
+        navigate("/map");
+      } catch {
+        sessionStorage.setItem("medimate.map.chat", JSON.stringify({
+          symptom,
+          answer: "MediMate AI đang tạm dùng luồng dự phòng. Bạn có thể xem các bệnh viện phù hợp tại bản đồ và thử gửi lại sau.",
+          intent: "fallback",
+          needsMoreInformation: false,
+        }));
+        setError(apiError.message);
+        navigate("/map");
+      }
     } finally {
       setLoading(false);
     }

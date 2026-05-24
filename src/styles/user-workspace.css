@@ -252,7 +252,7 @@
   top: 0;
   z-index: 12;
   display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(220px, 520px) auto;
+  grid-template-columns: minmax(220px, 1fr) auto;
   gap: 14px;
   align-items: center;
   border-bottom: 1px solid var(--workspace-line);
@@ -306,27 +306,6 @@
 
 .mobile-menu-btn {
   display: none;
-}
-
-.user-shell-search {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-  border: 1px solid var(--workspace-line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  padding: 0 14px;
-}
-
-.user-shell-search input {
-  min-width: 0;
-  height: 42px;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: var(--workspace-ink);
 }
 
 .user-shell-actions {
@@ -473,10 +452,6 @@
 
   .user-shell-topbar {
     grid-template-columns: minmax(200px, 1fr) auto;
-  }
-
-  .user-shell-search {
-    display: none;
   }
 
   .logout-btn {
