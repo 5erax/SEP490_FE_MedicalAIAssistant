@@ -35,7 +35,7 @@ function isExpiredToken(token) {
 }
 
 function isUsableAuth(auth) {
-  return Boolean(auth?.accessToken) && !isExpiredToken(auth.accessToken);
+  return Boolean(auth?.accessToken);
 }
 
 export function getStoredAuth() {
@@ -55,6 +55,11 @@ export function setStoredAuth(auth) {
 
 export function clearStoredAuth() {
   localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+export function hasStoredAuthRecord() {
+  if (typeof window === "undefined") return false;
+  return Boolean(parseStoredAuth()?.accessToken);
 }
 
 export function isAuthenticated() {
@@ -79,7 +84,7 @@ export function hasPremiumAccess(auth = getStoredAuth()) {
 }
 
 export function getAccessToken() {
-  return getStoredAuth()?.accessToken ?? "";
+  return parseStoredAuth()?.accessToken ?? "";
 }
 
 function normalizeAuthResponse(response) {
@@ -145,6 +150,58 @@ function formatApiErrors(errors) {
   return "";
 }
 
+async function refreshStoredAuth() {
+  const response = await fetch(buildUrl("/api/authentication/refresh"), {
+    method: "POST",
+    credentials: "include",
+  });
+
+  const text = await response.text();
+  let payload = { success: response.ok };
+
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = {
+        success: false,
+        message: "Không thể làm mới phiên đăng nhập. Vui lòng đăng nhập lại.",
+      };
+    }
+  }
+
+  const ok = response.ok && payload.success !== false;
+  if (!ok) {
+    const message =
+      payload?.message ||
+      formatApiErrors(payload?.errors) ||
+      payload?.title ||
+      `Không thể làm mới phiên đăng nhập với mã ${response.status}`;
+    const error = new Error(message);
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
+  }
+
+  return normalizeAuthResponse(payload);
+}
+
+async function getFreshAccessToken() {
+  const auth = parseStoredAuth();
+  if (!auth?.accessToken) return "";
+  if (!isExpiredToken(auth.accessToken)) return auth.accessToken;
+
+  try {
+    const response = await refreshStoredAuth();
+    return (response.data ?? response)?.accessToken ?? "";
+  } catch (error) {
+    if (error.status === 401 || error.status === 403) {
+      clearStoredAuth();
+    }
+    return "";
+  }
+}
+
 export async function apiRequest(path, options = {}) {
   const { method = "GET", body, auth = false, headers = {} } = options;
   const requestHeaders = { ...headers };
@@ -154,7 +211,7 @@ export async function apiRequest(path, options = {}) {
   }
 
   if (auth) {
-    const token = getAccessToken();
+    const token = await getFreshAccessToken();
     if (token) requestHeaders.Authorization = `Bearer ${token}`;
   }
 
@@ -235,10 +292,7 @@ export const authApi = {
   },
 
   refresh() {
-    return apiRequest("/api/authentication/refresh", {
-      method: "POST",
-      auth: true,
-    }).then(normalizeAuthResponse);
+    return refreshStoredAuth();
   },
 
   logout() {

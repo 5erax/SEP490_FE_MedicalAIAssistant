@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import LandingPage from "./pages/LandingPage";
 import UserWorkspaceShell from "./components/workspace/UserWorkspaceShell";
 import StaticPage from "./pages/StaticPage";
@@ -15,7 +16,7 @@ import UserProfilePage from "./pages/UserProfilePage";
 import MedicalAssistantPage from "./pages/MedicalAssistantPage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
-import { getStoredAuth, hasPremiumAccess } from "./services/api";
+import { authApi, clearStoredAuth, getStoredAuth, hasPremiumAccess, hasStoredAuthRecord } from "./services/api";
 import {
   ChangePasswordPage,
   ForgotPasswordPage,
@@ -56,7 +57,40 @@ function requirePremium(page, path) {
   return page;
 }
 
+const AUTH_REFRESH_INTERVAL_MS = 7 * 60 * 1000;
+
 function App() {
+  useEffect(() => {
+    let stopped = false;
+
+    async function refreshSession() {
+      if (stopped || !hasStoredAuthRecord()) return;
+
+      try {
+        await authApi.refresh();
+      } catch (error) {
+        if (error.status === 401 || error.status === 403) {
+          clearStoredAuth();
+        }
+      }
+    }
+
+    const intervalId = window.setInterval(refreshSession, AUTH_REFRESH_INTERVAL_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshSession();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
   const path = window.location.pathname;
 
   if (path === "/") {
