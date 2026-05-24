@@ -58,7 +58,7 @@ export function HeroSection() {
           </p>
 
           <div className="hero-actions">
-            <a className="btn btn-primary" href="/map">
+            <a className="btn btn-primary" href="/dashboard">
               Trải nghiệm ngay
             </a>
           </div>
