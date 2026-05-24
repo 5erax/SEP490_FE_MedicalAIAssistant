@@ -3,7 +3,7 @@
   min-height: 100svh;
   overflow-x: hidden;
   background:
-    linear-gradient(135deg, rgba(170, 237, 99, 0.14), rgba(8, 127, 140, 0.08) 44%, transparent 76%),
+    linear-gradient(135deg, rgba(196, 233, 149, 0.14), rgba(8, 127, 140, 0.08) 44%, transparent 76%),
     #f4f7ef;
   color: #101411;
 }
@@ -178,7 +178,7 @@
 .admin-operator .admin-toolbar input:focus,
 .admin-operator .admin-toolbar select:focus {
   border-color: rgba(16, 20, 17, 0.72);
-  box-shadow: 0 0 0 4px rgba(170, 237, 99, 0.24);
+  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
 }
 
 .admin-operator .admin-shell {
@@ -231,7 +231,7 @@
 .admin-operator .soft-badge {
   width: fit-content;
   border-radius: 999px;
-  background: #aaed63;
+  background: #c4e995;
   color: #101411;
   padding: 6px 10px;
   font-size: 11px;

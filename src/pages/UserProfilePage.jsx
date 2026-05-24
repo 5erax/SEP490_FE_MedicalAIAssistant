@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useFeedback } from "../components/feedback/feedbackContext";
 import { getStoredAuth } from "../services/api";
 
 const mockUser = { fullName: "Nguyễn Văn Phước", email: "phuoc@gmail.com", phone: "0901234567", address: "Quận 5, TP.HCM", gender: "Nam", dateOfBirth: "1998-02-14" };
@@ -18,6 +19,7 @@ function go(path) {
 }
 
 export default function UserProfilePage() {
+  const { confirmAction, showToast } = useFeedback();
   const auth = getStoredAuth();
   const user = useMemo(() => ({ ...mockUser, fullName: auth?.displayName || auth?.name || mockUser.fullName, email: auth?.email || mockUser.email }), [auth]);
   const [activeTab, setActiveTab] = useState("info");
@@ -65,12 +67,26 @@ export default function UserProfilePage() {
     if (!validateProfile()) return;
     setIsEditing(false);
     setToast("Đã lưu thông tin!");
+    showToast({ type: "success", title: "Đã lưu thông tin", message: "Hồ sơ cá nhân đã được cập nhật." });
   }
 
   function saveMedical(event) {
     event.preventDefault();
     if (!validateMedical()) return;
     setToast("Đã lưu hồ sơ!");
+    showToast({ type: "success", title: "Đã lưu hồ sơ", message: "Thông tin sức khỏe đã được cập nhật." });
+  }
+
+  async function requestDeleteAccount() {
+    const confirmed = await confirmAction({
+      title: "Xóa tài khoản?",
+      message: "Thao tác này có thể làm mất quyền truy cập vào hồ sơ. Bạn có thể hủy và quay lại bất cứ lúc nào.",
+      confirmLabel: "Xóa tài khoản",
+      tone: "danger",
+    });
+    if (confirmed) {
+      showToast({ type: "warning", title: "Chưa kết nối API xóa", message: "Chức năng xóa tài khoản sẽ được bật khi backend hỗ trợ." });
+    }
   }
 
   return (
@@ -151,7 +167,7 @@ export default function UserProfilePage() {
               <Field label="Xác nhận mật khẩu mới"><input type="password" /></Field>
             </div>
             <button className="lime" type="button">Đổi mật khẩu</button>
-            <div className="danger"><strong>Xoá tài khoản</strong><p>Thao tác này cần được xác nhận trước khi thực hiện.</p><button type="button" onClick={() => window.confirm("Bạn chắc chắn muốn xoá tài khoản?")}>Xoá tài khoản</button></div>
+            <div className="danger"><strong>Xoá tài khoản</strong><p>Thao tác này cần được xác nhận trước khi thực hiện.</p><button type="button" onClick={requestDeleteAccount}>Xoá tài khoản</button></div>
           </section>
         )}
 
@@ -172,6 +188,6 @@ function Field({ label, error, wide, children }) {
 }
 
 const styles = `
-.profile-page{min-height:100vh;display:flex;background:#f7f8f3;color:#111412;font-family:"Be Vietnam Pro",system-ui,sans-serif}.profile-sidebar{width:220px;padding:24px 18px;border-right:1.5px solid #111412;background:#fff;position:sticky;top:0;height:100vh}.profile-identity{text-align:center;border-bottom:1px solid #dde4d5;padding-bottom:18px;margin-bottom:18px}.profile-identity span{display:grid;place-items:center;width:76px;height:76px;margin:0 auto 12px;border-radius:999px;background:#111412;color:#aaed63;font-size:24px;font-weight:900}.profile-identity strong,.profile-identity small{display:block}.profile-identity small{color:rgba(17,20,18,.56);margin-top:4px}.profile-sidebar nav{display:grid;gap:6px}.profile-sidebar button,.mobile-tabs button{border:0;background:transparent;color:#111412;font-weight:800;text-align:left;padding:12px;border-radius:8px}.profile-sidebar button.active{background:#eef8dc;border-right:3px solid #aaed63}.profile-sidebar button span{margin-right:8px}.profile-content{flex:1;padding:24px;min-width:0}.profile-quick-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.profile-quick-nav button{min-height:38px;border:1.5px solid #111412;border-radius:999px;background:#fff;color:#111412;padding:0 13px;font-weight:900}.profile-quick-nav button:first-child{background:#aaed63}.mobile-tabs{display:none}.toast{border:1px solid #111412;border-radius:8px;background:#aaed63;padding:10px 12px;margin-bottom:14px;font-weight:900}.profile-card{border:1.5px solid #111412;border-radius:12px;background:#fff;box-shadow:4px 4px 0 #111412;padding:24px;display:grid;gap:14px}.profile-card h1{margin:0;font-size:30px}.profile-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.profile-head span,.plan-box span{display:inline-flex;border-radius:999px;background:#dff8ed;color:#087f8c;padding:6px 10px;font-size:12px;font-weight:900}.profile-head button,.lime,.danger button{border:1.5px solid #111412;border-radius:8px;background:#fff;min-height:40px;padding:0 14px;font-weight:900}.lime{background:#aaed63;box-shadow:3px 3px 0 #111412}.full{width:100%}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-grid.three{grid-template-columns:repeat(3,1fr)}.field{display:grid;gap:6px;font-size:13px;font-weight:900;color:rgba(17,20,18,.72);position:relative}.field.wide{grid-column:1/-1}.field input,.field select,.field textarea{width:100%;border:1px solid #b9c5ad;border-radius:8px;background:#fff;padding:12px;font:inherit}.field textarea{height:80px;resize:vertical}.field input:disabled,.field select:disabled{background:#f7f8f3;color:rgba(17,20,18,.7)}.field small{color:#dc2626;font-size:11px}.field em{position:absolute;right:8px;top:32px;border-radius:999px;background:#eef8dc;padding:4px 8px;font-size:11px;font-style:normal;color:#6fab29}.danger{border:1.5px solid #ef4444;border-radius:10px;background:#fff5f5;padding:14px;margin-top:14px}.danger p{color:#7f1d1d}.plan-box{border:1px solid #dde4d5;border-radius:10px;background:#fbfcf7;padding:18px}.plan-box strong{display:block;font-size:34px;margin:10px 0}.plan-box p{color:rgba(17,20,18,.62)}
-@media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px}.mobile-tabs button{min-width:112px;border:1px solid #dde4d5;background:#fff;text-align:center}.mobile-tabs button.active{background:#eef8dc;border-color:#111412}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head{flex-direction:column}.form-grid,.form-grid.three{grid-template-columns:1fr}.profile-card{padding:18px}}
+.profile-page{min-height:100vh;display:flex;background:#f7f8f3;color:#111412;font-family:"Be Vietnam Pro",system-ui,sans-serif}.profile-sidebar{width:220px;padding:24px 18px;border-right:1.5px solid #111412;background:#fff;position:sticky;top:0;height:100vh}.profile-identity{text-align:center;border-bottom:1px solid #dde4d5;padding-bottom:18px;margin-bottom:18px}.profile-identity span{display:grid;place-items:center;width:76px;height:76px;margin:0 auto 12px;border-radius:999px;background:#111412;color:#c4e995;font-size:24px;font-weight:900}.profile-identity strong,.profile-identity small{display:block}.profile-identity small{color:rgba(17,20,18,.56);margin-top:4px}.profile-sidebar nav{display:grid;gap:6px}.profile-sidebar button,.mobile-tabs button{border:0;background:transparent;color:#111412;font-weight:800;text-align:left;padding:12px;border-radius:8px}.profile-sidebar button.active{background:#eef7e8;border-right:3px solid #c4e995}.profile-sidebar button span{margin-right:8px}.profile-content{flex:1;padding:24px;min-width:0}.profile-quick-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.profile-quick-nav button{min-height:38px;border:1.5px solid #111412;border-radius:999px;background:#fff;color:#111412;padding:0 13px;font-weight:900}.profile-quick-nav button:first-child{background:#c4e995}.mobile-tabs{display:none}.toast{border:1px solid #111412;border-radius:8px;background:#c4e995;padding:10px 12px;margin-bottom:14px;font-weight:900}.profile-card{border:1.5px solid #111412;border-radius:12px;background:#fff;box-shadow:4px 4px 0 #111412;padding:24px;display:grid;gap:14px}.profile-card h1{margin:0;font-size:30px}.profile-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.profile-head span,.plan-box span{display:inline-flex;border-radius:999px;background:#e6f4ee;color:#087f8c;padding:6px 10px;font-size:12px;font-weight:900}.profile-head button,.lime,.danger button{border:1.5px solid #111412;border-radius:8px;background:#fff;min-height:40px;padding:0 14px;font-weight:900}.lime{background:#c4e995;box-shadow:3px 3px 0 #111412}.full{width:100%}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-grid.three{grid-template-columns:repeat(3,1fr)}.field{display:grid;gap:6px;font-size:13px;font-weight:900;color:rgba(17,20,18,.72);position:relative}.field.wide{grid-column:1/-1}.field input,.field select,.field textarea{width:100%;border:1px solid #b9c5ad;border-radius:8px;background:#fff;padding:12px;font:inherit}.field textarea{height:80px;resize:vertical}.field input:disabled,.field select:disabled{background:#f7f8f3;color:rgba(17,20,18,.7)}.field small{color:#dc2626;font-size:11px}.field em{position:absolute;right:8px;top:32px;border-radius:999px;background:#eef7e8;padding:4px 8px;font-size:11px;font-style:normal;color:#6a9540}.danger{border:1.5px solid #ef4444;border-radius:10px;background:#fff5f5;padding:14px;margin-top:14px}.danger p{color:#7f1d1d}.plan-box{border:1px solid #dde4d5;border-radius:10px;background:#fbfcf7;padding:18px}.plan-box strong{display:block;font-size:34px;margin:10px 0}.plan-box p{color:rgba(17,20,18,.62)}
+@media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px}.mobile-tabs button{min-width:112px;border:1px solid #dde4d5;background:#fff;text-align:center}.mobile-tabs button.active{background:#eef7e8;border-color:#111412}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head{flex-direction:column}.form-grid,.form-grid.three{grid-template-columns:1fr}.profile-card{padding:18px}}
 `;

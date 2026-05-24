@@ -1,0 +1,136 @@
+*:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.44);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+  margin: -1px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: rgba(8, 127, 140, 0.16);
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
+.api-message,
+.field-error,
+.form-error {
+  border-radius: var(--radius-md);
+  padding: 11px 13px;
+  font-weight: 800;
+  line-height: 1.48;
+}
+
+.api-message.error,
+.field-error,
+.form-error {
+  border: 1px solid rgba(180, 35, 24, 0.26);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.api-message.success {
+  border: 1px solid rgba(21, 128, 61, 0.24);
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.api-message.warning {
+  border: 1px solid rgba(180, 83, 9, 0.25);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.muted-text {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.table-primary-cell {
+  display: grid;
+  gap: 4px;
+  min-width: 220px;
+}
+
+.table-primary-cell strong,
+.table-primary-cell span,
+.table-primary-cell small {
+  overflow-wrap: anywhere;
+}
+
+.table-primary-cell span,
+.table-primary-cell small {
+  color: var(--muted);
+}
+
+.table-primary-cell small {
+  font-size: 12px;
+}
+
+.skeleton-line,
+.skeleton-card {
+  position: relative;
+  overflow: hidden;
+  background: #eef2e9;
+}
+
+.skeleton-line::after,
+.skeleton-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: skeletonSweep 1.2s infinite;
+}
+
+.skeleton-line {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.skeleton-card {
+  min-height: 96px;
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes skeletonSweep {
+  to {
+    transform: translateX(100%);
+  }
+}

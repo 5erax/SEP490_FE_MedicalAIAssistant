@@ -2,7 +2,7 @@
   min-height: 100svh;
   overflow-x: hidden;
   background:
-    linear-gradient(135deg, rgba(170, 237, 99, 0.2), rgba(8, 127, 140, 0.08) 42%, transparent 72%),
+    linear-gradient(135deg, rgba(196, 233, 149, 0.2), rgba(8, 127, 140, 0.08) 42%, transparent 72%),
     #f4f7ef;
 }
 
@@ -52,18 +52,18 @@
 }
 
 .auth-shell-page .auth-brand .brand-mark {
-  border: 1.5px solid #aaed63;
-  background: #aaed63;
+  border: 1.5px solid #c4e995;
+  background: #c4e995;
   color: #101411;
-  box-shadow: 3px 3px 0 rgba(170, 237, 99, 0.28);
+  box-shadow: 3px 3px 0 rgba(196, 233, 149, 0.28);
 }
 
 .auth-shell-page .auth-side-panel .eyebrow {
-  color: #aaed63;
+  color: #c4e995;
 }
 
 .auth-shell-page .auth-side-panel .eyebrow::before {
-  background: #aaed63;
+  background: #c4e995;
 }
 
 .auth-shell-page .auth-side-panel h1 {
@@ -102,7 +102,7 @@
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: #aaed63;
+  background: #c4e995;
   color: #101411;
   font-size: 12px;
   font-weight: 950;
@@ -165,7 +165,7 @@
 .auth-shell-page .clean-field input:focus,
 .auth-shell-page .clean-field select:focus {
   border-color: rgba(16, 20, 17, 0.72);
-  box-shadow: 0 0 0 4px rgba(170, 237, 99, 0.26);
+  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.26);
 }
 
 .auth-shell-page .form-two-cols {

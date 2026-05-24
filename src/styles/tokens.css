@@ -1,0 +1,47 @@
+:root {
+  --color-bg: #f7f8f3;
+  --color-surface: #ffffff;
+  --color-surface-soft: #fbfcf7;
+  --color-ink: #111412;
+  --color-muted: rgba(17, 20, 18, 0.68);
+  --color-subtle: rgba(17, 20, 18, 0.42);
+  --color-line: #dde4d5;
+  --color-line-strong: #b9c5ad;
+  --color-primary: #c4e995;
+  --color-primary-strong: #6a9540;
+  --color-info: #087f8c;
+  --color-info-bg: #e6f4ee;
+  --color-success: #15803d;
+  --color-success-bg: #dcfce7;
+  --color-warning: #b45309;
+  --color-warning-bg: #fef3c7;
+  --color-danger: #b42318;
+  --color-danger-bg: #fff4f2;
+  --font-body: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-display: "Be Vietnam Pro", system-ui, sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --shadow-card: 0 18px 48px rgba(17, 20, 18, 0.08);
+  --shadow-hard: 4px 4px 0 var(--color-ink);
+  --motion-fast: 120ms ease;
+  --motion-base: 180ms ease;
+  --z-nav: 20;
+  --z-overlay: 120;
+  --z-toast: 110;
+
+  --success: var(--color-success);
+  --success-bg: var(--color-success-bg);
+  --warning: var(--color-warning);
+  --warning-bg: var(--color-warning-bg);
+  --danger: var(--color-danger);
+  --danger-bg: var(--color-danger-bg);
+}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useFeedback } from "../components/feedback/feedbackContext";
 import { Footer } from "../components/landing/PricingSection";
 import { authApi, clearStoredAuth, getStoredAuth, medicalDepartmentsApi } from "../services/api";
 import { hasRole, normalizeRoles } from "../utils/roles";
@@ -55,6 +56,7 @@ function AccessDenied({ roles }) {
 }
 
 export default function StaffWorkspacePage() {
+  const { confirmAction, showToast } = useFeedback();
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [profile, setProfile] = useState(null);
   const [departments, setDepartments] = useState([]);
@@ -151,11 +153,18 @@ export default function StaffWorkspacePage() {
   }
 
   async function handleDeleteDepartment(id) {
-    if (!window.confirm("Xóa chuyên khoa này?")) return;
+    const confirmed = await confirmAction({
+      title: "Xóa chuyên khoa?",
+      message: "Chuyên khoa sẽ bị xóa khỏi danh mục và không còn xuất hiện trong luồng tư vấn.",
+      confirmLabel: "Xóa chuyên khoa",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     setMessage(null);
     try {
       const response = await medicalDepartmentsApi.remove(id);
       setMessage({ type: "success", text: response.message || "Đã xóa chuyên khoa." });
+      showToast({ type: "success", title: "Đã xóa chuyên khoa", message: response.message || "Danh mục đã được cập nhật." });
       await loadDepartments();
     } catch (error) {
       setMessage({ type: "error", text: error.message });

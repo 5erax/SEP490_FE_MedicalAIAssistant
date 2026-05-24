@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
+import { useFeedback } from "../components/feedback/feedbackContext";
+import { Badge, DataTable, EmptyState, LoadingState } from "../components/ui";
 import {
   authApi,
   clearStoredAuth,
@@ -86,6 +88,7 @@ function EmptyAuth() {
 }
 
 export default function AdminWorkspacePage() {
+  const { confirmAction, showToast } = useFeedback();
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [profile, setProfile] = useState(null);
   const [users, setUsers] = useState([]);
@@ -217,12 +220,19 @@ export default function AdminWorkspacePage() {
   }
 
   async function handleDeleteUser(userId) {
-    if (!window.confirm("Xóa người dùng này?")) return;
+    const confirmed = await confirmAction({
+      title: "Xóa người dùng?",
+      message: "Tài khoản này sẽ bị xóa khỏi danh sách quản trị. Hãy chắc chắn trước khi tiếp tục.",
+      confirmLabel: "Xóa người dùng",
+      tone: "danger",
+    });
+    if (!confirmed) return;
 
     setUsersMessage(null);
     try {
       const response = await usersApi.remove(userId);
       setUsersMessage({ type: "success", text: response.message || "Đã xóa người dùng." });
+      showToast({ type: "success", title: "Đã xóa người dùng", message: response.message || "Danh sách đã được cập nhật." });
       await loadUsers();
     } catch (error) {
       setUsersMessage({ type: "error", text: error.message });
@@ -265,12 +275,19 @@ export default function AdminWorkspacePage() {
   }
 
   async function handleDeleteDepartment(id) {
-    if (!window.confirm("Xóa chuyên khoa này?")) return;
+    const confirmed = await confirmAction({
+      title: "Xóa chuyên khoa?",
+      message: "Chuyên khoa sẽ bị xóa khỏi danh mục. Người dùng có thể không còn thấy lựa chọn này.",
+      confirmLabel: "Xóa chuyên khoa",
+      tone: "danger",
+    });
+    if (!confirmed) return;
 
     setDepartmentMessage(null);
     try {
       const response = await medicalDepartmentsApi.remove(id);
       setDepartmentMessage({ type: "success", text: response.message || "Đã xóa chuyên khoa." });
+      showToast({ type: "success", title: "Đã xóa chuyên khoa", message: response.message || "Danh mục đã được cập nhật." });
       await loadDepartments();
     } catch (error) {
       setDepartmentMessage({ type: "error", text: error.message });
@@ -312,6 +329,40 @@ export default function AdminWorkspacePage() {
       window.location.href = "/";
     }
   }
+
+  const userColumns = [
+    {
+      key: "user",
+      header: "Người dùng",
+      render: (item) => (
+        <div className="table-primary-cell">
+          <strong>{item.displayName || item.email || "Người dùng"}</strong>
+          <span>{item.email || "Chưa có email"}</span>
+          <small>{item.identityId}</small>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Trạng thái",
+      render: (item) => (
+        <div className="admin-badge-stack">
+          <Badge tone={Number(item.status) === 1 ? "success" : "warning"}>{statusLabel(item.status)}</Badge>
+          <Badge tone={item.isDeleted ? "danger" : "info"}>{item.isDeleted ? "Đã xóa" : "Hoạt động"}</Badge>
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Thao tác",
+      render: (item) => (
+        <div className="record-actions">
+          <button className="btn btn-ghost btn-small" type="button" onClick={() => handleApproveUser(item.identityId)}>Duyệt</button>
+          <button className="btn btn-dark btn-small" type="button" onClick={() => handleDeleteUser(item.identityId)}>Xóa</button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <main className="workspace-root admin-operator">
@@ -451,28 +502,14 @@ export default function AdminWorkspacePage() {
                 </div>
 
                 {usersLoading ? (
-                  <p className="muted-text">Đang tải danh sách người dùng...</p>
+                  <LoadingState label="Đang tải danh sách người dùng..." />
                 ) : (
-                  <div className="admin-table-list">
-                    {filteredUsers.length === 0 && <p className="muted-text">Không tìm thấy người dùng phù hợp.</p>}
-                    {filteredUsers.map((user) => (
-                      <article className="admin-user-row" key={user.identityId}>
-                        <div>
-                          <strong>{user.displayName || user.email || "Người dùng"}</strong>
-                          <span>{user.email || "Chưa có email"}</span>
-                          <small>{user.identityId}</small>
-                        </div>
-                        <div className="admin-badge-stack">
-                          <span>{statusLabel(user.status)}</span>
-                          <span>{user.isDeleted ? "Đã xóa" : "Hoạt động"}</span>
-                        </div>
-                        <div className="record-actions">
-                          <button className="btn btn-ghost btn-small" type="button" onClick={() => handleApproveUser(user.identityId)}>Duyệt</button>
-                          <button className="btn btn-dark btn-small" type="button" onClick={() => handleDeleteUser(user.identityId)}>Xóa</button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
+                  <DataTable
+                    columns={userColumns}
+                    rows={filteredUsers}
+                    getRowKey={(item) => item.identityId}
+                    emptyState={<EmptyState title="Không tìm thấy người dùng" description="Thử đổi từ khóa tìm kiếm hoặc tải lại danh sách." />}
+                  />
                 )}
 
                 <div className="pagination-row">

@@ -1,0 +1,194 @@
+.ui-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-sm);
+  padding: 0 16px;
+  color: var(--ink);
+  font-weight: 900;
+  transition: transform var(--motion-base), box-shadow var(--motion-base), background var(--motion-base);
+}
+
+.ui-button:hover {
+  transform: translateY(-1px);
+}
+
+.ui-button-primary {
+  background: var(--lime);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.ui-button-secondary {
+  background: #fff;
+}
+
+.ui-button-dark {
+  background: var(--ink);
+  color: #fff;
+}
+
+.ui-button-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.ui-button-sm {
+  min-height: 36px;
+  padding-inline: 12px;
+  font-size: 13px;
+}
+
+.ui-field {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.ui-field input,
+.ui-field select,
+.ui-field textarea {
+  width: 100%;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--ink);
+  padding: 12px;
+  outline: none;
+}
+
+.ui-field textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.ui-field input:focus,
+.ui-field select:focus,
+.ui-field textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.12);
+}
+
+.ui-field small {
+  color: var(--subtle);
+  line-height: 1.45;
+}
+
+.ui-field-error {
+  color: var(--danger) !important;
+}
+
+.ui-card {
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  box-shadow: var(--shadow-hard);
+  padding: 20px;
+}
+
+.ui-empty,
+.ui-loading {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  min-height: 180px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--paper-soft);
+  color: var(--muted);
+  padding: 22px;
+  text-align: center;
+}
+
+.ui-empty strong {
+  color: var(--ink);
+  font-size: 19px;
+}
+
+.ui-empty p,
+.ui-loading p {
+  max-width: 520px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.ui-loading span {
+  width: 34px;
+  height: 34px;
+  border: 4px solid rgba(17, 20, 18, 0.12);
+  border-top-color: var(--teal);
+  border-radius: 999px;
+  animation: uiSpin 0.8s linear infinite;
+}
+
+.ui-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ui-badge-info {
+  background: var(--mint);
+  color: var(--teal);
+}
+
+.ui-badge-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.ui-badge-warning {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.ui-badge-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.ui-table-wrap {
+  max-width: 100%;
+  overflow: auto;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ui-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ink);
+  color: #fff;
+  text-align: left;
+}
+
+.ui-table th,
+.ui-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 12px;
+  vertical-align: top;
+}
+
+@keyframes uiSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

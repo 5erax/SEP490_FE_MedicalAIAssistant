@@ -30,7 +30,7 @@ const PAGES = {
     title: "Các tính năng cốt lõi để người dùng hiểu và theo dõi sức khỏe.",
     copy: "Bộ tính năng được thiết kế xoay quanh các khoảnh khắc thực tế: đang lo vì triệu chứng mới, chuẩn bị đi khám, uống thuốc sau khám và cần xem lại tiến triển sau vài ngày.",
     primary: ["Dùng thử miễn phí", "/signup"],
-    secondary: ["Xem demo", "/#demo"],
+    secondary: null,
     stats: [["AI", "phân tích triệu chứng"], ["Map", "gợi ý cơ sở y tế"], ["Care", "theo dõi sau khám"]],
     cards: [
       ["Phân tích triệu chứng", "Gợi ý chuyên khoa, mức ưu tiên và câu hỏi cần chuẩn bị trước khi gặp bác sĩ."],
@@ -416,9 +416,11 @@ export default function StaticPage({ path }) {
               <a className="btn btn-primary" href={page.primary[1]}>
                 {page.primary[0]}
               </a>
-              <a className="btn btn-ghost" href={page.secondary[1]}>
-                {page.secondary[0]}
-              </a>
+              {page.secondary && (
+                <a className="btn btn-ghost" href={page.secondary[1]}>
+                  {page.secondary[0]}
+                </a>
+              )}
             </div>
           </div>
 

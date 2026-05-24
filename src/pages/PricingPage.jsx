@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { subscriptionPlansApi } from "../services/api";
+import { ArrowLeft, Home, MapPin } from "lucide-react";
+import { getStoredAuth, hasPremiumAccess, subscriptionPlansApi } from "../services/api";
+import { trackUxEvent } from "../utils/analytics";
 
 const FEATURES = [
   "Phân tích triệu chứng cơ bản",
@@ -21,10 +23,16 @@ function formatPrice(value) {
 }
 
 function PricingPage() {
+  const auth = getStoredAuth();
+  const shouldOpenPlanModal = Boolean(auth && (() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("upgrade") === "premium" || params.get("locked");
+  })());
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [openFaq, setOpenFaq] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(shouldOpenPlanModal);
   const [apiPlans, setApiPlans] = useState([]);
+  const isPremium = hasPremiumAccess(auth);
   const paidPlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) > 0), [apiPlans]);
   const freePlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) === 0), [apiPlans]);
   const monthlyPrice = Number(paidPlan?.price) || 149000;
@@ -49,13 +57,39 @@ function PricingPage() {
     };
   }, []);
 
+  function startFreePlan() {
+    window.location.href = auth ? "/dashboard" : "/signup";
+  }
+
+  function startPremiumUpgrade() {
+    trackUxEvent("pricing_trial_clicked", { billingCycle, authenticated: Boolean(auth) });
+
+    if (!auth) {
+      window.location.href = `/signup?redirect=${encodeURIComponent("/pricing?upgrade=premium")}`;
+      return;
+    }
+
+    setShowModal(true);
+  }
+
   return (
     <main className="pricing-page">
       <style>{styles}</style>
-      <nav className="pricing-quick-nav" aria-label="Dieu huong nhanh">
-        <button type="button" onClick={() => { window.location.href = "/dashboard"; }}>← Trang chủ</button>
-        <button type="button" onClick={() => { window.location.href = "/profile"; }}>Hồ sơ</button>
-        <button type="button" onClick={() => { window.location.href = "/chat"; }}>Chat AI</button>
+      <nav className="pricing-nav" aria-label="Điều hướng bảng giá">
+        <button type="button" onClick={() => { window.location.href = auth ? "/dashboard" : "/"; }}>
+          <ArrowLeft size={18} />
+          {auth ? "Về tư vấn" : "Về trang chủ"}
+        </button>
+        <div>
+          <button type="button" onClick={() => { window.location.href = "/"; }}>
+            <Home size={17} />
+            Trang chủ
+          </button>
+          <button type="button" onClick={() => { window.location.href = "/map"; }}>
+            <MapPin size={17} />
+            Bản đồ
+          </button>
+        </div>
       </nav>
       <section className="pricing-hero">
         <p className="mini-label">Bảng giá</p>
@@ -77,7 +111,7 @@ function PricingPage() {
               <li className={index > 2 ? "disabled" : ""} key={feature}>{index > 2 ? "×" : "✓"} {feature}</li>
             ))}
           </ul>
-          <button type="button" onClick={() => { window.location.href = "/signup"; }}>Bắt đầu ngay</button>
+          <button type="button" onClick={startFreePlan}>Bắt đầu ngay</button>
         </article>
 
         <article className="plan-card-premium">
@@ -90,7 +124,9 @@ function PricingPage() {
           <ul>
             {FEATURES.map((feature) => <li key={feature}>✓ {feature}</li>)}
           </ul>
-          <button type="button" onClick={() => setShowModal(true)}>Dùng thử 14 ngày</button>
+          <button type="button" onClick={startPremiumUpgrade}>
+            {auth ? (isPremium ? "Quản lý gói hiện tại" : "Nâng cấp MediMate+") : "Đăng ký để nâng cấp"}
+          </button>
         </article>
       </section>
 
@@ -116,17 +152,13 @@ function PricingPage() {
         <div>
           <h2>Bắt đầu hành trình chăm sóc sức khoẻ thông minh ngay hôm nay.</h2>
         </div>
-        <div>
-          <button type="button" onClick={() => { window.location.href = "/signup"; }}>Dùng thử miễn phí</button>
-          <button type="button" onClick={() => { window.location.href = "/contact"; }}>Liên hệ tư vấn</button>
-        </div>
       </section>
 
       {showModal && (
         <div className="pricing-modal" role="dialog" aria-modal="true">
           <div>
-            <strong>MediMate+ sắp ra mắt</strong>
-            <p>Tính năng nâng cấp sẽ được mở khi cổng thanh toán hoàn tất.</p>
+            <strong>{isPremium ? "Bạn đang ở gói MediMate+" : "MediMate+ sắp ra mắt"}</strong>
+            <p>{isPremium ? "Tài khoản của bạn đã có quyền truy cập premium." : "Bạn đã đăng nhập. Tính năng nâng cấp sẽ được mở khi cổng thanh toán hoàn tất."}</p>
             <button type="button" onClick={() => setShowModal(false)}>Đã hiểu</button>
           </div>
         </div>
@@ -137,9 +169,10 @@ function PricingPage() {
 
 const styles = `
 .pricing-page { min-height: 100svh; background: var(--bg); color: var(--ink); padding: 34px 20px 58px; }
-.pricing-quick-nav { width: min(960px, 100%); margin: 0 auto 18px; display: flex; flex-wrap: wrap; gap: 8px; }
-.pricing-quick-nav button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
-.pricing-quick-nav button:first-child { background: var(--lime); }
+.pricing-nav { width: min(960px, 100%); margin: 0 auto 28px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pricing-nav div { display: flex; gap: 8px; }
+.pricing-nav button { min-height: 40px; display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 14px; font-weight: 900; }
+.pricing-nav > button { background: var(--lime); box-shadow: 3px 3px 0 var(--ink); }
 .pricing-hero { text-align: center; width: min(820px, 100%); margin: 0 auto; }
 .mini-label { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 14px; color: var(--lime-dark); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
 .mini-label::before { content: ""; width: 12px; height: 2px; background: currentColor; }
@@ -189,6 +222,10 @@ const styles = `
 .pricing-modal button { width: 100%; background: var(--lime); }
 @media (max-width: 760px) {
   .pricing-page { padding-inline: 14px; }
+  .pricing-nav { align-items: stretch; flex-direction: column; }
+  .pricing-nav button, .pricing-nav div { width: 100%; }
+  .pricing-nav div { display: grid; grid-template-columns: 1fr 1fr; }
+  .pricing-nav button { justify-content: center; }
   .plans-grid, .pricing-cta { grid-template-columns: 1fr; }
   .billing-toggle { width: 100%; }
   .pricing-cta div:last-child, .pricing-cta button { width: 100%; }

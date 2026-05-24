@@ -16,9 +16,36 @@ function parseStoredAuth() {
   }
 }
 
+function decodeJwtPayload(token) {
+  try {
+    const payload = String(token).split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function isExpiredToken(token) {
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) return false;
+  return Number(payload.exp) * 1000 <= Date.now();
+}
+
+function isUsableAuth(auth) {
+  return Boolean(auth?.accessToken) && !isExpiredToken(auth.accessToken);
+}
+
 export function getStoredAuth() {
   if (typeof window === "undefined") return null;
-  return parseStoredAuth();
+  const auth = parseStoredAuth();
+  if (!isUsableAuth(auth)) {
+    clearStoredAuth();
+    return null;
+  }
+  return auth;
 }
 
 export function setStoredAuth(auth) {
@@ -28,6 +55,27 @@ export function setStoredAuth(auth) {
 
 export function clearStoredAuth() {
   localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+export function isAuthenticated() {
+  return Boolean(getStoredAuth());
+}
+
+export function hasPremiumAccess(auth = getStoredAuth()) {
+  const planName = String(auth?.planName ?? auth?.subscriptionPlan ?? auth?.plan ?? "").toLowerCase();
+  const subscriptionStatus = String(auth?.subscriptionStatus ?? auth?.subscription?.status ?? "").toLowerCase();
+  const roles = Array.isArray(auth?.roles) ? auth.roles.map((role) => String(role).toLowerCase()) : [];
+
+  return Boolean(
+    auth?.isPremium ||
+    auth?.isSubscribed ||
+    auth?.hasPremiumAccess ||
+    planName.includes("premium") ||
+    planName.includes("medimate+") ||
+    subscriptionStatus === "active" ||
+    roles.includes("admin") ||
+    roles.includes("staff")
+  );
 }
 
 export function getAccessToken() {
@@ -255,6 +303,96 @@ export const medicalDepartmentsApi = {
 
   remove(id) {
     return apiRequest(`/api/medical-departments/${id}`, {
+      method: "DELETE",
+      auth: true,
+    });
+  },
+};
+
+export const medicalFacilitiesApi = {
+  list(pageNumber = 1, pageSize = 50) {
+    return apiRequest(`/api/medical-facilities?${withPagination(pageNumber, pageSize)}`);
+  },
+
+  active() {
+    return apiRequest("/api/medical-facilities/active");
+  },
+
+  get(id) {
+    return apiRequest(`/api/medical-facilities/${id}`);
+  },
+
+  create(payload) {
+    return apiRequest("/api/medical-facilities", {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  update(id, payload) {
+    return apiRequest(`/api/medical-facilities/${id}`, {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  setStatus(id, isActive) {
+    return apiRequest(`/api/medical-facilities/${id}/status`, {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    });
+  },
+
+  remove(id) {
+    return apiRequest(`/api/medical-facilities/${id}`, {
+      method: "DELETE",
+      auth: true,
+    });
+  },
+};
+
+export const doctorsApi = {
+  list(pageNumber = 1, pageSize = 50) {
+    return apiRequest(`/api/doctors?${withPagination(pageNumber, pageSize)}`);
+  },
+
+  active() {
+    return apiRequest("/api/doctors/active");
+  },
+
+  get(id) {
+    return apiRequest(`/api/doctors/${id}`);
+  },
+
+  create(payload) {
+    return apiRequest("/api/doctors", {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  update(id, payload) {
+    return apiRequest(`/api/doctors/${id}`, {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  setStatus(id, isActive) {
+    return apiRequest(`/api/doctors/${id}/status`, {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    });
+  },
+
+  remove(id) {
+    return apiRequest(`/api/doctors/${id}`, {
       method: "DELETE",
       auth: true,
     });

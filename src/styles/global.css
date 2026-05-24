@@ -7,9 +7,9 @@
   --subtle: rgba(17, 20, 18, 0.42);
   --line: #dde4d5;
   --line-strong: #b9c5ad;
-  --lime: #aaed63;
-  --lime-dark: #6fab29;
-  --mint: #dff8ed;
+  --lime: #c4e995;
+  --lime-dark: #6a9540;
+  --mint: #e6f4ee;
   --teal: #087f8c;
   --blue: #1d4ed8;
   --amber: #d97706;
@@ -505,7 +505,7 @@
 }
 
 .feature-dark .feature-icon {
-  background: rgba(170, 237, 99, 0.12);
+  background: rgba(196, 233, 149, 0.12);
   color: var(--lime);
 }
 
@@ -541,7 +541,7 @@
 
 .demo-section {
   background:
-    radial-gradient(circle at 12% 18%, rgba(170, 237, 99, 0.22), transparent 28%),
+    radial-gradient(circle at 12% 18%, rgba(196, 233, 149, 0.22), transparent 28%),
     var(--bg);
 }
 
@@ -1564,7 +1564,7 @@
   min-height: 100svh;
   padding: 126px 0 80px;
   background:
-    linear-gradient(120deg, rgba(223, 248, 237, 0.72), rgba(255, 255, 255, 0.58) 42%, rgba(170, 237, 99, 0.18)),
+    linear-gradient(120deg, rgba(223, 248, 237, 0.72), rgba(255, 255, 255, 0.58) 42%, rgba(196, 233, 149, 0.18)),
     var(--bg);
 }
 
@@ -2330,7 +2330,7 @@
   background:
     linear-gradient(90deg, rgba(17, 20, 18, 0.06) 1px, transparent 1px),
     linear-gradient(rgba(17, 20, 18, 0.06) 1px, transparent 1px),
-    linear-gradient(135deg, #dff8ed, #f7f8f3 48%, #ffffff);
+    linear-gradient(135deg, #e6f4ee, #f7f8f3 48%, #ffffff);
   background-size: 42px 42px, 42px 42px, auto;
 }
 
@@ -3323,7 +3323,7 @@
 
 .assistant-map-loading {
   border-radius: 999px;
-  background: rgba(170, 237, 99, 0.9);
+  background: rgba(196, 233, 149, 0.9);
   box-shadow: 0 16px 32px rgba(17, 20, 18, 0.12);
 }
 
@@ -4451,11 +4451,11 @@
 @keyframes landingChatPulse {
   0%,
   100% {
-    box-shadow: 5px 5px 0 var(--ink), 0 18px 42px rgba(17, 20, 18, 0.18), 0 0 0 0 rgba(170, 237, 99, 0.32);
+    box-shadow: 5px 5px 0 var(--ink), 0 18px 42px rgba(17, 20, 18, 0.18), 0 0 0 0 rgba(196, 233, 149, 0.32);
   }
 
   50% {
-    box-shadow: 5px 5px 0 var(--ink), 0 18px 42px rgba(17, 20, 18, 0.18), 0 0 0 10px rgba(170, 237, 99, 0);
+    box-shadow: 5px 5px 0 var(--ink), 0 18px 42px rgba(17, 20, 18, 0.18), 0 0 0 10px rgba(196, 233, 149, 0);
   }
 }
 

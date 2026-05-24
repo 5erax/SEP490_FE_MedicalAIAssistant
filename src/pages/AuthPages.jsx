@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
+import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { authApi } from "../services/api";
 import { getPostLoginPath, getWorkspacePath } from "../utils/roles";
@@ -11,6 +12,13 @@ const GOOGLE_LOGIN_ENABLED = Boolean(GOOGLE_CLIENT_ID.trim());
 function ApiMessage({ message }) {
   if (!message) return null;
   return <div className={`api-message ${message.type}`}>{message.text}</div>;
+}
+
+function getSafeRedirectPath() {
+  const redirect = new URLSearchParams(window.location.search).get("redirect");
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) return "";
+  if (["/login", "/signup", "/forgot-password", "/change-password"].includes(redirect)) return "";
+  return redirect;
 }
 
 const authCopy = {
@@ -104,6 +112,7 @@ function SelectField({ label, children, ...props }) {
 }
 
 export function LoginPage() {
+  const { showToast } = useFeedback();
   const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -114,7 +123,8 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.login(form);
-      window.location.href = getPostLoginPath(response.data ?? response);
+      showToast({ type: "success", title: "Đăng nhập thành công", message: "Đang mở không gian phù hợp với tài khoản của bạn." });
+      window.location.href = getSafeRedirectPath() || getPostLoginPath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -133,7 +143,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.googleLogin(credential);
-      window.location.href = getPostLoginPath(response.data ?? response);
+      window.location.href = getSafeRedirectPath() || getPostLoginPath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -208,6 +218,7 @@ export function LoginPage() {
 }
 
 export function SignupPage() {
+  const { showToast } = useFeedback();
   const [form, setForm] = useState({
     email: "",
     userName: "",
@@ -232,6 +243,10 @@ export function SignupPage() {
       setMessage({ type: "error", text: "Bạn cần đồng ý điều khoản sử dụng và lưu ý y tế." });
       return;
     }
+    if (form.password !== form.confirmPassword) {
+      setMessage({ type: "error", text: "Mật khẩu nhập lại chưa khớp. Vui lòng kiểm tra lại." });
+      return;
+    }
     setSubmitting(true);
     setMessage(null);
     try {
@@ -240,7 +255,8 @@ export function SignupPage() {
         gender: Number(form.gender),
         dateOfBirth: form.dateOfBirth || null,
       });
-      window.location.href = getWorkspacePath(response.data ?? response);
+      showToast({ type: "success", title: "Tạo tài khoản thành công", message: "Đang mở workspace của bạn." });
+      window.location.href = getSafeRedirectPath() || getWorkspacePath(response.data ?? response);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -284,6 +300,7 @@ export function SignupPage() {
 }
 
 export function ForgotPasswordPage() {
+  const { showToast } = useFeedback();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -294,7 +311,9 @@ export function ForgotPasswordPage() {
     setMessage(null);
     try {
       const response = await authApi.forgotPassword(email);
-      setMessage({ type: "success", text: response.message || "Nếu email hợp lệ, hướng dẫn khôi phục sẽ được gửi đến bạn." });
+      const text = response.message || "Nếu email hợp lệ, hướng dẫn khôi phục sẽ được gửi đến bạn.";
+      setMessage({ type: "success", text });
+      showToast({ type: "success", title: "Đã gửi hướng dẫn", message: text });
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -320,6 +339,7 @@ export function ForgotPasswordPage() {
 }
 
 export function ChangePasswordPage() {
+  const { showToast } = useFeedback();
   const [form, setForm] = useState({ email: "", otp: "", newPassword: "", confirmNewPassword: "" });
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -332,9 +352,16 @@ export function ChangePasswordPage() {
     event.preventDefault();
     setSubmitting(true);
     setMessage(null);
+    if (form.newPassword !== form.confirmNewPassword) {
+      setMessage({ type: "error", text: "Mật khẩu mới nhập lại chưa khớp." });
+      setSubmitting(false);
+      return;
+    }
     try {
       const response = await authApi.changePassword(form);
-      setMessage({ type: "success", text: response.message || "Đổi mật khẩu thành công. Bạn có thể đăng nhập lại." });
+      const text = response.message || "Đổi mật khẩu thành công. Bạn có thể đăng nhập lại.";
+      setMessage({ type: "success", text });
+      showToast({ type: "success", title: "Đã đổi mật khẩu", message: text });
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {

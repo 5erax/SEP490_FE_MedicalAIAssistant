@@ -131,14 +131,6 @@ export function CtaSection() {
             <h2>Bắt đầu xây thói quen chăm sóc sức khỏe chủ động hơn.</h2>
             <p>Miễn phí để thử, không cần thẻ tín dụng, thiết lập trong vài phút.</p>
           </div>
-          <div className="hero-actions">
-            <a className="btn btn-dark" href="/contact">
-              Liên hệ tư vấn
-            </a>
-            <a className="btn btn-ghost" href="/#demo">
-              Xem lại demo
-            </a>
-          </div>
         </div>
       </div>
     </section>

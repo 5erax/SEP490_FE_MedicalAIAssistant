@@ -6,7 +6,6 @@ import StaffWorkspacePage from "./pages/StaffWorkspacePage";
 import AdminWorkspacePage from "./pages/AdminWorkspacePage";
 import ChatbotPage from "./pages/ChatbotPage";
 import DashboardPage from "./pages/DashboardPage";
-import DepartmentsPage from "./pages/DepartmentsPage";
 import MedicalRecordPage from "./pages/MedicalRecordPage";
 import MedicationScanPage from "./pages/MedicationScanPage";
 import NearbyClinicPage from "./pages/NearbyClinicPage";
@@ -16,6 +15,7 @@ import UserProfilePage from "./pages/UserProfilePage";
 import MedicalAssistantPage from "./pages/MedicalAssistantPage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
+import { getStoredAuth, hasPremiumAccess } from "./services/api";
 import {
   ChangePasswordPage,
   ForgotPasswordPage,
@@ -25,6 +25,35 @@ import {
 
 function userWorkspace(page) {
   return <UserWorkspaceShell>{page}</UserWorkspaceShell>;
+}
+
+function safeCurrentPath() {
+  return `${window.location.pathname}${window.location.search || ""}`;
+}
+
+function redirectToLogin(path) {
+  const redirect = encodeURIComponent(path || safeCurrentPath());
+  window.history.replaceState(null, "", `/login?redirect=${redirect}`);
+  return <LoginPage />;
+}
+
+function redirectToPricing(path) {
+  const locked = encodeURIComponent(path || safeCurrentPath());
+  window.history.replaceState(null, "", `/pricing?locked=${locked}`);
+  return <PricingPage />;
+}
+
+function requireAuth(page, path) {
+  const auth = getStoredAuth();
+  if (!auth) return redirectToLogin(path);
+  return page;
+}
+
+function requirePremium(page, path) {
+  const auth = getStoredAuth();
+  if (!auth) return redirectToLogin(path);
+  if (!hasPremiumAccess(auth)) return redirectToPricing(path);
+  return page;
 }
 
 function App() {
@@ -39,24 +68,27 @@ function App() {
   if (path === "/staff/register" || path === "/staff-register") return <StaffRegisterPortalPage />;
   if (path === "/forgot-password") return <ForgotPasswordPage />;
   if (path === "/change-password") return <ChangePasswordPage />;
-  if (path === "/dashboard") return userWorkspace(<DashboardPage />);
-  if (path === "/profile") return userWorkspace(<UserProfilePage />);
-  if (path === "/symptom") return userWorkspace(<SymptomAnalysisPage />);
-  if (path === "/chat") return userWorkspace(<ChatbotPage />);
-  if (path === "/map") return userWorkspace(<NearbyClinicPage />);
-  if (path === "/records") return userWorkspace(<MedicalRecordPage />);
-  if (path === "/medication") return userWorkspace(<MedicationScanPage />);
-  if (path === "/pricing") return userWorkspace(<PricingPage />);
+  if (path === "/dashboard") return requireAuth(userWorkspace(<DashboardPage />), safeCurrentPath());
+  if (path === "/profile") return requirePremium(userWorkspace(<UserProfilePage />), safeCurrentPath());
+  if (path === "/symptom") return requirePremium(userWorkspace(<SymptomAnalysisPage />), safeCurrentPath());
+  if (path === "/chat") return requirePremium(userWorkspace(<ChatbotPage />), safeCurrentPath());
+  if (path === "/map") return <NearbyClinicPage />;
+  if (path === "/records") return requirePremium(userWorkspace(<MedicalRecordPage />), safeCurrentPath());
+  if (path === "/medication") return requirePremium(userWorkspace(<MedicationScanPage />), safeCurrentPath());
+  if (path === "/pricing") return <PricingPage />;
   if (path === "/app") return <WorkspaceRedirect />;
   if (path === "/account" || path === "/app/patient") {
     window.history.replaceState(null, "", "/dashboard");
-    return userWorkspace(<DashboardPage />);
+    return requireAuth(userWorkspace(<DashboardPage />), "/dashboard");
   }
   if (path === "/app/staff") return <StaffWorkspacePage />;
   if (path === "/app/admin") return <AdminWorkspacePage />;
   if (path === "/medical-assistant" || path === "/symptom-chat") return <MedicalAssistantPage />;
-  if (path === "/patient/profile/setup") return <PersonalPatientProfilePage />;
-  if (path === "/departments") return <DepartmentsPage />;
+  if (path === "/patient/profile/setup") return requireAuth(<PersonalPatientProfilePage />, safeCurrentPath());
+  if (path === "/departments") {
+    window.history.replaceState(null, "", "/");
+    return <LandingPage />;
+  }
   if (path === "/admin" || path === "/admin/users") return <AdminWorkspacePage />;
 
   return <StaticPage path={path} />;
