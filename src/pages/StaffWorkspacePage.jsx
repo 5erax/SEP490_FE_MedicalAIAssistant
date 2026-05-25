@@ -3,7 +3,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Footer } from "../components/landing/PricingSection";
 import { authApi, clearStoredAuth, getStoredAuth, medicalDepartmentsApi } from "../services/api";
 import { hasRole, normalizeRoles } from "../utils/roles";
-import "../styles/operator-workspace.css";
+import "../styles/features/operator-workspace.css";
 
 const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
 

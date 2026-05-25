@@ -4,7 +4,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { authApi } from "../services/api";
 import { getPostLoginPath, getWorkspacePath } from "../utils/roles";
-import "../styles/auth-refresh.css";
+import "../styles/features/auth-refresh.css";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 const GOOGLE_LOGIN_ENABLED = Boolean(GOOGLE_CLIENT_ID.trim());

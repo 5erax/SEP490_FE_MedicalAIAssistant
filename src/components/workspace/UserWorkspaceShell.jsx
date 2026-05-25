@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { clearStoredAuth, getStoredAuth } from "../../services/api";
-import "../../styles/user-workspace.css";
+import "../../styles/features/user-workspace.css";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Tư vấn chuyên khoa", icon: LayoutDashboard, hint: "Gợi ý nơi khám" },

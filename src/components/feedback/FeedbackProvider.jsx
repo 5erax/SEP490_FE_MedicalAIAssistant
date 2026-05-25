@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 import { FeedbackContext } from "./feedbackContext";
-import "../../styles/feedback.css";
+import "../../styles/components/feedback.css";
 
 const TOAST_ICONS = {
   success: CheckCircle2,
