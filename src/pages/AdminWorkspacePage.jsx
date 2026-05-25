@@ -2,7 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Badge, DataTable, EmptyState, LoadingState } from "../components/ui";
+import { Badge } from "../components/ui";
+import {
+  AdminSidebar,
+  AdminStats,
+  AdminTopbar,
+  ApiMessage,
+  DepartmentsSection,
+  OverviewSection,
+  StaffSection,
+  UsersSection,
+} from "../features/admin/AdminWorkspaceParts";
 import {
   authApi,
   clearStoredAuth,
@@ -24,20 +34,6 @@ const EMPTY_STAFF = {
   gender: "1",
   dateOfBirth: "",
 };
-
-function ApiMessage({ message }) {
-  if (!message) return null;
-  return <div className={`api-message ${message.type}`}>{message.text}</div>;
-}
-
-function Field({ label, children }) {
-  return (
-    <label className="clean-field">
-      <span>{label}</span>
-      {children}
-    </label>
-  );
-}
 
 function statusLabel(status) {
   return Number(status) === 1 ? "Đã duyệt" : "Chờ duyệt";
@@ -368,267 +364,83 @@ export default function AdminWorkspacePage() {
     <main className="workspace-root admin-operator">
       <section className="admin-page">
         <div className="container admin-shell">
-          <aside className="admin-sidebar">
-            <a className="brand" href="/">
-              <span className="brand-mark">+</span>
-              <span>MediMate AI</span>
-            </a>
-
-            <nav className="admin-nav" aria-label="Điều hướng admin">
-              <button className={activeSection === "overview" ? "active" : ""} type="button" onClick={() => setActiveSection("overview")}>Tổng quan</button>
-              <button className={activeSection === "users" ? "active" : ""} type="button" onClick={() => setActiveSection("users")}>Người dùng</button>
-              <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => setActiveSection("staff")}>Tạo staff</button>
-              <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => setActiveSection("departments")}>Chuyên khoa</button>
-            </nav>
-
-            <div className="admin-session-card">
-              <span>Phiên quản trị</span>
-              <strong>{formatRoles(roles)}</strong>
-              <small>{auth.email}</small>
-              <button className="btn btn-dark btn-small" type="button" onClick={handleLogout}>Đăng xuất</button>
-            </div>
-          </aside>
+          <AdminSidebar
+            activeSection={activeSection}
+            auth={auth}
+            roles={roles}
+            onLogout={handleLogout}
+            onSectionChange={setActiveSection}
+          />
 
           <div className="admin-main">
-            <header className="admin-topbar">
-              <div>
-                <p className="eyebrow">Admin Workspace</p>
-                <h1>Quản trị MediMate AI</h1>
-                <p>Quản lý tài khoản, nhân sự hỗ trợ và danh mục chuyên khoa trong một nơi rõ ràng.</p>
-              </div>
-              <div className="admin-top-actions">
-                <a className="btn btn-ghost btn-small" href="/app/staff">Xem giao diện nhân sự</a>
-                <button className="btn btn-primary btn-small" type="button" onClick={() => {
-                  loadUsers();
-                  loadDepartments();
-                }}>Đồng bộ dữ liệu</button>
-              </div>
-            </header>
+            <AdminTopbar onRefresh={() => {
+              loadUsers();
+              loadDepartments();
+            }} />
 
             <ApiMessage message={globalMessage} />
 
-            <section className="admin-stats">
-              <article>
-                <span>Tổng user</span>
-                <strong>{usersLoading ? "..." : pageInfo.totalCount}</strong>
-                <small>Tổng số tài khoản</small>
-              </article>
-              <article>
-                <span>Chờ duyệt</span>
-                <strong>{usersLoading ? "..." : pendingUsers}</strong>
-                <small>Trong trang hiện tại</small>
-              </article>
-              <article>
-                <span>Đang hoạt động</span>
-                <strong>{usersLoading ? "..." : activeUsers}</strong>
-                <small>Chưa bị xóa mềm</small>
-              </article>
-              <article>
-                <span>Chuyên khoa</span>
-                <strong>{departmentsLoading ? "..." : departments.length}</strong>
-                <small>Danh mục đang dùng</small>
-              </article>
-            </section>
+            <AdminStats
+              activeUsers={activeUsers}
+              departments={departments}
+              departmentsLoading={departmentsLoading}
+              pageInfo={pageInfo}
+              pendingUsers={pendingUsers}
+              usersLoading={usersLoading}
+            />
 
             {activeSection === "overview" && (
-              <section className="admin-grid">
-                <div className="admin-panel">
-                  <div className="panel-title-row">
-                    <div>
-                      <p className="eyebrow">Việc cần chú ý</p>
-                      <h2>Hàng đợi quản trị</h2>
-                    </div>
-                    <button className="btn btn-ghost btn-small" type="button" onClick={() => setActiveSection("users")}>Xem user</button>
-                  </div>
-                  <div className="admin-task-list">
-                    <article>
-                      <strong>{pendingUsers} user chờ duyệt</strong>
-                      <span>Duyệt tài khoản để người dùng có thể tiếp tục dùng workspace.</span>
-                    </article>
-                    <article>
-                      <strong>{departments.length} chuyên khoa đang có</strong>
-                      <span>Dữ liệu chuyên khoa rõ ràng giúp người dùng chọn đúng nơi khám hơn.</span>
-                    </article>
-                    <article>
-                      <strong>Vận hành ổn định</strong>
-                      <span>Ưu tiên duyệt tài khoản, cập nhật chuyên khoa và giữ dữ liệu nhất quán.</span>
-                    </article>
-                  </div>
-                </div>
-
-                <div className="admin-panel">
-                  <div className="panel-title-row">
-                    <div>
-                      <p className="eyebrow">Thông tin phiên</p>
-                      <h2>{displayName}</h2>
-                    </div>
-                    <span className="soft-badge">{formatRoles(roles)}</span>
-                  </div>
-                  <div className="profile-list">
-                    <div>
-                      <span>Email</span>
-                      <strong>{profile?.email || auth.email || "Không có email"}</strong>
-                    </div>
-                    <div>
-                      <span>Trạng thái</span>
-                      <strong>{profile?.status === 1 ? "Đã duyệt" : "Đang hoạt động"}</strong>
-                    </div>
-                    <div>
-                      <span>User ID</span>
-                      <strong>{profile?.userId || auth.userId || "Không có"}</strong>
-                    </div>
-                  </div>
-                </div>
-              </section>
+              <OverviewSection
+                auth={auth}
+                departments={departments}
+                displayName={displayName}
+                pendingUsers={pendingUsers}
+                profile={profile}
+                roles={roles}
+                onUsersOpen={() => setActiveSection("users")}
+              />
             )}
 
             {activeSection === "users" && (
-              <section className="admin-panel">
-                <div className="panel-title-row">
-                  <div>
-                    <p className="eyebrow">Tài khoản</p>
-                    <h2>Quản lý người dùng</h2>
-                  </div>
-                  <button className="btn btn-ghost btn-small" type="button" onClick={() => loadUsers()}>Tải lại</button>
-                </div>
-                <ApiMessage message={usersMessage} />
-                <div className="admin-toolbar">
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm theo email, tên hoặc ID..." />
-                  <select value={pageInfo.pageSize} onChange={(event) => setPageInfo((current) => ({ ...current, pageSize: Number(event.target.value) }))}>
-                    <option value="10">10 / trang</option>
-                    <option value="20">20 / trang</option>
-                    <option value="50">50 / trang</option>
-                  </select>
-                </div>
-
-                {usersLoading ? (
-                  <LoadingState label="Đang tải danh sách người dùng..." />
-                ) : (
-                  <DataTable
-                    columns={userColumns}
-                    rows={filteredUsers}
-                    getRowKey={(item) => item.identityId}
-                    emptyState={<EmptyState title="Không tìm thấy người dùng" description="Thử đổi từ khóa tìm kiếm hoặc tải lại danh sách." />}
-                  />
-                )}
-
-                <div className="pagination-row">
-                  <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => loadUsers(pageInfo.pageNumber - 1)}>Trước</button>
-                  <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {pageInfo.totalCount} user</span>
-                  <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => loadUsers(pageInfo.pageNumber + 1)}>Sau</button>
-                </div>
-              </section>
+              <UsersSection
+                filteredUsers={filteredUsers}
+                pageInfo={pageInfo}
+                search={search}
+                userColumns={userColumns}
+                usersLoading={usersLoading}
+                usersMessage={usersMessage}
+                onPageSizeChange={(pageSize) => setPageInfo((current) => ({ ...current, pageSize }))}
+                onReload={() => loadUsers()}
+                onSearchChange={setSearch}
+                onUsersPageChange={loadUsers}
+              />
             )}
 
             {activeSection === "staff" && (
-              <section className="admin-panel">
-                <div className="panel-title-row">
-                  <div>
-                    <p className="eyebrow">Nhân sự</p>
-                    <h2>Tạo tài khoản staff</h2>
-                  </div>
-                  <span className="soft-badge">Tài khoản nội bộ</span>
-                </div>
-                <ApiMessage message={staffMessage} />
-                <form className="clean-form" onSubmit={handleCreateStaff}>
-                  <div className="form-two-cols">
-                    <Field label="Email">
-                      <input type="email" value={staffForm.email} onChange={(event) => updateStaff("email", event.target.value)} required />
-                    </Field>
-                    <Field label="Username">
-                      <input value={staffForm.userName} onChange={(event) => updateStaff("userName", event.target.value)} required />
-                    </Field>
-                    <Field label="Tên hiển thị">
-                      <input value={staffForm.displayName} onChange={(event) => updateStaff("displayName", event.target.value)} required />
-                    </Field>
-                    <Field label="Địa chỉ">
-                      <input value={staffForm.address} onChange={(event) => updateStaff("address", event.target.value)} />
-                    </Field>
-                    <Field label="Mật khẩu">
-                      <input type="password" value={staffForm.password} onChange={(event) => updateStaff("password", event.target.value)} required />
-                    </Field>
-                    <Field label="Nhập lại mật khẩu">
-                      <input type="password" value={staffForm.confirmPassword} onChange={(event) => updateStaff("confirmPassword", event.target.value)} required />
-                    </Field>
-                    <Field label="Giới tính">
-                      <select value={staffForm.gender} onChange={(event) => updateStaff("gender", event.target.value)}>
-                        <option value="1">Nam</option>
-                        <option value="2">Nữ</option>
-                      </select>
-                    </Field>
-                    <Field label="Ngày sinh">
-                      <input type="date" value={staffForm.dateOfBirth} onChange={(event) => updateStaff("dateOfBirth", event.target.value)} />
-                    </Field>
-                  </div>
-                  <button className="btn btn-primary" type="submit" disabled={savingStaff}>
-                    {savingStaff ? "Đang tạo..." : "Tạo tài khoản staff"}
-                  </button>
-                </form>
-              </section>
+              <StaffSection
+                savingStaff={savingStaff}
+                staffForm={staffForm}
+                staffMessage={staffMessage}
+                onCreateStaff={handleCreateStaff}
+                onUpdateStaff={updateStaff}
+              />
             )}
 
             {activeSection === "departments" && (
-              <section className="admin-grid">
-                <div className="admin-panel">
-                  <div className="panel-title-row">
-                    <div>
-                    <p className="eyebrow">Chuyên khoa</p>
-                      <h2>Danh mục chuyên khoa</h2>
-                    </div>
-                    <button className="btn btn-ghost btn-small" type="button" onClick={loadDepartments}>Tải lại</button>
-                  </div>
-                  <ApiMessage message={departmentMessage} />
-                  {departmentsLoading ? (
-                    <p className="muted-text">Đang tải chuyên khoa...</p>
-                  ) : (
-                    <div className="admin-table-list">
-                      {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa.</p>}
-                      {departments.map((department) => (
-                        <article className="admin-user-row" key={department.id}>
-                          <div>
-                            <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-                            <span>{department.description || "Chưa có mô tả."}</span>
-                            <small>{department.id}</small>
-                          </div>
-                          <div className="record-actions">
-                            <button className="btn btn-ghost btn-small" type="button" onClick={() => startEditDepartment(department)}>Sửa</button>
-                            <button className="btn btn-dark btn-small" type="button" onClick={() => handleDeleteDepartment(department.id)}>Xóa</button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <form className="admin-panel clean-form" onSubmit={handleSaveDepartment}>
-                  <div className="panel-title-row">
-                    <div>
-                      <p className="eyebrow">{editingDepartmentId ? "Update" : "Create"}</p>
-                      <h2>{editingDepartmentId ? "Cập nhật chuyên khoa" : "Tạo chuyên khoa"}</h2>
-                    </div>
-                    {editingDepartmentId && <button className="btn btn-ghost btn-small" type="button" onClick={resetDepartmentForm}>Hủy sửa</button>}
-                  </div>
-                  <Field label="Tên chuyên khoa">
-                    <input
-                      value={departmentForm.departmentName}
-                      onChange={(event) => setDepartmentForm({ ...departmentForm, departmentName: event.target.value })}
-                      placeholder="Ví dụ: Tim mạch"
-                      required
-                    />
-                  </Field>
-                  <Field label="Mô tả">
-                    <textarea
-                      rows={6}
-                      value={departmentForm.description}
-                      onChange={(event) => setDepartmentForm({ ...departmentForm, description: event.target.value })}
-                      placeholder="Mô tả chức năng, nhóm triệu chứng thường gặp..."
-                    />
-                  </Field>
-                  <button className="btn btn-primary" type="submit" disabled={savingDepartment}>
-                    {savingDepartment ? "Đang lưu..." : editingDepartmentId ? "Lưu cập nhật" : "Tạo chuyên khoa"}
-                  </button>
-                </form>
-              </section>
+              <DepartmentsSection
+                departmentForm={departmentForm}
+                departmentMessage={departmentMessage}
+                departments={departments}
+                departmentsLoading={departmentsLoading}
+                editingDepartmentId={editingDepartmentId}
+                savingDepartment={savingDepartment}
+                onDeleteDepartment={handleDeleteDepartment}
+                onDepartmentFormChange={setDepartmentForm}
+                onDepartmentsReload={loadDepartments}
+                onEditCancel={resetDepartmentForm}
+                onEditDepartment={startEditDepartment}
+                onSaveDepartment={handleSaveDepartment}
+              />
             )}
           </div>
         </div>
