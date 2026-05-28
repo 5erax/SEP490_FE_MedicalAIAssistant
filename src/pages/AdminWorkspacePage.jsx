@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  BrainCircuit,
   Building2,
   ClipboardList,
+  Cpu,
   LayoutDashboard,
   RefreshCw,
   Stethoscope,
@@ -16,6 +18,11 @@ import { Badge, DataTable, EmptyState, LoadingState } from "../components/ui";
 import DoctorFilters from "../components/adminDoctors/DoctorFilters";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import DoctorTable from "../components/adminDoctors/DoctorTable";
+import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
+import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
+import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
+import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
+import { getEnvironment } from "../components/adminAIConfigs/aiConfigUtils";
 import {
   authApi,
   clearStoredAuth,
@@ -24,6 +31,7 @@ import {
   medicalDepartmentsApi,
   usersApi,
 } from "../services/api";
+import { aiConfigManagementApi } from "../services/aiConfigManagement";
 import { doctorManagementApi } from "../services/doctors";
 import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
@@ -47,6 +55,14 @@ const EMPTY_DOCTOR_FILTERS = {
   departmentRole: "",
 };
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
+const EMPTY_AI_CONFIG_FILTERS = {
+  search: "",
+  status: "",
+  taskType: "",
+  model: "",
+  environment: "",
+};
+const DEFAULT_AI_CONFIG_PAGE_SIZE = 10;
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -118,28 +134,36 @@ export default function AdminWorkspacePage() {
   const [departments, setDepartments] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [aiConfigs, setAIConfigs] = useState([]);
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const [doctorPageInfo, setDoctorPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE, totalCount: 0, totalPages: 1 });
+  const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [activeSection, setActiveSection] = useState("overview");
   const [search, setSearch] = useState("");
   const [doctorFilters, setDoctorFilters] = useState(EMPTY_DOCTOR_FILTERS);
+  const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
+  const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
+  const [aiConfigDetail, setAIConfigDetail] = useState(null);
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
+  const [aiConfigsLoading, setAIConfigsLoading] = useState(true);
   const [facilitiesLoading, setFacilitiesLoading] = useState(true);
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingStaff, setSavingStaff] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
+  const [savingAIConfig, setSavingAIConfig] = useState(false);
   const [globalMessage, setGlobalMessage] = useState(null);
   const [usersMessage, setUsersMessage] = useState(null);
   const [departmentMessage, setDepartmentMessage] = useState(null);
   const [staffMessage, setStaffMessage] = useState(null);
   const [doctorMessage, setDoctorMessage] = useState(null);
+  const [aiConfigMessage, setAIConfigMessage] = useState(null);
 
   const roles = useMemo(() => normalizeRoles(profile?.roles ?? auth?.roles ?? []), [auth, profile]);
   const isAdmin = hasRole(roles, "admin");
@@ -158,6 +182,9 @@ export default function AdminWorkspacePage() {
 
   const pendingUsers = users.filter((user) => Number(user.status) !== 1).length;
   const activeDoctors = doctors.filter((doctor) => doctor.isActive).length;
+  const activeAIConfigs = aiConfigs.filter((config) => config.isActive).length;
+  const disabledAIConfigs = aiConfigs.filter((config) => !config.isActive).length;
+  const runningAIFeatures = new Set(aiConfigs.filter((config) => config.isActive).map((config) => config.taskType).filter(Boolean)).size;
   const facilityDepartmentOptions = useMemo(() => {
     return doctors
       .filter((doctor) => doctor.facilityDepartmentId)
@@ -169,6 +196,36 @@ export default function AdminWorkspacePage() {
       }));
   }, [doctors]);
 
+  const aiTaskTypes = useMemo(() => {
+    return Array.from(new Set(aiConfigs.map((config) => config.taskType).filter(Boolean))).sort();
+  }, [aiConfigs]);
+
+  const aiModels = useMemo(() => {
+    return Array.from(new Set(aiConfigs.map((config) => config.model).filter(Boolean))).sort();
+  }, [aiConfigs]);
+
+  const aiEnvironments = useMemo(() => {
+    return Array.from(new Set(aiConfigs.map(getEnvironment))).sort();
+  }, [aiConfigs]);
+
+  const filteredAIConfigs = useMemo(() => {
+    const keyword = aiConfigFilters.search.trim().toLowerCase();
+    return aiConfigs.filter((config) => {
+      const matchesSearch = !keyword || [config.taskType, config.model, config.systemPrompt]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword));
+      const matchesStatus =
+        !aiConfigFilters.status ||
+        (aiConfigFilters.status === "active" && config.isActive) ||
+        (aiConfigFilters.status === "inactive" && !config.isActive);
+      const matchesTaskType = !aiConfigFilters.taskType || config.taskType === aiConfigFilters.taskType;
+      const matchesModel = !aiConfigFilters.model || config.model === aiConfigFilters.model;
+      const matchesEnvironment = !aiConfigFilters.environment || getEnvironment(config) === aiConfigFilters.environment;
+
+      return matchesSearch && matchesStatus && matchesTaskType && matchesModel && matchesEnvironment;
+    });
+  }, [aiConfigFilters, aiConfigs]);
+
   useEffect(() => {
     if (!auth) return;
     let active = true;
@@ -178,9 +235,10 @@ export default function AdminWorkspacePage() {
       usersApi.list(1, pageInfo.pageSize),
       medicalDepartmentsApi.list(),
       doctorManagementApi.list({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE }),
+      aiConfigManagementApi.list(1, DEFAULT_AI_CONFIG_PAGE_SIZE),
       medicalFacilitiesApi.list(1, 100),
     ])
-      .then(([profileResult, usersResult, departmentResult, doctorResult, facilityResult]) => {
+      .then(([profileResult, usersResult, departmentResult, doctorResult, aiConfigResult, facilityResult]) => {
         if (!active) return;
 
         if (profileResult.status === "fulfilled") {
@@ -222,6 +280,20 @@ export default function AdminWorkspacePage() {
           setDoctorMessage({ type: "error", text: doctorResult.reason.message });
         }
 
+        if (aiConfigResult.status === "fulfilled") {
+          const data = aiConfigResult.value.data ?? {};
+          setAIConfigs(data.items ?? []);
+          setAIConfigPageInfo({
+            pageNumber: data.pageNumber ?? 1,
+            pageSize: data.pageSize ?? DEFAULT_AI_CONFIG_PAGE_SIZE,
+            totalCount: data.totalCount ?? 0,
+            totalPages: data.totalPages ?? 1,
+          });
+        } else {
+          console.error("AI Config API error:", aiConfigResult.reason);
+          setAIConfigMessage({ type: "error", text: aiConfigResult.reason.message });
+        }
+
         if (facilityResult.status === "fulfilled") {
           setFacilities(facilityResult.value.data?.items ?? facilityResult.value.data ?? []);
         } else {
@@ -234,6 +306,7 @@ export default function AdminWorkspacePage() {
         setUsersLoading(false);
         setDepartmentsLoading(false);
         setDoctorsLoading(false);
+        setAIConfigsLoading(false);
         setFacilitiesLoading(false);
       });
 
@@ -314,6 +387,130 @@ export default function AdminWorkspacePage() {
       showToast({ type: "error", title: "Không tải được danh sách bác sĩ", message: error.message });
     } finally {
       setDoctorsLoading(false);
+    }
+  }
+
+  async function loadAIConfigs(pageNumber = aiConfigPageInfo.pageNumber, pageSize = aiConfigPageInfo.pageSize) {
+    setAIConfigsLoading(true);
+    setAIConfigMessage(null);
+    try {
+      const response = await aiConfigManagementApi.list(pageNumber, pageSize);
+      const data = response.data ?? {};
+      setAIConfigs(data.items ?? []);
+      setAIConfigPageInfo({
+        pageNumber: data.pageNumber ?? pageNumber,
+        pageSize: data.pageSize ?? pageSize,
+        totalCount: data.totalCount ?? 0,
+        totalPages: data.totalPages ?? 1,
+      });
+    } catch (error) {
+      console.error("AI Config API error:", error);
+      setAIConfigMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không tải được AI configs", message: error.message });
+    } finally {
+      setAIConfigsLoading(false);
+    }
+  }
+
+  function updateAIConfigFilter(key, value) {
+    setAIConfigFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleAIConfigFilterSubmit(event) {
+    event.preventDefault();
+  }
+
+  function resetAIConfigFilters() {
+    setAIConfigFilters(EMPTY_AI_CONFIG_FILTERS);
+  }
+
+  function handleAIConfigPageSizeChange(pageSize) {
+    setAIConfigPageInfo((current) => ({ ...current, pageSize }));
+    loadAIConfigs(1, pageSize);
+  }
+
+  function openCreateAIConfig() {
+    setAIConfigModal({ open: true, mode: "create", config: null });
+  }
+
+  function openEditAIConfig(config) {
+    setAIConfigModal({ open: true, mode: "edit", config });
+  }
+
+  function closeAIConfigModal() {
+    if (savingAIConfig) return;
+    setAIConfigModal({ open: false, mode: "create", config: null });
+  }
+
+  async function handleSaveAIConfig(payload) {
+    setSavingAIConfig(true);
+    setAIConfigMessage(null);
+    try {
+      const response = aiConfigModal.mode === "edit"
+        ? await aiConfigManagementApi.update(aiConfigModal.config.id, payload)
+        : await aiConfigManagementApi.create(payload);
+      const savedConfig = response.data;
+      setAIConfigMessage({
+        type: "success",
+        text: response.message || (aiConfigModal.mode === "edit" ? "Đã cập nhật AI config." : "Đã tạo AI config."),
+      });
+      showToast({
+        type: "success",
+        title: aiConfigModal.mode === "edit" ? "Đã cập nhật AI config" : "Đã tạo AI config",
+        message: response.message || "AI configuration đã được đồng bộ.",
+      });
+      setAIConfigModal({ open: false, mode: "create", config: null });
+      if (savedConfig?.id && aiConfigModal.mode === "edit") {
+        setAIConfigs((current) => current.map((config) => (config.id === savedConfig.id ? savedConfig : config)));
+      } else {
+        await loadAIConfigs(1);
+      }
+    } catch (error) {
+      console.error("AI Config save API error:", error);
+      setAIConfigMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không lưu được AI config", message: error.message });
+    } finally {
+      setSavingAIConfig(false);
+    }
+  }
+
+  async function handleToggleAIConfigStatus(config) {
+    setAIConfigMessage(null);
+    try {
+      const response = await aiConfigManagementApi.setStatus(config.id, !config.isActive);
+      const updatedConfig = response.data;
+      setAIConfigs((current) => current.map((item) => (item.id === config.id ? (updatedConfig ?? { ...item, isActive: !item.isActive }) : item)));
+      showToast({
+        type: "success",
+        title: (updatedConfig?.isActive ?? !config.isActive) ? "Đã bật AI config" : "Đã tắt AI config",
+        message: response.message || "Trạng thái AI config đã được cập nhật.",
+      });
+    } catch (error) {
+      console.error("AI Config status API error:", error);
+      setAIConfigMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không đổi được trạng thái AI config", message: error.message });
+    }
+  }
+
+  async function handleDeleteAIConfig(config) {
+    const confirmed = await confirmAction({
+      title: "Xóa AI config?",
+      message: `${config.taskType || "Config này"} sẽ bị xóa khỏi AI platform console. Hãy chắc chắn trước khi tiếp tục.`,
+      confirmLabel: "Xóa AI config",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    setAIConfigMessage(null);
+    try {
+      const response = await aiConfigManagementApi.remove(config.id);
+      setAIConfigs((current) => current.filter((item) => item.id !== config.id));
+      setAIConfigPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
+      showToast({ type: "success", title: "Đã xóa AI config", message: response.message || "Danh sách AI config đã được cập nhật." });
+    } catch (error) {
+      console.error("AI Config delete API error:", error);
+      setAIConfigMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không xóa được AI config", message: error.message });
     }
   }
 
@@ -595,6 +792,10 @@ export default function AdminWorkspacePage() {
                 <span className="admin-nav-icon"><Stethoscope size={17} /></span>
                 <span>Bác sĩ</span>
               </button>
+              <button className={activeSection === "ai-configs" ? "active" : ""} type="button" onClick={() => setActiveSection("ai-configs")}>
+                <span className="admin-nav-icon"><BrainCircuit size={17} /></span>
+                <span>AI Config</span>
+              </button>
               <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => setActiveSection("staff")}>
                 <span className="admin-nav-icon"><UserPlus size={17} /></span>
                 <span>Tạo staff</span>
@@ -626,6 +827,7 @@ export default function AdminWorkspacePage() {
                   loadUsers();
                   loadDepartments();
                   loadDoctors();
+                  loadAIConfigs();
                   loadFacilities();
                 }}><RefreshCw size={15} /> Đồng bộ dữ liệu</button>
               </div>
@@ -659,11 +861,19 @@ export default function AdminWorkspacePage() {
                 </div>
               </article>
               <article>
+                <span className="admin-stat-icon"><BrainCircuit size={17} /></span>
+                <div>
+                  <span>AI Configs</span>
+                  <strong>{aiConfigsLoading ? "..." : aiConfigPageInfo.totalCount}</strong>
+                  <small>{activeAIConfigs} active · {disabledAIConfigs} inactive</small>
+                </div>
+              </article>
+              <article>
                 <span className="admin-stat-icon"><Activity size={17} /></span>
                 <div>
-                  <span>Chuyên khoa</span>
-                  <strong>{departmentsLoading ? "..." : departments.length}</strong>
-                  <small>Danh mục đang dùng</small>
+                  <span>AI Features</span>
+                  <strong>{aiConfigsLoading ? "..." : runningAIFeatures}</strong>
+                  <small>Feature đang chạy</small>
                 </div>
               </article>
             </section>
@@ -819,6 +1029,99 @@ export default function AdminWorkspacePage() {
               </section>
             )}
 
+            {activeSection === "ai-configs" && (
+              <section className="admin-panel ai-config-admin-panel">
+                <div className="panel-title-row ai-config-section-heading">
+                  <div>
+                    <p className="eyebrow">AI Platform Console</p>
+                    <h2>AI Configuration Management</h2>
+                    <p className="muted-text">Quản lý prompt, model và hành vi AI trong hệ thống MediMate AI.</p>
+                  </div>
+                  <button className="btn btn-ghost btn-small" type="button" onClick={() => loadAIConfigs()}>
+                    <RefreshCw size={15} /> Sync AI Settings
+                  </button>
+                </div>
+
+                <section className="ai-config-kpi-grid">
+                  <article>
+                    <span><BrainCircuit size={16} /></span>
+                    <div>
+                      <small>Total AI Configs</small>
+                      <strong>{aiConfigPageInfo.totalCount}</strong>
+                    </div>
+                  </article>
+                  <article>
+                    <span><Cpu size={16} /></span>
+                    <div>
+                      <small>Active Models</small>
+                      <strong>{activeAIConfigs}</strong>
+                    </div>
+                  </article>
+                  <article>
+                    <span><Activity size={16} /></span>
+                    <div>
+                      <small>Disabled Configs</small>
+                      <strong>{disabledAIConfigs}</strong>
+                    </div>
+                  </article>
+                  <article>
+                    <span><ClipboardList size={16} /></span>
+                    <div>
+                      <small>AI Features Running</small>
+                      <strong>{runningAIFeatures}</strong>
+                    </div>
+                  </article>
+                </section>
+
+                <ApiMessage message={aiConfigMessage} />
+
+                <AIConfigToolbar
+                  filters={aiConfigFilters}
+                  taskTypes={aiTaskTypes}
+                  models={aiModels}
+                  environments={aiEnvironments}
+                  pageSize={aiConfigPageInfo.pageSize}
+                  onChange={updateAIConfigFilter}
+                  onPageSizeChange={handleAIConfigPageSizeChange}
+                  onSubmit={handleAIConfigFilterSubmit}
+                  onReset={resetAIConfigFilters}
+                  onCreate={openCreateAIConfig}
+                />
+
+                {aiConfigsLoading ? (
+                  <div className="ai-config-skeleton-list" aria-live="polite">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div className="ai-config-skeleton-row" key={index}>
+                        <span />
+                        <div />
+                        <div />
+                        <div />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <AIConfigTable
+                    configs={filteredAIConfigs}
+                    onView={setAIConfigDetail}
+                    onEdit={openEditAIConfig}
+                    onToggleStatus={handleToggleAIConfigStatus}
+                    onDelete={handleDeleteAIConfig}
+                    onCreate={openCreateAIConfig}
+                  />
+                )}
+
+                <div className="pagination-row">
+                  <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber <= 1 || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber - 1)}>
+                    Trước
+                  </button>
+                  <span>Trang {aiConfigPageInfo.pageNumber} / {aiConfigPageInfo.totalPages || 1} · {filteredAIConfigs.length} / {aiConfigPageInfo.totalCount} configs</span>
+                  <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber >= aiConfigPageInfo.totalPages || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber + 1)}>
+                    Sau
+                  </button>
+                </div>
+              </section>
+            )}
+
             {activeSection === "staff" && (
               <section className="admin-panel">
                 <div className="panel-title-row">
@@ -942,6 +1245,19 @@ export default function AdminWorkspacePage() {
           onClose={closeDoctorModal}
           onSubmit={handleSaveDoctor}
         />
+      )}
+      {aiConfigModal.open && (
+        <AIConfigFormModal
+          key={aiConfigModal.config?.id ?? "create"}
+          mode={aiConfigModal.mode}
+          config={aiConfigModal.config}
+          saving={savingAIConfig}
+          onClose={closeAIConfigModal}
+          onSubmit={handleSaveAIConfig}
+        />
+      )}
+      {aiConfigDetail && (
+        <AIConfigDetailModal config={aiConfigDetail} onClose={() => setAIConfigDetail(null)} />
       )}
     </main>
   );
