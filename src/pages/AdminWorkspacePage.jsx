@@ -1,4 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  Building2,
+  ClipboardList,
+  LayoutDashboard,
+  RefreshCw,
+  Stethoscope,
+  Users,
+  UserPlus,
+} from "lucide-react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
@@ -573,11 +583,26 @@ export default function AdminWorkspacePage() {
             </a>
 
             <nav className="admin-nav" aria-label="Điều hướng admin">
-              <button className={activeSection === "overview" ? "active" : ""} type="button" onClick={() => setActiveSection("overview")}>Tổng quan</button>
-              <button className={activeSection === "users" ? "active" : ""} type="button" onClick={() => setActiveSection("users")}>Người dùng</button>
-              <button className={activeSection === "doctors" ? "active" : ""} type="button" onClick={() => setActiveSection("doctors")}>Bác sĩ</button>
-              <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => setActiveSection("staff")}>Tạo staff</button>
-              <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => setActiveSection("departments")}>Chuyên khoa</button>
+              <button className={activeSection === "overview" ? "active" : ""} type="button" onClick={() => setActiveSection("overview")}>
+                <span className="admin-nav-icon"><LayoutDashboard size={17} /></span>
+                <span>Tổng quan</span>
+              </button>
+              <button className={activeSection === "users" ? "active" : ""} type="button" onClick={() => setActiveSection("users")}>
+                <span className="admin-nav-icon"><Users size={17} /></span>
+                <span>Người dùng</span>
+              </button>
+              <button className={activeSection === "doctors" ? "active" : ""} type="button" onClick={() => setActiveSection("doctors")}>
+                <span className="admin-nav-icon"><Stethoscope size={17} /></span>
+                <span>Bác sĩ</span>
+              </button>
+              <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => setActiveSection("staff")}>
+                <span className="admin-nav-icon"><UserPlus size={17} /></span>
+                <span>Tạo staff</span>
+              </button>
+              <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => setActiveSection("departments")}>
+                <span className="admin-nav-icon"><Building2 size={17} /></span>
+                <span>Chuyên khoa</span>
+              </button>
             </nav>
 
             <div className="admin-session-card">
@@ -602,7 +627,7 @@ export default function AdminWorkspacePage() {
                   loadDepartments();
                   loadDoctors();
                   loadFacilities();
-                }}>Đồng bộ dữ liệu</button>
+                }}><RefreshCw size={15} /> Đồng bộ dữ liệu</button>
               </div>
             </header>
 
@@ -610,24 +635,36 @@ export default function AdminWorkspacePage() {
 
             <section className="admin-stats">
               <article>
-                <span>Tổng user</span>
-                <strong>{usersLoading ? "..." : pageInfo.totalCount}</strong>
-                <small>Tổng số tài khoản</small>
+                <span className="admin-stat-icon"><Users size={17} /></span>
+                <div>
+                  <span>Tổng user</span>
+                  <strong>{usersLoading ? "..." : pageInfo.totalCount}</strong>
+                  <small>Tổng số tài khoản</small>
+                </div>
               </article>
               <article>
-                <span>Chờ duyệt</span>
-                <strong>{usersLoading ? "..." : pendingUsers}</strong>
-                <small>Trong trang hiện tại</small>
+                <span className="admin-stat-icon"><ClipboardList size={17} /></span>
+                <div>
+                  <span>Chờ duyệt</span>
+                  <strong>{usersLoading ? "..." : pendingUsers}</strong>
+                  <small>Trong trang hiện tại</small>
+                </div>
               </article>
               <article>
-                <span>Bác sĩ</span>
-                <strong>{doctorsLoading ? "..." : doctorPageInfo.totalCount}</strong>
-                <small>{activeDoctors} đang hoạt động</small>
+                <span className="admin-stat-icon"><Stethoscope size={17} /></span>
+                <div>
+                  <span>Bác sĩ</span>
+                  <strong>{doctorsLoading ? "..." : doctorPageInfo.totalCount}</strong>
+                  <small>{activeDoctors} đang hoạt động</small>
+                </div>
               </article>
               <article>
-                <span>Chuyên khoa</span>
-                <strong>{departmentsLoading ? "..." : departments.length}</strong>
-                <small>Danh mục đang dùng</small>
+                <span className="admin-stat-icon"><Activity size={17} /></span>
+                <div>
+                  <span>Chuyên khoa</span>
+                  <strong>{departmentsLoading ? "..." : departments.length}</strong>
+                  <small>Danh mục đang dùng</small>
+                </div>
               </article>
             </section>
 
@@ -723,13 +760,15 @@ export default function AdminWorkspacePage() {
 
             {activeSection === "doctors" && (
               <section className="admin-panel doctor-admin-panel">
-                <div className="panel-title-row">
+                <div className="panel-title-row doctor-section-heading">
                   <div>
                     <p className="eyebrow">Doctor Management</p>
                     <h2>Quản lý bác sĩ</h2>
                     <p className="muted-text">Tạo, cập nhật, lọc và quản lý trạng thái bác sĩ theo bệnh viện/chuyên khoa từ API backend.</p>
                   </div>
-                  <button className="btn btn-primary btn-small" type="button" onClick={openCreateDoctor}>Add Doctor</button>
+                  <button className="btn btn-primary btn-small" type="button" onClick={openCreateDoctor}>
+                    <Stethoscope size={15} /> Add Doctor
+                  </button>
                 </div>
 
                 <ApiMessage message={doctorMessage} />
@@ -766,6 +805,7 @@ export default function AdminWorkspacePage() {
                     onEdit={openEditDoctor}
                     onToggleStatus={handleToggleDoctorStatus}
                     onDelete={handleDeleteDoctor}
+                    onCreate={openCreateDoctor}
                   />
                 )}
 

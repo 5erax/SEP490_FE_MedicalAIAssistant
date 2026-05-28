@@ -1,4 +1,5 @@
-import { Badge, DataTable, EmptyState } from "../ui";
+import { Badge, DataTable } from "../ui";
+import { Pencil, Power, Stethoscope, Trash2, UserRoundPlus } from "lucide-react";
 
 function getInitials(name = "") {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -11,7 +12,7 @@ function formatExperience(years) {
   return `${years} năm`;
 }
 
-export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete }) {
+export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete, onCreate }) {
   const columns = [
     {
       key: "doctor",
@@ -66,11 +67,12 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete 
       header: "Thao tác",
       render: (doctor) => (
         <div className="record-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(doctor)}>Sửa</button>
+          <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(doctor)}><Pencil size={14} /> Sửa</button>
           <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(doctor)}>
+            <Power size={14} />
             {doctor.isActive ? "Tạm ẩn" : "Kích hoạt"}
           </button>
-          <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(doctor)}>Xóa</button>
+          <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(doctor)}><Trash2 size={14} /> Xóa</button>
         </div>
       ),
     },
@@ -82,10 +84,14 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete 
       rows={doctors}
       getRowKey={(doctor) => doctor.id}
       emptyState={(
-        <EmptyState
-          title="Chưa có bác sĩ phù hợp"
-          description="Thử đổi bộ lọc hoặc thêm bác sĩ mới để bắt đầu quản lý danh sách nhân sự y tế."
-        />
+        <section className="ui-empty doctor-empty-state">
+          <span className="doctor-empty-icon"><Stethoscope size={24} /></span>
+          <strong>Chưa có bác sĩ phù hợp</strong>
+          <p>Thử đổi bộ lọc hoặc thêm bác sĩ mới để bắt đầu quản lý danh sách nhân sự y tế.</p>
+          <button className="btn btn-primary btn-small" type="button" onClick={onCreate}>
+            <UserRoundPlus size={15} /> Thêm bác sĩ
+          </button>
+        </section>
       )}
     />
   );

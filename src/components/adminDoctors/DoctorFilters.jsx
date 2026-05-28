@@ -1,3 +1,5 @@
+import { Filter, RotateCcw, Search } from "lucide-react";
+
 export default function DoctorFilters({
   filters,
   departments,
@@ -10,14 +12,14 @@ export default function DoctorFilters({
 }) {
   return (
     <form className="doctor-filter-bar" onSubmit={onSubmit}>
-      <label className="clean-field">
-        <span>Tìm bác sĩ</span>
+      <div className="doctor-search-field">
+        <Search size={16} />
         <input
           value={filters.search}
           onChange={(event) => onChange("search", event.target.value)}
           placeholder="Tìm theo họ tên bác sĩ..."
         />
-      </label>
+      </div>
       <label className="clean-field">
         <span>Chuyên khoa</span>
         <select value={filters.departmentId} onChange={(event) => onChange("departmentId", event.target.value)}>
@@ -57,8 +59,8 @@ export default function DoctorFilters({
         </select>
       </label>
       <div className="doctor-filter-actions">
-        <button className="btn btn-primary btn-small" type="submit">Áp dụng</button>
-        <button className="btn btn-ghost btn-small" type="button" onClick={onReset}>Xóa lọc</button>
+        <button className="btn btn-primary btn-small" type="submit"><Filter size={14} /> Áp dụng</button>
+        <button className="btn btn-ghost btn-small" type="button" onClick={onReset}><RotateCcw size={14} /> Xóa lọc</button>
       </div>
     </form>
   );
