@@ -419,13 +419,18 @@
 
 .admin-operator .doctor-admin-panel {
   display: grid;
-  gap: 14px;
+  gap: 18px;
   overflow: hidden;
 }
 
 .admin-operator .doctor-section-heading {
   align-items: center;
-  padding-bottom: 2px;
+  gap: 18px;
+  padding-bottom: 4px;
+}
+
+.admin-operator .doctor-section-heading > div {
+  min-width: 0;
 }
 
 .admin-operator .doctor-section-heading h2 {
@@ -438,15 +443,68 @@
   font-size: 14px;
 }
 
+.admin-operator .doctor-filter-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  border: 1px solid rgba(16, 20, 17, 0.08);
+  border-radius: 18px;
+  background: rgba(251, 252, 247, 0.82);
+  padding: 14px;
+}
+
+.admin-operator .doctor-filter-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-operator .doctor-filter-card-header strong {
+  display: block;
+  color: #101411;
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.admin-operator .doctor-filter-card-header p {
+  margin: 4px 0 0;
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .admin-operator .doctor-filter-bar {
   display: grid;
-  grid-template-columns: minmax(230px, 1.35fr) repeat(4, minmax(136px, 1fr)) auto;
-  gap: 8px;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-operator .doctor-toolbar-row {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-operator .doctor-toolbar-row-primary {
+  grid-template-columns: minmax(260px, 1fr) auto;
+  align-items: center;
+}
+
+.admin-operator .doctor-toolbar-row-filters {
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  border: 1px solid rgba(16, 20, 17, 0.08);
-  border-radius: 16px;
-  background: rgba(251, 252, 247, 0.82);
-  padding: 12px;
+}
+
+.admin-operator .doctor-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-operator .doctor-filter-grid .clean-field,
+.admin-operator .doctor-search-field {
+  min-width: 0;
 }
 
 .admin-operator .doctor-search-field {
@@ -464,6 +522,7 @@
 
 .admin-operator .doctor-search-field input {
   min-width: 0;
+  width: 100%;
   border: 0;
   background: transparent;
   color: #101411;
@@ -477,15 +536,26 @@
 }
 
 .admin-operator .doctor-filter-actions {
+  max-width: 100%;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+  align-items: end;
+  min-width: 0;
 }
 
 .admin-operator .doctor-filter-actions .btn {
   min-height: 42px;
   white-space: nowrap;
 }
+
+.admin-operator .doctor-add-button {
+  min-height: 44px;
+  min-width: 132px;
+  white-space: nowrap;
+}
+
 
 .doctor-primary-cell {
   display: flex;
@@ -756,7 +826,20 @@
   }
 
   .admin-operator .doctor-filter-bar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-toolbar-row-primary,
+  .admin-operator .doctor-toolbar-row-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-filter-grid {
+    grid-template-columns: minmax(240px, 1.2fr) repeat(2, minmax(150px, 1fr));
+  }
+
+  .admin-operator .doctor-filter-actions {
+    justify-content: flex-start;
   }
 
   .operator-workspace .app-stats,
@@ -783,6 +866,9 @@
   .operator-workspace .record-card,
   .admin-operator .admin-toolbar,
   .admin-operator .doctor-filter-bar,
+  .admin-operator .doctor-toolbar-row-primary,
+  .admin-operator .doctor-toolbar-row-filters,
+  .admin-operator .doctor-filter-grid,
   .doctor-skeleton-row,
   .admin-operator .admin-user-row,
   .admin-operator .form-two-cols {
@@ -801,6 +887,7 @@
   .admin-operator .record-actions .btn,
   .admin-operator .admin-top-actions .btn,
   .admin-operator .doctor-filter-actions .btn,
+  .admin-operator .doctor-add-button,
   .doctor-modal-actions .btn {
     width: 100%;
   }

@@ -766,9 +766,6 @@ export default function AdminWorkspacePage() {
                     <h2>Quản lý bác sĩ</h2>
                     <p className="muted-text">Tạo, cập nhật, lọc và quản lý trạng thái bác sĩ theo bệnh viện/chuyên khoa từ API backend.</p>
                   </div>
-                  <button className="btn btn-primary btn-small" type="button" onClick={openCreateDoctor}>
-                    <Stethoscope size={15} /> Add Doctor
-                  </button>
                 </div>
 
                 <ApiMessage message={doctorMessage} />
@@ -782,6 +779,7 @@ export default function AdminWorkspacePage() {
                   onPageSizeChange={(pageSize) => setDoctorPageInfo((current) => ({ ...current, pageSize }))}
                   onSubmit={handleDoctorFilterSubmit}
                   onReset={resetDoctorFilters}
+                  onCreate={openCreateDoctor}
                 />
 
                 {facilitiesLoading && (
