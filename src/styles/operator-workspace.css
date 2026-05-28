@@ -297,6 +297,229 @@
   overflow-wrap: anywhere;
 }
 
+.admin-operator .doctor-admin-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-operator .doctor-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.35fr) repeat(4, minmax(150px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 18px;
+  background: #fbfcf7;
+  padding: 14px;
+}
+
+.admin-operator .doctor-filter-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.doctor-primary-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.doctor-primary-cell strong,
+.doctor-primary-cell span,
+.table-primary-cell strong,
+.table-primary-cell span,
+.table-primary-cell small {
+  display: block;
+}
+
+.doctor-primary-cell strong,
+.table-primary-cell strong {
+  color: #101411;
+  line-height: 1.35;
+}
+
+.doctor-primary-cell div > span,
+.table-primary-cell span,
+.table-primary-cell small {
+  margin-top: 4px;
+  color: rgba(16, 20, 17, 0.58);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.doctor-avatar {
+  flex: 0 0 auto;
+  display: grid !important;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid rgba(16, 20, 17, 0.22);
+  border-radius: 999px;
+  background: #e6f8d9;
+  color: #101411 !important;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.doctor-experience {
+  display: inline-flex;
+  width: max-content;
+  border-radius: 999px;
+  background: rgba(8, 127, 140, 0.09);
+  color: #087f8c;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.admin-operator .ui-table tbody tr {
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.admin-operator .ui-table tbody tr:hover {
+  background: rgba(230, 248, 217, 0.42);
+}
+
+.doctor-skeleton-list {
+  display: grid;
+  gap: 10px;
+}
+
+.doctor-skeleton-row {
+  display: grid;
+  grid-template-columns: 42px minmax(180px, 1.2fr) minmax(140px, 1fr) 160px;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 16px;
+  background: #fbfcf7;
+  padding: 14px;
+}
+
+.doctor-skeleton-row span,
+.doctor-skeleton-row div {
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(16, 20, 17, 0.08), rgba(16, 20, 17, 0.14), rgba(16, 20, 17, 0.08));
+  background-size: 220% 100%;
+  animation: doctorSkeleton 1.15s ease-in-out infinite;
+}
+
+.doctor-skeleton-row span {
+  width: 42px;
+  height: 42px;
+}
+
+.doctor-skeleton-row div {
+  height: 18px;
+}
+
+.doctor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 20, 17, 0.46);
+  padding: 20px;
+  animation: doctorFadeIn 160ms ease both;
+}
+
+.doctor-modal {
+  width: min(760px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1.5px solid #101411;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 6px 6px 0 #101411, 0 26px 72px rgba(16, 20, 17, 0.18);
+  padding: clamp(20px, 3vw, 28px);
+  animation: doctorModalIn 180ms ease both;
+}
+
+.doctor-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.doctor-modal-header h2 {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 36px);
+}
+
+.doctor-modal-header p:not(.eyebrow) {
+  max-width: 580px;
+  margin: 8px 0 0;
+  color: rgba(16, 20, 17, 0.62);
+  line-height: 1.6;
+}
+
+.doctor-modal-close {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(16, 20, 17, 0.16);
+  border-radius: 999px;
+  background: #fbfcf7;
+  color: #101411;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.doctor-form {
+  gap: 16px;
+}
+
+.doctor-field-error input,
+.doctor-field-error select {
+  border-color: #ef4444 !important;
+}
+
+.doctor-field-error small {
+  color: #b91c1c;
+}
+
+.doctor-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid rgba(16, 20, 17, 0.1);
+  padding-top: 14px;
+}
+
+@keyframes doctorSkeleton {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+@keyframes doctorFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes doctorModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 980px) {
   .operator-workspace .app-work-grid,
   .admin-operator .admin-shell,
@@ -309,8 +532,12 @@
   }
 
   .admin-operator .admin-nav {
-    grid-template-columns: repeat(4, minmax(130px, 1fr));
+    grid-template-columns: repeat(5, minmax(130px, 1fr));
     overflow-x: auto;
+  }
+
+  .admin-operator .doctor-filter-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .operator-workspace .app-stats,
@@ -336,6 +563,8 @@
   .admin-operator .admin-stats,
   .operator-workspace .record-card,
   .admin-operator .admin-toolbar,
+  .admin-operator .doctor-filter-bar,
+  .doctor-skeleton-row,
   .admin-operator .admin-user-row,
   .admin-operator .form-two-cols {
     grid-template-columns: 1fr;
@@ -343,17 +572,25 @@
 
   .operator-workspace .record-actions,
   .admin-operator .record-actions,
-  .admin-operator .admin-top-actions {
+  .admin-operator .admin-top-actions,
+  .admin-operator .doctor-filter-actions,
+  .doctor-modal-actions {
     justify-content: stretch;
   }
 
   .operator-workspace .record-actions .btn,
   .admin-operator .record-actions .btn,
-  .admin-operator .admin-top-actions .btn {
+  .admin-operator .admin-top-actions .btn,
+  .admin-operator .doctor-filter-actions .btn,
+  .doctor-modal-actions .btn {
     width: 100%;
   }
 
   .admin-operator .admin-nav {
-    grid-template-columns: repeat(4, 140px);
+    grid-template-columns: repeat(5, 140px);
+  }
+
+  .doctor-modal-header {
+    display: grid;
   }
 }

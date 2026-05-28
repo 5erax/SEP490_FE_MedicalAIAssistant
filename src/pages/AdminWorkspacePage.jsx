@@ -3,13 +3,18 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Badge, DataTable, EmptyState, LoadingState } from "../components/ui";
+import DoctorFilters from "../components/adminDoctors/DoctorFilters";
+import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
+import DoctorTable from "../components/adminDoctors/DoctorTable";
 import {
   authApi,
   clearStoredAuth,
   getStoredAuth,
+  medicalFacilitiesApi,
   medicalDepartmentsApi,
   usersApi,
 } from "../services/api";
+import { doctorManagementApi } from "../services/doctors";
 import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
 
@@ -24,6 +29,14 @@ const EMPTY_STAFF = {
   gender: "1",
   dateOfBirth: "",
 };
+const EMPTY_DOCTOR_FILTERS = {
+  search: "",
+  facilityId: "",
+  departmentId: "",
+  isActive: "",
+  departmentRole: "",
+};
+const DEFAULT_DOCTOR_PAGE_SIZE = 10;
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -93,21 +106,30 @@ export default function AdminWorkspacePage() {
   const [profile, setProfile] = useState(null);
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [facilities, setFacilities] = useState([]);
+  const [doctors, setDoctors] = useState([]);
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
+  const [doctorPageInfo, setDoctorPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [activeSection, setActiveSection] = useState("overview");
   const [search, setSearch] = useState("");
+  const [doctorFilters, setDoctorFilters] = useState(EMPTY_DOCTOR_FILTERS);
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
+  const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
+  const [facilitiesLoading, setFacilitiesLoading] = useState(true);
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingStaff, setSavingStaff] = useState(false);
+  const [savingDoctor, setSavingDoctor] = useState(false);
   const [globalMessage, setGlobalMessage] = useState(null);
   const [usersMessage, setUsersMessage] = useState(null);
   const [departmentMessage, setDepartmentMessage] = useState(null);
   const [staffMessage, setStaffMessage] = useState(null);
+  const [doctorMessage, setDoctorMessage] = useState(null);
 
   const roles = useMemo(() => normalizeRoles(profile?.roles ?? auth?.roles ?? []), [auth, profile]);
   const isAdmin = hasRole(roles, "admin");
@@ -125,14 +147,30 @@ export default function AdminWorkspacePage() {
   }, [search, users]);
 
   const pendingUsers = users.filter((user) => Number(user.status) !== 1).length;
-  const activeUsers = users.filter((user) => !user.isDeleted).length;
+  const activeDoctors = doctors.filter((doctor) => doctor.isActive).length;
+  const facilityDepartmentOptions = useMemo(() => {
+    return doctors
+      .filter((doctor) => doctor.facilityDepartmentId)
+      .map((doctor) => ({
+        id: doctor.facilityDepartmentId,
+        facilityId: doctor.facilityId,
+        departmentId: doctor.departmentId,
+        label: `${doctor.facilityName || "Cơ sở y tế"} - ${doctor.departmentName || "Chuyên khoa"}`,
+      }));
+  }, [doctors]);
 
   useEffect(() => {
     if (!auth) return;
     let active = true;
 
-    Promise.allSettled([authApi.me(), usersApi.list(1, pageInfo.pageSize), medicalDepartmentsApi.list()])
-      .then(([profileResult, usersResult, departmentResult]) => {
+    Promise.allSettled([
+      authApi.me(),
+      usersApi.list(1, pageInfo.pageSize),
+      medicalDepartmentsApi.list(),
+      doctorManagementApi.list({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE }),
+      medicalFacilitiesApi.list(1, 100),
+    ])
+      .then(([profileResult, usersResult, departmentResult, doctorResult, facilityResult]) => {
         if (!active) return;
 
         if (profileResult.status === "fulfilled") {
@@ -159,12 +197,34 @@ export default function AdminWorkspacePage() {
         } else {
           setDepartmentMessage({ type: "error", text: departmentResult.reason.message });
         }
+
+        if (doctorResult.status === "fulfilled") {
+          const data = doctorResult.value.data ?? {};
+          setDoctors(data.items ?? []);
+          setDoctorPageInfo({
+            pageNumber: data.pageNumber ?? 1,
+            pageSize: data.pageSize ?? DEFAULT_DOCTOR_PAGE_SIZE,
+            totalCount: data.totalCount ?? 0,
+            totalPages: data.totalPages ?? 1,
+          });
+        } else {
+          console.error("Không thể tải danh sách bác sĩ:", doctorResult.reason);
+          setDoctorMessage({ type: "error", text: doctorResult.reason.message });
+        }
+
+        if (facilityResult.status === "fulfilled") {
+          setFacilities(facilityResult.value.data?.items ?? facilityResult.value.data ?? []);
+        } else {
+          console.error("Không thể tải danh sách bệnh viện:", facilityResult.reason);
+        }
       })
       .finally(() => {
         if (!active) return;
         setLoading(false);
         setUsersLoading(false);
         setDepartmentsLoading(false);
+        setDoctorsLoading(false);
+        setFacilitiesLoading(false);
       });
 
     return () => {
@@ -205,6 +265,144 @@ export default function AdminWorkspacePage() {
       setDepartmentMessage({ type: "error", text: error.message });
     } finally {
       setDepartmentsLoading(false);
+    }
+  }
+
+  async function loadFacilities() {
+    setFacilitiesLoading(true);
+    try {
+      const response = await medicalFacilitiesApi.list(1, 100);
+      setFacilities(response.data?.items ?? response.data ?? []);
+    } catch (error) {
+      console.error("Không thể tải danh sách bệnh viện:", error);
+      showToast({ type: "error", title: "Không tải được bệnh viện", message: error.message });
+    } finally {
+      setFacilitiesLoading(false);
+    }
+  }
+
+  async function loadDoctors(pageNumber = doctorPageInfo.pageNumber, filters = doctorFilters) {
+    setDoctorsLoading(true);
+    setDoctorMessage(null);
+    try {
+      const response = await doctorManagementApi.list({
+        ...filters,
+        pageNumber,
+        pageSize: doctorPageInfo.pageSize,
+      });
+      const data = response.data ?? {};
+      setDoctors(data.items ?? []);
+      setDoctorPageInfo({
+        pageNumber: data.pageNumber ?? pageNumber,
+        pageSize: data.pageSize ?? doctorPageInfo.pageSize,
+        totalCount: data.totalCount ?? 0,
+        totalPages: data.totalPages ?? 1,
+      });
+    } catch (error) {
+      console.error("Doctor API error:", error);
+      setDoctorMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không tải được danh sách bác sĩ", message: error.message });
+    } finally {
+      setDoctorsLoading(false);
+    }
+  }
+
+  function updateDoctorFilter(key, value) {
+    setDoctorFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleDoctorFilterSubmit(event) {
+    event.preventDefault();
+    loadDoctors(1, doctorFilters);
+  }
+
+  function resetDoctorFilters() {
+    setDoctorFilters(EMPTY_DOCTOR_FILTERS);
+    loadDoctors(1, EMPTY_DOCTOR_FILTERS);
+  }
+
+  function openCreateDoctor() {
+    setDoctorModal({ open: true, mode: "create", doctor: null });
+  }
+
+  function openEditDoctor(doctor) {
+    setDoctorModal({ open: true, mode: "edit", doctor });
+  }
+
+  function closeDoctorModal() {
+    if (savingDoctor) return;
+    setDoctorModal({ open: false, mode: "create", doctor: null });
+  }
+
+  async function handleSaveDoctor(payload) {
+    setSavingDoctor(true);
+    setDoctorMessage(null);
+    try {
+      const response = doctorModal.mode === "edit"
+        ? await doctorManagementApi.update(doctorModal.doctor.id, payload)
+        : await doctorManagementApi.create(payload);
+      const savedDoctor = response.data;
+      setDoctorMessage({
+        type: "success",
+        text: response.message || (doctorModal.mode === "edit" ? "Đã cập nhật bác sĩ." : "Đã thêm bác sĩ."),
+      });
+      showToast({
+        type: "success",
+        title: doctorModal.mode === "edit" ? "Đã cập nhật bác sĩ" : "Đã thêm bác sĩ",
+        message: response.message || "Danh sách bác sĩ đã được cập nhật.",
+      });
+      setDoctorModal({ open: false, mode: "create", doctor: null });
+      if (savedDoctor?.id && doctorModal.mode === "edit") {
+        setDoctors((current) => current.map((doctor) => (doctor.id === savedDoctor.id ? savedDoctor : doctor)));
+      } else {
+        await loadDoctors(1);
+      }
+    } catch (error) {
+      console.error("Doctor save API error:", error);
+      setDoctorMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không lưu được bác sĩ", message: error.message });
+    } finally {
+      setSavingDoctor(false);
+    }
+  }
+
+  async function handleToggleDoctorStatus(doctor) {
+    setDoctorMessage(null);
+    try {
+      const response = await doctorManagementApi.setStatus(doctor.id, !doctor.isActive);
+      const updatedDoctor = response.data;
+      setDoctors((current) => current.map((item) => (item.id === doctor.id ? (updatedDoctor ?? { ...item, isActive: !item.isActive }) : item)));
+      showToast({
+        type: "success",
+        title: (updatedDoctor?.isActive ?? !doctor.isActive) ? "Đã kích hoạt bác sĩ" : "Đã tạm ẩn bác sĩ",
+        message: response.message || "Trạng thái bác sĩ đã được cập nhật.",
+      });
+    } catch (error) {
+      console.error("Doctor status API error:", error);
+      setDoctorMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không đổi được trạng thái", message: error.message });
+    }
+  }
+
+  async function handleDeleteDoctor(doctor) {
+    const confirmed = await confirmAction({
+      title: "Xóa bác sĩ?",
+      message: `${doctor.fullName || "Bác sĩ này"} sẽ bị xóa khỏi danh sách quản trị. Hãy chắc chắn trước khi tiếp tục.`,
+      confirmLabel: "Xóa bác sĩ",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    setDoctorMessage(null);
+    try {
+      const response = await doctorManagementApi.remove(doctor.id);
+      setDoctors((current) => current.filter((item) => item.id !== doctor.id));
+      setDoctorPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
+      showToast({ type: "success", title: "Đã xóa bác sĩ", message: response.message || "Danh sách bác sĩ đã được cập nhật." });
+    } catch (error) {
+      console.error("Doctor delete API error:", error);
+      setDoctorMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không xóa được bác sĩ", message: error.message });
     }
   }
 
@@ -377,6 +575,7 @@ export default function AdminWorkspacePage() {
             <nav className="admin-nav" aria-label="Điều hướng admin">
               <button className={activeSection === "overview" ? "active" : ""} type="button" onClick={() => setActiveSection("overview")}>Tổng quan</button>
               <button className={activeSection === "users" ? "active" : ""} type="button" onClick={() => setActiveSection("users")}>Người dùng</button>
+              <button className={activeSection === "doctors" ? "active" : ""} type="button" onClick={() => setActiveSection("doctors")}>Bác sĩ</button>
               <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => setActiveSection("staff")}>Tạo staff</button>
               <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => setActiveSection("departments")}>Chuyên khoa</button>
             </nav>
@@ -401,6 +600,8 @@ export default function AdminWorkspacePage() {
                 <button className="btn btn-primary btn-small" type="button" onClick={() => {
                   loadUsers();
                   loadDepartments();
+                  loadDoctors();
+                  loadFacilities();
                 }}>Đồng bộ dữ liệu</button>
               </div>
             </header>
@@ -419,9 +620,9 @@ export default function AdminWorkspacePage() {
                 <small>Trong trang hiện tại</small>
               </article>
               <article>
-                <span>Đang hoạt động</span>
-                <strong>{usersLoading ? "..." : activeUsers}</strong>
-                <small>Chưa bị xóa mềm</small>
+                <span>Bác sĩ</span>
+                <strong>{doctorsLoading ? "..." : doctorPageInfo.totalCount}</strong>
+                <small>{activeDoctors} đang hoạt động</small>
               </article>
               <article>
                 <span>Chuyên khoa</span>
@@ -516,6 +717,66 @@ export default function AdminWorkspacePage() {
                   <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => loadUsers(pageInfo.pageNumber - 1)}>Trước</button>
                   <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {pageInfo.totalCount} user</span>
                   <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => loadUsers(pageInfo.pageNumber + 1)}>Sau</button>
+                </div>
+              </section>
+            )}
+
+            {activeSection === "doctors" && (
+              <section className="admin-panel doctor-admin-panel">
+                <div className="panel-title-row">
+                  <div>
+                    <p className="eyebrow">Doctor Management</p>
+                    <h2>Quản lý bác sĩ</h2>
+                    <p className="muted-text">Tạo, cập nhật, lọc và quản lý trạng thái bác sĩ theo bệnh viện/chuyên khoa từ API backend.</p>
+                  </div>
+                  <button className="btn btn-primary btn-small" type="button" onClick={openCreateDoctor}>Add Doctor</button>
+                </div>
+
+                <ApiMessage message={doctorMessage} />
+
+                <DoctorFilters
+                  filters={doctorFilters}
+                  departments={departments}
+                  facilities={facilities}
+                  pageSize={doctorPageInfo.pageSize}
+                  onChange={updateDoctorFilter}
+                  onPageSizeChange={(pageSize) => setDoctorPageInfo((current) => ({ ...current, pageSize }))}
+                  onSubmit={handleDoctorFilterSubmit}
+                  onReset={resetDoctorFilters}
+                />
+
+                {facilitiesLoading && (
+                  <p className="muted-text">Đang đồng bộ danh sách bệnh viện cho bộ lọc...</p>
+                )}
+
+                {doctorsLoading ? (
+                  <div className="doctor-skeleton-list" aria-live="polite">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <div className="doctor-skeleton-row" key={index}>
+                        <span />
+                        <div />
+                        <div />
+                        <div />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <DoctorTable
+                    doctors={doctors}
+                    onEdit={openEditDoctor}
+                    onToggleStatus={handleToggleDoctorStatus}
+                    onDelete={handleDeleteDoctor}
+                  />
+                )}
+
+                <div className="pagination-row">
+                  <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber - 1)}>
+                    Trước
+                  </button>
+                  <span>Trang {doctorPageInfo.pageNumber} / {doctorPageInfo.totalPages || 1} · {doctorPageInfo.totalCount} bác sĩ</span>
+                  <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber + 1)}>
+                    Sau
+                  </button>
                 </div>
               </section>
             )}
@@ -633,6 +894,17 @@ export default function AdminWorkspacePage() {
           </div>
         </div>
       </section>
+      {doctorModal.open && (
+        <DoctorFormModal
+          key={doctorModal.doctor?.id ?? "create"}
+          mode={doctorModal.mode}
+          doctor={doctorModal.doctor}
+          facilityDepartmentOptions={facilityDepartmentOptions}
+          saving={savingDoctor}
+          onClose={closeDoctorModal}
+          onSubmit={handleSaveDoctor}
+        />
+      )}
     </main>
   );
 }
