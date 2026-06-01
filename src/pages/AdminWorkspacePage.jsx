@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  Bell,
   BrainCircuit,
   Building2,
+  CalendarDays,
   ClipboardList,
   Cpu,
   LayoutDashboard,
+  MoreVertical,
   RefreshCw,
+  Search,
   Stethoscope,
   Users,
   UserPlus,
@@ -185,6 +189,41 @@ export default function AdminWorkspacePage() {
   const activeAIConfigs = aiConfigs.filter((config) => config.isActive).length;
   const disabledAIConfigs = aiConfigs.filter((config) => !config.isActive).length;
   const runningAIFeatures = new Set(aiConfigs.filter((config) => config.isActive).map((config) => config.taskType).filter(Boolean)).size;
+  const approvalRate = pageInfo.totalCount ? Math.round(((pageInfo.totalCount - pendingUsers) / pageInfo.totalCount) * 100) : 100;
+  const doctorActivationRate = doctorPageInfo.totalCount ? Math.round((activeDoctors / doctorPageInfo.totalCount) * 100) : 0;
+  const aiHealthScore = aiConfigPageInfo.totalCount ? Math.round((activeAIConfigs / aiConfigPageInfo.totalCount) * 100) : 0;
+  const managementLoad = pendingUsers + disabledAIConfigs + Math.max(0, doctorPageInfo.totalCount - activeDoctors);
+  const performanceBars = [
+    { label: "User", value: approvalRate, accent: "mint" },
+    { label: "Bác sĩ", value: doctorActivationRate, accent: "teal" },
+    { label: "AI", value: aiHealthScore, accent: "coral" },
+    { label: "Khoa", value: Math.min(100, departments.length * 8), accent: "sand" },
+    { label: "Feature", value: Math.min(100, runningAIFeatures * 18), accent: "mint" },
+    { label: "Tải", value: Math.max(12, Math.min(100, 100 - managementLoad * 8)), accent: "teal" },
+  ];
+  const operations = [
+    {
+      title: `${pendingUsers} tài khoản cần duyệt`,
+      time: "Ưu tiên hôm nay",
+      tone: "warning",
+      section: "users",
+      icon: <Users size={16} />,
+    },
+    {
+      title: `${disabledAIConfigs} AI config đang tắt`,
+      time: "Kiểm tra prompt/model",
+      tone: "info",
+      section: "ai-configs",
+      icon: <BrainCircuit size={16} />,
+    },
+    {
+      title: `${Math.max(0, doctorPageInfo.totalCount - activeDoctors)} bác sĩ chưa active`,
+      time: "Cập nhật hồ sơ nhân sự",
+      tone: "success",
+      section: "doctors",
+      icon: <Stethoscope size={16} />,
+    },
+  ];
   const facilityDepartmentOptions = useMemo(() => {
     return doctors
       .filter((doctor) => doctor.facilityDepartmentId)
@@ -816,13 +855,37 @@ export default function AdminWorkspacePage() {
 
           <div className="admin-main">
             <header className="admin-topbar">
+              <label className="admin-search" aria-label="Tìm kiếm nhanh trong admin">
+                <Search size={17} />
+                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm user, email hoặc ID..." />
+              </label>
+              <div className="admin-top-profile">
+                <button className="admin-icon-button" type="button" aria-label="Lịch vận hành">
+                  <CalendarDays size={17} />
+                </button>
+                <button className="admin-icon-button" type="button" aria-label="Thông báo">
+                  <Bell size={17} />
+                </button>
+                <div className="admin-profile-chip">
+                  <span>{displayName.slice(0, 1).toUpperCase()}</span>
+                  <div>
+                    <strong>{displayName}</strong>
+                    <small>ID: {profile?.userId || auth.userId || "Admin"}</small>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <ApiMessage message={globalMessage} />
+
+            <section className="admin-hero-panel">
               <div>
                 <p className="eyebrow">Admin Workspace</p>
                 <h1>Quản trị MediMate AI</h1>
-                <p>Quản lý tài khoản, nhân sự hỗ trợ và danh mục chuyên khoa trong một nơi rõ ràng.</p>
+                <p>Giám sát người dùng, bác sĩ, AI config và danh mục chuyên khoa trong một dashboard rõ ràng cho vận hành hằng ngày.</p>
               </div>
               <div className="admin-top-actions">
-                <a className="btn btn-ghost btn-small" href="/app/staff">Xem giao diện nhân sự</a>
+                <a className="btn btn-ghost btn-small" href="/app/staff">Giao diện nhân sự</a>
                 <button className="btn btn-primary btn-small" type="button" onClick={() => {
                   loadUsers();
                   loadDepartments();
@@ -831,9 +894,7 @@ export default function AdminWorkspacePage() {
                   loadFacilities();
                 }}><RefreshCw size={15} /> Đồng bộ dữ liệu</button>
               </div>
-            </header>
-
-            <ApiMessage message={globalMessage} />
+            </section>
 
             <section className="admin-stats">
               <article>
@@ -871,60 +932,100 @@ export default function AdminWorkspacePage() {
               <article>
                 <span className="admin-stat-icon"><Activity size={17} /></span>
                 <div>
-                  <span>AI Features</span>
-                  <strong>{aiConfigsLoading ? "..." : runningAIFeatures}</strong>
-                  <small>Feature đang chạy</small>
+                  <span>Health score</span>
+                  <strong>{aiConfigsLoading ? "..." : `${aiHealthScore}%`}</strong>
+                  <small>AI config đang active</small>
                 </div>
               </article>
             </section>
 
             {activeSection === "overview" && (
-              <section className="admin-grid">
-                <div className="admin-panel">
+              <section className="admin-dashboard-grid">
+                <div className="admin-panel admin-performance-panel">
                   <div className="panel-title-row">
                     <div>
-                      <p className="eyebrow">Việc cần chú ý</p>
-                      <h2>Hàng đợi quản trị</h2>
+                      <p className="eyebrow">Performance Over Time</p>
+                      <h2>Hiệu suất vận hành</h2>
+                      <span className="admin-panel-date">Cập nhật theo dữ liệu trang hiện tại</span>
                     </div>
-                    <button className="btn btn-ghost btn-small" type="button" onClick={() => setActiveSection("users")}>Xem user</button>
+                    <div className="admin-panel-tools">
+                      <span>Short</span>
+                      <span>Filter</span>
+                      <button type="button" aria-label="Tùy chọn"><MoreVertical size={16} /></button>
+                    </div>
                   </div>
-                  <div className="admin-task-list">
+                  <div className="admin-overview-metrics">
                     <article>
-                      <strong>{pendingUsers} user chờ duyệt</strong>
-                      <span>Duyệt tài khoản để người dùng có thể tiếp tục dùng workspace.</span>
+                      <span>Approval rate</span>
+                      <strong>{approvalRate}%</strong>
+                      <small className="trend-up">+{Math.max(0, approvalRate - 80)}%</small>
                     </article>
                     <article>
-                      <strong>{departments.length} chuyên khoa đang có</strong>
-                      <span>Dữ liệu chuyên khoa rõ ràng giúp người dùng chọn đúng nơi khám hơn.</span>
+                      <span>Doctor active</span>
+                      <strong>{activeDoctors}/{doctorPageInfo.totalCount}</strong>
+                      <small className="trend-up">{doctorActivationRate}%</small>
                     </article>
                     <article>
-                      <strong>Vận hành ổn định</strong>
-                      <span>Ưu tiên duyệt tài khoản, cập nhật chuyên khoa và giữ dữ liệu nhất quán.</span>
+                      <span>AI enabled</span>
+                      <strong>{activeAIConfigs}</strong>
+                      <small className={disabledAIConfigs ? "trend-down" : "trend-up"}>{disabledAIConfigs} off</small>
+                    </article>
+                    <article>
+                      <span>Departments</span>
+                      <strong>{departments.length}</strong>
+                      <small className="trend-up">Catalog</small>
                     </article>
                   </div>
                 </div>
 
-                <div className="admin-panel">
+                <div className="admin-panel admin-chart-panel">
                   <div className="panel-title-row">
                     <div>
-                      <p className="eyebrow">Thông tin phiên</p>
-                      <h2>{displayName}</h2>
+                      <p className="eyebrow">Campaign Performance</p>
+                      <h2>Chỉ số quản trị</h2>
+                      <span className="admin-panel-date">{managementLoad} mục cần xử lý</span>
+                    </div>
+                    <span className="soft-badge">Live</span>
+                  </div>
+                  <div className="admin-bar-chart" aria-label="Biểu đồ hiệu suất quản trị">
+                    {performanceBars.map((bar) => (
+                      <div className={`admin-bar admin-bar-${bar.accent}`} key={bar.label}>
+                        <span style={{ height: `${Math.max(14, bar.value)}%` }}>
+                          <strong>{bar.value}%</strong>
+                        </span>
+                        <small>{bar.label}</small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="admin-panel admin-schedule-panel">
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Operations Queue</p>
+                      <h2>Lịch vận hành</h2>
                     </div>
                     <span className="soft-badge">{formatRoles(roles)}</span>
                   </div>
-                  <div className="profile-list">
-                    <div>
-                      <span>Email</span>
-                      <strong>{profile?.email || auth.email || "Không có email"}</strong>
-                    </div>
-                    <div>
-                      <span>Trạng thái</span>
-                      <strong>{profile?.status === 1 ? "Đã duyệt" : "Đang hoạt động"}</strong>
-                    </div>
-                    <div>
-                      <span>User ID</span>
-                      <strong>{profile?.userId || auth.userId || "Không có"}</strong>
-                    </div>
+                  <div className="admin-week-strip">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, index) => (
+                      <button className={index === 4 ? "active" : ""} type="button" key={day}>
+                        <span>{day}</span>
+                        <strong>{15 + index}</strong>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="admin-operation-list">
+                    {operations.map((item) => (
+                      <button className={`admin-operation admin-operation-${item.tone}`} type="button" key={item.title} onClick={() => setActiveSection(item.section)}>
+                        <span className="admin-operation-icon">{item.icon}</span>
+                        <div>
+                          <strong>{item.title}</strong>
+                          <small>{item.time}</small>
+                        </div>
+                        <MoreVertical size={16} />
+                      </button>
+                    ))}
                   </div>
                 </div>
               </section>
