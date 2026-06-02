@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { sendAnthropicMessage } from "../services/anthropicService";
 
 const WELCOME_PROMPTS = [
   "Tôi bị đau đầu và sốt nhẹ 2 ngày",
@@ -74,14 +75,9 @@ function ChatbotPage() {
       const apiKey = import.meta.env.VITE_ANTHROPIC_KEY;
       if (!apiKey) throw new Error("Missing Anthropic key");
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
+      const data = await sendAnthropicMessage({
+        apiKey,
+        body: {
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
           system: `Bạn là MediMate AI, trợ lý y khoa thông minh.
@@ -92,11 +88,9 @@ Nếu triệu chứng nghiêm trọng, khuyến nghị đi cấp cứu ngay.`,
             role: message.role === "assistant" ? "assistant" : "user",
             content: message.content,
           })),
-        }),
+        },
       });
 
-      if (!response.ok) throw new Error("Assistant request failed");
-      const data = await response.json();
       const aiText = data.content?.[0]?.text || "Xin lỗi, có lỗi xảy ra.";
       setMessages((current) => [
         ...current,
