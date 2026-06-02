@@ -13,7 +13,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://sep490-medicalaiassistant.onrender.com/api/:path*"
+      "destination": "http://52.77.210.243:8080/api/:path*"
     },
     {
       "source": "/((?!api/.*).*)",
