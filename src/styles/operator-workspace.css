@@ -47,7 +47,7 @@
   display: grid;
   grid-template-columns: minmax(240px, 360px) auto;
   justify-content: space-between;
-  border-radius: 20px 20px 0 0;
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.66);
   padding: 14px clamp(16px, 2vw, 22px);
   box-shadow: none;
@@ -1054,6 +1054,35 @@
 
 .admin-operator .ui-table tbody tr:hover {
   background: rgba(230, 248, 217, 0.34);
+}
+
+.admin-operator .admin-users-panel .ui-table-wrap {
+  overflow-x: hidden;
+}
+
+.admin-operator .admin-users-panel .ui-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.admin-operator .admin-users-panel .ui-table th,
+.admin-operator .admin-users-panel .ui-table td {
+  overflow-wrap: anywhere;
+}
+
+.admin-operator .admin-users-panel .ui-table th:nth-child(1),
+.admin-operator .admin-users-panel .ui-table td:nth-child(1) {
+  width: 48%;
+}
+
+.admin-operator .admin-users-panel .ui-table th:nth-child(2),
+.admin-operator .admin-users-panel .ui-table td:nth-child(2) {
+  width: 24%;
+}
+
+.admin-operator .admin-users-panel .ui-table th:nth-child(3),
+.admin-operator .admin-users-panel .ui-table td:nth-child(3) {
+  width: 28%;
 }
 
 .doctor-empty-state {

@@ -173,18 +173,22 @@ export default function AdminWorkspacePage() {
   const isAdmin = hasRole(roles, "admin");
   const displayName = profile?.name || profile?.displayName || auth?.email?.split("@")[0] || "Admin";
 
+  const pendingApprovalUsers = useMemo(() => {
+    return users.filter((user) => Number(user.status) !== 1 && !user.isDeleted);
+  }, [users]);
+
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    if (!keyword) return users;
+    if (!keyword) return pendingApprovalUsers;
 
-    return users.filter((user) => {
+    return pendingApprovalUsers.filter((user) => {
       return [user.email, user.displayName, user.identityId]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword));
     });
-  }, [search, users]);
+  }, [search, pendingApprovalUsers]);
 
-  const pendingUsers = users.filter((user) => Number(user.status) !== 1).length;
+  const pendingUsers = pendingApprovalUsers.length;
   const activeDoctors = doctors.filter((doctor) => doctor.isActive).length;
   const activeAIConfigs = aiConfigs.filter((config) => config.isActive).length;
   const disabledAIConfigs = aiConfigs.filter((config) => !config.isActive).length;
@@ -387,19 +391,6 @@ export default function AdminWorkspacePage() {
       setDepartmentMessage({ type: "error", text: error.message });
     } finally {
       setDepartmentsLoading(false);
-    }
-  }
-
-  async function loadFacilities() {
-    setFacilitiesLoading(true);
-    try {
-      const response = await medicalFacilitiesApi.list(1, 100);
-      setFacilities(response.data?.items ?? response.data ?? []);
-    } catch (error) {
-      console.error("Không thể tải danh sách bệnh viện:", error);
-      showToast({ type: "error", title: "Không tải được bệnh viện", message: error.message });
-    } finally {
-      setFacilitiesLoading(false);
     }
   }
 
@@ -782,7 +773,6 @@ export default function AdminWorkspacePage() {
         <div className="table-primary-cell">
           <strong>{item.displayName || item.email || "Người dùng"}</strong>
           <span>{item.email || "Chưa có email"}</span>
-          <small>{item.identityId}</small>
         </div>
       ),
     },
@@ -857,7 +847,7 @@ export default function AdminWorkspacePage() {
             <header className="admin-topbar">
               <label className="admin-search" aria-label="Tìm kiếm nhanh trong admin">
                 <Search size={17} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm user, email hoặc ID..." />
+                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm người dùng hoặc email..." />
               </label>
               <div className="admin-top-profile">
                 <button className="admin-icon-button" type="button" aria-label="Lịch vận hành">
@@ -870,31 +860,13 @@ export default function AdminWorkspacePage() {
                   <span>{displayName.slice(0, 1).toUpperCase()}</span>
                   <div>
                     <strong>{displayName}</strong>
-                    <small>ID: {profile?.userId || auth.userId || "Admin"}</small>
+                    <small>{formatRoles(roles)}</small>
                   </div>
                 </div>
               </div>
             </header>
 
             <ApiMessage message={globalMessage} />
-
-            <section className="admin-hero-panel">
-              <div>
-                <p className="eyebrow">Admin Workspace</p>
-                <h1>Quản trị MediMate AI</h1>
-                <p>Giám sát người dùng, bác sĩ, AI config và danh mục chuyên khoa trong một dashboard rõ ràng cho vận hành hằng ngày.</p>
-              </div>
-              <div className="admin-top-actions">
-                <a className="btn btn-ghost btn-small" href="/app/staff">Giao diện nhân sự</a>
-                <button className="btn btn-primary btn-small" type="button" onClick={() => {
-                  loadUsers();
-                  loadDepartments();
-                  loadDoctors();
-                  loadAIConfigs();
-                  loadFacilities();
-                }}><RefreshCw size={15} /> Đồng bộ dữ liệu</button>
-              </div>
-            </section>
 
             <section className="admin-stats">
               <article>
@@ -1032,17 +1004,18 @@ export default function AdminWorkspacePage() {
             )}
 
             {activeSection === "users" && (
-              <section className="admin-panel">
+              <section className="admin-panel admin-users-panel">
                 <div className="panel-title-row">
                   <div>
                     <p className="eyebrow">Tài khoản</p>
-                    <h2>Quản lý người dùng</h2>
+                    <h2>Tài khoản chờ duyệt</h2>
+                    <p className="muted-text">Chỉ hiển thị các tài khoản chưa được duyệt để admin xử lý nhanh hơn.</p>
                   </div>
                   <button className="btn btn-ghost btn-small" type="button" onClick={() => loadUsers()}>Tải lại</button>
                 </div>
                 <ApiMessage message={usersMessage} />
                 <div className="admin-toolbar">
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm theo email, tên hoặc ID..." />
+                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm theo email hoặc tên..." />
                   <select value={pageInfo.pageSize} onChange={(event) => setPageInfo((current) => ({ ...current, pageSize: Number(event.target.value) }))}>
                     <option value="10">10 / trang</option>
                     <option value="20">20 / trang</option>
@@ -1057,13 +1030,13 @@ export default function AdminWorkspacePage() {
                     columns={userColumns}
                     rows={filteredUsers}
                     getRowKey={(item) => item.identityId}
-                    emptyState={<EmptyState title="Không tìm thấy người dùng" description="Thử đổi từ khóa tìm kiếm hoặc tải lại danh sách." />}
+                    emptyState={<EmptyState title="Không có tài khoản chờ duyệt" description="Các tài khoản đã duyệt hoặc đang hoạt động đã được ẩn khỏi danh sách này." />}
                   />
                 )}
 
                 <div className="pagination-row">
                   <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => loadUsers(pageInfo.pageNumber - 1)}>Trước</button>
-                  <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {pageInfo.totalCount} user</span>
+                  <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {filteredUsers.length} tài khoản cần duyệt</span>
                   <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => loadUsers(pageInfo.pageNumber + 1)}>Sau</button>
                 </div>
               </section>
