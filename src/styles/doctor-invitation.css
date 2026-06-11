@@ -1,0 +1,170 @@
+.doctor-invitation-layout {
+  align-items: stretch;
+}
+
+.doctor-invitation-card {
+  min-height: 620px;
+}
+
+.doctor-invitation-status {
+  min-height: 520px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.doctor-invitation-status h2 {
+  max-width: 560px;
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.1;
+}
+
+.doctor-invitation-status > p:not(.eyebrow) {
+  max-width: 540px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.doctor-invitation-loader {
+  width: 42px;
+  height: 42px;
+  border: 4px solid rgba(17, 20, 18, 0.12);
+  border-top-color: var(--teal);
+  border-radius: 999px;
+  animation: doctorInvitationSpin 0.8s linear infinite;
+}
+
+.doctor-profile-summary,
+.doctor-facility-warning,
+.doctor-api-errors {
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.doctor-profile-summary {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 20px;
+  border: 1px solid var(--line-strong);
+  background: var(--mint);
+}
+
+.doctor-profile-summary span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.doctor-api-errors {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(190, 24, 93, 0.25);
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.doctor-api-errors p,
+.doctor-facility-warning p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.doctor-professional-section {
+  display: grid;
+  gap: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+}
+
+.doctor-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.doctor-section-heading span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.doctor-facility-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.doctor-facility-warning .btn {
+  flex: 0 0 auto;
+}
+
+.doctor-invitation-field.has-error input,
+.doctor-invitation-field.has-error select {
+  border-color: #be123c;
+}
+
+.doctor-invitation-field .field-error {
+  color: #be123c;
+}
+
+.doctor-invitation-field input[readonly] {
+  background: var(--paper-soft);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.doctor-invitation-field select:disabled {
+  background: var(--paper-soft);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.doctor-field-wide {
+  grid-column: 1 / -1;
+}
+
+.doctor-submit-note,
+.doctor-redirect-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+@keyframes doctorInvitationSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .doctor-invitation-card {
+    min-height: auto;
+  }
+
+  .doctor-invitation-status {
+    min-height: 420px;
+  }
+
+  .doctor-facility-warning,
+  .doctor-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .doctor-field-wide {
+    grid-column: auto;
+  }
+}
