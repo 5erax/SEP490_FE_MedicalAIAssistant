@@ -74,6 +74,7 @@ export default function AIConfigTable({ configs, onView, onEdit, onToggleStatus,
 
   return (
     <DataTable
+      caption="Danh sách cấu hình AI theo bộ lọc hiện tại"
       columns={columns}
       rows={configs}
       getRowKey={(config) => config.id}
