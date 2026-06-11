@@ -1,16 +1,45 @@
+import { Children, cloneElement, isValidElement, useId } from "react";
 import "./ui.css";
 
-export function Field({ label, hint, error, children, className = "" }) {
-  const describedBy = error ? `${label}-error` : hint ? `${label}-hint` : undefined;
+function mergeIds(...values) {
+  return values.filter(Boolean).join(" ") || undefined;
+}
+
+export function Field({
+  id,
+  label,
+  hint,
+  error,
+  required = false,
+  optional = false,
+  children,
+  className = "",
+}) {
+  const generatedId = useId();
+  const controlId = id || `field-${generatedId.replace(/:/g, "")}`;
+  const hintId = hint ? `${controlId}-hint` : undefined;
+  const errorId = error ? `${controlId}-error` : undefined;
+  const child = Children.only(children);
+  const control = isValidElement(child)
+    ? cloneElement(child, {
+        id: child.props.id || controlId,
+        required: child.props.required ?? required,
+        "aria-invalid": child.props["aria-invalid"] ?? (error ? "true" : undefined),
+        "aria-describedby": mergeIds(child.props["aria-describedby"], hintId, errorId),
+      })
+    : child;
+
   return (
-    <label className={`ui-field ${className}`.trim()}>
-      <span>{label}</span>
-      {children?.type
-        ? children
-        : children}
-      {hint && !error && <small id={describedBy}>{hint}</small>}
-      {error && <small className="ui-field-error" id={describedBy}>{error}</small>}
-    </label>
+    <div className={`ui-field ${error ? "ui-field-invalid" : ""} ${className}`.trim()}>
+      <label htmlFor={control.props?.id || controlId}>
+        <span>{label}</span>
+        {required && <span className="ui-field-required" aria-hidden="true">*</span>}
+        {optional && !required && <span className="ui-field-optional">Không bắt buộc</span>}
+      </label>
+      {control}
+      {hint && <small id={hintId}>{hint}</small>}
+      {error && <small className="ui-field-error" id={errorId} role="alert">{error}</small>}
+    </div>
   );
 }
 

@@ -80,6 +80,7 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
 
   return (
     <DataTable
+      caption="Danh sách bác sĩ theo bộ lọc hiện tại"
       columns={columns}
       rows={doctors}
       getRowKey={(doctor) => doctor.id}

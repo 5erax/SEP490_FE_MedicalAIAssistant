@@ -1027,6 +1027,7 @@ export default function AdminWorkspacePage() {
                   <LoadingState label="Đang tải danh sách người dùng..." />
                 ) : (
                   <DataTable
+                    caption="Danh sách tài khoản đang chờ quản trị viên duyệt"
                     columns={userColumns}
                     rows={filteredUsers}
                     getRowKey={(item) => item.identityId}

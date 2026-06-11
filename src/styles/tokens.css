@@ -8,6 +8,7 @@
   --color-line: #dde4d5;
   --color-line-strong: #b9c5ad;
   --color-primary: #c4e995;
+  --color-primary-soft: #eef7e8;
   --color-primary-strong: #6a9540;
   --color-info: #087f8c;
   --color-info-bg: #e6f4ee;
@@ -30,13 +31,31 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
+  --radius-pill: 999px;
   --shadow-card: 0 18px 48px rgba(17, 20, 18, 0.08);
   --shadow-hard: 4px 4px 0 var(--color-ink);
+  --shadow-hard-lg: 6px 6px 0 var(--color-ink);
   --motion-fast: 120ms ease;
   --motion-base: 180ms ease;
   --z-nav: 20;
   --z-overlay: 120;
   --z-toast: 110;
+
+  /* Compatibility aliases. New components should prefer semantic --color-* tokens. */
+  --bg: var(--color-bg);
+  --paper: var(--color-surface);
+  --paper-soft: var(--color-surface-soft);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --subtle: var(--color-subtle);
+  --line: var(--color-line);
+  --line-strong: var(--color-line-strong);
+  --lime: var(--color-primary);
+  --lime-dark: var(--color-primary-strong);
+  --mint: var(--color-info-bg);
+  --teal: var(--color-info);
+  --display: var(--font-display);
+  --radius: var(--radius-sm);
 
   --success: var(--color-success);
   --success-bg: var(--color-success-bg);

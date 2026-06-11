@@ -1,0 +1,83 @@
+export const APP_ROUTES = [
+  { path: "/", expectedPath: "/", surface: "public" },
+  { path: "/login", expectedPath: "/login", surface: "auth" },
+  { path: "/signup", expectedPath: "/signup", surface: "auth" },
+  { path: "/staff/register", expectedPath: "/staff/register", surface: "auth" },
+  { path: "/staff-register", expectedPath: "/staff-register", surface: "auth-alias" },
+  { path: "/forgot-password", expectedPath: "/forgot-password", surface: "auth" },
+  { path: "/change-password", expectedPath: "/change-password", surface: "auth" },
+  { path: "/dashboard", expectedPath: "/dashboard", surface: "patient" },
+  { path: "/profile", expectedPath: "/login", surface: "premium-gate" },
+  { path: "/symptom", expectedPath: "/login", surface: "premium-gate" },
+  { path: "/chat", expectedPath: "/login", surface: "premium-gate" },
+  { path: "/map", expectedPath: "/map", surface: "public" },
+  { path: "/records", expectedPath: "/login", surface: "premium-gate" },
+  { path: "/medication", expectedPath: "/login", surface: "premium-gate" },
+  { path: "/pricing", expectedPath: "/pricing", surface: "public" },
+  { path: "/app", expectedPath: "/app", surface: "workspace-gate" },
+  { path: "/account", expectedPath: "/login", surface: "auth-gate" },
+  { path: "/app/patient", expectedPath: "/login", surface: "auth-gate" },
+  { path: "/app/staff", expectedPath: "/app/staff", surface: "role-gate" },
+  { path: "/app/admin", expectedPath: "/app/admin", surface: "role-gate" },
+  { path: "/medical-assistant", expectedPath: "/medical-assistant", surface: "auth-gate" },
+  { path: "/symptom-chat", expectedPath: "/symptom-chat", surface: "auth-alias" },
+  { path: "/patient/profile/setup", expectedPath: "/login", surface: "auth-gate" },
+  { path: "/departments", expectedPath: "/", surface: "redirect" },
+  { path: "/admin", expectedPath: "/admin", surface: "role-gate" },
+  { path: "/admin/users", expectedPath: "/admin/users", surface: "role-gate" },
+];
+
+export const STATIC_ROUTES = [
+  "/product",
+  "/features",
+  "/roadmap",
+  "/support",
+  "/help",
+  "/contact",
+  "/status",
+  "/community",
+  "/legal",
+  "/terms",
+  "/privacy",
+  "/cookies",
+  "/medical-disclaimer",
+  "/demo",
+  "/route-that-does-not-exist",
+];
+
+export const KNOWN_ROUTE_CONFLICTS = [
+  {
+    path: "/api",
+    reason: "Vite and production API rewrites reserve /api before React can render StaticPage.",
+  },
+];
+
+export const ACCESSIBILITY_ROUTES = [
+  "/",
+  "/login",
+  "/signup",
+  "/dashboard",
+  "/map",
+  "/pricing",
+  "/app",
+  "/app/staff",
+  "/app/admin",
+  "/route-that-does-not-exist",
+];
+
+export const VISUAL_ROUTES = [
+  { name: "landing", path: "/" },
+  { name: "login", path: "/login" },
+  { name: "patient-dashboard", path: "/dashboard" },
+  { name: "nearby-clinic", path: "/map" },
+  { name: "staff-gate", path: "/app/staff" },
+  { name: "admin-gate", path: "/app/admin" },
+  { name: "not-found", path: "/route-that-does-not-exist" },
+];
+
+export const VISUAL_VIEWPORTS = [
+  { name: "mobile-320", width: 320, height: 800 },
+  { name: "mobile-375", width: 375, height: 812 },
+  { name: "tablet-768", width: 768, height: 1024 },
+  { name: "desktop-1440", width: 1440, height: 1000 },
+];
