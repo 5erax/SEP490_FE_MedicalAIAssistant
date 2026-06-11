@@ -5,7 +5,9 @@ const AUTH_BASE = "/api/authentication";
 const USERS_BASE = "/api/users";
 const DEPARTMENTS_BASE = "/api/medical-departments";
 const FACILITIES_BASE = "/api/medical-facilities";
+const FACILITY_DEPARTMENTS_BASE = "/api/facility-departments";
 const DOCTORS_BASE = "/api/doctors";
+const DOCTOR_INVITATIONS_BASE = "/api/doctor-invitations";
 const PATIENT_PROFILES_BASE = "/api/patient-profiles";
 const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
 const AI_CONFIGS_BASE = "/api/ai-configs";
@@ -38,11 +40,18 @@ export const ENDPOINTS = {
     BY_ID: (id) => byId(FACILITIES_BASE, id),
     STATUS: (id) => status(FACILITIES_BASE, id),
   },
+  FACILITY_DEPARTMENTS: {
+    ACTIVE: `${FACILITY_DEPARTMENTS_BASE}/active`,
+  },
   DOCTORS: {
     BASE: DOCTORS_BASE,
     ACTIVE: `${DOCTORS_BASE}/active`,
     BY_ID: (id) => byId(DOCTORS_BASE, id),
     STATUS: (id) => status(DOCTORS_BASE, id),
+  },
+  DOCTOR_INVITATIONS: {
+    VALIDATE: `${DOCTOR_INVITATIONS_BASE}/validate`,
+    REGISTER: `${DOCTOR_INVITATIONS_BASE}/register`,
   },
   PATIENT_PROFILES: {
     BASE: PATIENT_PROFILES_BASE,
