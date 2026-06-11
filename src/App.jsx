@@ -15,6 +15,7 @@ import UserProfilePage from "./pages/UserProfilePage";
 import MedicalAssistantPage from "./pages/MedicalAssistantPage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
+import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
 import { getStoredAuth, hasPremiumAccess } from "./services/api";
 import {
   ChangePasswordPage,
@@ -65,6 +66,7 @@ function App() {
 
   if (path === "/login") return <LoginPage />;
   if (path === "/signup") return <SignupPage />;
+  if (path === "/register-doctor") return <DoctorRegisterInvitationPage />;
   if (path === "/staff/register" || path === "/staff-register") return <StaffRegisterPortalPage />;
   if (path === "/forgot-password") return <ForgotPasswordPage />;
   if (path === "/change-password") return <ChangePasswordPage />;
