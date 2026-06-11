@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:routes": "playwright test tests/e2e/routes.spec.js",
+    "test:e2e:a11y": "playwright test tests/e2e/accessibility.spec.js",
+    "test:e2e:performance": "playwright test tests/e2e/performance.spec.js",
+    "test:e2e:visual": "playwright test tests/e2e/visual.spec.js",
+    "test:e2e:visual:update": "playwright test tests/e2e/visual.spec.js --update-snapshots"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
@@ -18,7 +24,9 @@
     "react-map-gl": "^8.1.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
