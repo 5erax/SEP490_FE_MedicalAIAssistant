@@ -1,6 +1,6 @@
 import "./ui.css";
 
-export function DataTable({ columns, rows, getRowKey, emptyState }) {
+export function DataTable({ caption, columns, rows, getRowKey, emptyState }) {
   if (!rows.length) {
     return emptyState ?? null;
   }
@@ -8,10 +8,11 @@ export function DataTable({ columns, rows, getRowKey, emptyState }) {
   return (
     <div className="ui-table-wrap">
       <table className="ui-table">
+        {caption && <caption className="sr-only">{caption}</caption>}
         <thead>
           <tr>
             {columns.map((column) => (
-              <th key={column.key}>{column.header}</th>
+              <th key={column.key} scope="col">{column.header}</th>
             ))}
           </tr>
         </thead>
