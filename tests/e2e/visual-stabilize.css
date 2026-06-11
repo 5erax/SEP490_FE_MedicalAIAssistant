@@ -1,0 +1,10 @@
+.typed-text {
+  height: 96px !important;
+  min-height: 96px !important;
+  overflow: hidden !important;
+}
+
+.typed-text::after,
+.landing-chat-launcher {
+  visibility: hidden !important;
+}
