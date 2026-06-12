@@ -1,16 +1,34 @@
-# React + Vite
+# MediMate AI Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite frontend cho hệ thống trợ lý y khoa MediMate AI.
 
-Currently, two official plugins are available:
+## Chạy local
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+Ứng dụng chạy tại `http://localhost:3000`. API development được cấu hình trong `.env.development` và proxy qua `/api`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Kiểm tra
 
-## Expanding the ESLint configuration
+```bash
+npm run lint
+npm run build
+npm run test:e2e
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Production
+
+- Vercel rewrite `/api/*` tới backend deploy theo `vercel.json`.
+- SPA routes được rewrite về `index.html`.
+- Các biến môi trường mẫu nằm trong `.env.example`.
+
+## Tài liệu
+
+- `API_ARCHITECTURE.md`: quy ước API layer.
+- `docs/flows-and-use-cases.md`: luồng nghiệp vụ.
+- `docs/2.md`: đăng ký bác sĩ bằng invitation.
+- `docs/backend-facility-department-note.md`: phần backend còn thiếu cho invitation bác sĩ mới.
+- `docs/backend-payment-readiness-note.md`: điều kiện backend để PayOS hoạt động end-to-end.
