@@ -45,3 +45,38 @@ export const subscriptionPlansApi = {
     });
   },
 };
+
+export const userSubscriptionsApi = {
+  checkout(planId, autoRenew = false) {
+    return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.CHECKOUT, {
+      method: "POST",
+      body: { planId, autoRenew },
+      auth: true,
+    });
+  },
+
+  me() {
+    return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.ME, { auth: true });
+  },
+
+  get(id) {
+    return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.BY_ID(id), { auth: true });
+  },
+
+  cancel(id) {
+    return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.CANCEL(id), {
+      method: "POST",
+      auth: true,
+    });
+  },
+};
+
+export const paymentsApi = {
+  get(id) {
+    return apiRequest(ENDPOINTS.PAYMENTS.BY_ID(id), { auth: true });
+  },
+
+  payOsStatus(orderCode) {
+    return apiRequest(ENDPOINTS.PAYMENTS.PAYOS_STATUS(orderCode));
+  },
+};
