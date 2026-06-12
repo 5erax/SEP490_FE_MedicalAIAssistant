@@ -110,7 +110,9 @@ function NearbyClinicPage() {
   const [facilities, setFacilities] = useState(HCMC_FACILITIES);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
   const [apiNotice, setApiNotice] = useState("");
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState(
+    () => new URLSearchParams(window.location.search).get("search") || "",
+  );
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedFacility, setSelectedFacility] = useState(HCMC_FACILITIES[0]);
@@ -201,13 +203,20 @@ function NearbyClinicPage() {
           <button type="button" onClick={handleLocateMe}>Định vị tôi</button>
         </div>
         <div className="clinic-search">
-          <span>⌕</span>
+          <span aria-hidden="true">⌕</span>
+          <label className="sr-only" htmlFor="facility-search">Tìm cơ sở y tế</label>
           <input
+            id="facility-search"
+            name="search"
+            type="search"
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Tìm tên bệnh viện, phòng khám..."
+            placeholder="Tìm tên bệnh viện, phòng khám…"
+            autoComplete="off"
           />
-          {searchText && <button type="button" onClick={() => setSearchText("")}>×</button>}
+          {searchText && (
+            <button type="button" aria-label="Xóa tìm kiếm" onClick={() => setSearchText("")}>×</button>
+          )}
         </div>
 
         <div className="filter-row">
@@ -338,8 +347,8 @@ const styles = `
 .facility-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
 .facility-top strong { font-size: 14px; line-height: 1.35; }
 .type-badge { flex: 0 0 auto; border-radius: 999px; padding: 5px 8px; font-size: 10px; font-weight: 900; background: var(--lime); }
-.type-badge.clinic { background: var(--mint); color: var(--teal); }
-.type-badge.pharmacy { background: #e5f8d1; color: #4d7c0f; }
+.type-badge.clinic { background: var(--mint); color: #075d66; }
+.type-badge.pharmacy { background: #e5f8d1; color: #365e08; }
 .type-badge.emergency { background: rgba(239,111,97,.16); color: #b42318; }
 .facility-result-card p { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .department-row { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 2px; }

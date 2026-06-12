@@ -11,7 +11,15 @@ const GOOGLE_LOGIN_ENABLED = Boolean(GOOGLE_CLIENT_ID.trim());
 
 function ApiMessage({ message }) {
   if (!message) return null;
-  return <div className={`api-message ${message.type}`}>{message.text}</div>;
+  return (
+    <div
+      className={`api-message ${message.type}`}
+      role={message.type === "error" ? "alert" : "status"}
+      aria-live={message.type === "error" ? "assertive" : "polite"}
+    >
+      {message.text}
+    </div>
+  );
 }
 
 function getSafeRedirectPath() {
@@ -170,19 +178,22 @@ export function LoginPage() {
         )}
         <Field
           label="Email"
+          name="email"
           type="email"
           value={form.email}
           onChange={(event) => setForm({ ...form, email: event.target.value })}
           placeholder="you@example.com"
           autoComplete="email"
+          spellCheck={false}
           required
         />
         <Field
           label="Mật khẩu"
+          name="password"
           type="password"
           value={form.password}
           onChange={(event) => setForm({ ...form, password: event.target.value })}
-          placeholder="Nhập mật khẩu"
+          placeholder="Nhập mật khẩu…"
           autoComplete="current-password"
           required
         />
@@ -269,17 +280,17 @@ export function SignupPage() {
       <form className="clean-form auth-form-clean" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
         <div className="form-two-cols">
-          <Field label="Email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} autoComplete="email" required />
-          <Field label="Tên đăng nhập" value={form.userName} onChange={(event) => update("userName", event.target.value)} autoComplete="username" required />
-          <Field label="Tên hiển thị" value={form.displayName} onChange={(event) => update("displayName", event.target.value)} required />
-          <Field label="Địa chỉ" value={form.address} onChange={(event) => update("address", event.target.value)} />
-          <Field label="Mật khẩu" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" required />
-          <Field label="Nhập lại mật khẩu" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" required />
-          <SelectField label="Giới tính" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
+          <Field label="Email" name="email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} autoComplete="email" spellCheck={false} required />
+          <Field label="Tên đăng nhập" name="userName" value={form.userName} onChange={(event) => update("userName", event.target.value)} autoComplete="username" spellCheck={false} required />
+          <Field label="Tên hiển thị" name="displayName" value={form.displayName} onChange={(event) => update("displayName", event.target.value)} autoComplete="name" required />
+          <Field label="Địa chỉ" name="address" value={form.address} onChange={(event) => update("address", event.target.value)} autoComplete="street-address" />
+          <Field label="Mật khẩu" name="password" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" required />
+          <Field label="Nhập lại mật khẩu" name="confirmPassword" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" required />
+          <SelectField label="Giới tính" name="gender" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
             <option value="1">Nam</option>
             <option value="2">Nữ</option>
           </SelectField>
-          <Field label="Ngày sinh" type="date" value={form.dateOfBirth} onChange={(event) => update("dateOfBirth", event.target.value)} />
+          <Field label="Ngày sinh" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={(event) => update("dateOfBirth", event.target.value)} autoComplete="bday" />
         </div>
 
         <label className="api-check auth-consent">

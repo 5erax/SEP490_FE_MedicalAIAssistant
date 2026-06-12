@@ -32,6 +32,34 @@ function safeCurrentPath() {
   return `${window.location.pathname}${window.location.search || ""}`;
 }
 
+const PAGE_TITLES = {
+  "/": "MediMate AI | Trợ lý sức khỏe",
+  "/login": "Đăng nhập | MediMate AI",
+  "/signup": "Tạo tài khoản | MediMate AI",
+  "/register-doctor": "Đăng ký bác sĩ | MediMate AI",
+  "/staff/register": "Đăng ký nhân viên | MediMate AI",
+  "/staff-register": "Đăng ký nhân viên | MediMate AI",
+  "/forgot-password": "Khôi phục mật khẩu | MediMate AI",
+  "/change-password": "Đổi mật khẩu | MediMate AI",
+  "/dashboard": "Tư vấn chuyên khoa | MediMate AI",
+  "/profile": "Hồ sơ cá nhân | MediMate AI",
+  "/symptom": "Phân tích triệu chứng | MediMate AI",
+  "/chat": "Chat với trợ lý AI | MediMate AI",
+  "/map": "Tìm cơ sở y tế | MediMate AI",
+  "/records": "Hồ sơ y tế | MediMate AI",
+  "/medication": "Kiểm tra thuốc | MediMate AI",
+  "/pricing": "Bảng giá | MediMate AI",
+  "/app": "Không gian làm việc | MediMate AI",
+  "/app/staff": "Không gian nhân viên | MediMate AI",
+  "/app/admin": "Quản trị hệ thống | MediMate AI",
+  "/admin": "Quản trị hệ thống | MediMate AI",
+  "/admin/users": "Quản lý người dùng | MediMate AI",
+};
+
+function updateDocumentMetadata(path) {
+  document.title = PAGE_TITLES[path] ?? "MediMate AI";
+}
+
 function redirectToLogin(path) {
   const redirect = encodeURIComponent(path || safeCurrentPath());
   window.history.replaceState(null, "", `/login?redirect=${redirect}`);
@@ -59,6 +87,7 @@ function requirePremium(page, path) {
 
 function App() {
   const path = window.location.pathname;
+  updateDocumentMetadata(path);
 
   if (path === "/") {
     return <LandingPage />;

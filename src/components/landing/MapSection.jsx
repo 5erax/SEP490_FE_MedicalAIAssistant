@@ -89,17 +89,18 @@ export function MapSection() {
                   longitude={location.longitude}
                   latitude={location.latitude}
                   anchor="bottom"
+                  aria-label={location.name}
                   onClick={(event) => {
                     event.originalEvent.stopPropagation();
                     setSelectedId(location.id);
                   }}
                 >
-                  <button
+                  <span
                     className={`map-marker ${selectedId === location.id ? "active" : ""}`}
-                    aria-label={location.name}
+                    aria-hidden="true"
                   >
                     <span>+</span>
-                  </button>
+                  </span>
                 </Marker>
               ))}
 

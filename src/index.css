@@ -50,3 +50,27 @@ svg {
 #root {
   min-height: 100svh;
 }
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  border: 2px solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-ink);
+  padding: 10px 14px;
+  font-weight: 900;
+  box-shadow: var(--shadow-hard);
+  transform: translateY(calc(-100% - 20px));
+  transition: transform var(--motion-fast);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+#main-content:focus {
+  outline: none;
+}

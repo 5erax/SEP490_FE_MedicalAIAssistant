@@ -7,7 +7,10 @@ import App from './App.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <FeedbackProvider>
-      <App />
+      <a className="skip-link" href="#main-content">Bỏ qua đến nội dung chính</a>
+      <div id="main-content" tabIndex="-1">
+        <App />
+      </div>
     </FeedbackProvider>
   </StrictMode>,
 )

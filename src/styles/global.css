@@ -4,11 +4,11 @@
   --paper-soft: #fbfcf7;
   --ink: #111412;
   --muted: rgba(17, 20, 18, 0.68);
-  --subtle: rgba(17, 20, 18, 0.42);
+  --subtle: rgba(17, 20, 18, 0.72);
   --line: #dde4d5;
   --line-strong: #b9c5ad;
   --lime: #c4e995;
-  --lime-dark: #6a9540;
+  --lime-dark: #3f641f;
   --mint: #e6f4ee;
   --teal: #087f8c;
   --blue: #1d4ed8;
@@ -821,7 +821,7 @@
 }
 
 .map-location-meta {
-  color: var(--teal);
+  color: #075d66;
   font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
@@ -876,6 +876,10 @@
 .step-card:nth-child(even) {
   background: var(--ink);
   color: #fff;
+}
+
+.step-card:nth-child(even) .step-number {
+  color: var(--lime);
 }
 
 .step-card:nth-child(even) p {
@@ -1061,7 +1065,7 @@
   margin-top: 42px;
   padding-top: 22px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.34);
+  color: rgba(255, 255, 255, 0.72);
   font-size: 13px;
 }
 
@@ -2007,7 +2011,7 @@
   display: inline-flex;
   border-radius: 999px;
   background: var(--mint);
-  color: var(--teal);
+  color: #075d66;
   padding: 6px 10px;
   font-size: 11px;
   font-weight: 900;
@@ -3475,7 +3479,7 @@
   width: fit-content;
   border-radius: 999px;
   background: var(--mint);
-  color: var(--teal);
+  color: #075d66;
   padding: 6px 10px;
   font-size: 11px;
   font-weight: 900;
@@ -3763,7 +3767,7 @@
 }
 
 .staff-register-note strong {
-  color: var(--amber);
+  color: #92400e;
 }
 
 .staff-register-actions {
