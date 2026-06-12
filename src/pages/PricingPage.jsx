@@ -54,6 +54,7 @@ function PricingPage() {
   const { confirmAction, showToast } = useFeedback();
   const [auth] = useState(() => getStoredAuth());
   const [billingCycle, setBillingCycle] = useState("monthly");
+  const [autoRenew, setAutoRenew] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [apiPlans, setApiPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(true);
@@ -247,7 +248,7 @@ function PricingPage() {
     setCheckoutState({ status: "creating", message: "Đang tạo liên kết thanh toán PayOS...", paymentId: "" });
 
     try {
-      const response = await userSubscriptionsApi.checkout(paidPlan.id, false);
+      const response = await userSubscriptionsApi.checkout(paidPlan.id, autoRenew);
       const checkout = response.data;
       if (!checkout?.paymentUrl || !checkout?.paymentId) {
         paymentWindow?.close();
@@ -374,6 +375,19 @@ function PricingPage() {
           <ul>
             {FEATURES.map((feature) => <li key={feature}>✓ {feature}</li>)}
           </ul>
+          {auth && !isPremium && !activeSubscription && (
+            <label className="auto-renew-option">
+              <input
+                type="checkbox"
+                checked={autoRenew}
+                onChange={(event) => setAutoRenew(event.target.checked)}
+              />
+              <span>
+                <strong>Tự động gia hạn</strong>
+                <small>Có thể hủy gia hạn trong phần gói hiện tại.</small>
+              </span>
+            </label>
+          )}
           <button
             type="button"
             onClick={startPremiumUpgrade}
@@ -498,6 +512,10 @@ const styles = `
 .plan-card-basic li.disabled { color: var(--subtle); }
 .plan-card-premium li { color: rgba(255,255,255,.86); }
 .plan-card-premium li::first-letter { color: var(--lime); }
+.auto-renew-option { display: flex; align-items: flex-start; gap: 10px; margin: -4px 0 18px; border: 1px solid rgba(255,255,255,.22); border-radius: 9px; padding: 12px; color: #fff; cursor: pointer; }
+.auto-renew-option input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--lime); }
+.auto-renew-option span, .auto-renew-option strong, .auto-renew-option small { display: block; }
+.auto-renew-option small { margin-top: 3px; color: rgba(255,255,255,.68); line-height: 1.45; }
 .plans-grid article > button, .pricing-cta button { min-height: 46px; border: 1.5px solid var(--ink); border-radius: 9px; padding: 0 16px; font-weight: 900; }
 .plans-grid article > button { width: 100%; background: #fff; }
 .plans-grid article > button:disabled { cursor: not-allowed; opacity: .58; box-shadow: none; }

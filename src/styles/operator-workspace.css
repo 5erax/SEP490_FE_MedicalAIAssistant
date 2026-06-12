@@ -1552,6 +1552,177 @@
   line-height: 1.6;
 }
 
+.admin-operator .subscription-plan-admin-panel {
+  display: grid;
+  gap: 18px;
+  overflow: hidden;
+}
+
+.admin-operator .subscription-plan-heading {
+  align-items: center;
+  gap: 18px;
+}
+
+.admin-operator .subscription-plan-heading .muted-text {
+  max-width: 680px;
+  margin: 7px 0 0;
+}
+
+.subscription-plan-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.subscription-plan-kpis article {
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(230, 248, 217, 0.72), rgba(223, 248, 237, 0.62));
+  padding: 16px;
+}
+
+.subscription-plan-kpis span,
+.subscription-plan-kpis strong {
+  display: block;
+}
+
+.subscription-plan-kpis span {
+  color: rgba(16, 20, 17, 0.58);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.subscription-plan-kpis strong {
+  margin-top: 6px;
+  color: #101411;
+  font-size: 28px;
+}
+
+.subscription-plan-primary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 210px;
+}
+
+.subscription-plan-primary strong,
+.subscription-plan-primary span {
+  display: block;
+}
+
+.subscription-plan-primary div > span {
+  margin-top: 4px;
+  color: #087f8c;
+  font-weight: 800;
+}
+
+.subscription-plan-icon,
+.subscription-plan-empty-icon,
+.subscription-modal-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: #dff8ed;
+  color: #087f8c;
+}
+
+.subscription-limit-summary {
+  display: block;
+  max-width: 320px;
+  color: rgba(16, 20, 17, 0.66);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.subscription-plan-empty {
+  min-height: 300px;
+  align-content: center;
+  justify-items: center;
+  border: 1px dashed rgba(8, 127, 140, 0.28);
+  background: linear-gradient(180deg, rgba(223, 248, 237, 0.52), rgba(255, 255, 255, 0.88));
+  text-align: center;
+}
+
+.subscription-plan-skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.subscription-plan-skeleton div {
+  height: 72px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(16, 20, 17, 0.08), rgba(16, 20, 17, 0.14), rgba(16, 20, 17, 0.08));
+  background-size: 220% 100%;
+  animation: doctorSkeleton 1.15s ease-in-out infinite;
+}
+
+.subscription-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 20, 17, 0.42);
+  backdrop-filter: blur(8px);
+  padding: 20px;
+  animation: doctorFadeIn 160ms ease both;
+}
+
+.subscription-modal {
+  width: min(780px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid rgba(16, 20, 17, 0.14);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 30px 90px rgba(16, 20, 17, 0.22);
+  padding: clamp(20px, 3vw, 28px);
+  animation: doctorModalIn 180ms ease both;
+}
+
+.subscription-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.subscription-modal-header h2 {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 36px);
+  line-height: 1.18;
+}
+
+.subscription-modal-header p:not(.eyebrow) {
+  max-width: 580px;
+  margin: 8px 0 0;
+  color: rgba(16, 20, 17, 0.62);
+  line-height: 1.6;
+}
+
+.subscription-plan-form {
+  gap: 16px;
+}
+
+.subscription-plan-form textarea {
+  min-height: 180px;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.subscription-field-error input,
+.subscription-field-error select,
+.subscription-field-error textarea {
+  border-color: #b91c1c !important;
+}
+
+.subscription-field-error small {
+  color: #b91c1c;
+}
+
 .ai-config-form {
   gap: 16px;
 }
@@ -1811,7 +1982,7 @@
   }
 
   .admin-operator .admin-nav {
-    grid-template-columns: repeat(6, 140px);
+    grid-template-columns: repeat(7, 140px);
   }
 
   .doctor-modal-header {
@@ -1823,6 +1994,15 @@
   }
 
   .ai-config-modal-icon {
+    display: none;
+  }
+
+  .subscription-plan-kpis,
+  .subscription-modal-header {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-modal-icon {
     display: none;
   }
 }

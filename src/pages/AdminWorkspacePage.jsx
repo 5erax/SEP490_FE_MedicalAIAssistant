@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ClipboardList,
   Cpu,
+  CreditCard,
   LayoutDashboard,
   MoreVertical,
   RefreshCw,
@@ -28,12 +29,15 @@ import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
 import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
 import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
 import { getEnvironment } from "../components/adminAIConfigs/aiConfigUtils";
+import SubscriptionPlanFormModal from "../components/adminSubscriptions/SubscriptionPlanFormModal";
+import SubscriptionPlanTable from "../components/adminSubscriptions/SubscriptionPlanTable";
 import {
   authApi,
   clearStoredAuth,
   getStoredAuth,
   medicalFacilitiesApi,
   medicalDepartmentsApi,
+  subscriptionPlansApi,
   usersApi,
 } from "../services/api";
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
@@ -140,6 +144,7 @@ export default function AdminWorkspacePage() {
   const [facilities, setFacilities] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [aiConfigs, setAIConfigs] = useState([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const [doctorPageInfo, setDoctorPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
@@ -152,23 +157,27 @@ export default function AdminWorkspacePage() {
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
   const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
+  const [subscriptionPlanModal, setSubscriptionPlanModal] = useState({ open: false, mode: "create", plan: null });
   const [aiConfigDetail, setAIConfigDetail] = useState(null);
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [aiConfigsLoading, setAIConfigsLoading] = useState(true);
+  const [subscriptionPlansLoading, setSubscriptionPlansLoading] = useState(true);
   const [facilitiesLoading, setFacilitiesLoading] = useState(true);
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingStaff, setSavingStaff] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
   const [savingAIConfig, setSavingAIConfig] = useState(false);
+  const [savingSubscriptionPlan, setSavingSubscriptionPlan] = useState(false);
   const [globalMessage, setGlobalMessage] = useState(null);
   const [usersMessage, setUsersMessage] = useState(null);
   const [departmentMessage, setDepartmentMessage] = useState(null);
   const [staffMessage, setStaffMessage] = useState(null);
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
+  const [subscriptionPlanMessage, setSubscriptionPlanMessage] = useState(null);
 
   const roles = useMemo(() => normalizeRoles(profile?.roles ?? auth?.roles ?? []), [auth, profile]);
   const isAdmin = hasRole(roles, "admin");
@@ -192,6 +201,7 @@ export default function AdminWorkspacePage() {
   const pendingUsers = pendingApprovalUsers.length;
   const activeDoctors = doctors.filter((doctor) => doctor.isActive).length;
   const activeAIConfigs = aiConfigs.filter((config) => config.isActive).length;
+  const activeSubscriptionPlans = subscriptionPlans.filter((plan) => plan.isActive).length;
   const disabledAIConfigs = aiConfigs.filter((config) => !config.isActive).length;
   const runningAIFeatures = new Set(aiConfigs.filter((config) => config.isActive).map((config) => config.taskType).filter(Boolean)).size;
   const approvalRate = pageInfo.totalCount ? Math.round(((pageInfo.totalCount - pendingUsers) / pageInfo.totalCount) * 100) : 100;
@@ -281,8 +291,9 @@ export default function AdminWorkspacePage() {
       doctorManagementApi.list({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE }),
       aiConfigManagementApi.list(1, DEFAULT_AI_CONFIG_PAGE_SIZE),
       medicalFacilitiesApi.list(1, 100),
+      subscriptionPlansApi.list(),
     ])
-      .then(([profileResult, usersResult, departmentResult, doctorResult, aiConfigResult, facilityResult]) => {
+      .then(([profileResult, usersResult, departmentResult, doctorResult, aiConfigResult, facilityResult, subscriptionPlanResult]) => {
         if (!active) return;
 
         if (profileResult.status === "fulfilled") {
@@ -343,6 +354,13 @@ export default function AdminWorkspacePage() {
         } else {
           console.error("Không thể tải danh sách bệnh viện:", facilityResult.reason);
         }
+
+        if (subscriptionPlanResult.status === "fulfilled") {
+          setSubscriptionPlans(Array.isArray(subscriptionPlanResult.value.data) ? subscriptionPlanResult.value.data : []);
+        } else {
+          console.error("Subscription plan API error:", subscriptionPlanResult.reason);
+          setSubscriptionPlanMessage({ type: "error", text: subscriptionPlanResult.reason.message });
+        }
       })
       .finally(() => {
         if (!active) return;
@@ -352,6 +370,7 @@ export default function AdminWorkspacePage() {
         setDoctorsLoading(false);
         setAIConfigsLoading(false);
         setFacilitiesLoading(false);
+        setSubscriptionPlansLoading(false);
       });
 
     return () => {
@@ -542,6 +561,101 @@ export default function AdminWorkspacePage() {
       console.error("AI Config delete API error:", error);
       setAIConfigMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không xóa được AI config", message: error.message });
+    }
+  }
+
+  async function loadSubscriptionPlans() {
+    setSubscriptionPlansLoading(true);
+    setSubscriptionPlanMessage(null);
+    try {
+      const response = await subscriptionPlansApi.list();
+      setSubscriptionPlans(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      setSubscriptionPlanMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không tải được gói dịch vụ", message: error.message });
+    } finally {
+      setSubscriptionPlansLoading(false);
+    }
+  }
+
+  function openCreateSubscriptionPlan() {
+    setSubscriptionPlanModal({ open: true, mode: "create", plan: null });
+  }
+
+  function openEditSubscriptionPlan(plan) {
+    setSubscriptionPlanModal({ open: true, mode: "edit", plan });
+  }
+
+  function closeSubscriptionPlanModal() {
+    if (savingSubscriptionPlan) return;
+    setSubscriptionPlanModal({ open: false, mode: "create", plan: null });
+  }
+
+  async function handleSaveSubscriptionPlan(payload) {
+    setSavingSubscriptionPlan(true);
+    setSubscriptionPlanMessage(null);
+    try {
+      const response = subscriptionPlanModal.mode === "edit"
+        ? await subscriptionPlansApi.update(subscriptionPlanModal.plan.id, payload)
+        : await subscriptionPlansApi.create(payload);
+      const savedPlan = response.data;
+      setSubscriptionPlanModal({ open: false, mode: "create", plan: null });
+      setSubscriptionPlanMessage({
+        type: "success",
+        text: response.message || (subscriptionPlanModal.mode === "edit" ? "Đã cập nhật gói dịch vụ." : "Đã tạo gói dịch vụ."),
+      });
+      showToast({
+        type: "success",
+        title: subscriptionPlanModal.mode === "edit" ? "Đã cập nhật gói" : "Đã tạo gói",
+        message: response.message || "Danh sách gói dịch vụ đã được đồng bộ.",
+      });
+      if (savedPlan?.id && subscriptionPlanModal.mode === "edit") {
+        setSubscriptionPlans((current) => current.map((plan) => (plan.id === savedPlan.id ? savedPlan : plan)));
+      } else {
+        await loadSubscriptionPlans();
+      }
+    } catch (error) {
+      setSubscriptionPlanMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không lưu được gói dịch vụ", message: error.message });
+    } finally {
+      setSavingSubscriptionPlan(false);
+    }
+  }
+
+  async function handleToggleSubscriptionPlanStatus(plan) {
+    setSubscriptionPlanMessage(null);
+    try {
+      const response = await subscriptionPlansApi.setStatus(plan.id, !plan.isActive);
+      const updatedPlan = response.data ?? { ...plan, isActive: !plan.isActive };
+      setSubscriptionPlans((current) => current.map((item) => (item.id === plan.id ? updatedPlan : item)));
+      showToast({
+        type: "success",
+        title: updatedPlan.isActive ? "Đã mở bán gói" : "Đã tạm ẩn gói",
+        message: response.message || "Trạng thái gói dịch vụ đã được cập nhật.",
+      });
+    } catch (error) {
+      setSubscriptionPlanMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không đổi được trạng thái gói", message: error.message });
+    }
+  }
+
+  async function handleDeleteSubscriptionPlan(plan) {
+    const confirmed = await confirmAction({
+      title: "Xóa gói dịch vụ?",
+      message: `${plan.planName || "Gói này"} sẽ bị xóa khỏi danh sách quản trị. Gói đang được sử dụng có thể không xóa được theo quy tắc backend.`,
+      confirmLabel: "Xóa gói",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    setSubscriptionPlanMessage(null);
+    try {
+      const response = await subscriptionPlansApi.remove(plan.id);
+      setSubscriptionPlans((current) => current.filter((item) => item.id !== plan.id));
+      showToast({ type: "success", title: "Đã xóa gói dịch vụ", message: response.message || "Danh sách gói đã được cập nhật." });
+    } catch (error) {
+      setSubscriptionPlanMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không xóa được gói dịch vụ", message: error.message });
     }
   }
 
@@ -825,6 +939,10 @@ export default function AdminWorkspacePage() {
               <button className={activeSection === "ai-configs" ? "active" : ""} type="button" onClick={() => setActiveSection("ai-configs")}>
                 <span className="admin-nav-icon"><BrainCircuit size={17} /></span>
                 <span>AI Config</span>
+              </button>
+              <button className={activeSection === "subscriptions" ? "active" : ""} type="button" onClick={() => setActiveSection("subscriptions")}>
+                <span className="admin-nav-icon"><CreditCard size={17} /></span>
+                <span>Gói dịch vụ</span>
               </button>
               <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => setActiveSection("staff")}>
                 <span className="admin-nav-icon"><UserPlus size={17} /></span>
@@ -1198,6 +1316,57 @@ export default function AdminWorkspacePage() {
               </section>
             )}
 
+            {activeSection === "subscriptions" && (
+              <section className="admin-panel subscription-plan-admin-panel">
+                <div className="panel-title-row subscription-plan-heading">
+                  <div>
+                    <p className="eyebrow">Gói đăng ký</p>
+                    <h2>Quản lý gói dịch vụ</h2>
+                    <p className="muted-text">Tạo và kích hoạt các gói xuất hiện trên trang bảng giá để người dùng đăng ký qua PayOS.</p>
+                  </div>
+                  <div className="record-actions">
+                    <button className="btn btn-ghost btn-small" type="button" onClick={loadSubscriptionPlans}>
+                      <RefreshCw size={15} /> Đồng bộ
+                    </button>
+                    <button className="btn btn-primary btn-small" type="button" onClick={openCreateSubscriptionPlan}>
+                      <CreditCard size={15} /> Tạo gói
+                    </button>
+                  </div>
+                </div>
+
+                <section className="subscription-plan-kpis">
+                  <article>
+                    <span>Tổng số gói</span>
+                    <strong>{subscriptionPlans.length}</strong>
+                  </article>
+                  <article>
+                    <span>Đang mở bán</span>
+                    <strong>{activeSubscriptionPlans}</strong>
+                  </article>
+                  <article>
+                    <span>Đang tạm ẩn</span>
+                    <strong>{Math.max(0, subscriptionPlans.length - activeSubscriptionPlans)}</strong>
+                  </article>
+                </section>
+
+                <ApiMessage message={subscriptionPlanMessage} />
+
+                {subscriptionPlansLoading ? (
+                  <div className="subscription-plan-skeleton" aria-live="polite" aria-busy="true">
+                    {Array.from({ length: 3 }).map((_, index) => <div key={index} />)}
+                  </div>
+                ) : (
+                  <SubscriptionPlanTable
+                    plans={subscriptionPlans}
+                    onEdit={openEditSubscriptionPlan}
+                    onToggleStatus={handleToggleSubscriptionPlanStatus}
+                    onDelete={handleDeleteSubscriptionPlan}
+                    onCreate={openCreateSubscriptionPlan}
+                  />
+                )}
+              </section>
+            )}
+
             {activeSection === "staff" && (
               <section className="admin-panel">
                 <div className="panel-title-row">
@@ -1330,6 +1499,16 @@ export default function AdminWorkspacePage() {
           saving={savingAIConfig}
           onClose={closeAIConfigModal}
           onSubmit={handleSaveAIConfig}
+        />
+      )}
+      {subscriptionPlanModal.open && (
+        <SubscriptionPlanFormModal
+          key={subscriptionPlanModal.plan?.id ?? "create"}
+          mode={subscriptionPlanModal.mode}
+          plan={subscriptionPlanModal.plan}
+          saving={savingSubscriptionPlan}
+          onClose={closeSubscriptionPlanModal}
+          onSubmit={handleSaveSubscriptionPlan}
         />
       )}
       {aiConfigDetail && (

@@ -106,6 +106,7 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
 
   const checkoutButton = page.getByRole("button", { name: "Thanh toán qua PayOS" });
   await expect(checkoutButton).toBeEnabled();
+  await page.getByLabel("Tự động gia hạn").check();
 
   const popupPromise = context.waitForEvent("page");
   await checkoutButton.click();
@@ -118,7 +119,7 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
   ).toBeVisible();
   expect(checkoutBody).toEqual({
     planId: "11111111-1111-1111-1111-111111111111",
-    autoRenew: false,
+    autoRenew: true,
   });
 
   await popup.close();
