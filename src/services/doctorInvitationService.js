@@ -3,7 +3,12 @@ import { ENDPOINTS } from "./endpoints";
 
 export const doctorInvitationsApi = {
   validate(token) {
-    const params = new URLSearchParams({ token });
+    const normalizedToken = String(token ?? "").trim();
+    if (!normalizedToken) {
+      throw new Error("Invitation token is required.");
+    }
+
+    const params = new URLSearchParams({ token: normalizedToken });
     return apiRequest(`${ENDPOINTS.DOCTOR_INVITATIONS.VALIDATE}?${params.toString()}`);
   },
 
