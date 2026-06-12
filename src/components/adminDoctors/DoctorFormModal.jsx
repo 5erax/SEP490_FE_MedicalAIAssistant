@@ -17,6 +17,8 @@ const ROLE_OPTIONS = [
   { value: 4, label: "Cố vấn" },
 ];
 
+const GUID_PATTERN = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+
 function toFormValue(doctor) {
   if (!doctor) return EMPTY_FORM;
   return {
@@ -29,12 +31,23 @@ function toFormValue(doctor) {
   };
 }
 
-function validate(form) {
+function validate(form, validFacilityDepartmentIds) {
   const errors = {};
-  if (!form.facilityDepartmentId.trim()) errors.facilityDepartmentId = "Vui lòng chọn cơ sở y tế và khoa công tác.";
+  const facilityDepartmentId = form.facilityDepartmentId.trim();
+  if (!facilityDepartmentId) {
+    errors.facilityDepartmentId = "Vui lòng chọn cơ sở y tế và khoa công tác.";
+  } else if (
+    !GUID_PATTERN.test(facilityDepartmentId) ||
+    !validFacilityDepartmentIds.has(facilityDepartmentId)
+  ) {
+    errors.facilityDepartmentId = "Cơ sở y tế và khoa công tác không hợp lệ. Vui lòng chọn lại từ danh sách.";
+  }
   if (!form.fullName.trim()) errors.fullName = "Cần nhập họ tên bác sĩ.";
-  if (form.yearsOfExperience !== "" && Number(form.yearsOfExperience) < 0) {
-    errors.yearsOfExperience = "Số năm kinh nghiệm không được âm.";
+  if (form.yearsOfExperience !== "") {
+    const years = Number(form.yearsOfExperience);
+    if (!Number.isInteger(years) || years < 0) {
+      errors.yearsOfExperience = "Số năm kinh nghiệm phải là số nguyên không âm.";
+    }
   }
   return errors;
 }
@@ -76,7 +89,8 @@ export default function DoctorFormModal({ mode, doctor, facilityDepartmentOption
 
   function handleSubmit(event) {
     event.preventDefault();
-    const nextErrors = validate(form);
+    const validFacilityDepartmentIds = new Set(options.map((option) => option.id));
+    const nextErrors = validate(form, validFacilityDepartmentIds);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     onSubmit(buildDoctorPayload(form));
@@ -97,24 +111,27 @@ export default function DoctorFormModal({ mode, doctor, facilityDepartmentOption
         <form className="clean-form doctor-form" onSubmit={handleSubmit}>
           <label className={`clean-field ${errors.facilityDepartmentId ? "doctor-field-error" : ""}`}>
             <span>Cơ sở y tế - khoa</span>
-            <input
-              list="facility-department-options"
+            <select
               value={form.facilityDepartmentId}
               onChange={(event) => update("facilityDepartmentId", event.target.value)}
-              placeholder="Chọn cơ sở y tế và khoa"
               required
+              disabled={!options.length}
               aria-invalid={errors.facilityDepartmentId ? "true" : undefined}
               aria-describedby="facility-department-help"
-            />
-            {options.length > 0 && (
-              <datalist id="facility-department-options">
-                {options.map((option) => (
-                  <option key={option.id} value={option.id}>{option.label}</option>
-                ))}
-              </datalist>
-            )}
+            >
+              <option value="">
+                {options.length ? "Chọn cơ sở y tế và khoa" : "Chưa có khoa tại cơ sở y tế"}
+              </option>
+              {options.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
             <small id="facility-department-help" role={errors.facilityDepartmentId ? "alert" : undefined}>
-              {errors.facilityDepartmentId || "Chọn khoa mà bác sĩ đang công tác tại cơ sở y tế."}
+              {errors.facilityDepartmentId || (
+                options.length
+                  ? "Chọn khoa mà bác sĩ đang công tác tại cơ sở y tế."
+                  : "Cần có ít nhất một FacilityDepartment đang hoạt động trước khi thêm bác sĩ."
+              )}
             </small>
           </label>
 
