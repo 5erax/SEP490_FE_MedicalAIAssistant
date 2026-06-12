@@ -163,6 +163,6 @@ They should stay thin and only re-export the new domain services.
 ## Notes
 
 - Current backend base URL: `http://52.77.210.243:8080`.
-- Local development reads `VITE_API_BASE_URL` from `.env.development`; Vite proxy uses the same backend as a fallback for same-origin `/api/*` calls.
-- Production deployment can use `VITE_API_BASE_URL` during build, while Vercel still rewrites same-origin `/api/*` calls to the same backend in `vercel.json`.
+- Local development sends same-origin `/api/*` requests through the Vite proxy. `VITE_API_BASE_URL` configures the proxy target.
+- Production sends same-origin `/api/*` requests through the Vercel rewrite in `vercel.json`.
 - `anthropicService.js` centralizes the existing external Anthropic call used by the standalone chatbot page.

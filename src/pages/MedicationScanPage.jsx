@@ -87,6 +87,9 @@ function MedicationScanPage() {
     <main className="medication-page">
       <style>{styles}</style>
       <section className="scan-panel">
+        <div className="backend-support-note" role="status">
+          Backend hiện chưa có API nhận diện thuốc hoặc kiểm tra tương tác thuốc. Kết quả trên màn hình này chỉ là dữ liệu demo và không được lưu.
+        </div>
         <nav className="medication-quick-nav" aria-label="Dieu huong nhanh">
           <button type="button" onClick={() => goTo("/dashboard")}>← Trang chủ</button>
           <button type="button" onClick={() => goTo("/chat")}>Chat AI</button>
@@ -207,6 +210,7 @@ function MedicationScanPage() {
 }
 
 const styles = `
+.backend-support-note { border: 1.5px solid #9f1239; border-radius: 10px; background: #fff1f2; color: #881337; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; font-weight: 800; line-height: 1.55; }
 .medication-page { min-height: 100svh; display: grid; grid-template-columns: minmax(0, .9fr) minmax(360px, 1.1fr); gap: 18px; background: var(--bg); color: var(--ink); padding: 22px; }
 .scan-panel, .scan-result-panel > article, .empty-result, .med-disclaimer { border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
 .scan-panel { padding: clamp(20px, 3vw, 28px); align-self: start; }

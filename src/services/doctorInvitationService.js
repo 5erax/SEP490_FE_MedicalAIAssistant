@@ -18,4 +18,19 @@ export const doctorInvitationsApi = {
       body: payload,
     });
   },
+
+  create(payload) {
+    return apiRequest(ENDPOINTS.DOCTOR_INVITATIONS.ADMIN_CREATE, {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  revoke(id) {
+    return apiRequest(ENDPOINTS.DOCTOR_INVITATIONS.ADMIN_REVOKE(id), {
+      method: "POST",
+      auth: true,
+    });
+  },
 };

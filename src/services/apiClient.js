@@ -1,5 +1,5 @@
-const DIRECT_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
-const API_BASE_URL = import.meta.env.DEV ? DIRECT_API_BASE_URL : "";
+// Keep browser requests same-origin. Vite and Vercel proxy /api to the configured backend.
+const API_BASE_URL = "";
 const AUTH_STORAGE_KEY = "medimate.auth";
 
 function buildUrl(path) {

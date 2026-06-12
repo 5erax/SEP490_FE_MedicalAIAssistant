@@ -34,6 +34,7 @@ import SubscriptionPlanTable from "../components/adminSubscriptions/Subscription
 import {
   authApi,
   clearStoredAuth,
+  doctorInvitationsApi,
   facilityDepartmentsApi,
   getStoredAuth,
   medicalFacilitiesApi,
@@ -47,6 +48,16 @@ import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
 
 const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
+const EMPTY_INVITATION = { email: "", doctorId: "" };
+const EMPTY_FACILITY = {
+  facilityName: "",
+  address: "",
+  phone: "",
+  website: "",
+  openingHours: "",
+  facilityType: "",
+  departmentIds: [],
+};
 const EMPTY_STAFF = {
   email: "",
   userName: "",
@@ -155,9 +166,12 @@ export default function AdminWorkspacePage() {
   const [doctorFilters, setDoctorFilters] = useState(EMPTY_DOCTOR_FILTERS);
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
+  const [facilityForm, setFacilityForm] = useState(EMPTY_FACILITY);
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
+  const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
+  const [lastInvitation, setLastInvitation] = useState(null);
   const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
   const [subscriptionPlanModal, setSubscriptionPlanModal] = useState({ open: false, mode: "create", plan: null });
   const [aiConfigDetail, setAIConfigDetail] = useState(null);
@@ -169,13 +183,16 @@ export default function AdminWorkspacePage() {
   const [subscriptionPlansLoading, setSubscriptionPlansLoading] = useState(true);
   const [facilitiesLoading, setFacilitiesLoading] = useState(true);
   const [savingDepartment, setSavingDepartment] = useState(false);
+  const [savingFacility, setSavingFacility] = useState(false);
   const [savingStaff, setSavingStaff] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
+  const [savingInvitation, setSavingInvitation] = useState(false);
   const [savingAIConfig, setSavingAIConfig] = useState(false);
   const [savingSubscriptionPlan, setSavingSubscriptionPlan] = useState(false);
   const [globalMessage, setGlobalMessage] = useState(null);
   const [usersMessage, setUsersMessage] = useState(null);
   const [departmentMessage, setDepartmentMessage] = useState(null);
+  const [facilityMessage, setFacilityMessage] = useState(null);
   const [staffMessage, setStaffMessage] = useState(null);
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
@@ -448,6 +465,24 @@ export default function AdminWorkspacePage() {
       setDepartmentMessage({ type: "error", text: error.message });
     } finally {
       setDepartmentsLoading(false);
+    }
+  }
+
+  async function loadFacilities() {
+    setFacilitiesLoading(true);
+    setFacilityMessage(null);
+    try {
+      const [facilityResponse, facilityDepartmentResponse] = await Promise.all([
+        medicalFacilitiesApi.list(1, 100),
+        facilityDepartmentsApi.active(),
+      ]);
+      setFacilities(facilityResponse.data?.items ?? facilityResponse.data ?? []);
+      const data = facilityDepartmentResponse.data;
+      setFacilityDepartments(Array.isArray(data) ? data : data?.items ?? []);
+    } catch (error) {
+      setFacilityMessage({ type: "error", text: error.message });
+    } finally {
+      setFacilitiesLoading(false);
     }
   }
 
@@ -881,6 +916,96 @@ export default function AdminWorkspacePage() {
     }
   }
 
+  async function handleCreateInvitation(event) {
+    event.preventDefault();
+    setSavingInvitation(true);
+    setDoctorMessage(null);
+    try {
+      const response = await doctorInvitationsApi.create({
+        email: invitationForm.email.trim(),
+        doctorId: invitationForm.doctorId || null,
+      });
+      setLastInvitation(response.data ?? null);
+      setInvitationForm(EMPTY_INVITATION);
+      setDoctorMessage({
+        type: "success",
+        text: response.message || "Đã tạo và gửi lời mời đăng ký bác sĩ.",
+      });
+    } catch (error) {
+      setDoctorMessage({ type: "error", text: error.message });
+    } finally {
+      setSavingInvitation(false);
+    }
+  }
+
+  async function handleRevokeInvitation() {
+    if (!lastInvitation?.id) return;
+    setSavingInvitation(true);
+    setDoctorMessage(null);
+    try {
+      const response = await doctorInvitationsApi.revoke(lastInvitation.id);
+      setLastInvitation((current) => current ? { ...current, status: "Revoked" } : current);
+      setDoctorMessage({ type: "success", text: response.message || "Đã thu hồi lời mời." });
+    } catch (error) {
+      setDoctorMessage({ type: "error", text: error.message });
+    } finally {
+      setSavingInvitation(false);
+    }
+  }
+
+  function toggleFacilityDepartment(departmentId) {
+    setFacilityForm((current) => ({
+      ...current,
+      departmentIds: current.departmentIds.includes(departmentId)
+        ? current.departmentIds.filter((id) => id !== departmentId)
+        : [...current.departmentIds, departmentId],
+    }));
+  }
+
+  async function handleCreateFacility(event) {
+    event.preventDefault();
+    setFacilityMessage(null);
+
+    if (facilityForm.departmentIds.length === 0) {
+      setFacilityMessage({
+        type: "error",
+        text: "Hãy chọn ít nhất một chuyên khoa để có thể thêm bác sĩ.",
+      });
+      return;
+    }
+
+    setSavingFacility(true);
+    try {
+      const payload = {
+        facilityName: facilityForm.facilityName.trim(),
+        address: facilityForm.address.trim(),
+        phone: facilityForm.phone.trim() || null,
+        website: facilityForm.website.trim() || null,
+        openingHours: facilityForm.openingHours.trim() || null,
+        facilityType: facilityForm.facilityType.trim() || null,
+        isActive: true,
+        departmentIds: facilityForm.departmentIds,
+      };
+      const response = await medicalFacilitiesApi.create(payload);
+      showToast({
+        type: "success",
+        title: "Đã tạo cơ sở y tế",
+        message: "Chuyên khoa đã sẵn sàng để chọn khi thêm bác sĩ.",
+      });
+      setFacilityForm(EMPTY_FACILITY);
+      await loadFacilities();
+      setFacilityMessage({
+        type: "success",
+        text: response.message || "Đã tạo cơ sở y tế và liên kết chuyên khoa.",
+      });
+    } catch (error) {
+      setFacilityMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không tạo được cơ sở y tế", message: error.message });
+    } finally {
+      setSavingFacility(false);
+    }
+  }
+
   function updateStaff(key, value) {
     setStaffForm((current) => ({ ...current, [key]: value }));
   }
@@ -988,6 +1113,10 @@ export default function AdminWorkspacePage() {
               <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => setActiveSection("departments")}>
                 <span className="admin-nav-icon"><Building2 size={17} /></span>
                 <span>Chuyên khoa</span>
+              </button>
+              <button className={activeSection === "facilities" ? "active" : ""} type="button" onClick={() => setActiveSection("facilities")}>
+                <span className="admin-nav-icon"><Building2 size={17} /></span>
+                <span>Cơ sở y tế</span>
               </button>
             </nav>
 
@@ -1210,6 +1339,53 @@ export default function AdminWorkspacePage() {
                 </div>
 
                 <ApiMessage message={doctorMessage} />
+
+                <form className="doctor-invitation-admin" onSubmit={handleCreateInvitation}>
+                  <div>
+                    <strong>Gửi lời mời đăng ký bác sĩ</strong>
+                    <p>Email là bắt buộc. Có thể chọn hồ sơ bác sĩ có sẵn để liên kết tài khoản.</p>
+                  </div>
+                  <label className="clean-field">
+                    <span>Email bác sĩ</span>
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      value={invitationForm.email}
+                      onChange={(event) => setInvitationForm({ ...invitationForm, email: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label className="clean-field">
+                    <span>Hồ sơ bác sĩ có sẵn (không bắt buộc)</span>
+                    <select
+                      value={invitationForm.doctorId}
+                      onChange={(event) => setInvitationForm({ ...invitationForm, doctorId: event.target.value })}
+                    >
+                      <option value="">Tạo bác sĩ mới khi đăng ký</option>
+                      {doctors.map((doctor) => (
+                        <option key={doctor.id} value={doctor.id}>
+                          {doctor.fullName || doctor.id}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="btn btn-primary btn-small" type="submit" disabled={savingInvitation}>
+                    {savingInvitation ? "Đang gửi..." : "Gửi invitation"}
+                  </button>
+                  {lastInvitation && (
+                    <div className="doctor-invitation-latest" role="status">
+                      <span>
+                        {lastInvitation.email} · {lastInvitation.status || "Pending"}
+                        {lastInvitation.expiresAt && ` · hết hạn ${new Date(lastInvitation.expiresAt).toLocaleString("vi-VN")}`}
+                      </span>
+                      {String(lastInvitation.status).toLowerCase() !== "revoked" && (
+                        <button className="btn btn-ghost btn-small" type="button" onClick={handleRevokeInvitation}>
+                          Thu hồi
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </form>
 
                 <DoctorFilters
                   filters={doctorFilters}
@@ -1510,6 +1686,133 @@ export default function AdminWorkspacePage() {
                   </Field>
                   <button className="btn btn-primary" type="submit" disabled={savingDepartment}>
                     {savingDepartment ? "Đang lưu..." : editingDepartmentId ? "Lưu cập nhật" : "Tạo chuyên khoa"}
+                  </button>
+                </form>
+              </section>
+            )}
+
+            {activeSection === "facilities" && (
+              <section className="admin-grid">
+                <div className="admin-panel">
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Cơ sở y tế</p>
+                      <h2>Danh sách cơ sở</h2>
+                    </div>
+                    <button className="btn btn-ghost btn-small" type="button" onClick={loadFacilities}>Tải lại</button>
+                  </div>
+                  <ApiMessage message={facilityMessage} />
+                  {facilitiesLoading ? (
+                    <p className="muted-text">Đang tải cơ sở y tế...</p>
+                  ) : (
+                    <div className="admin-table-list">
+                      {facilities.length === 0 && (
+                        <p className="muted-text">
+                          Chưa có cơ sở y tế. Hãy tạo cơ sở và gán chuyên khoa trước khi thêm bác sĩ.
+                        </p>
+                      )}
+                      {facilities.map((facility) => {
+                        const linkedDepartments = facilityDepartments
+                          .filter((item) => item.facilityId === facility.id)
+                          .map((item) => item.departmentName)
+                          .filter(Boolean);
+                        return (
+                          <article className="admin-user-row" key={facility.id}>
+                            <div>
+                              <strong>{facility.facilityName || "Chưa đặt tên"}</strong>
+                              <span>{facility.address || "Chưa có địa chỉ."}</span>
+                              <small>
+                                {linkedDepartments.length
+                                  ? `Chuyên khoa: ${linkedDepartments.join(", ")}`
+                                  : "Chưa liên kết chuyên khoa."}
+                              </small>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <form className="admin-panel clean-form" onSubmit={handleCreateFacility}>
+                  <div className="panel-title-row">
+                    <div>
+                      <p className="eyebrow">Create</p>
+                      <h2>Tạo cơ sở y tế</h2>
+                    </div>
+                  </div>
+                  <Field label="Tên cơ sở y tế">
+                    <input
+                      value={facilityForm.facilityName}
+                      onChange={(event) => setFacilityForm({ ...facilityForm, facilityName: event.target.value })}
+                      placeholder="Ví dụ: Bệnh viện Đa khoa A"
+                      required
+                    />
+                  </Field>
+                  <Field label="Địa chỉ">
+                    <input
+                      value={facilityForm.address}
+                      onChange={(event) => setFacilityForm({ ...facilityForm, address: event.target.value })}
+                      required
+                    />
+                  </Field>
+                  <div className="clean-form-grid">
+                    <Field label="Số điện thoại">
+                      <input
+                        type="tel"
+                        value={facilityForm.phone}
+                        onChange={(event) => setFacilityForm({ ...facilityForm, phone: event.target.value })}
+                      />
+                    </Field>
+                    <Field label="Loại cơ sở">
+                      <input
+                        value={facilityForm.facilityType}
+                        onChange={(event) => setFacilityForm({ ...facilityForm, facilityType: event.target.value })}
+                        placeholder="Bệnh viện, phòng khám..."
+                      />
+                    </Field>
+                    <Field label="Website">
+                      <input
+                        type="url"
+                        value={facilityForm.website}
+                        onChange={(event) => setFacilityForm({ ...facilityForm, website: event.target.value })}
+                        placeholder="https://..."
+                      />
+                    </Field>
+                    <Field label="Giờ mở cửa">
+                      <input
+                        value={facilityForm.openingHours}
+                        onChange={(event) => setFacilityForm({ ...facilityForm, openingHours: event.target.value })}
+                        placeholder="07:00 - 17:00"
+                      />
+                    </Field>
+                  </div>
+                  <fieldset className="facility-department-picker">
+                    <legend>Chuyên khoa tại cơ sở</legend>
+                    <p>Chọn ít nhất một chuyên khoa. Đây là dữ liệu form thêm bác sĩ sử dụng.</p>
+                    {departments.length === 0 ? (
+                      <p className="muted-text">Hãy tạo chuyên khoa trước.</p>
+                    ) : (
+                      <div className="facility-department-options">
+                        {departments.map((department) => (
+                          <label key={department.id}>
+                            <input
+                              type="checkbox"
+                              checked={facilityForm.departmentIds.includes(department.id)}
+                              onChange={() => toggleFacilityDepartment(department.id)}
+                            />
+                            <span>{department.departmentName}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </fieldset>
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={savingFacility || departments.length === 0}
+                  >
+                    {savingFacility ? "Đang tạo..." : "Tạo cơ sở và liên kết chuyên khoa"}
                   </button>
                 </form>
               </section>
