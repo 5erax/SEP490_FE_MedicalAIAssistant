@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { navigate } from "../router/navigation";
-import { medicalFacilitiesApi } from "../services/api";
+import { feedbackReviewsApi, getStoredAuth, medicalFacilitiesApi } from "../services/api";
 
 const FILTERS = [
   ["all", "Tất cả"],
@@ -10,64 +10,6 @@ const FILTERS = [
   ["Clinic", "Phòng khám"],
   ["Pharmacy", "Nhà thuốc"],
   ["Emergency", "Cấp cứu"],
-];
-
-const HCMC_FACILITIES = [
-  {
-    facilityId: "1",
-    facilityName: "Bệnh viện Chợ Rẫy",
-    address: "201B Nguyễn Chí Thanh, Q.5",
-    latitude: 10.7553,
-    longitude: 106.6602,
-    phone: "028 3855 4137",
-    facilityType: "Hospital",
-    openingHours: "24/7",
-    departments: ["Nội khoa", "Ngoại khoa", "Cấp cứu"],
-  },
-  {
-    facilityId: "2",
-    facilityName: "BV Đại học Y Dược",
-    address: "215 Hồng Bàng, Q.5",
-    latitude: 10.7539,
-    longitude: 106.6636,
-    phone: "028 3855 1668",
-    facilityType: "Hospital",
-    openingHours: "6:00-20:00",
-    departments: ["Da liễu", "Mắt", "Tai mũi họng"],
-  },
-  {
-    facilityId: "3",
-    facilityName: "PK Đa khoa Medlatec",
-    address: "42 Nguyễn Thị Minh Khai, Q.1",
-    latitude: 10.7756,
-    longitude: 106.6941,
-    phone: "1900 56 56 56",
-    facilityType: "Clinic",
-    openingHours: "7:00-21:00",
-    departments: ["Nội khoa", "Xét nghiệm"],
-  },
-  {
-    facilityId: "4",
-    facilityName: "Pharmacity Nguyễn Huệ",
-    address: "98 Nguyễn Huệ, Q.1",
-    latitude: 10.7729,
-    longitude: 106.703,
-    phone: "1800 599 932",
-    facilityType: "Pharmacy",
-    openingHours: "7:00-23:00",
-    departments: ["Dược phẩm", "Tư vấn thuốc"],
-  },
-  {
-    facilityId: "5",
-    facilityName: "BV Cấp cứu Trưng Vương",
-    address: "266 Lý Thường Kiệt, Q.10",
-    latitude: 10.7725,
-    longitude: 106.6631,
-    phone: "028 3865 4388",
-    facilityType: "Emergency",
-    openingHours: "24/7",
-    departments: ["Cấp cứu", "Hồi sức"],
-  },
 ];
 
 const TYPE_LABELS = {
@@ -100,6 +42,7 @@ function normalizeFacility(facility) {
 }
 
 function NearbyClinicPage() {
+  const auth = getStoredAuth();
   const [chatContext] = useState(() => {
     try {
       const raw = sessionStorage.getItem("medimate.map.chat");
@@ -108,7 +51,7 @@ function NearbyClinicPage() {
       return null;
     }
   });
-  const [facilities, setFacilities] = useState(HCMC_FACILITIES);
+  const [facilities, setFacilities] = useState([]);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
   const [apiNotice, setApiNotice] = useState("");
   const [searchText, setSearchText] = useState(
@@ -116,7 +59,12 @@ function NearbyClinicPage() {
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
-  const [selectedFacility, setSelectedFacility] = useState(HCMC_FACILITIES[0]);
+  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: "5", comment: "" });
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [savingReview, setSavingReview] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
@@ -140,14 +88,17 @@ function NearbyClinicPage() {
             ? response.data.items
             : [];
         const data = rawFacilities.map(normalizeFacility);
-        if (data.length) {
-          setFacilities(data);
-          setSelectedFacility(data[0]);
-        }
-        setApiNotice("");
+        setFacilities(data);
+        setReviewsLoading(Boolean(data[0]));
+        setSelectedFacility(data[0] ?? null);
+        setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
       })
       .catch((error) => {
-        if (active) setApiNotice(error.message || "Đang dùng dữ liệu bệnh viện TP.HCM dự phòng.");
+        if (active) {
+          setFacilities([]);
+          setSelectedFacility(null);
+          setApiNotice(error.message || "Không tải được dữ liệu cơ sở y tế từ backend.");
+        }
       })
       .finally(() => {
         if (active) setLoadingFacilities(false);
@@ -157,6 +108,26 @@ function NearbyClinicPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedFacility?.facilityId) return;
+
+    let active = true;
+    feedbackReviewsApi.byFacility(selectedFacility.facilityId)
+      .then((response) => {
+        if (active) setReviews(response.data?.items ?? []);
+      })
+      .catch((error) => {
+        if (active) setReviewMessage(error.message);
+      })
+      .finally(() => {
+        if (active) setReviewsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedFacility?.facilityId]);
 
   const filteredFacilities = useMemo(() => {
     const normalized = debouncedSearch.trim().toLowerCase();
@@ -168,6 +139,8 @@ function NearbyClinicPage() {
   }, [activeFilter, debouncedSearch, facilities]);
 
   const handleCardClick = (facility) => {
+    setReviewsLoading(true);
+    setReviewMessage("");
     setSelectedFacility(facility);
     mapRef.current?.flyTo?.({ center: [facility.longitude, facility.latitude], zoom: 16, duration: 1200 });
     cardRefs.current[facility.facilityId]?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
@@ -192,6 +165,33 @@ function NearbyClinicPage() {
 
   const openDirections = (facility) => {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`, "_blank", "noopener,noreferrer");
+  };
+
+  const submitReview = async (event) => {
+    event.preventDefault();
+    if (!selectedFacility?.facilityId) return;
+    if (!auth) {
+      navigate(`/login?redirect=${encodeURIComponent("/map")}`);
+      return;
+    }
+
+    setSavingReview(true);
+    setReviewMessage("");
+    try {
+      const response = await feedbackReviewsApi.create({
+        facilityId: selectedFacility.facilityId,
+        rating: Number(reviewForm.rating),
+        comment: reviewForm.comment.trim() || null,
+      });
+      setReviewForm({ rating: "5", comment: "" });
+      setReviewMessage(response.message || "Đã gửi đánh giá.");
+      const refreshed = await feedbackReviewsApi.byFacility(selectedFacility.facilityId);
+      setReviews(refreshed.data?.items ?? []);
+    } catch (error) {
+      setReviewMessage(error.message);
+    } finally {
+      setSavingReview(false);
+    }
   };
 
   return (
@@ -237,6 +237,9 @@ function NearbyClinicPage() {
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
 
         <div className="facility-list-panel">
+          {!loadingFacilities && filteredFacilities.length === 0 && (
+            <div className="sidebar-note">Không có cơ sở y tế phù hợp từ backend.</div>
+          )}
           {filteredFacilities.map((facility) => (
             <article
               ref={(node) => { cardRefs.current[facility.facilityId] = node; }}
@@ -260,6 +263,48 @@ function NearbyClinicPage() {
             </article>
           ))}
         </div>
+
+        {selectedFacility && (
+          <section className="facility-reviews" aria-labelledby="facility-review-title">
+            <h2 id="facility-review-title">Đánh giá {selectedFacility.facilityName}</h2>
+            <form onSubmit={submitReview}>
+              <label>
+                <span>Số sao</span>
+                <select
+                  value={reviewForm.rating}
+                  onChange={(event) => setReviewForm({ ...reviewForm, rating: event.target.value })}
+                >
+                  {[5, 4, 3, 2, 1].map((rating) => (
+                    <option key={rating} value={rating}>{rating} sao</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Nhận xét</span>
+                <textarea
+                  rows={3}
+                  value={reviewForm.comment}
+                  onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })}
+                  placeholder="Chia sẻ trải nghiệm của bạn"
+                />
+              </label>
+              <button type="submit" disabled={savingReview}>
+                {auth ? (savingReview ? "Đang gửi..." : "Gửi đánh giá") : "Đăng nhập để đánh giá"}
+              </button>
+            </form>
+            {reviewMessage && <p className="review-message" role="status">{reviewMessage}</p>}
+            <div className="review-list" aria-live="polite">
+              {reviewsLoading && <p>Đang tải đánh giá...</p>}
+              {!reviewsLoading && reviews.length === 0 && <p>Chưa có đánh giá.</p>}
+              {reviews.map((review) => (
+                <article key={review.id}>
+                  <strong>{review.rating}/5 sao</strong>
+                  <p>{review.comment || "Không có nhận xét."}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="sidebar-note">ℹ Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</div>
       </aside>
@@ -358,6 +403,16 @@ const styles = `
 .facility-actions button, .popup-card button { border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; padding: 8px; font-size: 12px; font-weight: 900; }
 .facility-actions button:last-child, .popup-card button { background: var(--lime); }
 .sidebar-note { margin-top: 14px; border: 1px solid rgba(8,127,140,.22); border-radius: 10px; background: var(--mint); padding: 12px; color: var(--muted); font-size: 12px; line-height: 1.55; font-weight: 800; }
+.facility-reviews { display: grid; gap: 10px; margin-top: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
+.facility-reviews h2 { margin: 0; font-size: 16px; }
+.facility-reviews form, .facility-reviews label { display: grid; gap: 7px; }
+.facility-reviews label span { font-size: 12px; font-weight: 850; }
+.facility-reviews select, .facility-reviews textarea { width: 100%; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; padding: 9px; color: var(--ink); }
+.facility-reviews form > button { min-height: 40px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--lime); color: var(--ink); font-weight: 900; }
+.review-message, .review-list p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.review-list { display: grid; gap: 8px; }
+.review-list article { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 9px; }
+.review-list article p { margin-top: 4px; }
 .map-panel { position: relative; flex: 1; min-width: 0; background: #e9eee1; }
 .map-chat-context { position: absolute; left: 18px; top: 18px; z-index: 3; width: min(420px, calc(100% - 36px)); display: grid; gap: 8px; border: 1.5px solid var(--ink); border-radius: 14px; background: rgba(255,255,255,.94); box-shadow: 4px 4px 0 var(--ink); padding: 14px; backdrop-filter: blur(14px); }
 .map-chat-context strong { font-size: 14px; }

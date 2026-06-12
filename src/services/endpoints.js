@@ -8,7 +8,10 @@ const FACILITIES_BASE = "/api/medical-facilities";
 const FACILITY_DEPARTMENTS_BASE = "/api/facility-departments";
 const DOCTORS_BASE = "/api/doctors";
 const DOCTOR_INVITATIONS_BASE = "/api/doctor-invitations";
+const ADMIN_DOCTOR_INVITATIONS_BASE = "/api/admin/doctor-invitations";
 const PATIENT_PROFILES_BASE = "/api/patient-profiles";
+const FEEDBACK_REVIEWS_BASE = "/api/feedback-reviews";
+const SYMPTOM_ANALYSIS_BASE = "/api/symptom-analysis";
 const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
 const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
 const PAYMENTS_BASE = "/api/payments";
@@ -54,6 +57,18 @@ export const ENDPOINTS = {
   DOCTOR_INVITATIONS: {
     VALIDATE: `${DOCTOR_INVITATIONS_BASE}/validate`,
     REGISTER: `${DOCTOR_INVITATIONS_BASE}/register`,
+    ADMIN_CREATE: ADMIN_DOCTOR_INVITATIONS_BASE,
+    ADMIN_REVOKE: (id) => `${ADMIN_DOCTOR_INVITATIONS_BASE}/${id}/revoke`,
+  },
+  FEEDBACK_REVIEWS: {
+    BASE: FEEDBACK_REVIEWS_BASE,
+    BY_ID: (id) => byId(FEEDBACK_REVIEWS_BASE, id),
+    STATUS: (id) => status(FEEDBACK_REVIEWS_BASE, id),
+    BY_FACILITY: (facilityId) => `${FEEDBACK_REVIEWS_BASE}/facility/${facilityId}`,
+  },
+  SYMPTOM_ANALYSIS: {
+    ANALYZE: `${SYMPTOM_ANALYSIS_BASE}/analyze`,
+    BY_SESSION: (sessionId) => byId(SYMPTOM_ANALYSIS_BASE, sessionId),
   },
   PATIENT_PROFILES: {
     BASE: PATIENT_PROFILES_BASE,

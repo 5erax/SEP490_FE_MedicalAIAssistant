@@ -1,31 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { navigate as goTo } from "../router/navigation";
+import { symptomAnalysisApi } from "../services/api";
 
 const QUICK_SYMPTOMS = ["Đau đầu", "Sốt", "Ho", "Đau bụng", "Mệt mỏi", "Khó thở", "Đau họng", "Chóng mặt"];
-
-const RECOMMENDATIONS = [
-  {
-    dept: "Nội khoa tổng quát",
-    confidence: 91,
-    priority: 1,
-    isEmergency: false,
-    reason: "Phù hợp để đánh giá tổng quát khi triệu chứng kéo dài và có nhiều biểu hiện toàn thân.",
-  },
-  {
-    dept: "Tai mũi họng",
-    confidence: 67,
-    priority: 2,
-    isEmergency: false,
-    reason: "Nên cân nhắc nếu có ho, đau họng, nghẹt mũi hoặc sốt kèm khó chịu vùng hô hấp trên.",
-  },
-  {
-    dept: "Cấp cứu",
-    confidence: 12,
-    priority: 3,
-    isEmergency: true,
-    reason: "Chỉ cần đi cấp cứu ngay nếu có khó thở, đau ngực, lơ mơ, co giật hoặc sốt rất cao.",
-  },
-];
 
 const DOCTOR_QUESTIONS = [
   "Triệu chứng này có nguy hiểm không?",
@@ -34,6 +11,11 @@ const DOCTOR_QUESTIONS = [
   "Tôi nên tái khám sau bao lâu?",
   "Có thuốc nào cần tránh trong thời gian này không?",
 ];
+
+function confidencePercent(value) {
+  const numeric = Number(value ?? 0);
+  return Math.round(numeric <= 1 ? numeric * 100 : numeric);
+}
 
 function SymptomAnalysisPage() {
   const [step, setStep] = useState(1);
@@ -45,25 +27,9 @@ function SymptomAnalysisPage() {
   const [severity, setSeverity] = useState("medium");
   const [duration, setDuration] = useState("");
   const [checkedQs, setCheckedQs] = useState(new Set());
-  const [progress, setProgress] = useState(0);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (step !== 2) return undefined;
-
-    const intervalId = window.setInterval(() => {
-      setProgress((value) => {
-        const nextValue = Math.min(value + 4, 100);
-        if (nextValue >= 100) {
-          window.clearInterval(intervalId);
-          window.setTimeout(() => setStep(3), 260);
-        }
-        return nextValue;
-      });
-    }, 100);
-
-    return () => window.clearInterval(intervalId);
-  }, [step]);
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisError, setAnalysisError] = useState("");
 
   const appendSymptom = (label) => {
     setSymptoms((value) => {
@@ -89,11 +55,27 @@ function SymptomAnalysisPage() {
     window.setTimeout(() => setCopied(false), 1800);
   };
 
-  const startAnalysis = () => {
+  const startAnalysis = async () => {
     if (!symptoms.trim()) return;
-    setProgress(0);
+    setAnalysisError("");
     setStep(2);
+    try {
+      const details = [
+        symptoms.trim(),
+        duration ? `Thời gian: ${duration}.` : "",
+        severity ? `Mức độ người dùng tự đánh giá: ${severity}.` : "",
+      ].filter(Boolean).join(" ");
+      const response = await symptomAnalysisApi.analyze(details);
+      setAnalysis(response.data ?? null);
+      setStep(3);
+    } catch (error) {
+      setAnalysisError(error.message);
+      setStep(1);
+    }
   };
+
+  const recommendations = analysis?.recommendedDepartments ?? [];
+  const recommendedFacilities = analysis?.recommendedFacilities ?? [];
 
   return (
     <main className="symptom-page">
@@ -165,6 +147,7 @@ function SymptomAnalysisPage() {
             <button className="primary-action" type="button" disabled={!symptoms.trim()} onClick={startAnalysis}>
               Phân tích →
             </button>
+            {analysisError && <div className="disclaimer" role="alert">{analysisError}</div>}
           </section>
         )}
 
@@ -172,10 +155,7 @@ function SymptomAnalysisPage() {
           <section className="symptom-card analyzing-card">
             <div className="large-spinner" />
             <h1>MediMate AI đang phân tích triệu chứng của bạn...</h1>
-            <div className="progress-track" aria-label={`Tiến độ ${progress}%`}>
-              <span style={{ width: `${progress}%` }} />
-            </div>
-            <p>{progress}%</p>
+            <p role="status">Đang chờ kết quả từ backend.</p>
           </section>
         )}
 
@@ -185,22 +165,44 @@ function SymptomAnalysisPage() {
             <article className="symptom-card">
               <p className="mini-label">Chuyên khoa gợi ý</p>
               <div className="recommendation-list">
-                {RECOMMENDATIONS.map((item) => (
-                  <div className="recommendation-row" key={item.dept}>
+                {recommendations.length === 0 && (
+                  <div className="soft-empty">Backend chưa trả về chuyên khoa gợi ý.</div>
+                )}
+                {recommendations.map((item) => (
+                  <div className="recommendation-row" key={item.departmentId}>
                     <div>
-                      <strong>{item.dept}</strong>
+                      <strong>{item.departmentName || "Chuyên khoa"}</strong>
                       <p>{item.reason}</p>
                     </div>
                     <div className="confidence-box">
-                      <span>{item.confidence}%</span>
-                      <div><i style={{ width: `${item.confidence}%` }} /></div>
-                      <small>Ưu tiên {item.priority}</small>
-                      {item.isEmergency && <b>Cấp cứu</b>}
+                      <span>{confidencePercent(item.confidenceScore)}%</span>
+                      <div><i style={{ width: `${confidencePercent(item.confidenceScore)}%` }} /></div>
+                      <small>Ưu tiên {item.priorityRank}</small>
+                      {item.isEmergencySuggested && <b>Cấp cứu</b>}
                     </div>
                   </div>
                 ))}
               </div>
             </article>
+            {recommendedFacilities.length > 0 && (
+              <article className="symptom-card">
+                <p className="mini-label">Cơ sở y tế phù hợp</p>
+                <div className="recommendation-list">
+                  {recommendedFacilities.map((facility) => (
+                    <div className="recommendation-row" key={`${facility.facilityId}-${facility.departmentId}`}>
+                      <div>
+                        <strong>{facility.facilityName}</strong>
+                        <p>{facility.address || facility.departmentName}</p>
+                      </div>
+                      <div className="confidence-box">
+                        <small>{facility.departmentName}</small>
+                        {facility.phone && <span>{facility.phone}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            )}
             <article className="symptom-card">
               <p className="mini-label">Câu hỏi nên hỏi bác sĩ</p>
               <div className="question-list">
@@ -221,7 +223,7 @@ function SymptomAnalysisPage() {
             </article>
             <div className="result-actions">
               <button className="primary-action" type="button" onClick={() => goTo("/map")}>Tìm cơ sở y tế gần đây</button>
-              <button className="dark-action" type="button" onClick={() => setStep(4)}>Lưu kết quả</button>
+              <button className="dark-action" type="button" onClick={() => setStep(4)}>Xem mã phiên</button>
             </div>
           </section>
         )}
@@ -229,8 +231,8 @@ function SymptomAnalysisPage() {
         {step === 4 && (
           <section className="symptom-card saved-card">
             <div className="saved-mark">✓</div>
-            <h1>Đã lưu phiên phân tích!</h1>
-            <p>Bạn có thể xem lại kết quả trong không gian cá nhân hoặc tiếp tục tìm cơ sở phù hợp để thăm khám.</p>
+            <h1>Phiên phân tích đã được backend ghi nhận</h1>
+            <p>Mã phiên: <strong>{analysis?.sessionId || "Không có mã phiên"}</strong></p>
             <div className="result-actions">
               <button className="primary-action" type="button" onClick={() => goTo("/dashboard")}>Về trang chủ</button>
               <button className="outline-action" type="button" onClick={() => goTo("/records")}>Xem lịch sử</button>

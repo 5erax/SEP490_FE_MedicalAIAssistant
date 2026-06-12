@@ -34,6 +34,7 @@ import SubscriptionPlanTable from "../components/adminSubscriptions/Subscription
 import {
   authApi,
   clearStoredAuth,
+  doctorInvitationsApi,
   facilityDepartmentsApi,
   getStoredAuth,
   medicalFacilitiesApi,
@@ -47,6 +48,7 @@ import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
 
 const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
+const EMPTY_INVITATION = { email: "", doctorId: "" };
 const EMPTY_FACILITY = {
   facilityName: "",
   address: "",
@@ -168,6 +170,8 @@ export default function AdminWorkspacePage() {
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
+  const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
+  const [lastInvitation, setLastInvitation] = useState(null);
   const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
   const [subscriptionPlanModal, setSubscriptionPlanModal] = useState({ open: false, mode: "create", plan: null });
   const [aiConfigDetail, setAIConfigDetail] = useState(null);
@@ -182,6 +186,7 @@ export default function AdminWorkspacePage() {
   const [savingFacility, setSavingFacility] = useState(false);
   const [savingStaff, setSavingStaff] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
+  const [savingInvitation, setSavingInvitation] = useState(false);
   const [savingAIConfig, setSavingAIConfig] = useState(false);
   const [savingSubscriptionPlan, setSavingSubscriptionPlan] = useState(false);
   const [globalMessage, setGlobalMessage] = useState(null);
@@ -911,6 +916,43 @@ export default function AdminWorkspacePage() {
     }
   }
 
+  async function handleCreateInvitation(event) {
+    event.preventDefault();
+    setSavingInvitation(true);
+    setDoctorMessage(null);
+    try {
+      const response = await doctorInvitationsApi.create({
+        email: invitationForm.email.trim(),
+        doctorId: invitationForm.doctorId || null,
+      });
+      setLastInvitation(response.data ?? null);
+      setInvitationForm(EMPTY_INVITATION);
+      setDoctorMessage({
+        type: "success",
+        text: response.message || "Đã tạo và gửi lời mời đăng ký bác sĩ.",
+      });
+    } catch (error) {
+      setDoctorMessage({ type: "error", text: error.message });
+    } finally {
+      setSavingInvitation(false);
+    }
+  }
+
+  async function handleRevokeInvitation() {
+    if (!lastInvitation?.id) return;
+    setSavingInvitation(true);
+    setDoctorMessage(null);
+    try {
+      const response = await doctorInvitationsApi.revoke(lastInvitation.id);
+      setLastInvitation((current) => current ? { ...current, status: "Revoked" } : current);
+      setDoctorMessage({ type: "success", text: response.message || "Đã thu hồi lời mời." });
+    } catch (error) {
+      setDoctorMessage({ type: "error", text: error.message });
+    } finally {
+      setSavingInvitation(false);
+    }
+  }
+
   function toggleFacilityDepartment(departmentId) {
     setFacilityForm((current) => ({
       ...current,
@@ -1297,6 +1339,53 @@ export default function AdminWorkspacePage() {
                 </div>
 
                 <ApiMessage message={doctorMessage} />
+
+                <form className="doctor-invitation-admin" onSubmit={handleCreateInvitation}>
+                  <div>
+                    <strong>Gửi lời mời đăng ký bác sĩ</strong>
+                    <p>Email là bắt buộc. Có thể chọn hồ sơ bác sĩ có sẵn để liên kết tài khoản.</p>
+                  </div>
+                  <label className="clean-field">
+                    <span>Email bác sĩ</span>
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      value={invitationForm.email}
+                      onChange={(event) => setInvitationForm({ ...invitationForm, email: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label className="clean-field">
+                    <span>Hồ sơ bác sĩ có sẵn (không bắt buộc)</span>
+                    <select
+                      value={invitationForm.doctorId}
+                      onChange={(event) => setInvitationForm({ ...invitationForm, doctorId: event.target.value })}
+                    >
+                      <option value="">Tạo bác sĩ mới khi đăng ký</option>
+                      {doctors.map((doctor) => (
+                        <option key={doctor.id} value={doctor.id}>
+                          {doctor.fullName || doctor.id}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="btn btn-primary btn-small" type="submit" disabled={savingInvitation}>
+                    {savingInvitation ? "Đang gửi..." : "Gửi invitation"}
+                  </button>
+                  {lastInvitation && (
+                    <div className="doctor-invitation-latest" role="status">
+                      <span>
+                        {lastInvitation.email} · {lastInvitation.status || "Pending"}
+                        {lastInvitation.expiresAt && ` · hết hạn ${new Date(lastInvitation.expiresAt).toLocaleString("vi-VN")}`}
+                      </span>
+                      {String(lastInvitation.status).toLowerCase() !== "revoked" && (
+                        <button className="btn btn-ghost btn-small" type="button" onClick={handleRevokeInvitation}>
+                          Thu hồi
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </form>
 
                 <DoctorFilters
                   filters={doctorFilters}

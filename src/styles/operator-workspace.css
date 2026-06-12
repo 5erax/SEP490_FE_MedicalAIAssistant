@@ -1183,6 +1183,60 @@
   gap: 10px;
 }
 
+.doctor-invitation-admin {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.1fr) minmax(180px, 1fr) minmax(220px, 1.2fr) auto;
+  gap: 12px;
+  align-items: end;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 16px;
+  background: #fbfcf7;
+  padding: 14px;
+}
+
+.doctor-invitation-admin > div:first-child strong {
+  display: block;
+  color: #101411;
+}
+
+.doctor-invitation-admin > div:first-child p {
+  margin: 5px 0 0;
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.doctor-invitation-latest {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(16, 20, 17, 0.1);
+  padding-top: 10px;
+  color: rgba(16, 20, 17, 0.7);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .doctor-invitation-admin {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .doctor-invitation-admin {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-invitation-latest {
+    grid-column: auto;
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .doctor-skeleton-row {
   display: grid;
   grid-template-columns: 42px minmax(180px, 1.2fr) minmax(140px, 1fr) 160px;

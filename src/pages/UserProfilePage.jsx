@@ -1,9 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate as go } from "../router/navigation";
-import { getStoredAuth } from "../services/api";
+import {
+  authApi,
+  getStoredAuth,
+  patientProfilesApi,
+  usersApi,
+  userSubscriptionsApi,
+} from "../services/api";
 
-const mockUser = { fullName: "Nguyễn Văn Phước", email: "phuoc@gmail.com", phone: "0901234567", address: "Quận 5, TP.HCM", gender: "Nam", dateOfBirth: "1998-02-14" };
+const EMPTY_USER = { displayName: "", email: "", phoneNumber: "", address: "", gender: "1", dateOfBirth: "" };
 const tabs = [
   ["info", "👤", "Thông tin cá nhân"],
   ["medical", "♡", "Hồ sơ y tế"],
@@ -16,23 +22,68 @@ function initials(name) {
 }
 
 export default function UserProfilePage() {
-  const { confirmAction, showToast } = useFeedback();
+  const { showToast } = useFeedback();
   const auth = getStoredAuth();
-  const user = useMemo(() => ({ ...mockUser, fullName: auth?.displayName || auth?.name || mockUser.fullName, email: auth?.email || mockUser.email }), [auth]);
   const [activeTab, setActiveTab] = useState("info");
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState("");
-  const [profileForm, setProfileForm] = useState({ ...user });
+  const [profileForm, setProfileForm] = useState({ ...EMPTY_USER, email: auth?.email || "" });
   const [medicalForm, setMedicalForm] = useState({
     bloodType: "",
     height: "",
     weight: "",
     allergyNote: "",
     chronicDiseaseNote: "",
-    emergencyContactName: "",
-    emergencyContactPhone: "",
   });
+  const [userId, setUserId] = useState("");
+  const [patientProfileId, setPatientProfileId] = useState("");
+  const [subscription, setSubscription] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      authApi.me(),
+      patientProfilesApi.list(1, 100),
+      userSubscriptionsApi.me(),
+    ]).then(([userResult, profileResult, subscriptionResult]) => {
+      if (!active) return;
+
+      const user = userResult.status === "fulfilled" ? userResult.value.data ?? {} : {};
+      const resolvedUserId = user.userId ?? user.identityId ?? user.id ?? auth?.userId ?? auth?.identityId ?? "";
+      setUserId(resolvedUserId);
+      setProfileForm({
+        displayName: user.displayName ?? user.name ?? auth?.displayName ?? "",
+        email: user.email ?? auth?.email ?? "",
+        phoneNumber: user.phoneNumber ?? "",
+        address: user.address ?? "",
+        gender: String(user.gender ?? "1"),
+        dateOfBirth: user.dateOfBirth ? String(user.dateOfBirth).slice(0, 10) : "",
+      });
+
+      const profiles = profileResult.status === "fulfilled" ? profileResult.value.data?.items ?? [] : [];
+      const patientProfile = profiles.find((item) => String(item.userId) === String(resolvedUserId)) ?? null;
+      setPatientProfileId(patientProfile?.id ?? "");
+      setMedicalForm({
+        bloodType: patientProfile?.bloodType ?? "",
+        height: patientProfile?.height ?? "",
+        weight: patientProfile?.weight ?? "",
+        allergyNote: patientProfile?.allergyNote ?? "",
+        chronicDiseaseNote: patientProfile?.chronicDiseaseNote ?? "",
+      });
+
+      const subscriptions = subscriptionResult.status === "fulfilled"
+        ? Array.isArray(subscriptionResult.value.data) ? subscriptionResult.value.data : []
+        : [];
+      setSubscription(subscriptions.find((item) => String(item.statusName).toLowerCase() === "active") ?? subscriptions[0] ?? null);
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [auth?.displayName, auth?.email, auth?.identityId, auth?.userId]);
 
   function updateProfile(key, value) {
     setProfileForm((current) => ({ ...current, [key]: value }));
@@ -44,8 +95,8 @@ export default function UserProfilePage() {
 
   function validateProfile() {
     const next = {};
-    if (!profileForm.fullName.trim()) next.fullName = "Họ và tên không được để trống.";
-    if (profileForm.phone && !/^\d+$/.test(profileForm.phone)) next.phone = "Số điện thoại chỉ gồm chữ số.";
+    if (!profileForm.displayName.trim()) next.displayName = "Họ và tên không được để trống.";
+    if (profileForm.phoneNumber && !/^\d+$/.test(profileForm.phoneNumber)) next.phoneNumber = "Số điện thoại chỉ gồm chữ số.";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -54,35 +105,48 @@ export default function UserProfilePage() {
     const next = {};
     if (medicalForm.height && Number(medicalForm.height) <= 0) next.height = "Chiều cao phải là số dương.";
     if (medicalForm.weight && Number(medicalForm.weight) <= 0) next.weight = "Cân nặng phải là số dương.";
-    if (medicalForm.emergencyContactPhone && !/^\d+$/.test(medicalForm.emergencyContactPhone)) next.emergencyContactPhone = "SĐT khẩn chỉ gồm chữ số.";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  function saveProfile(event) {
+  async function saveProfile(event) {
     event.preventDefault();
     if (!validateProfile()) return;
-    setIsEditing(false);
-    setToast("Đã lưu thông tin!");
-    showToast({ type: "success", title: "Đã lưu thông tin", message: "Hồ sơ cá nhân đã được cập nhật." });
+    try {
+      await usersApi.update(userId, {
+        displayName: profileForm.displayName.trim(),
+        address: profileForm.address.trim() || null,
+        gender: Number(profileForm.gender),
+        dateOfBirth: profileForm.dateOfBirth || null,
+        phoneNumber: profileForm.phoneNumber.trim() || null,
+      });
+      setIsEditing(false);
+      setToast("Đã lưu thông tin!");
+      showToast({ type: "success", title: "Đã lưu thông tin", message: "Hồ sơ cá nhân đã được cập nhật." });
+    } catch (error) {
+      setToast(error.message);
+    }
   }
 
-  function saveMedical(event) {
+  async function saveMedical(event) {
     event.preventDefault();
     if (!validateMedical()) return;
-    setToast("Đã lưu hồ sơ!");
-    showToast({ type: "success", title: "Đã lưu hồ sơ", message: "Thông tin sức khỏe đã được cập nhật." });
-  }
-
-  async function requestDeleteAccount() {
-    const confirmed = await confirmAction({
-      title: "Xóa tài khoản?",
-      message: "Thao tác này có thể làm mất quyền truy cập vào hồ sơ. Bạn có thể hủy và quay lại bất cứ lúc nào.",
-      confirmLabel: "Xóa tài khoản",
-      tone: "danger",
-    });
-    if (confirmed) {
-      showToast({ type: "warning", title: "Chưa kết nối API xóa", message: "Chức năng xóa tài khoản sẽ được bật khi backend hỗ trợ." });
+    const payload = {
+      bloodType: medicalForm.bloodType || null,
+      height: medicalForm.height === "" ? null : Number(medicalForm.height),
+      weight: medicalForm.weight === "" ? null : Number(medicalForm.weight),
+      allergyNote: medicalForm.allergyNote.trim() || null,
+      chronicDiseaseNote: medicalForm.chronicDiseaseNote.trim() || null,
+    };
+    try {
+      const response = patientProfileId
+        ? await patientProfilesApi.update(patientProfileId, payload)
+        : await patientProfilesApi.create({ userId, ...payload });
+      if (!patientProfileId) setPatientProfileId(response.data?.id ?? "");
+      setToast("Đã lưu hồ sơ!");
+      showToast({ type: "success", title: "Đã lưu hồ sơ", message: "Thông tin sức khỏe đã được cập nhật." });
+    } catch (error) {
+      setToast(error.message);
     }
   }
 
@@ -91,8 +155,8 @@ export default function UserProfilePage() {
       <style>{styles}</style>
       <aside className="profile-sidebar">
         <div className="profile-identity">
-          <span>{initials(profileForm.fullName)}</span>
-          <strong>{profileForm.fullName}</strong>
+          <span>{initials(profileForm.displayName)}</span>
+          <strong>{profileForm.displayName || (loading ? "Đang tải..." : "Người dùng")}</strong>
           <small>{profileForm.email}</small>
         </div>
         <nav>
@@ -127,11 +191,11 @@ export default function UserProfilePage() {
               {!isEditing ? <button type="button" onClick={() => setIsEditing(true)}>Chỉnh sửa</button> : <div><button className="lime" type="submit">Lưu</button><button type="button" onClick={() => setIsEditing(false)}>Huỷ</button></div>}
             </div>
             <div className="form-grid">
-              <Field label="Họ và tên" error={errors.fullName} wide><input value={profileForm.fullName} disabled={!isEditing} onChange={(e) => updateProfile("fullName", e.target.value)} /></Field>
+              <Field label="Họ và tên" error={errors.displayName} wide><input value={profileForm.displayName} disabled={!isEditing} onChange={(e) => updateProfile("displayName", e.target.value)} /></Field>
               <Field label="Email" wide><input value={profileForm.email} disabled /><em>Không thể đổi</em></Field>
-              <Field label="Giới tính"><select value={profileForm.gender} disabled={!isEditing} onChange={(e) => updateProfile("gender", e.target.value)}><option>Nam</option><option>Nữ</option><option>Khác</option></select></Field>
+              <Field label="Giới tính"><select value={profileForm.gender} disabled={!isEditing} onChange={(e) => updateProfile("gender", e.target.value)}><option value="1">Nam</option><option value="2">Nữ</option><option value="0">Khác</option></select></Field>
               <Field label="Ngày sinh"><input type="date" value={profileForm.dateOfBirth} disabled={!isEditing} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
-              <Field label="Số điện thoại" error={errors.phone}><input value={profileForm.phone} disabled={!isEditing} onChange={(e) => updateProfile("phone", e.target.value)} /></Field>
+              <Field label="Số điện thoại" error={errors.phoneNumber}><input type="tel" value={profileForm.phoneNumber} disabled={!isEditing} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
               <Field label="Địa chỉ" wide><input value={profileForm.address} disabled={!isEditing} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
             </div>
           </form>
@@ -139,7 +203,7 @@ export default function UserProfilePage() {
 
         {activeTab === "medical" && (
           <form className="profile-card" onSubmit={saveMedical}>
-            <div className="profile-head"><div><h1>Hồ sơ bệnh nhân</h1><span>Tạo mới</span></div></div>
+            <div className="profile-head"><div><h1>Hồ sơ bệnh nhân</h1><span>{patientProfileId ? "Đã đồng bộ" : "Tạo mới"}</span></div></div>
             <div className="form-grid three">
               <Field label="Nhóm máu"><select value={medicalForm.bloodType} onChange={(e) => updateMedical("bloodType", e.target.value)}><option value="">Chọn</option>{["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((v)=><option key={v}>{v}</option>)}</select></Field>
               <Field label="Chiều cao (cm)" error={errors.height}><input type="number" value={medicalForm.height} onChange={(e) => updateMedical("height", e.target.value)} /></Field>
@@ -147,10 +211,6 @@ export default function UserProfilePage() {
             </div>
             <Field label="Dị ứng"><textarea value={medicalForm.allergyNote} onChange={(e) => updateMedical("allergyNote", e.target.value)} /></Field>
             <Field label="Bệnh nền"><textarea value={medicalForm.chronicDiseaseNote} onChange={(e) => updateMedical("chronicDiseaseNote", e.target.value)} /></Field>
-            <div className="form-grid">
-              <Field label="Người liên hệ khẩn"><input value={medicalForm.emergencyContactName} onChange={(e) => updateMedical("emergencyContactName", e.target.value)} /></Field>
-              <Field label="SĐT khẩn" error={errors.emergencyContactPhone}><input value={medicalForm.emergencyContactPhone} onChange={(e) => updateMedical("emergencyContactPhone", e.target.value)} /></Field>
-            </div>
             <button className="lime full" type="submit">Lưu hồ sơ</button>
           </form>
         )}
@@ -158,20 +218,23 @@ export default function UserProfilePage() {
         {activeTab === "security" && (
           <section className="profile-card">
             <h1>Bảo mật</h1>
-            <div className="form-grid">
-              <Field label="Mật khẩu hiện tại"><input type="password" /></Field>
-              <Field label="Mật khẩu mới"><input type="password" /></Field>
-              <Field label="Xác nhận mật khẩu mới"><input type="password" /></Field>
-            </div>
-            <button className="lime" type="button">Đổi mật khẩu</button>
-            <div className="danger"><strong>Xoá tài khoản</strong><p>Thao tác này cần được xác nhận trước khi thực hiện.</p><button type="button" onClick={requestDeleteAccount}>Xoá tài khoản</button></div>
+            <p>Backend đổi mật khẩu bằng mã OTP gửi qua email.</p>
+            <button className="lime" type="button" onClick={() => go("/forgot-password")}>Gửi mã đổi mật khẩu</button>
           </section>
         )}
 
         {activeTab === "subscription" && (
           <section className="profile-card">
             <h1>Gói đăng ký</h1>
-            <div className="plan-box"><span>Gói hiện tại</span><strong>Free</strong><p>Phân tích triệu chứng cơ bản, hồ sơ cá nhân và bản đồ cơ sở y tế.</p></div>
+            <div className="plan-box">
+              <span>Gói hiện tại</span>
+              <strong>{subscription?.planName || (loading ? "Đang tải..." : "Free")}</strong>
+              <p>
+                {subscription
+                  ? `${subscription.statusName || "Đang hoạt động"}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
+                  : "Bạn chưa có subscription trả phí đang hoạt động."}
+              </p>
+            </div>
             <button className="lime" type="button" onClick={() => go("/pricing")}>Nâng cấp MediMate+</button>
           </section>
         )}

@@ -83,6 +83,9 @@ function MedicalRecordPage() {
       </aside>
 
       <section className="records-content">
+        <div className="backend-support-note" role="status">
+          Backend hiện chưa có API hồ sơ y tế, tệp đính kèm hoặc phân tích xét nghiệm. Nội dung bên dưới chỉ là dữ liệu demo và không được lưu.
+        </div>
         <nav className="records-quick-nav" aria-label="Dieu huong nhanh">
           <button type="button" onClick={() => goTo("/dashboard")}>← Trang chủ</button>
           <button type="button" onClick={() => goTo("/profile")}>Hồ sơ cá nhân</button>
@@ -218,6 +221,7 @@ function MedicalRecordPage() {
 }
 
 const styles = `
+.backend-support-note { border: 1.5px solid #9f1239; border-radius: 10px; background: #fff1f2; color: #881337; padding: 12px 14px; font-size: 13px; font-weight: 800; line-height: 1.55; }
 .records-page { min-height: 100svh; display: flex; background: var(--bg); color: var(--ink); }
 .records-sidebar { width: 220px; flex: 0 0 220px; border-right: 1.5px solid var(--ink); background: var(--paper); padding: 18px; }
 .mini-label { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 14px; color: var(--lime-dark); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
