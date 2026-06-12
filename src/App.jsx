@@ -10,6 +10,7 @@ import MedicalRecordPage from "./pages/MedicalRecordPage";
 import MedicationScanPage from "./pages/MedicationScanPage";
 import NearbyClinicPage from "./pages/NearbyClinicPage";
 import PricingPage from "./pages/PricingPage";
+import PaymentResultPage from "./pages/PaymentResultPage";
 import SymptomAnalysisPage from "./pages/SymptomAnalysisPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import MedicalAssistantPage from "./pages/MedicalAssistantPage";
@@ -49,6 +50,8 @@ const PAGE_TITLES = {
   "/records": "Hồ sơ y tế | MediMate AI",
   "/medication": "Kiểm tra thuốc | MediMate AI",
   "/pricing": "Bảng giá | MediMate AI",
+  "/payment/return": "Thanh toán thành công | MediMate AI",
+  "/payment/cancel": "Thanh toán đã hủy | MediMate AI",
   "/app": "Không gian làm việc | MediMate AI",
   "/app/staff": "Không gian nhân viên | MediMate AI",
   "/app/admin": "Quản trị hệ thống | MediMate AI",
@@ -107,6 +110,8 @@ function App() {
   if (path === "/records") return requirePremium(userWorkspace(<MedicalRecordPage />), safeCurrentPath());
   if (path === "/medication") return requirePremium(userWorkspace(<MedicationScanPage />), safeCurrentPath());
   if (path === "/pricing") return <PricingPage />;
+  if (path === "/payment/return") return <PaymentResultPage expectedResult="return" />;
+  if (path === "/payment/cancel") return <PaymentResultPage expectedResult="cancel" />;
   if (path === "/app") return <WorkspaceRedirect />;
   if (path === "/account" || path === "/app/patient") {
     window.history.replaceState(null, "", "/dashboard");

@@ -15,6 +15,8 @@ export const APP_ROUTES = [
   { path: "/records", expectedPath: "/login", surface: "premium-gate" },
   { path: "/medication", expectedPath: "/login", surface: "premium-gate" },
   { path: "/pricing", expectedPath: "/pricing", surface: "public" },
+  { path: "/payment/return", expectedPath: "/payment/return", surface: "payment-result" },
+  { path: "/payment/cancel", expectedPath: "/payment/cancel", surface: "payment-result" },
   { path: "/app", expectedPath: "/app", surface: "workspace-gate" },
   { path: "/account", expectedPath: "/login", surface: "auth-gate" },
   { path: "/app/patient", expectedPath: "/login", surface: "auth-gate" },
