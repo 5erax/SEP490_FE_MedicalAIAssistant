@@ -1086,11 +1086,30 @@
 }
 
 .doctor-empty-state {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
   min-height: 300px;
   border: 1px dashed rgba(8, 127, 140, 0.28);
   background:
     linear-gradient(180deg, rgba(223, 248, 237, 0.52), rgba(255, 255, 255, 0.88)),
     #fff;
+  padding: clamp(28px, 6vw, 64px);
+  text-align: center;
+}
+
+.doctor-empty-state > strong {
+  font-size: clamp(20px, 2.5vw, 26px);
+  line-height: 1.25;
+}
+
+.doctor-empty-state > p {
+  max-width: 560px;
+  margin: 0;
+  color: rgba(16, 20, 17, 0.64);
+  line-height: 1.6;
 }
 
 .doctor-empty-icon {

@@ -3,21 +3,25 @@ import { useMemo, useState } from "react";
 const EMPTY_FORM = {
   facilityDepartmentId: "",
   fullName: "",
-  specialty: "",
   academicTitle: "",
   departmentRole: "0",
   yearsOfExperience: "",
   isActive: "true",
 };
 
-const ROLE_OPTIONS = [0, 1, 2, 3, 4];
+const ROLE_OPTIONS = [
+  { value: 0, label: "Bác sĩ" },
+  { value: 1, label: "Phó trưởng khoa" },
+  { value: 2, label: "Trưởng khoa" },
+  { value: 3, label: "Chuyên gia đầu ngành" },
+  { value: 4, label: "Cố vấn" },
+];
 
 function toFormValue(doctor) {
   if (!doctor) return EMPTY_FORM;
   return {
     facilityDepartmentId: doctor.facilityDepartmentId ?? "",
     fullName: doctor.fullName ?? "",
-    specialty: doctor.specialty ?? "",
     academicTitle: doctor.academicTitle ?? "",
     departmentRole: String(doctor.departmentRole ?? 0),
     yearsOfExperience: doctor.yearsOfExperience ?? "",
@@ -27,7 +31,7 @@ function toFormValue(doctor) {
 
 function validate(form) {
   const errors = {};
-  if (!form.facilityDepartmentId.trim()) errors.facilityDepartmentId = "Cần nhập facilityDepartmentId theo backend.";
+  if (!form.facilityDepartmentId.trim()) errors.facilityDepartmentId = "Vui lòng chọn cơ sở y tế và khoa công tác.";
   if (!form.fullName.trim()) errors.fullName = "Cần nhập họ tên bác sĩ.";
   if (form.yearsOfExperience !== "" && Number(form.yearsOfExperience) < 0) {
     errors.yearsOfExperience = "Số năm kinh nghiệm không được âm.";
@@ -39,7 +43,6 @@ function buildDoctorPayload(form) {
   return {
     facilityDepartmentId: form.facilityDepartmentId.trim(),
     fullName: form.fullName.trim(),
-    specialty: form.specialty.trim() || null,
     academicTitle: form.academicTitle.trim() || null,
     departmentRole: Number(form.departmentRole),
     yearsOfExperience: form.yearsOfExperience === "" ? null : Number(form.yearsOfExperience),
@@ -84,21 +87,24 @@ export default function DoctorFormModal({ mode, doctor, facilityDepartmentOption
       <section className="doctor-modal" role="dialog" aria-modal="true" aria-labelledby="doctor-modal-title" onMouseDown={(event) => event.stopPropagation()}>
         <header className="doctor-modal-header">
           <div>
-            <p className="eyebrow">Doctor Management</p>
+            <p className="eyebrow">Quản lý bác sĩ</p>
             <h2 id="doctor-modal-title">{title}</h2>
-            <p>Thông tin được gửi theo đúng CreateDoctorRequest/UpdateDoctorRequest của backend.</p>
+            <p>Điền thông tin hành chính và vị trí công tác của bác sĩ.</p>
           </div>
           <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose}>×</button>
         </header>
 
         <form className="clean-form doctor-form" onSubmit={handleSubmit}>
           <label className={`clean-field ${errors.facilityDepartmentId ? "doctor-field-error" : ""}`}>
-            <span>Liên kết bệnh viện - chuyên khoa</span>
+            <span>Cơ sở y tế - khoa</span>
             <input
               list="facility-department-options"
               value={form.facilityDepartmentId}
               onChange={(event) => update("facilityDepartmentId", event.target.value)}
-              placeholder="Nhập hoặc chọn UUID facilityDepartmentId"
+              placeholder="Chọn cơ sở y tế và khoa"
+              required
+              aria-invalid={errors.facilityDepartmentId ? "true" : undefined}
+              aria-describedby="facility-department-help"
             />
             {options.length > 0 && (
               <datalist id="facility-department-options">
@@ -107,33 +113,48 @@ export default function DoctorFormModal({ mode, doctor, facilityDepartmentOption
                 ))}
               </datalist>
             )}
-            <small>{errors.facilityDepartmentId || "Backend hiện yêu cầu facilityDepartmentId để gắn bác sĩ vào bệnh viện/chuyên khoa."}</small>
+            <small id="facility-department-help" role={errors.facilityDepartmentId ? "alert" : undefined}>
+              {errors.facilityDepartmentId || "Chọn khoa mà bác sĩ đang công tác tại cơ sở y tế."}
+            </small>
           </label>
 
           <div className="form-two-cols">
             <label className={`clean-field ${errors.fullName ? "doctor-field-error" : ""}`}>
               <span>Họ và tên bác sĩ</span>
-              <input value={form.fullName} onChange={(event) => update("fullName", event.target.value)} placeholder="Ví dụ: BS. Nguyễn Minh Anh" />
-              {errors.fullName && <small>{errors.fullName}</small>}
+              <input
+                value={form.fullName}
+                onChange={(event) => update("fullName", event.target.value)}
+                placeholder="Ví dụ: BS. Nguyễn Minh Anh"
+                autoComplete="name"
+                required
+                aria-invalid={errors.fullName ? "true" : undefined}
+                aria-describedby={errors.fullName ? "doctor-full-name-error" : undefined}
+              />
+              {errors.fullName && <small id="doctor-full-name-error" role="alert">{errors.fullName}</small>}
             </label>
             <label className="clean-field">
               <span>Học hàm/học vị</span>
               <input value={form.academicTitle} onChange={(event) => update("academicTitle", event.target.value)} placeholder="ThS.BS, CKI, CKII..." />
             </label>
-            <label className="clean-field">
-              <span>Chuyên môn</span>
-              <input value={form.specialty} onChange={(event) => update("specialty", event.target.value)} placeholder="Tim mạch, Nội tổng quát..." />
-            </label>
             <label className={`clean-field ${errors.yearsOfExperience ? "doctor-field-error" : ""}`}>
               <span>Số năm kinh nghiệm</span>
-              <input min="0" type="number" value={form.yearsOfExperience} onChange={(event) => update("yearsOfExperience", event.target.value)} placeholder="Ví dụ: 8" />
-              {errors.yearsOfExperience && <small>{errors.yearsOfExperience}</small>}
+              <input
+                min="0"
+                step="1"
+                type="number"
+                value={form.yearsOfExperience}
+                onChange={(event) => update("yearsOfExperience", event.target.value)}
+                placeholder="Ví dụ: 8"
+                aria-invalid={errors.yearsOfExperience ? "true" : undefined}
+                aria-describedby={errors.yearsOfExperience ? "doctor-experience-error" : undefined}
+              />
+              {errors.yearsOfExperience && <small id="doctor-experience-error" role="alert">{errors.yearsOfExperience}</small>}
             </label>
             <label className="clean-field">
-              <span>DepartmentRole</span>
+              <span>Vai trò trong khoa</span>
               <select value={form.departmentRole} onChange={(event) => update("departmentRole", event.target.value)}>
                 {ROLE_OPTIONS.map((role) => (
-                  <option key={role} value={role}>Vai trò {role}</option>
+                  <option key={role.value} value={role.value}>{role.label}</option>
                 ))}
               </select>
             </label>

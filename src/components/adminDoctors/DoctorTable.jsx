@@ -12,6 +12,14 @@ function formatExperience(years) {
   return `${years} năm`;
 }
 
+const DEPARTMENT_ROLE_LABELS = {
+  0: "Bác sĩ",
+  1: "Phó trưởng khoa",
+  2: "Trưởng khoa",
+  3: "Chuyên gia đầu ngành",
+  4: "Cố vấn",
+};
+
 export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete, onCreate }) {
   const columns = [
     {
@@ -28,13 +36,12 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
       ),
     },
     {
-      key: "specialty",
-      header: "Chuyên môn",
+      key: "department",
+      header: "Khoa công tác",
       render: (doctor) => (
         <div className="table-primary-cell">
-          <strong>{doctor.specialty || doctor.departmentName || "Chưa cập nhật"}</strong>
-          <span>{doctor.departmentName || "Chưa có chuyên khoa"}</span>
-          <small>{doctor.departmentRoleName || `DepartmentRole ${doctor.departmentRole ?? 0}`}</small>
+          <strong>{doctor.departmentName || "Chưa cập nhật khoa"}</strong>
+          <small>{doctor.departmentRoleName || DEPARTMENT_ROLE_LABELS[doctor.departmentRole] || "Chưa cập nhật vai trò"}</small>
         </div>
       ),
     },
@@ -44,7 +51,6 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
       render: (doctor) => (
         <div className="table-primary-cell">
           <strong>{doctor.facilityName || "Chưa có bệnh viện"}</strong>
-          <small>{doctor.facilityDepartmentId}</small>
         </div>
       ),
     },

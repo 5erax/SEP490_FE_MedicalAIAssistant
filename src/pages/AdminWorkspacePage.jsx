@@ -1048,9 +1048,9 @@ export default function AdminWorkspacePage() {
               <section className="admin-panel doctor-admin-panel">
                 <div className="panel-title-row doctor-section-heading">
                   <div>
-                    <p className="eyebrow">Doctor Management</p>
+                    <p className="eyebrow">Nhân sự y tế</p>
                     <h2>Quản lý bác sĩ</h2>
-                    <p className="muted-text">Tạo, cập nhật, lọc và quản lý trạng thái bác sĩ theo bệnh viện/chuyên khoa từ API backend.</p>
+                    <p className="muted-text">Tạo, cập nhật, lọc và quản lý trạng thái bác sĩ theo cơ sở y tế và khoa công tác.</p>
                   </div>
                 </div>
 

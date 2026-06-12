@@ -32,7 +32,7 @@ export default function DoctorFilters({
           </div>
 
           <button className="btn btn-primary btn-small doctor-add-button" type="button" onClick={onCreate}>
-            <Stethoscope size={14} /> Add Doctor
+            <Stethoscope size={14} /> Thêm bác sĩ
           </button>
         </div>
 
