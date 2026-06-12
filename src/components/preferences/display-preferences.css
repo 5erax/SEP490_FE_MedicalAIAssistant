@@ -1,0 +1,122 @@
+.display-preferences {
+  position: relative;
+}
+
+.display-preferences-trigger,
+.display-preferences-close,
+.display-preferences-reset {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font: inherit;
+}
+
+.display-preferences-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius);
+  background: var(--paper);
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.display-preferences-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  gap: 14px;
+  width: min(360px, calc(100vw - 28px));
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 18px;
+  box-shadow: var(--shadow-hard-lg), var(--shadow-card);
+}
+
+.display-preferences-panel header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.display-preferences-panel header p,
+.display-preferences-panel header h2 {
+  margin: 0;
+}
+
+.display-preferences-panel header p {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.display-preferences-panel header h2 {
+  margin-top: 3px;
+  font-size: 20px;
+}
+
+.display-preferences-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--paper-soft);
+}
+
+.display-preferences-panel label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.display-preferences-panel select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper-soft);
+  color: var(--ink);
+  padding: 0 12px;
+  font: inherit;
+}
+
+.display-preferences-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--lime);
+  padding: 0 14px;
+  font-weight: 900;
+}
+
+@media (max-width: 760px) {
+  .display-preferences-panel {
+    position: fixed;
+    inset: 76px 14px auto;
+    width: auto;
+    max-height: calc(100svh - 92px);
+    overflow: auto;
+  }
+}
+
+@media (forced-colors: active) {
+  .display-preferences-trigger,
+  .display-preferences-panel,
+  .display-preferences-close,
+  .display-preferences-reset,
+  .display-preferences-panel select {
+    border: 2px solid ButtonText;
+  }
+}

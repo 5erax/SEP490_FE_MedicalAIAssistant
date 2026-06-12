@@ -2,6 +2,7 @@
 @import "./styles/tokens.css";
 @import "./styles/global.css";
 @import "./styles/ux-foundation.css";
+@import "./styles/personalization.css";
 
 :root {
   font-family: "Be Vietnam Pro", system-ui, sans-serif;
@@ -24,7 +25,8 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background: #f7f8f3;
+  background: var(--color-bg);
+  color: var(--color-ink);
 }
 
 button,
