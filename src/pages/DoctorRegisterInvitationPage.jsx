@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { cloneElement, useCallback, useEffect, useRef, useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { replaceRoute } from "../router/navigation";
 import { doctorInvitationsApi, facilityDepartmentsApi } from "../services/api";
@@ -114,6 +114,12 @@ function getApiErrors(error) {
   const errors = error?.payload?.errors;
   if (Array.isArray(errors) && errors.length) return errors.filter(Boolean);
   if (typeof errors === "string" && errors) return [errors];
+  if (errors && typeof errors === "object") {
+    const messages = Object.values(errors)
+      .flatMap((value) => (Array.isArray(value) ? value : [value]))
+      .filter(Boolean);
+    if (messages.length) return messages;
+  }
   return [error?.message || "Không thể hoàn tất đăng ký. Vui lòng thử lại."];
 }
 
@@ -127,23 +133,65 @@ function isInvitationFailure(messages) {
   );
 }
 
-function Field({ label, error, hint, children, className = "" }) {
+function Field({ id, label, error, hint, required = false, children, className = "" }) {
+  const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
+  const describedBy = error ? errorId : hint ? hintId : undefined;
+  const control = cloneElement(children, {
+    id,
+    "aria-describedby": describedBy,
+    "aria-invalid": error ? "true" : undefined,
+  });
+
   return (
-    <label className={`clean-field doctor-invitation-field ${error ? "has-error" : ""} ${className}`.trim()}>
-      <span>{label}</span>
-      {children}
-      {error ? <small className="field-error">{error}</small> : hint ? <small>{hint}</small> : null}
-    </label>
+    <div className={`clean-field doctor-invitation-field ${error ? "has-error" : ""} ${className}`.trim()}>
+      <label htmlFor={id}>
+        {label}
+        {required && <span className="sr-only"> (bắt buộc)</span>}
+      </label>
+      {control}
+      {error ? (
+        <small id={errorId} className="field-error">{error}</small>
+      ) : hint ? (
+        <small id={hintId}>{hint}</small>
+      ) : null}
+    </div>
   );
 }
 
-function StatusPanel({ eyebrow, title, children, tone = "" }) {
+function StatusPanel({ eyebrow, title, children, tone = "", headingRef }) {
   return (
     <section className={`doctor-invitation-status ${tone}`.trim()}>
       <p className="eyebrow">{eyebrow}</p>
-      <h2>{title}</h2>
+      <h2 ref={headingRef} tabIndex="-1">{title}</h2>
       {children}
     </section>
+  );
+}
+
+function ErrorSummary({ errors, summaryRef }) {
+  const entries = Object.entries(errors);
+  if (!entries.length) return null;
+
+  return (
+    <div
+      ref={summaryRef}
+      className="doctor-error-summary"
+      role="alert"
+      aria-labelledby="doctor-error-summary-title"
+      tabIndex="-1"
+    >
+      <strong id="doctor-error-summary-title">
+        Vui lòng kiểm tra {entries.length} trường chưa hợp lệ:
+      </strong>
+      <ul>
+        {entries.map(([field, message]) => (
+          <li key={field}>
+            <a href={`#doctor-${field}`}>{message}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -157,6 +205,8 @@ export default function DoctorRegisterInvitationPage() {
   const [facilityDepartments, setFacilityDepartments] = useState([]);
   const [facilityError, setFacilityError] = useState("");
   const [facilityLoading, setFacilityLoading] = useState(false);
+  const errorSummaryRef = useRef(null);
+  const statusHeadingRef = useRef(null);
   const isLinkedProfile = Boolean(invitation?.isLinkedToExistingDoctorProfile);
 
   const loadFacilityDepartments = useCallback(async () => {
@@ -255,6 +305,11 @@ export default function DoctorRegisterInvitationPage() {
     return () => window.clearTimeout(timeoutId);
   }, [status]);
 
+  useEffect(() => {
+    if (!["invalid", "success"].includes(status)) return;
+    statusHeadingRef.current?.focus();
+  }, [status]);
+
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: "" }));
@@ -267,7 +322,12 @@ export default function DoctorRegisterInvitationPage() {
     setErrors(nextErrors);
     setApiErrors([]);
 
-    if (Object.keys(nextErrors).length || (!isLinkedProfile && !facilityDepartments.length)) return;
+    if (Object.keys(nextErrors).length) {
+      window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
+      return;
+    }
+
+    if (!isLinkedProfile && !facilityDepartments.length) return;
 
     setStatus("submitting");
     try {
@@ -283,9 +343,21 @@ export default function DoctorRegisterInvitationPage() {
   const submitDisabled =
     status === "submitting" ||
     (!isLinkedProfile && (facilityLoading || !facilityDepartments.length));
+  const announcement = status === "validating"
+    ? "Đang kiểm tra lời mời đăng ký."
+    : status === "submitting"
+      ? "Đang gửi thông tin đăng ký."
+      : status === "success"
+        ? "Đăng ký tài khoản bác sĩ thành công."
+        : facilityLoading
+          ? "Đang tải danh sách cơ sở y tế và khoa."
+          : "";
 
   return (
     <main className="landing-page auth-shell-page doctor-invitation-page">
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </div>
       <Navbar />
       <section className="auth-page">
         <div className="container auth-layout auth-layout-clean doctor-invitation-layout">
@@ -314,14 +386,19 @@ export default function DoctorRegisterInvitationPage() {
           <div className="auth-card auth-card-clean doctor-invitation-card">
             {status === "validating" && (
               <StatusPanel eyebrow="Đang xác thực" title="Đang kiểm tra lời mời đăng ký...">
-                <div className="doctor-invitation-loader" aria-label="Đang tải" />
+                <div className="doctor-invitation-loader" aria-hidden="true" />
                 <p>Quá trình này chỉ mất vài giây.</p>
               </StatusPanel>
             )}
 
             {status === "invalid" && (
-              <StatusPanel eyebrow="Lời mời không khả dụng" title="Không thể tiếp tục đăng ký." tone="error">
-                <div className="doctor-api-errors" role="alert">
+              <StatusPanel
+                eyebrow="Lời mời không khả dụng"
+                title="Không thể tiếp tục đăng ký."
+                tone="error"
+                headingRef={statusHeadingRef}
+              >
+                <div className="doctor-api-errors">
                   {apiErrors.map((message) => <p key={message}>{message}</p>)}
                 </div>
                 <p>Vui lòng liên hệ quản trị viên để nhận lời mời mới.</p>
@@ -330,7 +407,12 @@ export default function DoctorRegisterInvitationPage() {
             )}
 
             {status === "success" && (
-              <StatusPanel eyebrow="Đăng ký thành công" title="Tài khoản bác sĩ đã sẵn sàng." tone="success">
+              <StatusPanel
+                eyebrow="Đăng ký thành công"
+                title="Tài khoản bác sĩ đã sẵn sàng."
+                tone="success"
+                headingRef={statusHeadingRef}
+              >
                 <p>Đăng ký tài khoản bác sĩ thành công. Vui lòng đăng nhập để tiếp tục.</p>
                 <p className="doctor-redirect-note">Bạn sẽ được chuyển đến trang đăng nhập trong giây lát.</p>
                 <button className="btn btn-primary" type="button" onClick={() => replaceRoute("/login")}>
@@ -366,12 +448,18 @@ export default function DoctorRegisterInvitationPage() {
                   </div>
                 )}
 
-                <form className="clean-form auth-form-clean doctor-invitation-form" onSubmit={handleSubmit} noValidate>
+                <form
+                  className="clean-form auth-form-clean doctor-invitation-form"
+                  onSubmit={handleSubmit}
+                  noValidate
+                  aria-busy={status === "submitting"}
+                >
+                  <ErrorSummary errors={errors} summaryRef={errorSummaryRef} />
                   <div className="form-two-cols">
-                    <Field label="Email">
+                    <Field id="doctor-email" label="Email">
                       <input type="email" value={invitation?.email || ""} readOnly aria-readonly="true" />
                     </Field>
-                    <Field label="Họ và tên" error={errors.fullName}>
+                    <Field id="doctor-fullName" label="Họ và tên" error={errors.fullName} required>
                       <input
                         value={form.fullName}
                         onChange={(event) => updateField("fullName", event.target.value)}
@@ -379,7 +467,13 @@ export default function DoctorRegisterInvitationPage() {
                         required
                       />
                     </Field>
-                    <Field label="Mật khẩu" error={errors.password} hint="Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.">
+                    <Field
+                      id="doctor-password"
+                      label="Mật khẩu"
+                      error={errors.password}
+                      hint="Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
+                      required
+                    >
                       <input
                         type="password"
                         value={form.password}
@@ -388,7 +482,12 @@ export default function DoctorRegisterInvitationPage() {
                         required
                       />
                     </Field>
-                    <Field label="Nhập lại mật khẩu" error={errors.confirmPassword}>
+                    <Field
+                      id="doctor-confirmPassword"
+                      label="Nhập lại mật khẩu"
+                      error={errors.confirmPassword}
+                      required
+                    >
                       <input
                         type="password"
                         value={form.confirmPassword}
@@ -397,7 +496,12 @@ export default function DoctorRegisterInvitationPage() {
                         required
                       />
                     </Field>
-                    <Field label="Số điện thoại" error={errors.phoneNumber} hint="Không bắt buộc.">
+                    <Field
+                      id="doctor-phoneNumber"
+                      label="Số điện thoại"
+                      error={errors.phoneNumber}
+                      hint="Không bắt buộc."
+                    >
                       <input
                         type="tel"
                         value={form.phoneNumber}
@@ -415,7 +519,7 @@ export default function DoctorRegisterInvitationPage() {
                       </div>
 
                       {facilityError && (
-                        <div className="doctor-facility-warning" role="alert">
+                        <div className="doctor-facility-warning" role="status" aria-atomic="true">
                           <p>{facilityError}</p>
                           <button className="btn btn-ghost" type="button" onClick={loadFacilityDepartments} disabled={facilityLoading}>
                             {facilityLoading ? "Đang tải..." : "Thử tải lại"}
@@ -424,7 +528,13 @@ export default function DoctorRegisterInvitationPage() {
                       )}
 
                       <div className="form-two-cols">
-                        <Field label="Cơ sở y tế - khoa" error={errors.facilityDepartmentId} className="doctor-field-wide">
+                        <Field
+                          id="doctor-facilityDepartmentId"
+                          label="Cơ sở y tế - khoa"
+                          error={errors.facilityDepartmentId}
+                          className="doctor-field-wide"
+                          required
+                        >
                           <select
                             value={form.facilityDepartmentId}
                             onChange={(event) => updateField("facilityDepartmentId", event.target.value)}
@@ -439,7 +549,12 @@ export default function DoctorRegisterInvitationPage() {
                             ))}
                           </select>
                         </Field>
-                        <Field label="Vai trò trong khoa" error={errors.departmentRole}>
+                        <Field
+                          id="doctor-departmentRole"
+                          label="Vai trò trong khoa"
+                          error={errors.departmentRole}
+                          required
+                        >
                           <select
                             value={form.departmentRole}
                             onChange={(event) => updateField("departmentRole", event.target.value)}
@@ -449,18 +564,22 @@ export default function DoctorRegisterInvitationPage() {
                             ))}
                           </select>
                         </Field>
-                        <Field label="Chuyên môn / bằng cấp">
+                        <Field id="doctor-qualification" label="Chuyên môn / bằng cấp">
                           <input
                             value={form.qualification}
                             onChange={(event) => updateField("qualification", event.target.value)}
                             placeholder="Ví dụ: Bác sĩ chuyên khoa I"
                           />
                         </Field>
-                        <Field label="Số năm kinh nghiệm" error={errors.yearsOfExperience}>
+                        <Field
+                          id="doctor-yearsOfExperience"
+                          label="Số năm kinh nghiệm"
+                          error={errors.yearsOfExperience}
+                        >
                           <input
-                            type="number"
-                            min="0"
-                            step="1"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={form.yearsOfExperience}
                             onChange={(event) => updateField("yearsOfExperience", event.target.value)}
                           />

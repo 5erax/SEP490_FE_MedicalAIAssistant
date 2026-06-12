@@ -34,6 +34,7 @@ import SubscriptionPlanTable from "../components/adminSubscriptions/Subscription
 import {
   authApi,
   clearStoredAuth,
+  facilityDepartmentsApi,
   getStoredAuth,
   medicalFacilitiesApi,
   medicalDepartmentsApi,
@@ -142,6 +143,7 @@ export default function AdminWorkspacePage() {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [facilities, setFacilities] = useState([]);
+  const [facilityDepartments, setFacilityDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [aiConfigs, setAIConfigs] = useState([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
@@ -240,7 +242,17 @@ export default function AdminWorkspacePage() {
     },
   ];
   const facilityDepartmentOptions = useMemo(() => {
-    return doctors
+    const activeOptions = facilityDepartments
+      .map((item) => ({
+        id: item.id ?? item.facilityDepartmentId ?? "",
+        facilityId: item.facilityId ?? "",
+        departmentId: item.departmentId ?? "",
+        label: [item.facilityName, item.departmentName].filter(Boolean).join(" - "),
+      }))
+      .filter((item) => item.id)
+      .map((item) => ({ ...item, label: item.label || item.id }));
+
+    const doctorOptions = doctors
       .filter((doctor) => doctor.facilityDepartmentId)
       .map((doctor) => ({
         id: doctor.facilityDepartmentId,
@@ -248,7 +260,11 @@ export default function AdminWorkspacePage() {
         departmentId: doctor.departmentId,
         label: `${doctor.facilityName || "Cơ sở y tế"} - ${doctor.departmentName || "Chuyên khoa"}`,
       }));
-  }, [doctors]);
+
+    return Array.from(
+      new Map([...activeOptions, ...doctorOptions].map((item) => [item.id, item])).values(),
+    );
+  }, [doctors, facilityDepartments]);
 
   const aiTaskTypes = useMemo(() => {
     return Array.from(new Set(aiConfigs.map((config) => config.taskType).filter(Boolean))).sort();
@@ -291,9 +307,19 @@ export default function AdminWorkspacePage() {
       doctorManagementApi.list({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE }),
       aiConfigManagementApi.list(1, DEFAULT_AI_CONFIG_PAGE_SIZE),
       medicalFacilitiesApi.list(1, 100),
+      facilityDepartmentsApi.active(),
       subscriptionPlansApi.list(),
     ])
-      .then(([profileResult, usersResult, departmentResult, doctorResult, aiConfigResult, facilityResult, subscriptionPlanResult]) => {
+      .then(([
+        profileResult,
+        usersResult,
+        departmentResult,
+        doctorResult,
+        aiConfigResult,
+        facilityResult,
+        facilityDepartmentResult,
+        subscriptionPlanResult,
+      ]) => {
         if (!active) return;
 
         if (profileResult.status === "fulfilled") {
@@ -353,6 +379,17 @@ export default function AdminWorkspacePage() {
           setFacilities(facilityResult.value.data?.items ?? facilityResult.value.data ?? []);
         } else {
           console.error("Không thể tải danh sách bệnh viện:", facilityResult.reason);
+        }
+
+        if (facilityDepartmentResult.status === "fulfilled") {
+          const data = facilityDepartmentResult.value.data;
+          setFacilityDepartments(Array.isArray(data) ? data : data?.items ?? []);
+        } else {
+          console.error("Không thể tải danh sách khoa tại cơ sở y tế:", facilityDepartmentResult.reason);
+          setDoctorMessage({
+            type: "warning",
+            text: "Chưa tải được danh sách cơ sở y tế - khoa. Không thể thêm bác sĩ mới.",
+          });
         }
 
         if (subscriptionPlanResult.status === "fulfilled") {

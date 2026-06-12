@@ -16,8 +16,10 @@
 }
 
 .doctor-invitation-status h2 {
+  width: fit-content;
   max-width: 560px;
   margin: 0;
+  color: #111412;
   font-family: var(--display);
   font-size: clamp(28px, 4vw, 42px);
   line-height: 1.1;
@@ -41,7 +43,8 @@
 
 .doctor-profile-summary,
 .doctor-facility-warning,
-.doctor-api-errors {
+.doctor-api-errors,
+.doctor-error-summary {
   border-radius: 10px;
   padding: 14px 16px;
 }
@@ -68,6 +71,29 @@
   border: 1px solid rgba(190, 24, 93, 0.25);
   background: #fff1f2;
   color: #9f1239;
+}
+
+.doctor-error-summary {
+  border: 2px solid #be123c;
+  background: #fff1f2;
+  color: #881337;
+}
+
+.doctor-error-summary:focus {
+  outline: 3px solid var(--teal);
+  outline-offset: 3px;
+}
+
+.doctor-error-summary ul {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.doctor-error-summary a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 .doctor-api-errors p,
@@ -116,6 +142,10 @@
 
 .doctor-invitation-field .field-error {
   color: #be123c;
+}
+
+.doctor-invitation-field > label {
+  font-weight: 700;
 }
 
 .doctor-invitation-field input[readonly] {

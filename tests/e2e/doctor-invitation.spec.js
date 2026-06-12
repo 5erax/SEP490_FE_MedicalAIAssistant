@@ -5,10 +5,8 @@ test.beforeEach(async ({ page }) => {
   await preparePage(page);
 });
 
-test("linked doctor profile submits only account fields", async ({ page }) => {
-  let registerBody = null;
-
-  await page.route("**/api/doctor-invitations/validate?token=linked-token", (route) => route.fulfill({
+async function mockLinkedInvitation(page, token = "linked-token", overrides = {}) {
+  await page.route(`**/api/doctor-invitations/validate?token=${token}`, (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
@@ -19,9 +17,16 @@ test("linked doctor profile submits only account fields", async ({ page }) => {
         isLinkedToExistingDoctorProfile: true,
         doctorName: "BS. Nguyễn Văn A",
         suggestedFullName: "Nguyễn Văn A",
+        ...overrides,
       },
     }),
   }));
+}
+
+test("linked doctor profile submits only account fields", async ({ page }) => {
+  let registerBody = null;
+
+  await mockLinkedInvitation(page);
 
   await page.route("**/api/doctor-invitations/register", async (route) => {
     registerBody = route.request().postDataJSON();
@@ -43,6 +48,7 @@ test("linked doctor profile submits only account fields", async ({ page }) => {
   await page.goto("/register-doctor?token=linked-token", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("BS. Nguyễn Văn A", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Email")).toHaveValue("linked.doctor@example.com");
+  await expect.poll(() => page.evaluate(() => JSON.stringify(localStorage))).not.toContain("linked-token");
 
   await page.getByLabel(/^Mật khẩu/).fill("Password123!");
   await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
@@ -56,6 +62,7 @@ test("linked doctor profile submits only account fields", async ({ page }) => {
     password: "Password123!",
     phoneNumber: "0900000000",
   });
+  await expect(page).toHaveURL(/\/login$/, { timeout: 5_000 });
 });
 
 test("new doctor submits facility department and professional fields", async ({ page }) => {
@@ -128,4 +135,153 @@ test("new doctor submits facility department and professional fields", async ({ 
     qualification: "General Doctor",
     yearsOfExperience: 3,
   });
+});
+
+test("missing token shows an invalid invitation without calling validation", async ({ page }) => {
+  let validationCalls = 0;
+  await page.route("**/api/doctor-invitations/validate**", (route) => {
+    validationCalls += 1;
+    return route.abort();
+  });
+
+  await page.goto("/register-doctor", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("heading", { name: "Không thể tiếp tục đăng ký." })).toBeFocused();
+  await expect(page.getByText("Link đăng ký thiếu invitation token.")).toBeVisible();
+  expect(validationCalls).toBe(0);
+});
+
+for (const invitationCase of [
+  { token: "invalid-token", message: "Invitation link is invalid." },
+  { token: "expired-token", message: "Invitation link has expired." },
+  { token: "used-token", message: "Invitation link has already been used." },
+]) {
+  test(`${invitationCase.token} is rejected before rendering the form`, async ({ page }) => {
+    await page.route(`**/api/doctor-invitations/validate?token=${invitationCase.token}`, (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          isValid: false,
+          message: invitationCase.message,
+        },
+      }),
+    }));
+
+    await page.goto(`/register-doctor?token=${invitationCase.token}`, { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText(invitationCase.message, { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Hoàn tất đăng ký" })).toHaveCount(0);
+  });
+}
+
+test("validation errors are associated with fields and move focus to the summary", async ({ page }) => {
+  let registerCalls = 0;
+  await mockLinkedInvitation(page, "validation-token", {
+    doctorName: null,
+    suggestedFullName: "",
+  });
+  await page.route("**/api/doctor-invitations/register", (route) => {
+    registerCalls += 1;
+    return route.abort();
+  });
+
+  await page.goto("/register-doctor?token=validation-token", { waitUntil: "domcontentloaded" });
+  await page.getByLabel(/^Mật khẩu/).fill("weak");
+  await page.getByLabel("Nhập lại mật khẩu").fill("different");
+  await page.getByLabel("Số điện thoại").fill("123");
+  await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
+
+  const summary = page.locator(".doctor-error-summary");
+  await expect(summary).toBeFocused();
+  await expect(page.getByLabel("Họ và tên")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel(/^Mật khẩu/)).toHaveAttribute(
+    "aria-describedby",
+    "doctor-password-error",
+  );
+  await expect(summary.getByRole("link")).toHaveCount(4);
+  expect(registerCalls).toBe(0);
+});
+
+test("new doctor registration stays blocked without a FacilityDepartment id", async ({ page }) => {
+  await page.route("**/api/doctor-invitations/validate?token=no-facility-token", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        isValid: true,
+        email: "new.doctor@example.com",
+        doctorId: null,
+        isLinkedToExistingDoctorProfile: false,
+      },
+    }),
+  }));
+  await page.route("**/api/facility-departments/active", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: [{
+        departmentId: "not-a-facility-department-id",
+        facilityName: "Bệnh viện A",
+        departmentName: "Khoa Tim mạch",
+      }],
+    }),
+  }));
+
+  await page.goto("/register-doctor?token=no-facility-token", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("status").filter({
+    hasText: "Hệ thống chưa có dữ liệu khoa tại cơ sở y tế.",
+  })).toBeVisible();
+  await expect(page.getByLabel("Cơ sở y tế - khoa")).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Hoàn tất đăng ký" })).toBeDisabled();
+});
+
+test("all backend validation errors are displayed", async ({ page }) => {
+  await mockLinkedInvitation(page, "backend-errors-token");
+  await page.route("**/api/doctor-invitations/register", (route) => route.fulfill({
+    status: 400,
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: false,
+      message: "Register doctor failed.",
+      errors: {
+        Password: [
+          "Passwords must be at least 8 characters.",
+          "Passwords must have at least one digit.",
+        ],
+        PhoneNumber: "Phone number is invalid.",
+      },
+    }),
+  }));
+
+  await page.goto("/register-doctor?token=backend-errors-token", { waitUntil: "domcontentloaded" });
+  await page.getByLabel(/^Mật khẩu/).fill("Password123!");
+  await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
+  await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
+
+  await expect(page.getByText("Passwords must be at least 8 characters.")).toBeVisible();
+  await expect(page.getByText("Passwords must have at least one digit.")).toBeVisible();
+  await expect(page.getByText("Phone number is invalid.")).toBeVisible();
+});
+
+test("expired token during submission switches to the invalid state", async ({ page }) => {
+  await mockLinkedInvitation(page, "expires-on-submit-token");
+  await page.route("**/api/doctor-invitations/register", (route) => route.fulfill({
+    status: 400,
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: false,
+      message: "Register doctor failed.",
+      errors: ["Invitation link has expired."],
+    }),
+  }));
+
+  await page.goto("/register-doctor?token=expires-on-submit-token", { waitUntil: "domcontentloaded" });
+  await page.getByLabel(/^Mật khẩu/).fill("Password123!");
+  await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
+  await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
+
+  await expect(page.getByRole("heading", { name: "Không thể tiếp tục đăng ký." })).toBeFocused();
+  await expect(page.getByText("Invitation link has expired.", { exact: true })).toBeVisible();
 });
