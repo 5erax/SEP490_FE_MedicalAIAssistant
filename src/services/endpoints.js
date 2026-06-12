@@ -10,6 +10,8 @@ const DOCTORS_BASE = "/api/doctors";
 const DOCTOR_INVITATIONS_BASE = "/api/doctor-invitations";
 const PATIENT_PROFILES_BASE = "/api/patient-profiles";
 const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
+const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
+const PAYMENTS_BASE = "/api/payments";
 const AI_CONFIGS_BASE = "/api/ai-configs";
 const WEB_CHATBOT_BASE = "/api/web-chatbot";
 
@@ -62,6 +64,16 @@ export const ENDPOINTS = {
     ACTIVE: `${SUBSCRIPTION_PLANS_BASE}/active`,
     BY_ID: (id) => byId(SUBSCRIPTION_PLANS_BASE, id),
     STATUS: (id) => status(SUBSCRIPTION_PLANS_BASE, id),
+  },
+  USER_SUBSCRIPTIONS: {
+    CHECKOUT: `${USER_SUBSCRIPTIONS_BASE}/checkout`,
+    ME: `${USER_SUBSCRIPTIONS_BASE}/me`,
+    BY_ID: (id) => byId(USER_SUBSCRIPTIONS_BASE, id),
+    CANCEL: (id) => `${byId(USER_SUBSCRIPTIONS_BASE, id)}/cancel`,
+  },
+  PAYMENTS: {
+    BY_ID: (id) => byId(PAYMENTS_BASE, id),
+    PAYOS_STATUS: (orderCode) => `${PAYMENTS_BASE}/payos-status/${encodeURIComponent(orderCode)}`,
   },
   AI_CONFIGS: {
     BASE: AI_CONFIGS_BASE,

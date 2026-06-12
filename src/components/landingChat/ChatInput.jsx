@@ -21,15 +21,17 @@ export default function ChatInput({ value, loading, onChange, onSubmit }) {
     <form className="landing-chat-input" onSubmit={onSubmit}>
       <textarea
         ref={textareaRef}
+        aria-label="Nội dung cần hỏi MediMate AI"
+        name="message"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={handleKeyDown}
         rows={1}
-        placeholder="Hỏi MediMate AI..."
+        placeholder="Hỏi MediMate AI…"
         disabled={loading}
       />
       <button type="submit" disabled={loading || !value.trim()} aria-label="Gửi tin nhắn">
-        {loading ? "..." : "➤"}
+        {loading ? "…" : "➤"}
       </button>
     </form>
   );

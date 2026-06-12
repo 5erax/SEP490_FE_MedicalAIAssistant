@@ -16,6 +16,6 @@ export { facilityDepartmentsApi } from "./facilityDepartmentService";
 export { doctorsApi } from "./doctorService";
 export { doctorInvitationsApi } from "./doctorInvitationService";
 export { patientProfilesApi } from "./patientProfileService";
-export { subscriptionPlansApi } from "./subscriptionService";
+export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";

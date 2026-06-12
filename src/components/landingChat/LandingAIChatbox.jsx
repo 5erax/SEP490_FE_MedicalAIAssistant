@@ -65,7 +65,7 @@ export default function LandingAIChatbox() {
 
   return (
     <>
-      <div className={`landing-ai-chatbox ${open ? "open" : ""}`} aria-hidden={!open}>
+      {open && <div className="landing-ai-chatbox open" role="dialog" aria-label="Trợ lý MediMate AI">
         <header className="landing-chat-header">
           <div>
             <a className="brand" href="/">
@@ -96,7 +96,7 @@ export default function LandingAIChatbox() {
             <a href="/medical-assistant">Trợ lý nâng cao</a>
           </div>
         </footer>
-      </div>
+      </div>}
 
       <FloatingChatButton open={open} onClick={() => setOpen((current) => !current)} />
     </>
