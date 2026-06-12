@@ -8,6 +8,35 @@ const ACCESS_TOKEN = [
 ].join(".");
 
 test.describe("global navigation UX", () => {
+  test("internal links navigate without reloading the document", async ({ page }) => {
+    await preparePage(page);
+    await openRoute(page, "/");
+    await page.evaluate(() => {
+      window.__medimateSpaSentinel = "preserved";
+    });
+
+    await page.locator('a[href="/pricing"]').first().click();
+
+    await expect(page).toHaveURL(/\/pricing$/);
+    await expect.poll(() => page.evaluate(() => window.__medimateSpaSentinel)).toBe("preserved");
+  });
+
+  test("browser back and forward keep the React route in sync", async ({ page }) => {
+    await preparePage(page);
+    await openRoute(page, "/");
+
+    await page.locator('a[href="/pricing"]').first().click();
+    await expect(page).toHaveURL(/\/pricing$/);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+    await page.goForward();
+    await expect(page).toHaveURL(/\/pricing$/);
+    await expect(page.locator(".pricing-hero h1")).toBeVisible();
+  });
+
   test("provides page titles and keyboard skip navigation", async ({ page }) => {
     await preparePage(page);
     await openRoute(page, "/login");

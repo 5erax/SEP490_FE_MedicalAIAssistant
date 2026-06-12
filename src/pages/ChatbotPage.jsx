@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { navigate as goTo } from "../router/navigation";
 import { sendAnthropicMessage } from "../services/anthropicService";
 
 const WELCOME_PROMPTS = [
@@ -7,10 +8,6 @@ const WELCOME_PROMPTS = [
   "Triệu chứng nào cần đi cấp cứu ngay?",
   "Giải thích chỉ số xét nghiệm máu",
 ];
-
-function goTo(path) {
-  window.location.href = path;
-}
 
 function formatTime(date) {
   return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });

@@ -9,6 +9,7 @@ import {
   userSubscriptionsApi,
 } from "../services/api";
 import { useFeedback } from "../components/feedback/feedbackContext";
+import { navigate } from "../router/navigation";
 import { trackUxEvent } from "../utils/analytics";
 
 const FEATURES = [
@@ -153,7 +154,7 @@ function PricingPage() {
   }, []);
 
   function startFreePlan() {
-    window.location.href = "/dashboard";
+    navigate("/dashboard");
   }
 
   async function pollPayment(paymentId) {
@@ -221,7 +222,7 @@ function PricingPage() {
     trackUxEvent("pricing_trial_clicked", { billingCycle, authenticated: Boolean(auth) });
 
     if (!auth) {
-      window.location.href = `/signup?redirect=${encodeURIComponent("/pricing?upgrade=premium")}`;
+      navigate(`/signup?redirect=${encodeURIComponent("/pricing?upgrade=premium")}`);
       return;
     }
 

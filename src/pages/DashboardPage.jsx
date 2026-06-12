@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ClipboardPlus, Send } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
+import { navigate } from "../router/navigation";
 import { getStoredAuth, webChatbotApi } from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
 import "../styles/dashboard.css";
@@ -11,10 +12,6 @@ const PROMPTS = [
   "Khó thở khi leo cầu thang, tim đập nhanh",
   "Đau đầu kéo dài và mất ngủ",
 ];
-
-function navigate(path) {
-  window.location.href = path;
-}
 
 export default function DashboardPage() {
   const auth = getStoredAuth();

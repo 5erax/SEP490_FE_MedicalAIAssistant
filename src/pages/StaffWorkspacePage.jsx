@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Footer } from "../components/landing/PricingSection";
+import { navigate } from "../router/navigation";
 import { authApi, clearStoredAuth, getStoredAuth, medicalDepartmentsApi } from "../services/api";
 import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
@@ -179,7 +180,7 @@ export default function StaffWorkspacePage() {
     } finally {
       clearStoredAuth();
       setAuth(null);
-      window.location.href = "/";
+      navigate("/");
     }
   }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
+import { replaceRoute } from "../router/navigation";
 import { doctorInvitationsApi, facilityDepartmentsApi } from "../services/api";
 import "../styles/doctor-invitation.css";
 
@@ -249,7 +250,7 @@ export default function DoctorRegisterInvitationPage() {
   useEffect(() => {
     if (status !== "success") return undefined;
     const timeoutId = window.setTimeout(() => {
-      window.location.replace("/login");
+      replaceRoute("/login");
     }, 2500);
     return () => window.clearTimeout(timeoutId);
   }, [status]);
@@ -332,7 +333,7 @@ export default function DoctorRegisterInvitationPage() {
               <StatusPanel eyebrow="Đăng ký thành công" title="Tài khoản bác sĩ đã sẵn sàng." tone="success">
                 <p>Đăng ký tài khoản bác sĩ thành công. Vui lòng đăng nhập để tiếp tục.</p>
                 <p className="doctor-redirect-note">Bạn sẽ được chuyển đến trang đăng nhập trong giây lát.</p>
-                <button className="btn btn-primary" type="button" onClick={() => window.location.replace("/login")}>
+                <button className="btn btn-primary" type="button" onClick={() => replaceRoute("/login")}>
                   Đăng nhập ngay
                 </button>
               </StatusPanel>

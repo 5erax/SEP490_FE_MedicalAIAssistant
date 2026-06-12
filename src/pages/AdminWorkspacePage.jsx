@@ -23,6 +23,7 @@ import DoctorFilters from "../components/adminDoctors/DoctorFilters";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import DoctorTable from "../components/adminDoctors/DoctorTable";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
+import { navigate } from "../router/navigation";
 import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
 import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
 import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
@@ -761,7 +762,7 @@ export default function AdminWorkspacePage() {
     } finally {
       clearStoredAuth();
       setAuth(null);
-      window.location.href = "/";
+      navigate("/");
     }
   }
 

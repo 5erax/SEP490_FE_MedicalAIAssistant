@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
+import { replaceRoute } from "../router/navigation";
 import { getStoredAuth } from "../services/api";
 import { getWorkspacePath } from "../utils/roles";
 
@@ -9,7 +10,7 @@ export default function WorkspaceRedirect() {
 
   useEffect(() => {
     if (!auth) return;
-    window.location.replace(getWorkspacePath(auth));
+    replaceRoute(getWorkspacePath(auth));
   }, [auth]);
 
   if (!auth) {

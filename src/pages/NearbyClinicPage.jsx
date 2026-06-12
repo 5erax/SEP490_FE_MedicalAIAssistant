@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { navigate } from "../router/navigation";
 import { medicalFacilitiesApi } from "../services/api";
 
 const FILTERS = [
@@ -199,7 +200,7 @@ function NearbyClinicPage() {
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <aside className="clinic-sidebar">
         <div className="map-page-actions">
-          <button type="button" onClick={() => { window.location.href = "/dashboard"; }}>← Trang chủ</button>
+          <button type="button" onClick={() => navigate("/dashboard")}>← Trang chủ</button>
           <button type="button" onClick={handleLocateMe}>Định vị tôi</button>
         </div>
         <div className="clinic-search">

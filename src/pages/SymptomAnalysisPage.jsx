@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { navigate as goTo } from "../router/navigation";
 
 const QUICK_SYMPTOMS = ["Đau đầu", "Sốt", "Ho", "Đau bụng", "Mệt mỏi", "Khó thở", "Đau họng", "Chóng mặt"];
 
@@ -33,10 +34,6 @@ const DOCTOR_QUESTIONS = [
   "Tôi nên tái khám sau bao lâu?",
   "Có thuốc nào cần tránh trong thời gian này không?",
 ];
-
-function goTo(path) {
-  window.location.href = path;
-}
 
 function SymptomAnalysisPage() {
   const [step, setStep] = useState(1);

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
+import { navigate } from "../router/navigation";
 import { authApi } from "../services/api";
 import { getPostLoginPath, getWorkspacePath } from "../utils/roles";
 import "../styles/auth-refresh.css";
@@ -132,7 +133,7 @@ export function LoginPage() {
     try {
       const response = await authApi.login(form);
       showToast({ type: "success", title: "Đăng nhập thành công", message: "Đang mở không gian phù hợp với tài khoản của bạn." });
-      window.location.href = getSafeRedirectPath() || getPostLoginPath(response.data ?? response);
+      navigate(getSafeRedirectPath() || getPostLoginPath(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -151,7 +152,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.googleLogin(credential);
-      window.location.href = getSafeRedirectPath() || getPostLoginPath(response.data ?? response);
+      navigate(getSafeRedirectPath() || getPostLoginPath(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -267,7 +268,7 @@ export function SignupPage() {
         dateOfBirth: form.dateOfBirth || null,
       });
       showToast({ type: "success", title: "Tạo tài khoản thành công", message: "Đang mở workspace của bạn." });
-      window.location.href = getSafeRedirectPath() || getWorkspacePath(response.data ?? response);
+      navigate(getSafeRedirectPath() || getWorkspacePath(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {

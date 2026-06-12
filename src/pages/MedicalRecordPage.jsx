@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { navigate as goTo } from "../router/navigation";
 
 const MOCK_RECORDS = [
   { id: "r1", title: "Xét nghiệm máu tổng quát", type: "LabResult", date: "2024-08-15", status: "Analyzed", labName: "Bệnh viện Chợ Rẫy" },
@@ -25,10 +26,6 @@ function getStatus(item) {
   if (Number(item.value) > item.max) return ["Cao", "high"];
   if (Number(item.value) < item.min) return ["Thấp", "low"];
   return ["Bình thường", "normal"];
-}
-
-function goTo(path) {
-  window.location.href = path;
 }
 
 function MedicalRecordPage() {

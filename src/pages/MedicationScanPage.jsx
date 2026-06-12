@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { navigate as goTo } from "../router/navigation";
 
 const mockScanResult = {
   medicineName: "Amoxicillin",
@@ -23,10 +24,6 @@ const mockInteraction = {
 
 function delay(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
-function goTo(path) {
-  window.location.href = path;
 }
 
 function MedicationScanPage() {

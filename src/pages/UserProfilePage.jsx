@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useFeedback } from "../components/feedback/feedbackContext";
+import { navigate as go } from "../router/navigation";
 import { getStoredAuth } from "../services/api";
 
 const mockUser = { fullName: "Nguyễn Văn Phước", email: "phuoc@gmail.com", phone: "0901234567", address: "Quận 5, TP.HCM", gender: "Nam", dateOfBirth: "1998-02-14" };
@@ -12,10 +13,6 @@ const tabs = [
 
 function initials(name) {
   return name.split(" ").filter(Boolean).slice(-2).map((part) => part[0]).join("").toUpperCase() || "MM";
-}
-
-function go(path) {
-  window.location.href = path;
 }
 
 export default function UserProfilePage() {

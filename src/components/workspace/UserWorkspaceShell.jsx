@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { navigate as goTo } from "../../router/navigation";
 import { clearStoredAuth, getStoredAuth, hasPremiumAccess } from "../../services/api";
 import "../../styles/user-workspace.css";
 
@@ -33,10 +34,6 @@ const NAV_ITEMS = [
 const FREE_PATHS = new Set(["/dashboard", "/map"]);
 
 const MOBILE_ITEMS = NAV_ITEMS.slice(0, 5);
-
-function goTo(path) {
-  window.location.href = path;
-}
 
 function getCurrentPath() {
   return window.location.pathname;

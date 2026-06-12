@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import SymptomChatBox from "../components/patient/SymptomChatBox";
+import { navigate } from "../router/navigation";
 import {
   authApi,
   clearStoredAuth,
@@ -421,7 +422,7 @@ export default function PatientWorkspacePage() {
     } finally {
       clearStoredAuth();
       setAuth(null);
-      window.location.href = "/";
+      navigate("/");
     }
   }
 
