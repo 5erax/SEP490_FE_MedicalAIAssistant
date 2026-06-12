@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore, ViewTransition } from "react";
 import App from "./App";
 import { getLocationSnapshot, subscribeToLocation } from "./router/navigation";
 
@@ -18,5 +18,23 @@ export default function SpaRoot() {
     return () => window.cancelAnimationFrame(frame);
   }, [location]);
 
-  return <App key={location} />;
+  return (
+    <ViewTransition
+      default="none"
+      enter={{
+        "nav-forward": "nav-forward",
+        "nav-back": "nav-back",
+        "route-fade": "fade-in",
+        default: "none",
+      }}
+      exit={{
+        "nav-forward": "nav-forward",
+        "nav-back": "nav-back",
+        "route-fade": "fade-out",
+        default: "none",
+      }}
+    >
+      <App key={location} />
+    </ViewTransition>
+  );
 }

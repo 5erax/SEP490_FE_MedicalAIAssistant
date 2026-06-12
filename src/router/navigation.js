@@ -1,4 +1,15 @@
+import { addTransitionType, startTransition } from "react";
+
 const NAVIGATION_EVENT = "medimate:navigation";
+const WORKSPACE_PATHS = new Set([
+  "/dashboard",
+  "/profile",
+  "/symptom",
+  "/chat",
+  "/map",
+  "/records",
+  "/medication",
+]);
 
 export function getLocationSnapshot() {
   return `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -18,7 +29,18 @@ function notifyNavigation() {
   window.dispatchEvent(new Event(NAVIGATION_EVENT));
 }
 
-function changeLocation(path, replace) {
+function getTransitionType(destination) {
+  const currentPath = window.location.pathname;
+  const nextPath = destination.pathname;
+
+  if (currentPath === nextPath) return "route-fade";
+  if (nextPath === "/") return "nav-back";
+  if (currentPath === "/") return "nav-forward";
+  if (WORKSPACE_PATHS.has(currentPath) && WORKSPACE_PATHS.has(nextPath)) return "route-fade";
+  return "nav-forward";
+}
+
+function changeLocation(path, replace, transitionType) {
   const destination = new URL(path, window.location.href);
 
   if (destination.origin !== window.location.origin) {
@@ -29,12 +51,24 @@ function changeLocation(path, replace) {
   const nextLocation = `${destination.pathname}${destination.search}${destination.hash}`;
   if (nextLocation === getLocationSnapshot()) return;
 
-  window.history[replace ? "replaceState" : "pushState"](null, "", nextLocation);
-  notifyNavigation();
+  const commitNavigation = () => {
+    window.history[replace ? "replaceState" : "pushState"](null, "", nextLocation);
+    notifyNavigation();
+  };
+
+  if (replace) {
+    commitNavigation();
+    return;
+  }
+
+  startTransition(() => {
+    addTransitionType(transitionType || getTransitionType(destination));
+    commitNavigation();
+  });
 }
 
-export function navigate(path) {
-  changeLocation(path, false);
+export function navigate(path, options = {}) {
+  changeLocation(path, false, options.transitionType);
 }
 
 export function replaceRoute(path) {

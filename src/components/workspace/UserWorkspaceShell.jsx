@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { clearStoredAuth, getStoredAuth, hasPremiumAccess } from "../../services/api";
 import "../../styles/user-workspace.css";
+import DisplayPreferences from "../preferences/DisplayPreferences";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Tư vấn chuyên khoa", icon: LayoutDashboard, hint: "Gợi ý nơi khám" },
@@ -254,6 +255,7 @@ export default function UserWorkspaceShell({ children }) {
           </form>
 
           <div className="user-shell-actions">
+            <DisplayPreferences compact />
             {auth && (
               <button className="icon-btn" type="button" aria-label="Thông báo">
                 <Bell size={18} />

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getStoredAuth } from "../../services/api";
+import DisplayPreferences from "../preferences/DisplayPreferences";
 
 const NAV_LINKS = [
   { name: "Tính năng", href: "/features" },
@@ -45,6 +46,7 @@ export function Navbar() {
         </nav>
 
         <div className="nav-actions">
+          <DisplayPreferences compact />
           {auth ? (
             <a href="/app" className="btn btn-dark">
               Vào app
@@ -70,6 +72,7 @@ export function Navbar() {
 
       {open && (
         <nav id="mobile-navigation" className="container mobile-menu" aria-label="Điều hướng di động">
+          <DisplayPreferences />
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
               {link.name}
