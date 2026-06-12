@@ -65,3 +65,4 @@ Nếu bí mật đã bị commit, hãy thu hồi hoặc xoay vòng bí mật đ�
 ## Miễn trừ
 
 MIT License cung cấp phần mềm theo hiện trạng và không có bảo hành. Chính sách này không biến MediMate AI thành dịch vụ cấp cứu hoặc công cụ thay thế chuyên gia y tế.
+
