@@ -293,6 +293,62 @@
   box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
 }
 
+.admin-operator .facility-department-picker {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid rgba(16, 20, 17, 0.14);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.admin-operator .facility-department-picker legend {
+  padding: 0 5px;
+  color: #101411;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.admin-operator .facility-department-picker > p {
+  margin: 0;
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.admin-operator .facility-department-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.admin-operator .facility-department-options label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  border: 1px solid rgba(16, 20, 17, 0.11);
+  border-radius: 11px;
+  background: #fbfcf7;
+  padding: 9px 11px;
+  color: #101411;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.admin-operator .facility-department-options input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0c5f5e;
+}
+
+.admin-operator .facility-department-options label:focus-within {
+  border-color: rgba(16, 20, 17, 0.72);
+  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
+}
+
 .admin-operator .admin-shell {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
