@@ -6,6 +6,11 @@ const ACCESS_TOKEN = [
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwiZW1haWwiOiJwYXRpZW50QGV4YW1wbGUuY29tIn0",
   "",
 ].join(".");
+const ADMIN_ACCESS_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20ifQ",
+  "",
+].join(".");
 
 test.describe("global navigation UX", () => {
   test("internal links navigate without reloading the document", async ({ page }) => {
@@ -110,5 +115,80 @@ test.describe("global navigation UX", () => {
 
     await expect(page).toHaveURL(/\/map\?search=Ch%E1%BB%A3%20R%E1%BA%ABy$/);
     await expect(page.getByRole("searchbox", { name: "Tìm cơ sở y tế" })).toHaveValue("Chợ Rẫy");
+  });
+
+  test("signup preserves return intent through first-login profile setup", async ({ page }) => {
+    await preparePage(page);
+    await page.route("**/api/authentication/register", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          accessToken: ACCESS_TOKEN,
+          roles: ["Patient"],
+          isFirstLogin: true,
+          email: "new.patient@example.com",
+        },
+      }),
+    }));
+
+    await openRoute(page, "/signup?returnTo=%2Fsymptom");
+    await page.getByLabel("Email").fill("new.patient@example.com");
+    await page.getByLabel("Tên đăng nhập").fill("new-patient");
+    await page.getByLabel("Tên hiển thị").fill("New Patient");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("Example123!");
+    await page.getByLabel("Nhập lại mật khẩu").fill("Example123!");
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Tạo tài khoản" }).click();
+
+    await expect(page).toHaveURL(/\/patient\/profile\/setup\?returnTo=%2Fsymptom$/);
+  });
+
+  test("rejects external return intent after login", async ({ page }) => {
+    await preparePage(page);
+    await page.route("**/api/authentication/login", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          accessToken: ACCESS_TOKEN,
+          roles: ["Patient"],
+          isFirstLogin: false,
+          email: "patient@example.com",
+        },
+      }),
+    }));
+
+    await openRoute(page, "/login?returnTo=https%3A%2F%2Fevil.example");
+    await page.getByLabel("Email").fill("patient@example.com");
+    await page.getByLabel("Mật khẩu").fill("Example123!");
+    await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+    await expect(page).toHaveURL(/\/dashboard$/);
+  });
+
+  test("admin sections support deep links and browser history", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        email: "admin@example.com",
+        roles: ["Admin"],
+      }));
+    }, ADMIN_ACCESS_TOKEN);
+    await page.route("**/api/**", (route) => route.abort());
+
+    await openRoute(page, "/admin/users");
+    await expect(page).toHaveURL(/\/app\/admin\/users$/);
+    await expect(page.getByRole("heading", { name: "Tài khoản chờ duyệt" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Bác sĩ", exact: true }).click();
+    await expect(page).toHaveURL(/\/app\/admin\/doctors$/);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/app\/admin\/users$/);
+    await expect(page.getByRole("heading", { name: "Tài khoản chờ duyệt" })).toBeVisible();
   });
 });

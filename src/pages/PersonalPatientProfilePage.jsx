@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { navigate } from "../router/navigation";
+import { getReturnToFromSearch } from "../router/returnIntent";
 import { authApi, getStoredAuth, patientProfilesApi, setStoredAuth } from "../services/api";
 import { savePatientProfileSetup } from "../services/patientProfileSetup";
 import { getWorkspacePath } from "../utils/roles";
@@ -200,7 +201,7 @@ export default function PersonalPatientProfilePage() {
       setMessage({ type: "success", text: "Đã hoàn thiện hồ sơ sức khỏe. MediMate đang mở không gian cá nhân của bạn..." });
 
       window.setTimeout(() => {
-        navigate(getWorkspacePath(nextAuth));
+        navigate(getReturnToFromSearch() || getWorkspacePath(nextAuth));
       }, 900);
     } catch (error) {
       setMessage({ type: "error", text: error.message });

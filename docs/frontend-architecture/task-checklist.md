@@ -30,11 +30,23 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Thêm nhật ký thay đổi để commit và PR có thể đối chiếu.
 - [x] Liên kết checklist từ mục lục tài liệu frontend.
 
+### FE-ROUTE-001: Chuẩn hóa route và luồng quay lại tác vụ
+
+- [x] Xác nhận phạm vi và tiêu chí hoàn thành từ navigation roadmap.
+- [x] Kiểm tra `App.jsx`, navigation, auth/signup, pricing và admin workspace.
+- [x] Tạo route registry cho title, access, alias và admin section.
+- [x] Chuẩn hóa `returnTo` nội bộ cho login, signup, profile setup và premium gate.
+- [x] Thêm URL riêng cho admin section và hỗ trợ refresh, Back/Forward.
+- [x] Bổ sung route, auth redirect và admin deep-link tests.
+- [x] Chạy lint, build, route tests và accessibility smoke tests.
+- [x] Cập nhật nhật ký thay đổi với file, tác động và kết quả kiểm tra.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
 | --- | --- | --- | --- | --- |
 | 2026-06-13 | FE-DOC-001 | Hoàn thành | Thêm checklist nhiệm vụ frontend và liên kết từ mục lục tài liệu | Kiểm tra Markdown, link tương đối và `git diff --check` |
+| 2026-06-13 | FE-ROUTE-001 | Hoàn thành | Thêm route registry; bảo vệ `returnTo`; giữ tác vụ qua signup/profile/PayOS; canonical alias; thêm URL cho 8 admin section | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 10 passed; accessibility 14 passed; browser kiểm tra admin alias và premium gate |
 
 ## Mẫu cập nhật
 

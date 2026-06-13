@@ -25,6 +25,7 @@ import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import DoctorTable from "../components/adminDoctors/DoctorTable";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
 import { navigate } from "../router/navigation";
+import { getAdminSectionPath } from "../router/routes";
 import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
 import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
 import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
@@ -147,7 +148,7 @@ function EmptyAuth() {
   );
 }
 
-export default function AdminWorkspacePage() {
+export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const { confirmAction, showToast } = useFeedback();
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [profile, setProfile] = useState(null);
@@ -161,7 +162,7 @@ export default function AdminWorkspacePage() {
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const [doctorPageInfo, setDoctorPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
-  const [activeSection, setActiveSection] = useState("overview");
+  const activeSection = initialSection;
   const [search, setSearch] = useState("");
   const [doctorFilters, setDoctorFilters] = useState(EMPTY_DOCTOR_FILTERS);
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
@@ -201,6 +202,10 @@ export default function AdminWorkspacePage() {
   const roles = useMemo(() => normalizeRoles(profile?.roles ?? auth?.roles ?? []), [auth, profile]);
   const isAdmin = hasRole(roles, "admin");
   const displayName = profile?.name || profile?.displayName || auth?.email?.split("@")[0] || "Admin";
+
+  function openSection(section) {
+    navigate(getAdminSectionPath(section));
+  }
 
   const pendingApprovalUsers = useMemo(() => {
     return users.filter((user) => Number(user.status) !== 1 && !user.isDeleted);
@@ -867,7 +872,7 @@ export default function AdminWorkspacePage() {
       departmentName: department.departmentName ?? "",
       description: department.description ?? "",
     });
-    setActiveSection("departments");
+    openSection("departments");
   }
 
   function resetDepartmentForm() {
@@ -1086,35 +1091,35 @@ export default function AdminWorkspacePage() {
             </a>
 
             <nav className="admin-nav" aria-label="Điều hướng admin">
-              <button className={activeSection === "overview" ? "active" : ""} type="button" onClick={() => setActiveSection("overview")}>
+              <button className={activeSection === "overview" ? "active" : ""} type="button" onClick={() => openSection("overview")}>
                 <span className="admin-nav-icon"><LayoutDashboard size={17} /></span>
                 <span>Tổng quan</span>
               </button>
-              <button className={activeSection === "users" ? "active" : ""} type="button" onClick={() => setActiveSection("users")}>
+              <button className={activeSection === "users" ? "active" : ""} type="button" onClick={() => openSection("users")}>
                 <span className="admin-nav-icon"><Users size={17} /></span>
                 <span>Người dùng</span>
               </button>
-              <button className={activeSection === "doctors" ? "active" : ""} type="button" onClick={() => setActiveSection("doctors")}>
+              <button className={activeSection === "doctors" ? "active" : ""} type="button" onClick={() => openSection("doctors")}>
                 <span className="admin-nav-icon"><Stethoscope size={17} /></span>
                 <span>Bác sĩ</span>
               </button>
-              <button className={activeSection === "ai-configs" ? "active" : ""} type="button" onClick={() => setActiveSection("ai-configs")}>
+              <button className={activeSection === "ai-configs" ? "active" : ""} type="button" onClick={() => openSection("ai-configs")}>
                 <span className="admin-nav-icon"><BrainCircuit size={17} /></span>
                 <span>AI Config</span>
               </button>
-              <button className={activeSection === "subscriptions" ? "active" : ""} type="button" onClick={() => setActiveSection("subscriptions")}>
+              <button className={activeSection === "subscriptions" ? "active" : ""} type="button" onClick={() => openSection("subscriptions")}>
                 <span className="admin-nav-icon"><CreditCard size={17} /></span>
                 <span>Gói dịch vụ</span>
               </button>
-              <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => setActiveSection("staff")}>
+              <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => openSection("staff")}>
                 <span className="admin-nav-icon"><UserPlus size={17} /></span>
                 <span>Tạo staff</span>
               </button>
-              <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => setActiveSection("departments")}>
+              <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => openSection("departments")}>
                 <span className="admin-nav-icon"><Building2 size={17} /></span>
                 <span>Chuyên khoa</span>
               </button>
-              <button className={activeSection === "facilities" ? "active" : ""} type="button" onClick={() => setActiveSection("facilities")}>
+              <button className={activeSection === "facilities" ? "active" : ""} type="button" onClick={() => openSection("facilities")}>
                 <span className="admin-nav-icon"><Building2 size={17} /></span>
                 <span>Cơ sở y tế</span>
               </button>
@@ -1274,7 +1279,7 @@ export default function AdminWorkspacePage() {
                   </div>
                   <div className="admin-operation-list">
                     {operations.map((item) => (
-                      <button className={`admin-operation admin-operation-${item.tone}`} type="button" key={item.title} onClick={() => setActiveSection(item.section)}>
+                      <button className={`admin-operation admin-operation-${item.tone}`} type="button" key={item.title} onClick={() => openSection(item.section)}>
                         <span className="admin-operation-icon">{item.icon}</span>
                         <div>
                           <strong>{item.title}</strong>

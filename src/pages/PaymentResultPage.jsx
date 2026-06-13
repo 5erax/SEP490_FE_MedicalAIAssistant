@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, CircleX, Clock3, CreditCard, LoaderCircle, RefreshCw } from "lucide-react";
 import { authApi, getStoredAuth, paymentsApi, userSubscriptionsApi } from "../services/api";
 import { navigate } from "../router/navigation";
+import {
+  clearRememberedReturnTo,
+  getRememberedReturnTo,
+  getReturnToFromSearch,
+} from "../router/returnIntent";
 import "../styles/payment-result.css";
 
 const MAX_STATUS_CHECKS = 12;
@@ -76,6 +81,7 @@ export default function PaymentResultPage({ expectedResult }) {
   const [message, setMessage] = useState("");
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
+  const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
   const view = getView(status, expectedResult);
   const Icon = view.icon;
 
@@ -151,6 +157,15 @@ export default function PaymentResultPage({ expectedResult }) {
   const success = status === "success";
   const settled = success || status === "cancelled";
 
+  function continueAfterPayment() {
+    if (success && returnTo) {
+      clearRememberedReturnTo();
+      navigate(returnTo);
+      return;
+    }
+    navigate("/dashboard");
+  }
+
   return (
     <main className={`payment-result-page payment-result-${view.tone}`}>
       <div className="payment-result-glow" aria-hidden="true" />
@@ -180,8 +195,8 @@ export default function PaymentResultPage({ expectedResult }) {
         <div className="payment-result-actions">
           {success ? (
             <>
-              <button className="payment-result-primary" type="button" onClick={() => navigate("/dashboard")}>
-                Bắt đầu sử dụng <ArrowRight size={17} />
+              <button className="payment-result-primary" type="button" onClick={continueAfterPayment}>
+                {returnTo ? "Tiếp tục tác vụ" : "Bắt đầu sử dụng"} <ArrowRight size={17} />
               </button>
               <button type="button" onClick={() => navigate("/pricing#current-subscription")}>Xem gói hiện tại</button>
             </>

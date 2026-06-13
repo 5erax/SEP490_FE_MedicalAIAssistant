@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
+import { withReturnTo } from "../../router/returnIntent";
 import { clearStoredAuth, getStoredAuth, hasPremiumAccess } from "../../services/api";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
@@ -79,6 +80,7 @@ export default function UserWorkspaceShell({ children }) {
       noticeTriggerRef.current = trigger ?? document.activeElement;
       setNotice({
         title: "Cần nâng cấp MediMate+",
+        returnTo: pathToOpen,
         text: auth
           ? "Tính năng này nằm trong gói nâng cao. Bạn có thể xem bảng giá hoặc quay lại tư vấn chuyên khoa."
           : "Bạn vẫn có thể dùng tư vấn chuyên khoa và bản đồ. Những phần lưu hồ sơ, y bạ, thuốc và chat nâng cao cần đăng ký rồi nâng cấp MediMate+.",
@@ -95,8 +97,9 @@ export default function UserWorkspaceShell({ children }) {
   }
 
   function openPricingFromNotice() {
+    const returnTo = notice?.returnTo;
     setNotice(null);
-    goTo("/pricing?from=locked");
+    goTo(withReturnTo("/pricing", returnTo));
   }
 
   function handleSearch(event) {
