@@ -18,7 +18,7 @@ import MedicalAssistantPage from "./pages/MedicalAssistantPage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
 import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
-import { getStoredAuth, hasPremiumAccess } from "./services/api";
+import { getStoredAuth } from "./services/api";
 import {
   ChangePasswordPage,
   ForgotPasswordPage,
@@ -26,8 +26,8 @@ import {
   SignupPage,
 } from "./pages/AuthPages";
 import { getCanonicalPath, resolveRoute } from "./router/routes";
-import { withReturnTo } from "./router/returnIntent";
 import { replaceRoute } from "./router/navigation";
+import { resolveRouteAccess } from "./router/access";
 
 function userWorkspace(page) {
   return <UserWorkspaceShell>{page}</UserWorkspaceShell>;
@@ -38,38 +38,7 @@ function RouteRedirect({ to, children }) {
     replaceRoute(to);
   }, [to]);
 
-  return children;
-}
-
-function redirectToLogin(path) {
-  const destination = withReturnTo("/login", path);
-  return (
-    <RouteRedirect to={destination}>
-      <LoginPage />
-    </RouteRedirect>
-  );
-}
-
-function redirectToPricing(path) {
-  const destination = withReturnTo("/pricing", path);
-  return (
-    <RouteRedirect to={destination}>
-      <PricingPage />
-    </RouteRedirect>
-  );
-}
-
-function requireAuth(page, path) {
-  const auth = getStoredAuth();
-  if (!auth) return redirectToLogin(path);
-  return page;
-}
-
-function requirePremium(page, path) {
-  const auth = getStoredAuth();
-  if (!auth) return redirectToLogin(path);
-  if (!hasPremiumAccess(auth)) return redirectToPricing(path);
-  return page;
+  return children ?? null;
 }
 
 function App() {
@@ -89,11 +58,10 @@ function App() {
   if (!route) return <StaticPage path={path} />;
 
   const requestedPath = canonicalPath || path;
-  const guard = (page) => {
-    if (route.access === "auth") return requireAuth(page, requestedPath);
-    if (route.access === "premium") return requirePremium(page, requestedPath);
-    return page;
-  };
+  const redirectPath = resolveRouteAccess(route, getStoredAuth(), requestedPath);
+  if (redirectPath) {
+    return <RouteRedirect to={redirectPath} />;
+  }
 
   switch (route.id) {
     case "public.home":
@@ -112,19 +80,19 @@ function App() {
     case "auth.change-password":
       return <ChangePasswordPage />;
     case "patient.dashboard":
-      return guard(userWorkspace(<DashboardPage />));
+      return userWorkspace(<DashboardPage />);
     case "patient.profile":
-      return guard(userWorkspace(<UserProfilePage />));
+      return userWorkspace(<UserProfilePage />);
     case "patient.symptom":
-      return guard(userWorkspace(<SymptomAnalysisPage />));
+      return userWorkspace(<SymptomAnalysisPage />);
     case "patient.chat":
-      return guard(userWorkspace(<ChatbotPage />));
+      return userWorkspace(<ChatbotPage />);
     case "public.map":
       return <NearbyClinicPage />;
     case "patient.records":
-      return guard(userWorkspace(<MedicalRecordPage />));
+      return userWorkspace(<MedicalRecordPage />);
     case "patient.medication":
-      return guard(userWorkspace(<MedicationScanPage />));
+      return userWorkspace(<MedicationScanPage />);
     case "public.pricing":
       return <PricingPage />;
     case "payment.return":
@@ -138,7 +106,7 @@ function App() {
     case "assistant.main":
       return <MedicalAssistantPage />;
     case "patient.profile-setup":
-      return guard(<PersonalPatientProfilePage />);
+      return <PersonalPatientProfilePage />;
     default:
       if (route.id.startsWith("admin.")) {
         return <AdminWorkspacePage initialSection={route.section} />;

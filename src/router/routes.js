@@ -20,6 +20,17 @@ const ADMIN_SECTION_TITLES = {
   facilities: "Quản lý cơ sở y tế",
 };
 
+const ADMIN_SECTION_NAVIGATION = {
+  overview: { label: "Tổng quan", icon: "dashboard" },
+  users: { label: "Người dùng", icon: "users" },
+  doctors: { label: "Bác sĩ", icon: "doctor" },
+  "ai-configs": { label: "AI Config", icon: "ai" },
+  subscriptions: { label: "Gói dịch vụ", icon: "subscription" },
+  staff: { label: "Tạo staff", icon: "staff" },
+  departments: { label: "Chuyên khoa", icon: "facility" },
+  facilities: { label: "Cơ sở y tế", icon: "facility" },
+};
+
 const BASE_ROUTES = [
   { id: "public.home", path: "/", title: "MediMate AI | Trợ lý sức khỏe", access: "public" },
   { id: "auth.login", path: "/login", title: "Đăng nhập | MediMate AI", access: "public", returnable: false },
@@ -40,22 +51,84 @@ const BASE_ROUTES = [
     title: "Tư vấn chuyên khoa | MediMate AI",
     access: "public",
     shell: "patient",
+    profileSetup: true,
+    navigation: {
+      shell: "patient",
+      label: "Tư vấn chuyên khoa",
+      hint: "Gợi ý nơi khám",
+      icon: "dashboard",
+      order: 10,
+      mobile: true,
+    },
     aliases: [
       { path: "/account", access: "auth" },
       { path: "/app/patient", access: "auth" },
     ],
   },
-  { id: "patient.profile", path: "/profile", title: "Hồ sơ cá nhân | MediMate AI", access: "premium", shell: "patient" },
-  { id: "patient.symptom", path: "/symptom", title: "Phân tích triệu chứng | MediMate AI", access: "premium", shell: "patient" },
-  { id: "patient.chat", path: "/chat", title: "Chat với trợ lý AI | MediMate AI", access: "premium", shell: "patient" },
-  { id: "public.map", path: "/map", title: "Tìm cơ sở y tế | MediMate AI", access: "public" },
-  { id: "patient.records", path: "/records", title: "Hồ sơ y tế | MediMate AI", access: "premium", shell: "patient" },
-  { id: "patient.medication", path: "/medication", title: "Kiểm tra thuốc | MediMate AI", access: "premium", shell: "patient" },
+  {
+    id: "patient.symptom",
+    path: "/symptom",
+    title: "Phân tích triệu chứng | MediMate AI",
+    access: "premium",
+    shell: "patient",
+    profileSetup: true,
+    navigation: { shell: "patient", label: "Triệu chứng", hint: "Phân tích nhanh", icon: "symptom", order: 20, mobile: true },
+  },
+  {
+    id: "patient.chat",
+    path: "/chat",
+    title: "Chat với trợ lý AI | MediMate AI",
+    access: "premium",
+    shell: "patient",
+    profileSetup: true,
+    navigation: { shell: "patient", label: "Chat AI", hint: "Hỏi trợ lý", icon: "chat", order: 30, mobile: true },
+  },
+  {
+    id: "public.map",
+    path: "/map",
+    title: "Tìm cơ sở y tế | MediMate AI",
+    access: "public",
+    navigation: { shell: "patient", label: "Bản đồ", hint: "Cơ sở gần bạn", icon: "map", order: 40, mobile: true },
+  },
+  {
+    id: "patient.profile",
+    path: "/profile",
+    title: "Hồ sơ cá nhân | MediMate AI",
+    access: "premium",
+    shell: "patient",
+    profileSetup: true,
+    navigation: { shell: "patient", label: "Hồ sơ", hint: "Thông tin cá nhân", icon: "profile", order: 50, mobile: true },
+  },
+  {
+    id: "patient.records",
+    path: "/records",
+    title: "Hồ sơ y tế | MediMate AI",
+    access: "premium",
+    shell: "patient",
+    profileSetup: true,
+    navigation: { shell: "patient", label: "Y bạ", hint: "Kết quả & tài liệu", icon: "records", order: 60 },
+  },
+  {
+    id: "patient.medication",
+    path: "/medication",
+    title: "Kiểm tra thuốc | MediMate AI",
+    access: "premium",
+    shell: "patient",
+    profileSetup: true,
+    navigation: { shell: "patient", label: "Thuốc", hint: "Quét & kiểm tra", icon: "medication", order: 70 },
+  },
   { id: "public.pricing", path: "/pricing", title: "Bảng giá | MediMate AI", access: "public" },
   { id: "payment.return", path: "/payment/return", title: "Thanh toán thành công | MediMate AI", access: "public", returnable: false },
   { id: "payment.cancel", path: "/payment/cancel", title: "Thanh toán đã hủy | MediMate AI", access: "public", returnable: false },
   { id: "workspace.redirect", path: "/app", title: "Không gian làm việc | MediMate AI", access: "public", returnable: false },
-  { id: "workspace.staff", path: "/app/staff", title: "Không gian nhân viên | MediMate AI", access: "role", roles: ["staff"] },
+  {
+    id: "workspace.staff",
+    path: "/app/staff",
+    title: "Không gian nhân viên | MediMate AI",
+    access: "role",
+    roles: ["staff", "admin"],
+    navigation: { shell: "staff", label: "Tổng quan công việc", icon: "dashboard", order: 10 },
+  },
   {
     id: "assistant.main",
     path: "/medical-assistant",
@@ -87,6 +160,11 @@ const ADMIN_ROUTES = ADMIN_SECTIONS.map((section) => ({
   access: "role",
   roles: ["admin"],
   section,
+  navigation: {
+    shell: "admin",
+    ...ADMIN_SECTION_NAVIGATION[section],
+    order: (ADMIN_SECTIONS.indexOf(section) + 1) * 10,
+  },
   aliases: section === "overview"
     ? ["/admin"]
     : section === "users"
@@ -121,4 +199,17 @@ export function getCanonicalPath(route) {
 
 export function getAdminSectionPath(section) {
   return section === "overview" ? "/app/admin" : `/app/admin/${section}`;
+}
+
+export function getNavigationModel(shell) {
+  return ROUTES
+    .filter((route) => route.navigation?.shell === shell)
+    .sort((left, right) => left.navigation.order - right.navigation.order)
+    .map((route) => ({
+      id: route.id,
+      path: route.path,
+      access: route.access,
+      roles: route.roles ?? [],
+      ...route.navigation,
+    }));
 }

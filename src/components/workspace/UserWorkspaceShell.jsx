@@ -19,23 +19,27 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { withReturnTo } from "../../router/returnIntent";
+import { getNavigationModel } from "../../router/routes";
 import { clearStoredAuth, getStoredAuth, hasPremiumAccess } from "../../services/api";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 
-const NAV_ITEMS = [
-  { path: "/dashboard", label: "Tư vấn chuyên khoa", icon: LayoutDashboard, hint: "Gợi ý nơi khám" },
-  { path: "/symptom", label: "Triệu chứng", icon: Activity, hint: "Phân tích nhanh" },
-  { path: "/chat", label: "Chat AI", icon: Bot, hint: "Hỏi trợ lý" },
-  { path: "/map", label: "Bản đồ", icon: MapPin, hint: "Cơ sở gần bạn" },
-  { path: "/profile", label: "Hồ sơ", icon: UserRound, hint: "Thông tin cá nhân" },
-  { path: "/records", label: "Y bạ", icon: FileText, hint: "Kết quả & tài liệu" },
-  { path: "/medication", label: "Thuốc", icon: Pill, hint: "Quét & kiểm tra" },
-];
+const PATIENT_ICONS = {
+  dashboard: LayoutDashboard,
+  symptom: Activity,
+  chat: Bot,
+  map: MapPin,
+  profile: UserRound,
+  records: FileText,
+  medication: Pill,
+};
 
-const FREE_PATHS = new Set(["/dashboard", "/map"]);
+const NAV_ITEMS = getNavigationModel("patient").map((item) => ({
+  ...item,
+  icon: PATIENT_ICONS[item.icon],
+}));
 
-const MOBILE_ITEMS = NAV_ITEMS.slice(0, 5);
+const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
 
 function getCurrentPath() {
   return window.location.pathname;
@@ -72,7 +76,8 @@ export default function UserWorkspaceShell({ children }) {
   }
 
   function isLocked(pathToOpen) {
-    return !FREE_PATHS.has(pathToOpen) && !premiumAccess;
+    const item = NAV_ITEMS.find((entry) => entry.path === pathToOpen);
+    return item?.access === "premium" && !premiumAccess;
   }
 
   function handleLockedNav(pathToOpen, trigger) {

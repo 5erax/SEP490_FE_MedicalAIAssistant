@@ -11,6 +11,11 @@ const ADMIN_ACCESS_TOKEN = [
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20ifQ",
   "",
 ].join(".");
+const STAFF_ACCESS_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJTdGFmZiIsImVtYWlsIjoic3RhZmZAZXhhbXBsZS5jb20ifQ",
+  "",
+].join(".");
 
 test.describe("global navigation UX", () => {
   test("internal links navigate without reloading the document", async ({ page }) => {
@@ -190,5 +195,47 @@ test.describe("global navigation UX", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/app\/admin\/users$/);
     await expect(page.getByRole("heading", { name: "Tài khoản chờ duyệt" })).toBeVisible();
+  });
+
+  test("first-login patient enters profile setup before protected routes", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+        isFirstLogin: true,
+      }));
+    }, ACCESS_TOKEN);
+
+    await openRoute(page, "/symptom");
+    await expect(page).toHaveURL(/\/patient\/profile\/setup\?returnTo=%2Fsymptom$/);
+    await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ sức khỏe" })).toBeVisible();
+  });
+
+  test("permission matrix routes each role to an allowed workspace", async ({ page }) => {
+    await preparePage(page);
+    await page.goto("/");
+    await page.evaluate((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
+    await openRoute(page, "/app/admin");
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.evaluate(() => localStorage.clear());
+    await page.evaluate((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Staff"],
+      }));
+    }, STAFF_ACCESS_TOKEN);
+    await page.goto("/app/admin");
+    await expect(page).toHaveURL(/\/app\/staff$/);
+
+    await page.evaluate(() => localStorage.clear());
+    await page.goto("/app/admin");
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fadmin$/);
   });
 });

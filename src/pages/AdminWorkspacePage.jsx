@@ -25,7 +25,7 @@ import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import DoctorTable from "../components/adminDoctors/DoctorTable";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
 import { navigate } from "../router/navigation";
-import { getAdminSectionPath } from "../router/routes";
+import { getAdminSectionPath, getNavigationModel } from "../router/routes";
 import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
 import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
 import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
@@ -85,6 +85,16 @@ const EMPTY_AI_CONFIG_FILTERS = {
   environment: "",
 };
 const DEFAULT_AI_CONFIG_PAGE_SIZE = 10;
+const ADMIN_NAV_ICONS = {
+  dashboard: LayoutDashboard,
+  users: Users,
+  doctor: Stethoscope,
+  ai: BrainCircuit,
+  subscription: CreditCard,
+  staff: UserPlus,
+  facility: Building2,
+};
+const ADMIN_NAV_ITEMS = getNavigationModel("admin");
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -1091,38 +1101,21 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             </a>
 
             <nav className="admin-nav" aria-label="Điều hướng admin">
-              <button className={activeSection === "overview" ? "active" : ""} type="button" onClick={() => openSection("overview")}>
-                <span className="admin-nav-icon"><LayoutDashboard size={17} /></span>
-                <span>Tổng quan</span>
-              </button>
-              <button className={activeSection === "users" ? "active" : ""} type="button" onClick={() => openSection("users")}>
-                <span className="admin-nav-icon"><Users size={17} /></span>
-                <span>Người dùng</span>
-              </button>
-              <button className={activeSection === "doctors" ? "active" : ""} type="button" onClick={() => openSection("doctors")}>
-                <span className="admin-nav-icon"><Stethoscope size={17} /></span>
-                <span>Bác sĩ</span>
-              </button>
-              <button className={activeSection === "ai-configs" ? "active" : ""} type="button" onClick={() => openSection("ai-configs")}>
-                <span className="admin-nav-icon"><BrainCircuit size={17} /></span>
-                <span>AI Config</span>
-              </button>
-              <button className={activeSection === "subscriptions" ? "active" : ""} type="button" onClick={() => openSection("subscriptions")}>
-                <span className="admin-nav-icon"><CreditCard size={17} /></span>
-                <span>Gói dịch vụ</span>
-              </button>
-              <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => openSection("staff")}>
-                <span className="admin-nav-icon"><UserPlus size={17} /></span>
-                <span>Tạo staff</span>
-              </button>
-              <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => openSection("departments")}>
-                <span className="admin-nav-icon"><Building2 size={17} /></span>
-                <span>Chuyên khoa</span>
-              </button>
-              <button className={activeSection === "facilities" ? "active" : ""} type="button" onClick={() => openSection("facilities")}>
-                <span className="admin-nav-icon"><Building2 size={17} /></span>
-                <span>Cơ sở y tế</span>
-              </button>
+              {ADMIN_NAV_ITEMS.map((item) => {
+                const Icon = ADMIN_NAV_ICONS[item.icon];
+                const section = item.id.replace("admin.", "");
+                return (
+                  <button
+                    className={activeSection === section ? "active" : ""}
+                    type="button"
+                    key={item.id}
+                    onClick={() => openSection(section)}
+                  >
+                    <span className="admin-nav-icon"><Icon size={17} /></span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </nav>
 
             <div className="admin-session-card">

@@ -41,12 +41,24 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Chạy lint, build, route tests và accessibility smoke tests.
 - [x] Cập nhật nhật ký thay đổi với file, tác động và kết quả kiểm tra.
 
+### FE-ROUTE-002: Hợp nhất guard pipeline và navigation model
+
+- [x] Xác nhận hai hạng mục P0 còn lại trong navigation roadmap.
+- [x] Kiểm tra role/profile guard và navigation đang khai báo trong page/component.
+- [x] Thực thi auth, role, first-login và premium guard từ route metadata.
+- [x] Tạo navigation model dùng chung cho Patient, Staff và Admin.
+- [x] Chuyển sidebar Patient/Admin sang dữ liệu từ registry, không đổi giao diện.
+- [x] Bổ sung permission matrix và first-login route tests.
+- [x] Chạy lint, build, route, navigation và accessibility tests.
+- [x] Cập nhật nhật ký thay đổi với file, tác động và kết quả kiểm tra.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
 | --- | --- | --- | --- | --- |
 | 2026-06-13 | FE-DOC-001 | Hoàn thành | Thêm checklist nhiệm vụ frontend và liên kết từ mục lục tài liệu | Kiểm tra Markdown, link tương đối và `git diff --check` |
 | 2026-06-13 | FE-ROUTE-001 | Hoàn thành | Thêm route registry; bảo vệ `returnTo`; giữ tác vụ qua signup/profile/PayOS; canonical alias; thêm URL cho 8 admin section | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 10 passed; accessibility 14 passed; browser kiểm tra admin alias và premium gate |
+| 2026-06-13 | FE-ROUTE-002 | Hoàn thành | Hợp nhất auth/role/first-login/premium guard; tạo navigation model Patient/Staff/Admin; chuyển sidebar Patient/Admin sang route registry; bổ sung permission matrix | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 12 passed; accessibility 14 passed; browser kiểm tra admin guard và return intent |
 
 ## Mẫu cập nhật
 
