@@ -1,4 +1,8 @@
-# Roadmap nang cap UI/UX
+# Roadmap nâng cấp UI/UX
+
+> Roadmap nay phai tuan theo
+> [Product definition](../product-definition/README.md). Route demo khong duoc
+> xem la capability production neu chua co product decision va backend contract.
 
 ## Thu tu phase
 
@@ -7,7 +11,7 @@
 | 0. Baseline | Anh chup, flow map, accessibility/performance baseline | Co baseline cho route va admin section quan trong |
 | 1. Foundation | Token, primitive, state va shell pattern chuan | Story/demo matrix va component tests dat |
 | 2. Public/Auth | Landing, static, auth, pricing, staff registration | Public funnel responsive va keyboard-complete |
-| 3. Patient/AI | Patient shell, intake, map, profile, records, medication, chat | Core patient tasks dat acceptance va safety review |
+| 3. Patient/AI | Patient shell, intake, map, profile va AI guidance | Core patient tasks dat acceptance va safety review |
 | 4. Staff/Admin | CRUD, table, filter, dialog, section navigation | Operator workflows dat density va permission tests |
 | 5. Hardening | Cross-browser, a11y, visual regression, analytics | Khong con P0; P1 duoc dong hoac chap nhan co chu dich |
 
@@ -24,7 +28,7 @@ chay song song public va operator sau khi foundation dat exit criteria.
 | P0-04 | Loading/empty/error phan tan | Tao state matrix va component Loading/Empty/Error/Permission/Retry | Tat ca data surface | Moi surface co state fixture va khong blank khi request loi | P0-02 |
 | P0-05 | Route/navigation khong co metadata chung | Tao route registry cho label, shell, access, premium, title va alias | Moi route trong audit | Route compatibility test bao phu tat ca path/redirect hien tai | P0-02 |
 | P0-06 | Form semantics co ID/error lien ket yeu | Chuan hoa Field va validation summary | Auth, profile, setup, staff/admin forms | Label/hint/error duoc announce; focus den field dau loi | P0-02 |
-| P0-07 | Luong medical AI thieu pattern safety chung | Tao SafetyNotice, urgency va provenance pattern khong tu che data | Intake, symptom, chat, records, medication | Disclaimer va next step nhat quan; clinical owner duyet copy | P0-02 |
+| P0-07 | Luong medical AI thieu pattern safety chung | Tao SafetyNotice, urgency va provenance pattern khong tu che data | Intake, symptom, chat | Disclaimer va next step nhat quan; clinical owner duyet copy | P0-02 |
 | P0-08 | Khong co regression baseline | Them route smoke, axe, screenshot viewport va critical-flow checklist | Toan bo | CI fail khi route vo, a11y critical hoac visual diff chua duyet | Phase 0 |
 
 Tien do dot foundation 1:
@@ -46,8 +50,8 @@ Tien do dot foundation 1:
 | P1-06 | Map phu thuoc pointer va permission happy path | List/map parity, location permission, search/filter, selected state | `/map`, medical assistant | Hoan thanh chon facility bang keyboard/list; co denied/error state | P0-04 |
 | P1-07 | Symptom/chat co pattern hoi dap khac nhau | Dung chat primitive, composer, typing, retry va emergency escalation | `/symptom`, `/chat`, AI chat | Screen reader announce dung; draft duoc giu khi retry | P0-04, P0-07 |
 | P1-08 | Profile/setup form dai va save state roi rac | Section/progress, validation summary, dirty state va success | `/profile`, profile setup | Khong mat thay doi vo tinh; loi dua focus dung; mobile hoan thanh duoc | P0-06 |
-| P1-09 | Records master/detail va table kho dung tren mobile | Responsive record navigator, tabs, lab table/card, file states | `/records` | Chon record, doi tab, doc lab va upload o 320 px | P0-02, P0-04 |
-| P1-10 | Medication upload/camera thieu permission/error design | FileUpload, camera permission, preview va confidence/safety result | `/medication` | Invalid file, denied camera, processing, retry va result deu co state | P0-04, P0-07 |
+| P1-09 | Records dang la demo khong co backend | Gan nhan demo hoac an khoi navigation production | `/records` | Khong tao cam giac du lieu da duoc luu; production nav khong quang ba capability | Product decision |
+| P1-10 | Medication dang la demo khong co backend | Gan nhan demo hoac an khoi navigation production | `/medication` | Khong hien ket qua mau nhu phan tich that; khong yeu cau camera production | Product decision |
 | P1-11 | Staff CRUD dung custom field/state | Dung operator shell, Field, Alert, Dialog va responsive records | `/app/staff` | Create/edit/delete keyboard-complete; delete confirm; error giu form | P0-02-06 |
 | P1-12 | Admin page qua lon va navigation state cuc bo | Tach section container, route/deep-link section, shared toolbar/table | Admin aliases + 6 sections | Reload/back giu section; moi section co loading/empty/error | P0-02, P0-04, P0-05 |
 | P1-13 | Data table/modal admin khong co pattern day du | ResponsiveDataTable, caption/scope, row action menu, form dialog | Users, doctors, AI configs, departments | Keyboard va screen reader thao tac duoc; mobile co fallback | P0-02, P0-03 |

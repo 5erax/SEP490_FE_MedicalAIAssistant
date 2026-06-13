@@ -1,4 +1,7 @@
-# API Architecture
+# API layer hiện tại
+
+Trạng thái: kiến trúc đang sử dụng trước khi migration sang cấu trúc feature.
+Kiến trúc mục tiêu được mô tả tại [README](./README.md).
 
 This frontend uses a centralized API layer so endpoints, request behavior, auth headers, and error handling stay consistent across the application.
 
@@ -20,7 +23,9 @@ src/
     subscriptionService.js
     chatbotService.js
     staffService.js
-    anthropicService.js
+    symptomAnalysisService.js
+    feedbackReviewService.js
+    doctorInvitationService.js
 ```
 
 ## Responsibilities
@@ -158,11 +163,11 @@ These files intentionally preserve old import paths:
 - `src/services/aiConfigManagement.js`
 - `src/services/staffRegistration.js`
 
-They should stay thin and only re-export the new domain services.
+Các file này chỉ được giữ trong thời gian migration và phải luôn là re-export mỏng.
 
 ## Notes
 
-- Current backend base URL: `http://52.77.210.243:8080`.
 - Local development sends same-origin `/api/*` requests through the Vite proxy. `VITE_API_BASE_URL` configures the proxy target.
 - Production sends same-origin `/api/*` requests through the Vercel rewrite in `vercel.json`.
-- `anthropicService.js` centralizes the existing external Anthropic call used by the standalone chatbot page.
+- AI provider key không được đặt trong Vite/client. Chat và symptom analysis
+  production phải đi qua backend API.
