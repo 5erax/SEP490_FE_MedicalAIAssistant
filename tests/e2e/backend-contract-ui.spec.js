@@ -175,7 +175,54 @@ test("admin creates a doctor invitation with an optional doctor link", async ({ 
   await page.getByRole("button", { name: "Gửi invitation" }).click();
 
   await expect(page.getByText("Invitation sent.", { exact: true })).toBeVisible();
-  expect(invitationPayload).toEqual({ email: "doctor@example.com", doctorId: null });
+  expect(invitationPayload).toEqual({ email: "doctor@example.com" });
+});
+
+test("admin invitation displays backend error details with the generic summary", async ({ page }) => {
+  await preparePage(page);
+  await authenticate(page);
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+
+    if (url.pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (url.pathname === "/api/admin/doctor-invitations") {
+      return route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: false,
+          message: "Create doctor invitation failed.",
+          errors: ["The email already has an account."],
+        }),
+      });
+    }
+
+    const pagedPaths = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
+    const data = pagedPaths.includes(url.pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Bác sĩ", exact: true }).click();
+  await page.getByLabel("Email bác sĩ").fill("new-doctor@example.com");
+  await page.getByRole("button", { name: "Gửi invitation" }).click();
+
+  await expect(page.getByText(
+    "Create doctor invitation failed. The email already has an account.",
+    { exact: true },
+  )).toBeVisible();
 });
 
 test("profile page renders and updates backend user data instead of mock data", async ({ page }) => {

@@ -953,13 +953,34 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
   async function handleCreateInvitation(event) {
     event.preventDefault();
+    const normalizedEmail = invitationForm.email.trim().toLowerCase();
+    const registeredUser = users.find(
+      (user) => String(user.email ?? "").trim().toLowerCase() === normalizedEmail,
+    );
+    const selectedDoctor = doctors.find((doctor) => doctor.id === invitationForm.doctorId);
+
+    if (registeredUser) {
+      setDoctorMessage({
+        type: "error",
+        text: "Email này đã có tài khoản trong hệ thống. Hãy dùng email chưa đăng ký.",
+      });
+      return;
+    }
+
+    if (selectedDoctor?.userId) {
+      setDoctorMessage({
+        type: "error",
+        text: "Hồ sơ bác sĩ đã được liên kết với tài khoản và không thể nhận invitation mới.",
+      });
+      return;
+    }
+
     setSavingInvitation(true);
     setDoctorMessage(null);
     try {
-      const response = await doctorInvitationsApi.create({
-        email: invitationForm.email.trim(),
-        doctorId: invitationForm.doctorId || null,
-      });
+      const payload = { email: normalizedEmail };
+      if (invitationForm.doctorId) payload.doctorId = invitationForm.doctorId;
+      const response = await doctorInvitationsApi.create(payload);
       setLastInvitation(response.data ?? null);
       setInvitationForm(EMPTY_INVITATION);
       setDoctorMessage({
@@ -1380,7 +1401,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                       onChange={(event) => setInvitationForm({ ...invitationForm, doctorId: event.target.value })}
                     >
                       <option value="">Tạo bác sĩ mới khi đăng ký</option>
-                      {doctors.map((doctor) => (
+                      {doctors.filter((doctor) => !doctor.userId).map((doctor) => (
                         <option key={doctor.id} value={doctor.id}>
                           {doctor.fullName || doctor.id}
                         </option>
