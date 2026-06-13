@@ -1,6 +1,8 @@
 # MediMate AI Frontend
 
-Frontend cho **MediMate AI**, nền tảng hỗ trợ người dùng theo dõi sức khỏe, phân tích triệu chứng, quản lý hồ sơ y tế và kết nối với cơ sở y tế. Ứng dụng cũng cung cấp không gian làm việc riêng cho nhân viên y tế và quản trị viên.
+Frontend cho **MediMate AI**, nền tảng định hướng trước khi đi khám. Ứng dụng
+giúp người dùng mô tả triệu chứng, nhận gợi ý chuyên khoa và tìm cơ sở y tế phù
+hợp; đồng thời cung cấp workspace vận hành cho Staff và Admin.
 
 > **Lưu ý y tế:** MediMate AI chỉ cung cấp thông tin hỗ trợ và không thay thế chẩn đoán, tư vấn hoặc điều trị từ bác sĩ hay cơ sở y tế có chuyên môn. Trong tình huống khẩn cấp, hãy liên hệ ngay dịch vụ cấp cứu tại địa phương.
 
@@ -9,12 +11,15 @@ Frontend cho **MediMate AI**, nền tảng hỗ trợ người dùng theo dõi s
 - Đăng ký, đăng nhập bằng tài khoản hoặc Google OAuth.
 - Phân tích triệu chứng và trò chuyện với trợ lý AI.
 - Tìm kiếm cơ sở y tế, chuyên khoa và bác sĩ phù hợp.
-- Quản lý hồ sơ cá nhân, hồ sơ y tế và thông tin thuốc.
+- Quản lý hồ sơ cá nhân phục vụ onboarding và định hướng.
 - Đăng ký gói dịch vụ và xử lý kết quả thanh toán PayOS.
 - Phân quyền không gian làm việc cho người dùng, nhân viên y tế và quản trị viên.
 - Quản trị người dùng, cơ sở y tế, bác sĩ, gói đăng ký và cấu hình AI.
 - Đăng ký bác sĩ qua liên kết mời.
 - Hỗ trợ tùy chỉnh hiển thị và kiểm thử accessibility.
+
+Các màn hình hồ sơ y tế và quản lý thuốc hiện chỉ là demo, chưa có backend
+production và không được xem là capability sản phẩm chính.
 
 ## Công nghệ
 
@@ -111,7 +116,8 @@ API frontend được tổ chức theo luồng:
 Page/Component -> Domain Service -> ENDPOINTS -> apiRequest() -> Backend
 ```
 
-Xem [API_ARCHITECTURE.md](API_ARCHITECTURE.md) để biết quy ước chi tiết. Các endpoint mới nên được khai báo trong `src/services/endpoints.js`, không viết trực tiếp rải rác trong component.
+Xem [API layer](docs/frontend-architecture/api-layer.md) để biết quy ước hiện
+tại. Endpoint mới phải được khai báo tập trung, không viết trực tiếp trong component.
 
 ## Triển khai
 
@@ -133,11 +139,11 @@ Không nên giữ địa chỉ backend cố định trong `vercel.json` khi chuy
 
 ## Tài liệu liên quan
 
-- [Kiến trúc API](API_ARCHITECTURE.md)
-- [Luồng và use case](docs/flows-and-use-cases.md)
-- [Đăng ký bác sĩ bằng invitation](docs/2.md)
-- [Ghi chú tích hợp facility department](docs/backend-facility-department-note.md)
-- [Điều kiện tích hợp thanh toán](docs/backend-payment-readiness-note.md)
+- [Mục lục tài liệu](docs/README.md)
+- [Định nghĩa sản phẩm và luồng nghiệp vụ](docs/product-definition/README.md)
+- [Backend và tích hợp](docs/backend/README.md)
+- [Kiến trúc và chiến lược frontend](docs/frontend-architecture/README.md)
+- [UI/UX](docs/ui-ux/README.md)
 
 ## Bảo mật
 

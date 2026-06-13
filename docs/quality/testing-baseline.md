@@ -1,4 +1,7 @@
-# Phase 0 baseline
+# Baseline kiểm thử frontend
+
+Tài liệu này ghi baseline route, accessibility, visual và performance. Các
+finding UI/UX được quản lý trong [UI/UX roadmap](../ui-ux/roadmap.md).
 
 ## Pham vi da tu dong hoa
 

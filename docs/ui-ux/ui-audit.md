@@ -1,5 +1,9 @@
 # UI/UX Audit
 
+Trạng thái: baseline hiện trạng. Đọc cùng
+[navigation audit ngày 2026-06-13](./navigation-audit-2026-06-13.md) và
+[product definition](../product-definition/README.md).
+
 ## 1. Tom tat hien trang
 
 Ung dung da co mot nen tang tot de mo rong: token CSS, focus-visible,

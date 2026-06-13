@@ -1,4 +1,4 @@
-# Nguyen tac thiet ke va implementation
+# Nguyên tắc thiết kế và implementation
 
 ## 1. Safety before delight
 
