@@ -140,7 +140,11 @@ export async function apiRequest(path, options = {}) {
 
   if (!ok) {
     const message =
-      payload?.message ||
+      (
+        payload?.message && formatApiErrors(payload?.errors)
+          ? `${payload.message} ${formatApiErrors(payload.errors)}`
+          : payload?.message
+      ) ||
       formatApiErrors(payload?.errors) ||
       payload?.title ||
       `YÃªu cáº§u tháº¥t báº¡i vá»›i mÃ£ ${response.status}`;
