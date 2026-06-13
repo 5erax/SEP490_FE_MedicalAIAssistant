@@ -48,6 +48,10 @@ export function hasRole(roles = [], role) {
   });
 }
 
+export function hasAuthRole(authOrUser, role) {
+  return hasRole(normalizeRoles(collectRoleValues(authOrUser)), role);
+}
+
 export function getWorkspacePath(authOrUser) {
   const roles = normalizeRoles(collectRoleValues(authOrUser));
 

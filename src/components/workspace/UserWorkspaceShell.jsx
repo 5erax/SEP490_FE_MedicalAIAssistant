@@ -16,25 +16,31 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
+import { withReturnTo } from "../../router/returnIntent";
+import { getNavigationModel } from "../../router/routes";
 import { clearStoredAuth, getStoredAuth, hasPremiumAccess } from "../../services/api";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
+import { Dialog, useOverlayFocus } from "../ui";
 
-const NAV_ITEMS = [
-  { path: "/dashboard", label: "Tư vấn chuyên khoa", icon: LayoutDashboard, hint: "Gợi ý nơi khám" },
-  { path: "/symptom", label: "Triệu chứng", icon: Activity, hint: "Phân tích nhanh" },
-  { path: "/chat", label: "Chat AI", icon: Bot, hint: "Hỏi trợ lý" },
-  { path: "/map", label: "Bản đồ", icon: MapPin, hint: "Cơ sở gần bạn" },
-  { path: "/profile", label: "Hồ sơ", icon: UserRound, hint: "Thông tin cá nhân" },
-  { path: "/records", label: "Y bạ", icon: FileText, hint: "Kết quả & tài liệu" },
-  { path: "/medication", label: "Thuốc", icon: Pill, hint: "Quét & kiểm tra" },
-];
+const PATIENT_ICONS = {
+  dashboard: LayoutDashboard,
+  symptom: Activity,
+  chat: Bot,
+  map: MapPin,
+  profile: UserRound,
+  records: FileText,
+  medication: Pill,
+};
 
-const FREE_PATHS = new Set(["/dashboard", "/map"]);
+const NAV_ITEMS = getNavigationModel("patient").map((item) => ({
+  ...item,
+  icon: PATIENT_ICONS[item.icon],
+}));
 
-const MOBILE_ITEMS = NAV_ITEMS.slice(0, 5);
+const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
 
 function getCurrentPath() {
   return window.location.pathname;
@@ -55,9 +61,14 @@ export default function UserWorkspaceShell({ children }) {
   const [notice, setNotice] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const dialogRef = useRef(null);
-  const noticeTriggerRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const drawerCloseButtonRef = useRef(null);
+  const mainRef = useRef(null);
+  const mobileNavRef = useRef(null);
   const mobileMenuButtonRef = useRef(null);
+  const noticeDeferButtonRef = useRef(null);
+  const noticeTriggerRef = useRef(null);
+  const drawerInertRefs = useMemo(() => [mainRef, mobileNavRef], []);
   const auth = getStoredAuth();
   const premiumAccess = hasPremiumAccess(auth);
   const path = getCurrentPath();
@@ -71,7 +82,8 @@ export default function UserWorkspaceShell({ children }) {
   }
 
   function isLocked(pathToOpen) {
-    return !FREE_PATHS.has(pathToOpen) && !premiumAccess;
+    const item = NAV_ITEMS.find((entry) => entry.path === pathToOpen);
+    return item?.access === "premium" && !premiumAccess;
   }
 
   function handleLockedNav(pathToOpen, trigger) {
@@ -79,6 +91,7 @@ export default function UserWorkspaceShell({ children }) {
       noticeTriggerRef.current = trigger ?? document.activeElement;
       setNotice({
         title: "Cần nâng cấp MediMate+",
+        returnTo: pathToOpen,
         text: auth
           ? "Tính năng này nằm trong gói nâng cao. Bạn có thể xem bảng giá hoặc quay lại tư vấn chuyên khoa."
           : "Bạn vẫn có thể dùng tư vấn chuyên khoa và bản đồ. Những phần lưu hồ sơ, y bạ, thuốc và chat nâng cao cần đăng ký rồi nâng cấp MediMate+.",
@@ -91,12 +104,12 @@ export default function UserWorkspaceShell({ children }) {
 
   function closeNotice() {
     setNotice(null);
-    window.setTimeout(() => noticeTriggerRef.current?.focus?.(), 0);
   }
 
   function openPricingFromNotice() {
+    const returnTo = notice?.returnTo;
     setNotice(null);
-    goTo("/pricing?from=locked");
+    goTo(withReturnTo("/pricing", returnTo));
   }
 
   function handleSearch(event) {
@@ -105,45 +118,14 @@ export default function UserWorkspaceShell({ children }) {
     goTo(query ? `/map?search=${encodeURIComponent(query)}` : "/map");
   }
 
-  useEffect(() => {
-    if (!notice) return undefined;
-    const focusable = dialogRef.current?.querySelector("button");
-    focusable?.focus();
-
-    function handleDialogKeyDown(event) {
-      if (event.key === "Escape") closeNotice();
-      if (event.key !== "Tab") return;
-
-      const items = Array.from(dialogRef.current?.querySelectorAll("button") ?? [])
-        .filter((item) => !item.disabled);
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (!first || !last) return;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleDialogKeyDown);
-    return () => document.removeEventListener("keydown", handleDialogKeyDown);
-  }, [notice]);
-
-  useEffect(() => {
-    if (!mobileMenuOpen) return undefined;
-
-    function handleMenuKeyDown(event) {
-      if (event.key !== "Escape") return;
-      setMobileMenuOpen(false);
-      window.setTimeout(() => mobileMenuButtonRef.current?.focus?.(), 0);
-    }
-
-    document.addEventListener("keydown", handleMenuKeyDown);
-    return () => document.removeEventListener("keydown", handleMenuKeyDown);
-  }, [mobileMenuOpen]);
+  useOverlayFocus({
+    active: mobileMenuOpen,
+    containerRef: sidebarRef,
+    initialFocusRef: drawerCloseButtonRef,
+    restoreFocusRef: mobileMenuButtonRef,
+    inertRefs: drawerInertRefs,
+    onClose: () => setMobileMenuOpen(false),
+  });
 
   return (
     <div className="user-shell">
@@ -156,14 +138,19 @@ export default function UserWorkspaceShell({ children }) {
         />
       )}
       <aside
+        ref={sidebarRef}
         className={`user-shell-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}
         aria-label="Điều hướng không gian cá nhân"
+        aria-modal={mobileMenuOpen ? "true" : undefined}
+        role={mobileMenuOpen ? "dialog" : undefined}
+        tabIndex={mobileMenuOpen ? -1 : undefined}
       >
         <a className="user-shell-brand" href="/dashboard">
           <span>+</span>
           <strong>MediMate</strong>
         </a>
         <button
+          ref={drawerCloseButtonRef}
           className="mobile-drawer-close"
           type="button"
           aria-label="Đóng menu"
@@ -220,7 +207,7 @@ export default function UserWorkspaceShell({ children }) {
         </section>
       </aside>
 
-      <main className="user-shell-main">
+      <main ref={mainRef} className="user-shell-main">
         <header className="user-shell-topbar">
           <div className="user-shell-title">
             <button
@@ -288,7 +275,7 @@ export default function UserWorkspaceShell({ children }) {
         </section>
       </main>
 
-      <nav className="user-shell-mobile-nav" aria-label="Điều hướng nhanh">
+      <nav ref={mobileNavRef} className="user-shell-mobile-nav" aria-label="Điều hướng nhanh">
         {MOBILE_ITEMS.map((item) => {
           const Icon = item.icon;
           const locked = isLocked(item.path);
@@ -318,27 +305,25 @@ export default function UserWorkspaceShell({ children }) {
       </nav>
 
       {notice && (
-        <div className="app-notice-backdrop" role="presentation" onMouseDown={closeNotice}>
-          <section
-            className="app-notice"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="app-notice-title"
-            aria-describedby="app-notice-description"
-            ref={dialogRef}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
+        <Dialog
+          backdropClassName="app-notice-backdrop"
+          className="app-notice"
+          labelledBy="app-notice-title"
+          describedBy="app-notice-description"
+          initialFocusRef={noticeDeferButtonRef}
+          restoreFocusRef={noticeTriggerRef}
+          onClose={closeNotice}
+        >
             <span className="app-notice-icon"><Crown size={20} /></span>
             <div>
               <h2 id="app-notice-title">{notice.title}</h2>
               <p id="app-notice-description">{notice.text}</p>
             </div>
             <div className="app-notice-actions">
-              <button type="button" onClick={closeNotice}>Để sau</button>
+              <button ref={noticeDeferButtonRef} type="button" onClick={closeNotice}>Để sau</button>
               <button type="button" onClick={openPricingFromNotice}>Xem bảng giá</button>
             </div>
-          </section>
-        </div>
+        </Dialog>
       )}
     </div>
   );

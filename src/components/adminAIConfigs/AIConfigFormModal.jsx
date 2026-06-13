@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BrainCircuit } from "lucide-react";
+import { Dialog } from "../ui";
 
 const EMPTY_FORM = {
   taskType: "",
@@ -51,7 +52,14 @@ function buildPayload(form) {
   };
 }
 
-export default function AIConfigFormModal({ mode, config, saving, onClose, onSubmit }) {
+export default function AIConfigFormModal({
+  mode,
+  config,
+  saving,
+  restoreFocusRef,
+  onClose,
+  onSubmit,
+}) {
   const [form, setForm] = useState(() => toFormValue(config));
   const [errors, setErrors] = useState({});
   const title = mode === "edit" ? "Update AI Configuration" : "Create AI Configuration";
@@ -70,8 +78,15 @@ export default function AIConfigFormModal({ mode, config, saving, onClose, onSub
   }
 
   return (
-    <div className="ai-config-modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="ai-config-modal" role="dialog" aria-modal="true" aria-labelledby="ai-config-modal-title" onMouseDown={(event) => event.stopPropagation()}>
+    <Dialog
+      backdropClassName="ai-config-modal-backdrop"
+      className="ai-config-modal"
+      labelledBy="ai-config-modal-title"
+      onClose={onClose}
+      closeOnBackdrop={!saving}
+      closeOnEscape={!saving}
+      restoreFocusRef={restoreFocusRef}
+    >
         <header className="ai-config-modal-header">
           <span className="ai-config-modal-icon"><BrainCircuit size={22} /></span>
           <div>
@@ -132,7 +147,6 @@ export default function AIConfigFormModal({ mode, config, saving, onClose, onSub
             </button>
           </div>
         </form>
-      </section>
-    </div>
+    </Dialog>
   );
 }

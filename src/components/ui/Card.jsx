@@ -29,9 +29,20 @@ export function LoadingState({ label = "Đang tải dữ liệu...", description
   );
 }
 
-export function ErrorState({ title = "Không thể tải dữ liệu", description, action, className = "" }) {
+export function ErrorState({
+  title = "Không thể tải dữ liệu",
+  description,
+  action,
+  className = "",
+  urgent = false,
+}) {
   return (
-    <section className={`ui-state ui-error ${className}`.trim()} role="alert">
+    <section
+      className={`ui-state ui-error ${className}`.trim()}
+      role={urgent ? "alert" : "status"}
+      aria-live={urgent ? "assertive" : "polite"}
+      aria-atomic="true"
+    >
       <span className="ui-state-icon" aria-hidden="true">!</span>
       <strong>{title}</strong>
       {description && <p>{description}</p>}

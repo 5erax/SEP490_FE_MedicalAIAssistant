@@ -11,7 +11,7 @@ test.describe("route baseline", () => {
       await preparePage(page);
       await openRoute(page, route.path);
 
-      expect(pathname(page)).toBe(route.expectedPath);
+      await expect.poll(() => pathname(page)).toBe(route.expectedPath);
       expect(pageErrors).toEqual([]);
     });
   }

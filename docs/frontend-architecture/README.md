@@ -9,6 +9,7 @@ Tài liệu liên quan:
 1. [Chiến lược styling và design system](./styling-strategy.md)
 2. [Kế hoạch migration frontend](./migration-plan.md)
 3. [API layer hiện tại](./api-layer.md)
+4. [Checklist nhiệm vụ frontend](./task-checklist.md)
 
 ## 1. Đánh giá cấu trúc hiện tại
 

@@ -3,8 +3,8 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
+import { getPostAuthDestination, getReturnToFromSearch, withReturnTo } from "../router/returnIntent";
 import { authApi } from "../services/api";
-import { getPostLoginPath, getWorkspacePath } from "../utils/roles";
 import "../styles/auth-refresh.css";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -23,11 +23,8 @@ function ApiMessage({ message }) {
   );
 }
 
-function getSafeRedirectPath() {
-  const redirect = new URLSearchParams(window.location.search).get("redirect");
-  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) return "";
-  if (["/login", "/signup", "/forgot-password", "/change-password"].includes(redirect)) return "";
-  return redirect;
+function getAuthSwitchPath(path) {
+  return withReturnTo(path, getReturnToFromSearch());
 }
 
 const authCopy = {
@@ -133,7 +130,7 @@ export function LoginPage() {
     try {
       const response = await authApi.login(form);
       showToast({ type: "success", title: "Đăng nhập thành công", message: "Đang mở không gian phù hợp với tài khoản của bạn." });
-      navigate(getSafeRedirectPath() || getPostLoginPath(response.data ?? response));
+      navigate(getPostAuthDestination(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -152,7 +149,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.googleLogin(credential);
-      navigate(getSafeRedirectPath() || getPostLoginPath(response.data ?? response));
+      navigate(getPostAuthDestination(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -207,7 +204,7 @@ export function LoginPage() {
         </button>
         <div className="auth-bottom-link">
           <span>Chưa có tài khoản?</span>
-          <a href="/signup">Tạo tài khoản miễn phí</a>
+          <a href={getAuthSwitchPath("/signup")}>Tạo tài khoản miễn phí</a>
         </div>
       </form>
     </AuthShell>
@@ -268,7 +265,7 @@ export function SignupPage() {
         dateOfBirth: form.dateOfBirth || null,
       });
       showToast({ type: "success", title: "Tạo tài khoản thành công", message: "Đang mở workspace của bạn." });
-      navigate(getSafeRedirectPath() || getWorkspacePath(response.data ?? response));
+      navigate(getPostAuthDestination(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -304,7 +301,7 @@ export function SignupPage() {
         </button>
         <div className="auth-bottom-link">
           <span>Đã có tài khoản?</span>
-          <a href="/login">Đăng nhập</a>
+          <a href={getAuthSwitchPath("/login")}>Đăng nhập</a>
         </div>
       </form>
     </AuthShell>

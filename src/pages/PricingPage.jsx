@@ -10,6 +10,7 @@ import {
 } from "../services/api";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
+import { getReturnToFromSearch, rememberReturnTo, withReturnTo } from "../router/returnIntent";
 import { trackUxEvent } from "../utils/analytics";
 
 const FEATURES = [
@@ -79,6 +80,7 @@ function PricingPage() {
     [paidPlans],
   );
   const currentPrice = Number(paidPlan?.price) || 0;
+  const returnTo = getReturnToFromSearch();
 
   async function loadSubscriptions() {
     if (!auth) return [];
@@ -100,6 +102,10 @@ function PricingPage() {
       setSubscriptionsLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (returnTo) rememberReturnTo(returnTo);
+  }, [returnTo]);
 
   useEffect(() => {
     let active = true;
@@ -223,7 +229,7 @@ function PricingPage() {
     trackUxEvent("pricing_trial_clicked", { billingCycle, authenticated: Boolean(auth) });
 
     if (!auth) {
-      navigate(`/signup?redirect=${encodeURIComponent("/pricing?upgrade=premium")}`);
+      navigate(withReturnTo("/signup", returnTo || "/pricing"));
       return;
     }
 

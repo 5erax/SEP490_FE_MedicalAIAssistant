@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Bell,
@@ -19,12 +19,13 @@ import {
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Badge, DataTable, EmptyState, LoadingState } from "../components/ui";
+import { Badge, Button, DataTable, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import DoctorFilters from "../components/adminDoctors/DoctorFilters";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import DoctorTable from "../components/adminDoctors/DoctorTable";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
 import { navigate } from "../router/navigation";
+import { getAdminSectionPath, getNavigationModel } from "../router/routes";
 import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
 import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
 import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
@@ -76,6 +77,7 @@ const EMPTY_DOCTOR_FILTERS = {
   departmentRole: "",
 };
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
+const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const EMPTY_AI_CONFIG_FILTERS = {
   search: "",
   status: "",
@@ -84,6 +86,16 @@ const EMPTY_AI_CONFIG_FILTERS = {
   environment: "",
 };
 const DEFAULT_AI_CONFIG_PAGE_SIZE = 10;
+const ADMIN_NAV_ICONS = {
+  dashboard: LayoutDashboard,
+  users: Users,
+  doctor: Stethoscope,
+  ai: BrainCircuit,
+  subscription: CreditCard,
+  staff: UserPlus,
+  facility: Building2,
+};
+const ADMIN_NAV_ITEMS = getNavigationModel("admin");
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -147,7 +159,7 @@ function EmptyAuth() {
   );
 }
 
-export default function AdminWorkspacePage() {
+export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const { confirmAction, showToast } = useFeedback();
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [profile, setProfile] = useState(null);
@@ -161,7 +173,7 @@ export default function AdminWorkspacePage() {
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const [doctorPageInfo, setDoctorPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
-  const [activeSection, setActiveSection] = useState("overview");
+  const activeSection = initialSection;
   const [search, setSearch] = useState("");
   const [doctorFilters, setDoctorFilters] = useState(EMPTY_DOCTOR_FILTERS);
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
@@ -175,6 +187,7 @@ export default function AdminWorkspacePage() {
   const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
   const [subscriptionPlanModal, setSubscriptionPlanModal] = useState({ open: false, mode: "create", plan: null });
   const [aiConfigDetail, setAIConfigDetail] = useState(null);
+  const operatorDialogTriggerRef = useRef(null);
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
@@ -195,12 +208,17 @@ export default function AdminWorkspacePage() {
   const [facilityMessage, setFacilityMessage] = useState(null);
   const [staffMessage, setStaffMessage] = useState(null);
   const [doctorMessage, setDoctorMessage] = useState(null);
+  const [doctorLoadError, setDoctorLoadError] = useState("");
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
   const [subscriptionPlanMessage, setSubscriptionPlanMessage] = useState(null);
 
   const roles = useMemo(() => normalizeRoles(profile?.roles ?? auth?.roles ?? []), [auth, profile]);
   const isAdmin = hasRole(roles, "admin");
   const displayName = profile?.name || profile?.displayName || auth?.email?.split("@")[0] || "Admin";
+
+  function openSection(section) {
+    navigate(getAdminSectionPath(section));
+  }
 
   const pendingApprovalUsers = useMemo(() => {
     return users.filter((user) => Number(user.status) !== 1 && !user.isDeleted);
@@ -366,6 +384,7 @@ export default function AdminWorkspacePage() {
 
         if (doctorResult.status === "fulfilled") {
           const data = doctorResult.value.data ?? {};
+          setDoctorLoadError("");
           setDoctors(data.items ?? []);
           setDoctorPageInfo({
             pageNumber: data.pageNumber ?? 1,
@@ -375,7 +394,7 @@ export default function AdminWorkspacePage() {
           });
         } else {
           console.error("Không thể tải danh sách bác sĩ:", doctorResult.reason);
-          setDoctorMessage({ type: "error", text: doctorResult.reason.message });
+          setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
         }
 
         if (aiConfigResult.status === "fulfilled") {
@@ -489,6 +508,7 @@ export default function AdminWorkspacePage() {
   async function loadDoctors(pageNumber = doctorPageInfo.pageNumber, filters = doctorFilters) {
     setDoctorsLoading(true);
     setDoctorMessage(null);
+    setDoctorLoadError("");
     try {
       const response = await doctorManagementApi.list({
         ...filters,
@@ -505,8 +525,12 @@ export default function AdminWorkspacePage() {
       });
     } catch (error) {
       console.error("Doctor API error:", error);
-      setDoctorMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không tải được danh sách bác sĩ", message: error.message });
+      setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
+      showToast({
+        type: "error",
+        title: "Không tải được danh sách bác sĩ",
+        message: DOCTOR_LOAD_ERROR_MESSAGE,
+      });
     } finally {
       setDoctorsLoading(false);
     }
@@ -552,11 +576,18 @@ export default function AdminWorkspacePage() {
   }
 
   function openCreateAIConfig() {
+    operatorDialogTriggerRef.current = document.activeElement;
     setAIConfigModal({ open: true, mode: "create", config: null });
   }
 
   function openEditAIConfig(config) {
+    operatorDialogTriggerRef.current = document.activeElement;
     setAIConfigModal({ open: true, mode: "edit", config });
+  }
+
+  function openAIConfigDetail(config) {
+    operatorDialogTriggerRef.current = document.activeElement;
+    setAIConfigDetail(config);
   }
 
   function closeAIConfigModal() {
@@ -651,10 +682,12 @@ export default function AdminWorkspacePage() {
   }
 
   function openCreateSubscriptionPlan() {
+    operatorDialogTriggerRef.current = document.activeElement;
     setSubscriptionPlanModal({ open: true, mode: "create", plan: null });
   }
 
   function openEditSubscriptionPlan(plan) {
+    operatorDialogTriggerRef.current = document.activeElement;
     setSubscriptionPlanModal({ open: true, mode: "edit", plan });
   }
 
@@ -746,10 +779,12 @@ export default function AdminWorkspacePage() {
   }
 
   function openCreateDoctor() {
+    operatorDialogTriggerRef.current = document.activeElement;
     setDoctorModal({ open: true, mode: "create", doctor: null });
   }
 
   function openEditDoctor(doctor) {
+    operatorDialogTriggerRef.current = document.activeElement;
     setDoctorModal({ open: true, mode: "edit", doctor });
   }
 
@@ -867,7 +902,7 @@ export default function AdminWorkspacePage() {
       departmentName: department.departmentName ?? "",
       description: department.description ?? "",
     });
-    setActiveSection("departments");
+    openSection("departments");
   }
 
   function resetDepartmentForm() {
@@ -1086,38 +1121,21 @@ export default function AdminWorkspacePage() {
             </a>
 
             <nav className="admin-nav" aria-label="Điều hướng admin">
-              <button className={activeSection === "overview" ? "active" : ""} type="button" onClick={() => setActiveSection("overview")}>
-                <span className="admin-nav-icon"><LayoutDashboard size={17} /></span>
-                <span>Tổng quan</span>
-              </button>
-              <button className={activeSection === "users" ? "active" : ""} type="button" onClick={() => setActiveSection("users")}>
-                <span className="admin-nav-icon"><Users size={17} /></span>
-                <span>Người dùng</span>
-              </button>
-              <button className={activeSection === "doctors" ? "active" : ""} type="button" onClick={() => setActiveSection("doctors")}>
-                <span className="admin-nav-icon"><Stethoscope size={17} /></span>
-                <span>Bác sĩ</span>
-              </button>
-              <button className={activeSection === "ai-configs" ? "active" : ""} type="button" onClick={() => setActiveSection("ai-configs")}>
-                <span className="admin-nav-icon"><BrainCircuit size={17} /></span>
-                <span>AI Config</span>
-              </button>
-              <button className={activeSection === "subscriptions" ? "active" : ""} type="button" onClick={() => setActiveSection("subscriptions")}>
-                <span className="admin-nav-icon"><CreditCard size={17} /></span>
-                <span>Gói dịch vụ</span>
-              </button>
-              <button className={activeSection === "staff" ? "active" : ""} type="button" onClick={() => setActiveSection("staff")}>
-                <span className="admin-nav-icon"><UserPlus size={17} /></span>
-                <span>Tạo staff</span>
-              </button>
-              <button className={activeSection === "departments" ? "active" : ""} type="button" onClick={() => setActiveSection("departments")}>
-                <span className="admin-nav-icon"><Building2 size={17} /></span>
-                <span>Chuyên khoa</span>
-              </button>
-              <button className={activeSection === "facilities" ? "active" : ""} type="button" onClick={() => setActiveSection("facilities")}>
-                <span className="admin-nav-icon"><Building2 size={17} /></span>
-                <span>Cơ sở y tế</span>
-              </button>
+              {ADMIN_NAV_ITEMS.map((item) => {
+                const Icon = ADMIN_NAV_ICONS[item.icon];
+                const section = item.id.replace("admin.", "");
+                return (
+                  <button
+                    className={activeSection === section ? "active" : ""}
+                    type="button"
+                    key={item.id}
+                    onClick={() => openSection(section)}
+                  >
+                    <span className="admin-nav-icon"><Icon size={17} /></span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </nav>
 
             <div className="admin-session-card">
@@ -1274,7 +1292,7 @@ export default function AdminWorkspacePage() {
                   </div>
                   <div className="admin-operation-list">
                     {operations.map((item) => (
-                      <button className={`admin-operation admin-operation-${item.tone}`} type="button" key={item.title} onClick={() => setActiveSection(item.section)}>
+                      <button className={`admin-operation admin-operation-${item.tone}`} type="button" key={item.title} onClick={() => openSection(item.section)}>
                         <span className="admin-operation-icon">{item.icon}</span>
                         <div>
                           <strong>{item.title}</strong>
@@ -1404,16 +1422,22 @@ export default function AdminWorkspacePage() {
                 )}
 
                 {doctorsLoading ? (
-                  <div className="doctor-skeleton-list" aria-live="polite">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div className="doctor-skeleton-row" key={index}>
-                        <span />
-                        <div />
-                        <div />
-                        <div />
-                      </div>
-                    ))}
-                  </div>
+                  <LoadingState
+                    className="doctor-empty-state"
+                    label="Đang tải danh sách bác sĩ..."
+                    description="Dữ liệu nhân sự y tế đang được đồng bộ theo bộ lọc hiện tại."
+                  />
+                ) : doctorLoadError ? (
+                  <ErrorState
+                    className="doctor-empty-state"
+                    title="Không thể tải danh sách bác sĩ"
+                    description={doctorLoadError}
+                    action={(
+                      <Button onClick={() => loadDoctors()}>
+                        <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
+                      </Button>
+                    )}
+                  />
                 ) : (
                   <DoctorTable
                     doctors={doctors}
@@ -1424,15 +1448,17 @@ export default function AdminWorkspacePage() {
                   />
                 )}
 
-                <div className="pagination-row">
-                  <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber - 1)}>
-                    Trước
-                  </button>
-                  <span>Trang {doctorPageInfo.pageNumber} / {doctorPageInfo.totalPages || 1} · {doctorPageInfo.totalCount} bác sĩ</span>
-                  <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber + 1)}>
-                    Sau
-                  </button>
-                </div>
+                {!doctorLoadError && (
+                  <div className="pagination-row">
+                    <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber - 1)}>
+                      Trước
+                    </button>
+                    <span>Trang {doctorPageInfo.pageNumber} / {doctorPageInfo.totalPages || 1} · {doctorPageInfo.totalCount} bác sĩ</span>
+                    <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber + 1)}>
+                      Sau
+                    </button>
+                  </div>
+                )}
               </section>
             )}
 
@@ -1509,7 +1535,7 @@ export default function AdminWorkspacePage() {
                 ) : (
                   <AIConfigTable
                     configs={filteredAIConfigs}
-                    onView={setAIConfigDetail}
+                    onView={openAIConfigDetail}
                     onEdit={openEditAIConfig}
                     onToggleStatus={handleToggleAIConfigStatus}
                     onDelete={handleDeleteAIConfig}
@@ -1827,6 +1853,7 @@ export default function AdminWorkspacePage() {
           doctor={doctorModal.doctor}
           facilityDepartmentOptions={facilityDepartmentOptions}
           saving={savingDoctor}
+          restoreFocusRef={operatorDialogTriggerRef}
           onClose={closeDoctorModal}
           onSubmit={handleSaveDoctor}
         />
@@ -1837,6 +1864,7 @@ export default function AdminWorkspacePage() {
           mode={aiConfigModal.mode}
           config={aiConfigModal.config}
           saving={savingAIConfig}
+          restoreFocusRef={operatorDialogTriggerRef}
           onClose={closeAIConfigModal}
           onSubmit={handleSaveAIConfig}
         />
@@ -1847,12 +1875,17 @@ export default function AdminWorkspacePage() {
           mode={subscriptionPlanModal.mode}
           plan={subscriptionPlanModal.plan}
           saving={savingSubscriptionPlan}
+          restoreFocusRef={operatorDialogTriggerRef}
           onClose={closeSubscriptionPlanModal}
           onSubmit={handleSaveSubscriptionPlan}
         />
       )}
       {aiConfigDetail && (
-        <AIConfigDetailModal config={aiConfigDetail} onClose={() => setAIConfigDetail(null)} />
+        <AIConfigDetailModal
+          config={aiConfigDetail}
+          restoreFocusRef={operatorDialogTriggerRef}
+          onClose={() => setAIConfigDetail(null)}
+        />
       )}
     </main>
   );
