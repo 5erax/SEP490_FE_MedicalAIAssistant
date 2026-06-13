@@ -37,7 +37,8 @@ Tien do dot foundation 1:
 - P0-02: da nang Button, Field, Alert, ErrorState, LoadingState va table semantics.
 - P0-03: da co Dialog/focus foundation; premium notice, admin modal va patient
   mobile drawer da dung chung trap focus, Escape, backdrop, inert va restore focus.
-- P0-04: da co state primitive chung; can tiep tuc migrate cac data surface.
+- P0-04: da co state primitive chung; Admin Doctors da co loading/error/retry/empty
+  matrix va keyboard test; can tiep tuc migrate cac data surface con lai.
 - P0-06: Field da lien ket label, hint va error bang ID on dinh; `/dashboard` la vertical slice dau tien.
 
 ## P1 - Trải nghiệm cốt lõi

@@ -1,4 +1,4 @@
-import { Badge, DataTable } from "../ui";
+import { Badge, Button, DataTable, EmptyState } from "../ui";
 import { Pencil, Power, Stethoscope, Trash2, UserRoundPlus } from "lucide-react";
 
 function getInitials(name = "") {
@@ -91,14 +91,17 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
       rows={doctors}
       getRowKey={(doctor) => doctor.id}
       emptyState={(
-        <section className="ui-empty doctor-empty-state">
-          <span className="doctor-empty-icon"><Stethoscope size={24} /></span>
-          <strong>Chưa có bác sĩ phù hợp</strong>
-          <p>Thử đổi bộ lọc hoặc thêm bác sĩ mới để bắt đầu quản lý danh sách nhân sự y tế.</p>
-          <button className="btn btn-primary btn-small" type="button" onClick={onCreate}>
-            <UserRoundPlus size={15} /> Thêm bác sĩ
-          </button>
-        </section>
+        <EmptyState
+          className="doctor-empty-state"
+          icon={<Stethoscope size={24} />}
+          title="Chưa có bác sĩ phù hợp"
+          description="Thử đổi bộ lọc hoặc thêm bác sĩ mới để bắt đầu quản lý danh sách nhân sự y tế."
+          action={(
+            <Button onClick={onCreate}>
+              <UserRoundPlus size={15} /> Thêm bác sĩ
+            </Button>
+          )}
+        />
       )}
     />
   );

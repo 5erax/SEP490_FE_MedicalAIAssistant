@@ -19,7 +19,7 @@ import {
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Badge, DataTable, EmptyState, LoadingState } from "../components/ui";
+import { Badge, Button, DataTable, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import DoctorFilters from "../components/adminDoctors/DoctorFilters";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import DoctorTable from "../components/adminDoctors/DoctorTable";
@@ -77,6 +77,7 @@ const EMPTY_DOCTOR_FILTERS = {
   departmentRole: "",
 };
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
+const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const EMPTY_AI_CONFIG_FILTERS = {
   search: "",
   status: "",
@@ -207,6 +208,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [facilityMessage, setFacilityMessage] = useState(null);
   const [staffMessage, setStaffMessage] = useState(null);
   const [doctorMessage, setDoctorMessage] = useState(null);
+  const [doctorLoadError, setDoctorLoadError] = useState("");
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
   const [subscriptionPlanMessage, setSubscriptionPlanMessage] = useState(null);
 
@@ -382,6 +384,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
         if (doctorResult.status === "fulfilled") {
           const data = doctorResult.value.data ?? {};
+          setDoctorLoadError("");
           setDoctors(data.items ?? []);
           setDoctorPageInfo({
             pageNumber: data.pageNumber ?? 1,
@@ -391,7 +394,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           });
         } else {
           console.error("Không thể tải danh sách bác sĩ:", doctorResult.reason);
-          setDoctorMessage({ type: "error", text: doctorResult.reason.message });
+          setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
         }
 
         if (aiConfigResult.status === "fulfilled") {
@@ -505,6 +508,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function loadDoctors(pageNumber = doctorPageInfo.pageNumber, filters = doctorFilters) {
     setDoctorsLoading(true);
     setDoctorMessage(null);
+    setDoctorLoadError("");
     try {
       const response = await doctorManagementApi.list({
         ...filters,
@@ -521,8 +525,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       });
     } catch (error) {
       console.error("Doctor API error:", error);
-      setDoctorMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không tải được danh sách bác sĩ", message: error.message });
+      setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
+      showToast({
+        type: "error",
+        title: "Không tải được danh sách bác sĩ",
+        message: DOCTOR_LOAD_ERROR_MESSAGE,
+      });
     } finally {
       setDoctorsLoading(false);
     }
@@ -1414,16 +1422,22 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 )}
 
                 {doctorsLoading ? (
-                  <div className="doctor-skeleton-list" aria-live="polite">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div className="doctor-skeleton-row" key={index}>
-                        <span />
-                        <div />
-                        <div />
-                        <div />
-                      </div>
-                    ))}
-                  </div>
+                  <LoadingState
+                    className="doctor-empty-state"
+                    label="Đang tải danh sách bác sĩ..."
+                    description="Dữ liệu nhân sự y tế đang được đồng bộ theo bộ lọc hiện tại."
+                  />
+                ) : doctorLoadError ? (
+                  <ErrorState
+                    className="doctor-empty-state"
+                    title="Không thể tải danh sách bác sĩ"
+                    description={doctorLoadError}
+                    action={(
+                      <Button onClick={() => loadDoctors()}>
+                        <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
+                      </Button>
+                    )}
+                  />
                 ) : (
                   <DoctorTable
                     doctors={doctors}
@@ -1434,15 +1448,17 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                   />
                 )}
 
-                <div className="pagination-row">
-                  <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber - 1)}>
-                    Trước
-                  </button>
-                  <span>Trang {doctorPageInfo.pageNumber} / {doctorPageInfo.totalPages || 1} · {doctorPageInfo.totalCount} bác sĩ</span>
-                  <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber + 1)}>
-                    Sau
-                  </button>
-                </div>
+                {!doctorLoadError && (
+                  <div className="pagination-row">
+                    <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber - 1)}>
+                      Trước
+                    </button>
+                    <span>Trang {doctorPageInfo.pageNumber} / {doctorPageInfo.totalPages || 1} · {doctorPageInfo.totalCount} bác sĩ</span>
+                    <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber + 1)}>
+                      Sau
+                    </button>
+                  </div>
+                )}
               </section>
             )}
 
