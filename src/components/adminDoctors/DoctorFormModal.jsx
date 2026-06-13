@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Dialog } from "../ui";
 
 const EMPTY_FORM = {
   facilityDepartmentId: "",
@@ -63,7 +64,15 @@ function buildDoctorPayload(form) {
   };
 }
 
-export default function DoctorFormModal({ mode, doctor, facilityDepartmentOptions, saving, onClose, onSubmit }) {
+export default function DoctorFormModal({
+  mode,
+  doctor,
+  facilityDepartmentOptions,
+  saving,
+  restoreFocusRef,
+  onClose,
+  onSubmit,
+}) {
   const [form, setForm] = useState(() => toFormValue(doctor));
   const [errors, setErrors] = useState({});
   const title = mode === "edit" ? "Cập nhật bác sĩ" : "Thêm bác sĩ mới";
@@ -97,8 +106,15 @@ export default function DoctorFormModal({ mode, doctor, facilityDepartmentOption
   }
 
   return (
-    <div className="doctor-modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="doctor-modal" role="dialog" aria-modal="true" aria-labelledby="doctor-modal-title" onMouseDown={(event) => event.stopPropagation()}>
+    <Dialog
+      backdropClassName="doctor-modal-backdrop"
+      className="doctor-modal"
+      labelledBy="doctor-modal-title"
+      onClose={onClose}
+      closeOnBackdrop={!saving}
+      closeOnEscape={!saving}
+      restoreFocusRef={restoreFocusRef}
+    >
         <header className="doctor-modal-header">
           <div>
             <p className="eyebrow">Quản lý bác sĩ</p>
@@ -191,7 +207,6 @@ export default function DoctorFormModal({ mode, doctor, facilityDepartmentOption
             </button>
           </div>
         </form>
-      </section>
-    </div>
+    </Dialog>
   );
 }

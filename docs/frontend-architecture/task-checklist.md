@@ -52,6 +52,17 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Chạy lint, build, route, navigation và accessibility tests.
 - [x] Cập nhật nhật ký thay đổi với file, tác động và kết quả kiểm tra.
 
+### FE-UI-003: Chuẩn hóa Dialog và Drawer focus foundation
+
+- [x] Xác nhận phạm vi và tiêu chí nghiệm thu từ P0-03.
+- [x] Audit premium notice, patient drawer và các admin modal hiện tại.
+- [x] Tạo foundation dùng chung cho focus trap, Escape, backdrop và restore focus.
+- [x] Chuyển premium notice và admin modal sang Dialog foundation.
+- [x] Chuyển patient mobile drawer sang cùng focus-management contract.
+- [x] Bổ sung keyboard tests cho Tab cycle, inert background và restore focus.
+- [x] Chạy lint, build, route, navigation và accessibility tests.
+- [x] Cập nhật roadmap và nhật ký thay đổi với kết quả thực tế.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -59,6 +70,7 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-13 | FE-DOC-001 | Hoàn thành | Thêm checklist nhiệm vụ frontend và liên kết từ mục lục tài liệu | Kiểm tra Markdown, link tương đối và `git diff --check` |
 | 2026-06-13 | FE-ROUTE-001 | Hoàn thành | Thêm route registry; bảo vệ `returnTo`; giữ tác vụ qua signup/profile/PayOS; canonical alias; thêm URL cho 8 admin section | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 10 passed; accessibility 14 passed; browser kiểm tra admin alias và premium gate |
 | 2026-06-13 | FE-ROUTE-002 | Hoàn thành | Hợp nhất auth/role/first-login/premium guard; tạo navigation model Patient/Staff/Admin; chuyển sidebar Patient/Admin sang route registry; bổ sung permission matrix | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 12 passed; accessibility 14 passed; browser kiểm tra admin guard và return intent |
+| 2026-06-13 | FE-UI-003 | Hoàn thành | Thêm Dialog/focus foundation; migrate premium notice, 4 admin modal và patient drawer; chuẩn hóa inert, Tab cycle, Escape, backdrop và restore focus | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 13 passed; accessibility 14 passed; browser kiểm tra premium dialog và inert background |
 
 ## Mẫu cập nhật
 

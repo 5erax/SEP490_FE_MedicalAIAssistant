@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { CreditCard } from "lucide-react";
+import { Dialog } from "../ui";
 
 const DEFAULT_FEATURE_LIMITS = `{
   "symptomAnalysisPerMonth": 30,
@@ -73,22 +74,18 @@ function buildPayload(form) {
   };
 }
 
-export default function SubscriptionPlanFormModal({ mode, plan, saving, onClose, onSubmit }) {
+export default function SubscriptionPlanFormModal({
+  mode,
+  plan,
+  saving,
+  restoreFocusRef,
+  onClose,
+  onSubmit,
+}) {
   const [form, setForm] = useState(() => toFormValue(plan));
   const [errors, setErrors] = useState({});
   const closeButtonRef = useRef(null);
   const title = mode === "edit" ? "Cập nhật gói dịch vụ" : "Tạo gói dịch vụ";
-
-  useEffect(() => {
-    closeButtonRef.current?.focus();
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape" && !saving) onClose();
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, saving]);
 
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -104,14 +101,16 @@ export default function SubscriptionPlanFormModal({ mode, plan, saving, onClose,
   }
 
   return (
-    <div className="subscription-modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <section
-        className="subscription-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="subscription-modal-title"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
+    <Dialog
+      backdropClassName="subscription-modal-backdrop"
+      className="subscription-modal"
+      labelledBy="subscription-modal-title"
+      onClose={onClose}
+      closeOnBackdrop={!saving}
+      closeOnEscape={!saving}
+      initialFocusRef={closeButtonRef}
+      restoreFocusRef={restoreFocusRef}
+    >
         <header className="subscription-modal-header">
           <span className="subscription-modal-icon" aria-hidden="true"><CreditCard size={22} /></span>
           <div>
@@ -199,7 +198,6 @@ export default function SubscriptionPlanFormModal({ mode, plan, saving, onClose,
             </button>
           </div>
         </form>
-      </section>
-    </div>
+    </Dialog>
   );
 }

@@ -16,13 +16,14 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { withReturnTo } from "../../router/returnIntent";
 import { getNavigationModel } from "../../router/routes";
 import { clearStoredAuth, getStoredAuth, hasPremiumAccess } from "../../services/api";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
+import { Dialog, useOverlayFocus } from "../ui";
 
 const PATIENT_ICONS = {
   dashboard: LayoutDashboard,
@@ -60,9 +61,14 @@ export default function UserWorkspaceShell({ children }) {
   const [notice, setNotice] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const dialogRef = useRef(null);
-  const noticeTriggerRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const drawerCloseButtonRef = useRef(null);
+  const mainRef = useRef(null);
+  const mobileNavRef = useRef(null);
   const mobileMenuButtonRef = useRef(null);
+  const noticeDeferButtonRef = useRef(null);
+  const noticeTriggerRef = useRef(null);
+  const drawerInertRefs = useMemo(() => [mainRef, mobileNavRef], []);
   const auth = getStoredAuth();
   const premiumAccess = hasPremiumAccess(auth);
   const path = getCurrentPath();
@@ -98,7 +104,6 @@ export default function UserWorkspaceShell({ children }) {
 
   function closeNotice() {
     setNotice(null);
-    window.setTimeout(() => noticeTriggerRef.current?.focus?.(), 0);
   }
 
   function openPricingFromNotice() {
@@ -113,45 +118,14 @@ export default function UserWorkspaceShell({ children }) {
     goTo(query ? `/map?search=${encodeURIComponent(query)}` : "/map");
   }
 
-  useEffect(() => {
-    if (!notice) return undefined;
-    const focusable = dialogRef.current?.querySelector("button");
-    focusable?.focus();
-
-    function handleDialogKeyDown(event) {
-      if (event.key === "Escape") closeNotice();
-      if (event.key !== "Tab") return;
-
-      const items = Array.from(dialogRef.current?.querySelectorAll("button") ?? [])
-        .filter((item) => !item.disabled);
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (!first || !last) return;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleDialogKeyDown);
-    return () => document.removeEventListener("keydown", handleDialogKeyDown);
-  }, [notice]);
-
-  useEffect(() => {
-    if (!mobileMenuOpen) return undefined;
-
-    function handleMenuKeyDown(event) {
-      if (event.key !== "Escape") return;
-      setMobileMenuOpen(false);
-      window.setTimeout(() => mobileMenuButtonRef.current?.focus?.(), 0);
-    }
-
-    document.addEventListener("keydown", handleMenuKeyDown);
-    return () => document.removeEventListener("keydown", handleMenuKeyDown);
-  }, [mobileMenuOpen]);
+  useOverlayFocus({
+    active: mobileMenuOpen,
+    containerRef: sidebarRef,
+    initialFocusRef: drawerCloseButtonRef,
+    restoreFocusRef: mobileMenuButtonRef,
+    inertRefs: drawerInertRefs,
+    onClose: () => setMobileMenuOpen(false),
+  });
 
   return (
     <div className="user-shell">
@@ -164,14 +138,19 @@ export default function UserWorkspaceShell({ children }) {
         />
       )}
       <aside
+        ref={sidebarRef}
         className={`user-shell-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}
         aria-label="Điều hướng không gian cá nhân"
+        aria-modal={mobileMenuOpen ? "true" : undefined}
+        role={mobileMenuOpen ? "dialog" : undefined}
+        tabIndex={mobileMenuOpen ? -1 : undefined}
       >
         <a className="user-shell-brand" href="/dashboard">
           <span>+</span>
           <strong>MediMate</strong>
         </a>
         <button
+          ref={drawerCloseButtonRef}
           className="mobile-drawer-close"
           type="button"
           aria-label="Đóng menu"
@@ -228,7 +207,7 @@ export default function UserWorkspaceShell({ children }) {
         </section>
       </aside>
 
-      <main className="user-shell-main">
+      <main ref={mainRef} className="user-shell-main">
         <header className="user-shell-topbar">
           <div className="user-shell-title">
             <button
@@ -296,7 +275,7 @@ export default function UserWorkspaceShell({ children }) {
         </section>
       </main>
 
-      <nav className="user-shell-mobile-nav" aria-label="Điều hướng nhanh">
+      <nav ref={mobileNavRef} className="user-shell-mobile-nav" aria-label="Điều hướng nhanh">
         {MOBILE_ITEMS.map((item) => {
           const Icon = item.icon;
           const locked = isLocked(item.path);
@@ -326,27 +305,25 @@ export default function UserWorkspaceShell({ children }) {
       </nav>
 
       {notice && (
-        <div className="app-notice-backdrop" role="presentation" onMouseDown={closeNotice}>
-          <section
-            className="app-notice"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="app-notice-title"
-            aria-describedby="app-notice-description"
-            ref={dialogRef}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
+        <Dialog
+          backdropClassName="app-notice-backdrop"
+          className="app-notice"
+          labelledBy="app-notice-title"
+          describedBy="app-notice-description"
+          initialFocusRef={noticeDeferButtonRef}
+          restoreFocusRef={noticeTriggerRef}
+          onClose={closeNotice}
+        >
             <span className="app-notice-icon"><Crown size={20} /></span>
             <div>
               <h2 id="app-notice-title">{notice.title}</h2>
               <p id="app-notice-description">{notice.text}</p>
             </div>
             <div className="app-notice-actions">
-              <button type="button" onClick={closeNotice}>Để sau</button>
+              <button ref={noticeDeferButtonRef} type="button" onClick={closeNotice}>Để sau</button>
               <button type="button" onClick={openPricingFromNotice}>Xem bảng giá</button>
             </div>
-          </section>
-        </div>
+        </Dialog>
       )}
     </div>
   );

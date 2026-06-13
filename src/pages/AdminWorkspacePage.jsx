@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Bell,
@@ -186,6 +186,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
   const [subscriptionPlanModal, setSubscriptionPlanModal] = useState({ open: false, mode: "create", plan: null });
   const [aiConfigDetail, setAIConfigDetail] = useState(null);
+  const operatorDialogTriggerRef = useRef(null);
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
@@ -567,11 +568,18 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   }
 
   function openCreateAIConfig() {
+    operatorDialogTriggerRef.current = document.activeElement;
     setAIConfigModal({ open: true, mode: "create", config: null });
   }
 
   function openEditAIConfig(config) {
+    operatorDialogTriggerRef.current = document.activeElement;
     setAIConfigModal({ open: true, mode: "edit", config });
+  }
+
+  function openAIConfigDetail(config) {
+    operatorDialogTriggerRef.current = document.activeElement;
+    setAIConfigDetail(config);
   }
 
   function closeAIConfigModal() {
@@ -666,10 +674,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   }
 
   function openCreateSubscriptionPlan() {
+    operatorDialogTriggerRef.current = document.activeElement;
     setSubscriptionPlanModal({ open: true, mode: "create", plan: null });
   }
 
   function openEditSubscriptionPlan(plan) {
+    operatorDialogTriggerRef.current = document.activeElement;
     setSubscriptionPlanModal({ open: true, mode: "edit", plan });
   }
 
@@ -761,10 +771,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   }
 
   function openCreateDoctor() {
+    operatorDialogTriggerRef.current = document.activeElement;
     setDoctorModal({ open: true, mode: "create", doctor: null });
   }
 
   function openEditDoctor(doctor) {
+    operatorDialogTriggerRef.current = document.activeElement;
     setDoctorModal({ open: true, mode: "edit", doctor });
   }
 
@@ -1507,7 +1519,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 ) : (
                   <AIConfigTable
                     configs={filteredAIConfigs}
-                    onView={setAIConfigDetail}
+                    onView={openAIConfigDetail}
                     onEdit={openEditAIConfig}
                     onToggleStatus={handleToggleAIConfigStatus}
                     onDelete={handleDeleteAIConfig}
@@ -1825,6 +1837,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           doctor={doctorModal.doctor}
           facilityDepartmentOptions={facilityDepartmentOptions}
           saving={savingDoctor}
+          restoreFocusRef={operatorDialogTriggerRef}
           onClose={closeDoctorModal}
           onSubmit={handleSaveDoctor}
         />
@@ -1835,6 +1848,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           mode={aiConfigModal.mode}
           config={aiConfigModal.config}
           saving={savingAIConfig}
+          restoreFocusRef={operatorDialogTriggerRef}
           onClose={closeAIConfigModal}
           onSubmit={handleSaveAIConfig}
         />
@@ -1845,12 +1859,17 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           mode={subscriptionPlanModal.mode}
           plan={subscriptionPlanModal.plan}
           saving={savingSubscriptionPlan}
+          restoreFocusRef={operatorDialogTriggerRef}
           onClose={closeSubscriptionPlanModal}
           onSubmit={handleSaveSubscriptionPlan}
         />
       )}
       {aiConfigDetail && (
-        <AIConfigDetailModal config={aiConfigDetail} onClose={() => setAIConfigDetail(null)} />
+        <AIConfigDetailModal
+          config={aiConfigDetail}
+          restoreFocusRef={operatorDialogTriggerRef}
+          onClose={() => setAIConfigDetail(null)}
+        />
       )}
     </main>
   );

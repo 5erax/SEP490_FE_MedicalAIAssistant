@@ -1,12 +1,18 @@
 import { BrainCircuit } from "lucide-react";
+import { Dialog } from "../ui";
 import { formatDateTime, formatEnvironment, getEnvironment } from "./aiConfigUtils";
 
-export default function AIConfigDetailModal({ config, onClose }) {
+export default function AIConfigDetailModal({ config, restoreFocusRef, onClose }) {
   if (!config) return null;
 
   return (
-    <div className="ai-config-modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="ai-config-modal ai-config-detail-modal" role="dialog" aria-modal="true" aria-labelledby="ai-config-detail-title" onMouseDown={(event) => event.stopPropagation()}>
+    <Dialog
+      backdropClassName="ai-config-modal-backdrop"
+      className="ai-config-modal ai-config-detail-modal"
+      labelledBy="ai-config-detail-title"
+      onClose={onClose}
+      restoreFocusRef={restoreFocusRef}
+    >
         <header className="ai-config-modal-header">
           <span className="ai-config-modal-icon"><BrainCircuit size={22} /></span>
           <div>
@@ -48,7 +54,6 @@ export default function AIConfigDetailModal({ config, onClose }) {
           <span>Prompt / System Instruction</span>
           <pre>{config.systemPrompt || "Chưa có system prompt."}</pre>
         </section>
-      </section>
-    </div>
+    </Dialog>
   );
 }
