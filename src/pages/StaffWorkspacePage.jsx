@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Footer } from "../components/landing/PricingSection";
 import { navigate } from "../router/navigation";
-import { authApi, getStoredAuth, medicalDepartmentsApi } from "../services/api";
-import { logoutUser } from "../services/logoutService";
+import { authApi, clearStoredAuth, getStoredAuth, medicalDepartmentsApi } from "../services/api";
 import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
 
@@ -174,7 +173,15 @@ export default function StaffWorkspacePage() {
   }
 
   async function handleLogout() {
-    await logoutUser({ onClear: () => setAuth(null), redirect: navigate });
+    try {
+      await authApi.logout();
+    } catch {
+      // Keep local logout reliable when the server session has already expired.
+    } finally {
+      clearStoredAuth();
+      setAuth(null);
+      navigate("/");
+    }
   }
 
   return (

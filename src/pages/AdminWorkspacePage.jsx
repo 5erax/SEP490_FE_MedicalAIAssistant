@@ -34,6 +34,7 @@ import SubscriptionPlanFormModal from "../components/adminSubscriptions/Subscrip
 import SubscriptionPlanTable from "../components/adminSubscriptions/SubscriptionPlanTable";
 import {
   authApi,
+  clearStoredAuth,
   doctorInvitationsApi,
   facilityDepartmentsApi,
   getStoredAuth,
@@ -44,7 +45,6 @@ import {
 } from "../services/api";
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
 import { doctorManagementApi } from "../services/doctors";
-import { logoutUser } from "../services/logoutService";
 import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
 
@@ -1101,7 +1101,15 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   }
 
   async function handleLogout() {
-    await logoutUser({ onClear: () => setAuth(null), redirect: navigate });
+    try {
+      await authApi.logout();
+    } catch {
+      // Keep local logout reliable when the server session is already gone.
+    } finally {
+      clearStoredAuth();
+      setAuth(null);
+      navigate("/");
+    }
   }
 
   const userColumns = [
