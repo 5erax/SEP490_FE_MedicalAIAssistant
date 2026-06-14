@@ -1,4 +1,4 @@
-import { Badge, DataTable } from "../ui";
+import { Badge, Button, DataTable, EmptyState } from "../ui";
 import { CreditCard, Pencil, Power, Trash2 } from "lucide-react";
 
 function formatPrice(value) {
@@ -86,14 +86,17 @@ export default function SubscriptionPlanTable({ plans, onEdit, onToggleStatus, o
       rows={plans}
       getRowKey={(plan) => plan.id}
       emptyState={(
-        <section className="ui-empty subscription-plan-empty">
-          <span className="subscription-plan-empty-icon"><CreditCard size={26} /></span>
-          <strong>Chưa có gói dịch vụ</strong>
-          <p>Tạo gói đầu tiên để người dùng có thể đăng ký và thanh toán trên trang bảng giá.</p>
-          <button className="btn btn-primary btn-small" type="button" onClick={onCreate}>
-            <CreditCard size={15} /> Tạo gói dịch vụ
-          </button>
-        </section>
+        <EmptyState
+          className="subscription-plan-empty"
+          icon={<CreditCard size={26} />}
+          title="Chưa có gói dịch vụ"
+          description="Tạo gói đầu tiên để người dùng có thể đăng ký và thanh toán trên trang bảng giá."
+          action={(
+            <Button onClick={onCreate}>
+              <CreditCard size={15} aria-hidden="true" /> Tạo gói dịch vụ
+            </Button>
+          )}
+        />
       )}
     />
   );

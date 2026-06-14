@@ -79,6 +79,7 @@ const EMPTY_DOCTOR_FILTERS = {
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
 const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.";
+const SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.";
 const EMPTY_AI_CONFIG_FILTERS = {
   search: "",
   status: "",
@@ -213,6 +214,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
   const [aiConfigLoadError, setAIConfigLoadError] = useState("");
   const [subscriptionPlanMessage, setSubscriptionPlanMessage] = useState(null);
+  const [subscriptionPlanLoadError, setSubscriptionPlanLoadError] = useState("");
 
   const roles = useMemo(() => normalizeRoles(profile?.roles ?? auth?.roles ?? []), [auth, profile]);
   const isAdmin = hasRole(roles, "admin");
@@ -434,8 +436,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         if (subscriptionPlanResult.status === "fulfilled") {
           setSubscriptionPlans(Array.isArray(subscriptionPlanResult.value.data) ? subscriptionPlanResult.value.data : []);
         } else {
-          console.error("Subscription plan API error:", subscriptionPlanResult.reason);
-          setSubscriptionPlanMessage({ type: "error", text: subscriptionPlanResult.reason.message });
+          setSubscriptionPlanLoadError(SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE);
         }
       })
       .finally(() => {
@@ -678,12 +679,17 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function loadSubscriptionPlans() {
     setSubscriptionPlansLoading(true);
     setSubscriptionPlanMessage(null);
+    setSubscriptionPlanLoadError("");
     try {
       const response = await subscriptionPlansApi.list();
       setSubscriptionPlans(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      setSubscriptionPlanMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không tải được gói dịch vụ", message: error.message });
+    } catch {
+      setSubscriptionPlanLoadError(SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE);
+      showToast({
+        type: "error",
+        title: "Không tải được gói dịch vụ",
+        message: SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE,
+      });
     } finally {
       setSubscriptionPlansLoading(false);
     }
@@ -1607,9 +1613,20 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 <ApiMessage message={subscriptionPlanMessage} />
 
                 {subscriptionPlansLoading ? (
-                  <div className="subscription-plan-skeleton" aria-live="polite" aria-busy="true">
-                    {Array.from({ length: 3 }).map((_, index) => <div key={index} />)}
-                  </div>
+                  <LoadingState
+                    label="Đang tải danh sách gói dịch vụ..."
+                    description="Dữ liệu gói đăng ký đang được đồng bộ."
+                  />
+                ) : subscriptionPlanLoadError ? (
+                  <ErrorState
+                    title="Không thể tải danh sách gói dịch vụ"
+                    description={subscriptionPlanLoadError}
+                    action={(
+                      <Button onClick={loadSubscriptionPlans}>
+                        <RefreshCw size={16} aria-hidden="true" /> Thử tải lại
+                      </Button>
+                    )}
+                  />
                 ) : (
                   <SubscriptionPlanTable
                     plans={subscriptionPlans}
