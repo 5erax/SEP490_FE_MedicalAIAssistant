@@ -136,6 +136,15 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Bổ sung kiểm thử upload ảnh không hợp lệ/hợp lệ.
 - [x] Chạy lint, build, kiểm thử liên quan và cập nhật nhật ký thay đổi.
 
+### FE-SEC-012: Loại PII khỏi auth storage
+
+- [x] Xác minh đường truyền `phoneNumber` từ auth/profile response tới localStorage.
+- [x] Chỉ lưu token, role, ID kỹ thuật, onboarding và entitlement bằng whitelist rõ ràng.
+- [x] Loại email, tên, địa chỉ, số điện thoại và refresh token khỏi auth storage.
+- [x] Tự làm sạch auth storage cũ khi phiên được đọc.
+- [x] Bổ sung test cho login response và phiên cũ có chứa PII.
+- [x] Chạy lint, build, kiểm thử liên quan và cập nhật nhật ký thay đổi.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -149,9 +158,10 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-14 | FE-STATE-006 | Hoàn thành | Tách lỗi tải khỏi thông báo thao tác; migrate loading/error/empty state; thêm retry an toàn và CTA 44 px cho Admin Subscription Plans | `npm.cmd run lint`; `npm.cmd run build`; Admin state 5 passed; Subscription Plans 2 passed ở 390x844; accessibility 14 passed; browser kiểm tra bảng mobile không tràn trang |
 | 2026-06-14 | FE-STATE-007 | Hoàn thành | Tách lỗi tải khỏi thông báo approve/delete; thêm retry an toàn, ẩn phân trang khi lỗi và ổn định assertion retry cho bộ Admin state | `npm.cmd run lint`; `npm.cmd run build`; Admin state 6 passed; Admin Users 1 passed ở 390x844; accessibility 14 passed; CTA retry 44 px và không tràn ngang |
 | 2026-06-14 | FE-STATE-008 | Hoàn thành | Tách lỗi tải cơ sở/liên kết chuyên khoa khỏi thông báo submit; migrate loading/error/empty state và thêm retry an toàn | `npm.cmd run lint`; `npm.cmd run build`; Admin state 8 passed; Facilities 2 passed, gồm viewport 390x844; accessibility 14 passed; CTA retry 44 px và không tràn ngang |
-| 2026-06-14 | FE-AUTH-009 | Hoàn thành | Hợp nhất `firstLogin`/`isProfileCompleted`; giới hạn onboarding cho Patient; giữ phone trong phiên; dùng validation chung và lỗi field có liên kết ARIA | `npm.cmd run lint`; `npm.cmd run build`; auth/profile/payment/upload 19 passed; accessibility 14 passed |
+| 2026-06-14 | FE-AUTH-009 | Hoàn thành | Hợp nhất `firstLogin`/`isProfileCompleted`; giới hạn onboarding cho Patient; không dùng auth storage cho phone; dùng validation chung và lỗi field có liên kết ARIA | `npm.cmd run lint`; `npm.cmd run build`; auth/profile/payment/upload 19 passed; accessibility 14 passed |
 | 2026-06-14 | FE-PAY-010 | Hoàn thành | `/payment/cancel` kết thúc ngay ở trạng thái đã hủy, không poll status API và không thay đổi entitlement | Payment result 2 passed; browser xác nhận trạng thái `Đã hủy` hiển thị ngay |
 | 2026-06-14 | FE-SEC-011 | Hoàn thành | Decode ảnh hợp lệ vào canvas thay vì gắn file URL vào DOM; giới hạn JPG/PNG/WEBP 10 MB; thêm quyền workflow tối thiểu | Medication upload 1 passed; không còn `createObjectURL`/`img src={preview}`; `git diff --check` passed |
+| 2026-06-14 | FE-SEC-012 | Hoàn thành | Whitelist auth storage và tự làm sạch phiên cũ; loại email, tên, địa chỉ, số điện thoại và refresh token khỏi localStorage | `npm.cmd run lint`; `npm.cmd run build`; auth/profile/backend contract 22 passed; payment/upload 3 passed; accessibility 14 passed; không còn đường `phoneNumber` tới `setStoredAuth` |
 
 ## Mẫu cập nhật
 

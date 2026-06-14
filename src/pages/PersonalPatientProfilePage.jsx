@@ -6,7 +6,6 @@ import { getReturnToFromSearch } from "../router/returnIntent";
 import { authApi, getStoredAuth, setStoredAuth } from "../services/api";
 import { findPatientProfileByUserId, savePatientProfileSetup } from "../services/patientProfileSetup";
 import {
-  normalizePhoneNumber,
   validateMedicalProfile,
   validatePersonalProfile,
 } from "../utils/profileValidation";
@@ -148,10 +147,10 @@ export default function PersonalPatientProfilePage() {
 
       setForm((current) => ({
         ...current,
-        displayName: resolvedUser?.displayName ?? resolvedUser?.name ?? auth.email?.split("@")[0] ?? "",
+        displayName: resolvedUser?.displayName ?? resolvedUser?.name ?? "",
         dateOfBirth: toDateInput(resolvedUser?.dateOfBirth),
         gender: String(resolvedUser?.gender ?? "1"),
-        phoneNumber: resolvedUser?.phoneNumber ?? auth.phoneNumber ?? "",
+        phoneNumber: resolvedUser?.phoneNumber ?? "",
         address: resolvedUser?.address ?? "",
       }));
       setLoading(false);
@@ -203,7 +202,6 @@ export default function PersonalPatientProfilePage() {
         firstLogin: false,
         isFirstLogin: false,
         isProfileCompleted: true,
-        phoneNumber: normalizePhoneNumber(form.phoneNumber),
       };
       setStoredAuth(nextAuth);
       setAuth(nextAuth);

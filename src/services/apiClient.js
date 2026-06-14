@@ -16,6 +16,29 @@ function parseStoredAuth() {
   }
 }
 
+function selectStoredAuth(auth) {
+  if (!auth || typeof auth !== "object") return null;
+
+  return {
+    accessToken: auth.accessToken,
+    userId: auth.userId,
+    identityId: auth.identityId,
+    roles: auth.roles,
+    role: auth.role,
+    expiresAtUtc: auth.expiresAtUtc,
+    firstLogin: auth.firstLogin,
+    isFirstLogin: auth.isFirstLogin,
+    isProfileCompleted: auth.isProfileCompleted,
+    isPremium: auth.isPremium,
+    isSubscribed: auth.isSubscribed,
+    hasPremiumAccess: auth.hasPremiumAccess,
+    planName: auth.planName,
+    subscriptionPlan: auth.subscriptionPlan,
+    plan: auth.plan,
+    subscriptionStatus: auth.subscriptionStatus,
+  };
+}
+
 function decodeJwtPayload(token) {
   try {
     const payload = String(token).split(".")[1];
@@ -58,12 +81,18 @@ export function getStoredAuth() {
     clearStoredAuth();
     return null;
   }
-  return auth;
+
+  const storedAuth = selectStoredAuth(auth);
+  const serializedAuth = JSON.stringify(storedAuth);
+  if (localStorage.getItem(AUTH_STORAGE_KEY) !== serializedAuth) {
+    localStorage.setItem(AUTH_STORAGE_KEY, serializedAuth);
+  }
+  return storedAuth;
 }
 
 export function setStoredAuth(auth) {
   if (!auth) return;
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(selectStoredAuth(auth)));
 }
 
 export function clearStoredAuth() {

@@ -181,6 +181,10 @@ test.describe("global navigation UX", () => {
           firstLogin: true,
           isProfileCompleted: true,
           email: "patient@example.com",
+          displayName: "Patient Example",
+          phoneNumber: "0901234567",
+          address: "123 Sensitive Street",
+          refreshToken: "sensitive-refresh-token",
         },
       }),
     }));
@@ -197,6 +201,38 @@ test.describe("global navigation UX", () => {
       isFirstLogin: false,
       isProfileCompleted: true,
     });
+    expect(storedAuth).not.toHaveProperty("email");
+    expect(storedAuth).not.toHaveProperty("displayName");
+    expect(storedAuth).not.toHaveProperty("phoneNumber");
+    expect(storedAuth).not.toHaveProperty("address");
+    expect(storedAuth).not.toHaveProperty("refreshToken");
+  });
+
+  test("existing auth storage removes personal data when the session is read", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        roles: ["Patient"],
+        email: "patient@example.com",
+        displayName: "Patient Example",
+        phoneNumber: "0901234567",
+        address: "123 Sensitive Street",
+      }));
+    }, ACCESS_TOKEN);
+
+    await openRoute(page, "/dashboard");
+
+    const storedAuth = await page.evaluate(() => JSON.parse(localStorage.getItem("medimate.auth")));
+    expect(storedAuth).toMatchObject({
+      userId: "55555555-5555-4555-8555-555555555555",
+      roles: ["Patient"],
+    });
+    expect(storedAuth).not.toHaveProperty("email");
+    expect(storedAuth).not.toHaveProperty("displayName");
+    expect(storedAuth).not.toHaveProperty("phoneNumber");
+    expect(storedAuth).not.toHaveProperty("address");
   });
 
   test("doctor first login opens the staff workspace instead of patient onboarding", async ({ page }) => {

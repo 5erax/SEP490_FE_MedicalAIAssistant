@@ -33,7 +33,7 @@ export default function UserProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState("");
-  const [profileForm, setProfileForm] = useState({ ...EMPTY_USER, email: auth?.email || "" });
+  const [profileForm, setProfileForm] = useState(EMPTY_USER);
   const [medicalForm, setMedicalForm] = useState({
     bloodType: "",
     height: "",
@@ -59,9 +59,9 @@ export default function UserProfilePage() {
       const resolvedUserId = user.userId ?? user.identityId ?? user.id ?? auth?.userId ?? auth?.identityId ?? "";
       setUserId(resolvedUserId);
       setProfileForm({
-        displayName: user.displayName ?? user.name ?? auth?.displayName ?? "",
-        email: user.email ?? auth?.email ?? "",
-        phoneNumber: user.phoneNumber ?? auth?.phoneNumber ?? "",
+        displayName: user.displayName ?? user.name ?? "",
+        email: user.email ?? "",
+        phoneNumber: user.phoneNumber ?? "",
         address: user.address ?? "",
         gender: String(user.gender ?? "1"),
         dateOfBirth: user.dateOfBirth ? String(user.dateOfBirth).slice(0, 10) : "",
@@ -88,7 +88,7 @@ export default function UserProfilePage() {
     return () => {
       active = false;
     };
-  }, [auth?.displayName, auth?.email, auth?.identityId, auth?.phoneNumber, auth?.userId]);
+  }, [auth?.identityId, auth?.userId]);
 
   function updateProfile(key, value) {
     setProfileForm((current) => ({ ...current, [key]: value }));
