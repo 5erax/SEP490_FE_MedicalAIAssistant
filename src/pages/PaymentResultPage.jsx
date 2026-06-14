@@ -77,7 +77,9 @@ function getView(status, expectedResult) {
 
 export default function PaymentResultPage({ expectedResult }) {
   const [orderCode] = useState(getOrderCode);
-  const [status, setStatus] = useState(orderCode ? "checking" : "missing");
+  const [status, setStatus] = useState(
+    expectedResult === "cancel" ? "cancelled" : orderCode ? "checking" : "missing",
+  );
   const [message, setMessage] = useState("");
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
@@ -111,7 +113,7 @@ export default function PaymentResultPage({ expectedResult }) {
   }, [orderCode, refreshPremiumState]);
 
   useEffect(() => {
-    if (!orderCode) return undefined;
+    if (!orderCode || expectedResult === "cancel") return undefined;
     let active = true;
     let timer;
     let attempts = 0;
@@ -219,7 +221,9 @@ export default function PaymentResultPage({ expectedResult }) {
       </section>
 
       <p className="payment-result-support">
-        Không đóng trình duyệt trong lúc xác minh. Nếu tiền đã trừ nhưng gói chưa kích hoạt, hãy giữ lại mã giao dịch để liên hệ hỗ trợ.
+        {status === "cancelled"
+          ? "Giao dịch đã dừng và gói hiện tại của bạn không thay đổi. Bạn có thể đóng trang hoặc chọn lại gói."
+          : "Không đóng trình duyệt trong lúc xác minh. Nếu tiền đã trừ nhưng gói chưa kích hoạt, hãy giữ lại mã giao dịch để liên hệ hỗ trợ."}
       </p>
     </main>
   );

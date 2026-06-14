@@ -1,4 +1,5 @@
 import { authApi, patientProfilesApi } from "./api";
+import { normalizePersonalProfile } from "../utils/profileValidation";
 
 function numberOrNull(value) {
   if (value === "" || value === null || value === undefined) return null;
@@ -7,13 +8,7 @@ function numberOrNull(value) {
 }
 
 export async function savePatientProfileSetup({ userId, existingProfileId, form }) {
-  await authApi.updateUser(userId, {
-    displayName: form.displayName.trim(),
-    address: form.address.trim(),
-    gender: Number(form.gender),
-    dateOfBirth: form.dateOfBirth || null,
-    phoneNumber: form.phoneNumber.trim(),
-  });
+  await authApi.updateUser(userId, normalizePersonalProfile(form));
 
   const patientPayload = {
     bloodType: form.bloodType || null,

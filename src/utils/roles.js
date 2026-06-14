@@ -63,8 +63,15 @@ export function getWorkspacePath(authOrUser) {
 export function shouldSetupPatientProfile(authOrUser) {
   const roles = normalizeRoles(collectRoleValues(authOrUser));
   const isFirstLogin = authOrUser?.isFirstLogin === true || authOrUser?.firstLogin === true;
+  const isProfileCompleted = authOrUser?.isProfileCompleted === true;
 
-  return isFirstLogin && !hasRole(roles, "admin") && !hasRole(roles, "staff");
+  return (
+    isFirstLogin
+    && !isProfileCompleted
+    && hasRole(roles, "patient")
+    && !hasRole(roles, "admin")
+    && !hasRole(roles, "staff")
+  );
 }
 
 export function getPostLoginPath(authOrUser) {

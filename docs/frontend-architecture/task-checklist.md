@@ -113,6 +113,29 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Chạy lint, build, kiểm thử liên quan và kiểm tra responsive/accessibility.
 - [x] Cập nhật roadmap và nhật ký thay đổi với kết quả thực tế.
 
+### FE-AUTH-009: Ổn định onboarding hồ sơ và validation
+
+- [x] Đối chiếu route guard, auth response, `/api/users/me` và patient profile contract.
+- [x] Hợp nhất `firstLogin` với `isProfileCompleted` và chỉ áp dụng onboarding cho Patient.
+- [x] Chuẩn hóa validation thông tin cá nhân và sức khỏe ở màn hình tạo/chỉnh sửa hồ sơ.
+- [x] Bổ sung test đăng nhập lại sau khi hoàn tất hồ sơ và test role Doctor.
+- [x] Chạy lint, build, kiểm thử liên quan và cập nhật nhật ký thay đổi.
+
+### FE-PAY-010: Kết thúc ngay luồng PayOS cancel
+
+- [x] Audit callback `/payment/cancel`, status polling và contract `payos-status`.
+- [x] Hiển thị trạng thái đã hủy ngay, không poll kéo dài hoặc suy diễn quyền lợi thanh toán.
+- [x] Bổ sung test đảm bảo cancel không gọi status API tự động.
+- [x] Chạy kiểm thử liên quan và cập nhật nhật ký thay đổi.
+
+### FE-SEC-011: Khắc phục cảnh báo CodeQL frontend và workflow
+
+- [x] Xác minh đường truyền file upload tới DOM và quyền `GITHUB_TOKEN` hiện tại.
+- [x] Loại bỏ URL file không tin cậy khỏi thuộc tính DOM, đồng thời validate loại/kích thước ảnh.
+- [x] Khai báo quyền đọc tối thiểu ở cấp workflow và giữ quyền ghi package riêng cho publish job.
+- [x] Bổ sung kiểm thử upload ảnh không hợp lệ/hợp lệ.
+- [x] Chạy lint, build, kiểm thử liên quan và cập nhật nhật ký thay đổi.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -126,6 +149,9 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-14 | FE-STATE-006 | Hoàn thành | Tách lỗi tải khỏi thông báo thao tác; migrate loading/error/empty state; thêm retry an toàn và CTA 44 px cho Admin Subscription Plans | `npm.cmd run lint`; `npm.cmd run build`; Admin state 5 passed; Subscription Plans 2 passed ở 390x844; accessibility 14 passed; browser kiểm tra bảng mobile không tràn trang |
 | 2026-06-14 | FE-STATE-007 | Hoàn thành | Tách lỗi tải khỏi thông báo approve/delete; thêm retry an toàn, ẩn phân trang khi lỗi và ổn định assertion retry cho bộ Admin state | `npm.cmd run lint`; `npm.cmd run build`; Admin state 6 passed; Admin Users 1 passed ở 390x844; accessibility 14 passed; CTA retry 44 px và không tràn ngang |
 | 2026-06-14 | FE-STATE-008 | Hoàn thành | Tách lỗi tải cơ sở/liên kết chuyên khoa khỏi thông báo submit; migrate loading/error/empty state và thêm retry an toàn | `npm.cmd run lint`; `npm.cmd run build`; Admin state 8 passed; Facilities 2 passed, gồm viewport 390x844; accessibility 14 passed; CTA retry 44 px và không tràn ngang |
+| 2026-06-14 | FE-AUTH-009 | Hoàn thành | Hợp nhất `firstLogin`/`isProfileCompleted`; giới hạn onboarding cho Patient; giữ phone trong phiên; dùng validation chung và lỗi field có liên kết ARIA | `npm.cmd run lint`; `npm.cmd run build`; auth/profile/payment/upload 19 passed; accessibility 14 passed |
+| 2026-06-14 | FE-PAY-010 | Hoàn thành | `/payment/cancel` kết thúc ngay ở trạng thái đã hủy, không poll status API và không thay đổi entitlement | Payment result 2 passed; browser xác nhận trạng thái `Đã hủy` hiển thị ngay |
+| 2026-06-14 | FE-SEC-011 | Hoàn thành | Decode ảnh hợp lệ vào canvas thay vì gắn file URL vào DOM; giới hạn JPG/PNG/WEBP 10 MB; thêm quyền workflow tối thiểu | Medication upload 1 passed; không còn `createObjectURL`/`img src={preview}`; `git diff --check` passed |
 
 ## Mẫu cập nhật
 

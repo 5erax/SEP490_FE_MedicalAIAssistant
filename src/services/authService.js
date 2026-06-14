@@ -5,7 +5,21 @@ import { normalizeUserRecord } from "./userService";
 function normalizeAuthResponse(response) {
   const authData = response?.data ?? response;
   if (authData?.accessToken) {
-    setStoredAuth(authData);
+    const isProfileCompleted = authData.isProfileCompleted === true;
+    const isFirstLogin = isProfileCompleted
+      ? false
+      : authData.firstLogin === true || authData.isFirstLogin === true;
+    const normalizedAuth = {
+      ...authData,
+      firstLogin: isFirstLogin,
+      isFirstLogin,
+      isProfileCompleted,
+    };
+
+    setStoredAuth(normalizedAuth);
+    return response?.data
+      ? { ...response, data: normalizedAuth }
+      : normalizedAuth;
   }
   return response;
 }

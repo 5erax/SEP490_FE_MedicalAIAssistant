@@ -1,10 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { cloneElement, useEffect, useId, useMemo, useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch } from "../router/returnIntent";
 import { authApi, getStoredAuth, patientProfilesApi, setStoredAuth } from "../services/api";
 import { savePatientProfileSetup } from "../services/patientProfileSetup";
+import {
+  normalizePhoneNumber,
+  validateMedicalProfile,
+  validatePersonalProfile,
+} from "../utils/profileValidation";
 import { getWorkspacePath } from "../utils/roles";
 
 const BLOOD_TYPES = ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -24,15 +29,29 @@ const INITIAL_FORM = {
 
 function ApiMessage({ message }) {
   if (!message) return null;
-  return <div className={`api-message ${message.type}`}>{message.text}</div>;
+  return (
+    <div
+      className={`api-message ${message.type}`}
+      role={message.type === "error" ? "alert" : "status"}
+      aria-live={message.type === "error" ? "assertive" : "polite"}
+    >
+      {message.text}
+    </div>
+  );
 }
 
 function Field({ label, error, children }) {
+  const id = useId();
+  const errorId = `${id}-error`;
   return (
-    <label className={`clean-field profile-setup-field ${error ? "has-error" : ""}`}>
+    <label className={`clean-field profile-setup-field ${error ? "has-error" : ""}`} htmlFor={id}>
       <span>{label}</span>
-      {children}
-      {error && <small>{error}</small>}
+      {cloneElement(children, {
+        id,
+        "aria-invalid": Boolean(error),
+        "aria-describedby": error ? errorId : undefined,
+      })}
+      {error && <small id={errorId}>{error}</small>}
     </label>
   );
 }
@@ -55,17 +74,6 @@ function toPatientForm(profile) {
     allergyNote: profile.allergyNote ?? "",
     chronicDiseaseNote: profile.chronicDiseaseNote ?? "",
   };
-}
-
-function validateForm(form) {
-  const errors = {};
-  if (!form.displayName.trim()) errors.displayName = "Vui lòng nhập họ và tên.";
-  if (!form.dateOfBirth) errors.dateOfBirth = "Vui lòng chọn ngày sinh.";
-  if (!form.phoneNumber.trim()) errors.phoneNumber = "Vui lòng nhập số điện thoại.";
-  if (!form.address.trim()) errors.address = "Vui lòng nhập địa chỉ.";
-  if (form.height && Number(form.height) <= 0) errors.height = "Chiều cao phải lớn hơn 0.";
-  if (form.weight && Number(form.weight) <= 0) errors.weight = "Cân nặng phải lớn hơn 0.";
-  return errors;
 }
 
 function EmptyAuth() {
@@ -144,7 +152,7 @@ export default function PersonalPatientProfilePage() {
         displayName: resolvedUser?.displayName ?? resolvedUser?.name ?? auth.email?.split("@")[0] ?? "",
         dateOfBirth: toDateInput(resolvedUser?.dateOfBirth),
         gender: String(resolvedUser?.gender ?? "1"),
-        phoneNumber: resolvedUser?.phoneNumber ?? "",
+        phoneNumber: resolvedUser?.phoneNumber ?? auth.phoneNumber ?? "",
         address: resolvedUser?.address ?? "",
         ...toPatientForm(matchedProfile),
       }));
@@ -167,7 +175,10 @@ export default function PersonalPatientProfilePage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    const nextErrors = validateForm(form);
+    const nextErrors = {
+      ...validatePersonalProfile(form, { required: true }),
+      ...validateMedicalProfile(form),
+    };
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -195,6 +206,7 @@ export default function PersonalPatientProfilePage() {
         firstLogin: false,
         isFirstLogin: false,
         isProfileCompleted: true,
+        phoneNumber: normalizePhoneNumber(form.phoneNumber),
       };
       setStoredAuth(nextAuth);
       setAuth(nextAuth);
@@ -237,7 +249,7 @@ export default function PersonalPatientProfilePage() {
             </div>
           </aside>
 
-          <form className="profile-setup-form" onSubmit={handleSubmit}>
+          <form className="profile-setup-form" onSubmit={handleSubmit} noValidate>
             <div className="profile-setup-heading">
               <div>
                 <p className="eyebrow">Bệnh nhân</p>
@@ -260,14 +272,14 @@ export default function PersonalPatientProfilePage() {
                 <Field label="Ngày sinh" error={errors.dateOfBirth}>
                   <input type="date" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
                 </Field>
-                <Field label="Giới tính">
+                <Field label="Giới tính" error={errors.gender}>
                   <select value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>
                     <option value="1">Nam</option>
                     <option value="2">Nữ</option>
                   </select>
                 </Field>
                 <Field label="Số điện thoại" error={errors.phoneNumber}>
-                  <input value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} disabled={loading || submitting} />
+                  <input type="tel" inputMode="tel" autoComplete="tel" value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} disabled={loading || submitting} />
                 </Field>
               </div>
               <Field label="Địa chỉ" error={errors.address}>
@@ -289,18 +301,18 @@ export default function PersonalPatientProfilePage() {
                   </select>
                 </Field>
                 <Field label="Chiều cao (cm)" error={errors.height}>
-                  <input type="number" min="0" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
+                  <input type="number" min="40" max="250" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field label="Cân nặng (kg)" error={errors.weight}>
-                  <input type="number" min="0" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
+                  <input type="number" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
                 </Field>
               </div>
               <div className="form-two-cols">
-                <Field label="Dị ứng">
-                  <textarea rows={4} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
+                <Field label="Dị ứng" error={errors.allergyNote}>
+                  <textarea rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
                 </Field>
-                <Field label="Bệnh nền">
-                  <textarea rows={4} value={form.chronicDiseaseNote} onChange={(event) => updateField("chronicDiseaseNote", event.target.value)} placeholder="Ví dụ: hen suyễn, tăng huyết áp..." disabled={loading || submitting} />
+                <Field label="Bệnh nền" error={errors.chronicDiseaseNote}>
+                  <textarea rows={4} maxLength={1000} value={form.chronicDiseaseNote} onChange={(event) => updateField("chronicDiseaseNote", event.target.value)} placeholder="Ví dụ: hen suyễn, tăng huyết áp..." disabled={loading || submitting} />
                 </Field>
               </div>
             </section>
