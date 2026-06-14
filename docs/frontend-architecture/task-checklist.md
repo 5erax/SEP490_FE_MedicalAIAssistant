@@ -93,6 +93,16 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Chạy lint, build, kiểm thử liên quan và kiểm tra responsive/accessibility.
 - [x] Cập nhật roadmap và nhật ký thay đổi với kết quả thực tế.
 
+### FE-STATE-007: Chuẩn hóa trạng thái dữ liệu Admin Users
+
+- [x] Xác nhận phạm vi và tiêu chí nghiệm thu từ P0-04.
+- [x] Audit luồng tải, tìm kiếm, phân trang, thông báo thao tác và empty state hiện tại.
+- [x] Tách lỗi tải dữ liệu khỏi thông báo thao tác và bổ sung retry tại chỗ.
+- [x] Chuẩn hóa loading, error và empty state bằng primitive dùng chung.
+- [x] Bổ sung kiểm thử cho lỗi tải, keyboard retry và kết quả rỗng sau retry.
+- [x] Chạy lint, build, kiểm thử liên quan và kiểm tra responsive/accessibility.
+- [x] Cập nhật roadmap và nhật ký thay đổi với kết quả thực tế.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -104,6 +114,7 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-13 | FE-STATE-004 | Hoàn thành | Tách lỗi tải khỏi thông báo thao tác; migrate loading/error/empty state; thêm retry an toàn và CTA 44 px cho Admin Doctors | `npm.cmd run lint`; `npm.cmd run build`; Admin Doctors 2 passed; accessibility 14 passed; browser kiểm tra mobile 390x844 không tràn ngang |
 | 2026-06-14 | FE-STATE-005 | Hoàn thành | Tách lỗi tải khỏi thông báo thao tác; migrate loading/error/empty state; thêm retry an toàn và CTA 44 px cho Admin AI Configs | `npm.cmd run lint`; `npm.cmd run build`; Admin state 3 passed; accessibility 14 passed; browser kiểm tra mobile 390x844 không tràn ngang |
 | 2026-06-14 | FE-STATE-006 | Hoàn thành | Tách lỗi tải khỏi thông báo thao tác; migrate loading/error/empty state; thêm retry an toàn và CTA 44 px cho Admin Subscription Plans | `npm.cmd run lint`; `npm.cmd run build`; Admin state 5 passed; Subscription Plans 2 passed ở 390x844; accessibility 14 passed; browser kiểm tra bảng mobile không tràn trang |
+| 2026-06-14 | FE-STATE-007 | Hoàn thành | Tách lỗi tải khỏi thông báo approve/delete; thêm retry an toàn, ẩn phân trang khi lỗi và ổn định assertion retry cho bộ Admin state | `npm.cmd run lint`; `npm.cmd run build`; Admin state 6 passed; Admin Users 1 passed ở 390x844; accessibility 14 passed; CTA retry 44 px và không tràn ngang |
 
 ## Mẫu cập nhật
 

@@ -77,6 +77,7 @@ const EMPTY_DOCTOR_FILTERS = {
   departmentRole: "",
 };
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
+const USER_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách tài khoản.";
 const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.";
 const SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.";
@@ -206,6 +207,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [savingSubscriptionPlan, setSavingSubscriptionPlan] = useState(false);
   const [globalMessage, setGlobalMessage] = useState(null);
   const [usersMessage, setUsersMessage] = useState(null);
+  const [usersLoadError, setUsersLoadError] = useState("");
   const [departmentMessage, setDepartmentMessage] = useState(null);
   const [facilityMessage, setFacilityMessage] = useState(null);
   const [staffMessage, setStaffMessage] = useState(null);
@@ -369,6 +371,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
         if (usersResult.status === "fulfilled") {
           const data = usersResult.value.data ?? {};
+          setUsersLoadError("");
           setUsers(data.items ?? []);
           setPageInfo({
             pageNumber: data.pageNumber ?? 1,
@@ -377,7 +380,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             totalPages: data.totalPages ?? 1,
           });
         } else {
-          setUsersMessage({ type: "error", text: usersResult.reason.message });
+          setUsersLoadError(USER_LOAD_ERROR_MESSAGE);
         }
 
         if (departmentResult.status === "fulfilled") {
@@ -461,6 +464,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function loadUsers(pageNumber = pageInfo.pageNumber) {
     setUsersLoading(true);
     setUsersMessage(null);
+    setUsersLoadError("");
     try {
       const response = await usersApi.list(pageNumber, pageInfo.pageSize);
       const data = response.data ?? {};
@@ -471,8 +475,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         totalCount: data.totalCount ?? 0,
         totalPages: data.totalPages ?? 1,
       });
-    } catch (error) {
-      setUsersMessage({ type: "error", text: error.message });
+    } catch {
+      setUsersLoadError(USER_LOAD_ERROR_MESSAGE);
+      showToast({
+        type: "error",
+        title: "Không tải được danh sách tài khoản",
+        message: USER_LOAD_ERROR_MESSAGE,
+      });
     } finally {
       setUsersLoading(false);
     }
@@ -1342,6 +1351,16 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
                 {usersLoading ? (
                   <LoadingState label="Đang tải danh sách người dùng..." />
+                ) : usersLoadError ? (
+                  <ErrorState
+                    title="Không thể tải danh sách tài khoản"
+                    description={usersLoadError}
+                    action={(
+                      <Button onClick={() => loadUsers()}>
+                        <RefreshCw size={16} aria-hidden="true" /> Thử tải lại
+                      </Button>
+                    )}
+                  />
                 ) : (
                   <DataTable
                     caption="Danh sách tài khoản đang chờ quản trị viên duyệt"
@@ -1352,11 +1371,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                   />
                 )}
 
-                <div className="pagination-row">
-                  <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => loadUsers(pageInfo.pageNumber - 1)}>Trước</button>
-                  <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {filteredUsers.length} tài khoản cần duyệt</span>
-                  <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => loadUsers(pageInfo.pageNumber + 1)}>Sau</button>
-                </div>
+                {!usersLoadError && (
+                  <div className="pagination-row">
+                    <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1 || usersLoading} onClick={() => loadUsers(pageInfo.pageNumber - 1)}>Trước</button>
+                    <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {filteredUsers.length} tài khoản cần duyệt</span>
+                    <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages || usersLoading} onClick={() => loadUsers(pageInfo.pageNumber + 1)}>Sau</button>
+                  </div>
+                )}
               </section>
             )}
 
