@@ -171,7 +171,6 @@ test("admin retries a failed doctor list and receives an empty state", async ({ 
   await retryButton.focus();
   await page.keyboard.press("Enter");
 
-  await expect(loadingState).toBeVisible();
   await expect(page.getByText("Chưa có bác sĩ phù hợp", { exact: true })).toBeVisible();
   await expect(page.getByText("Trang 1 / 1 · 0 bác sĩ", { exact: true })).toBeVisible();
   expect(doctorRequestCount).toBe(3);

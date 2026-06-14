@@ -168,6 +168,107 @@ test.describe("global navigation UX", () => {
     await expect(page).toHaveURL(/\/patient\/profile\/setup\?returnTo=%2Fsymptom$/);
   });
 
+  test("completed patient profile does not reopen onboarding after login", async ({ page }) => {
+    await preparePage(page);
+    await page.route("**/api/authentication/login", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          accessToken: ACCESS_TOKEN,
+          roles: ["Patient"],
+          firstLogin: true,
+          isProfileCompleted: true,
+          email: "patient@example.com",
+          displayName: "Patient Example",
+          phoneNumber: "0901234567",
+          address: "123 Sensitive Street",
+          refreshToken: "sensitive-refresh-token",
+        },
+      }),
+    }));
+
+    await openRoute(page, "/login");
+    await page.getByLabel("Email").fill("patient@example.com");
+    await page.getByLabel("Mật khẩu").fill("Example123!");
+    await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const storedAuth = await page.evaluate(() => JSON.parse(localStorage.getItem("medimate.auth")));
+    expect(storedAuth).toMatchObject({
+      firstLogin: false,
+      isFirstLogin: false,
+      isProfileCompleted: true,
+    });
+    expect(storedAuth).not.toHaveProperty("email");
+    expect(storedAuth).not.toHaveProperty("displayName");
+    expect(storedAuth).not.toHaveProperty("phoneNumber");
+    expect(storedAuth).not.toHaveProperty("address");
+    expect(storedAuth).not.toHaveProperty("refreshToken");
+  });
+
+  test("existing auth storage removes personal data when the session is read", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        roles: ["Patient"],
+        email: "patient@example.com",
+        displayName: "Patient Example",
+        phoneNumber: "0901234567",
+        address: "123 Sensitive Street",
+      }));
+    }, ACCESS_TOKEN);
+
+    await openRoute(page, "/dashboard");
+
+    const storedAuth = await page.evaluate(() => JSON.parse(localStorage.getItem("medimate.auth")));
+    expect(storedAuth).toMatchObject({
+      userId: "55555555-5555-4555-8555-555555555555",
+      roles: ["Patient"],
+    });
+    expect(storedAuth).not.toHaveProperty("email");
+    expect(storedAuth).not.toHaveProperty("displayName");
+    expect(storedAuth).not.toHaveProperty("phoneNumber");
+    expect(storedAuth).not.toHaveProperty("address");
+  });
+
+  test("doctor first login opens the staff workspace instead of patient onboarding", async ({ page }) => {
+    await preparePage(page);
+    await page.route("**/api/authentication/login", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          accessToken: ACCESS_TOKEN,
+          roles: ["Doctor"],
+          firstLogin: true,
+          isProfileCompleted: false,
+          email: "doctor@example.com",
+        },
+      }),
+    }));
+    await page.route("**/api/**", (route) => {
+      if (new URL(route.request().url()).pathname === "/api/authentication/login") {
+        return route.fallback();
+      }
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    });
+
+    await openRoute(page, "/login");
+    await page.getByLabel("Email").fill("doctor@example.com");
+    await page.getByLabel("Mật khẩu").fill("Example123!");
+    await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+    await expect(page).toHaveURL(/\/app\/staff$/);
+  });
+
   test("rejects external return intent after login", async ({ page }) => {
     await preparePage(page);
     await page.route("**/api/authentication/login", (route) => route.fulfill({

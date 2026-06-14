@@ -57,23 +57,30 @@ test("payment return verifies the order and opens the activated experience", asy
 });
 
 test("payment cancel keeps the user safe and offers a clear retry path", async ({ page }) => {
-  await page.route("**/api/payments/payos-status/123456789", (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({
-      success: true,
-      data: {
-        orderCode: "123456789",
-        paymentStatus: "Cancelled",
-        subscriptionStatus: "Pending",
-        isPaid: false,
-        isActive: false,
-        isCancelled: true,
-      },
-    }),
-  }));
+  let statusRequests = 0;
+  await page.route("**/api/payments/payos-status/123456789", (route) => {
+    statusRequests += 1;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          orderCode: "123456789",
+          paymentStatus: "Pending",
+          subscriptionStatus: "Pending",
+          isPaid: false,
+          isActive: false,
+          isCancelled: false,
+        },
+      }),
+    });
+  });
 
   await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Bạn chưa bị tính phí." })).toBeVisible();
+  await expect(page.getByText("Đã hủy", { exact: true })).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(statusRequests).toBe(0);
   await page.getByRole("button", { name: "Chọn lại gói" }).click();
   await expect(page).toHaveURL(/\/pricing$/);
 });

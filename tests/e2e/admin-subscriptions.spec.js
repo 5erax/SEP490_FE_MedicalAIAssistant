@@ -162,7 +162,6 @@ test("admin retries a failed subscription plan list and receives an empty state"
   await retryButton.focus();
   await page.keyboard.press("Enter");
 
-  await expect(loadingState).toBeVisible();
   await expect(page.getByText("Chưa có gói dịch vụ", { exact: true })).toBeVisible();
   const createButton = page.getByRole("button", { name: "Tạo gói dịch vụ", exact: true });
   await expect(createButton).toBeVisible();

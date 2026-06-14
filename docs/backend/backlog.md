@@ -8,7 +8,7 @@ Nguồn đối chiếu:
 
 - Product definition và route/service frontend hiện tại.
 - Swagger deploy `http://52.77.210.243:8080/swagger/v1/swagger.json`.
-- Kiểm tra live ngày 2026-06-13.
+- Kiểm tra live ngày 2026-06-14.
 
 ## Trạng thái backend hiện tại
 
@@ -29,7 +29,10 @@ Nguồn đối chiếu:
 **Backend cần làm**
 
 - Bảo đảm login, Google login, refresh và `/api/users/me` trả nhất quán:
-  `userId`, `roles`, `status`, `isFirstLogin`, `isProfileCompleted`.
+  `userId`, `roles`, `status`, `firstLogin`, `isProfileCompleted`, `phoneNumber`.
+- Bổ sung `phoneNumber` vào `ApplicationUserResponse`; Swagger ngày 2026-06-14 chỉ
+  khai báo trường này ở `UpdateUserRequest`, nên frontend không thể tải lại số đã lưu
+  sau một phiên đăng nhập mới.
 - Trả mã lỗi riêng cho pending, disabled, deleted, invalid credential và token hết hạn.
 - Không trả token hoặc thông tin nhạy cảm trong message/log.
 

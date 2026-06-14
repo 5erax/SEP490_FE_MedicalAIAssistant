@@ -1,5 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { navigate as goTo } from "../router/navigation";
+
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_PREVIEW_EDGE = 1600;
 
 const mockScanResult = {
   medicineName: "Amoxicillin",
@@ -28,36 +32,71 @@ function delay(ms) {
 
 function MedicationScanPage() {
   const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [fileError, setFileError] = useState("");
   const [scanStatus, setScanStatus] = useState("idle");
   const [scanStep, setScanStep] = useState("");
   const [scanResult, setScanResult] = useState(null);
   const [drugList, setDrugList] = useState([]);
   const [drugInput, setDrugInput] = useState("");
   const [interactions, setInteractions] = useState([]);
-  const previewRef = useRef(null);
+  const previewCanvasRef = useRef(null);
 
-  useEffect(() => {
-    return () => {
-      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
-    };
-  }, []);
+  const clearPreview = () => {
+    const canvas = previewCanvasRef.current;
+    canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+    setFile(null);
+  };
 
-  const acceptFile = (nextFile) => {
+  const acceptFile = async (nextFile) => {
     if (!nextFile) return;
-    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
-    const objectUrl = URL.createObjectURL(nextFile);
-    previewRef.current = objectUrl;
-    setFile(nextFile);
-    setPreview(objectUrl);
+    setFileError("");
+
+    if (!ALLOWED_IMAGE_TYPES.has(nextFile.type)) {
+      clearPreview();
+      setFileError("Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP.");
+      return;
+    }
+    if (nextFile.size <= 0 || nextFile.size > MAX_IMAGE_BYTES) {
+      clearPreview();
+      setFileError("Ảnh phải có dung lượng lớn hơn 0 và không vượt quá 10 MB.");
+      return;
+    }
+
+    try {
+      const bitmap = await createImageBitmap(nextFile);
+      const scale = Math.min(1, MAX_PREVIEW_EDGE / Math.max(bitmap.width, bitmap.height));
+      const canvas = previewCanvasRef.current;
+      const context = canvas?.getContext("2d");
+      if (!canvas || !context || bitmap.width <= 0 || bitmap.height <= 0) {
+        bitmap.close();
+        throw new Error("invalid-image");
+      }
+
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      setFile(nextFile);
+    } catch {
+      clearPreview();
+      setFileError("Không thể đọc ảnh này. Vui lòng chọn một tệp ảnh hợp lệ khác.");
+      return;
+    }
+
     setScanStatus("idle");
     setScanResult(null);
     setInteractions([]);
   };
 
-  const handleDrop = (event) => {
+  const handleDrop = async (event) => {
     event.preventDefault();
-    acceptFile(event.dataTransfer.files?.[0]);
+    await acceptFile(event.dataTransfer.files?.[0]);
+  };
+
+  const handleFileChange = async (event) => {
+    await acceptFile(event.target.files?.[0]);
+    event.target.value = "";
   };
 
   const handleScan = async () => {
@@ -98,14 +137,18 @@ function MedicationScanPage() {
         <p className="mini-label">Nhận diện thuốc qua ảnh</p>
         <h1>Chụp ảnh hoặc tải lên nhãn thuốc</h1>
         <label
-          className={`upload-zone ${preview ? "has-preview" : ""}`}
+          className={`upload-zone ${file ? "has-preview" : ""}`}
           onDragOver={(event) => event.preventDefault()}
           onDrop={handleDrop}
         >
-          <input type="file" accept="image/*" onChange={(event) => acceptFile(event.target.files?.[0])} />
-          {preview ? (
-            <img src={preview} alt="Ảnh thuốc đã chọn" />
-          ) : (
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
+          <canvas
+            ref={previewCanvasRef}
+            role="img"
+            aria-label="Ảnh thuốc đã chọn"
+            hidden={!file}
+          />
+          {!file && (
             <div>
               <span>📷</span>
               <strong>Chọn ảnh nhãn thuốc</strong>
@@ -113,14 +156,15 @@ function MedicationScanPage() {
             </div>
           )}
         </label>
+        {fileError && <p className="upload-error" role="alert">{fileError}</p>}
         <div className="upload-actions">
           <label>
             Chọn ảnh
-            <input type="file" accept="image/*" onChange={(event) => acceptFile(event.target.files?.[0])} />
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
           </label>
           <label>
             Chụp ảnh
-            <input type="file" accept="image/*" capture="environment" onChange={(event) => acceptFile(event.target.files?.[0])} />
+            <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={handleFileChange} />
           </label>
         </div>
         <button className="primary-action" type="button" disabled={!file || scanStatus === "scanning"} onClick={handleScan}>
@@ -225,7 +269,8 @@ const styles = `
 .upload-zone span { display: grid; place-items: center; width: 62px; height: 62px; margin: 0 auto 12px; border-radius: 50%; background: var(--mint); font-size: 28px; }
 .upload-zone strong, .upload-zone small { display: block; }
 .upload-zone small { margin-top: 7px; color: var(--muted); }
-.upload-zone img { width: 100%; height: 300px; object-fit: cover; border: 1.5px solid var(--ink); border-radius: 10px; }
+.upload-zone canvas { width: 100%; max-height: 300px; object-fit: contain; border: 1.5px solid var(--ink); border-radius: 10px; }
+.upload-error { margin: 10px 0 0; border: 1px solid #b42318; border-radius: 8px; background: #fff1f0; color: #8f1d16; padding: 10px 12px; font-size: 13px; font-weight: 800; }
 .upload-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 .upload-actions label, .primary-action, .dark-action { min-height: 44px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 9px; font-weight: 900; }
 .upload-actions label { background: #fff; cursor: pointer; }

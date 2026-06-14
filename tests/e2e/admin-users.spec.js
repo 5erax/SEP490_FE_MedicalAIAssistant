@@ -7,8 +7,9 @@ const ADMIN_TOKEN = [
   "",
 ].join(".");
 
-test("admin retries a failed AI config list and receives an empty state", async ({ page }) => {
+test("admin retries a failed user list and receives an empty state", async ({ page }) => {
   await preparePage(page);
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
       accessToken,
@@ -17,7 +18,7 @@ test("admin retries a failed AI config list and receives an empty state", async 
     }));
   }, ADMIN_TOKEN);
 
-  let aiConfigRequestCount = 0;
+  let userRequestCount = 0;
 
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
@@ -30,15 +31,15 @@ test("admin retries a failed AI config list and receives an empty state", async 
       });
     }
 
-    if (pathname === "/api/ai-configs") {
-      aiConfigRequestCount += 1;
+    if (pathname === "/api/users") {
+      userRequestCount += 1;
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      if (aiConfigRequestCount <= 2) {
+      if (userRequestCount <= 2) {
         return route.fulfill({
           status: 503,
           contentType: "application/json",
-          body: JSON.stringify({ success: false, message: "Sensitive AI platform detail" }),
+          body: JSON.stringify({ success: false, message: "Sensitive identity provider detail" }),
         });
       }
 
@@ -51,7 +52,7 @@ test("admin retries a failed AI config list and receives an empty state", async 
       });
     }
 
-    const pagedPaths = ["/api/users", "/api/doctors", "/api/medical-facilities"];
+    const pagedPaths = ["/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
     const data = pagedPaths.includes(pathname)
       ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
       : [];
@@ -62,21 +63,24 @@ test("admin retries a failed AI config list and receives an empty state", async 
     });
   });
 
-  await page.goto("/app/admin/ai-configs", { waitUntil: "domcontentloaded" });
+  await page.goto("/app/admin/users", { waitUntil: "domcontentloaded" });
 
-  const loadingState = page.getByText("Đang tải danh sách AI config...", { exact: true });
+  const loadingState = page.getByText("Đang tải danh sách người dùng...", { exact: true });
   await expect(loadingState).toBeVisible();
 
-  const errorState = page.getByRole("status").filter({ hasText: "Không thể tải danh sách AI config" });
+  const errorState = page.getByRole("status").filter({ hasText: "Không thể tải danh sách tài khoản" });
   await expect(errorState).toBeVisible();
-  await expect(errorState).toContainText("Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.");
-  await expect(errorState).not.toContainText("Sensitive AI platform detail");
+  await expect(errorState).toContainText("Vui lòng kiểm tra kết nối và thử tải lại danh sách tài khoản.");
+  await expect(errorState).not.toContainText("Sensitive identity provider detail");
+  await expect(page.getByText("Trang 1 / 1 · 0 tài khoản cần duyệt", { exact: true })).toHaveCount(0);
 
   const retryButton = errorState.getByRole("button", { name: "Thử tải lại" });
+  await expect(retryButton).toHaveCSS("min-height", "44px");
   await retryButton.focus();
   await page.keyboard.press("Enter");
 
-  await expect(page.getByText("Chưa có AI config phù hợp", { exact: true })).toBeVisible();
-  await expect(page.getByText("Trang 1 / 1 · 0 / 0 configs", { exact: true })).toBeVisible();
-  expect(aiConfigRequestCount).toBe(3);
+  await expect(page.getByText("Không có tài khoản chờ duyệt", { exact: true })).toBeVisible();
+  await expect(page.getByText("Trang 1 / 1 · 0 tài khoản cần duyệt", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  expect(userRequestCount).toBe(3);
 });

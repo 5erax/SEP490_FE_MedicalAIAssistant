@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Children, cloneElement, useEffect, useId, useState } from "react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate as go } from "../router/navigation";
 import {
@@ -8,6 +8,11 @@ import {
   usersApi,
   userSubscriptionsApi,
 } from "../services/api";
+import {
+  normalizePersonalProfile,
+  validateMedicalProfile,
+  validatePersonalProfile,
+} from "../utils/profileValidation";
 
 const EMPTY_USER = { displayName: "", email: "", phoneNumber: "", address: "", gender: "1", dateOfBirth: "" };
 const tabs = [
@@ -28,7 +33,7 @@ export default function UserProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState("");
-  const [profileForm, setProfileForm] = useState({ ...EMPTY_USER, email: auth?.email || "" });
+  const [profileForm, setProfileForm] = useState(EMPTY_USER);
   const [medicalForm, setMedicalForm] = useState({
     bloodType: "",
     height: "",
@@ -54,8 +59,8 @@ export default function UserProfilePage() {
       const resolvedUserId = user.userId ?? user.identityId ?? user.id ?? auth?.userId ?? auth?.identityId ?? "";
       setUserId(resolvedUserId);
       setProfileForm({
-        displayName: user.displayName ?? user.name ?? auth?.displayName ?? "",
-        email: user.email ?? auth?.email ?? "",
+        displayName: user.displayName ?? user.name ?? "",
+        email: user.email ?? "",
         phoneNumber: user.phoneNumber ?? "",
         address: user.address ?? "",
         gender: String(user.gender ?? "1"),
@@ -83,7 +88,7 @@ export default function UserProfilePage() {
     return () => {
       active = false;
     };
-  }, [auth?.displayName, auth?.email, auth?.identityId, auth?.userId]);
+  }, [auth?.identityId, auth?.userId]);
 
   function updateProfile(key, value) {
     setProfileForm((current) => ({ ...current, [key]: value }));
@@ -94,17 +99,13 @@ export default function UserProfilePage() {
   }
 
   function validateProfile() {
-    const next = {};
-    if (!profileForm.displayName.trim()) next.displayName = "Họ và tên không được để trống.";
-    if (profileForm.phoneNumber && !/^\d+$/.test(profileForm.phoneNumber)) next.phoneNumber = "Số điện thoại chỉ gồm chữ số.";
+    const next = validatePersonalProfile(profileForm);
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
   function validateMedical() {
-    const next = {};
-    if (medicalForm.height && Number(medicalForm.height) <= 0) next.height = "Chiều cao phải là số dương.";
-    if (medicalForm.weight && Number(medicalForm.weight) <= 0) next.weight = "Cân nặng phải là số dương.";
+    const next = validateMedicalProfile(medicalForm);
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -113,13 +114,7 @@ export default function UserProfilePage() {
     event.preventDefault();
     if (!validateProfile()) return;
     try {
-      await usersApi.update(userId, {
-        displayName: profileForm.displayName.trim(),
-        address: profileForm.address.trim() || null,
-        gender: Number(profileForm.gender),
-        dateOfBirth: profileForm.dateOfBirth || null,
-        phoneNumber: profileForm.phoneNumber.trim() || null,
-      });
+      await usersApi.update(userId, normalizePersonalProfile(profileForm));
       setIsEditing(false);
       setToast("Đã lưu thông tin!");
       showToast({ type: "success", title: "Đã lưu thông tin", message: "Hồ sơ cá nhân đã được cập nhật." });
@@ -182,10 +177,10 @@ export default function UserProfilePage() {
             </button>
           ))}
         </div>
-        {toast && <div className="toast">{toast}</div>}
+        {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
 
         {activeTab === "info" && (
-          <form className="profile-card" onSubmit={saveProfile}>
+          <form className="profile-card" onSubmit={saveProfile} noValidate>
             <div className="profile-head">
               <div><h1>Thông tin cá nhân</h1><span>Cơ bản</span></div>
               {!isEditing ? <button type="button" onClick={() => setIsEditing(true)}>Chỉnh sửa</button> : <div><button className="lime" type="submit">Lưu</button><button type="button" onClick={() => setIsEditing(false)}>Huỷ</button></div>}
@@ -193,24 +188,24 @@ export default function UserProfilePage() {
             <div className="form-grid">
               <Field label="Họ và tên" error={errors.displayName} wide><input value={profileForm.displayName} disabled={!isEditing} onChange={(e) => updateProfile("displayName", e.target.value)} /></Field>
               <Field label="Email" wide><input value={profileForm.email} disabled /><em>Không thể đổi</em></Field>
-              <Field label="Giới tính"><select value={profileForm.gender} disabled={!isEditing} onChange={(e) => updateProfile("gender", e.target.value)}><option value="1">Nam</option><option value="2">Nữ</option><option value="0">Khác</option></select></Field>
-              <Field label="Ngày sinh"><input type="date" value={profileForm.dateOfBirth} disabled={!isEditing} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
-              <Field label="Số điện thoại" error={errors.phoneNumber}><input type="tel" value={profileForm.phoneNumber} disabled={!isEditing} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
-              <Field label="Địa chỉ" wide><input value={profileForm.address} disabled={!isEditing} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
+              <Field label="Giới tính" error={errors.gender}><select value={profileForm.gender} disabled={!isEditing} onChange={(e) => updateProfile("gender", e.target.value)}><option value="1">Nam</option><option value="2">Nữ</option><option value="0">Khác</option></select></Field>
+              <Field label="Ngày sinh" error={errors.dateOfBirth}><input type="date" value={profileForm.dateOfBirth} disabled={!isEditing} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
+              <Field label="Số điện thoại" error={errors.phoneNumber}><input type="tel" inputMode="tel" autoComplete="tel" value={profileForm.phoneNumber} disabled={!isEditing} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
+              <Field label="Địa chỉ" error={errors.address} wide><input value={profileForm.address} disabled={!isEditing} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
             </div>
           </form>
         )}
 
         {activeTab === "medical" && (
-          <form className="profile-card" onSubmit={saveMedical}>
+          <form className="profile-card" onSubmit={saveMedical} noValidate>
             <div className="profile-head"><div><h1>Hồ sơ bệnh nhân</h1><span>{patientProfileId ? "Đã đồng bộ" : "Tạo mới"}</span></div></div>
             <div className="form-grid three">
               <Field label="Nhóm máu"><select value={medicalForm.bloodType} onChange={(e) => updateMedical("bloodType", e.target.value)}><option value="">Chọn</option>{["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((v)=><option key={v}>{v}</option>)}</select></Field>
-              <Field label="Chiều cao (cm)" error={errors.height}><input type="number" value={medicalForm.height} onChange={(e) => updateMedical("height", e.target.value)} /></Field>
-              <Field label="Cân nặng (kg)" error={errors.weight}><input type="number" value={medicalForm.weight} onChange={(e) => updateMedical("weight", e.target.value)} /></Field>
+              <Field label="Chiều cao (cm)" error={errors.height}><input type="number" min="40" max="250" step="0.1" value={medicalForm.height} onChange={(e) => updateMedical("height", e.target.value)} /></Field>
+              <Field label="Cân nặng (kg)" error={errors.weight}><input type="number" min="2" max="500" step="0.1" value={medicalForm.weight} onChange={(e) => updateMedical("weight", e.target.value)} /></Field>
             </div>
-            <Field label="Dị ứng"><textarea value={medicalForm.allergyNote} onChange={(e) => updateMedical("allergyNote", e.target.value)} /></Field>
-            <Field label="Bệnh nền"><textarea value={medicalForm.chronicDiseaseNote} onChange={(e) => updateMedical("chronicDiseaseNote", e.target.value)} /></Field>
+            <Field label="Dị ứng" error={errors.allergyNote}><textarea maxLength={1000} value={medicalForm.allergyNote} onChange={(e) => updateMedical("allergyNote", e.target.value)} /></Field>
+            <Field label="Bệnh nền" error={errors.chronicDiseaseNote}><textarea maxLength={1000} value={medicalForm.chronicDiseaseNote} onChange={(e) => updateMedical("chronicDiseaseNote", e.target.value)} /></Field>
             <button className="lime full" type="submit">Lưu hồ sơ</button>
           </form>
         )}
@@ -244,7 +239,21 @@ export default function UserProfilePage() {
 }
 
 function Field({ label, error, wide, children }) {
-  return <label className={wide ? "field wide" : "field"}><span>{label}</span>{children}{error && <small>{error}</small>}</label>;
+  const id = useId();
+  const errorId = `${id}-error`;
+  const [control, ...content] = Children.toArray(children);
+  return (
+    <label className={wide ? "field wide" : "field"} htmlFor={id}>
+      <span>{label}</span>
+      {cloneElement(control, {
+        id,
+        "aria-invalid": Boolean(error),
+        "aria-describedby": error ? errorId : undefined,
+      })}
+      {content}
+      {error && <small id={errorId}>{error}</small>}
+    </label>
+  );
 }
 
 const styles = `
