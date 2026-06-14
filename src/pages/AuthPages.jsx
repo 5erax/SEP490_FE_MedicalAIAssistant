@@ -4,9 +4,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
 import { getPostAuthDestination, getReturnToFromSearch, withReturnTo } from "../router/returnIntent";
-import { authApi, setStoredAuth } from "../services/api";
-import { findPatientProfileByUserId } from "../services/patientProfileSetup";
-import { getWorkspacePath } from "../utils/roles";
+import { authApi } from "../services/api";
 import "../styles/auth-refresh.css";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -27,34 +25,6 @@ function ApiMessage({ message }) {
 
 function getAuthSwitchPath(path) {
   return withReturnTo(path, getReturnToFromSearch());
-}
-
-function getUserId(authOrUser) {
-  return authOrUser?.userId ?? authOrUser?.identityId ?? authOrUser?.id ?? authOrUser?.data?.userId ?? authOrUser?.data?.identityId ?? authOrUser?.data?.id ?? "";
-}
-
-async function getVerifiedPostLoginPath(authOrUser) {
-  const postLoginPath = getPostAuthDestination(authOrUser);
-  const postLoginUrl = new URL(postLoginPath, window.location.origin);
-  if (postLoginUrl.pathname !== "/patient/profile/setup") return postLoginPath;
-
-  let userId = getUserId(authOrUser);
-  if (!userId) {
-    const meResponse = await authApi.me();
-    userId = getUserId(meResponse.data);
-  }
-
-  const existingProfile = await findPatientProfileByUserId(userId);
-  if (!existingProfile) return postLoginPath;
-
-  const nextAuth = {
-    ...authOrUser,
-    firstLogin: false,
-    isFirstLogin: false,
-    isProfileCompleted: true,
-  };
-  setStoredAuth(nextAuth);
-  return getReturnToFromSearch() || getWorkspacePath(nextAuth);
 }
 
 const authCopy = {
@@ -160,9 +130,7 @@ export function LoginPage() {
     try {
       const response = await authApi.login(form);
       showToast({ type: "success", title: "Đăng nhập thành công", message: "Đang mở không gian phù hợp với tài khoản của bạn." });
-      const authData = response.data ?? response;
-      const postLoginPath = await getVerifiedPostLoginPath(authData);
-      navigate(postLoginPath);
+      navigate(getPostAuthDestination(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -181,9 +149,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.googleLogin(credential);
-      const authData = response.data ?? response;
-      const postLoginPath = await getVerifiedPostLoginPath(authData);
-      navigate(postLoginPath);
+      navigate(getPostAuthDestination(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {

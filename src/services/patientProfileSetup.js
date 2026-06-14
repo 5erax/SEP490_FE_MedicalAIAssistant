@@ -1,4 +1,4 @@
-import { patientProfilesApi } from "./api";
+import { authApi, patientProfilesApi } from "./api";
 
 function numberOrNull(value) {
   if (value === "" || value === null || value === undefined) return null;
@@ -6,16 +6,15 @@ function numberOrNull(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-export async function findPatientProfileByUserId(userId, pageNumber = 1, pageSize = 100) {
-  if (!userId) return null;
+export async function savePatientProfileSetup({ userId, existingProfileId, form }) {
+  await authApi.updateUser(userId, {
+    displayName: form.displayName.trim(),
+    address: form.address.trim(),
+    gender: Number(form.gender),
+    dateOfBirth: form.dateOfBirth || null,
+    phoneNumber: form.phoneNumber.trim(),
+  });
 
-  const response = await patientProfilesApi.list(pageNumber, pageSize);
-  const items = response.data?.items ?? [];
-
-  return items.find((item) => String(item.userId).toLowerCase() === String(userId).toLowerCase()) ?? null;
-}
-
-export async function savePatientProfileSetup({ userId, form }) {
   const patientPayload = {
     bloodType: form.bloodType || null,
     height: numberOrNull(form.height),
@@ -23,6 +22,10 @@ export async function savePatientProfileSetup({ userId, form }) {
     allergyNote: form.allergyNote.trim() || null,
     chronicDiseaseNote: form.chronicDiseaseNote.trim() || null,
   };
+
+  if (existingProfileId) {
+    return patientProfilesApi.update(existingProfileId, patientPayload);
+  }
 
   return patientProfilesApi.create({
     ...patientPayload,
