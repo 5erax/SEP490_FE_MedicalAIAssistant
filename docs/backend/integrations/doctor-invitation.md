@@ -55,8 +55,9 @@ Response active cần có:
 }
 ```
 
-Endpoint hiện trả HTTP 200 nhưng danh sách rỗng. Backend cần seed dữ liệu facility
-và facility department hợp lệ trước khi kiểm thử luồng tạo Doctor mới.
+Endpoint đã có dữ liệu facility-department tối thiểu để kiểm thử luồng tạo Doctor mới.
+Backend vẫn cần thêm dữ liệu staging cho nhiều cơ sở, nhiều khoa và các trạng thái inactive
+để kiểm thử validation đầy đủ.
 
 ## Trạng thái invitation
 
