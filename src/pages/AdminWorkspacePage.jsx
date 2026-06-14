@@ -81,6 +81,7 @@ const USER_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tả
 const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.";
 const SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.";
+const FACILITY_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cơ sở y tế.";
 const EMPTY_AI_CONFIG_FILTERS = {
   search: "",
   status: "",
@@ -210,6 +211,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [usersLoadError, setUsersLoadError] = useState("");
   const [departmentMessage, setDepartmentMessage] = useState(null);
   const [facilityMessage, setFacilityMessage] = useState(null);
+  const [facilityLoadError, setFacilityLoadError] = useState("");
   const [staffMessage, setStaffMessage] = useState(null);
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [doctorLoadError, setDoctorLoadError] = useState("");
@@ -421,20 +423,22 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
         if (facilityResult.status === "fulfilled") {
           setFacilities(facilityResult.value.data?.items ?? facilityResult.value.data ?? []);
-        } else {
-          console.error("Không thể tải danh sách bệnh viện:", facilityResult.reason);
         }
 
         if (facilityDepartmentResult.status === "fulfilled") {
           const data = facilityDepartmentResult.value.data;
           setFacilityDepartments(Array.isArray(data) ? data : data?.items ?? []);
         } else {
-          console.error("Không thể tải danh sách khoa tại cơ sở y tế:", facilityDepartmentResult.reason);
           setDoctorMessage({
             type: "warning",
             text: "Chưa tải được danh sách cơ sở y tế - khoa. Không thể thêm bác sĩ mới.",
           });
         }
+        setFacilityLoadError(
+          facilityResult.status === "fulfilled" && facilityDepartmentResult.status === "fulfilled"
+            ? ""
+            : FACILITY_LOAD_ERROR_MESSAGE,
+        );
 
         if (subscriptionPlanResult.status === "fulfilled") {
           setSubscriptionPlans(Array.isArray(subscriptionPlanResult.value.data) ? subscriptionPlanResult.value.data : []);
@@ -503,6 +507,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function loadFacilities() {
     setFacilitiesLoading(true);
     setFacilityMessage(null);
+    setFacilityLoadError("");
     try {
       const [facilityResponse, facilityDepartmentResponse] = await Promise.all([
         medicalFacilitiesApi.list(1, 100),
@@ -511,8 +516,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setFacilities(facilityResponse.data?.items ?? facilityResponse.data ?? []);
       const data = facilityDepartmentResponse.data;
       setFacilityDepartments(Array.isArray(data) ? data : data?.items ?? []);
-    } catch (error) {
-      setFacilityMessage({ type: "error", text: error.message });
+    } catch {
+      setFacilityLoadError(FACILITY_LOAD_ERROR_MESSAGE);
+      showToast({
+        type: "error",
+        title: "Không tải được danh sách cơ sở y tế",
+        message: FACILITY_LOAD_ERROR_MESSAGE,
+      });
     } finally {
       setFacilitiesLoading(false);
     }
@@ -1783,13 +1793,27 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                   </div>
                   <ApiMessage message={facilityMessage} />
                   {facilitiesLoading ? (
-                    <p className="muted-text">Đang tải cơ sở y tế...</p>
+                    <LoadingState
+                      label="Đang tải danh sách cơ sở y tế..."
+                      description="Dữ liệu cơ sở và liên kết chuyên khoa đang được đồng bộ."
+                    />
+                  ) : facilityLoadError ? (
+                    <ErrorState
+                      title="Không thể tải danh sách cơ sở y tế"
+                      description={facilityLoadError}
+                      action={(
+                        <Button onClick={loadFacilities}>
+                          <RefreshCw size={16} aria-hidden="true" /> Thử tải lại
+                        </Button>
+                      )}
+                    />
                   ) : (
                     <div className="admin-table-list">
                       {facilities.length === 0 && (
-                        <p className="muted-text">
-                          Chưa có cơ sở y tế. Hãy tạo cơ sở và gán chuyên khoa trước khi thêm bác sĩ.
-                        </p>
+                        <EmptyState
+                          title="Chưa có cơ sở y tế"
+                          description="Tạo cơ sở và gán chuyên khoa trước khi thêm bác sĩ."
+                        />
                       )}
                       {facilities.map((facility) => {
                         const linkedDepartments = facilityDepartments
