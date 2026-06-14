@@ -20,7 +20,8 @@ import { useMemo, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { withReturnTo } from "../../router/returnIntent";
 import { getNavigationModel } from "../../router/routes";
-import { clearStoredAuth, getStoredAuth, hasPremiumAccess } from "../../services/api";
+import { getStoredAuth, hasPremiumAccess } from "../../services/api";
+import { logoutUser } from "../../services/logoutService";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 import { Dialog, useOverlayFocus } from "../ui";
@@ -76,9 +77,8 @@ export default function UserWorkspaceShell({ children }) {
   const ActiveIcon = activeItem.icon;
   const displayName = auth?.displayName || auth?.name || auth?.email || "Khách trải nghiệm";
 
-  function logout() {
-    clearStoredAuth();
-    goTo("/");
+  async function logout() {
+    await logoutUser({ redirect: goTo });
   }
 
   function isLocked(pathToOpen) {
