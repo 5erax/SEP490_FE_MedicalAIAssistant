@@ -1,6 +1,6 @@
 # Trạng thái contract backend/frontend
 
-Ngày kiểm tra: **2026-06-13**
+Ngày kiểm tra: **2026-06-14**
 
 Nguồn:
 
@@ -19,7 +19,7 @@ http://52.77.210.243:8080/swagger/v1/swagger.json
 - Facility departments: public active list.
 - Doctors: active list, management list, CRUD/status.
 - Doctor invitations: create, revoke, validate và register.
-- Symptom analysis: analyze và get by session ID.
+- Symptom analysis: clinical question flow, lịch sử current user và get by session ID.
 - Web chatbot.
 - Feedback reviews: list, create, detail, status và delete.
 - Subscription plans, checkout, current subscription và cancellation.
@@ -28,24 +28,25 @@ http://52.77.210.243:8080/swagger/v1/swagger.json
 
 ## Dữ liệu deploy tại lần kiểm tra
 
-- `GET /api/medical-facilities/active`: HTTP 200, `data: []`.
-- `GET /api/facility-departments/active`: HTTP 200, `data: []`.
+- `GET /api/medical-facilities/active`: có một facility active, nhưng `latitude` và `longitude` đang là `null`.
+- `GET /api/facility-departments/active`: có một quan hệ facility-department active.
 - `GET /api/subscription-plans/active`: có một gói active.
 
-Facility và facility department chưa có dữ liệu nên luồng map, recommendation và
-gán Doctor vào khoa chưa thể nghiệm thu end-to-end dù endpoint đã tồn tại.
+Luồng gán Doctor vào khoa đã có dữ liệu tối thiểu để kiểm thử. Luồng map theo khoảng cách
+chưa thể nghiệm thu vì facility chưa có tọa độ.
 
 ## Giới hạn contract
 
 - Doctor invitation chưa có endpoint list hoặc resend.
-- Symptom analysis chưa có endpoint lịch sử theo current user.
 - Facility department chưa có management CRUD riêng.
 - Facility search chưa có filter vị trí, khoảng cách, chuyên khoa và pagination
   phù hợp cho map.
-- OpenAPI chưa khai báo security requirement rõ cho endpoint cần JWT.
+- OpenAPI đã khai báo Bearer JWT toàn cục, nhưng chưa mô tả rõ endpoint public,
+  response `401`/`403` và error contract theo từng operation.
 - Backend deploy dùng HTTP; frontend production cần same-origin HTTPS proxy.
 - Payment status cần được bảo vệ bằng ownership hoặc reference an toàn.
 - Review có status nhưng policy pending/approve/public chưa được xác định rõ.
+- `ApplicationUserResponse` chưa trả `phoneNumber`, dù `UpdateUserRequest` nhận trường này.
 
 ## Capability chưa có backend production
 
