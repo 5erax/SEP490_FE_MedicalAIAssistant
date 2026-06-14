@@ -4,7 +4,9 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
 import { getPostAuthDestination, getReturnToFromSearch, withReturnTo } from "../router/returnIntent";
-import { authApi } from "../services/api";
+import { authApi, setStoredAuth } from "../services/api";
+import { findPatientProfileByUserId } from "../services/patientProfileSetup";
+import { getWorkspacePath } from "../utils/roles";
 import "../styles/auth-refresh.css";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -25,6 +27,34 @@ function ApiMessage({ message }) {
 
 function getAuthSwitchPath(path) {
   return withReturnTo(path, getReturnToFromSearch());
+}
+
+function getUserId(authOrUser) {
+  return authOrUser?.userId ?? authOrUser?.identityId ?? authOrUser?.id ?? authOrUser?.data?.userId ?? authOrUser?.data?.identityId ?? authOrUser?.data?.id ?? "";
+}
+
+async function getVerifiedGoogleLoginDestination(authOrUser) {
+  const destination = getPostAuthDestination(authOrUser);
+  const destinationUrl = new URL(destination, window.location.origin);
+  if (destinationUrl.pathname !== "/patient/profile/setup") return destination;
+
+  let userId = getUserId(authOrUser);
+  if (!userId) {
+    const meResponse = await authApi.me();
+    userId = getUserId(meResponse.data);
+  }
+
+  const existingProfile = await findPatientProfileByUserId(userId);
+  if (!existingProfile) return destination;
+
+  const nextAuth = {
+    ...authOrUser,
+    firstLogin: false,
+    isFirstLogin: false,
+    isProfileCompleted: true,
+  };
+  setStoredAuth(nextAuth);
+  return getReturnToFromSearch() || getWorkspacePath(nextAuth);
 }
 
 const authCopy = {
@@ -149,7 +179,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.googleLogin(credential);
-      navigate(getPostAuthDestination(response.data ?? response));
+      navigate(await getVerifiedGoogleLoginDestination(response.data ?? response));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
