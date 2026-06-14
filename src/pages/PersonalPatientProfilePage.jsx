@@ -3,8 +3,8 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch } from "../router/returnIntent";
-import { authApi, getStoredAuth, patientProfilesApi, setStoredAuth } from "../services/api";
-import { savePatientProfileSetup } from "../services/patientProfileSetup";
+import { authApi, getStoredAuth, setStoredAuth } from "../services/api";
+import { findPatientProfileByUserId, savePatientProfileSetup } from "../services/patientProfileSetup";
 import {
   normalizePhoneNumber,
   validateMedicalProfile,
@@ -65,17 +65,6 @@ function getUserId(user, auth) {
   return user?.userId ?? user?.identityId ?? user?.id ?? auth?.userId ?? auth?.identityId ?? "";
 }
 
-function toPatientForm(profile) {
-  if (!profile) return {};
-  return {
-    bloodType: profile.bloodType ?? "",
-    height: profile.height ?? "",
-    weight: profile.weight ?? "",
-    allergyNote: profile.allergyNote ?? "",
-    chronicDiseaseNote: profile.chronicDiseaseNote ?? "",
-  };
-}
-
 function EmptyAuth() {
   return (
     <main className="landing-page">
@@ -97,7 +86,6 @@ function EmptyAuth() {
 export default function PersonalPatientProfilePage() {
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [user, setUser] = useState(null);
-  const [patientProfile, setPatientProfile] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(Boolean(auth));
   const [submitting, setSubmitting] = useState(false);
@@ -122,29 +110,40 @@ export default function PersonalPatientProfilePage() {
 
     async function loadProfileContext() {
       setLoading(true);
-      const [userResult, profileResult] = await Promise.allSettled([
-        authApi.me(),
-        patientProfilesApi.list(1, 100),
-      ]);
-
-      if (!active) return;
-
       let resolvedUser = null;
       let resolvedUserId = auth.userId ?? auth.identityId ?? "";
 
-      if (userResult.status === "fulfilled") {
-        resolvedUser = userResult.value.data ?? {};
+      try {
+        const userResult = await authApi.me();
+        if (!active) return;
+
+        resolvedUser = userResult.data ?? {};
         resolvedUserId = getUserId(resolvedUser, auth);
         setUser(resolvedUser);
-      } else {
-        setMessage({ type: "warning", text: userResult.reason.message });
+      } catch (error) {
+        if (!active) return;
+        setMessage({ type: "warning", text: error.message });
       }
 
-      let matchedProfile = null;
-      if (profileResult.status === "fulfilled") {
-        const items = profileResult.value.data?.items ?? [];
-        matchedProfile = items.find((item) => String(item.userId).toLowerCase() === String(resolvedUserId).toLowerCase()) ?? null;
-        setPatientProfile(matchedProfile);
+      try {
+        const matchedProfile = await findPatientProfileByUserId(resolvedUserId);
+        if (!active) return;
+
+        if (matchedProfile) {
+          const nextAuth = {
+            ...auth,
+            firstLogin: false,
+            isFirstLogin: false,
+            isProfileCompleted: true,
+          };
+          setStoredAuth(nextAuth);
+          setAuth(nextAuth);
+          navigate(getReturnToFromSearch() || getWorkspacePath(nextAuth));
+          return;
+        }
+      } catch (error) {
+        if (!active) return;
+        setMessage({ type: "warning", text: error.message });
       }
 
       setForm((current) => ({
@@ -154,7 +153,6 @@ export default function PersonalPatientProfilePage() {
         gender: String(resolvedUser?.gender ?? "1"),
         phoneNumber: resolvedUser?.phoneNumber ?? auth.phoneNumber ?? "",
         address: resolvedUser?.address ?? "",
-        ...toPatientForm(matchedProfile),
       }));
       setLoading(false);
     }
@@ -197,7 +195,6 @@ export default function PersonalPatientProfilePage() {
     try {
       await savePatientProfileSetup({
         userId: currentUserId,
-        existingProfileId: patientProfile?.id,
         form,
       });
 

@@ -1,4 +1,4 @@
-import { cloneElement, useEffect, useId, useState } from "react";
+import { Children, cloneElement, useEffect, useId, useState } from "react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate as go } from "../router/navigation";
 import {
@@ -241,14 +241,16 @@ export default function UserProfilePage() {
 function Field({ label, error, wide, children }) {
   const id = useId();
   const errorId = `${id}-error`;
+  const [control, ...content] = Children.toArray(children);
   return (
     <label className={wide ? "field wide" : "field"} htmlFor={id}>
       <span>{label}</span>
-      {cloneElement(children, {
+      {cloneElement(control, {
         id,
         "aria-invalid": Boolean(error),
         "aria-describedby": error ? errorId : undefined,
       })}
+      {content}
       {error && <small id={errorId}>{error}</small>}
     </label>
   );
