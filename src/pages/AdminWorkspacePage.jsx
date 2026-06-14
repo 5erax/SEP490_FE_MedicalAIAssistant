@@ -78,6 +78,8 @@ const EMPTY_DOCTOR_FILTERS = {
 };
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
 const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
+const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.";
+const SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.";
 const EMPTY_AI_CONFIG_FILTERS = {
   search: "",
   status: "",
@@ -210,7 +212,9 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [doctorLoadError, setDoctorLoadError] = useState("");
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
+  const [aiConfigLoadError, setAIConfigLoadError] = useState("");
   const [subscriptionPlanMessage, setSubscriptionPlanMessage] = useState(null);
+  const [subscriptionPlanLoadError, setSubscriptionPlanLoadError] = useState("");
 
   const roles = useMemo(() => normalizeRoles(profile?.roles ?? auth?.roles ?? []), [auth, profile]);
   const isAdmin = hasRole(roles, "admin");
@@ -399,6 +403,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
         if (aiConfigResult.status === "fulfilled") {
           const data = aiConfigResult.value.data ?? {};
+          setAIConfigLoadError("");
           setAIConfigs(data.items ?? []);
           setAIConfigPageInfo({
             pageNumber: data.pageNumber ?? 1,
@@ -408,7 +413,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           });
         } else {
           console.error("AI Config API error:", aiConfigResult.reason);
-          setAIConfigMessage({ type: "error", text: aiConfigResult.reason.message });
+          setAIConfigLoadError(AI_CONFIG_LOAD_ERROR_MESSAGE);
         }
 
         if (facilityResult.status === "fulfilled") {
@@ -431,8 +436,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         if (subscriptionPlanResult.status === "fulfilled") {
           setSubscriptionPlans(Array.isArray(subscriptionPlanResult.value.data) ? subscriptionPlanResult.value.data : []);
         } else {
-          console.error("Subscription plan API error:", subscriptionPlanResult.reason);
-          setSubscriptionPlanMessage({ type: "error", text: subscriptionPlanResult.reason.message });
+          setSubscriptionPlanLoadError(SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE);
         }
       })
       .finally(() => {
@@ -539,6 +543,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function loadAIConfigs(pageNumber = aiConfigPageInfo.pageNumber, pageSize = aiConfigPageInfo.pageSize) {
     setAIConfigsLoading(true);
     setAIConfigMessage(null);
+    setAIConfigLoadError("");
     try {
       const response = await aiConfigManagementApi.list(pageNumber, pageSize);
       const data = response.data ?? {};
@@ -551,8 +556,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       });
     } catch (error) {
       console.error("AI Config API error:", error);
-      setAIConfigMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không tải được AI configs", message: error.message });
+      setAIConfigLoadError(AI_CONFIG_LOAD_ERROR_MESSAGE);
+      showToast({
+        type: "error",
+        title: "Không tải được AI configs",
+        message: AI_CONFIG_LOAD_ERROR_MESSAGE,
+      });
     } finally {
       setAIConfigsLoading(false);
     }
@@ -670,12 +679,17 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function loadSubscriptionPlans() {
     setSubscriptionPlansLoading(true);
     setSubscriptionPlanMessage(null);
+    setSubscriptionPlanLoadError("");
     try {
       const response = await subscriptionPlansApi.list();
       setSubscriptionPlans(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      setSubscriptionPlanMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không tải được gói dịch vụ", message: error.message });
+    } catch {
+      setSubscriptionPlanLoadError(SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE);
+      showToast({
+        type: "error",
+        title: "Không tải được gói dịch vụ",
+        message: SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE,
+      });
     } finally {
       setSubscriptionPlansLoading(false);
     }
@@ -1543,16 +1557,22 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 />
 
                 {aiConfigsLoading ? (
-                  <div className="ai-config-skeleton-list" aria-live="polite">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div className="ai-config-skeleton-row" key={index}>
-                        <span />
-                        <div />
-                        <div />
-                        <div />
-                      </div>
-                    ))}
-                  </div>
+                  <LoadingState
+                    className="ai-config-empty-state"
+                    label="Đang tải danh sách AI config..."
+                    description="Các cấu hình model và prompt đang được đồng bộ."
+                  />
+                ) : aiConfigLoadError ? (
+                  <ErrorState
+                    className="ai-config-empty-state"
+                    title="Không thể tải danh sách AI config"
+                    description={aiConfigLoadError}
+                    action={(
+                      <Button onClick={() => loadAIConfigs()}>
+                        <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
+                      </Button>
+                    )}
+                  />
                 ) : (
                   <AIConfigTable
                     configs={filteredAIConfigs}
@@ -1564,15 +1584,17 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                   />
                 )}
 
-                <div className="pagination-row">
-                  <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber <= 1 || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber - 1)}>
-                    Trước
-                  </button>
-                  <span>Trang {aiConfigPageInfo.pageNumber} / {aiConfigPageInfo.totalPages || 1} · {filteredAIConfigs.length} / {aiConfigPageInfo.totalCount} configs</span>
-                  <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber >= aiConfigPageInfo.totalPages || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber + 1)}>
-                    Sau
-                  </button>
-                </div>
+                {!aiConfigLoadError && (
+                  <div className="pagination-row">
+                    <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber <= 1 || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber - 1)}>
+                      Trước
+                    </button>
+                    <span>Trang {aiConfigPageInfo.pageNumber} / {aiConfigPageInfo.totalPages || 1} · {filteredAIConfigs.length} / {aiConfigPageInfo.totalCount} configs</span>
+                    <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber >= aiConfigPageInfo.totalPages || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber + 1)}>
+                      Sau
+                    </button>
+                  </div>
+                )}
               </section>
             )}
 
@@ -1612,9 +1634,20 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 <ApiMessage message={subscriptionPlanMessage} />
 
                 {subscriptionPlansLoading ? (
-                  <div className="subscription-plan-skeleton" aria-live="polite" aria-busy="true">
-                    {Array.from({ length: 3 }).map((_, index) => <div key={index} />)}
-                  </div>
+                  <LoadingState
+                    label="Đang tải danh sách gói dịch vụ..."
+                    description="Dữ liệu gói đăng ký đang được đồng bộ."
+                  />
+                ) : subscriptionPlanLoadError ? (
+                  <ErrorState
+                    title="Không thể tải danh sách gói dịch vụ"
+                    description={subscriptionPlanLoadError}
+                    action={(
+                      <Button onClick={loadSubscriptionPlans}>
+                        <RefreshCw size={16} aria-hidden="true" /> Thử tải lại
+                      </Button>
+                    )}
+                  />
                 ) : (
                   <SubscriptionPlanTable
                     plans={subscriptionPlans}

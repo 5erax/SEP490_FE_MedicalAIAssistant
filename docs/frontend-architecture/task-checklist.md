@@ -73,6 +73,26 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Chạy lint, build, kiểm thử liên quan và kiểm tra responsive/accessibility.
 - [x] Cập nhật roadmap và nhật ký thay đổi với kết quả thực tế.
 
+### FE-STATE-005: Chuẩn hóa trạng thái dữ liệu Admin AI Configs
+
+- [x] Xác nhận phạm vi và tiêu chí nghiệm thu từ P0-04.
+- [x] Audit luồng tải, lọc, phân trang, thông báo lỗi và empty state hiện tại.
+- [x] Tách lỗi tải dữ liệu khỏi thông báo thao tác và bổ sung retry tại chỗ.
+- [x] Chuyển loading, error và empty state sang primitive dùng chung.
+- [x] Bổ sung kiểm thử cho lỗi tải, keyboard retry và kết quả rỗng sau retry.
+- [x] Chạy lint, build, kiểm thử liên quan và kiểm tra responsive/accessibility.
+- [x] Cập nhật roadmap và nhật ký thay đổi với kết quả thực tế.
+
+### FE-STATE-006: Chuẩn hóa trạng thái dữ liệu Admin Subscription Plans
+
+- [x] Xác nhận phạm vi và tiêu chí nghiệm thu từ P0-04.
+- [x] Audit luồng tải, đồng bộ, thông báo lỗi và empty state hiện tại.
+- [x] Tách lỗi tải dữ liệu khỏi thông báo thao tác và bổ sung retry tại chỗ.
+- [x] Chuyển loading, error và empty state sang primitive dùng chung.
+- [x] Bổ sung kiểm thử cho lỗi tải, keyboard retry và kết quả rỗng sau retry.
+- [x] Chạy lint, build, kiểm thử liên quan và kiểm tra responsive/accessibility.
+- [x] Cập nhật roadmap và nhật ký thay đổi với kết quả thực tế.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -82,6 +102,8 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-13 | FE-ROUTE-002 | Hoàn thành | Hợp nhất auth/role/first-login/premium guard; tạo navigation model Patient/Staff/Admin; chuyển sidebar Patient/Admin sang route registry; bổ sung permission matrix | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 12 passed; accessibility 14 passed; browser kiểm tra admin guard và return intent |
 | 2026-06-13 | FE-UI-003 | Hoàn thành | Thêm Dialog/focus foundation; migrate premium notice, 4 admin modal và patient drawer; chuẩn hóa inert, Tab cycle, Escape, backdrop và restore focus | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 13 passed; accessibility 14 passed; browser kiểm tra premium dialog và inert background |
 | 2026-06-13 | FE-STATE-004 | Hoàn thành | Tách lỗi tải khỏi thông báo thao tác; migrate loading/error/empty state; thêm retry an toàn và CTA 44 px cho Admin Doctors | `npm.cmd run lint`; `npm.cmd run build`; Admin Doctors 2 passed; accessibility 14 passed; browser kiểm tra mobile 390x844 không tràn ngang |
+| 2026-06-14 | FE-STATE-005 | Hoàn thành | Tách lỗi tải khỏi thông báo thao tác; migrate loading/error/empty state; thêm retry an toàn và CTA 44 px cho Admin AI Configs | `npm.cmd run lint`; `npm.cmd run build`; Admin state 3 passed; accessibility 14 passed; browser kiểm tra mobile 390x844 không tràn ngang |
+| 2026-06-14 | FE-STATE-006 | Hoàn thành | Tách lỗi tải khỏi thông báo thao tác; migrate loading/error/empty state; thêm retry an toàn và CTA 44 px cho Admin Subscription Plans | `npm.cmd run lint`; `npm.cmd run build`; Admin state 5 passed; Subscription Plans 2 passed ở 390x844; accessibility 14 passed; browser kiểm tra bảng mobile không tràn trang |
 
 ## Mẫu cập nhật
 

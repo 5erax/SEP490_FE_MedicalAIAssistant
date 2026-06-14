@@ -1,4 +1,4 @@
-import { Badge, DataTable } from "../ui";
+import { Badge, Button, DataTable, EmptyState } from "../ui";
 import { BrainCircuit, Eye, Pencil, Power, Trash2 } from "lucide-react";
 import { formatDateTime, getConfigName, truncatePrompt } from "./aiConfigUtils";
 
@@ -79,14 +79,17 @@ export default function AIConfigTable({ configs, onView, onEdit, onToggleStatus,
       rows={configs}
       getRowKey={(config) => config.id}
       emptyState={(
-        <section className="ui-empty ai-config-empty-state">
-          <span className="ai-config-empty-icon"><BrainCircuit size={26} /></span>
-          <strong>Chưa có AI config phù hợp</strong>
-          <p>Tạo prompt/model configuration đầu tiên để quản trị hành vi AI trong hệ thống MediMate AI.</p>
-          <button className="btn btn-primary btn-small" type="button" onClick={onCreate}>
-            <BrainCircuit size={15} /> Add Config
-          </button>
-        </section>
+        <EmptyState
+          className="ai-config-empty-state"
+          icon={<BrainCircuit size={26} />}
+          title="Chưa có AI config phù hợp"
+          description="Tạo prompt/model configuration đầu tiên để quản trị hành vi AI trong hệ thống MediMate AI."
+          action={(
+            <Button onClick={onCreate}>
+              <BrainCircuit size={15} aria-hidden="true" /> Add Config
+            </Button>
+          )}
+        />
       )}
     />
   );

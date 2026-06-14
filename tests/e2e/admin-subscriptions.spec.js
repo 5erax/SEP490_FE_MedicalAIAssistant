@@ -93,3 +93,80 @@ test("admin can create a subscription plan from the workspace", async ({ page })
     isActive: true,
   });
 });
+
+test("admin retries a failed subscription plan list and receives an empty state", async ({ page }) => {
+  await preparePage(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      email: "admin@example.com",
+      roles: ["Admin"],
+    }));
+  }, ADMIN_TOKEN);
+
+  let subscriptionPlanRequestCount = 0;
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname;
+
+    if (pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (pathname === "/api/subscription-plans") {
+      subscriptionPlanRequestCount += 1;
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      if (subscriptionPlanRequestCount <= 2) {
+        return route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ success: false, message: "Sensitive payment platform detail" }),
+        });
+      }
+
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    }
+
+    const pagedPaths = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
+    const data = pagedPaths.includes(pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto("/app/admin/subscriptions", { waitUntil: "domcontentloaded" });
+
+  const loadingState = page.getByText("Đang tải danh sách gói dịch vụ...", { exact: true });
+  await expect(loadingState).toBeVisible();
+
+  const errorState = page.getByRole("status").filter({ hasText: "Không thể tải danh sách gói dịch vụ" });
+  await expect(errorState).toBeVisible();
+  await expect(errorState).toContainText("Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.");
+  await expect(errorState).not.toContainText("Sensitive payment platform detail");
+
+  const retryButton = errorState.getByRole("button", { name: "Thử tải lại" });
+  await expect(retryButton).toHaveCSS("min-height", "44px");
+  await retryButton.focus();
+  await page.keyboard.press("Enter");
+
+  await expect(loadingState).toBeVisible();
+  await expect(page.getByText("Chưa có gói dịch vụ", { exact: true })).toBeVisible();
+  const createButton = page.getByRole("button", { name: "Tạo gói dịch vụ", exact: true });
+  await expect(createButton).toBeVisible();
+  await expect(createButton).toHaveCSS("min-height", "44px");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  expect(subscriptionPlanRequestCount).toBe(3);
+});

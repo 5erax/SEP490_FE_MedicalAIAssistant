@@ -1527,7 +1527,6 @@
     #fff;
 }
 
-.ai-config-empty-icon,
 .ai-config-modal-icon {
   display: grid;
   place-items: center;
@@ -1536,40 +1535,6 @@
   border-radius: 18px;
   background: #dff8ed;
   color: #087f8c;
-}
-
-.ai-config-skeleton-list {
-  display: grid;
-  gap: 10px;
-}
-
-.ai-config-skeleton-row {
-  display: grid;
-  grid-template-columns: 42px minmax(180px, 1.2fr) minmax(180px, 1fr) 160px;
-  gap: 12px;
-  align-items: center;
-  border: 1px solid rgba(16, 20, 17, 0.1);
-  border-radius: 16px;
-  background: #fbfcf7;
-  padding: 14px;
-}
-
-.ai-config-skeleton-row span,
-.ai-config-skeleton-row div {
-  overflow: hidden;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(16, 20, 17, 0.08), rgba(16, 20, 17, 0.14), rgba(16, 20, 17, 0.08));
-  background-size: 220% 100%;
-  animation: doctorSkeleton 1.15s ease-in-out infinite;
-}
-
-.ai-config-skeleton-row span {
-  width: 42px;
-  height: 42px;
-}
-
-.ai-config-skeleton-row div {
-  height: 18px;
 }
 
 .ai-config-modal-backdrop {
@@ -1683,7 +1648,6 @@
 }
 
 .subscription-plan-icon,
-.subscription-plan-empty-icon,
 .subscription-modal-icon {
   flex: 0 0 auto;
   display: grid;
@@ -1710,19 +1674,6 @@
   border: 1px dashed rgba(8, 127, 140, 0.28);
   background: linear-gradient(180deg, rgba(223, 248, 237, 0.52), rgba(255, 255, 255, 0.88));
   text-align: center;
-}
-
-.subscription-plan-skeleton {
-  display: grid;
-  gap: 10px;
-}
-
-.subscription-plan-skeleton div {
-  height: 72px;
-  border-radius: 16px;
-  background: linear-gradient(90deg, rgba(16, 20, 17, 0.08), rgba(16, 20, 17, 0.14), rgba(16, 20, 17, 0.08));
-  background-size: 220% 100%;
-  animation: doctorSkeleton 1.15s ease-in-out infinite;
 }
 
 .subscription-modal-backdrop {
@@ -2001,7 +1952,6 @@
     .admin-operator .ai-config-filter-grid,
     .admin-operator .ai-config-kpi-grid,
     .ai-config-detail-grid,
-    .ai-config-skeleton-row,
     .admin-operator .admin-user-row,
     .admin-operator .form-two-cols {
     grid-template-columns: 1fr;
