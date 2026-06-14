@@ -145,6 +145,27 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Bổ sung test cho login response và phiên cũ có chứa PII.
 - [x] Chạy lint, build, kiểm thử liên quan và cập nhật nhật ký thay đổi.
 
+### FE-DOC-013: Chuẩn hóa backend backlog để giao việc
+
+- [x] Xác minh lại Swagger và dữ liệu deploy ngày 2026-06-14.
+- [x] Loại các blocker đã lỗi thời về facility, symptom history và Bearer security.
+- [x] Thêm bảng ưu tiên, trạng thái đề xuất, phụ thuộc, Definition of Ready và Definition of Done.
+- [x] Chi tiết hóa contract, error, kiểm thử và tiêu chí nghiệm thu cho các ticket backend trọng yếu.
+- [x] Đồng bộ contract status và ghi chú Doctor invitation.
+- [x] Kiểm tra mã ticket, code fence, link Markdown và `git diff --check`.
+
+### FE-MAP-014: Khôi phục và ổn định bản đồ cơ sở y tế
+
+- [x] Kiểm tra route, component, service, API live, local và production.
+- [x] Xác định rủi ro loading/error không hiển thị, style ngoài và tọa độ fallback giả.
+- [x] Tạo kế hoạch triển khai theo giai đoạn và tiêu chí đóng task.
+- [x] Thêm quan sát runtime và trạng thái map loading/ready/error.
+- [x] Loại tọa độ giả và chuẩn hóa facility thiếu tọa độ.
+- [x] Thêm fallback/retry khi style hoặc WebGL lỗi.
+- [x] Hoàn thiện keyboard, skip link, reduced motion và responsive.
+- [x] Bổ sung test hồi quy map, contract và accessibility.
+- [x] Chạy lint, build, test và cập nhật nhật ký sau triển khai.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -162,6 +183,8 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-14 | FE-PAY-010 | Hoàn thành | `/payment/cancel` kết thúc ngay ở trạng thái đã hủy, không poll status API và không thay đổi entitlement | Payment result 2 passed; browser xác nhận trạng thái `Đã hủy` hiển thị ngay |
 | 2026-06-14 | FE-SEC-011 | Hoàn thành | Decode ảnh hợp lệ vào canvas thay vì gắn file URL vào DOM; giới hạn JPG/PNG/WEBP 10 MB; thêm quyền workflow tối thiểu | Medication upload 1 passed; không còn `createObjectURL`/`img src={preview}`; `git diff --check` passed |
 | 2026-06-14 | FE-SEC-012 | Hoàn thành | Whitelist auth storage và tự làm sạch phiên cũ; loại email, tên, địa chỉ, số điện thoại và refresh token khỏi localStorage | `npm.cmd run lint`; `npm.cmd run build`; auth/profile/backend contract 22 passed; payment/upload 3 passed; accessibility 14 passed; không còn đường `phoneNumber` tới `setStoredAuth` |
+| 2026-06-14 | FE-DOC-013 | Hoàn thành | Chuẩn hóa backend backlog; cập nhật contract live; thêm delivery status, phụ thuộc, contract, test và bằng chứng nghiệm thu | 18 ticket hợp lệ; code fence/link Markdown hợp lệ; `git diff --check` passed |
+| 2026-06-14 | FE-MAP-014 | Hoàn thành | Thêm map loading/error/retry; loại tọa độ giả; giữ list fallback; thêm keyboard, skip link, reduced motion và responsive | `npm.cmd run lint`; `npm.cmd run build`; map 4 passed; backend contract 5 passed; accessibility 14 passed; browser desktop/mobile không tràn ngang và không console error |
 
 ## Mẫu cập nhật
 
