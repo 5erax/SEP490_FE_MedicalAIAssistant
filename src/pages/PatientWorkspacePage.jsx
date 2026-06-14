@@ -7,11 +7,11 @@ import SymptomChatBox from "../components/patient/SymptomChatBox";
 import { navigate } from "../router/navigation";
 import {
   authApi,
-  clearStoredAuth,
   getStoredAuth,
   medicalDepartmentsApi,
   patientProfilesApi,
 } from "../services/api";
+import { logoutUser } from "../services/logoutService";
 
 const EMPTY_ACCOUNT_PROFILE = {
   displayName: "",
@@ -415,15 +415,7 @@ export default function PatientWorkspacePage() {
   }
 
   async function handleLogout() {
-    try {
-      await authApi.logout();
-    } catch {
-      // Keep local logout reliable when the server session has already expired.
-    } finally {
-      clearStoredAuth();
-      setAuth(null);
-      navigate("/");
-    }
+    await logoutUser({ onClear: () => setAuth(null), redirect: navigate });
   }
 
   return (
