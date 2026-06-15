@@ -4,6 +4,10 @@
 > [Product definition](../product-definition/README.md). Route demo khong duoc
 > xem la capability production neu chua co product decision va backend contract.
 
+Các ticket có thể giao trực tiếp, file dự kiến, phụ thuộc API và checklist test
+được chi tiết hóa tại
+[Frontend delivery backlog](../frontend-architecture/frontend-delivery-backlog.md).
+
 ## Thu tu phase
 
 | Phase | Ket qua | Exit criteria |

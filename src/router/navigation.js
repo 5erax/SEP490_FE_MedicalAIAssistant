@@ -40,7 +40,7 @@ function getTransitionType(destination) {
   return "nav-forward";
 }
 
-function changeLocation(path, replace, transitionType) {
+function changeLocation(path, replace, transitionType, state = null) {
   const destination = new URL(path, window.location.href);
 
   if (destination.origin !== window.location.origin) {
@@ -52,7 +52,7 @@ function changeLocation(path, replace, transitionType) {
   if (nextLocation === getLocationSnapshot()) return;
 
   const commitNavigation = () => {
-    window.history[replace ? "replaceState" : "pushState"](null, "", nextLocation);
+    window.history[replace ? "replaceState" : "pushState"](state, "", nextLocation);
     notifyNavigation();
   };
 
@@ -68,11 +68,11 @@ function changeLocation(path, replace, transitionType) {
 }
 
 export function navigate(path, options = {}) {
-  changeLocation(path, false, options.transitionType);
+  changeLocation(path, false, options.transitionType, options.state);
 }
 
-export function replaceRoute(path) {
-  changeLocation(path, true);
+export function replaceRoute(path, options = {}) {
+  changeLocation(path, true, options.transitionType, options.state);
 }
 
 export function installLinkNavigation() {

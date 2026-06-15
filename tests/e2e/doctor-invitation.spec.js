@@ -1,6 +1,18 @@
 import { expect, test } from "@playwright/test";
 import { preparePage } from "./helpers";
 
+const DOCTOR_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJEb2N0b3IifQ",
+  "",
+].join(".");
+
+const PATIENT_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50In0",
+  "",
+].join(".");
+
 test.beforeEach(async ({ page }) => {
   await preparePage(page);
 });
@@ -62,7 +74,175 @@ test("linked doctor profile submits only account fields", async ({ page }) => {
     password: "Password123!",
     phoneNumber: "0900000000",
   });
-  await expect(page).toHaveURL(/\/login$/, { timeout: 5_000 });
+  await page.getByRole("button", { name: "Đăng nhập ngay" }).click();
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fstaff$/);
+  await expect(page.getByLabel("Email")).toHaveValue("linked.doctor@example.com");
+  await expect.poll(() => page.evaluate(() => JSON.stringify(localStorage))).not.toContain(
+    "linked.doctor@example.com",
+  );
+});
+
+test("invited doctor can register, log in, and open the doctor workspace", async ({ page }) => {
+  await mockLinkedInvitation(page, "doctor-login-token");
+
+  await page.route("**/api/doctor-invitations/register", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        userId: "22222222-2222-2222-2222-222222222222",
+        doctorId: "11111111-1111-1111-1111-111111111111",
+        email: "linked.doctor@example.com",
+        fullName: "Nguyễn Văn A",
+        role: "Doctor",
+      },
+    }),
+  }));
+
+  await page.route("**/api/authentication/login", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        accessToken: DOCTOR_TOKEN,
+        userId: "22222222-2222-2222-2222-222222222222",
+        roles: ["Doctor"],
+        firstLogin: true,
+        isProfileCompleted: false,
+      },
+    }),
+  }));
+
+  await page.route("**/api/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        id: "22222222-2222-2222-2222-222222222222",
+        displayName: "Nguyễn Văn A",
+        roles: ["Doctor"],
+      },
+    }),
+  }));
+
+  await page.route("**/api/medical-departments", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: [] }),
+  }));
+
+  await page.goto("/register-doctor?token=doctor-login-token", { waitUntil: "domcontentloaded" });
+  await page.getByLabel(/^Mật khẩu/).fill("Password123!");
+  await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
+  await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
+  await page.getByRole("button", { name: "Đăng nhập ngay" }).click();
+
+  await expect(page.getByLabel("Email")).toHaveValue("linked.doctor@example.com");
+  await page.getByLabel("Mật khẩu").fill("Password123!");
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+  await expect(page).toHaveURL(/\/app\/staff$/);
+  await expect(page.getByRole("heading", { name: "Quản lý chuyên khoa" })).toBeVisible();
+  await expect(page.evaluate(() => window.history.state)).resolves.toBeNull();
+});
+
+test("invitation login rejects an account without a doctor role", async ({ page }) => {
+  await mockLinkedInvitation(page, "missing-role-token");
+
+  await page.route("**/api/doctor-invitations/register", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        email: "linked.doctor@example.com",
+        role: "Doctor",
+      },
+    }),
+  }));
+
+  await page.route("**/api/authentication/login", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        accessToken: PATIENT_TOKEN,
+        roles: ["Patient"],
+        firstLogin: false,
+        isProfileCompleted: true,
+      },
+    }),
+  }));
+
+  await page.goto("/register-doctor?token=missing-role-token", { waitUntil: "domcontentloaded" });
+  await page.getByLabel(/^Mật khẩu/).fill("Password123!");
+  await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
+  await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
+  await page.getByRole("button", { name: "Đăng nhập ngay" }).click();
+  await page.getByLabel("Mật khẩu").fill("Password123!");
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fstaff$/);
+  await expect(page.getByRole("alert")).toContainText("chưa được cấp quyền Bác sĩ");
+  await expect(page.evaluate(() => localStorage.getItem("medimate.auth"))).resolves.toBeNull();
+  await expect(page.evaluate(() => window.history.state)).resolves.toBeNull();
+});
+
+test("invitation login keeps an inactive doctor on the login page", async ({ page }) => {
+  await page.route("**/api/authentication/login", (route) => route.fulfill({
+    status: 403,
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: false,
+      message: "Tài khoản chưa được kích hoạt hoặc đã bị vô hiệu hóa.",
+    }),
+  }));
+
+  await page.goto("/login?returnTo=%2Fapp%2Fstaff", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    window.history.replaceState({
+      doctorInvitation: {
+        email: "inactive.doctor@example.com",
+        expectedRole: "doctor",
+      },
+    }, "", window.location.href);
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+
+  await expect(page.getByLabel("Email")).toHaveValue("inactive.doctor@example.com");
+  await page.getByLabel("Mật khẩu").fill("Password123!");
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fstaff$/);
+  await expect(page.getByRole("alert")).toContainText("chưa được kích hoạt");
+  await expect(page.evaluate(() => localStorage.getItem("medimate.auth"))).resolves.toBeNull();
+});
+
+test("invitation login keeps the doctor email after an incorrect password", async ({ page }) => {
+  await page.route("**/api/authentication/login", (route) => route.fulfill({
+    status: 401,
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: false,
+      message: "Email hoặc mật khẩu không chính xác.",
+    }),
+  }));
+
+  await page.goto("/login?returnTo=%2Fapp%2Fstaff", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    window.history.replaceState({
+      doctorInvitation: {
+        email: "doctor@example.com",
+        expectedRole: "doctor",
+      },
+    }, "", window.location.href);
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+
+  await page.getByLabel("Mật khẩu").fill("WrongPassword123!");
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("không chính xác");
+  await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");
+  await expect(page.evaluate(() => localStorage.getItem("medimate.auth"))).resolves.toBeNull();
 });
 
 test("new doctor submits facility department and professional fields", async ({ page }) => {

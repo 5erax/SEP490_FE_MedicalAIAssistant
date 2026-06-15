@@ -311,7 +311,7 @@ function NearbyClinicPage() {
         <p className="result-count">{loadingFacilities ? "Đang đồng bộ cơ sở y tế..." : `Tìm thấy ${filteredFacilities.length} cơ sở`}</p>
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
 
-        <div
+        <section
           className="facility-list-panel"
           id="facility-list"
           tabIndex="-1"
@@ -366,7 +366,7 @@ function NearbyClinicPage() {
               </div>
             </article>
           ))}
-        </div>
+        </section>
 
         {selectedFacility && (
           <section className="facility-reviews" aria-labelledby="facility-review-title">

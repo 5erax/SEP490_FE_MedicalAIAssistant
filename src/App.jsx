@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import LandingPage from "./pages/LandingPage";
 import UserWorkspaceShell from "./components/workspace/UserWorkspaceShell";
 import StaticPage from "./pages/StaticPage";
@@ -9,12 +9,10 @@ import ChatbotPage from "./pages/ChatbotPage";
 import DashboardPage from "./pages/DashboardPage";
 import MedicalRecordPage from "./pages/MedicalRecordPage";
 import MedicationScanPage from "./pages/MedicationScanPage";
-import NearbyClinicPage from "./pages/NearbyClinicPage";
 import PricingPage from "./pages/PricingPage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import SymptomAnalysisPage from "./pages/SymptomAnalysisPage";
 import UserProfilePage from "./pages/UserProfilePage";
-import MedicalAssistantPage from "./pages/MedicalAssistantPage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
 import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
@@ -29,8 +27,29 @@ import { getCanonicalPath, resolveRoute } from "./router/routes";
 import { replaceRoute } from "./router/navigation";
 import { resolveRouteAccess } from "./router/access";
 
+const NearbyClinicPage = lazy(() => import("./pages/NearbyClinicPage"));
+const MedicalAssistantPage = lazy(() => import("./pages/MedicalAssistantPage"));
+
 function userWorkspace(page) {
   return <UserWorkspaceShell>{page}</UserWorkspaceShell>;
+}
+
+function lazyPage(page) {
+  return (
+    <Suspense fallback={(
+      <main className="workspace-root" data-route-loading>
+        <section className="app-page">
+          <div className="container app-empty" role="status">
+            <p className="eyebrow">Đang tải</p>
+            <h1>Đang chuẩn bị nội dung...</h1>
+          </div>
+        </section>
+      </main>
+    )}
+    >
+      {page}
+    </Suspense>
+  );
 }
 
 function RouteRedirect({ to, children }) {
@@ -88,7 +107,7 @@ function App() {
     case "patient.chat":
       return userWorkspace(<ChatbotPage />);
     case "public.map":
-      return <NearbyClinicPage />;
+      return lazyPage(<NearbyClinicPage />);
     case "patient.records":
       return userWorkspace(<MedicalRecordPage />);
     case "patient.medication":
@@ -104,7 +123,7 @@ function App() {
     case "workspace.staff":
       return <StaffWorkspacePage />;
     case "assistant.main":
-      return <MedicalAssistantPage />;
+      return lazyPage(<MedicalAssistantPage />);
     case "patient.profile-setup":
       return <PersonalPatientProfilePage />;
     default:

@@ -90,6 +90,7 @@ const EMPTY_AI_CONFIG_FILTERS = {
   environment: "",
 };
 const DEFAULT_AI_CONFIG_PAGE_SIZE = 10;
+const DOCTOR_PAGE_SIZES = new Set([10, 20, 50]);
 const ADMIN_NAV_ICONS = {
   dashboard: LayoutDashboard,
   users: Users,
@@ -100,6 +101,41 @@ const ADMIN_NAV_ICONS = {
   facility: Building2,
 };
 const ADMIN_NAV_ITEMS = getNavigationModel("admin");
+
+function readDoctorViewState(search = window.location.search) {
+  const params = new URLSearchParams(search);
+  const requestedPageSize = Number(params.get("pageSize"));
+  const requestedPage = Number(params.get("page"));
+  const isActive = params.get("isActive");
+
+  return {
+    filters: {
+      search: params.get("search")?.trim() || "",
+      facilityId: params.get("facilityId") || "",
+      departmentId: params.get("departmentId") || "",
+      isActive: ["true", "false"].includes(isActive) ? isActive : "",
+      departmentRole: params.get("departmentRole") || "",
+    },
+    pageNumber: Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1,
+    pageSize: DOCTOR_PAGE_SIZES.has(requestedPageSize) ? requestedPageSize : DEFAULT_DOCTOR_PAGE_SIZE,
+  };
+}
+
+function getDoctorViewPath(filters, pageNumber, pageSize) {
+  const params = new URLSearchParams();
+  const normalizedSearch = filters.search.trim();
+
+  if (normalizedSearch) params.set("search", normalizedSearch);
+  if (filters.facilityId) params.set("facilityId", filters.facilityId);
+  if (filters.departmentId) params.set("departmentId", filters.departmentId);
+  if (filters.isActive !== "") params.set("isActive", filters.isActive);
+  if (filters.departmentRole !== "") params.set("departmentRole", filters.departmentRole);
+  if (pageNumber > 1) params.set("page", String(pageNumber));
+  if (pageSize !== DEFAULT_DOCTOR_PAGE_SIZE) params.set("pageSize", String(pageSize));
+
+  const query = params.toString();
+  return `/app/admin/doctors${query ? `?${query}` : ""}`;
+}
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -165,6 +201,7 @@ function EmptyAuth() {
 
 export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const { confirmAction, showToast } = useFeedback();
+  const [initialDoctorView] = useState(readDoctorViewState);
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [profile, setProfile] = useState(null);
   const [users, setUsers] = useState([]);
@@ -175,11 +212,16 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [aiConfigs, setAIConfigs] = useState([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
-  const [doctorPageInfo, setDoctorPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE, totalCount: 0, totalPages: 1 });
+  const [doctorPageInfo, setDoctorPageInfo] = useState({
+    pageNumber: initialDoctorView.pageNumber,
+    pageSize: initialDoctorView.pageSize,
+    totalCount: 0,
+    totalPages: 1,
+  });
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const activeSection = initialSection;
   const [search, setSearch] = useState("");
-  const [doctorFilters, setDoctorFilters] = useState(EMPTY_DOCTOR_FILTERS);
+  const [doctorFilters, setDoctorFilters] = useState(initialDoctorView.filters);
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
   const [facilityForm, setFacilityForm] = useState(EMPTY_FACILITY);
@@ -347,7 +389,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       authApi.me(),
       usersApi.list(1, pageInfo.pageSize),
       medicalDepartmentsApi.list(),
-      doctorManagementApi.list({ pageNumber: 1, pageSize: DEFAULT_DOCTOR_PAGE_SIZE }),
+      doctorManagementApi.list({
+        ...initialDoctorView.filters,
+        pageNumber: initialDoctorView.pageNumber,
+        pageSize: initialDoctorView.pageSize,
+      }),
       aiConfigManagementApi.list(1, DEFAULT_AI_CONFIG_PAGE_SIZE),
       medicalFacilitiesApi.list(1, 100),
       facilityDepartmentsApi.active(),
@@ -396,8 +442,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           setDoctorLoadError("");
           setDoctors(data.items ?? []);
           setDoctorPageInfo({
-            pageNumber: data.pageNumber ?? 1,
-            pageSize: data.pageSize ?? DEFAULT_DOCTOR_PAGE_SIZE,
+            pageNumber: data.pageNumber ?? initialDoctorView.pageNumber,
+            pageSize: data.pageSize ?? initialDoctorView.pageSize,
             totalCount: data.totalCount ?? 0,
             totalPages: data.totalPages ?? 1,
           });
@@ -460,7 +506,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     return () => {
       active = false;
     };
-  }, [auth, pageInfo.pageSize]);
+  }, [auth, initialDoctorView, pageInfo.pageSize]);
 
   if (!auth) return <EmptyAuth />;
   if (!loading && !isAdmin) return <AccessDenied auth={auth} roles={roles} />;
@@ -803,12 +849,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
   function handleDoctorFilterSubmit(event) {
     event.preventDefault();
-    loadDoctors(1, doctorFilters);
+    navigate(getDoctorViewPath(doctorFilters, 1, doctorPageInfo.pageSize));
   }
 
   function resetDoctorFilters() {
     setDoctorFilters(EMPTY_DOCTOR_FILTERS);
-    loadDoctors(1, EMPTY_DOCTOR_FILTERS);
+    navigate("/app/admin/doctors");
   }
 
   function openCreateDoctor() {
@@ -1508,11 +1554,21 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
                 {!doctorLoadError && (
                   <div className="pagination-row">
-                    <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber - 1)}>
+                    <button
+                      className="btn btn-ghost btn-small"
+                      type="button"
+                      disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading}
+                      onClick={() => navigate(getDoctorViewPath(doctorFilters, doctorPageInfo.pageNumber - 1, doctorPageInfo.pageSize))}
+                    >
                       Trước
                     </button>
                     <span>Trang {doctorPageInfo.pageNumber} / {doctorPageInfo.totalPages || 1} · {doctorPageInfo.totalCount} bác sĩ</span>
-                    <button className="btn btn-ghost btn-small" type="button" disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading} onClick={() => loadDoctors(doctorPageInfo.pageNumber + 1)}>
+                    <button
+                      className="btn btn-ghost btn-small"
+                      type="button"
+                      disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading}
+                      onClick={() => navigate(getDoctorViewPath(doctorFilters, doctorPageInfo.pageNumber + 1, doctorPageInfo.pageSize))}
+                    >
                       Sau
                     </button>
                   </div>

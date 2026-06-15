@@ -84,25 +84,79 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
     },
   ];
 
-  return (
-    <DataTable
-      caption="Danh sách bác sĩ theo bộ lọc hiện tại"
-      columns={columns}
-      rows={doctors}
-      getRowKey={(doctor) => doctor.id}
-      emptyState={(
-        <EmptyState
-          className="doctor-empty-state"
-          icon={<Stethoscope size={24} />}
-          title="Chưa có bác sĩ phù hợp"
-          description="Thử đổi bộ lọc hoặc thêm bác sĩ mới để bắt đầu quản lý danh sách nhân sự y tế."
-          action={(
-            <Button onClick={onCreate}>
-              <UserRoundPlus size={15} /> Thêm bác sĩ
-            </Button>
-          )}
-        />
+  const emptyState = (
+    <EmptyState
+      className="doctor-empty-state"
+      icon={<Stethoscope size={24} />}
+      title="Chưa có bác sĩ phù hợp"
+      description="Thử đổi bộ lọc hoặc thêm bác sĩ mới để bắt đầu quản lý danh sách nhân sự y tế."
+      action={(
+        <Button onClick={onCreate}>
+          <UserRoundPlus size={15} /> Thêm bác sĩ
+        </Button>
       )}
     />
+  );
+
+  if (!doctors.length) return emptyState;
+
+  return (
+    <>
+      <DataTable
+        caption="Danh sách bác sĩ theo bộ lọc hiện tại"
+        className="doctor-table-wrap"
+        columns={columns}
+        rows={doctors}
+        rowHeaderKey="doctor"
+        getRowKey={(doctor) => doctor.id}
+      />
+
+      <div className="doctor-card-list" aria-label="Danh sách bác sĩ theo bộ lọc hiện tại">
+        {doctors.map((doctor) => (
+          <article className="doctor-responsive-card" key={doctor.id}>
+            <header className="doctor-responsive-card-header">
+              <div className="doctor-primary-cell">
+                <span className="doctor-avatar">{getInitials(doctor.fullName)}</span>
+                <div>
+                  <strong>{doctor.fullName || "Bác sĩ chưa đặt tên"}</strong>
+                  <span>{doctor.academicTitle || "Chưa cập nhật học hàm/học vị"}</span>
+                </div>
+              </div>
+              <Badge tone={doctor.isActive ? "success" : "warning"}>
+                {doctor.isActive ? "Đang hoạt động" : "Tạm ẩn"}
+              </Badge>
+            </header>
+
+            <dl className="doctor-card-details">
+              <div>
+                <dt>Khoa công tác</dt>
+                <dd>{doctor.departmentName || "Chưa cập nhật khoa"}</dd>
+              </div>
+              <div>
+                <dt>Vai trò</dt>
+                <dd>{doctor.departmentRoleName || DEPARTMENT_ROLE_LABELS[doctor.departmentRole] || "Chưa cập nhật"}</dd>
+              </div>
+              <div>
+                <dt>Bệnh viện</dt>
+                <dd>{doctor.facilityName || "Chưa có bệnh viện"}</dd>
+              </div>
+              <div>
+                <dt>Kinh nghiệm</dt>
+                <dd>{formatExperience(doctor.yearsOfExperience)}</dd>
+              </div>
+            </dl>
+
+            <div className="record-actions doctor-card-actions" aria-label={`Thao tác với ${doctor.fullName || "bác sĩ"}`}>
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(doctor)}><Pencil size={14} /> Sửa</button>
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(doctor)}>
+                <Power size={14} />
+                {doctor.isActive ? "Tạm ẩn" : "Kích hoạt"}
+              </button>
+              <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(doctor)}><Trash2 size={14} /> Xóa</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </>
   );
 }

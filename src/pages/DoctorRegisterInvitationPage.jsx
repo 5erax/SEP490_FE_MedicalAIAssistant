@@ -1,6 +1,7 @@
 import { cloneElement, useCallback, useEffect, useRef, useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { replaceRoute } from "../router/navigation";
+import { withReturnTo } from "../router/returnIntent";
 import { doctorInvitationsApi, facilityDepartmentsApi } from "../services/api";
 import "../styles/doctor-invitation.css";
 
@@ -205,9 +206,22 @@ export default function DoctorRegisterInvitationPage() {
   const [facilityDepartments, setFacilityDepartments] = useState([]);
   const [facilityError, setFacilityError] = useState("");
   const [facilityLoading, setFacilityLoading] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const errorSummaryRef = useRef(null);
   const statusHeadingRef = useRef(null);
   const isLinkedProfile = Boolean(invitation?.isLinkedToExistingDoctorProfile);
+  const loginPath = withReturnTo("/login", "/app/staff");
+
+  const openDoctorLogin = useCallback(() => {
+    replaceRoute(loginPath, {
+      state: {
+        doctorInvitation: {
+          email: registeredEmail || invitation?.email || "",
+          expectedRole: "doctor",
+        },
+      },
+    });
+  }, [invitation?.email, loginPath, registeredEmail]);
 
   const loadFacilityDepartments = useCallback(async () => {
     setFacilityLoading(true);
@@ -300,10 +314,10 @@ export default function DoctorRegisterInvitationPage() {
   useEffect(() => {
     if (status !== "success") return undefined;
     const timeoutId = window.setTimeout(() => {
-      replaceRoute("/login");
+      openDoctorLogin();
     }, 2500);
     return () => window.clearTimeout(timeoutId);
-  }, [status]);
+  }, [openDoctorLogin, status]);
 
   useEffect(() => {
     if (!["invalid", "success"].includes(status)) return;
@@ -331,7 +345,8 @@ export default function DoctorRegisterInvitationPage() {
 
     setStatus("submitting");
     try {
-      await doctorInvitationsApi.register(buildPayload(token, form, isLinkedProfile));
+      const response = await doctorInvitationsApi.register(buildPayload(token, form, isLinkedProfile));
+      setRegisteredEmail(response?.data?.email || invitation?.email || "");
       setStatus("success");
     } catch (error) {
       const messages = getApiErrors(error);
@@ -415,7 +430,7 @@ export default function DoctorRegisterInvitationPage() {
               >
                 <p>Đăng ký tài khoản bác sĩ thành công. Vui lòng đăng nhập để tiếp tục.</p>
                 <p className="doctor-redirect-note">Bạn sẽ được chuyển đến trang đăng nhập trong giây lát.</p>
-                <button className="btn btn-primary" type="button" onClick={() => replaceRoute("/login")}>
+                <button className="btn btn-primary" type="button" onClick={openDoctorLogin}>
                   Đăng nhập ngay
                 </button>
               </StatusPanel>
