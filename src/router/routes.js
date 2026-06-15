@@ -70,7 +70,6 @@ const BASE_ROUTES = [
     title: "Phân tích triệu chứng | MediMate AI",
     access: "auth",
     shell: "patient",
-    navigation: { shell: "patient", label: "Triệu chứng", hint: "Phân tích nhanh", icon: "symptom", order: 20, mobile: true },
   },
   {
     id: "patient.chat",
@@ -93,6 +92,7 @@ const BASE_ROUTES = [
     title: "Hồ sơ cá nhân | MediMate AI",
     access: "auth",
     shell: "patient",
+    navigation: { shell: "patient", label: "Hồ sơ", hint: "Thông tin cá nhân", icon: "profile", order: 50, mobile: true },
   },
   {
     id: "patient.records",

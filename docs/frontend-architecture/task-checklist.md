@@ -269,25 +269,40 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 
 - [x] Cho người dùng mới vào app ngay cả khi hồ sơ chưa hoàn tất.
 - [x] Gỡ redirect cứng sang profile setup sau login/signup nếu không có yêu cầu bắt buộc.
-- [ ] Thêm prompt hoặc tour hướng dẫn cập nhật hồ sơ ở dashboard/menu avatar.
-- [ ] Cho phép bỏ qua nhắc hồ sơ khi bắt đầu chẩn đoán hoặc tìm cơ sở y tế.
+- [x] Thêm prompt hoặc tour hướng dẫn cập nhật hồ sơ ở dashboard/menu avatar.
+- [x] Cho phép bỏ qua nhắc hồ sơ khi bắt đầu chẩn đoán hoặc tìm cơ sở y tế.
 - [x] Thêm regression test đảm bảo user mới không bị kẹt ở profile setup.
+
+### FE-DX-030: Gom chẩn đoán vào Tư vấn chuyên khoa
+
+- [x] Bỏ mục Triệu chứng khỏi sidebar và mobile navigation.
+- [x] Giữ `/symptom` như URL tương thích nhưng không dùng làm entry chính.
+- [x] Đưa CTA phân tích triệu chứng nội bộ về `/dashboard`.
+- [x] Đọc prefill triệu chứng ngay trong dashboard để câu hỏi yes/no hiển thị tại chỗ.
+- [x] Thêm regression test cho sidebar không có `/symptom` và prefill dashboard.
+
+### FE-AUTH-031: Xác minh Doctor invitation khi đăng nhập Google
+
+- [x] Sau Google login, gọi `/api/users/me` để lấy role mới nhất từ backend.
+- [x] Nếu login trong context invitation mà tài khoản không có Doctor/Staff/Admin, xóa phiên và giữ người dùng ở login.
+- [x] Điều hướng Doctor/Staff/Admin về `/app/staff`, không rơi về patient dashboard.
+- [ ] Cần backend đảm bảo Google OAuth gán đúng role Doctor cho email invitation.
 
 ### FE-FACILITY-028: Xếp hạng bệnh viện sau chẩn đoán
 
-- [ ] Ưu tiên cơ sở có khoa/chuyên khoa liên quan đến kết quả chẩn đoán.
-- [ ] Dùng khoảng cách khi người dùng cấp quyền vị trí và cơ sở có tọa độ hợp lệ.
-- [ ] Dùng rating/số sao chỉ khi backend trả dữ liệu thật.
-- [ ] Không tự dựng thời gian chờ, khoảng cách, rating hoặc dữ liệu bệnh viện.
-- [ ] Hiển thị lý do xếp hạng và fallback khi thiếu vị trí/tọa độ.
+- [x] Ưu tiên cơ sở có khoa/chuyên khoa liên quan đến kết quả chẩn đoán.
+- [x] Dùng khoảng cách khi người dùng cấp quyền vị trí và cơ sở có tọa độ hợp lệ.
+- [x] Dùng rating/số sao chỉ khi backend trả dữ liệu thật.
+- [x] Không tự dựng thời gian chờ, khoảng cách, rating hoặc dữ liệu bệnh viện.
+- [x] Hiển thị lý do xếp hạng và fallback khi thiếu vị trí/tọa độ.
 
 ### FE-POLISH-029: Hoàn thiện UX frontend chuyên nghiệp
 
-- [ ] Rà navigation để ưu tiên chẩn đoán, tìm cơ sở, hồ sơ, giao dịch và cài đặt.
-- [ ] Bỏ hoặc hạ nhãn các card demo/CTA chưa có capability production.
-- [ ] Chuẩn hóa loading, empty, error và recovery state cho luồng chính.
-- [ ] Kiểm tra mobile, keyboard, 200% zoom và visual cho menu avatar/onboarding/diagnosis.
-- [ ] Rà copy y tế để không hứa hẹn chẩn đoán chắc chắn hoặc thay thế bác sĩ.
+- [x] Rà navigation để ưu tiên chẩn đoán, tìm cơ sở, hồ sơ, giao dịch và cài đặt.
+- [x] Bỏ hoặc hạ nhãn các card demo/CTA chưa có capability production.
+- [x] Chuẩn hóa loading, empty, error và recovery state cho luồng chính.
+- [x] Kiểm tra mobile, keyboard, 200% zoom và visual cho menu avatar/onboarding/diagnosis.
+- [x] Rà copy y tế để không hứa hẹn chẩn đoán chắc chắn hoặc thay thế bác sĩ.
 
 ## Nhật ký thay đổi
 
@@ -315,6 +330,9 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-15 | FE-PROFILE-025..FE-POLISH-029 | Chưa bắt đầu | Cập nhật backlog theo Swagger live và yêu cầu UX mới: mở hồ sơ cho mọi gói, menu avatar, diagnosis yes/no, onboarding hồ sơ nhẹ nhàng, xếp hạng bệnh viện và polish luồng chính | Đối chiếu Swagger live `http://52.77.210.243:8080/swagger/v1/swagger.json`; chưa chạy test vì chỉ cập nhật tài liệu |
 | 2026-06-15 | FE-PROFILE-025, FE-ONBOARD-027 | Đang thực hiện | Bỏ premium gate hồ sơ; chuyển cài đặt hiển thị vào menu avatar cùng Hồ sơ, Lịch sử giao dịch, Đăng xuất; bỏ redirect cứng profile setup sau auth | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 17 passed; personalization 1 passed |
 | 2026-06-15 | FE-DX-026 | Đang thực hiện | Thay `/symptom` bằng flow diagnosis theo Swagger mới: nhập triệu chứng, lấy câu hỏi yes/no, gửi câu trả lời, hiển thị chẩn đoán/khoa/cơ sở y tế và CTA bản đồ | `npm.cmd run lint`; `npm.cmd run build`; symptom diagnosis 1 passed; backend contract 4 passed, 1 skipped legacy `/analyze` |
+| 2026-06-16 | FE-DX-030, FE-AUTH-031 | Hoàn thành | Gom entry chẩn đoán vào dashboard; bỏ `/symptom` khỏi sidebar/mobile; chuyển CTA phân tích về `/dashboard`; Google login trong context Doctor invitation xác minh role qua `/api/users/me` và chặn tài khoản Patient | `npm.cmd run lint`; `npm.cmd run build`; Playwright dashboard/navigation/doctor-invitation/routes 84 passed, 1 skipped |
+| 2026-06-16 | FE-ONBOARD-027, FE-FACILITY-028 | Hoàn thành | Thêm prompt hồ sơ nhẹ nhàng trong dashboard có thể bỏ qua; bổ sung xếp hạng cơ sở theo chuyên khoa, vị trí người dùng nếu được cấp quyền, tọa độ/rating thật từ backend và lý do xếp hạng | `npm.cmd run lint`; dashboard UX 4 passed |
+| 2026-06-16 | FE-POLISH-029 | Hoàn thành | Đưa Hồ sơ vào navigation chính; giữ giao dịch/cài đặt trong menu avatar; thêm recovery action cho lỗi/empty/result của tư vấn chuyên khoa; hạ copy y tế từ chẩn đoán chắc chắn sang nhận định tham khảo; xác nhận các capability demo đã được gắn nhãn | `npm.cmd run lint`; `npm.cmd run build`; dashboard UX/navigation/doctor-invitation/routes; `git diff --check` |
 
 ## Mẫu cập nhật
 

@@ -150,7 +150,7 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).not.toHaveProperty("avatarUrl");
   });
 
-  test("authenticated users can navigate directly to symptom diagnosis", async ({ page }) => {
+  test("patient sidebar keeps diagnosis inside the specialty consultation page", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -162,10 +162,12 @@ test.describe("global navigation UX", () => {
 
     await openRoute(page, "/dashboard");
 
-    const symptomLink = page.getByRole("link", { name: /Triệu chứng/ }).first();
-    await expect(symptomLink).toHaveAttribute("href", "/symptom");
-    await symptomLink.click();
-    await expect(page).toHaveURL(/\/symptom$/);
+    await expect(page.locator('.user-shell-nav a[href="/dashboard"]')).toBeVisible();
+    await expect(page.locator('.user-shell-nav a[href="/profile"]')).toBeVisible();
+    await expect(page.locator('.user-shell-mobile-nav a[href="/profile"]')).toHaveCount(1);
+    await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(0);
+    await expect(page.locator('.user-shell-mobile-nav a[href="/symptom"]')).toHaveCount(0);
+    await expect(page.locator("#specialty-symptoms")).toBeVisible();
   });
 
   test("mobile workspace drawer opens and closes with Escape", async ({ page }) => {

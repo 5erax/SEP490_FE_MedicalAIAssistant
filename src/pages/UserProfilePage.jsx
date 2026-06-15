@@ -178,7 +178,7 @@ export default function UserProfilePage() {
       <section className="profile-content">
         <nav className="profile-quick-nav" aria-label="Dieu huong nhanh">
           <button type="button" onClick={() => go("/dashboard")}>← Trang chủ</button>
-          <button type="button" onClick={() => go("/symptom")}>Phân tích triệu chứng</button>
+          <button type="button" onClick={() => go("/dashboard")}>Phân tích triệu chứng</button>
           <button type="button" onClick={() => go("/records")}>Hồ sơ y tế</button>
           <button type="button" onClick={() => go("/map")}>Bản đồ</button>
         </nav>

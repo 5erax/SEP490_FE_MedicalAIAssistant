@@ -78,6 +78,15 @@ test.describe("patient specialty intake", () => {
                 longitude: 106.69,
                 isActive: true,
                 departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tai Mũi Họng" }],
+              }, {
+                id: "99999999-9999-4999-8999-999999999999",
+                facilityName: "Phòng khám Đánh Giá Cao",
+                address: "456 Lê Lợi",
+                rating: 5,
+                latitude: 10.78,
+                longitude: 106.7,
+                isActive: true,
+                departments: [{ departmentId: "other", departmentName: "Nội tổng quát" }],
               }],
             },
           },
@@ -106,12 +115,14 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByText("Bạn có sốt trên 38 độ không?")).toBeVisible();
 
     await page.getByLabel("Có").check();
-    await page.getByRole("button", { name: "Xem chẩn đoán và bệnh viện phù hợp" }).click();
+    await page.getByRole("button", { name: "Xem nhận định và bệnh viện phù hợp" }).click();
 
     await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Tai Mũi Họng", { exact: true })).toBeVisible();
     await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
-    await expect(page.getByText("4.7 sao đánh giá")).toBeVisible();
+    await expect(page.getByText("Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.")).toBeVisible();
+    await expect(page.getByText("#1")).toBeVisible();
+    await expect(page.getByText("Ưu tiên vì có chuyên khoa liên quan, có tọa độ sẵn sàng điều hướng, 4.7 sao đánh giá, đang hoạt động.")).toBeVisible();
 
     expect(questionPayload).toEqual({ userInput: "Sốt nhẹ 2 ngày kèm đau họng" });
     expect(answerPayload).toEqual({
@@ -143,5 +154,60 @@ test.describe("patient specialty intake", () => {
 
     await expect(page.getByText("Bạn có ho kéo dài trên 3 ngày không?")).toBeVisible();
     await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeHidden();
+  });
+
+  test("offers recovery actions when no follow-up question is returned", async ({ page }) => {
+    await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          sessionId: SESSION_ID,
+          questions: [],
+        },
+      }),
+    }));
+
+    await openRoute(page, "/dashboard");
+    await page.getByLabel("Triệu chứng bạn đang gặp").fill("Đau không rõ vị trí");
+    await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
+
+    await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Quay lại biểu mẫu" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thử lại với mô tả hiện tại" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Quay lại biểu mẫu" }).click();
+    await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeHidden();
+    await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toHaveValue("Đau không rõ vị trí");
+  });
+
+  test("loads symptom prefill directly into specialty consultation", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("medimate.symptom.prefill", "Headache for three days with poor sleep");
+    });
+
+    await openRoute(page, "/dashboard");
+
+    await expect(page.locator("#specialty-symptoms")).toHaveValue("Headache for three days with poor sleep");
+    await expect(page).toHaveURL(/\/dashboard$/);
+  });
+
+  test("shows a dismissible profile nudge without blocking diagnosis", async ({ page }) => {
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+        isProfileCompleted: false,
+      }));
+    }, ACCESS_TOKEN);
+
+    await openRoute(page, "/dashboard");
+
+    await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ khi bạn sẵn sàng" })).toBeVisible();
+    await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toBeVisible();
+
+    await page.getByRole("button", { name: "Để sau" }).click();
+    await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ khi bạn sẵn sàng" })).toBeHidden();
+    await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toBeVisible();
   });
 });

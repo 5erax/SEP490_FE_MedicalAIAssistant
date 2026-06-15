@@ -193,7 +193,7 @@ export default function SymptomAnalysisPage() {
       setQuestions(data.questions);
       setStatus(data.questions.length ? "questions" : "no-questions");
     } catch (requestError) {
-      setError(requestError.message || "Không thể tạo câu hỏi chẩn đoán. Vui lòng thử lại.");
+      setError(requestError.message || "Không thể tạo câu hỏi làm rõ. Vui lòng thử lại.");
       setStatus("idle");
     }
   }
@@ -233,7 +233,7 @@ export default function SymptomAnalysisPage() {
       <style>{styles}</style>
       <section className="symptom-shell">
         <header className="symptom-hero">
-          <p className="mini-label">Chẩn đoán định hướng</p>
+          <p className="mini-label">Sàng lọc định hướng</p>
           <h1>Mô tả triệu chứng, trả lời vài câu hỏi yes/no.</h1>
           <p>
             MediMate dùng câu hỏi lâm sàng từ backend để định hướng chuyên khoa và cơ sở y tế phù hợp.
@@ -241,11 +241,11 @@ export default function SymptomAnalysisPage() {
           </p>
         </header>
 
-        <ol className="diagnosis-steps" aria-label="Tiến trình chẩn đoán">
+        <ol className="diagnosis-steps" aria-label="Tiến trình sàng lọc">
           {[
             ["Nhập triệu chứng", ["idle", "loading-questions", "no-questions"].includes(status)],
             ["Trả lời yes/no", ["questions", "submitting"].includes(status)],
-            ["Xem kết quả", status === "result"],
+            ["Xem nhận định", status === "result"],
           ].map(([label, active], index) => (
             <li className={active ? "active" : ""} key={label}>
               <span>{index + 1}</span>
@@ -274,7 +274,7 @@ export default function SymptomAnalysisPage() {
             ))}
           </div>
           <button className="primary-action" type="submit" disabled={!userInput.trim() || status === "loading-questions"}>
-            {status === "loading-questions" ? "Đang tạo câu hỏi..." : "Bắt đầu chẩn đoán"}
+            {status === "loading-questions" ? "Đang tạo câu hỏi..." : "Bắt đầu sàng lọc"}
           </button>
         </form>
 
@@ -300,7 +300,7 @@ export default function SymptomAnalysisPage() {
             <div className="question-card-head">
               <div>
                 <p className="mini-label">Câu hỏi lâm sàng</p>
-                <h2>Trả lời yes/no để hoàn tất chẩn đoán</h2>
+                <h2>Trả lời yes/no để hoàn tất sàng lọc</h2>
               </div>
               <span>{answeredCount}/{questions.length}</span>
             </div>
@@ -339,7 +339,7 @@ export default function SymptomAnalysisPage() {
             </div>
 
             <button className="primary-action" type="submit" disabled={!canSubmitAnswers}>
-              {status === "submitting" ? "Đang phân tích..." : "Xem kết quả chẩn đoán"}
+              {status === "submitting" ? "Đang phân tích..." : "Xem nhận định tham khảo"}
             </button>
           </form>
         )}
@@ -352,8 +352,8 @@ export default function SymptomAnalysisPage() {
             </div>
 
             <article className="symptom-card diagnosis-summary">
-              <p className="mini-label">Kết quả chẩn đoán</p>
-              <h2>{primaryDiagnosis?.diseaseName || "Chưa có chẩn đoán chính"}</h2>
+              <p className="mini-label">Nhận định tham khảo</p>
+              <h2>{primaryDiagnosis?.diseaseName || "Chưa có nhận định chính"}</h2>
               {primaryDiagnosis?.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
               {primaryDiagnosis?.icd10Code && <span className="soft-badge">ICD-10: {primaryDiagnosis.icd10Code}</span>}
             </article>
@@ -379,7 +379,7 @@ export default function SymptomAnalysisPage() {
                 <div className="diagnosis-list">
                   {diagnoses.map((diagnosis) => (
                     <div key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
-                      <strong>{diagnosis.rank}. {diagnosis.diseaseName || "Chẩn đoán"}</strong>
+                      <strong>{diagnosis.rank}. {diagnosis.diseaseName || "Nhận định"}</strong>
                       <span>{confidencePercent(diagnosis.paGivenB)}%</span>
                       {diagnosis.clinicalReasoning && <p>{diagnosis.clinicalReasoning}</p>}
                     </div>
@@ -427,7 +427,7 @@ export default function SymptomAnalysisPage() {
                 setResult(null);
                 setSessionId("");
               }}>
-                Chẩn đoán mới
+                Sàng lọc mới
               </button>
             </div>
           </section>
