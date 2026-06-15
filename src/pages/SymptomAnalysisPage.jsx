@@ -4,238 +4,344 @@ import { symptomAnalysisApi } from "../services/api";
 
 const QUICK_SYMPTOMS = ["Đau đầu", "Sốt", "Ho", "Đau bụng", "Mệt mỏi", "Khó thở", "Đau họng", "Chóng mặt"];
 
-const DOCTOR_QUESTIONS = [
-  "Triệu chứng này có nguy hiểm không?",
-  "Tôi có cần xét nghiệm máu không?",
-  "Có cần nhịn ăn trước khi xét nghiệm không?",
-  "Tôi nên tái khám sau bao lâu?",
-  "Có thuốc nào cần tránh trong thời gian này không?",
-];
-
 function confidencePercent(value) {
   const numeric = Number(value ?? 0);
-  return Math.round(numeric <= 1 ? numeric * 100 : numeric);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
 }
 
-function SymptomAnalysisPage() {
-  const [step, setStep] = useState(1);
-  const [symptoms, setSymptoms] = useState(() => {
+function formatQuestion(question, index) {
+  return question.questionVi || `Câu hỏi lâm sàng ${index + 1}`;
+}
+
+function facilityId(facility) {
+  return facility.id || facility.facilityId || facility.facilityName;
+}
+
+function hasDepartmentMatch(facility, department) {
+  if (!department) return false;
+  const departmentId = String(department.departmentId || "");
+  const departmentName = String(department.departmentName || "").toLowerCase();
+  const departments = Array.isArray(facility.departments) ? facility.departments : [];
+
+  return departments.some((item) => (
+    (departmentId && String(item.departmentId) === departmentId)
+    || (departmentName && String(item.departmentName || "").toLowerCase().includes(departmentName))
+  ));
+}
+
+function scoreFacility(facility, department) {
+  let score = 0;
+  if (hasDepartmentMatch(facility, department)) score += 100;
+  if (facility.latitude != null && facility.longitude != null) score += 20;
+  if (facility.isActive) score += 12;
+  if (facility.openingHours) score += 8;
+  if (facility.phone) score += 6;
+  if (facility.website) score += 4;
+  return score;
+}
+
+function sortFacilities(facilities, department) {
+  return [...facilities].sort((left, right) => scoreFacility(right, department) - scoreFacility(left, department));
+}
+
+function getFacilityReason(facility, department) {
+  const reasons = [];
+  if (hasDepartmentMatch(facility, department)) reasons.push("có chuyên khoa liên quan");
+  if (facility.latitude != null && facility.longitude != null) reasons.push("có tọa độ để tìm đường");
+  if (facility.isActive) reasons.push("đang hoạt động");
+  if (facility.openingHours) reasons.push("có giờ mở cửa");
+  if (facility.phone) reasons.push("có số liên hệ");
+  return reasons.length ? reasons.join(", ") : "backend đề xuất cho phiên chẩn đoán này";
+}
+
+function getAnalysis(response) {
+  return response?.analysis ?? response;
+}
+
+export default function SymptomAnalysisPage() {
+  const [userInput, setUserInput] = useState(() => {
     const prefill = sessionStorage.getItem("medimate.symptom.prefill");
     if (prefill) sessionStorage.removeItem("medimate.symptom.prefill");
     return prefill || "";
   });
-  const [severity, setSeverity] = useState("medium");
-  const [duration, setDuration] = useState("");
-  const [checkedQs, setCheckedQs] = useState(new Set());
-  const [copied, setCopied] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
-  const [analysisError, setAnalysisError] = useState("");
+  const [sessionId, setSessionId] = useState("");
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
 
-  const appendSymptom = (label) => {
-    setSymptoms((value) => {
-      if (!value.trim()) return label;
-      if (value.toLowerCase().includes(label.toLowerCase())) return value;
-      return `${value}, ${label.toLowerCase()}`;
+  const answeredCount = Object.values(answers).filter((value) => value === true || value === false).length;
+  const canSubmitAnswers = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
+  const analysis = getAnalysis(result);
+  const primaryDiagnosis = analysis?.primaryDiagnosis;
+  const diagnoses = analysis?.diagnoses ?? [];
+  const recommendedDepartment = analysis?.recommendedDepartment;
+  const sortedFacilities = sortFacilities(analysis?.recommendedFacilities ?? [], recommendedDepartment);
+
+  function appendSymptom(label) {
+    setUserInput((current) => {
+      if (!current.trim()) return label;
+      if (current.toLowerCase().includes(label.toLowerCase())) return current;
+      return `${current}, ${label.toLowerCase()}`;
     });
-  };
+  }
 
-  const toggleQuestion = (question) => {
-    setCheckedQs((current) => {
-      const next = new Set(current);
-      if (next.has(question)) next.delete(question);
-      else next.add(question);
-      return next;
-    });
-  };
+  async function startDiagnosis(event) {
+    event.preventDefault();
+    const symptomText = userInput.trim();
+    if (!symptomText) return;
 
-  const copyQuestions = async () => {
-    const text = DOCTOR_QUESTIONS.map((question) => `- ${question}`).join("\n");
-    await navigator.clipboard?.writeText(text);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
-  };
+    setError("");
+    setResult(null);
+    setQuestions([]);
+    setAnswers({});
+    setStatus("loading-questions");
 
-  const startAnalysis = async () => {
-    if (!symptoms.trim()) return;
-    setAnalysisError("");
-    setStep(2);
     try {
-      const details = [
-        symptoms.trim(),
-        duration ? `Thời gian: ${duration}.` : "",
-        severity ? `Mức độ người dùng tự đánh giá: ${severity}.` : "",
-      ].filter(Boolean).join(" ");
-      const response = await symptomAnalysisApi.analyze(details);
-      setAnalysis(response.data ?? null);
-      setStep(3);
-    } catch (error) {
-      setAnalysisError(error.message);
-      setStep(1);
+      const response = await symptomAnalysisApi.suggestClinicalQuestions(symptomText);
+      const data = response.data ?? {};
+      setSessionId(data.sessionId ?? "");
+      setQuestions(Array.isArray(data.questions) ? data.questions : []);
+      setStatus((data.questions ?? []).length ? "questions" : "no-questions");
+    } catch (requestError) {
+      setError(requestError.message || "Không thể tạo câu hỏi chẩn đoán. Vui lòng thử lại.");
+      setStatus("idle");
     }
-  };
+  }
 
-  const recommendations = analysis?.recommendedDepartments ?? [];
-  const recommendedFacilities = analysis?.recommendedFacilities ?? [];
+  function updateAnswer(questionId, answer) {
+    setAnswers((current) => ({ ...current, [questionId]: answer }));
+  }
+
+  async function submitAnswers(event) {
+    event.preventDefault();
+    if (!canSubmitAnswers) return;
+
+    setError("");
+    setStatus("submitting");
+
+    try {
+      const payload = questions.map((question) => ({
+        questionId: question.questionId,
+        answer: answers[question.questionId],
+      }));
+      const response = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
+      setResult(response.data ?? null);
+      setStatus("result");
+    } catch (requestError) {
+      setError(requestError.message || "Không thể gửi câu trả lời. Vui lòng thử lại.");
+      setStatus("questions");
+    }
+  }
+
+  function openFacilities() {
+    const search = recommendedDepartment?.departmentName || primaryDiagnosis?.diseaseName || userInput;
+    goTo(`/map?search=${encodeURIComponent(search)}`);
+  }
 
   return (
     <main className="symptom-page">
       <style>{styles}</style>
       <section className="symptom-shell">
-        <nav className="workspace-nav" aria-label="Dieu huong tinh nang">
-          <button type="button" onClick={() => goTo("/dashboard")}>← Trang chủ</button>
-          <button type="button" onClick={() => goTo("/chat")}>Chat AI</button>
-          <button type="button" onClick={() => goTo("/map")}>Bản đồ</button>
-          <button type="button" onClick={() => goTo("/records")}>Hồ sơ y tế</button>
-        </nav>
-        <header className="symptom-stepper" aria-label="Quy trình phân tích triệu chứng">
-          {["Nhập triệu chứng", "AI phân tích", "Kết quả", "Lưu"].map((label, index) => {
-            const number = index + 1;
-            const state = step > number ? "done" : step === number ? "active" : "todo";
-            return (
-              <div className={`symptom-step ${state}`} key={label}>
-                <span>{state === "done" ? "✓" : number}</span>
-                <strong>{number}. {label}</strong>
-              </div>
-            );
-          })}
+        <header className="symptom-hero">
+          <p className="mini-label">Chẩn đoán định hướng</p>
+          <h1>Mô tả triệu chứng, trả lời vài câu hỏi yes/no.</h1>
+          <p>
+            MediMate dùng câu hỏi lâm sàng từ backend để định hướng chuyên khoa và cơ sở y tế phù hợp.
+            Kết quả chỉ mang tính hỗ trợ, không thay thế bác sĩ.
+          </p>
         </header>
 
-        {step === 1 && (
-          <section className="symptom-card">
-            <p className="mini-label">Nhập triệu chứng</p>
-            <h1>Bạn đang cảm thấy thế nào?</h1>
+        <ol className="diagnosis-steps" aria-label="Tiến trình chẩn đoán">
+          {[
+            ["Nhập triệu chứng", ["idle", "loading-questions", "no-questions"].includes(status)],
+            ["Trả lời yes/no", ["questions", "submitting"].includes(status)],
+            ["Xem kết quả", status === "result"],
+          ].map(([label, active], index) => (
+            <li className={active ? "active" : ""} key={label}>
+              <span>{index + 1}</span>
+              {label}
+            </li>
+          ))}
+        </ol>
+
+        <form className="symptom-card" onSubmit={startDiagnosis}>
+          <label className="symptom-input" htmlFor="symptom-input">
+            <span>Triệu chứng của bạn</span>
             <textarea
-              value={symptoms}
-              onChange={(event) => setSymptoms(event.target.value)}
-              placeholder={"Mô tả triệu chứng bằng tiếng Việt tự nhiên.\nVí dụ: Tôi bị đau đầu kéo dài 3 ngày, sốt nhẹ, người mệt mỏi, không muốn ăn..."}
+              id="symptom-input"
+              value={userInput}
+              onChange={(event) => setUserInput(event.target.value)}
+              placeholder="Ví dụ: Tôi bị đau đầu 3 ngày, sốt nhẹ, mệt mỏi và buồn nôn..."
+              rows={5}
+              disabled={status === "loading-questions" || status === "submitting"}
             />
-            <div className="chip-row">
-              {QUICK_SYMPTOMS.map((item) => (
-                <button type="button" key={item} onClick={() => appendSymptom(item)}>{item}</button>
-              ))}
-            </div>
-            <div className="symptom-form-grid">
-              <fieldset>
-                <legend>Mức độ nghiêm trọng</legend>
-                {[
-                  ["mild", "Nhẹ"],
-                  ["medium", "Vừa"],
-                  ["heavy", "Nặng"],
-                  ["critical", "Rất nặng"],
-                ].map(([value, label]) => (
-                  <label key={value} className="radio-line">
-                    <input
-                      type="radio"
-                      checked={severity === value}
-                      onChange={() => setSeverity(value)}
-                    />
-                    {label}
-                  </label>
-                ))}
-              </fieldset>
-              <label className="field">
-                Thời gian xuất hiện
-                <select value={duration} onChange={(event) => setDuration(event.target.value)}>
-                  <option value="">Chọn thời gian</option>
-                  <option value="today">Hôm nay</option>
-                  <option value="2-3">2-3 ngày</option>
-                  <option value="week">1 tuần</option>
-                  <option value="over-week">Hơn 1 tuần</option>
-                </select>
-              </label>
-            </div>
-            <button className="primary-action" type="button" disabled={!symptoms.trim()} onClick={startAnalysis}>
-              Phân tích →
-            </button>
-            {analysisError && <div className="disclaimer" role="alert">{analysisError}</div>}
-          </section>
-        )}
+          </label>
+          <div className="chip-row" aria-label="Triệu chứng nhanh">
+            {QUICK_SYMPTOMS.map((item) => (
+              <button type="button" key={item} onClick={() => appendSymptom(item)}>
+                {item}
+              </button>
+            ))}
+          </div>
+          <button className="primary-action" type="submit" disabled={!userInput.trim() || status === "loading-questions"}>
+            {status === "loading-questions" ? "Đang tạo câu hỏi..." : "Bắt đầu chẩn đoán"}
+          </button>
+        </form>
 
-        {step === 2 && (
-          <section className="symptom-card analyzing-card">
+        {error && <div className="diagnosis-alert" role="alert">{error}</div>}
+
+        {status === "loading-questions" && (
+          <section className="symptom-card status-card" role="status">
             <div className="large-spinner" />
-            <h1>MediMate AI đang phân tích triệu chứng của bạn...</h1>
-            <p role="status">Đang chờ kết quả từ backend.</p>
+            <h2>Backend đang chọn câu hỏi phù hợp.</h2>
+            <p>Quá trình này giúp kết quả bám sát triệu chứng bạn mô tả hơn.</p>
           </section>
         )}
 
-        {step === 3 && (
-          <section className="result-layout">
-            <div className="disclaimer">⚕ Kết quả chỉ mang tính tham khảo và không thay thế chẩn đoán y khoa chuyên nghiệp.</div>
-            <article className="symptom-card">
-              <p className="mini-label">Chuyên khoa gợi ý</p>
-              <div className="recommendation-list">
-                {recommendations.length === 0 && (
-                  <div className="soft-empty">Backend chưa trả về chuyên khoa gợi ý.</div>
-                )}
-                {recommendations.map((item) => (
-                  <div className="recommendation-row" key={item.departmentId}>
-                    <div>
-                      <strong>{item.departmentName || "Chuyên khoa"}</strong>
-                      <p>{item.reason}</p>
-                    </div>
-                    <div className="confidence-box">
-                      <span>{confidencePercent(item.confidenceScore)}%</span>
-                      <div><i style={{ width: `${confidencePercent(item.confidenceScore)}%` }} /></div>
-                      <small>Ưu tiên {item.priorityRank}</small>
-                      {item.isEmergencySuggested && <b>Cấp cứu</b>}
-                    </div>
-                  </div>
-                ))}
+        {status === "no-questions" && (
+          <section className="symptom-card status-card" role="status">
+            <h2>Chưa có câu hỏi phù hợp.</h2>
+            <p>Hãy mô tả rõ hơn về thời gian, vị trí đau, mức độ và triệu chứng đi kèm.</p>
+          </section>
+        )}
+
+        {["questions", "submitting"].includes(status) && (
+          <form className="symptom-card question-card" onSubmit={submitAnswers}>
+            <div className="question-card-head">
+              <div>
+                <p className="mini-label">Câu hỏi lâm sàng</p>
+                <h2>Trả lời yes/no để hoàn tất chẩn đoán</h2>
               </div>
+              <span>{answeredCount}/{questions.length}</span>
+            </div>
+
+            <div className="question-list">
+              {questions.map((question, index) => {
+                const questionText = formatQuestion(question, index);
+                const questionId = question.questionId;
+                return (
+                  <fieldset className="diagnosis-question" key={questionId}>
+                    <legend>{questionText}</legend>
+                    <div>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`answer-${questionId}`}
+                          checked={answers[questionId] === true}
+                          onChange={() => updateAnswer(questionId, true)}
+                        />
+                        Có
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`answer-${questionId}`}
+                          checked={answers[questionId] === false}
+                          onChange={() => updateAnswer(questionId, false)}
+                        />
+                        Không
+                      </label>
+                    </div>
+                    {question.chapterCode && <small>Nhóm ICD: {question.chapterCode}</small>}
+                  </fieldset>
+                );
+              })}
+            </div>
+
+            <button className="primary-action" type="submit" disabled={!canSubmitAnswers}>
+              {status === "submitting" ? "Đang phân tích..." : "Xem kết quả chẩn đoán"}
+            </button>
+          </form>
+        )}
+
+        {status === "result" && (
+          <section className="result-layout">
+            <div className="diagnosis-alert medical" role="note">
+              Kết quả này chỉ giúp định hướng. Nếu đau ngực, khó thở, yếu liệt, lơ mơ, chảy máu nhiều
+              hoặc triệu chứng nặng nhanh, hãy liên hệ cấp cứu hoặc đến cơ sở y tế gần nhất.
+            </div>
+
+            <article className="symptom-card diagnosis-summary">
+              <p className="mini-label">Kết quả chẩn đoán</p>
+              <h2>{primaryDiagnosis?.diseaseName || "Chưa có chẩn đoán chính"}</h2>
+              {primaryDiagnosis?.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
+              {primaryDiagnosis?.icd10Code && <span className="soft-badge">ICD-10: {primaryDiagnosis.icd10Code}</span>}
             </article>
-            {recommendedFacilities.length > 0 && (
+
+            {recommendedDepartment && (
+              <article className="symptom-card department-card">
+                <p className="mini-label">Chuyên khoa đề xuất</p>
+                <h2>{recommendedDepartment.departmentName || "Chuyên khoa phù hợp"}</h2>
+                <p>{recommendedDepartment.reason || "Backend đề xuất chuyên khoa dựa trên câu trả lời của bạn."}</p>
+                <div className="confidence-line">
+                  <span>{confidencePercent(recommendedDepartment.confidenceScore)}%</span>
+                  <i style={{ width: `${confidencePercent(recommendedDepartment.confidenceScore)}%` }} />
+                </div>
+                {recommendedDepartment.isEmergencySuggested && (
+                  <strong className="emergency-badge">Nên ưu tiên thăm khám khẩn cấp</strong>
+                )}
+              </article>
+            )}
+
+            {diagnoses.length > 0 && (
               <article className="symptom-card">
-                <p className="mini-label">Cơ sở y tế phù hợp</p>
-                <div className="recommendation-list">
-                  {recommendedFacilities.map((facility) => (
-                    <div className="recommendation-row" key={`${facility.facilityId}-${facility.departmentId}`}>
-                      <div>
-                        <strong>{facility.facilityName}</strong>
-                        <p>{facility.address || facility.departmentName}</p>
-                      </div>
-                      <div className="confidence-box">
-                        <small>{facility.departmentName}</small>
-                        {facility.phone && <span>{facility.phone}</span>}
-                      </div>
+                <p className="mini-label">Khả năng khác</p>
+                <div className="diagnosis-list">
+                  {diagnoses.map((diagnosis) => (
+                    <div key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
+                      <strong>{diagnosis.rank}. {diagnosis.diseaseName || "Chẩn đoán"}</strong>
+                      <span>{confidencePercent(diagnosis.paGivenB)}%</span>
+                      {diagnosis.clinicalReasoning && <p>{diagnosis.clinicalReasoning}</p>}
                     </div>
                   ))}
                 </div>
               </article>
             )}
-            <article className="symptom-card">
-              <p className="mini-label">Câu hỏi nên hỏi bác sĩ</p>
-              <div className="question-list">
-                {DOCTOR_QUESTIONS.map((question) => (
-                  <label key={question}>
-                    <input
-                      type="checkbox"
-                      checked={checkedQs.has(question)}
-                      onChange={() => toggleQuestion(question)}
-                    />
-                    <span>{question}</span>
-                  </label>
-                ))}
-              </div>
-              <button className="outline-action" type="button" onClick={copyQuestions}>
-                {copied ? "Đã sao chép" : "Sao chép danh sách"}
-              </button>
-            </article>
-            <div className="result-actions">
-              <button className="primary-action" type="button" onClick={() => goTo("/map")}>Tìm cơ sở y tế gần đây</button>
-              <button className="dark-action" type="button" onClick={() => setStep(4)}>Xem mã phiên</button>
-            </div>
-          </section>
-        )}
 
-        {step === 4 && (
-          <section className="symptom-card saved-card">
-            <div className="saved-mark">✓</div>
-            <h1>Phiên phân tích đã được backend ghi nhận</h1>
-            <p>Mã phiên: <strong>{analysis?.sessionId || "Không có mã phiên"}</strong></p>
+            <article className="symptom-card">
+              <div className="question-card-head">
+                <div>
+                  <p className="mini-label">Cơ sở y tế liên quan</p>
+                  <h2>Ưu tiên theo chuyên khoa, tọa độ và dữ liệu thật</h2>
+                </div>
+                <button className="outline-action" type="button" onClick={openFacilities}>
+                  Mở bản đồ
+                </button>
+              </div>
+              {sortedFacilities.length === 0 ? (
+                <p className="soft-empty">Backend chưa trả cơ sở y tế cho phiên này. Bạn vẫn có thể mở bản đồ để tìm theo chuyên khoa.</p>
+              ) : (
+                <div className="facility-list">
+                  {sortedFacilities.map((facility, index) => (
+                    <article key={facilityId(facility)}>
+                      <span>#{index + 1}</span>
+                      <div>
+                        <strong>{facility.facilityName || "Cơ sở y tế"}</strong>
+                        <p>{facility.address || "Chưa có địa chỉ"}</p>
+                        <small>{getFacilityReason(facility, recommendedDepartment)}</small>
+                      </div>
+                      {facility.phone && <a href={`tel:${facility.phone}`}>{facility.phone}</a>}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </article>
+
             <div className="result-actions">
-              <button className="primary-action" type="button" onClick={() => goTo("/dashboard")}>Về trang chủ</button>
-              <button className="outline-action" type="button" onClick={() => goTo("/records")}>Xem lịch sử</button>
+              <button className="primary-action" type="button" onClick={openFacilities}>Tìm bệnh viện liên quan</button>
+              <button className="outline-action" type="button" onClick={() => setStatus("questions")}>Xem lại câu trả lời</button>
+              <button className="outline-action" type="button" onClick={() => {
+                setStatus("idle");
+                setQuestions([]);
+                setAnswers({});
+                setResult(null);
+                setSessionId("");
+              }}>
+                Chẩn đoán mới
+              </button>
             </div>
           </section>
         )}
@@ -247,65 +353,62 @@ function SymptomAnalysisPage() {
 const styles = `
 .symptom-page { min-height: 100svh; background: var(--bg); color: var(--ink); padding: 24px; }
 .symptom-shell { width: min(1080px, 100%); margin: 0 auto; display: grid; gap: 18px; }
-.workspace-nav { display: flex; flex-wrap: wrap; gap: 8px; }
-.workspace-nav button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
-.workspace-nav button:first-child { background: var(--lime); }
-.symptom-stepper { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1.5px solid var(--ink); background: var(--paper); padding: 12px; box-shadow: 4px 4px 0 var(--ink); }
-.symptom-step { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--muted); }
-.symptom-step span { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; font-weight: 900; }
-.symptom-step strong { font-size: 13px; overflow-wrap: anywhere; }
-.symptom-step.active { color: var(--ink); }
-.symptom-step.active span { background: var(--lime); }
-.symptom-step.done span { background: var(--ink); color: var(--lime); }
-.symptom-card { border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); padding: clamp(20px, 4vw, 32px); box-shadow: 4px 4px 0 var(--ink); }
-.mini-label { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 12px; color: var(--lime-dark); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.symptom-hero { border: 1.5px solid var(--ink); border-radius: 18px; background: #fff; padding: clamp(22px, 4vw, 38px); box-shadow: 4px 4px 0 var(--ink); }
+.mini-label { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 10px; color: var(--lime-dark); font-size: 11px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
 .mini-label::before { content: ""; width: 12px; height: 2px; background: currentColor; }
-.symptom-card h1 { margin: 0 0 18px; font-family: var(--display); font-size: clamp(30px, 5vw, 48px); line-height: 1.06; }
-.symptom-card textarea { width: 100%; min-height: 150px; resize: vertical; border: 1.5px solid var(--ink); border-radius: 10px; padding: 14px; line-height: 1.65; outline: none; background: var(--paper-soft); }
-.symptom-card textarea:focus, .field select:focus { box-shadow: 0 0 0 4px rgba(196, 233, 149, .28); }
+.symptom-hero h1, .symptom-card h2 { margin: 0; font-family: var(--display); letter-spacing: 0; line-height: 1.06; }
+.symptom-hero h1 { max-width: 760px; font-size: clamp(34px, 5vw, 58px); }
+.symptom-hero p, .symptom-card p { color: var(--muted); line-height: 1.65; }
+.diagnosis-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.diagnosis-steps li { display: flex; align-items: center; gap: 10px; min-height: 52px; border: 1px solid var(--line-strong); border-radius: 14px; background: rgba(255,255,255,.76); padding: 8px 12px; color: var(--muted); font-weight: 950; }
+.diagnosis-steps span { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #fff; border: 1.5px solid var(--ink); color: var(--ink); }
+.diagnosis-steps .active { color: var(--ink); background: var(--mint); }
+.diagnosis-steps .active span { background: var(--lime); }
+.symptom-card { border: 1.5px solid var(--ink); border-radius: 18px; background: var(--paper); padding: clamp(18px, 3vw, 28px); box-shadow: 4px 4px 0 var(--ink); }
+.symptom-input { display: grid; gap: 8px; font-size: 13px; font-weight: 950; color: var(--ink); }
+.symptom-input textarea { width: 100%; min-height: 150px; resize: vertical; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper-soft); padding: 14px; color: var(--ink); font: inherit; line-height: 1.65; }
+.symptom-input textarea:focus, .diagnosis-question input:focus-visible { outline: 3px solid rgba(8,127,140,.35); outline-offset: 2px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
-.chip-row button, .outline-action { border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 9px 12px; font-weight: 800; }
-.chip-row button:hover, .outline-action:hover { background: var(--mint); transform: translateY(-1px); }
-.symptom-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-fieldset, .field { min-width: 0; border: 1px solid var(--line-strong); border-radius: 10px; padding: 14px; background: var(--paper-soft); }
-legend, .field { color: var(--muted); font-size: 12px; font-weight: 900; }
-.radio-line { display: inline-flex; align-items: center; gap: 8px; margin: 10px 16px 0 0; color: var(--ink); font-size: 14px; font-weight: 800; }
-.field { display: grid; gap: 9px; }
-.field select { width: 100%; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; padding: 11px; outline: none; }
-.primary-action, .dark-action { min-height: 48px; border: 1.5px solid var(--ink); border-radius: 10px; padding: 0 18px; font-weight: 900; box-shadow: 3px 3px 0 var(--ink); }
-.primary-action { width: 100%; margin-top: 18px; background: var(--lime); color: var(--ink); }
+.chip-row button, .outline-action { min-height: 42px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
+.primary-action { min-height: 48px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--lime); color: var(--ink); padding: 0 18px; font-weight: 950; box-shadow: 3px 3px 0 var(--ink); }
 .primary-action:disabled { cursor: not-allowed; opacity: .48; box-shadow: none; }
-.dark-action { background: var(--ink); color: #fff; }
-.analyzing-card { min-height: 420px; display: grid; place-items: center; text-align: center; align-content: center; gap: 16px; }
-.large-spinner { width: 74px; height: 74px; border: 6px solid rgba(17,20,18,.1); border-top-color: var(--lime); border-radius: 50%; animation: spin .8s linear infinite; }
-.progress-track { width: min(520px, 100%); height: 12px; overflow: hidden; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; }
-.progress-track span, .confidence-box i { display: block; height: 100%; background: linear-gradient(90deg, var(--lime), var(--teal)); }
+.diagnosis-alert { border: 1px solid rgba(185,28,28,.3); border-radius: 14px; background: rgba(254,226,226,.72); color: #7f1d1d; padding: 13px 14px; font-weight: 850; line-height: 1.55; }
+.diagnosis-alert.medical { border-color: rgba(217,119,6,.35); background: rgba(245,158,11,.14); color: #7c3f00; }
+.status-card { min-height: 260px; display: grid; place-items: center; align-content: center; gap: 12px; text-align: center; }
+.large-spinner { width: 62px; height: 62px; border: 6px solid rgba(17,20,18,.1); border-top-color: var(--lime); border-radius: 50%; animation: spin .8s linear infinite; }
+.question-card-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+.question-card-head h2 { font-size: clamp(24px, 3vw, 36px); }
+.question-card-head > span, .soft-badge, .emergency-badge { display: inline-flex; width: fit-content; border-radius: 999px; background: var(--mint); color: var(--teal); padding: 6px 10px; font-size: 12px; font-weight: 950; }
+.question-list { display: grid; gap: 12px; }
+.diagnosis-question { min-width: 0; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--paper-soft); padding: 14px; }
+.diagnosis-question legend { color: var(--ink); font-weight: 950; line-height: 1.45; }
+.diagnosis-question div { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.diagnosis-question label { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; padding: 0 14px; font-weight: 900; }
+.diagnosis-question small { display: inline-block; margin-top: 9px; color: var(--muted); font-weight: 800; }
 .result-layout { display: grid; gap: 16px; }
-.disclaimer { border: 1px solid rgba(217,119,6,.35); border-radius: 10px; background: rgba(245,158,11,.14); padding: 13px 14px; color: #7c3f00; font-weight: 800; line-height: 1.5; }
-.recommendation-list, .question-list { display: grid; gap: 12px; }
-.recommendation-row { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 16px; align-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-soft); padding: 14px; }
-.recommendation-row strong { font-size: 17px; }
-.recommendation-row p { margin: 7px 0 0; color: var(--muted); line-height: 1.55; }
-.confidence-box { display: grid; gap: 7px; }
-.confidence-box span { font-weight: 900; text-align: right; }
-.confidence-box div { height: 8px; overflow: hidden; border-radius: 999px; background: #e9eee1; }
-.confidence-box small, .confidence-box b { justify-self: end; border-radius: 999px; padding: 5px 9px; font-size: 11px; font-weight: 900; background: var(--mint); color: var(--teal); }
-.confidence-box b { background: rgba(239,111,97,.15); color: #b42318; }
-.question-list label { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--paper-soft); font-weight: 800; }
-.result-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-.result-actions .primary-action { width: auto; margin-top: 0; }
-.saved-card { min-height: 420px; display: grid; place-items: center; align-content: center; gap: 14px; text-align: center; }
-.saved-card p { max-width: 560px; margin: 0; color: var(--muted); line-height: 1.65; }
-.saved-mark { width: 82px; height: 82px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 50%; background: var(--lime); box-shadow: 4px 4px 0 var(--ink); font-size: 42px; font-weight: 900; }
+.diagnosis-summary h2, .department-card h2 { font-size: clamp(28px, 4vw, 44px); }
+.confidence-line { position: relative; height: 12px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 999px; background: #e9eee1; margin-top: 14px; }
+.confidence-line span { position: absolute; right: 0; bottom: 16px; color: var(--ink); font-size: 12px; font-weight: 950; }
+.confidence-line i { display: block; height: 100%; background: linear-gradient(90deg, var(--lime), var(--teal)); }
+.emergency-badge { margin-top: 12px; background: rgba(239,111,97,.15); color: #b42318; }
+.diagnosis-list, .facility-list { display: grid; gap: 10px; }
+.diagnosis-list > div, .facility-list article { border: 1px solid var(--line); border-radius: 14px; background: var(--paper-soft); padding: 14px; }
+.diagnosis-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.diagnosis-list p { grid-column: 1 / -1; margin: 0; }
+.diagnosis-list span { font-weight: 950; color: var(--teal); }
+.facility-list article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.facility-list article > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: var(--lime); font-size: 12px; font-weight: 950; }
+.facility-list strong, .facility-list p, .facility-list small { display: block; min-width: 0; }
+.facility-list p { margin: 4px 0; color: var(--muted); }
+.facility-list small { color: var(--teal); font-weight: 850; }
+.facility-list a { color: var(--ink); font-weight: 950; }
+.soft-empty { color: var(--muted); line-height: 1.6; }
+.result-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 760px) {
   .symptom-page { padding: 14px; }
-  .symptom-stepper { display: flex; overflow-x: auto; }
-  .symptom-step { min-width: 160px; }
-  .symptom-form-grid, .recommendation-row { grid-template-columns: 1fr; }
-  .confidence-box span, .confidence-box small, .confidence-box b { justify-self: start; text-align: left; }
-  .result-actions, .result-actions .primary-action, .result-actions .dark-action, .outline-action { width: 100%; }
+  .diagnosis-steps, .diagnosis-list > div, .facility-list article { grid-template-columns: 1fr; }
+  .question-card-head { display: grid; }
+  .result-actions, .result-actions button, .outline-action, .primary-action { width: 100%; }
 }
 `;
-
-export default SymptomAnalysisPage;

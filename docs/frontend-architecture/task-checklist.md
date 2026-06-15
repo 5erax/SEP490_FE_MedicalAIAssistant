@@ -1,7 +1,7 @@
 # Frontend task checklist
 
 Tài liệu này theo dõi các nhiệm vụ frontend được thực hiện trên nhánh
-`codex/frontend-docs-task-checklist`. Mỗi thay đổi phải được cập nhật tại đây
+`5era/frontend-docs-task-checklist`. Mỗi thay đổi phải được cập nhật tại đây
 trước khi commit để phạm vi, trạng thái và kết quả kiểm tra có thể được rà soát.
 
 ## Quy ước trạng thái
@@ -248,6 +248,47 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Bảo đảm `/map` không hồi quy sau khi tách khỏi landing.
 - [ ] Chạy route, accessibility, performance và visual suite trong CI.
 
+### FE-PROFILE-025: Mở hồ sơ và gom menu tài khoản
+
+- [x] Bỏ premium gate khỏi xem/cập nhật hồ sơ.
+- [x] Tạo menu avatar gồm Hồ sơ, Cài đặt hiển thị, Lịch sử giao dịch và Đăng xuất.
+- [x] Chuyển cài đặt trải nghiệm/hiển thị vào trong app, không để ngoài shell chính.
+- [x] Đảm bảo menu dùng được bằng keyboard, mobile và không lộ dữ liệu nhạy cảm.
+- [-] Thêm test user free mở hồ sơ và thấy cài đặt hiển thị; còn thiếu test submit cập nhật hồ sơ.
+
+### FE-DX-026: Chẩn đoán triệu chứng bằng câu hỏi yes/no
+
+- [x] Tạo service cho `suggest-clinical-questions` và `submit-clinical-question-answers`.
+- [x] Xây flow nhập triệu chứng -> trả lời yes/no -> xem kết quả chẩn đoán.
+- [x] Hiển thị `primaryDiagnosis`, danh sách chẩn đoán, khoa đề xuất và cảnh báo y tế.
+- [x] Thêm CTA điều hướng đến cơ sở y tế liên quan sau khi có kết quả.
+- [-] Xử lý loading, empty questions và submit error; cần bổ sung test riêng cho 400, 401, 502.
+- [-] Thêm test success; còn thiếu test empty questions, backend error và emergency suggestion.
+
+### FE-ONBOARD-027: Onboarding hồ sơ nhẹ nhàng
+
+- [x] Cho người dùng mới vào app ngay cả khi hồ sơ chưa hoàn tất.
+- [x] Gỡ redirect cứng sang profile setup sau login/signup nếu không có yêu cầu bắt buộc.
+- [ ] Thêm prompt hoặc tour hướng dẫn cập nhật hồ sơ ở dashboard/menu avatar.
+- [ ] Cho phép bỏ qua nhắc hồ sơ khi bắt đầu chẩn đoán hoặc tìm cơ sở y tế.
+- [x] Thêm regression test đảm bảo user mới không bị kẹt ở profile setup.
+
+### FE-FACILITY-028: Xếp hạng bệnh viện sau chẩn đoán
+
+- [ ] Ưu tiên cơ sở có khoa/chuyên khoa liên quan đến kết quả chẩn đoán.
+- [ ] Dùng khoảng cách khi người dùng cấp quyền vị trí và cơ sở có tọa độ hợp lệ.
+- [ ] Dùng rating/số sao chỉ khi backend trả dữ liệu thật.
+- [ ] Không tự dựng thời gian chờ, khoảng cách, rating hoặc dữ liệu bệnh viện.
+- [ ] Hiển thị lý do xếp hạng và fallback khi thiếu vị trí/tọa độ.
+
+### FE-POLISH-029: Hoàn thiện UX frontend chuyên nghiệp
+
+- [ ] Rà navigation để ưu tiên chẩn đoán, tìm cơ sở, hồ sơ, giao dịch và cài đặt.
+- [ ] Bỏ hoặc hạ nhãn các card demo/CTA chưa có capability production.
+- [ ] Chuẩn hóa loading, empty, error và recovery state cho luồng chính.
+- [ ] Kiểm tra mobile, keyboard, 200% zoom và visual cho menu avatar/onboarding/diagnosis.
+- [ ] Rà copy y tế để không hứa hẹn chẩn đoán chắc chắn hoặc thay thế bác sĩ.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -271,6 +312,9 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-15 | FE-AUTH-016 | Hoàn thành | Chuyển email invitation sang login bằng History state tạm thời; giữ `returnTo=/app/staff`; xác minh role Doctor/Staff từ response hoặc JWT; xóa phiên khi role không khớp; giữ tài khoản inactive/sai mật khẩu tại login | `npm.cmd run lint`; `npm.cmd run build`; Doctor invitation 14 passed; navigation 16 passed; accessibility 14 passed |
 | 2026-06-15 | FE-ADMIN-018 | Hoàn thành | Chuyển Admin Doctors sang table semantic ở desktop và card có nhãn ở viewport hẹp; giữ action; đồng bộ filter/page vào URL; sửa overflow với dữ liệu tiếng Việt dài | Admin Doctors 3 passed trên 390/640/768/1024/1280/1440 px; visual 28 passed |
 | 2026-06-15 | FE-LANDING-019 | Hoàn thành | Xóa cơ sở, khoảng cách và thời gian chờ giả; thay landing map bằng preview/CTA thật; lazy-load route MapLibre; sửa semantics danh sách `/map` | Landing production 2 passed; map 4 passed; accessibility `/map` passed; performance 4 passed; browser desktop/mobile không console error |
+| 2026-06-15 | FE-PROFILE-025..FE-POLISH-029 | Chưa bắt đầu | Cập nhật backlog theo Swagger live và yêu cầu UX mới: mở hồ sơ cho mọi gói, menu avatar, diagnosis yes/no, onboarding hồ sơ nhẹ nhàng, xếp hạng bệnh viện và polish luồng chính | Đối chiếu Swagger live `http://52.77.210.243:8080/swagger/v1/swagger.json`; chưa chạy test vì chỉ cập nhật tài liệu |
+| 2026-06-15 | FE-PROFILE-025, FE-ONBOARD-027 | Đang thực hiện | Bỏ premium gate hồ sơ; chuyển cài đặt hiển thị vào menu avatar cùng Hồ sơ, Lịch sử giao dịch, Đăng xuất; bỏ redirect cứng profile setup sau auth | `npm.cmd run lint`; `npm.cmd run build`; route 50 passed, 1 skipped; navigation 17 passed; personalization 1 passed |
+| 2026-06-15 | FE-DX-026 | Đang thực hiện | Thay `/symptom` bằng flow diagnosis theo Swagger mới: nhập triệu chứng, lấy câu hỏi yes/no, gửi câu trả lời, hiển thị chẩn đoán/khoa/cơ sở y tế và CTA bản đồ | `npm.cmd run lint`; `npm.cmd run build`; symptom diagnosis 1 passed; backend contract 4 passed, 1 skipped legacy `/analyze` |
 
 ## Mẫu cập nhật
 

@@ -51,7 +51,6 @@ const BASE_ROUTES = [
     title: "Tư vấn chuyên khoa | MediMate AI",
     access: "public",
     shell: "patient",
-    profileSetup: true,
     navigation: {
       shell: "patient",
       label: "Tư vấn chuyên khoa",
@@ -71,7 +70,6 @@ const BASE_ROUTES = [
     title: "Phân tích triệu chứng | MediMate AI",
     access: "premium",
     shell: "patient",
-    profileSetup: true,
     navigation: { shell: "patient", label: "Triệu chứng", hint: "Phân tích nhanh", icon: "symptom", order: 20, mobile: true },
   },
   {
@@ -80,7 +78,6 @@ const BASE_ROUTES = [
     title: "Chat với trợ lý AI | MediMate AI",
     access: "premium",
     shell: "patient",
-    profileSetup: true,
     navigation: { shell: "patient", label: "Chat AI", hint: "Hỏi trợ lý", icon: "chat", order: 30, mobile: true },
   },
   {
@@ -94,10 +91,8 @@ const BASE_ROUTES = [
     id: "patient.profile",
     path: "/profile",
     title: "Hồ sơ cá nhân | MediMate AI",
-    access: "premium",
+    access: "auth",
     shell: "patient",
-    profileSetup: true,
-    navigation: { shell: "patient", label: "Hồ sơ", hint: "Thông tin cá nhân", icon: "profile", order: 50, mobile: true },
   },
   {
     id: "patient.records",
@@ -105,7 +100,6 @@ const BASE_ROUTES = [
     title: "Hồ sơ y tế | MediMate AI",
     access: "premium",
     shell: "patient",
-    profileSetup: true,
     navigation: { shell: "patient", label: "Y bạ", hint: "Kết quả & tài liệu", icon: "records", order: 60 },
   },
   {
@@ -114,7 +108,6 @@ const BASE_ROUTES = [
     title: "Kiểm tra thuốc | MediMate AI",
     access: "premium",
     shell: "patient",
-    profileSetup: true,
     navigation: { shell: "patient", label: "Thuốc", hint: "Quét & kiểm tra", icon: "medication", order: 70 },
   },
   { id: "public.pricing", path: "/pricing", title: "Bảng giá | MediMate AI", access: "public" },

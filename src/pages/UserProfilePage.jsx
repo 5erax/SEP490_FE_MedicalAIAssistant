@@ -19,8 +19,14 @@ const tabs = [
   ["info", "👤", "Thông tin cá nhân"],
   ["medical", "♡", "Hồ sơ y tế"],
   ["security", "🛡", "Bảo mật"],
-  ["subscription", "💳", "Gói đăng ký"],
+  ["subscription", "💳", "Giao dịch"],
 ];
+const TAB_IDS = new Set(tabs.map(([id]) => id));
+
+function getInitialTab() {
+  const requestedTab = new URLSearchParams(window.location.search).get("tab");
+  return TAB_IDS.has(requestedTab) ? requestedTab : "info";
+}
 
 function initials(name) {
   return name.split(" ").filter(Boolean).slice(-2).map((part) => part[0]).join("").toUpperCase() || "MM";
@@ -29,7 +35,7 @@ function initials(name) {
 export default function UserProfilePage() {
   const { showToast } = useFeedback();
   const auth = getStoredAuth();
-  const [activeTab, setActiveTab] = useState("info");
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState("");
@@ -89,6 +95,12 @@ export default function UserProfilePage() {
       active = false;
     };
   }, [auth?.identityId, auth?.userId]);
+
+  function selectTab(tabId) {
+    setActiveTab(tabId);
+    const nextUrl = tabId === "info" ? "/profile" : `/profile?tab=${tabId}`;
+    window.history.replaceState(null, "", nextUrl);
+  }
 
   function updateProfile(key, value) {
     setProfileForm((current) => ({ ...current, [key]: value }));
@@ -156,7 +168,7 @@ export default function UserProfilePage() {
         </div>
         <nav>
           {tabs.map(([id, icon, label]) => (
-            <button className={activeTab === id ? "active" : ""} key={id} type="button" onClick={() => setActiveTab(id)}>
+            <button className={activeTab === id ? "active" : ""} key={id} type="button" onClick={() => selectTab(id)}>
               <span>{icon}</span>{label}
             </button>
           ))}
@@ -172,7 +184,7 @@ export default function UserProfilePage() {
         </nav>
         <div className="mobile-tabs">
           {tabs.map(([id, icon, label]) => (
-            <button className={activeTab === id ? "active" : ""} key={id} type="button" onClick={() => setActiveTab(id)}>
+            <button className={activeTab === id ? "active" : ""} key={id} type="button" onClick={() => selectTab(id)}>
               <span>{icon}</span><small>{label}</small>
             </button>
           ))}
@@ -220,7 +232,7 @@ export default function UserProfilePage() {
 
         {activeTab === "subscription" && (
           <section className="profile-card">
-            <h1>Gói đăng ký</h1>
+            <h1>Lịch sử giao dịch</h1>
             <div className="plan-box">
               <span>Gói hiện tại</span>
               <strong>{subscription?.planName || (loading ? "Đang tải..." : "Free")}</strong>

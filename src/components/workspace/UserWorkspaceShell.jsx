@@ -4,6 +4,7 @@ import {
   Bot,
   ChevronRight,
   Crown,
+  CreditCard,
   FileText,
   LayoutDashboard,
   Lock,
@@ -13,10 +14,11 @@ import {
   Menu,
   Pill,
   Search,
+  Settings2,
   UserRound,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { withReturnTo } from "../../router/returnIntent";
 import { getNavigationModel } from "../../router/routes";
@@ -61,8 +63,11 @@ function getInitials(nameOrEmail = "MediMate") {
 export default function UserWorkspaceShell({ children }) {
   const [notice, setNotice] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const sidebarRef = useRef(null);
+  const accountMenuRef = useRef(null);
+  const accountButtonRef = useRef(null);
   const drawerCloseButtonRef = useRef(null);
   const mainRef = useRef(null);
   const mobileNavRef = useRef(null);
@@ -73,12 +78,19 @@ export default function UserWorkspaceShell({ children }) {
   const auth = getStoredAuth();
   const premiumAccess = hasPremiumAccess(auth);
   const path = getCurrentPath();
-  const activeItem = NAV_ITEMS.find((item) => path === item.path) ?? NAV_ITEMS[0];
+  const activeItem = NAV_ITEMS.find((item) => path === item.path)
+    ?? (path === "/profile" ? { label: "Hồ sơ", icon: UserRound } : NAV_ITEMS[0]);
   const ActiveIcon = activeItem.icon;
   const displayName = auth?.displayName || auth?.name || auth?.email || "Khách trải nghiệm";
 
   async function logout() {
+    setAccountMenuOpen(false);
     await logoutUser({ redirect: goTo });
+  }
+
+  function navigateFromAccount(pathToOpen) {
+    setAccountMenuOpen(false);
+    goTo(pathToOpen);
   }
 
   function isLocked(pathToOpen) {
@@ -126,6 +138,30 @@ export default function UserWorkspaceShell({ children }) {
     inertRefs: drawerInertRefs,
     onClose: () => setMobileMenuOpen(false),
   });
+
+  useEffect(() => {
+    if (!accountMenuOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!accountMenuRef.current?.contains(event.target)) {
+        setAccountMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setAccountMenuOpen(false);
+        accountButtonRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [accountMenuOpen]);
 
   return (
     <div className="user-shell">
@@ -242,31 +278,67 @@ export default function UserWorkspaceShell({ children }) {
           </form>
 
           <div className="user-shell-actions">
-            <DisplayPreferences compact />
             {auth && (
               <button className="icon-btn" type="button" aria-label="Thông báo">
                 <Bell size={18} />
               </button>
             )}
-            <button
-              className="user-chip"
-              type="button"
-              onClick={(event) => handleLockedNav("/profile", event.currentTarget)}
-            >
-              <span>{getInitials(displayName)}</span>
-              <strong>{displayName}</strong>
-            </button>
-            {auth ? (
-              <button className="logout-btn" type="button" onClick={logout}>
-                <LogOut size={17} />
-                Đăng xuất
+            <div className="account-menu" ref={accountMenuRef}>
+              <button
+                ref={accountButtonRef}
+                className="user-chip account-menu-trigger"
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={accountMenuOpen}
+                aria-controls="workspace-account-menu"
+                onClick={() => setAccountMenuOpen((current) => !current)}
+              >
+                <span>{getInitials(displayName)}</span>
+                <strong>{displayName}</strong>
               </button>
-            ) : (
-              <button className="logout-btn" type="button" onClick={() => goTo("/login?redirect=/dashboard")}>
-                <LogIn size={17} />
-                Đăng nhập
-              </button>
-            )}
+
+              {accountMenuOpen && (
+                <section
+                  className="account-menu-panel"
+                  id="workspace-account-menu"
+                  aria-label="Menu tài khoản"
+                >
+                  <div className="account-menu-summary">
+                    <span>{getInitials(displayName)}</span>
+                    <div>
+                      <strong>{displayName}</strong>
+                      <small>{auth ? "Tài khoản MediMate" : "Chưa đăng nhập"}</small>
+                    </div>
+                  </div>
+
+                  {auth ? (
+                    <>
+                      <button type="button" onClick={() => navigateFromAccount("/profile")}>
+                        <UserRound size={17} aria-hidden="true" />
+                        Hồ sơ
+                      </button>
+                      <div className="account-menu-preferences">
+                        <Settings2 size={17} aria-hidden="true" />
+                        <DisplayPreferences compact />
+                      </div>
+                      <button type="button" onClick={() => navigateFromAccount("/profile?tab=subscription")}>
+                        <CreditCard size={17} aria-hidden="true" />
+                        Lịch sử giao dịch
+                      </button>
+                      <button className="account-menu-danger" type="button" onClick={logout}>
+                        <LogOut size={17} aria-hidden="true" />
+                        Đăng xuất
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => navigateFromAccount("/login?redirect=/dashboard")}>
+                      <LogIn size={17} aria-hidden="true" />
+                      Đăng nhập
+                    </button>
+                  )}
+                </section>
+              )}
+            </div>
           </div>
         </header>
 

@@ -1,5 +1,5 @@
 import { getCanonicalPath, resolveRoute } from "./routes";
-import { getPostLoginPath, shouldSetupPatientProfile } from "../utils/roles";
+import { getPostLoginPath } from "../utils/roles";
 
 const RETURN_TO_KEY = "medimate.returnTo";
 const RETURN_TO_PARAM = "returnTo";
@@ -41,9 +41,6 @@ export function withReturnTo(path, returnTo) {
 
 export function getPostAuthDestination(authOrUser, search = window.location.search) {
   const returnTo = getReturnToFromSearch(search);
-  if (shouldSetupPatientProfile(authOrUser)) {
-    return withReturnTo("/patient/profile/setup", returnTo);
-  }
   return returnTo || getPostLoginPath(authOrUser);
 }
 

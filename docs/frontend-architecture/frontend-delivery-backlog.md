@@ -25,6 +25,15 @@ tại [Frontend task checklist](./task-checklist.md).
 - Route `/map` đã dùng API cơ sở y tế thật và có fallback khi thiếu tọa độ. Đây
   phải là nguồn trải nghiệm bản đồ production, không nhân đôi một bản đồ demo ở
   landing page.
+- Swagger live ngày 2026-06-15 đã có luồng chẩn đoán theo câu hỏi lâm sàng:
+  `POST /api/symptom-analysis/suggest-clinical-questions` nhận `userInput`,
+  trả `sessionId` và danh sách câu hỏi; `POST
+  /api/symptom-analysis/submit-clinical-question-answers` nhận câu trả lời
+  yes/no và trả `analysis`, `primaryDiagnosis`, `recommendedDepartment` và
+  `recommendedFacilities`.
+- Hồ sơ bệnh nhân đã có contract riêng ở `/api/patient-profiles`; vì vậy xem và
+  cập nhật hồ sơ không nên bị khóa sau gói Premium. Hồ sơ là dữ liệu nền tảng
+  của trải nghiệm, không phải quyền lợi trả phí.
 
 ## 2. Thứ tự triển khai
 
@@ -39,6 +48,11 @@ tại [Frontend task checklist](./task-checklist.md).
 | 7 | FE-UX-021 | P1 | Trạng thái, copy và luồng phục hồi nhất quán |
 | 8 | FE-PERF-022 | P2 | Giảm tải ban đầu và cô lập bundle nặng |
 | 9 | FE-A11Y-023 | P2 | Critical flow dùng được bằng keyboard, zoom và screen reader |
+| 10 | FE-PROFILE-025 | P0 | Hồ sơ, cài đặt hiển thị, lịch sử giao dịch và đăng xuất nằm trong menu avatar |
+| 11 | FE-DX-026 | P0 | Chẩn đoán triệu chứng theo câu hỏi yes/no và trả kết quả có điều hướng bệnh viện |
+| 12 | FE-ONBOARD-027 | P0 | Người dùng vào app ngay sau đăng nhập; cập nhật hồ sơ là gợi ý nhẹ nhàng |
+| 13 | FE-FACILITY-028 | P1 | Xếp hạng bệnh viện theo chuyên khoa liên quan, khoảng cách, đánh giá và dữ liệu sẵn có |
+| 14 | FE-POLISH-029 | P1 | Nâng trải nghiệm frontend lên mức sản phẩm chuyên nghiệp, ưu tiên luồng chính |
 
 Không bắt đầu FE-DOCTOR-017 bằng cách tự tạo lịch khám, bệnh nhân hoặc chỉ số
 hoạt động. Những capability đó chỉ được thêm sau khi product scope và backend
@@ -249,6 +263,121 @@ cách và không dựng marker khi thiếu tọa độ.
 - [ ] Test `/map` không hồi quy khi landing bỏ MapLibre.
 - [ ] Route, accessibility, performance và visual suite chạy trong CI.
 - [ ] Lưu screenshot/trace khi lỗi nhưng không commit dữ liệu người dùng thật.
+
+### FE-PROFILE-025: Mở hồ sơ cho mọi người dùng và gom menu tài khoản
+
+**Mục tiêu:** bỏ premium gate khỏi xem/cập nhật hồ sơ, đồng thời chuyển các tác
+vụ tài khoản vào menu avatar để app gọn và dễ dùng hơn.
+
+**Phạm vi dự kiến**
+
+- `src/router/routes.js`
+- `src/router/access.js`
+- `src/components/workspace/UserWorkspaceShell.jsx`
+- `src/components/preferences/DisplayPreferences.jsx`
+- `src/pages/UserProfilePage.jsx`
+- `src/pages/PersonalPatientProfilePage.jsx`
+- `src/pages/PaymentResultPage.jsx`
+- `tests/e2e/navigation-ux.spec.js`
+- `tests/e2e/personalization.spec.js`
+
+**Checklist**
+
+- [ ] Bỏ yêu cầu Premium khỏi route xem hồ sơ và cập nhật hồ sơ.
+- [ ] Khi bấm avatar hoặc vùng tài khoản, mở menu có Hồ sơ, Cài đặt hiển thị,
+  Lịch sử giao dịch, Đăng xuất và các mục tài khoản thật sự có route.
+- [ ] Chuyển cài đặt app/tùy chỉnh hiển thị khỏi vị trí ngoài app vào menu hoặc
+  dialog tài khoản.
+- [ ] Giữ keyboard access: mở bằng Enter/Space, đóng bằng Escape, restore focus.
+- [ ] Không lộ email, số điện thoại hoặc dữ liệu y tế nhạy cảm trong menu tóm tắt.
+- [ ] Thêm test cho user free mở hồ sơ, cập nhật hồ sơ và mở cài đặt hiển thị.
+
+**Tiêu chí nghiệm thu**
+
+- Người dùng free vào được hồ sơ và chỉnh sửa dữ liệu được backend cho phép.
+- Menu avatar dùng được trên desktop/mobile, không che nội dung hoặc tràn màn hình.
+- Đăng xuất vẫn xóa phiên an toàn và không lưu PII vào storage.
+
+### FE-DX-026: Xây luồng chẩn đoán triệu chứng bằng câu hỏi yes/no
+
+**Mục tiêu:** người dùng nhập triệu chứng, frontend gọi backend lấy câu hỏi lâm
+sàng dạng yes/no, thu câu trả lời, sau đó hiển thị kết quả chẩn đoán và điều
+hướng đến cơ sở y tế phù hợp.
+
+**Contract đã xác minh**
+
+- `POST /api/symptom-analysis/suggest-clinical-questions`
+  - request: `{ userInput: string }`
+  - response data: `{ sessionId, questions[] }`
+- `POST /api/symptom-analysis/submit-clinical-question-answers`
+  - request: `{ sessionId, answers: [{ questionId, answer: boolean }] }`
+  - response data: `{ sessionId, userInput, answers, analysis }`
+- `analysis` có `diagnoses`, `primaryDiagnosis`, `recommendedDepartment` và
+  `recommendedFacilities`.
+
+**Checklist**
+
+- [ ] Thiết kế flow nhập triệu chứng -> câu hỏi yes/no -> kết quả -> CTA tìm
+  bệnh viện.
+- [ ] Tạo service cho hai endpoint mới, không tái dùng mock `hospitalRecommendations`.
+- [ ] Hiển thị câu hỏi từng bước hoặc theo nhóm nhỏ, có tiến độ và lưu draft tạm
+  trong memory/session an toàn.
+- [ ] Kết quả phải có cảnh báo y tế: chỉ hỗ trợ định hướng, không thay thế bác sĩ.
+- [ ] Xử lý `processing`, `completed`, `failed`, 400, 401 và 502 bằng copy an toàn.
+- [ ] Cho phép người dùng xem lại câu trả lời và quay lại sửa trước khi gửi.
+- [ ] Thêm lịch sử phiên từ `GET /api/symptom-analysis/my-sessions` nếu có đăng nhập.
+- [ ] Thêm E2E cho success, không có câu hỏi, lỗi backend và kết quả cần cấp cứu.
+
+**Tiêu chí nghiệm thu**
+
+- Không có dữ liệu bệnh, bệnh viện hoặc kết quả AI hard-code trên production.
+- Người dùng hiểu rõ bước hiện tại và có thể hoàn tất chỉ bằng bàn phím.
+- Kết quả chẩn đoán luôn đi kèm khuyến cáo khám chuyên môn khi cần.
+
+### FE-ONBOARD-027: Làm onboarding hồ sơ nhẹ nhàng sau đăng nhập
+
+**Mục tiêu:** bỏ việc ép người dùng hoàn tất toàn bộ hồ sơ ngay sau đăng ký hoặc
+đăng nhập; thay bằng hướng dẫn mềm, nhắc đúng thời điểm và không chặn luồng chính.
+
+**Checklist**
+
+- [ ] Sửa route guard để Patient vào app ngay cả khi `isProfileCompleted=false`.
+- [ ] Không redirect cứng sang màn hình hồ sơ sau login/signup, trừ khi backend yêu
+  cầu bắt buộc cho một tác vụ cụ thể.
+- [ ] Thêm prompt nhẹ trong dashboard/menu avatar để cập nhật hồ sơ.
+- [ ] Có tour hoặc checklist nhỏ cho người mới: mô tả triệu chứng, tìm cơ sở y tế,
+  cập nhật hồ sơ, xem lịch sử giao dịch.
+- [ ] Khi người dùng bắt đầu chẩn đoán hoặc tìm bệnh viện, nhắc bổ sung hồ sơ nếu
+  thiếu dữ liệu hữu ích nhưng vẫn cho bỏ qua.
+- [ ] Thêm test đảm bảo người dùng mới không bị kẹt ở profile setup.
+
+### FE-FACILITY-028: Xếp hạng cơ sở y tế sau chẩn đoán
+
+**Mục tiêu:** sau khi có `recommendedDepartment` hoặc danh sách cơ sở từ backend,
+frontend trình bày lựa chọn bệnh viện theo thứ tự logic và minh bạch.
+
+**Checklist**
+
+- [ ] Ưu tiên 1: cơ sở có chuyên khoa/khoa liên quan với chẩn đoán hoặc ICD chapter.
+- [ ] Ưu tiên 2: cơ sở gần người dùng nếu có quyền vị trí và tọa độ hợp lệ.
+- [ ] Ưu tiên 3: đánh giá/số sao nếu backend cung cấp dữ liệu đáng tin cậy.
+- [ ] Ưu tiên 4: trạng thái hoạt động, giờ mở cửa, loại cơ sở, số điện thoại và website.
+- [ ] Không tự dựng rating, khoảng cách hoặc thời gian chờ khi backend không trả.
+- [ ] Giải thích ngắn lý do xếp hạng từng cơ sở bằng dữ liệu thật có sẵn.
+- [ ] Có fallback khi người dùng từ chối vị trí hoặc cơ sở thiếu tọa độ.
+
+### FE-POLISH-029: Hoàn thiện UX frontend theo hướng sản phẩm chuyên nghiệp
+
+**Checklist**
+
+- [ ] Rà lại navigation chính để các tác vụ người dùng thật xuất hiện trước: chẩn
+  đoán, tìm cơ sở, hồ sơ, giao dịch, cài đặt.
+- [ ] Chuẩn hóa dashboard theo vai trò, bỏ card demo và CTA không dẫn đến chức năng thật.
+- [ ] Chuẩn hóa empty/error/loading state trên profile, diagnosis, payment và map.
+- [ ] Cải thiện mobile bottom/side navigation nếu tác vụ chính khó chạm.
+- [ ] Rà copy y tế để không hứa hẹn chẩn đoán chắc chắn hoặc thay thế bác sĩ.
+- [ ] Thêm kiểm tra responsive, accessibility và visual cho luồng avatar menu,
+  onboarding mềm và diagnosis.
 
 ## 4. Definition of Ready
 
