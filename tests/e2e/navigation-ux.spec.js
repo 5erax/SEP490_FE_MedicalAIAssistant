@@ -85,6 +85,61 @@ test.describe("global navigation UX", () => {
     await expect(lockedFeature).toBeFocused();
   });
 
+  test("free users can open profile from the account menu", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
+    await page.route("**/api/users/me", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          id: "55555555-5555-4555-8555-555555555555",
+          displayName: "Patient Example",
+          email: "patient@example.com",
+          gender: 1,
+        },
+      }),
+    }));
+    await page.route("**/api/patient-profiles**", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          items: [{
+            id: "66666666-6666-4666-8666-666666666666",
+            userId: "55555555-5555-4555-8555-555555555555",
+            bloodType: "O+",
+            isProfileCompleted: true,
+          }],
+        },
+      }),
+    }));
+    await page.route("**/api/user-subscriptions/me", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [] }),
+    }));
+
+    await openRoute(page, "/dashboard");
+    await page.locator(".account-menu-trigger").click();
+    await expect(page.getByRole("region", { name: "Menu tài khoản" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Hiển thị", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Lịch sử giao dịch" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Đăng xuất" })).toBeVisible();
+    await page.getByRole("button", { name: "Hồ sơ" }).click();
+
+    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page.getByRole("heading", { name: "Thông tin cá nhân" })).toBeVisible();
+  });
+
   test("premium users can navigate directly to premium features", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
@@ -140,7 +195,7 @@ test.describe("global navigation UX", () => {
     await expect(page.getByRole("searchbox", { name: "Tìm cơ sở y tế" })).toHaveValue("Chợ Rẫy");
   });
 
-  test("signup preserves return intent through first-login profile setup", async ({ page }) => {
+  test("signup opens the requested app route without forced profile setup", async ({ page }) => {
     await preparePage(page);
     await page.route("**/api/authentication/register", (route) => route.fulfill({
       status: 200,
@@ -156,7 +211,7 @@ test.describe("global navigation UX", () => {
       }),
     }));
 
-    await openRoute(page, "/signup?returnTo=%2Fsymptom");
+    await openRoute(page, "/signup?returnTo=%2Fdashboard");
     await page.getByLabel("Email").fill("new.patient@example.com");
     await page.getByLabel("Tên đăng nhập").fill("new-patient");
     await page.getByLabel("Tên hiển thị").fill("New Patient");
@@ -165,7 +220,7 @@ test.describe("global navigation UX", () => {
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: "Tạo tài khoản" }).click();
 
-    await expect(page).toHaveURL(/\/patient\/profile\/setup\?returnTo=%2Fsymptom$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
   });
 
   test("completed patient profile does not reopen onboarding after login", async ({ page }) => {
@@ -341,19 +396,20 @@ test.describe("global navigation UX", () => {
     await expect(createButton).toBeFocused();
   });
 
-  test("first-login patient enters profile setup before protected routes", async ({ page }) => {
+  test("first-login patient can use premium routes without forced profile setup", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
         accessToken,
         roles: ["Patient"],
         isFirstLogin: true,
+        isPremium: true,
       }));
     }, ACCESS_TOKEN);
 
     await openRoute(page, "/symptom");
-    await expect(page).toHaveURL(/\/patient\/profile\/setup\?returnTo=%2Fsymptom$/);
-    await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ sức khỏe" })).toBeVisible();
+    await expect(page).toHaveURL(/\/symptom$/);
+    await expect(page.getByRole("heading", { name: "Mô tả triệu chứng, trả lời vài câu hỏi yes/no." })).toBeVisible();
   });
 
   test("permission matrix routes each role to an allowed workspace", async ({ page }) => {
