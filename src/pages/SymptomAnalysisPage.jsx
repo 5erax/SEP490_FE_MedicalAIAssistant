@@ -11,7 +11,42 @@ function confidencePercent(value) {
 }
 
 function formatQuestion(question, index) {
-  return question.questionVi || `Câu hỏi lâm sàng ${index + 1}`;
+  return question.questionVi || question.questionText || question.text || question.content || `Câu hỏi lâm sàng ${index + 1}`;
+}
+
+function getQuestionId(question, index) {
+  return question.questionId ?? question.id ?? question.code ?? `question-${index + 1}`;
+}
+
+function normalizeQuestion(question, index) {
+  const questionId = getQuestionId(question, index);
+  return {
+    ...question,
+    questionId,
+  };
+}
+
+function unwrapPayload(response) {
+  return response?.data?.data ?? response?.data ?? response;
+}
+
+function readQuestionsPayload(response) {
+  const data = unwrapPayload(response) ?? {};
+  const questions = data.questions
+    ?? data.clinicalQuestions
+    ?? data.suggestedQuestions
+    ?? data.followUpQuestions
+    ?? [];
+
+  return {
+    sessionId: data.sessionId ?? data.id ?? data.session?.id ?? "",
+    questions: Array.isArray(questions) ? questions.map(normalizeQuestion) : [],
+  };
+}
+
+function readResultPayload(response) {
+  const data = unwrapPayload(response);
+  return data?.analysis ?? data?.result ?? data ?? null;
 }
 
 function facilityId(facility) {
@@ -56,7 +91,7 @@ function getFacilityReason(facility, department) {
 }
 
 function getAnalysis(response) {
-  return response?.analysis ?? response;
+  return response?.analysis ?? response?.result ?? response;
 }
 
 export default function SymptomAnalysisPage() {
@@ -101,10 +136,10 @@ export default function SymptomAnalysisPage() {
 
     try {
       const response = await symptomAnalysisApi.suggestClinicalQuestions(symptomText);
-      const data = response.data ?? {};
-      setSessionId(data.sessionId ?? "");
-      setQuestions(Array.isArray(data.questions) ? data.questions : []);
-      setStatus((data.questions ?? []).length ? "questions" : "no-questions");
+      const data = readQuestionsPayload(response);
+      setSessionId(data.sessionId);
+      setQuestions(data.questions);
+      setStatus(data.questions.length ? "questions" : "no-questions");
     } catch (requestError) {
       setError(requestError.message || "Không thể tạo câu hỏi chẩn đoán. Vui lòng thử lại.");
       setStatus("idle");
@@ -128,7 +163,7 @@ export default function SymptomAnalysisPage() {
         answer: answers[question.questionId],
       }));
       const response = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
-      setResult(response.data ?? null);
+      setResult(readResultPayload(response));
       setStatus("result");
     } catch (requestError) {
       setError(requestError.message || "Không thể gửi câu trả lời. Vui lòng thử lại.");

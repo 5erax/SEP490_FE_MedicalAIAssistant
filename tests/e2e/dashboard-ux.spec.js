@@ -1,24 +1,21 @@
 import { expect, test } from "@playwright/test";
 import { openRoute, preparePage } from "./helpers.js";
 
+const ACCESS_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwiZW1haWwiOiJwYXRpZW50QGV4YW1wbGUuY29tIn0",
+  "",
+].join(".");
+
 test.describe("patient specialty intake", () => {
   test("supports reviewable prompts and an accessible submission handoff", async ({ page }) => {
-    await page.route("**/api/web-chatbot/message", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: {
-            answer: "Bạn nên cân nhắc khám Nội tổng quát.",
-            intent: "specialty_recommendation",
-            needsMoreInformation: false,
-          },
-        }),
-      });
-    });
-
     await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
     await openRoute(page, "/dashboard");
 
     const symptoms = page.getByLabel("Triệu chứng bạn đang gặp");
@@ -36,12 +33,10 @@ test.describe("patient specialty intake", () => {
     await expect(submit).toBeEnabled();
 
     await submit.click();
-    await expect(page).toHaveURL(/\/map$/);
+    await expect(page).toHaveURL(/\/symptom$/);
+    await expect(page.getByLabel("Triệu chứng của bạn")).toHaveValue("Sốt nhẹ 2 ngày kèm đau họng");
 
-    const context = await page.evaluate(() => JSON.parse(sessionStorage.getItem("medimate.map.chat")));
-    expect(context).toMatchObject({
-      symptom: "Sốt nhẹ 2 ngày kèm đau họng",
-      intent: "specialty_recommendation",
-    });
+    const prefill = await page.evaluate(() => sessionStorage.getItem("medimate.symptom.prefill"));
+    expect(prefill).toBeNull();
   });
 });

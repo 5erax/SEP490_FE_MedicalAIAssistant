@@ -365,17 +365,27 @@
   font-weight: 900;
 }
 
-.user-chip span {
+.user-chip span,
+.user-chip img {
   width: 32px;
   height: 32px;
   flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.user-chip span {
   display: grid;
   place-items: center;
-  border-radius: 50%;
   background: var(--workspace-ink);
   color: var(--workspace-lime);
   font-size: 11px;
   font-weight: 950;
+}
+
+.user-chip img {
+  display: block;
+  object-fit: cover;
+  background: var(--workspace-ink);
 }
 
 .user-chip strong {
@@ -415,16 +425,26 @@
   padding: 6px 6px 10px;
 }
 
-.account-menu-summary > span {
+.account-menu-summary > span,
+.account-menu-summary > img {
   width: 38px;
   height: 38px;
+  border-radius: 50%;
+}
+
+.account-menu-summary > span {
   display: grid;
   place-items: center;
-  border-radius: 50%;
   background: var(--workspace-ink);
   color: var(--workspace-lime);
   font-size: 12px;
   font-weight: 950;
+}
+
+.account-menu-summary > img {
+  display: block;
+  object-fit: cover;
+  background: var(--workspace-ink);
 }
 
 .account-menu-summary strong,
