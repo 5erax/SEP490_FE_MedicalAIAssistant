@@ -128,7 +128,7 @@ Nếu triệu chứng nghiêm trọng, khuyến nghị đi cấp cứu ngay.`,
           <span><i /> Sẵn sàng</span>
         </div>
         <div className="chatbot-actions">
-          <button type="button" onClick={() => goTo("/symptom")}>Phân tích</button>
+          <button type="button" onClick={() => goTo("/dashboard")}>Phân tích</button>
           <button type="button" onClick={() => goTo("/map")}>Bản đồ</button>
           <button type="button" onClick={() => setMessages([])}>Xoá lịch sử</button>
           <button type="button" onClick={() => goTo("/dashboard")}>Thu nhỏ</button>

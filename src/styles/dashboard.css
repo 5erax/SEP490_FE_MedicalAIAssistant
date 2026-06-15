@@ -168,6 +168,58 @@
   padding: 18px;
 }
 
+.profile-nudge {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1.5px solid var(--color-ink);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-hard);
+  padding: 14px;
+}
+
+.profile-nudge > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-ink);
+}
+
+.profile-nudge h2,
+.profile-nudge p {
+  margin: 0;
+}
+
+.profile-nudge h2 {
+  font-size: 16px;
+}
+
+.profile-nudge p {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.profile-nudge-actions,
+.facility-panel-actions,
+.studio-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.studio-recovery-actions {
+  width: 100%;
+}
+
 .studio-panel-head {
   display: flex;
   justify-content: space-between;
@@ -357,7 +409,23 @@
     display: grid;
   }
 
+  .profile-nudge {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-nudge > span {
+    display: none;
+  }
+
   .studio-chat-actions .ui-button {
+    width: 100%;
+  }
+
+  .profile-nudge-actions,
+  .facility-panel-actions,
+  .studio-recovery-actions,
+  .studio-recovery-actions .ui-button,
+  .facility-panel-actions .ui-button {
     width: 100%;
   }
 

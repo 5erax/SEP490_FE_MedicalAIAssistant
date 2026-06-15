@@ -73,7 +73,7 @@ export default function MedicalAssistantPage() {
 
     try {
       sessionStorage.setItem("medimate.symptom.prefill", symptomText);
-      navigate("/symptom");
+      navigate("/dashboard");
     } catch (error) {
       setErrorMessage(error.message);
       setMessages((current) => [

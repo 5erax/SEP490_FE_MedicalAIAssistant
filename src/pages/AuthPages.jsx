@@ -69,6 +69,36 @@ async function getVerifiedGoogleLoginDestination(authOrUser) {
   return getReturnToFromSearch() || getWorkspacePath(nextAuth);
 }
 
+async function refreshAuthRoles(authOrUser) {
+  if (!authOrUser?.accessToken) return authOrUser;
+
+  try {
+    const meResponse = await authApi.me();
+    const user = meResponse.data ?? {};
+    const nextAuth = {
+      ...authOrUser,
+      userId: authOrUser.userId ?? user.userId ?? user.id,
+      identityId: authOrUser.identityId ?? user.identityId,
+      roles: user.roles ?? authOrUser.roles,
+      role: user.role ?? authOrUser.role,
+      isProfileCompleted: user.isProfileCompleted ?? authOrUser.isProfileCompleted,
+    };
+    setStoredAuth(nextAuth);
+    return nextAuth;
+  } catch {
+    return authOrUser;
+  }
+}
+
+function rejectDoctorInvitationLogin(setMessage) {
+  clearStoredAuth();
+  clearNavigationState();
+  setMessage({
+    type: "error",
+    text: "Tài khoản đăng nhập chưa được cấp quyền Bác sĩ. Vui lòng liên hệ quản trị viên để kiểm tra lời mời.",
+  });
+}
+
 const authCopy = {
   login: {
     eyebrow: "MediMate AI",
@@ -174,12 +204,7 @@ export function LoginPage() {
       const response = await authApi.login(form);
       const authData = response.data ?? response;
       if (invitationContext && !hasAuthRole(authData, "staff")) {
-        clearStoredAuth();
-        clearNavigationState();
-        setMessage({
-          type: "error",
-          text: "Tài khoản đăng nhập chưa được cấp quyền Bác sĩ. Vui lòng liên hệ quản trị viên để kiểm tra lời mời.",
-        });
+        rejectDoctorInvitationLogin(setMessage);
         return;
       }
 
@@ -204,7 +229,14 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.googleLogin(credential);
-      navigate(await getVerifiedGoogleLoginDestination(response.data ?? response));
+      const authData = await refreshAuthRoles(response.data ?? response);
+      if (invitationContext && !hasAuthRole(authData, "staff")) {
+        rejectDoctorInvitationLogin(setMessage);
+        return;
+      }
+
+      clearNavigationState();
+      navigate(await getVerifiedGoogleLoginDestination(authData));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {

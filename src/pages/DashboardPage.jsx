@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ClipboardPlus, MapPin, Send } from "lucide-react";
+import { ClipboardPlus, MapPin, Send, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
-import { symptomAnalysisApi } from "../services/api";
+import { getStoredAuth, symptomAnalysisApi } from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
 import "../styles/dashboard.css";
 
@@ -24,10 +24,18 @@ function unwrapPayload(response) {
 }
 
 function getQuestionId(question, index) {
+  if (typeof question === "string") return `question-${index + 1}`;
   return question.questionId ?? question.id ?? question.code ?? `question-${index + 1}`;
 }
 
 function normalizeQuestion(question, index) {
+  if (typeof question === "string") {
+    return {
+      questionId: getQuestionId(question, index),
+      questionText: question,
+    };
+  }
+
   return {
     ...question,
     questionId: getQuestionId(question, index),
@@ -35,16 +43,60 @@ function normalizeQuestion(question, index) {
   };
 }
 
+function looksLikeQuestion(item) {
+  if (typeof item === "string") return item.trim().length > 0;
+  if (!item || typeof item !== "object") return false;
+  return Boolean(item.questionId || item.questionVi || item.questionText || item.text || item.content);
+}
+
+function findFirstByKeys(value, keys) {
+  if (!value || typeof value !== "object") return undefined;
+
+  for (const key of keys) {
+    const directValue = value[key];
+    if (Array.isArray(directValue) && directValue.some(looksLikeQuestion)) return directValue;
+    if (directValue && typeof directValue === "object" && looksLikeQuestion(directValue)) return [directValue];
+  }
+
+  for (const nestedValue of Object.values(value)) {
+    const found = findFirstByKeys(nestedValue, keys);
+    if (found) return found;
+  }
+
+  return undefined;
+}
+
+function findFirstSessionId(value) {
+  if (!value || typeof value !== "object") return "";
+  const direct = value.sessionId ?? value.sessionID ?? value.session?.id ?? value.id;
+  if (direct) return direct;
+
+  for (const nestedValue of Object.values(value)) {
+    const found = findFirstSessionId(nestedValue);
+    if (found) return found;
+  }
+
+  return "";
+}
+
 function readQuestionsPayload(response) {
   const data = unwrapPayload(response) ?? {};
-  const questions = data.questions
-    ?? data.clinicalQuestions
-    ?? data.suggestedQuestions
-    ?? data.followUpQuestions
-    ?? [];
+  const questionKeys = [
+    "questions",
+    "clinicalQuestions",
+    "suggestedQuestions",
+    "followUpQuestions",
+    "clinicalQuestionSuggestions",
+    "questionSuggestions",
+    "items",
+    "data",
+  ];
+  const questions = Array.isArray(data) && data.some(looksLikeQuestion)
+    ? data
+    : findFirstByKeys(data, questionKeys) ?? [];
 
   return {
-    sessionId: data.sessionId ?? data.id ?? data.session?.id ?? "",
+    sessionId: findFirstSessionId(data),
     questions: Array.isArray(questions) ? questions.map(normalizeQuestion) : [],
   };
 }
@@ -66,10 +118,49 @@ function hasDepartmentMatch(facility, department) {
   ));
 }
 
-function scoreFacility(facility, department) {
+function coordinateOrNull(value, min, max) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < min || numeric > max) return null;
+  return numeric;
+}
+
+function distanceKmBetween(first, second) {
+  const radiusKm = 6371;
+  const toRadians = (value) => (value * Math.PI) / 180;
+  const deltaLat = toRadians(second.latitude - first.latitude);
+  const deltaLon = toRadians(second.longitude - first.longitude);
+  const lat1 = toRadians(first.latitude);
+  const lat2 = toRadians(second.latitude);
+  const a = Math.sin(deltaLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
+  return radiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getFacilityCoordinates(facility) {
+  const latitude = coordinateOrNull(facility.latitude, -90, 90);
+  const longitude = coordinateOrNull(facility.longitude, -180, 180);
+  if (latitude == null || longitude == null) return null;
+  return { latitude, longitude };
+}
+
+function getFacilityDistanceKm(facility, userLocation) {
+  const facilityLocation = getFacilityCoordinates(facility);
+  if (!facilityLocation || !userLocation) return null;
+  return distanceKmBetween(userLocation, facilityLocation);
+}
+
+function formatDistance(distanceKm) {
+  if (distanceKm == null) return "";
+  if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
+  return `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
+}
+
+function scoreFacility(facility, department, userLocation) {
   let score = 0;
   if (hasDepartmentMatch(facility, department)) score += 100;
-  if (facility.latitude != null && facility.longitude != null) score += 20;
+  const distanceKm = getFacilityDistanceKm(facility, userLocation);
+  if (distanceKm != null) score += Math.max(0, 60 - distanceKm * 4);
+  else if (getFacilityCoordinates(facility)) score += 20;
   if (facility.rating || facility.averageRating) score += Number(facility.rating ?? facility.averageRating) * 3;
   if (facility.isActive) score += 12;
   if (facility.openingHours) score += 8;
@@ -78,14 +169,56 @@ function scoreFacility(facility, department) {
   return score;
 }
 
+function getFacilityRankingReason(facility, department, userLocation) {
+  const reasons = [];
+  const distanceKm = getFacilityDistanceKm(facility, userLocation);
+
+  if (hasDepartmentMatch(facility, department)) {
+    reasons.push("có chuyên khoa liên quan");
+  }
+  if (distanceKm != null) {
+    reasons.push(`cách bạn khoảng ${formatDistance(distanceKm)}`);
+  } else if (getFacilityCoordinates(facility)) {
+    reasons.push("có tọa độ sẵn sàng điều hướng");
+  }
+  if (facility.rating || facility.averageRating) {
+    reasons.push(`${facility.rating ?? facility.averageRating} sao đánh giá`);
+  }
+  if (facility.isActive) {
+    reasons.push("đang hoạt động");
+  }
+
+  return reasons.length
+    ? `Ưu tiên vì ${reasons.join(", ")}.`
+    : "Được backend đề xuất trong nhận định tham khảo.";
+}
+
+function readSymptomPrefill() {
+  if (typeof sessionStorage === "undefined") return "";
+  const prefill = sessionStorage.getItem("medimate.symptom.prefill") ?? "";
+  if (prefill) sessionStorage.removeItem("medimate.symptom.prefill");
+  return prefill;
+}
+
+function readProfilePromptDismissed() {
+  if (typeof sessionStorage === "undefined") return false;
+  return sessionStorage.getItem("medimate.profile.prompt.dismissed") === "true";
+}
+
 export default function DashboardPage() {
-  const [input, setInput] = useState("");
+  const auth = getStoredAuth();
+  const [input, setInput] = useState(readSymptomPrefill);
   const [sessionId, setSessionId] = useState("");
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [profilePromptVisible, setProfilePromptVisible] = useState(
+    auth?.isProfileCompleted === false && !readProfilePromptDismissed(),
+  );
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("idle");
   const loading = status === "loading-questions" || status === "submitting";
   const answeredCount = Object.values(answers).filter((value) => value === true || value === false).length;
   const canSubmitAnswers = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
@@ -93,7 +226,50 @@ export default function DashboardPage() {
   const diagnoses = result?.diagnoses ?? [];
   const recommendedDepartment = result?.recommendedDepartment;
   const sortedFacilities = [...(result?.recommendedFacilities ?? [])]
-    .sort((left, right) => scoreFacility(right, recommendedDepartment) - scoreFacility(left, recommendedDepartment));
+    .sort((left, right) => scoreFacility(right, recommendedDepartment, userLocation) - scoreFacility(left, recommendedDepartment, userLocation));
+
+  function dismissProfilePrompt() {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem("medimate.profile.prompt.dismissed", "true");
+    }
+    setProfilePromptVisible(false);
+  }
+
+  function requestUserLocation() {
+    if (!navigator.geolocation) {
+      setLocationStatus("unsupported");
+      return;
+    }
+
+    setLocationStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setLocationStatus("ready");
+      },
+      () => {
+        setLocationStatus("denied");
+      },
+      {
+        enableHighAccuracy: false,
+        maximumAge: 5 * 60 * 1000,
+        timeout: 8000,
+      },
+    );
+  }
+
+  function resetDiagnosis({ clearInput = false } = {}) {
+    setError("");
+    setResult(null);
+    setQuestions([]);
+    setAnswers({});
+    setSessionId("");
+    setStatus("idle");
+    if (clearInput) setInput("");
+  }
 
   async function startDiagnosis(textOverride) {
     const symptom = (textOverride ?? input).trim();
@@ -113,7 +289,7 @@ export default function DashboardPage() {
       setQuestions(data.questions);
       setStatus(data.questions.length ? "questions" : "no-questions");
     } catch (apiError) {
-      setError(apiError.message || "Không thể tạo câu hỏi chẩn đoán. Vui lòng thử lại.");
+      setError(apiError.message || "Không thể tạo câu hỏi làm rõ. Vui lòng thử lại.");
       setStatus("idle");
     }
   }
@@ -154,8 +330,22 @@ export default function DashboardPage() {
         <div className="studio-heading">
           <span className="studio-mark"><ClipboardPlus size={28} /></span>
           <h1>Gợi ý chuyên khoa qua triệu chứng</h1>
-          <p>Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi gợi ý chẩn đoán và cơ sở phù hợp.</p>
+          <p>Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo và cơ sở phù hợp.</p>
         </div>
+
+        {profilePromptVisible && (
+          <section className="profile-nudge" aria-labelledby="profile-nudge-title">
+            <span aria-hidden="true"><UserRound size={20} /></span>
+            <div>
+              <h2 id="profile-nudge-title">Hoàn thiện hồ sơ khi bạn sẵn sàng</h2>
+              <p>Hồ sơ giúp gợi ý theo bối cảnh sức khỏe tốt hơn, nhưng bạn vẫn có thể dùng tư vấn chuyên khoa ngay.</p>
+            </div>
+            <div className="profile-nudge-actions">
+              <Button type="button" tone="secondary" onClick={dismissProfilePrompt}>Để sau</Button>
+              <Button type="button" onClick={() => navigate("/profile")}>Cập nhật hồ sơ</Button>
+            </div>
+          </section>
+        )}
 
         <form className="studio-chatbox" onSubmit={(event) => {
           event.preventDefault();
@@ -183,7 +373,7 @@ export default function DashboardPage() {
             <span className="studio-status" aria-live="polite">
               {status === "loading-questions"
                 ? "AI đang chọn câu hỏi cần hỏi thêm..."
-                : <><strong>Sẵn sàng.</strong> AI sẽ hỏi thêm yes/no rồi gợi ý bệnh viện phù hợp.</>}
+                : <><strong>Sẵn sàng.</strong> AI sẽ hỏi thêm yes/no rồi gợi ý nơi khám phù hợp.</>}
             </span>
             <Button
               size="lg"
@@ -211,11 +401,23 @@ export default function DashboardPage() {
             {error}
           </Alert>
         )}
+        {error && (
+          <div className="studio-recovery-actions">
+            <Button type="button" tone="secondary" onClick={() => resetDiagnosis()}>Quay lại biểu mẫu</Button>
+            <Button type="button" onClick={() => startDiagnosis()}>Thử lại</Button>
+          </div>
+        )}
 
         {status === "no-questions" && (
           <Alert tone="warning" title="AI chưa có câu hỏi phù hợp" live>
             Hãy mô tả rõ hơn về thời gian xuất hiện, vị trí đau, mức độ và triệu chứng đi kèm.
           </Alert>
+        )}
+        {status === "no-questions" && (
+          <div className="studio-recovery-actions">
+            <Button type="button" tone="secondary" onClick={() => resetDiagnosis()}>Quay lại biểu mẫu</Button>
+            <Button type="button" onClick={() => startDiagnosis()}>Thử lại với mô tả hiện tại</Button>
+          </div>
         )}
 
         {["questions", "submitting"].includes(status) && (
@@ -223,7 +425,7 @@ export default function DashboardPage() {
             <div className="studio-panel-head">
               <div>
                 <span>Câu hỏi làm rõ</span>
-                <h2>AI cần hỏi thêm để chẩn đoán chính xác hơn</h2>
+                <h2>AI cần hỏi thêm để sàng lọc phù hợp hơn</h2>
               </div>
               <strong>{answeredCount}/{questions.length}</strong>
             </div>
@@ -264,18 +466,19 @@ export default function DashboardPage() {
               loadingLabel="Đang phân tích..."
               disabled={!canSubmitAnswers}
             >
-              Xem chẩn đoán và bệnh viện phù hợp
+              Xem nhận định và bệnh viện phù hợp
             </Button>
           </form>
         )}
 
         {status === "result" && (
-          <section className="studio-result-panel" aria-label="Kết quả chẩn đoán và gợi ý bệnh viện">
+          <section className="studio-result-panel" aria-label="Nhận định tham khảo và gợi ý bệnh viện">
             <article className="studio-result-card primary">
-              <span>Kết quả chẩn đoán</span>
-              <h2>{primaryDiagnosis?.diseaseName || "Chưa có chẩn đoán chính"}</h2>
+              <span>Nhận định tham khảo</span>
+              <h2>{primaryDiagnosis?.diseaseName || "Chưa có nhận định chính"}</h2>
               {primaryDiagnosis?.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
               {primaryDiagnosis?.icd10Code && <small>ICD-10: {primaryDiagnosis.icd10Code}</small>}
+              <small>Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.</small>
             </article>
 
             {recommendedDepartment && (
@@ -306,12 +509,37 @@ export default function DashboardPage() {
                 <div>
                   <span>Bệnh viện phù hợp</span>
                   <h2>Ưu tiên chuyên khoa liên quan, gần và có dữ liệu tốt</h2>
+                  <p>Khoảng cách chỉ được dùng khi bạn cho phép truy cập vị trí và cơ sở có tọa độ hợp lệ.</p>
                 </div>
-                <Button type="button" onClick={openFacilities}>
-                  <MapPin size={18} />
-                  Mở bản đồ
-                </Button>
+                <div className="facility-panel-actions">
+                  <Button
+                    type="button"
+                    tone="secondary"
+                    loading={locationStatus === "loading"}
+                    loadingLabel="Đang lấy vị trí..."
+                    onClick={requestUserLocation}
+                    disabled={locationStatus === "ready"}
+                  >
+                    <MapPin size={18} />
+                    {locationStatus === "ready" ? "Đã có vị trí" : "Dùng vị trí của tôi"}
+                  </Button>
+                  <Button type="button" onClick={openFacilities}>
+                    <MapPin size={18} />
+                    Mở bản đồ
+                  </Button>
+                </div>
               </div>
+
+              {locationStatus === "denied" && (
+                <Alert tone="warning" live>
+                  Trình duyệt chưa cấp quyền vị trí. Danh sách vẫn ưu tiên chuyên khoa, tọa độ hợp lệ và đánh giá thật nếu backend cung cấp.
+                </Alert>
+              )}
+              {locationStatus === "unsupported" && (
+                <Alert tone="warning" live>
+                  Trình duyệt không hỗ trợ định vị. Bạn vẫn có thể mở bản đồ và tìm theo chuyên khoa được đề xuất.
+                </Alert>
+              )}
 
               {sortedFacilities.length === 0 ? (
                 <p>AI chưa trả về cơ sở y tế cụ thể. Bạn có thể mở bản đồ để tìm theo chuyên khoa được đề xuất.</p>
@@ -323,7 +551,7 @@ export default function DashboardPage() {
                       <div>
                         <strong>{facility.facilityName || "Cơ sở y tế"}</strong>
                         <p>{facility.address || "Chưa có địa chỉ"}</p>
-                        {(facility.rating || facility.averageRating) && <small>{facility.rating ?? facility.averageRating} sao đánh giá</small>}
+                        <small>{getFacilityRankingReason(facility, recommendedDepartment, userLocation)}</small>
                       </div>
                     </article>
                   ))}
@@ -331,6 +559,11 @@ export default function DashboardPage() {
               )}
             </article>
           </section>
+        )}
+        {status === "result" && (
+          <div className="studio-recovery-actions">
+            <Button type="button" tone="secondary" onClick={() => resetDiagnosis({ clearInput: true })}>Nhập triệu chứng mới</Button>
+          </div>
         )}
 
         <Alert className="studio-safety" tone="warning" title="Khi nào cần cấp cứu?">
