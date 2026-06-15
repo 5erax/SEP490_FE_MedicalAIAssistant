@@ -11,7 +11,7 @@ const QUESTION_ID = "77777777-7777-4777-8777-777777777777";
 const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
 
 test.describe("patient specialty intake", () => {
-  test("asks follow-up questions and recommends a matching hospital in place", async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -19,7 +19,9 @@ test.describe("patient specialty intake", () => {
         roles: ["Patient"],
       }));
     }, ACCESS_TOKEN);
+  });
 
+  test("asks follow-up questions and recommends a matching hospital in place", async ({ page }) => {
     let questionPayload = null;
     let answerPayload = null;
 
@@ -116,5 +118,30 @@ test.describe("patient specialty intake", () => {
       sessionId: SESSION_ID,
       answers: [{ questionId: QUESTION_ID, answer: true }],
     });
+  });
+
+  test("accepts nested backend question response shapes", async ({ page }) => {
+    await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          result: {
+            sessionID: SESSION_ID,
+            clinicalQuestionSuggestions: [{
+              id: QUESTION_ID,
+              questionText: "Bạn có ho kéo dài trên 3 ngày không?",
+            }],
+          },
+        },
+      }),
+    }));
+
+    await openRoute(page, "/dashboard");
+    await page.getByLabel("Triệu chứng bạn đang gặp").fill("Ho và đau họng");
+    await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
+
+    await expect(page.getByText("Bạn có ho kéo dài trên 3 ngày không?")).toBeVisible();
+    await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeHidden();
   });
 });

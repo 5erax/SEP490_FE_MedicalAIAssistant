@@ -24,10 +24,18 @@ function unwrapPayload(response) {
 }
 
 function getQuestionId(question, index) {
+  if (typeof question === "string") return `question-${index + 1}`;
   return question.questionId ?? question.id ?? question.code ?? `question-${index + 1}`;
 }
 
 function normalizeQuestion(question, index) {
+  if (typeof question === "string") {
+    return {
+      questionId: getQuestionId(question, index),
+      questionText: question,
+    };
+  }
+
   return {
     ...question,
     questionId: getQuestionId(question, index),
@@ -35,16 +43,60 @@ function normalizeQuestion(question, index) {
   };
 }
 
+function looksLikeQuestion(item) {
+  if (typeof item === "string") return item.trim().length > 0;
+  if (!item || typeof item !== "object") return false;
+  return Boolean(item.questionId || item.questionVi || item.questionText || item.text || item.content);
+}
+
+function findFirstByKeys(value, keys) {
+  if (!value || typeof value !== "object") return undefined;
+
+  for (const key of keys) {
+    const directValue = value[key];
+    if (Array.isArray(directValue) && directValue.some(looksLikeQuestion)) return directValue;
+    if (directValue && typeof directValue === "object" && looksLikeQuestion(directValue)) return [directValue];
+  }
+
+  for (const nestedValue of Object.values(value)) {
+    const found = findFirstByKeys(nestedValue, keys);
+    if (found) return found;
+  }
+
+  return undefined;
+}
+
+function findFirstSessionId(value) {
+  if (!value || typeof value !== "object") return "";
+  const direct = value.sessionId ?? value.sessionID ?? value.session?.id ?? value.id;
+  if (direct) return direct;
+
+  for (const nestedValue of Object.values(value)) {
+    const found = findFirstSessionId(nestedValue);
+    if (found) return found;
+  }
+
+  return "";
+}
+
 function readQuestionsPayload(response) {
   const data = unwrapPayload(response) ?? {};
-  const questions = data.questions
-    ?? data.clinicalQuestions
-    ?? data.suggestedQuestions
-    ?? data.followUpQuestions
-    ?? [];
+  const questionKeys = [
+    "questions",
+    "clinicalQuestions",
+    "suggestedQuestions",
+    "followUpQuestions",
+    "clinicalQuestionSuggestions",
+    "questionSuggestions",
+    "items",
+    "data",
+  ];
+  const questions = Array.isArray(data) && data.some(looksLikeQuestion)
+    ? data
+    : findFirstByKeys(data, questionKeys) ?? [];
 
   return {
-    sessionId: data.sessionId ?? data.id ?? data.session?.id ?? "",
+    sessionId: findFirstSessionId(data),
     questions: Array.isArray(questions) ? questions.map(normalizeQuestion) : [],
   };
 }
