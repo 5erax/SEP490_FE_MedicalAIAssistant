@@ -166,6 +166,88 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Bổ sung test hồi quy map, contract và accessibility.
 - [x] Chạy lint, build, test và cập nhật nhật ký sau triển khai.
 
+### FE-PLAN-015: Lập backlog hoàn thiện chức năng và trải nghiệm frontend
+
+- [x] Đối chiếu Doctor invitation, role routing và workspace hiện tại.
+- [x] Đối chiếu Swagger ngày 2026-06-15 và ghi rõ capability chưa có contract.
+- [x] Phân tích lỗi responsive của bảng Admin Doctors từ code và ảnh lỗi.
+- [x] Xác định dữ liệu bản đồ/bệnh viện giả còn xuất hiện trên production surface.
+- [x] Tạo backlog theo P0/P1/P2, phụ thuộc, tiêu chí nghiệm thu và test.
+- [x] Liên kết backlog từ tài liệu kiến trúc frontend.
+
+### FE-AUTH-016: Hoàn tất Doctor invitation đến workspace
+
+- [x] Giữ đúng login intent sau khi đăng ký bằng invitation.
+- [x] Xác minh role Doctor từ login response/JWT và mở `/app/staff`.
+- [x] Không đưa Doctor qua onboarding Patient.
+- [x] Xử lý missing role, account inactive và permission mismatch.
+- [x] Thêm E2E invitation -> register -> login -> Doctor workspace.
+- [x] Kiểm tra không lưu invitation token hoặc PII trong auth storage.
+
+### FE-DOCTOR-017: Xây Doctor workspace chuyên nghiệp
+
+- [ ] Tách Doctor/Staff shell khỏi form quản lý chuyên khoa.
+- [ ] Hiển thị account summary và hồ sơ nghề nghiệp từ contract thật.
+- [ ] Chỉ hiển thị tác vụ đúng quyền và capability production.
+- [ ] Hoàn thiện responsive, loading, empty, error và permission state.
+- [ ] Bổ sung test Doctor/Staff/Admin và dữ liệu hồ sơ thiếu.
+- [-] Phụ thuộc backend `GET /api/doctors/me` cho hồ sơ Doctor hiện tại.
+
+### FE-ADMIN-018: Sửa layout quản lý bác sĩ
+
+- [x] Thiết kế table desktop và compact row/card hoặc action menu trên mobile.
+- [x] Loại cột đầu bị khuất, wrap quá mức và overflow toàn trang.
+- [x] Đồng bộ search/filter/page/page size vào URL.
+- [x] Kiểm tra nội dung tiếng Việt dài và không gian tương đương zoom 200%.
+- [x] Thêm visual/E2E ở 390, 640, 768, 1024, 1280 và 1440 px.
+
+### FE-LANDING-019: Loại dữ liệu bản đồ giả khỏi landing
+
+- [x] Xóa `MEDICAL_LOCATIONS`, khoảng cách và thời gian chờ hard-code.
+- [x] Xóa copy đặt lịch/lưu địa điểm chưa có capability thật.
+- [x] Thay bằng preview nhẹ và CTA SPA đến `/map`.
+- [x] Không tải MapLibre trên landing.
+- [x] Thêm test ngăn dữ liệu bệnh viện mẫu quay lại production surface.
+
+### FE-PROD-020: Audit capability demo và mock production
+
+- [ ] Lập inventory `MOCK_`, `DEMO_`, fixture và TODO thay API trong `src/`.
+- [ ] Xử lý mock trong `hospitalRecommendations.js`.
+- [ ] Audit records, medication và kết quả AI mẫu.
+- [ ] Ẩn hoặc gắn nhãn demo cho capability chưa sẵn sàng.
+- [ ] Thêm regression guard cho production navigation và surface.
+
+### FE-UX-021: Chuẩn hóa critical-flow UX
+
+- [ ] Chuẩn hóa busy/success/error/empty/permission/retry state.
+- [ ] Chống double-submit và giữ form khi lỗi có thể sửa.
+- [ ] Chuẩn hóa validation summary, focus và lỗi field.
+- [ ] Không để trạng thái kiểm tra vô hạn; luôn có timeout/recovery.
+- [ ] Audit copy trộn ngôn ngữ, internal ID và lỗi kỹ thuật.
+
+### FE-PERF-022: Tối ưu tải trang và bundle
+
+- [x] Ghi baseline bundle, LCP và request theo route.
+- [-] Lazy-load map và medical assistant; admin/page hiếm dùng còn lại chưa tách.
+- [x] Không tải MapLibre/map style trên landing.
+- [ ] Giảm request trùng và layout shift.
+- [ ] Cập nhật performance budget theo số đo trước/sau.
+
+### FE-A11Y-023: Accessibility hardening
+
+- [-] Keyboard-only đã có cho invitation và Admin Doctors; Doctor workspace còn mở.
+- [x] Kiểm tra focus, live region và table/card semantics ở các surface đã sửa.
+- [ ] Kiểm tra 200% zoom, forced colors, reduced motion và contrast.
+- [ ] Chạy screen reader smoke và axe cho surface đã thay đổi.
+
+### FE-TEST-024: Regression suite cho Doctor và production data
+
+- [x] Bao phủ invitation -> login -> workspace và role matrix.
+- [x] Bao phủ Admin Doctors bằng dữ liệu dài và nhiều viewport.
+- [x] Bảo đảm landing không còn dữ liệu cơ sở giả.
+- [x] Bảo đảm `/map` không hồi quy sau khi tách khỏi landing.
+- [ ] Chạy route, accessibility, performance và visual suite trong CI.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -185,6 +267,10 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-14 | FE-SEC-012 | Hoàn thành | Whitelist auth storage và tự làm sạch phiên cũ; loại email, tên, địa chỉ, số điện thoại và refresh token khỏi localStorage | `npm.cmd run lint`; `npm.cmd run build`; auth/profile/backend contract 22 passed; payment/upload 3 passed; accessibility 14 passed; không còn đường `phoneNumber` tới `setStoredAuth` |
 | 2026-06-14 | FE-DOC-013 | Hoàn thành | Chuẩn hóa backend backlog; cập nhật contract live; thêm delivery status, phụ thuộc, contract, test và bằng chứng nghiệm thu | 18 ticket hợp lệ; code fence/link Markdown hợp lệ; `git diff --check` passed |
 | 2026-06-14 | FE-MAP-014 | Hoàn thành | Thêm map loading/error/retry; loại tọa độ giả; giữ list fallback; thêm keyboard, skip link, reduced motion và responsive | `npm.cmd run lint`; `npm.cmd run build`; map 4 passed; backend contract 5 passed; accessibility 14 passed; browser desktop/mobile không tràn ngang và không console error |
+| 2026-06-15 | FE-PLAN-015 | Hoàn thành | Tạo frontend delivery backlog cho Doctor invitation/workspace, Admin Doctors responsive, landing fake map, production mock audit, UX, performance, accessibility và regression test | Đối chiếu code, test, Swagger và ảnh lỗi; kiểm tra Markdown/link và `git diff --check` |
+| 2026-06-15 | FE-AUTH-016 | Hoàn thành | Chuyển email invitation sang login bằng History state tạm thời; giữ `returnTo=/app/staff`; xác minh role Doctor/Staff từ response hoặc JWT; xóa phiên khi role không khớp; giữ tài khoản inactive/sai mật khẩu tại login | `npm.cmd run lint`; `npm.cmd run build`; Doctor invitation 14 passed; navigation 16 passed; accessibility 14 passed |
+| 2026-06-15 | FE-ADMIN-018 | Hoàn thành | Chuyển Admin Doctors sang table semantic ở desktop và card có nhãn ở viewport hẹp; giữ action; đồng bộ filter/page vào URL; sửa overflow với dữ liệu tiếng Việt dài | Admin Doctors 3 passed trên 390/640/768/1024/1280/1440 px; visual 28 passed |
+| 2026-06-15 | FE-LANDING-019 | Hoàn thành | Xóa cơ sở, khoảng cách và thời gian chờ giả; thay landing map bằng preview/CTA thật; lazy-load route MapLibre; sửa semantics danh sách `/map` | Landing production 2 passed; map 4 passed; accessibility `/map` passed; performance 4 passed; browser desktop/mobile không console error |
 
 ## Mẫu cập nhật
 

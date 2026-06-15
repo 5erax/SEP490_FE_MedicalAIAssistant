@@ -1,156 +1,43 @@
-import { useMemo, useState } from "react";
-import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
-
-const MEDICAL_LOCATIONS = [
-  {
-    id: "cho-ray",
-    name: "Bệnh viện Chợ Rẫy",
-    type: "Bệnh viện đa khoa tuyến cuối",
-    address: "201B Nguyễn Chí Thanh, Quận 5, TP.HCM",
-    longitude: 106.6602,
-    latitude: 10.7553,
-    wait: "35 phút",
-    distance: "2.4 km",
-  },
-  {
-    id: "umc",
-    name: "BV Đại học Y Dược TP.HCM",
-    type: "Bệnh viện đa khoa",
-    address: "215 Hồng Bàng, Quận 5, TP.HCM",
-    longitude: 106.6636,
-    latitude: 10.7539,
-    wait: "25 phút",
-    distance: "2.8 km",
-  },
-  {
-    id: "tu-du",
-    name: "Bệnh viện Từ Dũ",
-    type: "Sản phụ khoa",
-    address: "284 Cống Quỳnh, Quận 1, TP.HCM",
-    longitude: 106.6867,
-    latitude: 10.7685,
-    wait: "20 phút",
-    distance: "3.5 km",
-  },
-  {
-    id: "children-1",
-    name: "Bệnh viện Nhi Đồng 1",
-    type: "Nhi khoa",
-    address: "341 Sư Vạn Hạnh, Quận 10, TP.HCM",
-    longitude: 106.6672,
-    latitude: 10.7682,
-    wait: "30 phút",
-    distance: "4.1 km",
-  },
-];
-
-const INITIAL_VIEW_STATE = {
-  longitude: 106.676,
-  latitude: 10.765,
-  zoom: 12.2,
-  pitch: 38,
-  bearing: -12,
-};
+import { Building2, ListFilter, MapPinned, Search } from "lucide-react";
 
 export function MapSection() {
-  const [selectedId, setSelectedId] = useState(MEDICAL_LOCATIONS[0].id);
-
-  const selectedLocation = useMemo(
-    () => MEDICAL_LOCATIONS.find((location) => location.id === selectedId),
-    [selectedId],
-  );
-
   return (
     <section id="map" className="section section-alt map-section">
-      <div className="container">
-        <p className="eyebrow">Bản đồ cơ sở y tế</p>
-        <h2 className="section-title">
-          Tìm nơi chăm sóc phù hợp sau khi <em>AI gợi ý chuyên khoa</em>.
-        </h2>
-        <p className="section-copy">
-          Sau phần phân tích triệu chứng, người dùng có thể xem các cơ sở y tế
-          gần mình, chọn marker để xem thông tin nhanh và lưu địa điểm cho lần
-          đặt lịch tiếp theo.
-        </p>
-
-        <div className="map-layout">
-          <div className="map-shell">
-            <Map
-              initialViewState={INITIAL_VIEW_STATE}
-              mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-              attributionControl={false}
-            >
-              <NavigationControl position="top-right" />
-
-              {MEDICAL_LOCATIONS.map((location) => (
-                <Marker
-                  key={location.id}
-                  longitude={location.longitude}
-                  latitude={location.latitude}
-                  anchor="bottom"
-                  aria-label={location.name}
-                  onClick={(event) => {
-                    event.originalEvent.stopPropagation();
-                    setSelectedId(location.id);
-                  }}
-                >
-                  <span
-                    className={`map-marker ${selectedId === location.id ? "active" : ""}`}
-                    aria-hidden="true"
-                  >
-                    <span>+</span>
-                  </span>
-                </Marker>
-              ))}
-
-              {selectedLocation && (
-                <Popup
-                  longitude={selectedLocation.longitude}
-                  latitude={selectedLocation.latitude}
-                  anchor="top"
-                  closeButton={false}
-                  offset={18}
-                >
-                  <div className="map-popup">
-                    <strong>{selectedLocation.name}</strong>
-                    <span>{selectedLocation.type}</span>
-                    <p>{selectedLocation.address}</p>
-                    <small>Thời gian chờ dự kiến: {selectedLocation.wait}</small>
-                  </div>
-                </Popup>
-              )}
-            </Map>
+      <div className="container map-preview-layout">
+        <div className="map-preview-copy">
+          <p className="eyebrow">Tìm cơ sở y tế</p>
+          <h2 className="section-title">
+            Mở bản đồ khi bạn cần tìm <em>cơ sở phù hợp</em>.
+          </h2>
+          <p className="section-copy">
+            Công cụ bản đồ sử dụng danh sách cơ sở y tế từ hệ thống. Kết quả chỉ
+            hiển thị vị trí khi cơ sở có tọa độ hợp lệ và không tự tạo khoảng cách,
+            thời gian chờ hoặc khả năng đặt lịch.
+          </p>
+          <div className="hero-actions">
+            <a className="btn btn-primary" href="/map">
+              <MapPinned size={18} aria-hidden="true" /> Mở bản đồ cơ sở y tế
+            </a>
+            <a className="btn btn-ghost" href="/dashboard">
+              <Search size={18} aria-hidden="true" /> Nhận gợi ý chuyên khoa
+            </a>
           </div>
-
-          <aside className="map-location-panel" aria-label="Cơ sở y tế gần bạn">
-            <p className="map-panel-kicker">Gợi ý gần bạn</p>
-            <h3>Cơ sở phù hợp để đặt lịch</h3>
-            <p>
-              Danh sách này minh họa bước tiếp theo sau khi người dùng nhận gợi ý
-              chuyên khoa từ MediMate AI.
-            </p>
-
-            <div className="map-location-list">
-              {MEDICAL_LOCATIONS.map((location) => (
-                <button
-                  className={`map-location-card ${selectedId === location.id ? "active" : ""}`}
-                  key={location.id}
-                  onClick={() => setSelectedId(location.id)}
-                >
-                  <span>
-                    <strong>{location.name}</strong>
-                    <small>{location.type}</small>
-                  </span>
-                  <span className="map-location-meta">
-                    {location.distance} · {location.wait}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-          </aside>
         </div>
+
+        <ol className="map-preview-steps" aria-label="Các bước tìm cơ sở y tế">
+          <li>
+            <Search size={20} aria-hidden="true" />
+            <div><strong>Tìm kiếm</strong><span>Nhập tên cơ sở hoặc khu vực cần tra cứu.</span></div>
+          </li>
+          <li>
+            <ListFilter size={20} aria-hidden="true" />
+            <div><strong>Lọc kết quả</strong><span>Thu hẹp danh sách theo thông tin hệ thống cung cấp.</span></div>
+          </li>
+          <li>
+            <Building2 size={20} aria-hidden="true" />
+            <div><strong>Xem thông tin thật</strong><span>Địa chỉ, liên hệ và vị trí chỉ xuất hiện khi có dữ liệu hợp lệ.</span></div>
+          </li>
+        </ol>
       </div>
     </section>
   );

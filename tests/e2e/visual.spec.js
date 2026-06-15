@@ -14,6 +14,10 @@ test.describe("visual baseline", () => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
         await openRoute(page, route.path);
+        const routeLoading = page.locator("[data-route-loading]");
+        if (await routeLoading.count()) {
+          await routeLoading.waitFor({ state: "detached" });
+        }
 
         await expect(page).toHaveScreenshot(`${route.name}-${viewport.name}.png`, {
           fullPage: true,

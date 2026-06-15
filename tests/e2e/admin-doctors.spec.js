@@ -175,3 +175,125 @@ test("admin retries a failed doctor list and receives an empty state", async ({ 
   await expect(page.getByText("Trang 1 / 1 · 0 bác sĩ", { exact: true })).toBeVisible();
   expect(doctorRequestCount).toBe(3);
 });
+
+test("doctor management keeps filters in the URL and adapts long records", async ({ page }) => {
+  await preparePage(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      roles: ["Admin"],
+    }));
+  }, ADMIN_TOKEN);
+
+  let doctorRequest = null;
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname;
+
+    if (pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (pathname === "/api/doctors") {
+      doctorRequest = Object.fromEntries(url.searchParams);
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items: [{
+              id: "44444444-4444-4444-8444-444444444444",
+              fullName: "PGS.TS.BS Nguyễn Hoàng Minh Anh Với Tên Rất Dài",
+              academicTitle: "Phó giáo sư, Tiến sĩ, Bác sĩ chuyên khoa II",
+              departmentName: "Khoa Tim mạch can thiệp và Điều trị chuyên sâu",
+              departmentRoleName: "Trưởng khoa",
+              facilityName: "Bệnh viện Đa khoa Khu vực Thành phố Thủ Đức Cơ sở Trung tâm",
+              yearsOfExperience: 22,
+              isActive: true,
+            }],
+            pageNumber: 2,
+            pageSize: 20,
+            totalCount: 21,
+            totalPages: 2,
+          },
+        }),
+      });
+    }
+
+    const pagedPaths = ["/api/users", "/api/ai-configs", "/api/medical-facilities"];
+    const data = pagedPaths.includes(pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto(
+    "/app/admin/doctors?search=Minh%20Anh&isActive=true&page=2&pageSize=20",
+    { waitUntil: "domcontentloaded" },
+  );
+
+  await expect(page.getByPlaceholder("Tìm theo họ tên bác sĩ...")).toHaveValue("Minh Anh");
+  await expect(page.getByLabel("Trạng thái")).toHaveValue("true");
+  await expect(page.getByLabel("Hiển thị")).toHaveValue("20");
+  await expect(page.getByText("Trang 2 / 2 · 21 bác sĩ", { exact: true })).toBeVisible();
+  expect(doctorRequest).toMatchObject({
+    search: "Minh Anh",
+    isActive: "true",
+    PageNumber: "2",
+    PageSize: "20",
+  });
+
+  await page.getByPlaceholder("Tìm theo họ tên bác sĩ...").fill("Bác sĩ mới");
+  await page.getByRole("button", { name: "Áp dụng" }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("search")).toBe("Bác sĩ mới");
+  await page.goBack();
+  await expect.poll(() => new URL(page.url()).searchParams.get("search")).toBe("Minh Anh");
+  await expect(page.getByPlaceholder("Tìm theo họ tên bác sĩ...")).toHaveValue("Minh Anh");
+
+  const tableWrap = page.locator(".doctor-table-wrap");
+  await expect(tableWrap).toBeVisible();
+  const desktopOverflow = await tableWrap.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(desktopOverflow.scrollWidth).toBeLessThanOrEqual(desktopOverflow.clientWidth + 1);
+
+  const cardList = page.locator(".doctor-card-list");
+  for (const viewport of [
+    { width: 390, height: 844, card: true },
+    { width: 640, height: 900, card: true },
+    { width: 768, height: 1024, card: true },
+    { width: 1024, height: 900, card: true },
+    { width: 1280, height: 900, card: false },
+    { width: 1440, height: 1000, card: false },
+  ]) {
+    await page.setViewportSize(viewport);
+    if (viewport.card) {
+      await expect(tableWrap).toBeHidden();
+      await expect(cardList).toBeVisible();
+    } else {
+      await expect(tableWrap).toBeVisible();
+      await expect(cardList).toBeHidden();
+    }
+
+    const pageOverflow = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+    }));
+    expect(pageOverflow.documentWidth).toBeLessThanOrEqual(pageOverflow.viewport);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(cardList.getByText("Khoa công tác", { exact: true })).toBeVisible();
+  await expect(cardList.getByText("Bệnh viện", { exact: true })).toBeVisible();
+  await expect(cardList.getByRole("button", { name: "Tạm ẩn" })).toBeVisible();
+});

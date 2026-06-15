@@ -675,156 +675,56 @@
   overflow: hidden;
 }
 
-.map-layout {
+.map-preview-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: center;
+}
+
+.map-preview-copy {
+  display: grid;
   gap: 18px;
-  align-items: stretch;
-  margin-top: 44px;
 }
 
-.map-shell {
-  min-height: 560px;
-  overflow: hidden;
-  border: 1.5px solid var(--ink);
-  border-radius: 14px;
-  background: var(--paper-soft);
-  box-shadow: var(--shadow);
+.map-preview-copy .section-title,
+.map-preview-copy .section-copy {
+  margin: 0;
 }
 
-.map-shell .maplibregl-map {
-  min-height: 560px;
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
-}
-
-.map-marker {
-  width: 34px;
-  height: 34px;
+.map-preview-steps {
   display: grid;
-  place-items: center;
-  border: 2px solid var(--ink);
-  border-radius: 50% 50% 50% 8px;
-  background: var(--lime);
-  color: var(--ink);
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1;
-  box-shadow: 0 10px 24px rgba(17, 20, 18, 0.2);
-  transform: rotate(-45deg);
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.map-marker span {
-  transform: rotate(45deg);
-}
-
-.map-marker.active {
-  background: var(--ink);
-  color: var(--lime);
-}
-
-.map-popup {
+.map-preview-steps li {
   display: grid;
-  gap: 4px;
-  max-width: 220px;
-  color: var(--ink);
-}
-
-.map-popup strong {
-  font-size: 14px;
-}
-
-.map-popup span {
-  color: var(--teal);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.map-popup p {
-  margin: 4px 0;
-  color: var(--muted);
-  line-height: 1.45;
-}
-
-.map-popup small {
-  color: var(--subtle);
-  font-weight: 700;
-}
-
-.map-location-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
   border: 1.5px solid var(--ink);
   border-radius: 14px;
   background: var(--paper);
-  padding: 24px;
+  padding: 18px;
+  box-shadow: 4px 4px 0 rgba(17, 20, 18, 0.12);
 }
 
-.map-panel-kicker {
-  margin: 0 0 8px;
-  color: var(--lime-dark);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.map-preview-steps svg {
+  color: var(--teal);
 }
 
-.map-location-panel h3 {
-  margin: 0 0 10px;
-  font-size: 24px;
-}
-
-.map-location-panel p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.65;
-}
-
-.map-location-list {
-  display: grid;
-  gap: 10px;
-}
-
-.map-location-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--paper-soft);
-  padding: 14px;
-  color: var(--muted);
-  text-align: left;
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-}
-
-.map-location-card:hover,
-.map-location-card.active {
-  transform: translateX(4px);
-  border-color: var(--ink);
-  background: var(--mint);
-}
-
-.map-location-card strong {
+.map-preview-steps strong,
+.map-preview-steps span {
   display: block;
-  color: var(--ink);
-  font-size: 14px;
 }
 
-.map-location-card small {
-  display: block;
-  margin-top: 3px;
-  color: var(--subtle);
-  font-weight: 700;
-}
-
-.map-location-meta {
-  color: #075d66;
-  font-size: 12px;
-  font-weight: 900;
-  white-space: nowrap;
+.map-preview-steps span {
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .solution-card {
@@ -4529,7 +4429,7 @@
   }
 
   .solutions-grid,
-  .map-layout,
+  .map-preview-layout,
   .reviews-grid,
   .faq-grid,
   .static-grid,
@@ -4578,7 +4478,7 @@
   .demo-upgrade-grid,
   .features-grid,
   .solutions-grid,
-  .map-layout,
+  .map-preview-layout,
   .steps-grid,
   .reviews-grid,
   .pricing-grid,

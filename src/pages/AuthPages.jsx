@@ -4,9 +4,9 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
 import { getPostAuthDestination, getReturnToFromSearch, withReturnTo } from "../router/returnIntent";
-import { authApi, setStoredAuth } from "../services/api";
+import { authApi, clearStoredAuth, setStoredAuth } from "../services/api";
 import { findPatientProfileByUserId } from "../services/patientProfileSetup";
-import { getWorkspacePath } from "../utils/roles";
+import { getWorkspacePath, hasAuthRole } from "../utils/roles";
 import "../styles/auth-refresh.css";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -31,6 +31,18 @@ function getAuthSwitchPath(path) {
 
 function getUserId(authOrUser) {
   return authOrUser?.userId ?? authOrUser?.identityId ?? authOrUser?.id ?? authOrUser?.data?.userId ?? authOrUser?.data?.identityId ?? authOrUser?.data?.id ?? "";
+}
+
+function getDoctorInvitationLoginContext() {
+  const context = window.history.state?.doctorInvitation;
+  if (!context || context.expectedRole !== "doctor") return null;
+
+  const email = typeof context.email === "string" ? context.email.trim() : "";
+  return { email };
+}
+
+function clearNavigationState() {
+  window.history.replaceState(null, "", window.location.href);
 }
 
 async function getVerifiedGoogleLoginDestination(authOrUser) {
@@ -149,7 +161,8 @@ function SelectField({ label, children, ...props }) {
 
 export function LoginPage() {
   const { showToast } = useFeedback();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [invitationContext] = useState(getDoctorInvitationLoginContext);
+  const [form, setForm] = useState({ email: invitationContext?.email || "", password: "" });
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -159,8 +172,20 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.login(form);
+      const authData = response.data ?? response;
+      if (invitationContext && !hasAuthRole(authData, "staff")) {
+        clearStoredAuth();
+        clearNavigationState();
+        setMessage({
+          type: "error",
+          text: "Tài khoản đăng nhập chưa được cấp quyền Bác sĩ. Vui lòng liên hệ quản trị viên để kiểm tra lời mời.",
+        });
+        return;
+      }
+
+      clearNavigationState();
       showToast({ type: "success", title: "Đăng nhập thành công", message: "Đang mở không gian phù hợp với tài khoản của bạn." });
-      navigate(getPostAuthDestination(response.data ?? response));
+      navigate(getPostAuthDestination(authData));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {

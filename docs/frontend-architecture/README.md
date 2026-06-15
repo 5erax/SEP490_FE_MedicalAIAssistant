@@ -11,6 +11,7 @@ Tài liệu liên quan:
 3. [API layer hiện tại](./api-layer.md)
 4. [Checklist nhiệm vụ frontend](./task-checklist.md)
 5. [Kế hoạch khôi phục bản đồ](./map-recovery-plan.md)
+6. [Frontend delivery backlog](./frontend-delivery-backlog.md)
 
 ## 1. Đánh giá cấu trúc hiện tại
 
