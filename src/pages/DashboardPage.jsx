@@ -2,7 +2,6 @@ import { useState } from "react";
 import { ClipboardPlus, Send } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
-import { getStoredAuth, webChatbotApi } from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
 import "../styles/dashboard.css";
 
@@ -14,7 +13,6 @@ const PROMPTS = [
 ];
 
 export default function DashboardPage() {
-  const auth = getStoredAuth();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -28,24 +26,12 @@ export default function DashboardPage() {
     trackUxEvent("specialty_intake_submitted", { source: textOverride ? "quick_prompt" : "manual" });
 
     try {
-      const response = await webChatbotApi.message(symptom, { auth: Boolean(auth) });
-      const data = response.data ?? response;
-      sessionStorage.setItem("medimate.map.chat", JSON.stringify({
-        symptom,
-        answer: data.answer || "AI đã ghi nhận triệu chứng và sẽ gợi ý cơ sở phù hợp.",
-        intent: data.intent || "specialty_recommendation",
-        needsMoreInformation: Boolean(data.needsMoreInformation),
-      }));
-      navigate("/map");
+      sessionStorage.setItem("medimate.symptom.prefill", symptom);
+      navigate("/symptom");
     } catch (apiError) {
-      sessionStorage.setItem("medimate.map.chat", JSON.stringify({
-        symptom,
-        answer: "MediMate AI đang tạm dùng luồng dự phòng. Bạn có thể xem các bệnh viện phù hợp tại bản đồ và thử gửi lại sau.",
-        intent: "fallback",
-        needsMoreInformation: false,
-      }));
       setError(apiError.message);
-      navigate("/map");
+      sessionStorage.setItem("medimate.symptom.prefill", symptom);
+      navigate("/symptom");
     } finally {
       setLoading(false);
     }
@@ -57,7 +43,7 @@ export default function DashboardPage() {
         <div className="studio-heading">
           <span className="studio-mark"><ClipboardPlus size={28} /></span>
           <h1>Gợi ý chuyên khoa qua triệu chứng</h1>
-          <p>Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ gợi ý hướng chuyên khoa và chuyển sang bản đồ cơ sở phù hợp.</p>
+          <p>Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi gợi ý chẩn đoán và cơ sở phù hợp.</p>
         </div>
 
         <div className="studio-chatbox">
@@ -80,7 +66,7 @@ export default function DashboardPage() {
           </Field>
           <div className="studio-chat-actions">
             <span className="studio-status" aria-live="polite">
-              {loading ? "Đang phân tích triệu chứng..." : <><strong>Sẵn sàng.</strong> Kết quả sẽ mở cùng danh sách cơ sở phù hợp.</>}
+              {loading ? "Đang mở luồng chẩn đoán..." : <><strong>Sẵn sàng.</strong> Bạn sẽ trả lời vài câu yes/no trước khi xem gợi ý cơ sở phù hợp.</>}
             </span>
             <Button
               size="lg"
@@ -105,7 +91,7 @@ export default function DashboardPage() {
 
         {error && (
           <Alert tone="danger" title="Không thể kết nối dịch vụ phân tích" live>
-            {error} MediMate đã chuyển sang dữ liệu dự phòng trên bản đồ.
+            {error} MediMate sẽ mở luồng chẩn đoán để bạn tiếp tục trả lời câu hỏi.
           </Alert>
         )}
 

@@ -65,7 +65,7 @@ test.describe("global navigation UX", () => {
     await openRoute(page, "/dashboard");
 
     const lockedFeature = page.getByRole("button", {
-      name: /Triệu chứng, yêu cầu MediMate\+/,
+      name: /Chat AI, yêu cầu MediMate\+/,
     }).first();
     await lockedFeature.click();
 
@@ -101,8 +101,9 @@ test.describe("global navigation UX", () => {
         success: true,
         data: {
           id: "55555555-5555-4555-8555-555555555555",
-          displayName: "Patient Example",
+          displayName: "Nguyễn Minh",
           email: "patient@example.com",
+          avatarUrl: "https://example.com/avatar.png",
           gender: 1,
         },
       }),
@@ -129,8 +130,12 @@ test.describe("global navigation UX", () => {
     }));
 
     await openRoute(page, "/dashboard");
+    await expect(page.locator(".account-menu-trigger")).toContainText("Nguyễn Minh");
+    await expect(page.locator(".account-menu-trigger img")).toHaveAttribute("src", "https://example.com/avatar.png");
     await page.locator(".account-menu-trigger").click();
     await expect(page.getByRole("region", { name: "Menu tài khoản" })).toBeVisible();
+    await expect(page.locator(".account-menu-summary")).toContainText("Nguyễn Minh");
+    await expect(page.locator(".account-menu-summary img")).toHaveAttribute("src", "https://example.com/avatar.png");
     await expect(page.getByRole("button", { name: "Hiển thị", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Lịch sử giao dịch" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Đăng xuất" })).toBeVisible();
@@ -138,15 +143,19 @@ test.describe("global navigation UX", () => {
 
     await expect(page).toHaveURL(/\/profile$/);
     await expect(page.getByRole("heading", { name: "Thông tin cá nhân" })).toBeVisible();
+
+    const storedAuth = await page.evaluate(() => JSON.parse(localStorage.getItem("medimate.auth")));
+    expect(storedAuth).not.toHaveProperty("email");
+    expect(storedAuth).not.toHaveProperty("displayName");
+    expect(storedAuth).not.toHaveProperty("avatarUrl");
   });
 
-  test("premium users can navigate directly to premium features", async ({ page }) => {
+  test("authenticated users can navigate directly to symptom diagnosis", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
         accessToken,
         displayName: "Premium Patient",
-        isPremium: true,
         roles: ["Patient"],
       }));
     }, ACCESS_TOKEN);
@@ -396,14 +405,13 @@ test.describe("global navigation UX", () => {
     await expect(createButton).toBeFocused();
   });
 
-  test("first-login patient can use premium routes without forced profile setup", async ({ page }) => {
+  test("first-login patient can use symptom diagnosis without forced profile setup", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
         accessToken,
         roles: ["Patient"],
         isFirstLogin: true,
-        isPremium: true,
       }));
     }, ACCESS_TOKEN);
 

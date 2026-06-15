@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import ChatSidebar from "../components/medicalAssistant/ChatSidebar";
 import MedicalMap from "../components/medicalAssistant/MedicalMap";
+import { navigate } from "../router/navigation";
 import { getStoredAuth } from "../services/api";
-import { getDefaultMapLocation, getHospitalRecommendations } from "../services/hospitalRecommendations";
-import { sendSymptomMessage } from "../services/symptomChat";
+import { getDefaultMapLocation } from "../services/hospitalRecommendations";
 
 const SUGGESTED_PROMPTS = [
   "Tôi bị sốt nhẹ 2 ngày",
@@ -11,16 +11,6 @@ const SUGGESTED_PROMPTS = [
   "Triệu chứng nào cần cấp cứu?",
   "Bệnh viện gần tôi nhất?",
 ];
-
-function buildAssistantMessage(response) {
-  const data = response.data ?? {};
-  const answer = data.answer || response.message || "MediMate AI đã ghi nhận triệu chứng của bạn.";
-  const moreInfo = data.needsMoreInformation
-    ? "\n\nBạn nên bổ sung thêm thời gian xuất hiện, mức độ đau, bệnh nền và thuốc đang dùng nếu có."
-    : "";
-
-  return `${answer}${moreInfo}`;
-}
 
 function EmptyAuth() {
   return (
@@ -44,7 +34,7 @@ export default function MedicalAssistantPage() {
   const defaultLocation = getDefaultMapLocation();
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState([]);
-  const [hospitals, setHospitals] = useState([]);
+  const [hospitals] = useState([]);
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [hospitalsLoading, setHospitalsLoading] = useState(false);
@@ -82,22 +72,15 @@ export default function MedicalAssistantPage() {
     setErrorMessage("");
 
     try {
-      const [chatResponse, hospitalResponse] = await Promise.all([
-        sendSymptomMessage(symptomText),
-        getHospitalRecommendations({ symptomText }),
-      ]);
-      const recommendedHospitals = hospitalResponse.data ?? [];
-
-      setMessages((current) => [...current, { from: "assistant", text: buildAssistantMessage(chatResponse) }]);
-      setHospitals(recommendedHospitals);
-      focusHospital(recommendedHospitals[0] ?? null);
+      sessionStorage.setItem("medimate.symptom.prefill", symptomText);
+      navigate("/symptom");
     } catch (error) {
       setErrorMessage(error.message);
       setMessages((current) => [
         ...current,
         {
           from: "assistant",
-          text: "Hiện chưa thể hoàn tất tư vấn. Bạn có thể thử lại hoặc đi khám sớm nếu triệu chứng nặng lên.",
+          text: "Hiện chưa thể mở luồng chẩn đoán. Bạn có thể thử lại hoặc đi khám sớm nếu triệu chứng nặng lên.",
         },
       ]);
     } finally {

@@ -68,7 +68,7 @@ const BASE_ROUTES = [
     id: "patient.symptom",
     path: "/symptom",
     title: "Phân tích triệu chứng | MediMate AI",
-    access: "premium",
+    access: "auth",
     shell: "patient",
     navigation: { shell: "patient", label: "Triệu chứng", hint: "Phân tích nhanh", icon: "symptom", order: 20, mobile: true },
   },

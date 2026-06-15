@@ -22,7 +22,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { withReturnTo } from "../../router/returnIntent";
 import { getNavigationModel } from "../../router/routes";
-import { getStoredAuth, hasPremiumAccess } from "../../services/api";
+import { authApi, getStoredAuth, hasPremiumAccess } from "../../services/api";
 import { logoutUser } from "../../services/logoutService";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
@@ -60,10 +60,30 @@ function getInitials(nameOrEmail = "MediMate") {
     .toUpperCase() || "MM";
 }
 
+function getAccountName(user, auth) {
+  return user?.displayName
+    || user?.fullName
+    || user?.name
+    || user?.email
+    || auth?.username
+    || "Người dùng";
+}
+
+function getAccountAvatar(user) {
+  return user?.avatarUrl
+    || user?.avatar
+    || user?.picture
+    || user?.photoUrl
+    || user?.imageUrl
+    || user?.profilePictureUrl
+    || "";
+}
+
 export default function UserWorkspaceShell({ children }) {
   const [notice, setNotice] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [accountUser, setAccountUser] = useState(null);
   const [searchText, setSearchText] = useState("");
   const sidebarRef = useRef(null);
   const accountMenuRef = useRef(null);
@@ -76,12 +96,15 @@ export default function UserWorkspaceShell({ children }) {
   const noticeTriggerRef = useRef(null);
   const drawerInertRefs = useMemo(() => [mainRef, mobileNavRef], []);
   const auth = getStoredAuth();
+  const accessToken = auth?.accessToken;
   const premiumAccess = hasPremiumAccess(auth);
   const path = getCurrentPath();
   const activeItem = NAV_ITEMS.find((item) => path === item.path)
     ?? (path === "/profile" ? { label: "Hồ sơ", icon: UserRound } : NAV_ITEMS[0]);
   const ActiveIcon = activeItem.icon;
-  const displayName = auth?.displayName || auth?.name || auth?.email || "Khách trải nghiệm";
+  const visibleAccountUser = accessToken ? accountUser : null;
+  const displayName = getAccountName(visibleAccountUser, auth);
+  const avatarUrl = getAccountAvatar(visibleAccountUser);
 
   async function logout() {
     setAccountMenuOpen(false);
@@ -138,6 +161,26 @@ export default function UserWorkspaceShell({ children }) {
     inertRefs: drawerInertRefs,
     onClose: () => setMobileMenuOpen(false),
   });
+
+  useEffect(() => {
+    if (!accessToken) {
+      return undefined;
+    }
+
+    let active = true;
+
+    authApi.me()
+      .then((response) => {
+        if (active) setAccountUser(response.data ?? null);
+      })
+      .catch(() => {
+        if (active) setAccountUser(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken]);
 
   useEffect(() => {
     if (!accountMenuOpen) return undefined;
@@ -293,7 +336,11 @@ export default function UserWorkspaceShell({ children }) {
                 aria-controls="workspace-account-menu"
                 onClick={() => setAccountMenuOpen((current) => !current)}
               >
-                <span>{getInitials(displayName)}</span>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+                ) : (
+                  <span>{getInitials(displayName)}</span>
+                )}
                 <strong>{displayName}</strong>
               </button>
 
@@ -304,7 +351,11 @@ export default function UserWorkspaceShell({ children }) {
                   aria-label="Menu tài khoản"
                 >
                   <div className="account-menu-summary">
-                    <span>{getInitials(displayName)}</span>
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+                    ) : (
+                      <span>{getInitials(displayName)}</span>
+                    )}
                     <div>
                       <strong>{displayName}</strong>
                       <small>{auth ? "Tài khoản MediMate" : "Chưa đăng nhập"}</small>
