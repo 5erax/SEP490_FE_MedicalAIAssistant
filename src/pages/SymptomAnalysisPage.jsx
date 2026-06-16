@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../router/navigation";
 import { symptomAnalysisApi } from "../services/api";
 
@@ -147,6 +147,7 @@ function getAnalysis(response) {
 }
 
 export default function SymptomAnalysisPage() {
+  const questionsPanelRef = useRef(null);
   const [userInput, setUserInput] = useState(() => {
     const prefill = sessionStorage.getItem("medimate.symptom.prefill");
     if (prefill) sessionStorage.removeItem("medimate.symptom.prefill");
@@ -166,6 +167,17 @@ export default function SymptomAnalysisPage() {
   const diagnoses = analysis?.diagnoses ?? [];
   const recommendedDepartment = analysis?.recommendedDepartment;
   const sortedFacilities = sortFacilities(analysis?.recommendedFacilities ?? [], recommendedDepartment);
+
+  useEffect(() => {
+    if (!["questions", "submitting"].includes(status) || questions.length === 0) return;
+
+    const handle = window.setTimeout(() => {
+      questionsPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      questionsPanelRef.current?.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(handle);
+  }, [questions.length, status]);
 
   function appendSymptom(label) {
     setUserInput((current) => {
@@ -296,7 +308,13 @@ export default function SymptomAnalysisPage() {
         )}
 
         {["questions", "submitting"].includes(status) && (
-          <form className="symptom-card question-card" onSubmit={submitAnswers}>
+          <form
+            className="symptom-card question-card"
+            onSubmit={submitAnswers}
+            ref={questionsPanelRef}
+            tabIndex={-1}
+            aria-live="polite"
+          >
             <div className="question-card-head">
               <div>
                 <p className="mini-label">Câu hỏi lâm sàng</p>
@@ -464,6 +482,8 @@ const styles = `
 .status-card { min-height: 260px; display: grid; place-items: center; align-content: center; gap: 12px; text-align: center; }
 .large-spinner { width: 62px; height: 62px; border: 6px solid rgba(17,20,18,.1); border-top-color: var(--lime); border-radius: 50%; animation: spin .8s linear infinite; }
 .question-card-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+.question-card { scroll-margin-top: 18px; }
+.question-card:focus { outline: 3px solid rgba(8,127,140,.28); outline-offset: 4px; }
 .question-card-head h2 { font-size: clamp(24px, 3vw, 36px); }
 .question-card-head > span, .soft-badge, .emergency-badge { display: inline-flex; width: fit-content; border-radius: 999px; background: var(--mint); color: var(--teal); padding: 6px 10px; font-size: 12px; font-weight: 950; }
 .question-list { display: grid; gap: 12px; }

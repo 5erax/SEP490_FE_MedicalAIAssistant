@@ -25,13 +25,16 @@
 }
 
 .display-preferences-panel {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  z-index: var(--z-overlay);
+  position: fixed;
+  top: clamp(82px, 10vh, 112px);
+  right: clamp(14px, 4vw, 52px);
+  z-index: 1200;
   display: grid;
   gap: 14px;
-  width: min(360px, calc(100vw - 28px));
+  width: min(430px, calc(100vw - 28px));
+  max-height: calc(100svh - clamp(104px, 14vh, 132px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1.5px solid var(--ink);
   border-radius: var(--radius-lg);
   background: var(--paper);
@@ -103,11 +106,9 @@
 
 @media (max-width: 760px) {
   .display-preferences-panel {
-    position: fixed;
     inset: 76px 14px auto;
     width: auto;
     max-height: calc(100svh - 92px);
-    overflow: auto;
   }
 }
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClipboardPlus, MapPin, Send, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -377,6 +377,7 @@ function readProfilePromptDismissed() {
 
 export default function DashboardPage() {
   const auth = getStoredAuth();
+  const questionsPanelRef = useRef(null);
   const [input, setInput] = useState(readSymptomPrefill);
   const [sessionId, setSessionId] = useState("");
   const [questions, setQuestions] = useState([]);
@@ -399,6 +400,17 @@ export default function DashboardPage() {
   const recommendedDepartment = result?.recommendedDepartment;
   const sortedFacilities = [...(result?.recommendedFacilities ?? [])]
     .sort((left, right) => scoreFacility(right, recommendedDepartment, userLocation) - scoreFacility(left, recommendedDepartment, userLocation));
+
+  useEffect(() => {
+    if (!["questions", "submitting"].includes(status) || questions.length === 0) return;
+
+    const handle = window.setTimeout(() => {
+      questionsPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      questionsPanelRef.current?.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(handle);
+  }, [questions.length, status]);
 
   function dismissProfilePrompt() {
     if (typeof sessionStorage !== "undefined") {
@@ -472,12 +484,14 @@ export default function DashboardPage() {
     let backendSessionId = "";
     let backendQuestions = [];
     let warning = "";
+    let backendReturned = false;
 
     try {
       const response = await symptomAnalysisApi.suggestClinicalQuestions(symptom);
       const data = readQuestionsPayload(response);
       backendSessionId = data.sessionId;
       backendQuestions = data.questions;
+      backendReturned = true;
     } catch (apiError) {
       setError(apiError.message || "Không thể tạo câu hỏi làm rõ. Vui lòng thử lại.");
       warning = apiError.message || "Backend chưa tạo được câu hỏi làm rõ.";
@@ -490,6 +504,12 @@ export default function DashboardPage() {
       setQuestions(backendQuestions);
       setQuestionSource("backend");
       setStatus("questions");
+      return;
+    }
+
+    if (backendReturned) {
+      setSessionId(backendSessionId);
+      setStatus("no-questions");
       return;
     }
 
@@ -674,7 +694,13 @@ export default function DashboardPage() {
         )}
 
         {["questions", "submitting"].includes(status) && (
-          <form className="studio-diagnosis-panel" onSubmit={submitAnswers}>
+          <form
+            className="studio-diagnosis-panel"
+            onSubmit={submitAnswers}
+            ref={questionsPanelRef}
+            tabIndex={-1}
+            aria-live="polite"
+          >
             <div className="studio-panel-head">
               <div>
                 <span>Câu hỏi làm rõ</span>

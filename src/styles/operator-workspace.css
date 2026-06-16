@@ -197,6 +197,11 @@
   gap: 16px;
 }
 
+.admin-operator .facility-admin-grid {
+  grid-template-columns: minmax(480px, 1fr) minmax(340px, 420px);
+  align-items: start;
+}
+
 .operator-workspace .app-card,
 .admin-operator .admin-panel {
   padding: clamp(18px, 2.4vw, 24px);
@@ -245,6 +250,7 @@
 .admin-operator .admin-user-row strong,
 .admin-operator .admin-task-list strong {
   color: #101411;
+  overflow-wrap: anywhere;
 }
 
 .operator-workspace .record-card p,
@@ -603,6 +609,22 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 12px;
   align-items: center;
+}
+
+.admin-operator .facility-admin-row {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.admin-operator .facility-admin-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-operator .facility-admin-row .record-actions {
+  justify-content: flex-start;
+  margin-top: 4px;
 }
 
 .admin-operator .admin-badge-stack {
@@ -1061,24 +1083,25 @@
 }
 
 .admin-operator .doctor-table-wrap .ui-table {
-  min-width: 820px;
+  width: 100%;
+  min-width: 0;
   table-layout: fixed;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(1) {
-  width: 22%;
+  width: 24%;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(2) {
-  width: 18%;
+  width: 17%;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(3) {
-  width: 21%;
+  width: 23%;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(4) {
-  width: 11%;
+  width: 10%;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(5) {
@@ -1086,7 +1109,7 @@
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(6) {
-  width: 16%;
+  width: 14%;
 }
 
 .admin-operator .doctor-table-wrap .ui-table th {
@@ -1101,7 +1124,8 @@
 .admin-operator .doctor-table-wrap .ui-table th,
 .admin-operator .doctor-table-wrap .ui-table td {
   border-bottom: 1px solid rgba(16, 20, 17, 0.07);
-  padding: 14px;
+  padding: 14px 12px;
+  vertical-align: top;
 }
 
 .admin-operator .doctor-table-wrap .ui-table tbody tr:last-child td {
@@ -1120,6 +1144,7 @@
 .table-primary-cell strong {
   color: #101411;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .doctor-primary-cell div > span,
@@ -1148,12 +1173,25 @@
 .doctor-experience {
   display: inline-flex;
   width: max-content;
+  max-width: 100%;
   border-radius: 999px;
   background: rgba(8, 127, 140, 0.09);
   color: #087f8c;
   padding: 7px 10px;
   font-size: 12px;
   font-weight: 950;
+  white-space: nowrap;
+}
+
+.admin-operator .doctor-table-wrap .record-actions {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.admin-operator .doctor-table-wrap .record-actions .btn {
+  justify-content: center;
+  width: 100%;
 }
 
 .admin-operator .doctor-table-wrap .ui-table tbody tr {
@@ -1941,7 +1979,7 @@
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1240px) {
   .admin-operator .doctor-table-wrap {
     display: none;
   }
