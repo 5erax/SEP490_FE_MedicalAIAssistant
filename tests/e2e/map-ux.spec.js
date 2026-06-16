@@ -24,7 +24,7 @@ function facility(overrides = {}) {
   };
 }
 
-async function mockMapApis(page, facilities) {
+async function mockMapApis(page, facilities, options = {}) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
 
@@ -32,6 +32,20 @@ async function mockMapApis(page, facilities) {
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ success: true, data: facilities }),
+      });
+    }
+
+    if (url.pathname === "/api/medical-departments") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: options.departments ?? [] }),
+      });
+    }
+
+    if (url.pathname === "/api/facility-departments/active") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: options.facilityDepartments ?? [] }),
       });
     }
 
@@ -92,6 +106,42 @@ test("facility without coordinates stays in the list without a false marker", as
   const directionsButton = page.getByRole("button", { name: "Chỉ đường" });
   await expect(directionsButton).toBeDisabled();
   await expect(directionsButton).toHaveAttribute("title", "Cơ sở chưa có tọa độ chính xác");
+});
+
+test("map search matches facility departments from active backend data", async ({ page }) => {
+  await preparePage(page);
+  await mockMapApis(page, [
+    facility({
+      id: FACILITY_ID,
+      facilityName: "Bệnh viện Tim",
+      departments: [{ departmentName: "Tim mạch" }],
+    }),
+    facility({
+      id: "22222222-2222-4222-8222-222222222222",
+      facilityName: "Phòng khám Da liễu",
+      phone: null,
+      facilityType: "Phòng khám",
+      departments: [],
+    }),
+  ], {
+    departments: [{ id: "33333333-3333-4333-8333-333333333333", departmentName: "Da liễu" }],
+    facilityDepartments: [{
+      facilityId: "22222222-2222-4222-8222-222222222222",
+      departmentId: "33333333-3333-4333-8333-333333333333",
+    }],
+  });
+  await mockSuccessfulMapStyle(page);
+
+  await page.goto("/map", { waitUntil: "domcontentloaded" });
+
+  await page.getByLabel("Tìm cơ sở y tế").fill("da lieu");
+  await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bệnh viện Tim", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Danh sách cơ sở y tế").getByText("Phòng khám", { exact: true })).toBeVisible();
+
+  const callButton = page.getByRole("button", { name: "Gọi ngay" });
+  await expect(callButton).toBeDisabled();
+  await expect(callButton).toHaveAttribute("title", "Cơ sở chưa có số điện thoại");
 });
 
 test("map style failure shows a usable fallback and supports retry", async ({ page }) => {

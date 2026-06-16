@@ -53,10 +53,13 @@ const EMPTY_INVITATION = { email: "", doctorId: "" };
 const EMPTY_FACILITY = {
   facilityName: "",
   address: "",
+  latitude: "",
+  longitude: "",
   phone: "",
   website: "",
   openingHours: "",
   facilityType: "",
+  isActive: true,
   departmentIds: [],
 };
 const EMPTY_STAFF = {
@@ -155,6 +158,47 @@ function statusLabel(status) {
   return Number(status) === 1 ? "Đã duyệt" : "Chờ duyệt";
 }
 
+function parseOptionalCoordinate(value, minimum, maximum) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return null;
+  const coordinate = Number(trimmed);
+  return Number.isFinite(coordinate) && coordinate >= minimum && coordinate <= maximum
+    ? coordinate
+    : Number.NaN;
+}
+
+function hasValidCoordinatePair(facility) {
+  const latitude = Number(facility?.latitude);
+  const longitude = Number(facility?.longitude);
+  return Number.isFinite(latitude)
+    && Number.isFinite(longitude)
+    && latitude >= -90
+    && latitude <= 90
+    && longitude >= -180
+    && longitude <= 180;
+}
+
+function isFacilityActive(facility) {
+  return facility?.isActive !== false;
+}
+
+function formatCoordinatePair(facility) {
+  if (!hasValidCoordinatePair(facility)) return "Chưa có tọa độ hợp lệ";
+  return `${Number(facility.latitude).toFixed(5)}, ${Number(facility.longitude).toFixed(5)}`;
+}
+
+function getFacilityDepartmentIds(facility, facilityDepartments) {
+  const directIds = Array.isArray(facility?.departmentIds) ? facility.departmentIds : [];
+  const nestedIds = Array.isArray(facility?.departments)
+    ? facility.departments.map((department) => department.departmentId ?? department.id)
+    : [];
+  const linkedIds = facilityDepartments
+    .filter((item) => item.facilityId === facility?.id)
+    .map((item) => item.departmentId);
+
+  return Array.from(new Set([...directIds, ...nestedIds, ...linkedIds].filter(Boolean)));
+}
+
 function formatRoles(roles) {
   return roles.length ? roles.join(", ") : "admin";
 }
@@ -226,6 +270,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
   const [facilityForm, setFacilityForm] = useState(EMPTY_FACILITY);
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
+  const [editingFacilityId, setEditingFacilityId] = useState("");
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
   const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
@@ -1097,7 +1142,52 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     }));
   }
 
-  async function handleCreateFacility(event) {
+  function startEditFacility(facility) {
+    setEditingFacilityId(facility.id);
+    setFacilityMessage(null);
+    setFacilityForm({
+      facilityName: facility.facilityName ?? "",
+      address: facility.address ?? "",
+      latitude: facility.latitude ?? "",
+      longitude: facility.longitude ?? "",
+      phone: facility.phone ?? "",
+      website: facility.website ?? "",
+      openingHours: facility.openingHours ?? "",
+      facilityType: facility.facilityType ?? "",
+      isActive: facility.isActive ?? true,
+      departmentIds: getFacilityDepartmentIds(facility, facilityDepartments),
+    });
+    openSection("facilities");
+  }
+
+  function resetFacilityForm() {
+    setEditingFacilityId("");
+    setFacilityForm(EMPTY_FACILITY);
+  }
+
+  function buildFacilityPayload() {
+    const latitude = parseOptionalCoordinate(facilityForm.latitude, -90, 90);
+    const longitude = parseOptionalCoordinate(facilityForm.longitude, -180, 180);
+
+    if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+      throw new Error("Tọa độ không hợp lệ. Vĩ độ phải từ -90 đến 90, kinh độ phải từ -180 đến 180.");
+    }
+
+    return {
+      facilityName: facilityForm.facilityName.trim(),
+      address: facilityForm.address.trim(),
+      latitude,
+      longitude,
+      phone: facilityForm.phone.trim() || null,
+      website: facilityForm.website.trim() || null,
+      openingHours: facilityForm.openingHours.trim() || null,
+      facilityType: facilityForm.facilityType.trim() || null,
+      isActive: Boolean(facilityForm.isActive),
+      departmentIds: facilityForm.departmentIds,
+    };
+  }
+
+  async function handleSaveFacility(event) {
     event.preventDefault();
     setFacilityMessage(null);
 
@@ -1111,33 +1201,67 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
     setSavingFacility(true);
     try {
-      const payload = {
-        facilityName: facilityForm.facilityName.trim(),
-        address: facilityForm.address.trim(),
-        phone: facilityForm.phone.trim() || null,
-        website: facilityForm.website.trim() || null,
-        openingHours: facilityForm.openingHours.trim() || null,
-        facilityType: facilityForm.facilityType.trim() || null,
-        isActive: true,
-        departmentIds: facilityForm.departmentIds,
-      };
-      const response = await medicalFacilitiesApi.create(payload);
+      const payload = buildFacilityPayload();
+      const response = editingFacilityId
+        ? await medicalFacilitiesApi.update(editingFacilityId, payload)
+        : await medicalFacilitiesApi.create(payload);
       showToast({
         type: "success",
-        title: "Đã tạo cơ sở y tế",
-        message: "Chuyên khoa đã sẵn sàng để chọn khi thêm bác sĩ.",
+        title: editingFacilityId ? "Đã cập nhật cơ sở y tế" : "Đã tạo cơ sở y tế",
+        message: "Dữ liệu cơ sở y tế đã được đồng bộ với backend.",
       });
-      setFacilityForm(EMPTY_FACILITY);
+      resetFacilityForm();
       await loadFacilities();
       setFacilityMessage({
         type: "success",
-        text: response.message || "Đã tạo cơ sở y tế và liên kết chuyên khoa.",
+        text: response.message || (editingFacilityId ? "Đã cập nhật cơ sở y tế." : "Đã tạo cơ sở y tế và liên kết chuyên khoa."),
       });
     } catch (error) {
       setFacilityMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không tạo được cơ sở y tế", message: error.message });
+      showToast({ type: "error", title: "Không lưu được cơ sở y tế", message: error.message });
     } finally {
       setSavingFacility(false);
+    }
+  }
+
+  async function handleToggleFacilityStatus(facility) {
+    setFacilityMessage(null);
+    try {
+      const nextStatus = !isFacilityActive(facility);
+      const response = await medicalFacilitiesApi.setStatus(facility.id, nextStatus);
+      const updatedFacility = response.data ?? { ...facility, isActive: nextStatus };
+      setFacilities((current) => current.map((item) => (item.id === facility.id ? updatedFacility : item)));
+      showToast({
+        type: "success",
+        title: updatedFacility.isActive ? "Đã bật cơ sở y tế" : "Đã tắt cơ sở y tế",
+        message: response.message || "Trạng thái cơ sở y tế đã được cập nhật.",
+      });
+      await loadFacilities();
+    } catch (error) {
+      setFacilityMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không đổi được trạng thái cơ sở y tế", message: error.message });
+    }
+  }
+
+  async function handleDeleteFacility(facility) {
+    const confirmed = await confirmAction({
+      title: "Xóa cơ sở y tế?",
+      message: `${facility.facilityName || "Cơ sở này"} sẽ bị xóa khỏi danh sách quản trị. Cơ sở đang được liên kết với bác sĩ hoặc review có thể không xóa được theo quy tắc backend.`,
+      confirmLabel: "Xóa cơ sở",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    setFacilityMessage(null);
+    try {
+      const response = await medicalFacilitiesApi.remove(facility.id);
+      setFacilities((current) => current.filter((item) => item.id !== facility.id));
+      showToast({ type: "success", title: "Đã xóa cơ sở y tế", message: response.message || "Danh sách cơ sở y tế đã được cập nhật." });
+      if (editingFacilityId === facility.id) resetFacilityForm();
+      await loadFacilities();
+    } catch (error) {
+      setFacilityMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không xóa được cơ sở y tế", message: error.message });
     }
   }
 
@@ -1894,11 +2018,25 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                             <div>
                               <strong>{facility.facilityName || "Chưa đặt tên"}</strong>
                               <span>{facility.address || "Chưa có địa chỉ."}</span>
+                              <small>{formatCoordinatePair(facility)}</small>
                               <small>
                                 {linkedDepartments.length
                                   ? `Chuyên khoa: ${linkedDepartments.join(", ")}`
                                   : "Chưa liên kết chuyên khoa."}
                               </small>
+                            </div>
+                            <div className="record-actions">
+                              <Badge tone={isFacilityActive(facility) ? "success" : "warning"}>
+                                {isFacilityActive(facility) ? "Đang hoạt động" : "Đang tắt"}
+                              </Badge>
+                              <Badge tone={hasValidCoordinatePair(facility) ? "success" : "warning"}>
+                                {hasValidCoordinatePair(facility) ? "Đủ dữ liệu bản đồ" : "Thiếu tọa độ"}
+                              </Badge>
+                              <button className="btn btn-ghost btn-small" type="button" onClick={() => startEditFacility(facility)}>Sửa</button>
+                              <button className="btn btn-ghost btn-small" type="button" onClick={() => handleToggleFacilityStatus(facility)}>
+                                {isFacilityActive(facility) ? "Tắt" : "Bật"}
+                              </button>
+                              <button className="btn btn-dark btn-small" type="button" onClick={() => handleDeleteFacility(facility)}>Xóa</button>
                             </div>
                           </article>
                         );
@@ -1907,12 +2045,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                   )}
                 </div>
 
-                <form className="admin-panel clean-form" onSubmit={handleCreateFacility}>
+                <form className="admin-panel clean-form" onSubmit={handleSaveFacility}>
                   <div className="panel-title-row">
                     <div>
-                      <p className="eyebrow">Create</p>
-                      <h2>Tạo cơ sở y tế</h2>
+                      <p className="eyebrow">{editingFacilityId ? "Update" : "Create"}</p>
+                      <h2>{editingFacilityId ? "Cập nhật cơ sở y tế" : "Tạo cơ sở y tế"}</h2>
                     </div>
+                    {editingFacilityId && <button className="btn btn-ghost btn-small" type="button" onClick={resetFacilityForm}>Hủy sửa</button>}
                   </div>
                   <Field label="Tên cơ sở y tế">
                     <input
@@ -1930,6 +2069,30 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                     />
                   </Field>
                   <div className="clean-form-grid">
+                    <Field label="Vĩ độ">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="any"
+                        min="-90"
+                        max="90"
+                        value={facilityForm.latitude}
+                        onChange={(event) => setFacilityForm({ ...facilityForm, latitude: event.target.value })}
+                        placeholder="10.8491"
+                      />
+                    </Field>
+                    <Field label="Kinh độ">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="any"
+                        min="-180"
+                        max="180"
+                        value={facilityForm.longitude}
+                        onChange={(event) => setFacilityForm({ ...facilityForm, longitude: event.target.value })}
+                        placeholder="106.7715"
+                      />
+                    </Field>
                     <Field label="Số điện thoại">
                       <input
                         type="tel"
@@ -1960,6 +2123,14 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                       />
                     </Field>
                   </div>
+                  <label className="clean-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={facilityForm.isActive}
+                      onChange={(event) => setFacilityForm({ ...facilityForm, isActive: event.target.checked })}
+                    />
+                    <span>Cho phép cơ sở này xuất hiện trong danh sách active sau khi backend lưu trạng thái.</span>
+                  </label>
                   <fieldset className="facility-department-picker">
                     <legend>Chuyên khoa tại cơ sở</legend>
                     <p>Chọn ít nhất một chuyên khoa. Đây là dữ liệu form thêm bác sĩ sử dụng.</p>
@@ -1985,7 +2156,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                     type="submit"
                     disabled={savingFacility || departments.length === 0}
                   >
-                    {savingFacility ? "Đang tạo..." : "Tạo cơ sở và liên kết chuyên khoa"}
+                    {savingFacility ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật cơ sở" : "Tạo cơ sở và liên kết chuyên khoa"}
                   </button>
                 </form>
               </section>
