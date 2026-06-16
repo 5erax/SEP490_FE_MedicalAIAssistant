@@ -96,11 +96,12 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
 
   await page.goto("/symptom", { waitUntil: "domcontentloaded" });
   await page.locator("textarea").first().fill("Đau ngực nhẹ");
-  await page.getByRole("button", { name: "Bắt đầu chẩn đoán" }).click();
+  await page.getByRole("button", { name: "Bắt đầu sàng lọc" }).click();
 
   await expect(page.getByText("Bạn có đau ngực khi gắng sức không?")).toBeVisible();
+  await expect(page.locator(".question-card")).toBeFocused();
   await page.getByLabel("Có").check();
-  await page.getByRole("button", { name: "Xem kết quả chẩn đoán" }).click();
+  await page.getByRole("button", { name: "Xem nhận định tham khảo" }).click();
 
   await expect(page.getByText("Đau thắt ngực", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Tim mạch", { exact: true })).toBeVisible();

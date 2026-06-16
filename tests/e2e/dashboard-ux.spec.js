@@ -112,6 +112,7 @@ test.describe("patient specialty intake", () => {
 
     await submit.click();
     await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.locator(".studio-diagnosis-panel")).toBeFocused();
     await expect(page.getByText("Bạn có sốt trên 38 độ không?")).toBeVisible();
 
     await page.getByLabel("Có").check();

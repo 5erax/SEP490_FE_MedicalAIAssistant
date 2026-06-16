@@ -154,8 +154,40 @@ function Field({ label, children }) {
   );
 }
 
-function statusLabel(status) {
-  return Number(status) === 1 ? "Đã duyệt" : "Chờ duyệt";
+const APPROVED_USER_STATUSES = new Set(["1", "active", "approved", "confirmed", "enabled", "verified"]);
+const PENDING_USER_STATUSES = new Set(["0", "pending", "pendingapproval", "pending_approval", "awaitingapproval", "unapproved", "unconfirmed"]);
+
+function normalizeStatusText(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
+}
+
+function getUserStatusText(user) {
+  return normalizeStatusText(
+    user?.statusName
+      ?? user?.accountStatus
+      ?? user?.approvalStatus
+      ?? user?.status,
+  );
+}
+
+function isApprovedUser(user) {
+  const status = getUserStatusText(user);
+  if (PENDING_USER_STATUSES.has(status)) return false;
+  if (APPROVED_USER_STATUSES.has(status)) return true;
+  if (Number(user?.status) === 1) return true;
+  if (user?.isApproved === true || user?.approved === true) return true;
+  return user?.isActive === true && status !== "";
+}
+
+function isPendingApprovalUser(user) {
+  return !user?.isDeleted && !isApprovedUser(user);
+}
+
+function statusLabel(user) {
+  return isApprovedUser(user) ? "Đã duyệt" : "Chờ duyệt";
 }
 
 function parseOptionalCoordinate(value, minimum, maximum) {
@@ -315,9 +347,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     navigate(getAdminSectionPath(section));
   }
 
-  const pendingApprovalUsers = useMemo(() => {
-    return users.filter((user) => Number(user.status) !== 1 && !user.isDeleted);
-  }, [users]);
+  const pendingApprovalUsers = useMemo(() => users.filter(isPendingApprovalUser), [users]);
 
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -1309,7 +1339,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       header: "Trạng thái",
       render: (item) => (
         <div className="admin-badge-stack">
-          <Badge tone={Number(item.status) === 1 ? "success" : "warning"}>{statusLabel(item.status)}</Badge>
+          <Badge tone={isApprovedUser(item) ? "success" : "warning"}>{statusLabel(item)}</Badge>
           <Badge tone={item.isDeleted ? "danger" : "info"}>{item.isDeleted ? "Đã xóa" : "Hoạt động"}</Badge>
         </div>
       ),
@@ -1975,7 +2005,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
 
             {activeSection === "facilities" && (
-              <section className="admin-grid">
+              <section className="admin-grid facility-admin-grid">
                 <div className="admin-panel">
                   <div className="panel-title-row">
                     <div>
@@ -2014,8 +2044,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                           .map((item) => item.departmentName)
                           .filter(Boolean);
                         return (
-                          <article className="admin-user-row" key={facility.id}>
-                            <div>
+                          <article className="admin-user-row facility-admin-row" key={facility.id}>
+                            <div className="facility-admin-info">
                               <strong>{facility.facilityName || "Chưa đặt tên"}</strong>
                               <span>{facility.address || "Chưa có địa chỉ."}</span>
                               <small>{formatCoordinatePair(facility)}</small>

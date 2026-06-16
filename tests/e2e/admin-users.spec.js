@@ -84,3 +84,84 @@ test("admin retries a failed user list and receives an empty state", async ({ pa
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   expect(userRequestCount).toBe(3);
 });
+
+test("admin pending queue hides accounts already approved by backend", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      email: "admin@example.com",
+      roles: ["Admin"],
+    }));
+  }, ADMIN_TOKEN);
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname;
+
+    if (pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (pathname === "/api/users") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items: [
+              {
+                identityId: "approved-1",
+                displayName: "Approved String",
+                email: "approved-string@example.com",
+                status: "approved",
+                statusName: "Active",
+                isActive: true,
+                isDeleted: false,
+              },
+              {
+                identityId: "approved-2",
+                displayName: "Approved Number",
+                email: "approved-number@example.com",
+                status: 1,
+                isActive: true,
+                isDeleted: false,
+              },
+              {
+                identityId: "pending-1",
+                displayName: "Pending Doctor",
+                email: "pending-doctor@example.com",
+                status: "pending",
+                isActive: true,
+                isDeleted: false,
+              },
+            ],
+            pageNumber: 1,
+            pageSize: 10,
+            totalCount: 3,
+            totalPages: 1,
+          },
+        }),
+      });
+    }
+
+    const pagedPaths = ["/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
+    const data = pagedPaths.includes(pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto("/app/admin/users", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("pending-doctor@example.com", { exact: true })).toBeVisible();
+  await expect(page.getByText("approved-string@example.com", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("approved-number@example.com", { exact: true })).toHaveCount(0);
+});
