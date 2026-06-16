@@ -12,6 +12,7 @@ Tài liệu liên quan:
 4. [Checklist nhiệm vụ frontend](./task-checklist.md)
 5. [Kế hoạch khôi phục bản đồ](./map-recovery-plan.md)
 6. [Frontend delivery backlog](./frontend-delivery-backlog.md)
+7. [Frontend web-scale checklist](./frontend-web-scale-checklist.md)
 
 ## 1. Đánh giá cấu trúc hiện tại
 

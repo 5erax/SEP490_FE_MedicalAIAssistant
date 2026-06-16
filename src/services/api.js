@@ -17,6 +17,7 @@ export { doctorsApi } from "./doctorService";
 export { doctorInvitationsApi } from "./doctorInvitationService";
 export { feedbackReviewsApi } from "./feedbackReviewService";
 export { patientProfilesApi } from "./patientProfileService";
+export { clinicalQuestionsApi } from "./clinicalQuestionService";
 export { symptomAnalysisApi } from "./symptomAnalysisService";
 export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
 export { aiConfigsApi } from "./aiConfigService";

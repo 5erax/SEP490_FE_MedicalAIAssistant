@@ -349,6 +349,33 @@
   box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
 }
 
+.admin-operator .clean-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  border: 1px solid rgba(16, 20, 17, 0.12);
+  border-radius: 12px;
+  background: #fbfcf7;
+  padding: 11px 12px;
+  color: rgba(16, 20, 17, 0.68);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.admin-operator .clean-checkbox input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: #0c5f5e;
+}
+
+.admin-operator .clean-checkbox:focus-within {
+  border-color: rgba(16, 20, 17, 0.72);
+  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
+}
+
 .admin-operator .admin-shell {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);

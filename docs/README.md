@@ -35,6 +35,7 @@ Thư mục [frontend-architecture](./frontend-architecture/README.md) mô tả:
 - Chiến lược CSS và design system.
 - Kế hoạch migration từng phase.
 - Backlog giao việc frontend theo ưu tiên, phụ thuộc và tiêu chí nghiệm thu.
+- Checklist frontend chuẩn web lớn và ma trận tận dụng API backend.
 
 ## 4. UI/UX
 

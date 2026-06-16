@@ -11,6 +11,7 @@ const DOCTOR_INVITATIONS_BASE = "/api/doctor-invitations";
 const ADMIN_DOCTOR_INVITATIONS_BASE = "/api/admin/doctor-invitations";
 const PATIENT_PROFILES_BASE = "/api/patient-profiles";
 const FEEDBACK_REVIEWS_BASE = "/api/feedback-reviews";
+const CLINICAL_QUESTIONS_BASE = "/api/clinical-questions";
 const SYMPTOM_ANALYSIS_BASE = "/api/symptom-analysis";
 const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
 const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
@@ -65,6 +66,11 @@ export const ENDPOINTS = {
     BY_ID: (id) => byId(FEEDBACK_REVIEWS_BASE, id),
     STATUS: (id) => status(FEEDBACK_REVIEWS_BASE, id),
     BY_FACILITY: (facilityId) => `${FEEDBACK_REVIEWS_BASE}/facility/${facilityId}`,
+  },
+  CLINICAL_QUESTIONS: {
+    BASE: CLINICAL_QUESTIONS_BASE,
+    BY_ID: (id) => byId(CLINICAL_QUESTIONS_BASE, id),
+    BULK: `${CLINICAL_QUESTIONS_BASE}/bulk`,
   },
   SYMPTOM_ANALYSIS: {
     ANALYZE: `${SYMPTOM_ANALYSIS_BASE}/analyze`,

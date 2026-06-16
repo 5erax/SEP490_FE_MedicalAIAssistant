@@ -2,21 +2,28 @@ import { Component, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { navigate } from "../router/navigation";
-import { feedbackReviewsApi, getStoredAuth, medicalFacilitiesApi } from "../services/api";
+import {
+  facilityDepartmentsApi,
+  feedbackReviewsApi,
+  getStoredAuth,
+  medicalDepartmentsApi,
+  medicalFacilitiesApi,
+} from "../services/api";
 
 const FILTERS = [
   ["all", "Tất cả"],
-  ["Hospital", "Bệnh viện"],
-  ["Clinic", "Phòng khám"],
-  ["Pharmacy", "Nhà thuốc"],
-  ["Emergency", "Cấp cứu"],
+  ["hospital", "Bệnh viện"],
+  ["clinic", "Phòng khám"],
+  ["pharmacy", "Nhà thuốc"],
+  ["emergency", "Cấp cứu"],
 ];
 
 const TYPE_LABELS = {
-  Hospital: "Bệnh viện",
-  Clinic: "Phòng khám",
-  Pharmacy: "Nhà thuốc",
-  Emergency: "Cấp cứu",
+  hospital: "Bệnh viện",
+  clinic: "Phòng khám",
+  pharmacy: "Nhà thuốc",
+  emergency: "Cấp cứu",
+  other: "Cơ sở y tế",
 };
 
 const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
@@ -28,6 +35,28 @@ function coordinateOrNull(value, minimum, maximum) {
   return Number.isFinite(coordinate) && coordinate >= minimum && coordinate <= maximum
     ? coordinate
     : null;
+}
+
+function normalizeSearchText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeFacilityType(value) {
+  const normalized = normalizeSearchText(value);
+  if (normalized.includes("hospital") || normalized.includes("benh vien")) return "hospital";
+  if (normalized.includes("clinic") || normalized.includes("phong kham")) return "clinic";
+  if (normalized.includes("pharmacy") || normalized.includes("nha thuoc")) return "pharmacy";
+  if (normalized.includes("emergency") || normalized.includes("cap cuu")) return "emergency";
+  return "other";
+}
+
+function normalizePhone(value) {
+  const phone = String(value ?? "").trim();
+  return phone || null;
 }
 
 class MapErrorBoundary extends Component {
@@ -49,13 +78,22 @@ class MapErrorBoundary extends Component {
   }
 }
 
-function normalizeFacility(facility) {
+function getArrayData(response) {
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.data?.items)) return response.data.items;
+  return [];
+}
+
+function normalizeFacility(facility, relationDepartments = []) {
   const id = facility.facilityId ?? facility.id;
   const latitude = coordinateOrNull(facility.latitude, -90, 90);
   const longitude = coordinateOrNull(facility.longitude, -180, 180);
-  const departments = Array.isArray(facility.departments)
+  const embeddedDepartments = Array.isArray(facility.departments)
     ? facility.departments.map((item) => item.departmentName ?? item.name ?? item).filter(Boolean)
     : [];
+  const departments = Array.from(new Set([...embeddedDepartments, ...relationDepartments].filter(Boolean)));
+  const typeKey = normalizeFacilityType(facility.facilityType);
+  const phone = normalizePhone(facility.phone);
 
   return {
     ...facility,
@@ -65,8 +103,12 @@ function normalizeFacility(facility) {
     latitude,
     longitude,
     hasValidCoordinates: latitude !== null && longitude !== null,
-    phone: facility.phone || "Đang cập nhật",
-    facilityType: facility.facilityType || "Hospital",
+    phone,
+    phoneLabel: phone || "Chưa có số điện thoại",
+    website: String(facility.website ?? "").trim(),
+    facilityType: facility.facilityType || TYPE_LABELS[typeKey],
+    facilityTypeKey: typeKey,
+    facilityTypeLabel: TYPE_LABELS[typeKey],
     openingHours: facility.openingHours || "Đang cập nhật",
     departments: departments.length ? departments : ["Đa khoa"],
   };
@@ -103,6 +145,7 @@ function NearbyClinicPage() {
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
+  const hasInitialSearchRef = useRef(Boolean(searchText.trim()));
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -120,18 +163,41 @@ function NearbyClinicPage() {
   useEffect(() => {
     let active = true;
 
-    medicalFacilitiesApi.active()
-      .then((response) => {
+    Promise.allSettled([
+      medicalFacilitiesApi.active(),
+      medicalDepartmentsApi.list(1, 100),
+      facilityDepartmentsApi.active(),
+    ])
+      .then(([facilityResult, departmentResult, relationResult]) => {
         if (!active) return;
-        const rawFacilities = Array.isArray(response.data)
-          ? response.data
-          : Array.isArray(response.data?.items)
-            ? response.data.items
-            : [];
-        const data = rawFacilities.map(normalizeFacility);
+        if (facilityResult.status !== "fulfilled") {
+          throw facilityResult.reason;
+        }
+
+        const rawFacilities = getArrayData(facilityResult.value);
+        const departments = departmentResult.status === "fulfilled" ? getArrayData(departmentResult.value) : [];
+        const departmentNamesById = new globalThis.Map(
+          departments
+            .map((department) => [department.id, department.departmentName || department.name])
+            .filter(([id, name]) => id && name),
+        );
+        const relations = relationResult.status === "fulfilled" ? getArrayData(relationResult.value) : [];
+        const relationDepartmentsByFacility = relations.reduce((map, relation) => {
+          const facilityId = relation.facilityId;
+          const departmentName = relation.departmentName || departmentNamesById.get(relation.departmentId);
+          if (!facilityId || !departmentName) return map;
+          const names = map.get(facilityId) ?? [];
+          names.push(departmentName);
+          map.set(facilityId, names);
+          return map;
+        }, new globalThis.Map());
+        const data = rawFacilities.map((facility) => {
+          const facilityId = facility.facilityId ?? facility.id;
+          return normalizeFacility(facility, relationDepartmentsByFacility.get(facilityId) ?? []);
+        });
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
-        setSelectedFacility(data[0] ?? null);
+        setSelectedFacility(hasInitialSearchRef.current ? null : (data[0] ?? null));
         setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
       })
       .catch((error) => {
@@ -171,10 +237,18 @@ function NearbyClinicPage() {
   }, [selectedFacility?.facilityId]);
 
   const filteredFacilities = useMemo(() => {
-    const normalized = debouncedSearch.trim().toLowerCase();
+    const normalized = normalizeSearchText(debouncedSearch);
     return facilities.filter((facility) => {
-      const matchSearch = !normalized || facility.facilityName.toLowerCase().includes(normalized) || facility.address.toLowerCase().includes(normalized);
-      const matchFilter = activeFilter === "all" || facility.facilityType.toLowerCase() === activeFilter.toLowerCase();
+      const searchable = [
+        facility.facilityName,
+        facility.address,
+        facility.facilityType,
+        facility.facilityTypeLabel,
+        facility.openingHours,
+        ...facility.departments,
+      ].map(normalizeSearchText);
+      const matchSearch = !normalized || searchable.some((value) => value.includes(normalized));
+      const matchFilter = activeFilter === "all" || facility.facilityTypeKey === activeFilter;
       return matchSearch && matchFilter;
     });
   }, [activeFilter, debouncedSearch, facilities]);
@@ -183,11 +257,26 @@ function NearbyClinicPage() {
     () => filteredFacilities.filter((facility) => facility.hasValidCoordinates),
     [filteredFacilities],
   );
+  const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
 
   const prefersReducedMotion = () => (
     document.documentElement.dataset.motion === "reduce"
     || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
   );
+
+  const handleSearchChange = (event) => {
+    setSearchText(event.target.value);
+    setSelectedFacility(null);
+    setReviews([]);
+    setReviewsLoading(false);
+  };
+
+  const handleFilterChange = (value) => {
+    setActiveFilter(value);
+    setSelectedFacility(null);
+    setReviews([]);
+    setReviewsLoading(false);
+  };
 
   const handleCardClick = (facility) => {
     setReviewsLoading(true);
@@ -230,6 +319,11 @@ function NearbyClinicPage() {
   const openDirections = (facility) => {
     if (!facility.hasValidCoordinates) return;
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`, "_blank", "noopener,noreferrer");
+  };
+
+  const callFacility = (facility) => {
+    if (!facility.phone) return;
+    window.location.href = `tel:${facility.phone.replaceAll(" ", "")}`;
   };
 
   const handleMapError = () => {
@@ -286,12 +380,12 @@ function NearbyClinicPage() {
             name="search"
             type="search"
             value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
+            onChange={handleSearchChange}
             placeholder="Tìm tên bệnh viện, phòng khám…"
             autoComplete="off"
           />
           {searchText && (
-            <button type="button" aria-label="Xóa tìm kiếm" onClick={() => setSearchText("")}>×</button>
+            <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setSearchText(""); setSelectedFacility(null); }}>×</button>
           )}
         </div>
 
@@ -301,7 +395,7 @@ function NearbyClinicPage() {
               key={value}
               type="button"
               className={activeFilter === value ? "active" : ""}
-              onClick={() => setActiveFilter(value)}
+              onClick={() => handleFilterChange(value)}
             >
               {label}
             </button>
@@ -310,6 +404,11 @@ function NearbyClinicPage() {
 
         <p className="result-count">{loadingFacilities ? "Đang đồng bộ cơ sở y tế..." : `Tìm thấy ${filteredFacilities.length} cơ sở`}</p>
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
+        {hasActiveFacilitiesWithoutMapData && (
+          <div className="sidebar-note">
+            Backend đã có cơ sở active nhưng chưa có tọa độ hợp lệ. Admin cần cập nhật vĩ độ và kinh độ để bản đồ hiển thị marker.
+          </div>
+        )}
 
         <section
           className="facility-list-panel"
@@ -329,10 +428,11 @@ function NearbyClinicPage() {
             >
               <div className="facility-top">
                 <strong>{facility.facilityName}</strong>
-                <span className={`type-badge ${facility.facilityType.toLowerCase()}`}>{TYPE_LABELS[facility.facilityType]}</span>
+                <span className={`type-badge ${facility.facilityTypeKey}`}>{facility.facilityTypeLabel}</span>
               </div>
               <p>⌖ {facility.address}</p>
               <p>◷ {facility.openingHours}</p>
+              <p>Liên hệ: {facility.phoneLabel}</p>
               {!facility.hasValidCoordinates && (
                 <p className="coordinate-notice">Chưa có vị trí chính xác trên bản đồ.</p>
               )}
@@ -351,7 +451,17 @@ function NearbyClinicPage() {
                 {facility.hasValidCoordinates ? "Hiển thị trên bản đồ" : "Xem thông tin cơ sở"}
               </button>
               <div className="facility-actions">
-                <button type="button" onClick={(event) => { event.stopPropagation(); window.location.href = `tel:${facility.phone.replaceAll(" ", "")}`; }}>Gọi ngay</button>
+                <button
+                  type="button"
+                  disabled={!facility.phone}
+                  title={facility.phone ? undefined : "Cơ sở chưa có số điện thoại"}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    callFacility(facility);
+                  }}
+                >
+                  Gọi ngay
+                </button>
                 <button
                   type="button"
                   disabled={!facility.hasValidCoordinates}
@@ -474,7 +584,10 @@ function NearbyClinicPage() {
                   <div className="popup-card">
                     <strong>{selectedFacility.facilityName}</strong>
                     <span>{selectedFacility.address}</span>
-                    <span>{selectedFacility.phone}</span>
+                    <span>{selectedFacility.phoneLabel}</span>
+                    {selectedFacility.website && (
+                      <a href={selectedFacility.website} target="_blank" rel="noreferrer">Website cơ sở</a>
+                    )}
                     <button type="button" onClick={() => openDirections(selectedFacility)}>Xem chi tiết</button>
                   </div>
                 </Popup>
@@ -538,6 +651,7 @@ const styles = `
 .type-badge.clinic { background: var(--mint); color: #075d66; }
 .type-badge.pharmacy { background: #e5f8d1; color: #365e08; }
 .type-badge.emergency { background: rgba(239,111,97,.16); color: #b42318; }
+.type-badge.other { background: #fff; border: 1px solid var(--line); color: var(--muted); }
 .facility-result-card p { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .facility-result-card .coordinate-notice { color: #9a3412; font-weight: 850; }
 .department-row { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 2px; }
@@ -585,6 +699,7 @@ const styles = `
 .popup-card { min-width: 190px; display: grid; gap: 6px; color: var(--ink); }
 .popup-card strong { font-size: 14px; }
 .popup-card span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.popup-card a { color: var(--teal); font-size: 12px; font-weight: 900; }
 .clinic-popup .maplibregl-popup-content { border: 1.5px solid var(--ink); border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); padding: 12px; }
 .clinic-popup .maplibregl-popup-tip { display: none; }
 .locate-button { position: absolute; right: 18px; bottom: 18px; z-index: 2; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); font-size: 22px; font-weight: 900; }

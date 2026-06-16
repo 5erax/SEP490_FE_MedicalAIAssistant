@@ -66,6 +66,8 @@ test("admin creates a medical facility linked to an existing department", async 
   await page.getByRole("button", { name: "Cơ sở y tế", exact: true }).click();
   await page.getByLabel("Tên cơ sở y tế").fill("Bệnh viện Đa khoa A");
   await page.getByLabel("Địa chỉ").fill("123 Nguyễn Trãi");
+  await page.getByLabel("Vĩ độ").fill("10.8491");
+  await page.getByLabel("Kinh độ").fill("106.7715");
   await page.getByLabel("Tim mạch").check();
   await page.getByRole("button", { name: "Tạo cơ sở và liên kết chuyên khoa" }).click();
 
@@ -73,6 +75,8 @@ test("admin creates a medical facility linked to an existing department", async 
   expect(createdFacility).toEqual({
     facilityName: "Bệnh viện Đa khoa A",
     address: "123 Nguyễn Trãi",
+    latitude: 10.8491,
+    longitude: 106.7715,
     phone: null,
     website: null,
     openingHours: null,
@@ -80,6 +84,151 @@ test("admin creates a medical facility linked to an existing department", async 
     isActive: true,
     departmentIds: [DEPARTMENT_ID],
   });
+});
+
+test("admin updates, toggles, and deletes a medical facility", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      email: "admin@example.com",
+      roles: ["Admin"],
+    }));
+  }, ADMIN_TOKEN);
+
+  let updatePayload = null;
+  let statusPayload = null;
+  let deleteRequested = false;
+  let facilityRecord = {
+    id: "11111111-1111-4111-8111-111111111111",
+    facilityName: "Bệnh viện Đa khoa A",
+    address: "123 Nguyễn Trãi",
+    latitude: 10.8491,
+    longitude: 106.7715,
+    phone: "0281234567",
+    website: "https://hospital.example",
+    openingHours: "07:00 - 17:00",
+    facilityType: "Bệnh viện",
+    isActive: true,
+    departmentIds: [DEPARTMENT_ID],
+  };
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    const pathname = url.pathname;
+
+    if (pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (pathname === "/api/medical-departments") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: [{ id: DEPARTMENT_ID, departmentName: "Tim mạch", description: "" }],
+        }),
+      });
+    }
+
+    if (pathname === "/api/facility-departments/active") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: facilityRecord ? [{
+            id: "33333333-3333-4333-8333-333333333333",
+            facilityId: facilityRecord.id,
+            facilityName: facilityRecord.facilityName,
+            departmentId: DEPARTMENT_ID,
+            departmentName: "Tim mạch",
+          }] : [],
+        }),
+      });
+    }
+
+    if (pathname === "/api/medical-facilities" && method === "GET") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: { items: facilityRecord ? [facilityRecord] : [], pageNumber: 1, pageSize: 100, totalCount: facilityRecord ? 1 : 0, totalPages: 1 },
+        }),
+      });
+    }
+
+    if (pathname === `/api/medical-facilities/${facilityRecord?.id}` && method === "PUT") {
+      updatePayload = route.request().postDataJSON();
+      facilityRecord = { ...facilityRecord, ...updatePayload };
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, message: "Đã cập nhật cơ sở y tế.", data: facilityRecord }),
+      });
+    }
+
+    if (pathname === `/api/medical-facilities/${facilityRecord?.id}/status` && method === "PATCH") {
+      statusPayload = route.request().postDataJSON();
+      facilityRecord = { ...facilityRecord, isActive: statusPayload.isActive };
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, message: "Đã cập nhật trạng thái.", data: facilityRecord }),
+      });
+    }
+
+    if (pathname === `/api/medical-facilities/${facilityRecord?.id}` && method === "DELETE") {
+      deleteRequested = true;
+      facilityRecord = null;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, message: "Đã xóa cơ sở y tế." }),
+      });
+    }
+
+    const pagedPaths = ["/api/users", "/api/doctors", "/api/ai-configs"];
+    const data = pagedPaths.includes(pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto("/app/admin/facilities", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("Đủ dữ liệu bản đồ", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Sửa" }).click();
+  await page.getByLabel("Tên cơ sở y tế").fill("Bệnh viện Đa khoa A - Cơ sở 2");
+  await page.getByLabel("Kinh độ").fill("106.7725");
+  await page.getByRole("button", { name: "Lưu cập nhật cơ sở" }).click();
+
+  await expect(page.getByText("Đã cập nhật cơ sở y tế.", { exact: true })).toBeVisible();
+  expect(updatePayload).toMatchObject({
+    facilityName: "Bệnh viện Đa khoa A - Cơ sở 2",
+    address: "123 Nguyễn Trãi",
+    latitude: 10.8491,
+    longitude: 106.7725,
+    phone: "0281234567",
+    website: "https://hospital.example",
+    openingHours: "07:00 - 17:00",
+    facilityType: "Bệnh viện",
+    isActive: true,
+    departmentIds: [DEPARTMENT_ID],
+  });
+
+  await page.getByRole("button", { name: "Tắt" }).click();
+  await expect(page.getByText("Đang tắt", { exact: true })).toBeVisible();
+  expect(statusPayload).toEqual({ isActive: false });
+
+  await page.getByRole("button", { name: "Xóa" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Xóa cơ sở" }).click();
+  await expect(page.getByText("Chưa có cơ sở y tế", { exact: true })).toBeVisible();
+  expect(deleteRequested).toBe(true);
 });
 
 test("admin retries a failed facility list and receives an empty state", async ({ page }) => {
