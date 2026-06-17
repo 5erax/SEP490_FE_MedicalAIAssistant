@@ -1,34 +1,11 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://accounts.google.com; frame-src https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
-        },
-        {
           "key": "Cross-Origin-Opener-Policy",
           "value": "same-origin-allow-popups"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(self), geolocation=(self), microphone=(), payment=(), usb=()"
         }
       ]
     }
@@ -36,11 +13,10 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "$BACKEND_API_ORIGIN/api/:path*",
-      "env": ["BACKEND_API_ORIGIN"]
+      "destination": "http://52.77.210.243:8080/api/:path*"
     },
     {
-      "source": "/:path((?!api/).*)",
+      "source": "/((?!api/.*).*)",
       "destination": "/index.html"
     }
   ]
