@@ -8,3 +8,9 @@
 .landing-chat-launcher {
   visibility: hidden !important;
 }
+
+.maplibregl-canvas,
+.maplibregl-control-container,
+.map-status-overlay {
+  visibility: hidden !important;
+}

@@ -37,6 +37,8 @@ const DEFAULT_VIEW_STATE = {
   bearing: -10,
 };
 
+const FALLBACK_FACILITY_NOTE = "Danh sách, tọa độ và khoảng cách bên dưới là dữ liệu minh họa tại Hà Nội, không phải kết quả live theo vị trí hiện tại. Hãy dùng bản đồ công cộng hoặc gọi cơ sở y tế để xác nhận trước khi đến.";
+
 const FALLBACK_FACILITIES = [
   {
     id: "bach-mai",
@@ -152,12 +154,13 @@ function PatientMap({ userLocation, viewState, setViewState, onLocate, locating 
       <div className="panel-title-row">
         <div>
           <p className="eyebrow">Bản đồ</p>
-          <h2>Cơ sở y tế gần bạn</h2>
+          <h2>Cơ sở y tế tham khảo</h2>
         </div>
         <button className="btn btn-ghost btn-small" type="button" onClick={onLocate} disabled={locating}>
           {locating ? "Đang định vị..." : "Định vị tôi"}
         </button>
       </div>
+      <div className="api-message warning" role="status">{FALLBACK_FACILITY_NOTE}</div>
 
       <div className="patient-map-live">
         <Map
@@ -230,7 +233,7 @@ function PatientMap({ userLocation, viewState, setViewState, onLocate, locating 
             <span>{index + 1}</span>
             <div>
               <strong>{facility.name}</strong>
-              <small>{facility.department} · {facility.distance}</small>
+              <small>{facility.department} · khoảng cách minh họa {facility.distance}</small>
               <p>{facility.address}</p>
               <em>{facility.status}</em>
             </div>

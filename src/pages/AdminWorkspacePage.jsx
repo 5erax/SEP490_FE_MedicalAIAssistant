@@ -105,6 +105,14 @@ const ADMIN_NAV_ICONS = {
 };
 const ADMIN_NAV_ITEMS = getNavigationModel("admin");
 
+function logAdminApiError(scope, error) {
+  if (!import.meta.env.DEV) return;
+  console.error(scope, {
+    name: error?.name ?? "Error",
+    status: error?.status ?? "unknown",
+  });
+}
+
 function readDoctorViewState(search = window.location.search) {
   const params = new URLSearchParams(search);
   const requestedPageSize = Number(params.get("pageSize"));
@@ -523,7 +531,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             totalPages: data.totalPages ?? 1,
           });
         } else {
-          console.error("Không thể tải danh sách bác sĩ:", doctorResult.reason);
+          logAdminApiError("Doctor list load failed", doctorResult.reason);
           setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
         }
 
@@ -538,7 +546,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             totalPages: data.totalPages ?? 1,
           });
         } else {
-          console.error("AI Config API error:", aiConfigResult.reason);
+          logAdminApiError("AI config list load failed", aiConfigResult.reason);
           setAIConfigLoadError(AI_CONFIG_LOAD_ERROR_MESSAGE);
         }
 
@@ -668,7 +676,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         totalPages: data.totalPages ?? 1,
       });
     } catch (error) {
-      console.error("Doctor API error:", error);
+      logAdminApiError("Doctor API error", error);
       setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
       showToast({
         type: "error",
@@ -695,7 +703,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         totalPages: data.totalPages ?? 1,
       });
     } catch (error) {
-      console.error("AI Config API error:", error);
+      logAdminApiError("AI config API error", error);
       setAIConfigLoadError(AI_CONFIG_LOAD_ERROR_MESSAGE);
       showToast({
         type: "error",
@@ -768,7 +776,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         await loadAIConfigs(1);
       }
     } catch (error) {
-      console.error("AI Config save API error:", error);
+      logAdminApiError("AI config save failed", error);
       setAIConfigMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không lưu được AI config", message: error.message });
     } finally {
@@ -788,7 +796,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         message: response.message || "Trạng thái AI config đã được cập nhật.",
       });
     } catch (error) {
-      console.error("AI Config status API error:", error);
+      logAdminApiError("AI config status update failed", error);
       setAIConfigMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không đổi được trạng thái AI config", message: error.message });
     }
@@ -810,7 +818,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setAIConfigPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
       showToast({ type: "success", title: "Đã xóa AI config", message: response.message || "Danh sách AI config đã được cập nhật." });
     } catch (error) {
-      console.error("AI Config delete API error:", error);
+      logAdminApiError("AI config delete failed", error);
       setAIConfigMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không xóa được AI config", message: error.message });
     }
@@ -971,7 +979,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         await loadDoctors(1);
       }
     } catch (error) {
-      console.error("Doctor save API error:", error);
+      logAdminApiError("Doctor save failed", error);
       setDoctorMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không lưu được bác sĩ", message: error.message });
     } finally {
@@ -991,7 +999,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         message: response.message || "Trạng thái bác sĩ đã được cập nhật.",
       });
     } catch (error) {
-      console.error("Doctor status API error:", error);
+      logAdminApiError("Doctor status update failed", error);
       setDoctorMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không đổi được trạng thái", message: error.message });
     }
@@ -1013,7 +1021,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setDoctorPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
       showToast({ type: "success", title: "Đã xóa bác sĩ", message: response.message || "Danh sách bác sĩ đã được cập nhật." });
     } catch (error) {
-      console.error("Doctor delete API error:", error);
+      logAdminApiError("Doctor delete failed", error);
       setDoctorMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không xóa được bác sĩ", message: error.message });
     }

@@ -44,8 +44,8 @@ nâng cấp trải nghiệm. UI/UX không được tự mở rộng phạm vi ng
 
 ## 5. Chất lượng
 
-Thư mục [quality](./quality/testing-baseline.md) chứa baseline kiểm thử route,
-accessibility, visual và performance.
+Thư mục [quality](./quality/README.md) chứa baseline kiểm thử route,
+accessibility, visual, performance và inventory mock/demo production-sensitive.
 
 ## Quy ước tài liệu
 

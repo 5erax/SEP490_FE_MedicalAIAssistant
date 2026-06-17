@@ -168,6 +168,7 @@ Các file này chỉ được giữ trong thời gian migration và phải luôn
 ## Notes
 
 - Local development sends same-origin `/api/*` requests through the Vite proxy. `VITE_API_BASE_URL` configures the proxy target.
-- Production sends same-origin `/api/*` requests through the Vercel rewrite in `vercel.json`.
+- Production sends same-origin `/api/*` requests through the `vercel.json` rewrite that references `$BACKEND_API_ORIGIN`. Configure that variable for both Preview and Production; a missing or invalid value leaves `/api/*` without a valid backend destination.
+- `apiRequest` normalizes error metadata (`status`, `code`, `details`, `requestId`) and exports `isUnauthorizedError`, `isForbiddenError`, `isAuthError`, and `getUserSafeErrorMessage` for centralized 401/403 handling.
 - AI provider key không được đặt trong Vite/client. Chat và symptom analysis
   production phải đi qua backend API.
