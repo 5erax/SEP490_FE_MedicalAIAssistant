@@ -4,7 +4,6 @@ import { HowItWorksSection, SocialProofSection } from "../components/landing/How
 import { MapSection } from "../components/landing/MapSection";
 import { CtaSection, FaqSection, Footer } from "../components/landing/PricingSection";
 import { Navbar } from "../components/landing/Navbar";
-import { SymptomDemoSection } from "../components/landing/SymptomDemoSection";
 import LandingAIChatbox from "../components/landingChat/LandingAIChatbox";
 
 export default function LandingPage() {
@@ -12,7 +11,6 @@ export default function LandingPage() {
     <main className="landing-page">
       <Navbar />
       <HeroSection />
-      <SymptomDemoSection />
       <MapSection />
       <TickerBar />
       <FeaturesSection />

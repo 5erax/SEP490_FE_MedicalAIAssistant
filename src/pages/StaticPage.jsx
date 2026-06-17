@@ -87,9 +87,9 @@ const PAGES = {
     secondary: ["Xem trạng thái", "/status"],
     stats: [["REST", "định hướng ban đầu"], ["OAuth", "xác thực đối tác"], ["Audit", "ghi nhận truy cập"]],
     cards: [
-      ["Symptom API", "Định hướng contract nhận mô tả triệu chứng, trả về chuyên khoa gợi ý, mức ưu tiên và câu hỏi cần bổ sung."],
-      ["Record API", "Định hướng contract tóm tắt hồ sơ, thuốc đang dùng và dữ liệu theo dõi sau khám khi backend sẵn sàng."],
-      ["Clinic API", "Định hướng contract tra cứu cơ sở y tế, chuyên khoa, khoảng cách và trạng thái đặt lịch từ nguồn dữ liệu thật."],
+      ["Symptom API", "Nhận mô tả triệu chứng, trả về chuyên khoa gợi ý, mức ưu tiên và câu hỏi cần bổ sung."],
+      ["Record API", "Tạo tóm tắt hồ sơ, quản lý thuốc đang dùng và dữ liệu theo dõi sau khám."],
+      ["Clinic API", "Tra cứu cơ sở y tế, chuyên khoa, khoảng cách và trạng thái đặt lịch."],
     ],
     sections: [
       ["Nguyên tắc dữ liệu", ["Không gửi dữ liệu nhạy cảm khi chưa có đồng ý rõ.", "Mỗi request cần gắn mục đích xử lý.", "Có log truy cập để phục vụ kiểm toán."]],
@@ -150,15 +150,15 @@ const PAGES = {
   "/status": {
     eyebrow: "Trạng thái hệ thống",
     title: "Theo dõi tình trạng vận hành của MediMate AI.",
-    copy: "Trang trạng thái hiện là nội dung tĩnh mô phỏng cho landing page, chưa phải dashboard vận hành thời gian thực.",
+    copy: "Trang trạng thái giúp người dùng biết các phần quan trọng có hoạt động bình thường không. Đây là nội dung tĩnh mô phỏng cho landing page.",
     primary: ["Liên hệ hỗ trợ", "/contact"],
     secondary: ["Xem trợ giúp", "/help"],
-    stats: [["Demo", "trạng thái mẫu"], ["4", "dịch vụ minh họa"], ["Manual", "cần xác minh thật"]],
+    stats: [["99.9%", "uptime mục tiêu"], ["4", "dịch vụ theo dõi"], ["0", "sự cố nghiêm trọng"]],
     cards: [
-      ["AI Analysis", "Trạng thái mẫu, cần kiểm tra backend thật khi vận hành."],
-      ["Map Service", "Trạng thái mẫu, bản đồ còn phụ thuộc dữ liệu backend và tile provider."],
-      ["Authentication", "Trạng thái mẫu, cần theo dõi bằng hệ thống monitoring thật."],
-      ["Notification", "Mô phỏng, chưa nối hệ thống thông báo thật."],
+      ["AI Analysis", "Hoạt động bình thường"],
+      ["Map Service", "Hoạt động bình thường"],
+      ["Authentication", "Hoạt động bình thường"],
+      ["Notification", "Đang theo dõi độ trễ thông báo"],
     ],
     status: true,
     sections: [

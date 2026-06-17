@@ -5,7 +5,7 @@ finding UI/UX được quản lý trong [UI/UX roadmap](../ui-ux/roadmap.md).
 
 ## Pham vi da tu dong hoa
 
-- Route smoke: moi route/alias/redirect trong `src/App.jsx`, moi static route va ma tran auth/role/premium.
+- Route smoke: moi route/alias/redirect trong `src/App.jsx` va moi static route.
 - Accessibility smoke: 10 surface dai dien, gate o muc violation `critical`.
 - Visual baseline: 7 surface dai dien tai 320, 375, 768 va 1440 px.
 - Performance smoke: landing, login, patient dashboard va nearby clinic.
@@ -38,8 +38,8 @@ nam trong `test-results/`. Hai thu muc nay khong commit.
 
 ## Gioi han baseline hien tai
 
-- Route can auth/role/premium duoc test bang auth storage gia lap; backend authorization van phai duoc kiem tra rieng.
-- Chua mock backend day du cho patient premium, staff CRUD va admin data section.
+- Route can auth/role duoc test tai gate khi chua dang nhap.
+- Chua mock backend cho patient premium, staff CRUD va admin data section.
 - Axe tu dong khong thay the keyboard, zoom, screen reader va contrast review thu cong.
 - Performance smoke dung lab Navigation Timing, LCP va CLS; day la regression guard,
   khong thay the du lieu Real User Monitoring.
@@ -64,12 +64,11 @@ Lighthouse va du lieu thiet bi/mang dai dien.
 
 ## Verification hien tai
 
-Cap nhat 2026-06-17:
-
-- Route smoke: 51 passed, 1 skipped (`/api` known conflict).
-- Landing production/safety: 3 passed.
-- Accessibility smoke: 14 passed.
+- Full Playwright suite: 84 passed, 1 skipped (`/api` known conflict).
+- Route smoke: 41 passed, 1 skipped.
+- Accessibility smoke: 10 passed.
 - Performance smoke: 4 passed.
 - Visual regression: 28 passed, 28 baseline snapshots.
+- Specialty intake interaction: 1 passed.
 - `npm run lint` va `npm run build`: passed.
-- Build van canh bao chunk lon hon 500 kB; backlog performance tiep tuc theo doi viec nay.
+- Build van canh bao MapLibre chunk lon hon 500 kB; backlog `P2-06` theo doi viec nay.

@@ -1,7 +1,6 @@
 // Keep browser requests same-origin. Vite and Vercel proxy /api to the configured backend.
 const API_BASE_URL = "";
 const AUTH_STORAGE_KEY = "medimate.auth";
-const AUTH_ERROR_STATUSES = new Set([401, 403]);
 
 function buildUrl(path) {
   if (path.startsWith("http")) return path;
@@ -73,32 +72,6 @@ function formatApiErrors(errors) {
       .join(", ");
   }
   return "";
-}
-
-function getRequestId(response, payload) {
-  return response.headers.get("x-request-id")
-    || response.headers.get("x-correlation-id")
-    || payload?.requestId
-    || payload?.traceId
-    || "";
-}
-
-export function isUnauthorizedError(error) {
-  return Number(error?.status) === 401;
-}
-
-export function isForbiddenError(error) {
-  return Number(error?.status) === 403;
-}
-
-export function isAuthError(error) {
-  return AUTH_ERROR_STATUSES.has(Number(error?.status));
-}
-
-export function getUserSafeErrorMessage(error, fallback = "Yêu cầu chưa thể hoàn tất. Vui lòng thử lại sau.") {
-  if (isUnauthorizedError(error)) return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
-  if (isForbiddenError(error)) return "Bạn không có quyền thực hiện thao tác này.";
-  return error?.message || fallback;
 }
 
 export function getStoredAuth() {
@@ -206,11 +179,7 @@ export async function apiRequest(path, options = {}) {
       `YÃªu cáº§u tháº¥t báº¡i vá»›i mÃ£ ${response.status}`;
     const error = new Error(message);
     error.status = response.status;
-    error.code = payload?.code || payload?.errorCode || payload?.type || "";
-    error.details = payload?.errors ?? null;
-    error.requestId = getRequestId(response, payload);
     error.payload = payload;
-    if (auth && isUnauthorizedError(error)) clearStoredAuth();
     throw error;
   }
 

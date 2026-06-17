@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../router/navigation";
-import { webChatbotApi } from "../services/chatbotService";
+import { sendAnthropicMessage } from "../services/anthropicService";
 
 const WELCOME_PROMPTS = [
   "Tôi bị đau đầu và sốt nhẹ 2 ngày",
@@ -11,13 +11,6 @@ const WELCOME_PROMPTS = [
 
 function formatTime(date) {
   return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-}
-
-function getChatbotAnswer(response) {
-  const data = response?.data;
-  if (typeof data === "string") return data;
-
-  return data?.answer || data?.message || response?.answer || response?.message || "";
 }
 
 function ChatbotPage() {
@@ -69,15 +62,33 @@ function ChatbotPage() {
       timestamp: new Date(),
     };
 
-    setMessages((current) => [...current, userMessage]);
+    const history = [...messages, userMessage];
+    setMessages(history);
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsLoading(true);
 
     try {
-      const response = await webChatbotApi.message(text, { auth: true });
+      const apiKey = import.meta.env.VITE_ANTHROPIC_KEY;
+      if (!apiKey) throw new Error("Missing Anthropic key");
 
-      const aiText = getChatbotAnswer(response) || "Xin lỗi, trợ lý chưa có phản hồi phù hợp. Bạn có thể thử lại sau.";
+      const data = await sendAnthropicMessage({
+        apiKey,
+        body: {
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: `Bạn là MediMate AI, trợ lý y khoa thông minh.
+Trả lời bằng tiếng Việt, ngắn gọn, dễ hiểu, thân thiện.
+Khi nói về thuốc hoặc điều trị, luôn khuyên người dùng tham khảo bác sĩ.
+Nếu triệu chứng nghiêm trọng, khuyến nghị đi cấp cứu ngay.`,
+          messages: history.map((message) => ({
+            role: message.role === "assistant" ? "assistant" : "user",
+            content: message.content,
+          })),
+        },
+      });
+
+      const aiText = data.content?.[0]?.text || "Xin lỗi, có lỗi xảy ra.";
       setMessages((current) => [
         ...current,
         {
@@ -124,9 +135,7 @@ function ChatbotPage() {
         </div>
       </header>
 
-      <div className="chatbot-disclaimer">
-        ⚕ Kết quả AI chỉ mang tính tham khảo và không thay thế chẩn đoán y khoa chuyên nghiệp. Nếu đau ngực dữ dội, khó thở, yếu liệt, ngất hoặc chảy máu nhiều, hãy gọi cấp cứu 115 hoặc đến cơ sở y tế gần nhất ngay.
-      </div>
+      <div className="chatbot-disclaimer">⚕ Kết quả AI chỉ mang tính tham khảo và không thay thế chẩn đoán y khoa chuyên nghiệp.</div>
 
       <section className="message-area" aria-live="polite">
         {messages.length === 0 && !isLoading ? (

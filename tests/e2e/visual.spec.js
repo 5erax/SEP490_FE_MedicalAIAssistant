@@ -8,8 +8,6 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const visualStyles = path.join(currentDirectory, "visual-stabilize.css");
 
 test.describe("visual baseline", () => {
-  test.setTimeout(60_000);
-
   for (const route of VISUAL_ROUTES) {
     for (const viewport of VISUAL_VIEWPORTS) {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
