@@ -1,22 +1,51 @@
-const backendApiOrigin = process.env.BACKEND_API_ORIGIN;
+declare const process: {
+  env: Record<string, string | undefined>;
+};
 
-function normalizeBackendOrigin(value) {
-  const origin = value?.trim().replace(/\/+$/, "");
+function normalizeBackendOrigin(value: string | undefined) {
+  const rawValue = value?.trim();
 
-  if (!origin) {
-    throw new Error("Missing BACKEND_API_ORIGIN. Set it in Vercel environment variables.");
+  if (!rawValue) {
+    return "";
   }
 
-  if (!/^https:\/\/[^/]+$/i.test(origin)) {
+  let url: URL;
+
+  try {
+    url = new URL(rawValue);
+  } catch {
+    throw new Error(
+      "BACKEND_API_ORIGIN must be a valid HTTPS origin, for example https://api.example.com.",
+    );
+  }
+
+  if (url.protocol !== "https:" || url.pathname !== "/" || url.search || url.hash) {
     throw new Error(
       "BACKEND_API_ORIGIN must be an HTTPS origin without a path, for example https://api.example.com.",
     );
   }
 
-  return origin;
+  return url.origin;
 }
 
-const backendOrigin = normalizeBackendOrigin(backendApiOrigin);
+const backendOrigin = normalizeBackendOrigin(process.env.BACKEND_API_ORIGIN);
+const apiRewrites = backendOrigin
+  ? [
+      {
+        source: "/api/:path*",
+        destination: `${backendOrigin}/api/:path*`,
+      },
+    ]
+  : [];
+
+const connectSources = [
+  "'self'",
+  ...(backendOrigin ? [backendOrigin] : []),
+  "https://basemaps.cartocdn.com",
+  "https://*.basemaps.cartocdn.com",
+  "https://accounts.google.com",
+].join(" ");
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -27,7 +56,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
-  `connect-src 'self' ${backendOrigin} https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://accounts.google.com`,
+  `connect-src ${connectSources}`,
   "frame-src https://accounts.google.com",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
@@ -62,6 +91,8 @@ const securityHeaders = [
 ];
 
 export const config = {
+  buildCommand: "npm run build",
+  outputDirectory: "dist",
   headers: [
     {
       source: "/(.*)",
@@ -69,10 +100,7 @@ export const config = {
     },
   ],
   rewrites: [
-    {
-      source: "/api/:path*",
-      destination: `${backendOrigin}/api/:path*`,
-    },
+    ...apiRewrites,
     {
       source: "/((?!api/.*).*)",
       destination: "/index.html",

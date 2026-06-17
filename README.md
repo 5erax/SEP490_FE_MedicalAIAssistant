@@ -125,10 +125,10 @@ tại. Endpoint mới phải được khai báo tập trung, không viết trự
 
 Dự án được cấu hình cho Vercel:
 
-- `/api/*` được rewrite đến backend.
+- `/api/*` được rewrite đến backend khi `BACKEND_API_ORIGIN` được cấu hình trong Vercel.
 - Các route SPA được rewrite về `index.html`.
-- `vercel.mjs` đọc `BACKEND_API_ORIGIN` từ Vercel environment variables để tạo rewrite, tránh hardcode backend origin trong source.
-- Security headers/CSP được khai báo trong `vercel.mjs`; khi thêm provider mới cho OAuth, map, font hoặc API, cần cập nhật whitelist CSP tương ứng.
+- `vercel.ts` đọc `BACKEND_API_ORIGIN` từ Vercel environment variables để tạo rewrite, tránh hardcode backend origin trong source.
+- Security headers/CSP được khai báo trong `vercel.ts`; khi thêm provider mới cho OAuth, map, font hoặc API, cần cập nhật whitelist CSP tương ứng.
 - Google OAuth Client ID phải cho phép domain production tương ứng.
 
 Trước khi triển khai:
@@ -139,7 +139,7 @@ npm run build
 npm run test:e2e
 ```
 
-Không nên giữ địa chỉ backend cố định trong source khi chuyển môi trường. Hãy cập nhật `BACKEND_API_ORIGIN` trong cấu hình triển khai và luôn sử dụng HTTPS cho production.
+Không nên giữ địa chỉ backend cố định trong source khi chuyển môi trường. Hãy cập nhật `BACKEND_API_ORIGIN` trong cấu hình triển khai và luôn sử dụng HTTPS cho production. Nếu biến này chưa được cấu hình, Vercel vẫn có thể build frontend nhưng các request `/api/*` sẽ không có rewrite backend.
 
 ## Tài liệu liên quan
 
