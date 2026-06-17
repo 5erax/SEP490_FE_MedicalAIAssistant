@@ -90,7 +90,7 @@ const securityHeaders = [
   },
 ];
 
-export const config = {
+const config = {
   buildCommand: "npm run build",
   outputDirectory: "dist",
   headers: [
@@ -107,3 +107,5 @@ export const config = {
     },
   ],
 };
+
+export default config;
