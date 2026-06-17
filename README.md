@@ -62,12 +62,14 @@ Cập nhật các biến trong `.env.local`:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8080
+BACKEND_API_ORIGIN=https://api.example.com
 VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
 ```
 
 | Biến | Bắt buộc | Mô tả |
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | Có | Địa chỉ backend. Vite chuyển tiếp các request `/api/*` đến địa chỉ này. |
+| `BACKEND_API_ORIGIN` | Khi deploy Vercel | Backend HTTPS origin cho rewrite `/api/*`; khai báo trong Vercel Project Settings, không thêm `/api` và không prefix `VITE_`. |
 | `VITE_GOOGLE_CLIENT_ID` | Khi dùng Google OAuth | Client ID được cấu hình cho domain chạy frontend. |
 
 Không commit khóa API, token, mật khẩu hoặc thông tin xác thực thật vào repository.
@@ -125,6 +127,8 @@ Dự án được cấu hình cho Vercel:
 
 - `/api/*` được rewrite đến backend.
 - Các route SPA được rewrite về `index.html`.
+- `vercel.mjs` đọc `BACKEND_API_ORIGIN` từ Vercel environment variables để tạo rewrite, tránh hardcode backend origin trong source.
+- Security headers/CSP được khai báo trong `vercel.mjs`; khi thêm provider mới cho OAuth, map, font hoặc API, cần cập nhật whitelist CSP tương ứng.
 - Google OAuth Client ID phải cho phép domain production tương ứng.
 
 Trước khi triển khai:
@@ -135,7 +139,7 @@ npm run build
 npm run test:e2e
 ```
 
-Không nên giữ địa chỉ backend cố định trong `vercel.json` khi chuyển môi trường. Hãy cập nhật cấu hình triển khai phù hợp và luôn sử dụng HTTPS cho production.
+Không nên giữ địa chỉ backend cố định trong source khi chuyển môi trường. Hãy cập nhật `BACKEND_API_ORIGIN` trong cấu hình triển khai và luôn sử dụng HTTPS cho production.
 
 ## Tài liệu liên quan
 

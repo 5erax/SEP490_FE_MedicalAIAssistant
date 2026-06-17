@@ -101,6 +101,9 @@ export function SymptomDemoSection() {
               Đăng nhập Freemium
             </a>
           </div>
+          <p className="api-message warning" role="status">
+            Demo chỉ hỗ trợ định hướng thông tin ban đầu, không chẩn đoán bệnh và không thay thế bác sĩ. Nếu có triệu chứng nặng hoặc khẩn cấp, hãy gọi cấp cứu 115 hoặc đến cơ sở y tế gần nhất.
+          </p>
 
           {isReady && (
             <div className="demo-result">

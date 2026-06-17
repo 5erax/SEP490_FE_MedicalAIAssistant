@@ -2,9 +2,13 @@ export {
   apiRequest,
   clearStoredAuth,
   getAccessToken,
+  getUserSafeErrorMessage,
   getStoredAuth,
   hasPremiumAccess,
+  isAuthError,
   isAuthenticated,
+  isForbiddenError,
+  isUnauthorizedError,
   setStoredAuth,
   withPagination,
 } from "./apiClient";
