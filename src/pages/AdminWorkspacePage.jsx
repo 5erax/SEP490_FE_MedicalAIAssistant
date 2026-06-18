@@ -34,6 +34,7 @@ import SubscriptionPlanTable from "../components/adminSubscriptions/Subscription
 import AdminOverviewSection from "../components/adminOverview/AdminOverviewSection";
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
 import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
+import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -1729,67 +1730,20 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
 
             {activeSection === "departments" && (
-              <section className="admin-grid">
-                <div className="admin-panel">
-                  <div className="panel-title-row">
-                    <div>
-                    <p className="eyebrow">Chuyên khoa</p>
-                      <h2>Danh mục chuyên khoa</h2>
-                    </div>
-                    <button className="btn btn-ghost btn-small" type="button" onClick={loadDepartments}>Tải lại</button>
-                  </div>
-                  <ApiMessage message={departmentMessage} />
-                  {departmentsLoading ? (
-                    <p className="muted-text">Đang tải chuyên khoa...</p>
-                  ) : (
-                    <div className="admin-table-list">
-                      {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa.</p>}
-                      {departments.map((department) => (
-                        <article className="admin-user-row" key={department.id}>
-                          <div>
-                            <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-                            <span>{department.description || "Chưa có mô tả."}</span>
-                            <small>{department.id}</small>
-                          </div>
-                          <div className="record-actions">
-                            <button className="btn btn-ghost btn-small" type="button" onClick={() => startEditDepartment(department)}>Sửa</button>
-                            <button className="btn btn-dark btn-small" type="button" onClick={() => handleDeleteDepartment(department.id)}>Xóa</button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <form className="admin-panel clean-form" onSubmit={handleSaveDepartment}>
-                  <div className="panel-title-row">
-                    <div>
-                      <p className="eyebrow">{editingDepartmentId ? "Update" : "Create"}</p>
-                      <h2>{editingDepartmentId ? "Cập nhật chuyên khoa" : "Tạo chuyên khoa"}</h2>
-                    </div>
-                    {editingDepartmentId && <button className="btn btn-ghost btn-small" type="button" onClick={resetDepartmentForm}>Hủy sửa</button>}
-                  </div>
-                  <Field label="Tên chuyên khoa">
-                    <input
-                      value={departmentForm.departmentName}
-                      onChange={(event) => setDepartmentForm({ ...departmentForm, departmentName: event.target.value })}
-                      placeholder="Ví dụ: Tim mạch"
-                      required
-                    />
-                  </Field>
-                  <Field label="Mô tả">
-                    <textarea
-                      rows={6}
-                      value={departmentForm.description}
-                      onChange={(event) => setDepartmentForm({ ...departmentForm, description: event.target.value })}
-                      placeholder="Mô tả chức năng, nhóm triệu chứng thường gặp..."
-                    />
-                  </Field>
-                  <button className="btn btn-primary" type="submit" disabled={savingDepartment}>
-                    {savingDepartment ? "Đang lưu..." : editingDepartmentId ? "Lưu cập nhật" : "Tạo chuyên khoa"}
-                  </button>
-                </form>
-              </section>
+              <AdminDepartmentsSection
+                departments={departments}
+                editingDepartmentId={editingDepartmentId}
+                form={departmentForm}
+                loading={departmentsLoading}
+                message={departmentMessage}
+                saving={savingDepartment}
+                onDelete={handleDeleteDepartment}
+                onEdit={startEditDepartment}
+                onFormChange={(key, value) => setDepartmentForm((current) => ({ ...current, [key]: value }))}
+                onReload={loadDepartments}
+                onReset={resetDepartmentForm}
+                onSubmit={handleSaveDepartment}
+              />
             )}
 
             {activeSection === "facilities" && (

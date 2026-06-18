@@ -319,6 +319,13 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Không đổi validation, route, auth/role gate hoặc CSS contract.
 - [x] Chạy lint, build và regression test liên quan.
 
+### FE-REFACTOR-034: Tách Admin departments section
+
+- [x] Tách danh sách và form chuyên khoa sang component theo domain.
+- [x] Giữ CRUD service, confirmation và state ownership tại page cha.
+- [x] Giữ nguyên selector, route và CSS contract.
+- [x] Chạy lint, build và regression test liên quan.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -353,6 +360,7 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-18 | FE-PROD-020 Vercel CI | Hoàn thành | Thay programmatic config bị Git integration parse sai bằng `vercel.json` tĩnh; giữ backend origin qua `$BACKEND_API_ORIGIN`; giữ SPA fallback và security headers; ignore metadata `.vercel` cục bộ | `npm.cmd run lint`; `npm.cmd run build`; Vercel preview `READY`; kiểm tra `/`, SPA route và response security headers bằng `vercel curl` |
 | 2026-06-19 | FE-REFACTOR-032 | Hoàn thành | Tách overview và users khỏi `AdminWorkspacePage.jsx` thành component theo domain; giữ state, API, mutation, route, selector và CSS contract hiện tại | Baseline: lint/build pass, route 51 passed/1 skipped; sau refactor: lint/build pass; route, accessibility và Admin 76 passed/1 skipped; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-033 | Hoàn thành | Tách form tạo Staff khỏi `AdminWorkspacePage.jsx`; giữ state, payload và submit service ở page cha | `npm.cmd run lint`; `npm.cmd run build`; route và accessibility regression; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-034 | Hoàn thành | Tách danh sách và form CRUD chuyên khoa khỏi `AdminWorkspacePage.jsx`; giữ service, confirmation và state ở page cha | `npm.cmd run lint`; `npm.cmd run build`; route và accessibility regression; `git diff --check` |
 
 
 ## Mẫu cập nhật
