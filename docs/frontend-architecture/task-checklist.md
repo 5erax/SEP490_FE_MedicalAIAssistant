@@ -304,6 +304,14 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Kiểm tra mobile, keyboard, 200% zoom và visual cho menu avatar/onboarding/diagnosis.
 - [x] Rà copy y tế để không hứa hẹn chẩn đoán chắc chắn hoặc thay thế bác sĩ.
 
+### FE-REFACTOR-032: Tách Admin overview và users section
+
+- [x] Xác nhận baseline lint, build và route trước khi refactor.
+- [x] Tách Admin overview sang component riêng, giữ nguyên số liệu, CSS class và điều hướng section.
+- [x] Tách Admin users sang component riêng, giữ API, mutation và confirmation ở page cha.
+- [x] Không đổi route, backend contract, auth/role gate hoặc giao diện.
+- [x] Chạy lint, build và các regression test Admin liên quan.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -335,6 +343,7 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-16 | FE-POLISH-029 | Hoàn thành | Đưa Hồ sơ vào navigation chính; giữ giao dịch/cài đặt trong menu avatar; thêm recovery action cho lỗi/empty/result của tư vấn chuyên khoa; hạ copy y tế từ chẩn đoán chắc chắn sang nhận định tham khảo; xác nhận các capability demo đã được gắn nhãn | `npm.cmd run lint`; `npm.cmd run build`; dashboard UX/navigation/doctor-invitation/routes; `git diff --check` |
 | 2026-06-17 | FE-PROD-020, P0/P1 hardening | Hoàn thành | Loại AI provider trực tiếp khỏi client; chuyển chatbot qua API backend; chuẩn hóa env/Vercel rewrite và security headers; thêm centralized API auth error helpers; lập mock/demo inventory; render lại `/#demo` với safety note; gắn nhãn demo/fallback cho records, medication và patient map; bổ sung route role/premium guard và production safety regression | `npm.cmd run lint`; `npm.cmd run build`; route 51 passed, 1 skipped; landing production 3 passed; accessibility 14 passed; performance 4 passed; visual 28 passed; `git diff --check` |
 | 2026-06-18 | FE-PROD-020 Vercel CI | Hoàn thành | Thay programmatic config bị Git integration parse sai bằng `vercel.json` tĩnh; giữ backend origin qua `$BACKEND_API_ORIGIN`; giữ SPA fallback và security headers; ignore metadata `.vercel` cục bộ | `npm.cmd run lint`; `npm.cmd run build`; Vercel preview `READY`; kiểm tra `/`, SPA route và response security headers bằng `vercel curl` |
+| 2026-06-19 | FE-REFACTOR-032 | Hoàn thành | Tách overview và users khỏi `AdminWorkspacePage.jsx` thành component theo domain; giữ state, API, mutation, route, selector và CSS contract hiện tại | Baseline: lint/build pass, route 51 passed/1 skipped; sau refactor: lint/build pass; route, accessibility và Admin 76 passed/1 skipped; `git diff --check` |
 
 ## Mẫu cập nhật
 
