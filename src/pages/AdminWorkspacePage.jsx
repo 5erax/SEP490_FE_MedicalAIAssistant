@@ -6,7 +6,6 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
-  Cpu,
   CreditCard,
   LayoutDashboard,
   RefreshCw,
@@ -26,8 +25,7 @@ import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModa
 import { navigate } from "../router/navigation";
 import { getAdminSectionPath, getNavigationModel } from "../router/routes";
 import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
-import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
-import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
+import AdminAIConfigsSection from "../components/adminAIConfigs/AdminAIConfigsSection";
 import { getEnvironment } from "../components/adminAIConfigs/aiConfigUtils";
 import SubscriptionPlanFormModal from "../components/adminSubscriptions/SubscriptionPlanFormModal";
 import AdminSubscriptionsSection from "../components/adminSubscriptions/AdminSubscriptionsSection";
@@ -1557,104 +1555,30 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
 
             {activeSection === "ai-configs" && (
-              <section className="admin-panel ai-config-admin-panel">
-                <div className="panel-title-row ai-config-section-heading">
-                  <div>
-                    <p className="eyebrow">AI Platform Console</p>
-                    <h2>AI Configuration Management</h2>
-                    <p className="muted-text">Quản lý prompt, model và hành vi AI trong hệ thống MediMate AI.</p>
-                  </div>
-                  <button className="btn btn-ghost btn-small" type="button" onClick={() => loadAIConfigs()}>
-                    <RefreshCw size={15} /> Sync AI Settings
-                  </button>
-                </div>
-
-                <section className="ai-config-kpi-grid">
-                  <article>
-                    <span><BrainCircuit size={16} /></span>
-                    <div>
-                      <small>Total AI Configs</small>
-                      <strong>{aiConfigPageInfo.totalCount}</strong>
-                    </div>
-                  </article>
-                  <article>
-                    <span><Cpu size={16} /></span>
-                    <div>
-                      <small>Active Models</small>
-                      <strong>{activeAIConfigs}</strong>
-                    </div>
-                  </article>
-                  <article>
-                    <span><Activity size={16} /></span>
-                    <div>
-                      <small>Disabled Configs</small>
-                      <strong>{disabledAIConfigs}</strong>
-                    </div>
-                  </article>
-                  <article>
-                    <span><ClipboardList size={16} /></span>
-                    <div>
-                      <small>AI Features Running</small>
-                      <strong>{runningAIFeatures}</strong>
-                    </div>
-                  </article>
-                </section>
-
-                <ApiMessage message={aiConfigMessage} />
-
-                <AIConfigToolbar
-                  filters={aiConfigFilters}
-                  taskTypes={aiTaskTypes}
-                  models={aiModels}
-                  environments={aiEnvironments}
-                  pageSize={aiConfigPageInfo.pageSize}
-                  onChange={updateAIConfigFilter}
-                  onPageSizeChange={handleAIConfigPageSizeChange}
-                  onSubmit={handleAIConfigFilterSubmit}
-                  onReset={resetAIConfigFilters}
-                  onCreate={openCreateAIConfig}
-                />
-
-                {aiConfigsLoading ? (
-                  <LoadingState
-                    className="ai-config-empty-state"
-                    label="Đang tải danh sách AI config..."
-                    description="Các cấu hình model và prompt đang được đồng bộ."
-                  />
-                ) : aiConfigLoadError ? (
-                  <ErrorState
-                    className="ai-config-empty-state"
-                    title="Không thể tải danh sách AI config"
-                    description={aiConfigLoadError}
-                    action={(
-                      <Button onClick={() => loadAIConfigs()}>
-                        <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
-                      </Button>
-                    )}
-                  />
-                ) : (
-                  <AIConfigTable
-                    configs={filteredAIConfigs}
-                    onView={openAIConfigDetail}
-                    onEdit={openEditAIConfig}
-                    onToggleStatus={handleToggleAIConfigStatus}
-                    onDelete={handleDeleteAIConfig}
-                    onCreate={openCreateAIConfig}
-                  />
-                )}
-
-                {!aiConfigLoadError && (
-                  <div className="pagination-row">
-                    <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber <= 1 || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber - 1)}>
-                      Trước
-                    </button>
-                    <span>Trang {aiConfigPageInfo.pageNumber} / {aiConfigPageInfo.totalPages || 1} · {filteredAIConfigs.length} / {aiConfigPageInfo.totalCount} configs</span>
-                    <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber >= aiConfigPageInfo.totalPages || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber + 1)}>
-                      Sau
-                    </button>
-                  </div>
-                )}
-              </section>
+              <AdminAIConfigsSection
+                activeCount={activeAIConfigs}
+                configs={filteredAIConfigs}
+                disabledCount={disabledAIConfigs}
+                environments={aiEnvironments}
+                error={aiConfigLoadError}
+                featureCount={runningAIFeatures}
+                filters={aiConfigFilters}
+                loading={aiConfigsLoading}
+                message={aiConfigMessage}
+                models={aiModels}
+                pageInfo={aiConfigPageInfo}
+                taskTypes={aiTaskTypes}
+                onCreate={openCreateAIConfig}
+                onDelete={handleDeleteAIConfig}
+                onEdit={openEditAIConfig}
+                onFilterChange={updateAIConfigFilter}
+                onFilterReset={resetAIConfigFilters}
+                onFilterSubmit={handleAIConfigFilterSubmit}
+                onLoadPage={loadAIConfigs}
+                onPageSizeChange={handleAIConfigPageSizeChange}
+                onToggleStatus={handleToggleAIConfigStatus}
+                onView={openAIConfigDetail}
+              />
             )}
 
             {activeSection === "subscriptions" && (
