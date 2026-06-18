@@ -109,4 +109,7 @@ export const ENDPOINTS = {
   WEB_CHATBOT: {
     MESSAGE: `${WEB_CHATBOT_BASE}/message`,
   },
+  EXTERNAL: {
+    ANTHROPIC_MESSAGES: "https://api.anthropic.com/v1/messages",
+  },
 };

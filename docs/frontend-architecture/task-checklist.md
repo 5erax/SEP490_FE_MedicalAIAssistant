@@ -211,11 +211,11 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 
 ### FE-PROD-020: Audit capability demo và mock production
 
-- [x] Lập inventory `MOCK_`, `DEMO_`, fixture và TODO thay API trong `src/`.
-- [-] Xử lý mock trong `hospitalRecommendations.js`; đã đưa vào inventory, còn phụ thuộc backend facility/map contract để thay thế hoàn toàn.
-- [x] Audit records, medication và kết quả AI mẫu.
-- [x] Ẩn hoặc gắn nhãn demo cho capability chưa sẵn sàng.
-- [x] Thêm regression guard cho production navigation và surface.
+- [ ] Lập inventory `MOCK_`, `DEMO_`, fixture và TODO thay API trong `src/`.
+- [ ] Xử lý mock trong `hospitalRecommendations.js`.
+- [ ] Audit records, medication và kết quả AI mẫu.
+- [ ] Ẩn hoặc gắn nhãn demo cho capability chưa sẵn sàng.
+- [ ] Thêm regression guard cho production navigation và surface.
 
 ### FE-UX-021: Chuẩn hóa critical-flow UX
 
@@ -341,9 +341,11 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-16 | FE-DX-030, FE-AUTH-031 | Hoàn thành | Gom entry chẩn đoán vào dashboard; bỏ `/symptom` khỏi sidebar/mobile; chuyển CTA phân tích về `/dashboard`; Google login trong context Doctor invitation xác minh role qua `/api/users/me` và chặn tài khoản Patient | `npm.cmd run lint`; `npm.cmd run build`; Playwright dashboard/navigation/doctor-invitation/routes 84 passed, 1 skipped |
 | 2026-06-16 | FE-ONBOARD-027, FE-FACILITY-028 | Hoàn thành | Thêm prompt hồ sơ nhẹ nhàng trong dashboard có thể bỏ qua; bổ sung xếp hạng cơ sở theo chuyên khoa, vị trí người dùng nếu được cấp quyền, tọa độ/rating thật từ backend và lý do xếp hạng | `npm.cmd run lint`; dashboard UX 4 passed |
 | 2026-06-16 | FE-POLISH-029 | Hoàn thành | Đưa Hồ sơ vào navigation chính; giữ giao dịch/cài đặt trong menu avatar; thêm recovery action cho lỗi/empty/result của tư vấn chuyên khoa; hạ copy y tế từ chẩn đoán chắc chắn sang nhận định tham khảo; xác nhận các capability demo đã được gắn nhãn | `npm.cmd run lint`; `npm.cmd run build`; dashboard UX/navigation/doctor-invitation/routes; `git diff --check` |
+
 | 2026-06-17 | FE-PROD-020, P0/P1 hardening | Hoàn thành | Loại AI provider trực tiếp khỏi client; chuyển chatbot qua API backend; chuẩn hóa env/Vercel rewrite và security headers; thêm centralized API auth error helpers; lập mock/demo inventory; render lại `/#demo` với safety note; gắn nhãn demo/fallback cho records, medication và patient map; bổ sung route role/premium guard và production safety regression | `npm.cmd run lint`; `npm.cmd run build`; route 51 passed, 1 skipped; landing production 3 passed; accessibility 14 passed; performance 4 passed; visual 28 passed; `git diff --check` |
 | 2026-06-18 | FE-PROD-020 Vercel CI | Hoàn thành | Thay programmatic config bị Git integration parse sai bằng `vercel.json` tĩnh; giữ backend origin qua `$BACKEND_API_ORIGIN`; giữ SPA fallback và security headers; ignore metadata `.vercel` cục bộ | `npm.cmd run lint`; `npm.cmd run build`; Vercel preview `READY`; kiểm tra `/`, SPA route và response security headers bằng `vercel curl` |
 | 2026-06-19 | FE-REFACTOR-032 | Hoàn thành | Tách overview và users khỏi `AdminWorkspacePage.jsx` thành component theo domain; giữ state, API, mutation, route, selector và CSS contract hiện tại | Baseline: lint/build pass, route 51 passed/1 skipped; sau refactor: lint/build pass; route, accessibility và Admin 76 passed/1 skipped; `git diff --check` |
+
 
 ## Mẫu cập nhật
 
