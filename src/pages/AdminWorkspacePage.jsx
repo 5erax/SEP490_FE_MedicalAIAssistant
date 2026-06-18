@@ -18,9 +18,8 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
-import DoctorFilters from "../components/adminDoctors/DoctorFilters";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
-import DoctorTable from "../components/adminDoctors/DoctorTable";
+import AdminDoctorsSection from "../components/adminDoctors/AdminDoctorsSection";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
 import { navigate } from "../router/navigation";
 import { getAdminSectionPath, getNavigationModel } from "../router/routes";
@@ -1429,129 +1428,33 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
 
             {activeSection === "doctors" && (
-              <section className="admin-panel doctor-admin-panel">
-                <div className="panel-title-row doctor-section-heading">
-                  <div>
-                    <p className="eyebrow">Nhân sự y tế</p>
-                    <h2>Quản lý bác sĩ</h2>
-                    <p className="muted-text">Tạo, cập nhật, lọc và quản lý trạng thái bác sĩ theo cơ sở y tế và khoa công tác.</p>
-                  </div>
-                </div>
-
-                <ApiMessage message={doctorMessage} />
-
-                <form className="doctor-invitation-admin" onSubmit={handleCreateInvitation}>
-                  <div>
-                    <strong>Gửi lời mời đăng ký bác sĩ</strong>
-                    <p>Email là bắt buộc. Có thể chọn hồ sơ bác sĩ có sẵn để liên kết tài khoản.</p>
-                  </div>
-                  <label className="clean-field">
-                    <span>Email bác sĩ</span>
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      value={invitationForm.email}
-                      onChange={(event) => setInvitationForm({ ...invitationForm, email: event.target.value })}
-                      required
-                    />
-                  </label>
-                  <label className="clean-field">
-                    <span>Hồ sơ bác sĩ có sẵn (không bắt buộc)</span>
-                    <select
-                      value={invitationForm.doctorId}
-                      onChange={(event) => setInvitationForm({ ...invitationForm, doctorId: event.target.value })}
-                    >
-                      <option value="">Tạo bác sĩ mới khi đăng ký</option>
-                      {doctors.filter((doctor) => !doctor.userId).map((doctor) => (
-                        <option key={doctor.id} value={doctor.id}>
-                          {doctor.fullName || doctor.id}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button className="btn btn-primary btn-small" type="submit" disabled={savingInvitation}>
-                    {savingInvitation ? "Đang gửi..." : "Gửi invitation"}
-                  </button>
-                  {lastInvitation && (
-                    <div className="doctor-invitation-latest" role="status">
-                      <span>
-                        {lastInvitation.email} · {lastInvitation.status || "Pending"}
-                        {lastInvitation.expiresAt && ` · hết hạn ${new Date(lastInvitation.expiresAt).toLocaleString("vi-VN")}`}
-                      </span>
-                      {String(lastInvitation.status).toLowerCase() !== "revoked" && (
-                        <button className="btn btn-ghost btn-small" type="button" onClick={handleRevokeInvitation}>
-                          Thu hồi
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </form>
-
-                <DoctorFilters
-                  filters={doctorFilters}
-                  departments={departments}
-                  facilities={facilities}
-                  pageSize={doctorPageInfo.pageSize}
-                  onChange={updateDoctorFilter}
-                  onPageSizeChange={(pageSize) => setDoctorPageInfo((current) => ({ ...current, pageSize }))}
-                  onSubmit={handleDoctorFilterSubmit}
-                  onReset={resetDoctorFilters}
-                  onCreate={openCreateDoctor}
-                />
-
-                {facilitiesLoading && (
-                  <p className="muted-text">Đang đồng bộ danh sách bệnh viện cho bộ lọc...</p>
-                )}
-
-                {doctorsLoading ? (
-                  <LoadingState
-                    className="doctor-empty-state"
-                    label="Đang tải danh sách bác sĩ..."
-                    description="Dữ liệu nhân sự y tế đang được đồng bộ theo bộ lọc hiện tại."
-                  />
-                ) : doctorLoadError ? (
-                  <ErrorState
-                    className="doctor-empty-state"
-                    title="Không thể tải danh sách bác sĩ"
-                    description={doctorLoadError}
-                    action={(
-                      <Button onClick={() => loadDoctors()}>
-                        <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
-                      </Button>
-                    )}
-                  />
-                ) : (
-                  <DoctorTable
-                    doctors={doctors}
-                    onEdit={openEditDoctor}
-                    onToggleStatus={handleToggleDoctorStatus}
-                    onDelete={handleDeleteDoctor}
-                    onCreate={openCreateDoctor}
-                  />
-                )}
-
-                {!doctorLoadError && (
-                  <div className="pagination-row">
-                    <button
-                      className="btn btn-ghost btn-small"
-                      type="button"
-                      disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading}
-                      onClick={() => navigate(getDoctorViewPath(doctorFilters, doctorPageInfo.pageNumber - 1, doctorPageInfo.pageSize))}
-                    >
-                      Trước
-                    </button>
-                    <span>Trang {doctorPageInfo.pageNumber} / {doctorPageInfo.totalPages || 1} · {doctorPageInfo.totalCount} bác sĩ</span>
-                    <button
-                      className="btn btn-ghost btn-small"
-                      type="button"
-                      disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading}
-                      onClick={() => navigate(getDoctorViewPath(doctorFilters, doctorPageInfo.pageNumber + 1, doctorPageInfo.pageSize))}
-                    >
-                      Sau
-                    </button>
-                  </div>
-                )}
-              </section>
+              <AdminDoctorsSection
+                departments={departments}
+                doctors={doctors}
+                error={doctorLoadError}
+                facilities={facilities}
+                facilitiesLoading={facilitiesLoading}
+                filters={doctorFilters}
+                invitation={invitationForm}
+                invitationMessage={doctorMessage}
+                lastInvitation={lastInvitation}
+                loading={doctorsLoading}
+                pageInfo={doctorPageInfo}
+                savingInvitation={savingInvitation}
+                onCreate={openCreateDoctor}
+                onDelete={handleDeleteDoctor}
+                onEdit={openEditDoctor}
+                onFilterChange={updateDoctorFilter}
+                onFilterReset={resetDoctorFilters}
+                onFilterSubmit={handleDoctorFilterSubmit}
+                onInvitationChange={(key, value) => setInvitationForm((current) => ({ ...current, [key]: value }))}
+                onInvitationSubmit={handleCreateInvitation}
+                onLoad={loadDoctors}
+                onNavigatePage={(pageNumber) => navigate(getDoctorViewPath(doctorFilters, pageNumber, doctorPageInfo.pageSize))}
+                onPageSizeChange={(pageSize) => setDoctorPageInfo((current) => ({ ...current, pageSize }))}
+                onRevokeInvitation={handleRevokeInvitation}
+                onToggleStatus={handleToggleDoctorStatus}
+              />
             )}
 
             {activeSection === "ai-configs" && (
