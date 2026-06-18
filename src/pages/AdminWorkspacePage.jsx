@@ -33,6 +33,7 @@ import SubscriptionPlanFormModal from "../components/adminSubscriptions/Subscrip
 import SubscriptionPlanTable from "../components/adminSubscriptions/SubscriptionPlanTable";
 import AdminOverviewSection from "../components/adminOverview/AdminOverviewSection";
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
+import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -1718,50 +1719,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
 
             {activeSection === "staff" && (
-              <section className="admin-panel">
-                <div className="panel-title-row">
-                  <div>
-                    <p className="eyebrow">Nhân sự</p>
-                    <h2>Tạo tài khoản staff</h2>
-                  </div>
-                  <span className="soft-badge">Tài khoản nội bộ</span>
-                </div>
-                <ApiMessage message={staffMessage} />
-                <form className="clean-form" onSubmit={handleCreateStaff}>
-                  <div className="form-two-cols">
-                    <Field label="Email">
-                      <input type="email" value={staffForm.email} onChange={(event) => updateStaff("email", event.target.value)} required />
-                    </Field>
-                    <Field label="Username">
-                      <input value={staffForm.userName} onChange={(event) => updateStaff("userName", event.target.value)} required />
-                    </Field>
-                    <Field label="Tên hiển thị">
-                      <input value={staffForm.displayName} onChange={(event) => updateStaff("displayName", event.target.value)} required />
-                    </Field>
-                    <Field label="Địa chỉ">
-                      <input value={staffForm.address} onChange={(event) => updateStaff("address", event.target.value)} />
-                    </Field>
-                    <Field label="Mật khẩu">
-                      <input type="password" value={staffForm.password} onChange={(event) => updateStaff("password", event.target.value)} required />
-                    </Field>
-                    <Field label="Nhập lại mật khẩu">
-                      <input type="password" value={staffForm.confirmPassword} onChange={(event) => updateStaff("confirmPassword", event.target.value)} required />
-                    </Field>
-                    <Field label="Giới tính">
-                      <select value={staffForm.gender} onChange={(event) => updateStaff("gender", event.target.value)}>
-                        <option value="1">Nam</option>
-                        <option value="2">Nữ</option>
-                      </select>
-                    </Field>
-                    <Field label="Ngày sinh">
-                      <input type="date" value={staffForm.dateOfBirth} onChange={(event) => updateStaff("dateOfBirth", event.target.value)} />
-                    </Field>
-                  </div>
-                  <button className="btn btn-primary" type="submit" disabled={savingStaff}>
-                    {savingStaff ? "Đang tạo..." : "Tạo tài khoản staff"}
-                  </button>
-                </form>
-              </section>
+              <AdminStaffSection
+                form={staffForm}
+                message={staffMessage}
+                saving={savingStaff}
+                onChange={updateStaff}
+                onSubmit={handleCreateStaff}
+              />
             )}
 
             {activeSection === "departments" && (
