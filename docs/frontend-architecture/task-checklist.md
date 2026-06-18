@@ -312,6 +312,41 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Không đổi route, backend contract, auth/role gate hoặc giao diện.
 - [x] Chạy lint, build và các regression test Admin liên quan.
 
+### FE-REFACTOR-033: Tách Admin staff section
+
+- [x] Tách form tạo Staff sang component theo domain.
+- [x] Giữ form state, payload và submit service tại page cha.
+- [x] Không đổi validation, route, auth/role gate hoặc CSS contract.
+- [x] Chạy lint, build và regression test liên quan.
+
+### FE-REFACTOR-034: Tách Admin departments section
+
+- [x] Tách danh sách và form chuyên khoa sang component theo domain.
+- [x] Giữ CRUD service, confirmation và state ownership tại page cha.
+- [x] Giữ nguyên selector, route và CSS contract.
+- [x] Chạy lint, build và regression test liên quan.
+
+### FE-REFACTOR-035: Tách Admin subscriptions section
+
+- [x] Gom heading, KPI, data states và bảng gói dịch vụ vào component theo domain.
+- [x] Giữ modal state, CRUD mutation và loading ownership tại page cha.
+- [x] Không đổi PayOS contract, selector hoặc CSS class.
+- [x] Chạy lint, build và regression test Subscription Plans.
+
+### FE-REFACTOR-036: Tách Admin AI Configs section
+
+- [x] Gom KPI, toolbar, data states, table và pagination vào component theo domain.
+- [x] Giữ filter state, modal state và CRUD mutation tại page cha.
+- [x] Giữ nguyên AI config contract, selectors và CSS classes.
+- [x] Chạy lint, build và regression test AI Configs.
+
+### FE-REFACTOR-037: Tách Admin doctors section
+
+- [x] Gom invitation, filters, data states, table và pagination vào component theo domain.
+- [x] Giữ filter state, modal state, navigation và CRUD mutation tại page cha.
+- [x] Giữ nguyên invitation/doctor contract, selectors và CSS classes.
+- [x] Chạy lint, build và regression test Admin Doctors.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -345,6 +380,11 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-17 | FE-PROD-020, P0/P1 hardening | Hoàn thành | Loại AI provider trực tiếp khỏi client; chuyển chatbot qua API backend; chuẩn hóa env/Vercel rewrite và security headers; thêm centralized API auth error helpers; lập mock/demo inventory; render lại `/#demo` với safety note; gắn nhãn demo/fallback cho records, medication và patient map; bổ sung route role/premium guard và production safety regression | `npm.cmd run lint`; `npm.cmd run build`; route 51 passed, 1 skipped; landing production 3 passed; accessibility 14 passed; performance 4 passed; visual 28 passed; `git diff --check` |
 | 2026-06-18 | FE-PROD-020 Vercel CI | Hoàn thành | Thay programmatic config bị Git integration parse sai bằng `vercel.json` tĩnh; giữ backend origin qua `$BACKEND_API_ORIGIN`; giữ SPA fallback và security headers; ignore metadata `.vercel` cục bộ | `npm.cmd run lint`; `npm.cmd run build`; Vercel preview `READY`; kiểm tra `/`, SPA route và response security headers bằng `vercel curl` |
 | 2026-06-19 | FE-REFACTOR-032 | Hoàn thành | Tách overview và users khỏi `AdminWorkspacePage.jsx` thành component theo domain; giữ state, API, mutation, route, selector và CSS contract hiện tại | Baseline: lint/build pass, route 51 passed/1 skipped; sau refactor: lint/build pass; route, accessibility và Admin 76 passed/1 skipped; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-033 | Hoàn thành | Tách form tạo Staff khỏi `AdminWorkspacePage.jsx`; giữ state, payload và submit service ở page cha | `npm.cmd run lint`; `npm.cmd run build`; route và accessibility regression; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-034 | Hoàn thành | Tách danh sách và form CRUD chuyên khoa khỏi `AdminWorkspacePage.jsx`; giữ service, confirmation và state ở page cha | `npm.cmd run lint`; `npm.cmd run build`; route và accessibility regression; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-035 | Hoàn thành | Gom toàn bộ section Subscription Plans vào component theo domain; page cha tiếp tục quản lý modal, loading và mutation | `npm.cmd run lint`; `npm.cmd run build`; Subscription Plans, route và accessibility regression; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-036 | Hoàn thành | Gom wrapper AI Configs gồm KPI, toolbar, states, table và pagination vào component theo domain; giữ state và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; AI Configs, route và accessibility regression; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-037 | Hoàn thành | Gom invitation, filters, states, table và pagination của Doctors vào component theo domain; giữ state, navigation và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; Admin Doctors, route và accessibility regression; `git diff --check` |
 
 
 ## Mẫu cập nhật

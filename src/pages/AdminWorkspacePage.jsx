@@ -6,7 +6,6 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
-  Cpu,
   CreditCard,
   LayoutDashboard,
   RefreshCw,
@@ -19,20 +18,20 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
-import DoctorFilters from "../components/adminDoctors/DoctorFilters";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
-import DoctorTable from "../components/adminDoctors/DoctorTable";
+import AdminDoctorsSection from "../components/adminDoctors/AdminDoctorsSection";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
 import { navigate } from "../router/navigation";
 import { getAdminSectionPath, getNavigationModel } from "../router/routes";
 import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
-import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
-import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
+import AdminAIConfigsSection from "../components/adminAIConfigs/AdminAIConfigsSection";
 import { getEnvironment } from "../components/adminAIConfigs/aiConfigUtils";
 import SubscriptionPlanFormModal from "../components/adminSubscriptions/SubscriptionPlanFormModal";
-import SubscriptionPlanTable from "../components/adminSubscriptions/SubscriptionPlanTable";
+import AdminSubscriptionsSection from "../components/adminSubscriptions/AdminSubscriptionsSection";
 import AdminOverviewSection from "../components/adminOverview/AdminOverviewSection";
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
+import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
+import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -1429,403 +1428,102 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
 
             {activeSection === "doctors" && (
-              <section className="admin-panel doctor-admin-panel">
-                <div className="panel-title-row doctor-section-heading">
-                  <div>
-                    <p className="eyebrow">Nhân sự y tế</p>
-                    <h2>Quản lý bác sĩ</h2>
-                    <p className="muted-text">Tạo, cập nhật, lọc và quản lý trạng thái bác sĩ theo cơ sở y tế và khoa công tác.</p>
-                  </div>
-                </div>
-
-                <ApiMessage message={doctorMessage} />
-
-                <form className="doctor-invitation-admin" onSubmit={handleCreateInvitation}>
-                  <div>
-                    <strong>Gửi lời mời đăng ký bác sĩ</strong>
-                    <p>Email là bắt buộc. Có thể chọn hồ sơ bác sĩ có sẵn để liên kết tài khoản.</p>
-                  </div>
-                  <label className="clean-field">
-                    <span>Email bác sĩ</span>
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      value={invitationForm.email}
-                      onChange={(event) => setInvitationForm({ ...invitationForm, email: event.target.value })}
-                      required
-                    />
-                  </label>
-                  <label className="clean-field">
-                    <span>Hồ sơ bác sĩ có sẵn (không bắt buộc)</span>
-                    <select
-                      value={invitationForm.doctorId}
-                      onChange={(event) => setInvitationForm({ ...invitationForm, doctorId: event.target.value })}
-                    >
-                      <option value="">Tạo bác sĩ mới khi đăng ký</option>
-                      {doctors.filter((doctor) => !doctor.userId).map((doctor) => (
-                        <option key={doctor.id} value={doctor.id}>
-                          {doctor.fullName || doctor.id}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button className="btn btn-primary btn-small" type="submit" disabled={savingInvitation}>
-                    {savingInvitation ? "Đang gửi..." : "Gửi invitation"}
-                  </button>
-                  {lastInvitation && (
-                    <div className="doctor-invitation-latest" role="status">
-                      <span>
-                        {lastInvitation.email} · {lastInvitation.status || "Pending"}
-                        {lastInvitation.expiresAt && ` · hết hạn ${new Date(lastInvitation.expiresAt).toLocaleString("vi-VN")}`}
-                      </span>
-                      {String(lastInvitation.status).toLowerCase() !== "revoked" && (
-                        <button className="btn btn-ghost btn-small" type="button" onClick={handleRevokeInvitation}>
-                          Thu hồi
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </form>
-
-                <DoctorFilters
-                  filters={doctorFilters}
-                  departments={departments}
-                  facilities={facilities}
-                  pageSize={doctorPageInfo.pageSize}
-                  onChange={updateDoctorFilter}
-                  onPageSizeChange={(pageSize) => setDoctorPageInfo((current) => ({ ...current, pageSize }))}
-                  onSubmit={handleDoctorFilterSubmit}
-                  onReset={resetDoctorFilters}
-                  onCreate={openCreateDoctor}
-                />
-
-                {facilitiesLoading && (
-                  <p className="muted-text">Đang đồng bộ danh sách bệnh viện cho bộ lọc...</p>
-                )}
-
-                {doctorsLoading ? (
-                  <LoadingState
-                    className="doctor-empty-state"
-                    label="Đang tải danh sách bác sĩ..."
-                    description="Dữ liệu nhân sự y tế đang được đồng bộ theo bộ lọc hiện tại."
-                  />
-                ) : doctorLoadError ? (
-                  <ErrorState
-                    className="doctor-empty-state"
-                    title="Không thể tải danh sách bác sĩ"
-                    description={doctorLoadError}
-                    action={(
-                      <Button onClick={() => loadDoctors()}>
-                        <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
-                      </Button>
-                    )}
-                  />
-                ) : (
-                  <DoctorTable
-                    doctors={doctors}
-                    onEdit={openEditDoctor}
-                    onToggleStatus={handleToggleDoctorStatus}
-                    onDelete={handleDeleteDoctor}
-                    onCreate={openCreateDoctor}
-                  />
-                )}
-
-                {!doctorLoadError && (
-                  <div className="pagination-row">
-                    <button
-                      className="btn btn-ghost btn-small"
-                      type="button"
-                      disabled={doctorPageInfo.pageNumber <= 1 || doctorsLoading}
-                      onClick={() => navigate(getDoctorViewPath(doctorFilters, doctorPageInfo.pageNumber - 1, doctorPageInfo.pageSize))}
-                    >
-                      Trước
-                    </button>
-                    <span>Trang {doctorPageInfo.pageNumber} / {doctorPageInfo.totalPages || 1} · {doctorPageInfo.totalCount} bác sĩ</span>
-                    <button
-                      className="btn btn-ghost btn-small"
-                      type="button"
-                      disabled={doctorPageInfo.pageNumber >= doctorPageInfo.totalPages || doctorsLoading}
-                      onClick={() => navigate(getDoctorViewPath(doctorFilters, doctorPageInfo.pageNumber + 1, doctorPageInfo.pageSize))}
-                    >
-                      Sau
-                    </button>
-                  </div>
-                )}
-              </section>
+              <AdminDoctorsSection
+                departments={departments}
+                doctors={doctors}
+                error={doctorLoadError}
+                facilities={facilities}
+                facilitiesLoading={facilitiesLoading}
+                filters={doctorFilters}
+                invitation={invitationForm}
+                invitationMessage={doctorMessage}
+                lastInvitation={lastInvitation}
+                loading={doctorsLoading}
+                pageInfo={doctorPageInfo}
+                savingInvitation={savingInvitation}
+                onCreate={openCreateDoctor}
+                onDelete={handleDeleteDoctor}
+                onEdit={openEditDoctor}
+                onFilterChange={updateDoctorFilter}
+                onFilterReset={resetDoctorFilters}
+                onFilterSubmit={handleDoctorFilterSubmit}
+                onInvitationChange={(key, value) => setInvitationForm((current) => ({ ...current, [key]: value }))}
+                onInvitationSubmit={handleCreateInvitation}
+                onLoad={loadDoctors}
+                onNavigatePage={(pageNumber) => navigate(getDoctorViewPath(doctorFilters, pageNumber, doctorPageInfo.pageSize))}
+                onPageSizeChange={(pageSize) => setDoctorPageInfo((current) => ({ ...current, pageSize }))}
+                onRevokeInvitation={handleRevokeInvitation}
+                onToggleStatus={handleToggleDoctorStatus}
+              />
             )}
 
             {activeSection === "ai-configs" && (
-              <section className="admin-panel ai-config-admin-panel">
-                <div className="panel-title-row ai-config-section-heading">
-                  <div>
-                    <p className="eyebrow">AI Platform Console</p>
-                    <h2>AI Configuration Management</h2>
-                    <p className="muted-text">Quản lý prompt, model và hành vi AI trong hệ thống MediMate AI.</p>
-                  </div>
-                  <button className="btn btn-ghost btn-small" type="button" onClick={() => loadAIConfigs()}>
-                    <RefreshCw size={15} /> Sync AI Settings
-                  </button>
-                </div>
-
-                <section className="ai-config-kpi-grid">
-                  <article>
-                    <span><BrainCircuit size={16} /></span>
-                    <div>
-                      <small>Total AI Configs</small>
-                      <strong>{aiConfigPageInfo.totalCount}</strong>
-                    </div>
-                  </article>
-                  <article>
-                    <span><Cpu size={16} /></span>
-                    <div>
-                      <small>Active Models</small>
-                      <strong>{activeAIConfigs}</strong>
-                    </div>
-                  </article>
-                  <article>
-                    <span><Activity size={16} /></span>
-                    <div>
-                      <small>Disabled Configs</small>
-                      <strong>{disabledAIConfigs}</strong>
-                    </div>
-                  </article>
-                  <article>
-                    <span><ClipboardList size={16} /></span>
-                    <div>
-                      <small>AI Features Running</small>
-                      <strong>{runningAIFeatures}</strong>
-                    </div>
-                  </article>
-                </section>
-
-                <ApiMessage message={aiConfigMessage} />
-
-                <AIConfigToolbar
-                  filters={aiConfigFilters}
-                  taskTypes={aiTaskTypes}
-                  models={aiModels}
-                  environments={aiEnvironments}
-                  pageSize={aiConfigPageInfo.pageSize}
-                  onChange={updateAIConfigFilter}
-                  onPageSizeChange={handleAIConfigPageSizeChange}
-                  onSubmit={handleAIConfigFilterSubmit}
-                  onReset={resetAIConfigFilters}
-                  onCreate={openCreateAIConfig}
-                />
-
-                {aiConfigsLoading ? (
-                  <LoadingState
-                    className="ai-config-empty-state"
-                    label="Đang tải danh sách AI config..."
-                    description="Các cấu hình model và prompt đang được đồng bộ."
-                  />
-                ) : aiConfigLoadError ? (
-                  <ErrorState
-                    className="ai-config-empty-state"
-                    title="Không thể tải danh sách AI config"
-                    description={aiConfigLoadError}
-                    action={(
-                      <Button onClick={() => loadAIConfigs()}>
-                        <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
-                      </Button>
-                    )}
-                  />
-                ) : (
-                  <AIConfigTable
-                    configs={filteredAIConfigs}
-                    onView={openAIConfigDetail}
-                    onEdit={openEditAIConfig}
-                    onToggleStatus={handleToggleAIConfigStatus}
-                    onDelete={handleDeleteAIConfig}
-                    onCreate={openCreateAIConfig}
-                  />
-                )}
-
-                {!aiConfigLoadError && (
-                  <div className="pagination-row">
-                    <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber <= 1 || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber - 1)}>
-                      Trước
-                    </button>
-                    <span>Trang {aiConfigPageInfo.pageNumber} / {aiConfigPageInfo.totalPages || 1} · {filteredAIConfigs.length} / {aiConfigPageInfo.totalCount} configs</span>
-                    <button className="btn btn-ghost btn-small" type="button" disabled={aiConfigPageInfo.pageNumber >= aiConfigPageInfo.totalPages || aiConfigsLoading} onClick={() => loadAIConfigs(aiConfigPageInfo.pageNumber + 1)}>
-                      Sau
-                    </button>
-                  </div>
-                )}
-              </section>
+              <AdminAIConfigsSection
+                activeCount={activeAIConfigs}
+                configs={filteredAIConfigs}
+                disabledCount={disabledAIConfigs}
+                environments={aiEnvironments}
+                error={aiConfigLoadError}
+                featureCount={runningAIFeatures}
+                filters={aiConfigFilters}
+                loading={aiConfigsLoading}
+                message={aiConfigMessage}
+                models={aiModels}
+                pageInfo={aiConfigPageInfo}
+                taskTypes={aiTaskTypes}
+                onCreate={openCreateAIConfig}
+                onDelete={handleDeleteAIConfig}
+                onEdit={openEditAIConfig}
+                onFilterChange={updateAIConfigFilter}
+                onFilterReset={resetAIConfigFilters}
+                onFilterSubmit={handleAIConfigFilterSubmit}
+                onLoadPage={loadAIConfigs}
+                onPageSizeChange={handleAIConfigPageSizeChange}
+                onToggleStatus={handleToggleAIConfigStatus}
+                onView={openAIConfigDetail}
+              />
             )}
 
             {activeSection === "subscriptions" && (
-              <section className="admin-panel subscription-plan-admin-panel">
-                <div className="panel-title-row subscription-plan-heading">
-                  <div>
-                    <p className="eyebrow">Gói đăng ký</p>
-                    <h2>Quản lý gói dịch vụ</h2>
-                    <p className="muted-text">Tạo và kích hoạt các gói xuất hiện trên trang bảng giá để người dùng đăng ký qua PayOS.</p>
-                  </div>
-                  <div className="record-actions">
-                    <button className="btn btn-ghost btn-small" type="button" onClick={loadSubscriptionPlans}>
-                      <RefreshCw size={15} /> Đồng bộ
-                    </button>
-                    <button className="btn btn-primary btn-small" type="button" onClick={openCreateSubscriptionPlan}>
-                      <CreditCard size={15} /> Tạo gói
-                    </button>
-                  </div>
-                </div>
-
-                <section className="subscription-plan-kpis">
-                  <article>
-                    <span>Tổng số gói</span>
-                    <strong>{subscriptionPlans.length}</strong>
-                  </article>
-                  <article>
-                    <span>Đang mở bán</span>
-                    <strong>{activeSubscriptionPlans}</strong>
-                  </article>
-                  <article>
-                    <span>Đang tạm ẩn</span>
-                    <strong>{Math.max(0, subscriptionPlans.length - activeSubscriptionPlans)}</strong>
-                  </article>
-                </section>
-
-                <ApiMessage message={subscriptionPlanMessage} />
-
-                {subscriptionPlansLoading ? (
-                  <LoadingState
-                    label="Đang tải danh sách gói dịch vụ..."
-                    description="Dữ liệu gói đăng ký đang được đồng bộ."
-                  />
-                ) : subscriptionPlanLoadError ? (
-                  <ErrorState
-                    title="Không thể tải danh sách gói dịch vụ"
-                    description={subscriptionPlanLoadError}
-                    action={(
-                      <Button onClick={loadSubscriptionPlans}>
-                        <RefreshCw size={16} aria-hidden="true" /> Thử tải lại
-                      </Button>
-                    )}
-                  />
-                ) : (
-                  <SubscriptionPlanTable
-                    plans={subscriptionPlans}
-                    onEdit={openEditSubscriptionPlan}
-                    onToggleStatus={handleToggleSubscriptionPlanStatus}
-                    onDelete={handleDeleteSubscriptionPlan}
-                    onCreate={openCreateSubscriptionPlan}
-                  />
-                )}
-              </section>
+              <AdminSubscriptionsSection
+                activeCount={activeSubscriptionPlans}
+                error={subscriptionPlanLoadError}
+                loading={subscriptionPlansLoading}
+                message={subscriptionPlanMessage}
+                plans={subscriptionPlans}
+                onCreate={openCreateSubscriptionPlan}
+                onDelete={handleDeleteSubscriptionPlan}
+                onEdit={openEditSubscriptionPlan}
+                onReload={loadSubscriptionPlans}
+                onToggleStatus={handleToggleSubscriptionPlanStatus}
+              />
             )}
 
             {activeSection === "staff" && (
-              <section className="admin-panel">
-                <div className="panel-title-row">
-                  <div>
-                    <p className="eyebrow">Nhân sự</p>
-                    <h2>Tạo tài khoản staff</h2>
-                  </div>
-                  <span className="soft-badge">Tài khoản nội bộ</span>
-                </div>
-                <ApiMessage message={staffMessage} />
-                <form className="clean-form" onSubmit={handleCreateStaff}>
-                  <div className="form-two-cols">
-                    <Field label="Email">
-                      <input type="email" value={staffForm.email} onChange={(event) => updateStaff("email", event.target.value)} required />
-                    </Field>
-                    <Field label="Username">
-                      <input value={staffForm.userName} onChange={(event) => updateStaff("userName", event.target.value)} required />
-                    </Field>
-                    <Field label="Tên hiển thị">
-                      <input value={staffForm.displayName} onChange={(event) => updateStaff("displayName", event.target.value)} required />
-                    </Field>
-                    <Field label="Địa chỉ">
-                      <input value={staffForm.address} onChange={(event) => updateStaff("address", event.target.value)} />
-                    </Field>
-                    <Field label="Mật khẩu">
-                      <input type="password" value={staffForm.password} onChange={(event) => updateStaff("password", event.target.value)} required />
-                    </Field>
-                    <Field label="Nhập lại mật khẩu">
-                      <input type="password" value={staffForm.confirmPassword} onChange={(event) => updateStaff("confirmPassword", event.target.value)} required />
-                    </Field>
-                    <Field label="Giới tính">
-                      <select value={staffForm.gender} onChange={(event) => updateStaff("gender", event.target.value)}>
-                        <option value="1">Nam</option>
-                        <option value="2">Nữ</option>
-                      </select>
-                    </Field>
-                    <Field label="Ngày sinh">
-                      <input type="date" value={staffForm.dateOfBirth} onChange={(event) => updateStaff("dateOfBirth", event.target.value)} />
-                    </Field>
-                  </div>
-                  <button className="btn btn-primary" type="submit" disabled={savingStaff}>
-                    {savingStaff ? "Đang tạo..." : "Tạo tài khoản staff"}
-                  </button>
-                </form>
-              </section>
+              <AdminStaffSection
+                form={staffForm}
+                message={staffMessage}
+                saving={savingStaff}
+                onChange={updateStaff}
+                onSubmit={handleCreateStaff}
+              />
             )}
 
             {activeSection === "departments" && (
-              <section className="admin-grid">
-                <div className="admin-panel">
-                  <div className="panel-title-row">
-                    <div>
-                    <p className="eyebrow">Chuyên khoa</p>
-                      <h2>Danh mục chuyên khoa</h2>
-                    </div>
-                    <button className="btn btn-ghost btn-small" type="button" onClick={loadDepartments}>Tải lại</button>
-                  </div>
-                  <ApiMessage message={departmentMessage} />
-                  {departmentsLoading ? (
-                    <p className="muted-text">Đang tải chuyên khoa...</p>
-                  ) : (
-                    <div className="admin-table-list">
-                      {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa.</p>}
-                      {departments.map((department) => (
-                        <article className="admin-user-row" key={department.id}>
-                          <div>
-                            <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-                            <span>{department.description || "Chưa có mô tả."}</span>
-                            <small>{department.id}</small>
-                          </div>
-                          <div className="record-actions">
-                            <button className="btn btn-ghost btn-small" type="button" onClick={() => startEditDepartment(department)}>Sửa</button>
-                            <button className="btn btn-dark btn-small" type="button" onClick={() => handleDeleteDepartment(department.id)}>Xóa</button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <form className="admin-panel clean-form" onSubmit={handleSaveDepartment}>
-                  <div className="panel-title-row">
-                    <div>
-                      <p className="eyebrow">{editingDepartmentId ? "Update" : "Create"}</p>
-                      <h2>{editingDepartmentId ? "Cập nhật chuyên khoa" : "Tạo chuyên khoa"}</h2>
-                    </div>
-                    {editingDepartmentId && <button className="btn btn-ghost btn-small" type="button" onClick={resetDepartmentForm}>Hủy sửa</button>}
-                  </div>
-                  <Field label="Tên chuyên khoa">
-                    <input
-                      value={departmentForm.departmentName}
-                      onChange={(event) => setDepartmentForm({ ...departmentForm, departmentName: event.target.value })}
-                      placeholder="Ví dụ: Tim mạch"
-                      required
-                    />
-                  </Field>
-                  <Field label="Mô tả">
-                    <textarea
-                      rows={6}
-                      value={departmentForm.description}
-                      onChange={(event) => setDepartmentForm({ ...departmentForm, description: event.target.value })}
-                      placeholder="Mô tả chức năng, nhóm triệu chứng thường gặp..."
-                    />
-                  </Field>
-                  <button className="btn btn-primary" type="submit" disabled={savingDepartment}>
-                    {savingDepartment ? "Đang lưu..." : editingDepartmentId ? "Lưu cập nhật" : "Tạo chuyên khoa"}
-                  </button>
-                </form>
-              </section>
+              <AdminDepartmentsSection
+                departments={departments}
+                editingDepartmentId={editingDepartmentId}
+                form={departmentForm}
+                loading={departmentsLoading}
+                message={departmentMessage}
+                saving={savingDepartment}
+                onDelete={handleDeleteDepartment}
+                onEdit={startEditDepartment}
+                onFormChange={(key, value) => setDepartmentForm((current) => ({ ...current, [key]: value }))}
+                onReload={loadDepartments}
+                onReset={resetDepartmentForm}
+                onSubmit={handleSaveDepartment}
+              />
             )}
 
             {activeSection === "facilities" && (
