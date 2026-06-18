@@ -326,6 +326,13 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Giữ nguyên selector, route và CSS contract.
 - [x] Chạy lint, build và regression test liên quan.
 
+### FE-REFACTOR-035: Tách Admin subscriptions section
+
+- [x] Gom heading, KPI, data states và bảng gói dịch vụ vào component theo domain.
+- [x] Giữ modal state, CRUD mutation và loading ownership tại page cha.
+- [x] Không đổi PayOS contract, selector hoặc CSS class.
+- [x] Chạy lint, build và regression test Subscription Plans.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -361,6 +368,7 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-19 | FE-REFACTOR-032 | Hoàn thành | Tách overview và users khỏi `AdminWorkspacePage.jsx` thành component theo domain; giữ state, API, mutation, route, selector và CSS contract hiện tại | Baseline: lint/build pass, route 51 passed/1 skipped; sau refactor: lint/build pass; route, accessibility và Admin 76 passed/1 skipped; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-033 | Hoàn thành | Tách form tạo Staff khỏi `AdminWorkspacePage.jsx`; giữ state, payload và submit service ở page cha | `npm.cmd run lint`; `npm.cmd run build`; route và accessibility regression; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-034 | Hoàn thành | Tách danh sách và form CRUD chuyên khoa khỏi `AdminWorkspacePage.jsx`; giữ service, confirmation và state ở page cha | `npm.cmd run lint`; `npm.cmd run build`; route và accessibility regression; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-035 | Hoàn thành | Gom toàn bộ section Subscription Plans vào component theo domain; page cha tiếp tục quản lý modal, loading và mutation | `npm.cmd run lint`; `npm.cmd run build`; Subscription Plans, route và accessibility regression; `git diff --check` |
 
 
 ## Mẫu cập nhật

@@ -30,7 +30,7 @@ import AIConfigTable from "../components/adminAIConfigs/AIConfigTable";
 import AIConfigToolbar from "../components/adminAIConfigs/AIConfigToolbar";
 import { getEnvironment } from "../components/adminAIConfigs/aiConfigUtils";
 import SubscriptionPlanFormModal from "../components/adminSubscriptions/SubscriptionPlanFormModal";
-import SubscriptionPlanTable from "../components/adminSubscriptions/SubscriptionPlanTable";
+import AdminSubscriptionsSection from "../components/adminSubscriptions/AdminSubscriptionsSection";
 import AdminOverviewSection from "../components/adminOverview/AdminOverviewSection";
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
 import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
@@ -1658,65 +1658,18 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
 
             {activeSection === "subscriptions" && (
-              <section className="admin-panel subscription-plan-admin-panel">
-                <div className="panel-title-row subscription-plan-heading">
-                  <div>
-                    <p className="eyebrow">Gói đăng ký</p>
-                    <h2>Quản lý gói dịch vụ</h2>
-                    <p className="muted-text">Tạo và kích hoạt các gói xuất hiện trên trang bảng giá để người dùng đăng ký qua PayOS.</p>
-                  </div>
-                  <div className="record-actions">
-                    <button className="btn btn-ghost btn-small" type="button" onClick={loadSubscriptionPlans}>
-                      <RefreshCw size={15} /> Đồng bộ
-                    </button>
-                    <button className="btn btn-primary btn-small" type="button" onClick={openCreateSubscriptionPlan}>
-                      <CreditCard size={15} /> Tạo gói
-                    </button>
-                  </div>
-                </div>
-
-                <section className="subscription-plan-kpis">
-                  <article>
-                    <span>Tổng số gói</span>
-                    <strong>{subscriptionPlans.length}</strong>
-                  </article>
-                  <article>
-                    <span>Đang mở bán</span>
-                    <strong>{activeSubscriptionPlans}</strong>
-                  </article>
-                  <article>
-                    <span>Đang tạm ẩn</span>
-                    <strong>{Math.max(0, subscriptionPlans.length - activeSubscriptionPlans)}</strong>
-                  </article>
-                </section>
-
-                <ApiMessage message={subscriptionPlanMessage} />
-
-                {subscriptionPlansLoading ? (
-                  <LoadingState
-                    label="Đang tải danh sách gói dịch vụ..."
-                    description="Dữ liệu gói đăng ký đang được đồng bộ."
-                  />
-                ) : subscriptionPlanLoadError ? (
-                  <ErrorState
-                    title="Không thể tải danh sách gói dịch vụ"
-                    description={subscriptionPlanLoadError}
-                    action={(
-                      <Button onClick={loadSubscriptionPlans}>
-                        <RefreshCw size={16} aria-hidden="true" /> Thử tải lại
-                      </Button>
-                    )}
-                  />
-                ) : (
-                  <SubscriptionPlanTable
-                    plans={subscriptionPlans}
-                    onEdit={openEditSubscriptionPlan}
-                    onToggleStatus={handleToggleSubscriptionPlanStatus}
-                    onDelete={handleDeleteSubscriptionPlan}
-                    onCreate={openCreateSubscriptionPlan}
-                  />
-                )}
-              </section>
+              <AdminSubscriptionsSection
+                activeCount={activeSubscriptionPlans}
+                error={subscriptionPlanLoadError}
+                loading={subscriptionPlansLoading}
+                message={subscriptionPlanMessage}
+                plans={subscriptionPlans}
+                onCreate={openCreateSubscriptionPlan}
+                onDelete={handleDeleteSubscriptionPlan}
+                onEdit={openEditSubscriptionPlan}
+                onReload={loadSubscriptionPlans}
+                onToggleStatus={handleToggleSubscriptionPlanStatus}
+              />
             )}
 
             {activeSection === "staff" && (
