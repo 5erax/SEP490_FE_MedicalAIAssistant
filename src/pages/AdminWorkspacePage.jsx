@@ -97,7 +97,7 @@ const ADMIN_NAV_ICONS = {
   dashboard: LayoutDashboard,
   users: Users,
   doctor: Stethoscope,
-  ai: BrainCircuit,
+  ai: ClipboardList,
   subscription: CreditCard,
   staff: UserPlus,
   facility: Building2,
