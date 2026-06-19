@@ -13,6 +13,7 @@ dist-ssr
 *.local
 playwright-report
 test-results
+.vercel/
 
 # Editor directories and files
 .vscode/*
