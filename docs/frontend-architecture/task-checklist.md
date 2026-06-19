@@ -361,6 +361,13 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Giữ page tập trung vào render, profile prompt, vị trí và xếp hạng cơ sở.
 - [x] Chạy lint, build và regression test Dashboard specialty intake.
 
+### FE-REFACTOR-040: Tách NearbyClinic map, list và reviews
+
+- [x] Tách danh sách cơ sở, MapLibre panel và review panel thành component riêng.
+- [x] Giữ fetch, filter, selection, geolocation và review mutation tại page cha.
+- [x] Loại phụ thuộc review khỏi component bản đồ và ổn định selection khi search chạy trước API.
+- [x] Chạy lint, build và regression test Map UX.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -401,6 +408,7 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-19 | FE-REFACTOR-037 | Hoàn thành | Gom invitation, filters, states, table và pagination của Doctors vào component theo domain; giữ state, navigation và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; Admin Doctors, route và accessibility regression; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-038 | Hoàn thành | Gom danh sách, trạng thái dữ liệu và form Facilities vào component theo domain; giữ state, payload, confirmation và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; Facilities, route và accessibility: 67 passed, 1 skipped; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-039 | Hoàn thành | Tách state machine, focus, request câu hỏi, submit câu trả lời và fallback orchestration khỏi Dashboard vào `useSymptomIntake`; giữ nguyên thuật toán và contract | `npm.cmd run lint`; `npm.cmd run build`; Dashboard, route và accessibility: 69 passed, 1 skipped; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-040 | Hoàn thành | Tách list, reviews và MapLibre panel khỏi `NearbyClinicPage`; map không còn biết review form; ngăn tải API muộn chọn facility ngoài kết quả search | `npm.cmd run lint`; `npm.cmd run build`; Map UX 5 passed; route/accessibility 64 passed, 1 skipped; `git diff --check` |
 
 
 ## Mẫu cập nhật
