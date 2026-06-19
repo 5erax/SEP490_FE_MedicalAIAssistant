@@ -475,6 +475,7 @@ const styles = `
 .department-row span { flex: 0 0 auto; border-radius: 999px; background: #fff; border: 1px solid var(--line); padding: 5px 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
 .facility-select-button { width: 100%; min-height: 38px; margin-top: 10px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--mint); color: var(--ink); font-size: 12px; font-weight: 900; }
 .facility-select-button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.facility-details { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 2px; }
 .facility-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
 .facility-actions button, .popup-card button { border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; padding: 8px; font-size: 12px; font-weight: 900; }
 .facility-actions button:last-child, .popup-card button { background: var(--lime); }

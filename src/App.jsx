@@ -14,6 +14,7 @@ import PaymentResultPage from "./pages/PaymentResultPage";
 import SymptomAnalysisPage from "./pages/SymptomAnalysisPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
+import RecoveryPlanPage from "./pages/RecoveryPlanPage";
 import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
 import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
 import { getStoredAuth } from "./services/api";
@@ -110,6 +111,8 @@ function App() {
       return lazyPage(<NearbyClinicPage />);
     case "patient.records":
       return userWorkspace(<MedicalRecordPage />);
+    case "patient.recovery":
+      return userWorkspace(<RecoveryPlanPage />);
     case "patient.medication":
       return userWorkspace(<MedicationScanPage />);
     case "public.pricing":

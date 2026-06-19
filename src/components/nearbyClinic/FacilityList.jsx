@@ -23,22 +23,23 @@ export default function FacilityList({
             <strong>{facility.facilityName}</strong>
             <span className={`type-badge ${facility.facilityTypeKey}`}>{facility.facilityTypeLabel}</span>
           </div>
-          <p>⌖ {facility.address}</p>
-          <p>◷ {facility.openingHours}</p>
-          <p>Liên hệ: {facility.phoneLabel}</p>
-          {!facility.hasValidCoordinates && <p className="coordinate-notice">Chưa có vị trí chính xác trên bản đồ.</p>}
-          <div className="department-row">
-            {facility.departments.map((department) => <span key={department}>{department}</span>)}
-          </div>
           <button
             className="facility-select-button"
             type="button"
             aria-pressed={selectedFacilityId === facility.facilityId}
             onClick={(event) => { event.stopPropagation(); onSelect(facility); }}
           >
-            {facility.hasValidCoordinates ? "Hiển thị trên bản đồ" : "Xem thông tin cơ sở"}
+            {selectedFacilityId === facility.facilityId ? "Đang xem chi tiết" : "Xem chi tiết"}
           </button>
-          <div className="facility-actions">
+          {selectedFacilityId === facility.facilityId && <div className="facility-details">
+            <p>Địa chỉ: {facility.address}</p>
+            <p>Giờ mở cửa: {facility.openingHours}</p>
+            <p>Liên hệ: {facility.phoneLabel}</p>
+            {!facility.hasValidCoordinates && <p className="coordinate-notice">Chưa có vị trí chính xác trên bản đồ.</p>}
+            <div className="department-row">
+              {facility.departments.map((department) => <span key={department}>{department}</span>)}
+            </div>
+            <div className="facility-actions">
             <button
               type="button"
               disabled={!facility.phone}
@@ -55,7 +56,8 @@ export default function FacilityList({
             >
               Chỉ đường
             </button>
-          </div>
+            </div>
+          </div>}
         </article>
       ))}
     </section>

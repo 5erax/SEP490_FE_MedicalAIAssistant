@@ -6,6 +6,8 @@ export const ADMIN_SECTIONS = [
   "subscriptions",
   "staff",
   "departments",
+  "icd-chapters",
+  "clinical-questions",
   "facilities",
 ];
 
@@ -17,6 +19,8 @@ const ADMIN_SECTION_TITLES = {
   subscriptions: "Quản lý gói dịch vụ",
   staff: "Quản lý nhân viên",
   departments: "Quản lý chuyên khoa",
+  "icd-chapters": "Quản lý chương ICD",
+  "clinical-questions": "Quản lý câu hỏi lâm sàng",
   facilities: "Quản lý cơ sở y tế",
 };
 
@@ -28,6 +32,8 @@ const ADMIN_SECTION_NAVIGATION = {
   subscriptions: { label: "Gói dịch vụ", icon: "subscription" },
   staff: { label: "Tạo staff", icon: "staff" },
   departments: { label: "Chuyên khoa", icon: "facility" },
+  "icd-chapters": { label: "Chương ICD", icon: "records" },
+  "clinical-questions": { label: "Câu hỏi lâm sàng", icon: "question" },
   facilities: { label: "Cơ sở y tế", icon: "facility" },
 };
 
@@ -70,6 +76,7 @@ const BASE_ROUTES = [
     title: "Phân tích triệu chứng | MediMate AI",
     access: "auth",
     shell: "patient",
+    navigation: { shell: "patient", label: "Phân tích lâm sàng", hint: "Nhận định triệu chứng", icon: "symptom", order: 70 },
   },
   {
     id: "patient.chat",
@@ -94,21 +101,14 @@ const BASE_ROUTES = [
     shell: "patient",
     navigation: { shell: "patient", label: "Hồ sơ", hint: "Thông tin cá nhân", icon: "profile", order: 50, mobile: true },
   },
-  {
-    id: "patient.records",
-    path: "/records",
-    title: "Hồ sơ y tế | MediMate AI",
-    access: "premium",
-    shell: "patient",
-    navigation: { shell: "patient", label: "Y bạ", hint: "Kết quả & tài liệu", icon: "records", order: 60 },
-  },
+  { id: "patient.records", path: "/records", title: "Kết quả xét nghiệm | MediMate AI", access: "premium", shell: "patient", navigation: { shell: "patient", label: "Kết quả xét nghiệm", hint: "Kết quả & tài liệu", icon: "records", order: 50 } },
+  { id: "patient.recovery", path: "/recovery-plan", title: "Kế hoạch phục hồi | MediMate AI", access: "auth", shell: "patient", navigation: { shell: "patient", label: "Kế hoạch phục hồi", hint: "Theo dõi sau khám", icon: "recovery", order: 60 } },
   {
     id: "patient.medication",
     path: "/medication",
     title: "Kiểm tra thuốc | MediMate AI",
     access: "premium",
     shell: "patient",
-    navigation: { shell: "patient", label: "Thuốc", hint: "Quét & kiểm tra", icon: "medication", order: 70 },
   },
   { id: "public.pricing", path: "/pricing", title: "Bảng giá | MediMate AI", access: "public" },
   { id: "payment.return", path: "/payment/return", title: "Thanh toán thành công | MediMate AI", access: "public", returnable: false },

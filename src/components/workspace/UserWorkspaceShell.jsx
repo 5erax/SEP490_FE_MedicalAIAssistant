@@ -13,6 +13,7 @@ import {
   MapPin,
   Menu,
   Pill,
+  ClipboardCheck,
   Search,
   Settings2,
   UserRound,
@@ -36,6 +37,7 @@ const PATIENT_ICONS = {
   profile: UserRound,
   records: FileText,
   medication: Pill,
+  recovery: ClipboardCheck,
 };
 
 const NAV_ITEMS = getNavigationModel("patient").map((item) => ({
