@@ -347,6 +347,13 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Giữ nguyên invitation/doctor contract, selectors và CSS classes.
 - [x] Chạy lint, build và regression test Admin Doctors.
 
+### FE-REFACTOR-038: Tách Admin facilities section
+
+- [x] Gom danh sách, data states và form cơ sở y tế vào component theo domain.
+- [x] Giữ form state, payload, confirmation và CRUD mutation tại page cha.
+- [x] Giữ nguyên facility/department contract, selectors và CSS classes.
+- [x] Chạy lint, build và regression test Admin Facilities.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -385,6 +392,7 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-19 | FE-REFACTOR-035 | Hoàn thành | Gom toàn bộ section Subscription Plans vào component theo domain; page cha tiếp tục quản lý modal, loading và mutation | `npm.cmd run lint`; `npm.cmd run build`; Subscription Plans, route và accessibility regression; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-036 | Hoàn thành | Gom wrapper AI Configs gồm KPI, toolbar, states, table và pagination vào component theo domain; giữ state và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; AI Configs, route và accessibility regression; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-037 | Hoàn thành | Gom invitation, filters, states, table và pagination của Doctors vào component theo domain; giữ state, navigation và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; Admin Doctors, route và accessibility regression; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-038 | Hoàn thành | Gom danh sách, trạng thái dữ liệu và form Facilities vào component theo domain; giữ state, payload, confirmation và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; Facilities, route và accessibility: 67 passed, 1 skipped; `git diff --check` |
 
 
 ## Mẫu cập nhật
