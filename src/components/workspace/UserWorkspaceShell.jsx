@@ -38,10 +38,12 @@ const PATIENT_ICONS = {
   medication: Pill,
 };
 
-const NAV_ITEMS = getNavigationModel("patient").map((item) => ({
-  ...item,
-  icon: PATIENT_ICONS[item.icon],
-}));
+const NAV_ITEMS = getNavigationModel("patient")
+  .filter((item) => item.id !== "patient.profile")
+  .map((item) => ({
+    ...item,
+    icon: PATIENT_ICONS[item.icon],
+  }));
 
 const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
 
