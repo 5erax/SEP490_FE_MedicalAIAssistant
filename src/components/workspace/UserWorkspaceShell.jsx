@@ -1,18 +1,18 @@
 import {
   Activity,
   Bell,
-  Bot,
+  CalendarDays,
   ChevronRight,
+  ClipboardList,
   Crown,
   CreditCard,
-  FileText,
   LayoutDashboard,
   Lock,
   LogIn,
   LogOut,
   MapPin,
   Menu,
-  Pill,
+  MessageSquare,
   Search,
   Settings2,
   UserRound,
@@ -31,11 +31,11 @@ import { Dialog, useOverlayFocus } from "../ui";
 const PATIENT_ICONS = {
   dashboard: LayoutDashboard,
   symptom: Activity,
-  chat: Bot,
+  chat: MessageSquare,
   map: MapPin,
   profile: UserRound,
-  records: FileText,
-  medication: Pill,
+  records: ClipboardList,
+  recovery: CalendarDays,
 };
 
 const NAV_ITEMS = getNavigationModel("patient")

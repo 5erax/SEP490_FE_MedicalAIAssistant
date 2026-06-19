@@ -112,6 +112,15 @@ function App() {
       return userWorkspace(<MedicalRecordPage />);
     case "patient.medication":
       return userWorkspace(<MedicationScanPage />);
+    case "patient.recovery-plan":
+      return userWorkspace(
+        <section className="app-page">
+          <div className="container">
+            <p className="eyebrow">Kế hoạch hồi phục</p>
+            <h1>Kế hoạch hồi phục đang được chuẩn bị.</h1>
+          </div>
+        </section>,
+      );
     case "public.pricing":
       return <PricingPage />;
     case "payment.return":
