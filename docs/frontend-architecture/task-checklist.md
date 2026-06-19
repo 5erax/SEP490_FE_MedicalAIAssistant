@@ -354,6 +354,13 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 - [x] Giữ nguyên facility/department contract, selectors và CSS classes.
 - [x] Chạy lint, build và regression test Admin Facilities.
 
+### FE-REFACTOR-039: Tách Dashboard symptom intake hook
+
+- [x] Tách state machine, focus transition và handlers khỏi `DashboardPage.jsx`.
+- [x] Giữ nguyên endpoint, payload, response normalization và fallback y khoa hiện tại.
+- [x] Giữ page tập trung vào render, profile prompt, vị trí và xếp hạng cơ sở.
+- [x] Chạy lint, build và regression test Dashboard specialty intake.
+
 ## Nhật ký thay đổi
 
 | Ngày | Mã nhiệm vụ | Trạng thái | Thay đổi | Kiểm tra |
@@ -393,6 +400,7 @@ trước khi commit để phạm vi, trạng thái và kết quả kiểm tra c�
 | 2026-06-19 | FE-REFACTOR-036 | Hoàn thành | Gom wrapper AI Configs gồm KPI, toolbar, states, table và pagination vào component theo domain; giữ state và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; AI Configs, route và accessibility regression; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-037 | Hoàn thành | Gom invitation, filters, states, table và pagination của Doctors vào component theo domain; giữ state, navigation và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; Admin Doctors, route và accessibility regression; `git diff --check` |
 | 2026-06-19 | FE-REFACTOR-038 | Hoàn thành | Gom danh sách, trạng thái dữ liệu và form Facilities vào component theo domain; giữ state, payload, confirmation và mutation ở page cha | `npm.cmd run lint`; `npm.cmd run build`; Facilities, route và accessibility: 67 passed, 1 skipped; `git diff --check` |
+| 2026-06-19 | FE-REFACTOR-039 | Hoàn thành | Tách state machine, focus, request câu hỏi, submit câu trả lời và fallback orchestration khỏi Dashboard vào `useSymptomIntake`; giữ nguyên thuật toán và contract | `npm.cmd run lint`; `npm.cmd run build`; Dashboard, route và accessibility: 69 passed, 1 skipped; `git diff --check` |
 
 
 ## Mẫu cập nhật
