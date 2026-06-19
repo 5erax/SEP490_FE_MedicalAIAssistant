@@ -6,6 +6,7 @@ export const ADMIN_SECTIONS = [
   "subscriptions",
   "staff",
   "departments",
+  "icd-chapters",
   "facilities",
 ];
 
@@ -17,6 +18,7 @@ const ADMIN_SECTION_TITLES = {
   subscriptions: "Quản lý gói dịch vụ",
   staff: "Quản lý nhân viên",
   departments: "Quản lý chuyên khoa",
+  "icd-chapters": "Quản lý ICD Chapter",
   facilities: "Quản lý cơ sở y tế",
 };
 
@@ -28,6 +30,7 @@ const ADMIN_SECTION_NAVIGATION = {
   subscriptions: { label: "Gói dịch vụ", icon: "subscription" },
   staff: { label: "Tạo staff", icon: "staff" },
   departments: { label: "Chuyên khoa", icon: "facility" },
+  "icd-chapters": { label: "ICD Chapter", icon: "icd" },
   facilities: { label: "Cơ sở y tế", icon: "facility" },
 };
 

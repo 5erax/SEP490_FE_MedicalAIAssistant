@@ -16,6 +16,7 @@ export { facilityDepartmentsApi } from "./facilityDepartmentService";
 export { doctorsApi } from "./doctorService";
 export { doctorInvitationsApi } from "./doctorInvitationService";
 export { feedbackReviewsApi } from "./feedbackReviewService";
+export { icdChaptersApi } from "./icdChapterService";
 export { patientProfilesApi } from "./patientProfileService";
 export { clinicalQuestionsApi } from "./clinicalQuestionService";
 export { symptomAnalysisApi } from "./symptomAnalysisService";
