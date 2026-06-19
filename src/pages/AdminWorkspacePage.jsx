@@ -8,7 +8,6 @@ import {
   ClipboardList,
   CreditCard,
   LayoutDashboard,
-  RefreshCw,
   Search,
   Stethoscope,
   Users,
@@ -17,7 +16,6 @@ import {
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import AdminDoctorsSection from "../components/adminDoctors/AdminDoctorsSection";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
@@ -32,6 +30,7 @@ import AdminOverviewSection from "../components/adminOverview/AdminOverviewSecti
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
 import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
+import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -145,15 +144,6 @@ function ApiMessage({ message }) {
   return <div className={`api-message ${message.type}`}>{message.text}</div>;
 }
 
-function Field({ label, children }) {
-  return (
-    <label className="clean-field">
-      <span>{label}</span>
-      {children}
-    </label>
-  );
-}
-
 const APPROVED_USER_STATUSES = new Set(["1", "active", "approved", "confirmed", "enabled", "verified"]);
 const PENDING_USER_STATUSES = new Set(["0", "pending", "pendingapproval", "pending_approval", "awaitingapproval", "unapproved", "unconfirmed"]);
 
@@ -199,24 +189,8 @@ function parseOptionalCoordinate(value, minimum, maximum) {
     : Number.NaN;
 }
 
-function hasValidCoordinatePair(facility) {
-  const latitude = Number(facility?.latitude);
-  const longitude = Number(facility?.longitude);
-  return Number.isFinite(latitude)
-    && Number.isFinite(longitude)
-    && latitude >= -90
-    && latitude <= 90
-    && longitude >= -180
-    && longitude <= 180;
-}
-
 function isFacilityActive(facility) {
   return facility?.isActive !== false;
-}
-
-function formatCoordinatePair(facility) {
-  if (!hasValidCoordinatePair(facility)) return "Chưa có tọa độ hợp lệ";
-  return `${Number(facility.latitude).toFixed(5)}, ${Number(facility.longitude).toFixed(5)}`;
 }
 
 function getFacilityDepartmentIds(facility, facilityDepartments) {
@@ -1527,191 +1501,25 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
 
             {activeSection === "facilities" && (
-              <section className="admin-grid facility-admin-grid">
-                <div className="admin-panel">
-                  <div className="panel-title-row">
-                    <div>
-                      <p className="eyebrow">Cơ sở y tế</p>
-                      <h2>Danh sách cơ sở</h2>
-                    </div>
-                    <button className="btn btn-ghost btn-small" type="button" onClick={loadFacilities}>Tải lại</button>
-                  </div>
-                  <ApiMessage message={facilityMessage} />
-                  {facilitiesLoading ? (
-                    <LoadingState
-                      label="Đang tải danh sách cơ sở y tế..."
-                      description="Dữ liệu cơ sở và liên kết chuyên khoa đang được đồng bộ."
-                    />
-                  ) : facilityLoadError ? (
-                    <ErrorState
-                      title="Không thể tải danh sách cơ sở y tế"
-                      description={facilityLoadError}
-                      action={(
-                        <Button onClick={loadFacilities}>
-                          <RefreshCw size={16} aria-hidden="true" /> Thử tải lại
-                        </Button>
-                      )}
-                    />
-                  ) : (
-                    <div className="admin-table-list">
-                      {facilities.length === 0 && (
-                        <EmptyState
-                          title="Chưa có cơ sở y tế"
-                          description="Tạo cơ sở và gán chuyên khoa trước khi thêm bác sĩ."
-                        />
-                      )}
-                      {facilities.map((facility) => {
-                        const linkedDepartments = facilityDepartments
-                          .filter((item) => item.facilityId === facility.id)
-                          .map((item) => item.departmentName)
-                          .filter(Boolean);
-                        return (
-                          <article className="admin-user-row facility-admin-row" key={facility.id}>
-                            <div className="facility-admin-info">
-                              <strong>{facility.facilityName || "Chưa đặt tên"}</strong>
-                              <span>{facility.address || "Chưa có địa chỉ."}</span>
-                              <small>{formatCoordinatePair(facility)}</small>
-                              <small>
-                                {linkedDepartments.length
-                                  ? `Chuyên khoa: ${linkedDepartments.join(", ")}`
-                                  : "Chưa liên kết chuyên khoa."}
-                              </small>
-                            </div>
-                            <div className="record-actions">
-                              <Badge tone={isFacilityActive(facility) ? "success" : "warning"}>
-                                {isFacilityActive(facility) ? "Đang hoạt động" : "Đang tắt"}
-                              </Badge>
-                              <Badge tone={hasValidCoordinatePair(facility) ? "success" : "warning"}>
-                                {hasValidCoordinatePair(facility) ? "Đủ dữ liệu bản đồ" : "Thiếu tọa độ"}
-                              </Badge>
-                              <button className="btn btn-ghost btn-small" type="button" onClick={() => startEditFacility(facility)}>Sửa</button>
-                              <button className="btn btn-ghost btn-small" type="button" onClick={() => handleToggleFacilityStatus(facility)}>
-                                {isFacilityActive(facility) ? "Tắt" : "Bật"}
-                              </button>
-                              <button className="btn btn-dark btn-small" type="button" onClick={() => handleDeleteFacility(facility)}>Xóa</button>
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <form className="admin-panel clean-form" onSubmit={handleSaveFacility}>
-                  <div className="panel-title-row">
-                    <div>
-                      <p className="eyebrow">{editingFacilityId ? "Update" : "Create"}</p>
-                      <h2>{editingFacilityId ? "Cập nhật cơ sở y tế" : "Tạo cơ sở y tế"}</h2>
-                    </div>
-                    {editingFacilityId && <button className="btn btn-ghost btn-small" type="button" onClick={resetFacilityForm}>Hủy sửa</button>}
-                  </div>
-                  <Field label="Tên cơ sở y tế">
-                    <input
-                      value={facilityForm.facilityName}
-                      onChange={(event) => setFacilityForm({ ...facilityForm, facilityName: event.target.value })}
-                      placeholder="Ví dụ: Bệnh viện Đa khoa A"
-                      required
-                    />
-                  </Field>
-                  <Field label="Địa chỉ">
-                    <input
-                      value={facilityForm.address}
-                      onChange={(event) => setFacilityForm({ ...facilityForm, address: event.target.value })}
-                      required
-                    />
-                  </Field>
-                  <div className="clean-form-grid">
-                    <Field label="Vĩ độ">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="any"
-                        min="-90"
-                        max="90"
-                        value={facilityForm.latitude}
-                        onChange={(event) => setFacilityForm({ ...facilityForm, latitude: event.target.value })}
-                        placeholder="10.8491"
-                      />
-                    </Field>
-                    <Field label="Kinh độ">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        step="any"
-                        min="-180"
-                        max="180"
-                        value={facilityForm.longitude}
-                        onChange={(event) => setFacilityForm({ ...facilityForm, longitude: event.target.value })}
-                        placeholder="106.7715"
-                      />
-                    </Field>
-                    <Field label="Số điện thoại">
-                      <input
-                        type="tel"
-                        value={facilityForm.phone}
-                        onChange={(event) => setFacilityForm({ ...facilityForm, phone: event.target.value })}
-                      />
-                    </Field>
-                    <Field label="Loại cơ sở">
-                      <input
-                        value={facilityForm.facilityType}
-                        onChange={(event) => setFacilityForm({ ...facilityForm, facilityType: event.target.value })}
-                        placeholder="Bệnh viện, phòng khám..."
-                      />
-                    </Field>
-                    <Field label="Website">
-                      <input
-                        type="url"
-                        value={facilityForm.website}
-                        onChange={(event) => setFacilityForm({ ...facilityForm, website: event.target.value })}
-                        placeholder="https://..."
-                      />
-                    </Field>
-                    <Field label="Giờ mở cửa">
-                      <input
-                        value={facilityForm.openingHours}
-                        onChange={(event) => setFacilityForm({ ...facilityForm, openingHours: event.target.value })}
-                        placeholder="07:00 - 17:00"
-                      />
-                    </Field>
-                  </div>
-                  <label className="clean-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={facilityForm.isActive}
-                      onChange={(event) => setFacilityForm({ ...facilityForm, isActive: event.target.checked })}
-                    />
-                    <span>Cho phép cơ sở này xuất hiện trong danh sách active sau khi backend lưu trạng thái.</span>
-                  </label>
-                  <fieldset className="facility-department-picker">
-                    <legend>Chuyên khoa tại cơ sở</legend>
-                    <p>Chọn ít nhất một chuyên khoa. Đây là dữ liệu form thêm bác sĩ sử dụng.</p>
-                    {departments.length === 0 ? (
-                      <p className="muted-text">Hãy tạo chuyên khoa trước.</p>
-                    ) : (
-                      <div className="facility-department-options">
-                        {departments.map((department) => (
-                          <label key={department.id}>
-                            <input
-                              type="checkbox"
-                              checked={facilityForm.departmentIds.includes(department.id)}
-                              onChange={() => toggleFacilityDepartment(department.id)}
-                            />
-                            <span>{department.departmentName}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </fieldset>
-                  <button
-                    className="btn btn-primary"
-                    type="submit"
-                    disabled={savingFacility || departments.length === 0}
-                  >
-                    {savingFacility ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật cơ sở" : "Tạo cơ sở và liên kết chuyên khoa"}
-                  </button>
-                </form>
-              </section>
+              <AdminFacilitiesSection
+                departments={departments}
+                editingFacilityId={editingFacilityId}
+                facilities={facilities}
+                facilityDepartments={facilityDepartments}
+                form={facilityForm}
+                loadError={facilityLoadError}
+                loading={facilitiesLoading}
+                message={facilityMessage}
+                saving={savingFacility}
+                onDelete={handleDeleteFacility}
+                onEdit={startEditFacility}
+                onFormChange={(key, value) => setFacilityForm((current) => ({ ...current, [key]: value }))}
+                onReload={loadFacilities}
+                onReset={resetFacilityForm}
+                onSubmit={handleSaveFacility}
+                onToggleDepartment={toggleFacilityDepartment}
+                onToggleStatus={handleToggleFacilityStatus}
+              />
             )}
           </div>
         </div>

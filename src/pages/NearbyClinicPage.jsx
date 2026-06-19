@@ -1,6 +1,7 @@
-import { Component, useEffect, useMemo, useRef, useState } from "react";
-import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useMemo, useRef, useState } from "react";
+import FacilityList from "../components/nearbyClinic/FacilityList";
+import FacilityMap from "../components/nearbyClinic/FacilityMap";
+import FacilityReviews from "../components/nearbyClinic/FacilityReviews";
 import { navigate } from "../router/navigation";
 import {
   facilityDepartmentsApi,
@@ -26,7 +27,6 @@ const TYPE_LABELS = {
   other: "Cơ sở y tế",
 };
 
-const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 
 function coordinateOrNull(value, minimum, maximum) {
@@ -57,25 +57,6 @@ function normalizeFacilityType(value) {
 function normalizePhone(value) {
   const phone = String(value ?? "").trim();
   return phone || null;
-}
-
-class MapErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { failed: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  componentDidCatch() {
-    this.props.onError();
-  }
-
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
 }
 
 function getArrayData(response) {
@@ -146,6 +127,7 @@ function NearbyClinicPage() {
   const mapRef = useRef(null);
   const cardRefs = useRef({});
   const hasInitialSearchRef = useRef(Boolean(searchText.trim()));
+  const currentSearchRef = useRef(searchText);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -197,7 +179,9 @@ function NearbyClinicPage() {
         });
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
-        setSelectedFacility(hasInitialSearchRef.current ? null : (data[0] ?? null));
+        setSelectedFacility(
+          hasInitialSearchRef.current || currentSearchRef.current.trim() ? null : (data[0] ?? null),
+        );
         setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
       })
       .catch((error) => {
@@ -265,6 +249,7 @@ function NearbyClinicPage() {
   );
 
   const handleSearchChange = (event) => {
+    currentSearchRef.current = event.target.value;
     setSearchText(event.target.value);
     setSelectedFacility(null);
     setReviews([]);
@@ -410,217 +395,49 @@ function NearbyClinicPage() {
           </div>
         )}
 
-        <section
-          className="facility-list-panel"
-          id="facility-list"
-          tabIndex="-1"
-          aria-label="Danh sách cơ sở y tế"
-        >
-          {!loadingFacilities && filteredFacilities.length === 0 && (
-            <div className="sidebar-note">Không có cơ sở y tế phù hợp từ backend.</div>
-          )}
-          {filteredFacilities.map((facility) => (
-            <article
-              ref={(node) => { cardRefs.current[facility.facilityId] = node; }}
-              className={`facility-result-card ${selectedFacility?.facilityId === facility.facilityId ? "selected" : ""}`}
-              key={facility.facilityId}
-              onClick={() => handleCardClick(facility)}
-            >
-              <div className="facility-top">
-                <strong>{facility.facilityName}</strong>
-                <span className={`type-badge ${facility.facilityTypeKey}`}>{facility.facilityTypeLabel}</span>
-              </div>
-              <p>⌖ {facility.address}</p>
-              <p>◷ {facility.openingHours}</p>
-              <p>Liên hệ: {facility.phoneLabel}</p>
-              {!facility.hasValidCoordinates && (
-                <p className="coordinate-notice">Chưa có vị trí chính xác trên bản đồ.</p>
-              )}
-              <div className="department-row">
-                {facility.departments.map((department) => <span key={department}>{department}</span>)}
-              </div>
-              <button
-                className="facility-select-button"
-                type="button"
-                aria-pressed={selectedFacility?.facilityId === facility.facilityId}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleCardClick(facility);
-                }}
-              >
-                {facility.hasValidCoordinates ? "Hiển thị trên bản đồ" : "Xem thông tin cơ sở"}
-              </button>
-              <div className="facility-actions">
-                <button
-                  type="button"
-                  disabled={!facility.phone}
-                  title={facility.phone ? undefined : "Cơ sở chưa có số điện thoại"}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    callFacility(facility);
-                  }}
-                >
-                  Gọi ngay
-                </button>
-                <button
-                  type="button"
-                  disabled={!facility.hasValidCoordinates}
-                  title={facility.hasValidCoordinates ? undefined : "Cơ sở chưa có tọa độ chính xác"}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openDirections(facility);
-                  }}
-                >
-                  Chỉ đường
-                </button>
-              </div>
-            </article>
-          ))}
-        </section>
+        <FacilityList
+          cardRefs={cardRefs}
+          facilities={filteredFacilities}
+          loading={loadingFacilities}
+          selectedFacilityId={selectedFacility?.facilityId}
+          onCall={callFacility}
+          onDirections={openDirections}
+          onSelect={handleCardClick}
+        />
 
-        {selectedFacility && (
-          <section className="facility-reviews" aria-labelledby="facility-review-title">
-            <h2 id="facility-review-title">Đánh giá {selectedFacility.facilityName}</h2>
-            <form onSubmit={submitReview}>
-              <label>
-                <span>Số sao</span>
-                <select
-                  value={reviewForm.rating}
-                  onChange={(event) => setReviewForm({ ...reviewForm, rating: event.target.value })}
-                >
-                  {[5, 4, 3, 2, 1].map((rating) => (
-                    <option key={rating} value={rating}>{rating} sao</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Nhận xét</span>
-                <textarea
-                  rows={3}
-                  value={reviewForm.comment}
-                  onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })}
-                  placeholder="Chia sẻ trải nghiệm của bạn"
-                />
-              </label>
-              <button type="submit" disabled={savingReview}>
-                {auth ? (savingReview ? "Đang gửi..." : "Gửi đánh giá") : "Đăng nhập để đánh giá"}
-              </button>
-            </form>
-            {reviewMessage && <p className="review-message" role="status">{reviewMessage}</p>}
-            <div className="review-list" aria-live="polite">
-              {reviewsLoading && <p>Đang tải đánh giá...</p>}
-              {!reviewsLoading && reviews.length === 0 && <p>Chưa có đánh giá.</p>}
-              {reviews.map((review) => (
-                <article key={review.id}>
-                  <strong>{review.rating}/5 sao</strong>
-                  <p>{review.comment || "Không có nhận xét."}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
+        <FacilityReviews
+          authenticated={Boolean(auth)}
+          facility={selectedFacility}
+          form={reviewForm}
+          loading={reviewsLoading}
+          message={reviewMessage}
+          reviews={reviews}
+          saving={savingReview}
+          onFormChange={(key, value) => setReviewForm((current) => ({ ...current, [key]: value }))}
+          onSubmit={submitReview}
+        />
 
         <div className="sidebar-note">ℹ Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</div>
       </aside>
 
-      <section className="map-panel" aria-labelledby="interactive-map-title">
-        <h2 className="sr-only" id="interactive-map-title">Bản đồ tương tác các cơ sở y tế</h2>
-        {chatContext && (
-          <aside className="map-chat-context" aria-label="Khung chat gợi ý chuyên khoa">
-            <strong>Gợi ý chuyên khoa qua triệu chứng</strong>
-            <p>{chatContext.symptom}</p>
-            <span>{chatContext.answer}</span>
-          </aside>
-        )}
-
-        {mapStatus !== "error" && (
-          <MapErrorBoundary key={mapRenderKey} onError={handleMapError}>
-            <Map
-              ref={mapRef}
-              mapStyle={FREE_MAP_STYLE}
-              {...viewState}
-              onLoad={() => setMapStatus("ready")}
-              onError={handleMapError}
-              onMove={(event) => setViewState(event.viewState)}
-              style={{ width: "100%", height: "100%" }}
-            >
-              <NavigationControl position="top-right" />
-
-              {userLocation && (
-                <Marker longitude={userLocation.lng} latitude={userLocation.lat}>
-                  <div className="user-marker"><span /></div>
-                </Marker>
-              )}
-
-              {mappableFacilities.map((facility) => (
-                <Marker
-                  key={facility.facilityId}
-                  longitude={facility.longitude}
-                  latitude={facility.latitude}
-                >
-                  <button
-                    className={`clinic-marker ${selectedFacility?.facilityId === facility.facilityId ? "selected" : ""}`}
-                    type="button"
-                    aria-label={`Chọn ${facility.facilityName} trên bản đồ`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleCardClick(facility);
-                    }}
-                  >
-                    <span aria-hidden="true">+</span>
-                  </button>
-                </Marker>
-              ))}
-
-              {selectedFacility?.hasValidCoordinates && (
-                <Popup
-                  longitude={selectedFacility.longitude}
-                  latitude={selectedFacility.latitude}
-                  onClose={() => setSelectedFacility(null)}
-                  closeOnClick={false}
-                  offset={28}
-                  className="clinic-popup"
-                >
-                  <div className="popup-card">
-                    <strong>{selectedFacility.facilityName}</strong>
-                    <span>{selectedFacility.address}</span>
-                    <span>{selectedFacility.phoneLabel}</span>
-                    {selectedFacility.website && (
-                      <a href={selectedFacility.website} target="_blank" rel="noreferrer">Website cơ sở</a>
-                    )}
-                    <button type="button" onClick={() => openDirections(selectedFacility)}>Xem chi tiết</button>
-                  </div>
-                </Popup>
-              )}
-            </Map>
-          </MapErrorBoundary>
-        )}
-
-        {mapStatus === "loading" && (
-          <div className="map-status-overlay" role="status" aria-live="polite" aria-busy="true">
-            <span className="map-loading-spinner" aria-hidden="true" />
-            <strong>Đang tải bản đồ…</strong>
-            <p>Danh sách cơ sở vẫn có thể sử dụng trong lúc chờ.</p>
-          </div>
-        )}
-
-        {mapStatus === "error" && (
-          <div className="map-fallback" role="status" aria-live="polite">
-            <span aria-hidden="true">!</span>
-            <strong>Không thể hiển thị bản đồ lúc này</strong>
-            <p>Bạn vẫn có thể xem, tìm kiếm và chọn cơ sở trong danh sách.</p>
-            <div className="map-fallback-actions">
-              <button type="button" onClick={retryMap}>Thử tải lại bản đồ</button>
-              <a href="#facility-list">Đến danh sách cơ sở</a>
-            </div>
-          </div>
-        )}
-
-        {mapStatus === "ready" && (
-          <button className="locate-button" type="button" onClick={handleLocateMe} aria-label="Định vị tôi">⌖</button>
-        )}
-        {locationError && <div className="location-error">{locationError}</div>}
-      </section>
+      <FacilityMap
+        chatContext={chatContext}
+        facilities={mappableFacilities}
+        locationError={locationError}
+        mapRef={mapRef}
+        mapRenderKey={mapRenderKey}
+        mapStatus={mapStatus}
+        selectedFacility={selectedFacility}
+        userLocation={userLocation}
+        viewState={viewState}
+        onDirections={openDirections}
+        onError={handleMapError}
+        onLocate={handleLocateMe}
+        onMapLoad={() => setMapStatus("ready")}
+        onRetry={retryMap}
+        onSelect={(facility) => facility ? handleCardClick(facility) : setSelectedFacility(null)}
+        onViewStateChange={setViewState}
+      />
     </main>
   );
 }
