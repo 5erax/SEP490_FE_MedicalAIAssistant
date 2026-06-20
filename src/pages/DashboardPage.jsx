@@ -13,63 +13,7 @@ const PROMPTS = [
   "Đau đầu kéo dài và mất ngủ",
 ];
 
-const FALLBACK_TRIAGE_GROUPS = [
-  {
-    id: "cardiology",
-    keywords: ["đau ngực", "tim", "khó thở", "hồi hộp", "đánh trống ngực", "huyết áp"],
-    departmentNames: ["Tim mạch", "Cấp cứu", "Nội tổng quát"],
-    diseaseName: "Nhóm triệu chứng tim mạch cần được đánh giá",
-    reasoning: "Mô tả có dấu hiệu liên quan tim mạch hoặc khó thở, nên ưu tiên cơ sở có chuyên khoa phù hợp.",
-    questions: [
-      "Triệu chứng có nặng hơn khi gắng sức hoặc leo cầu thang không?",
-      "Bạn có đau tức ngực, vã mồ hôi, choáng hoặc khó thở tăng nhanh không?",
-      "Bạn có tiền sử tăng huyết áp, bệnh tim mạch hoặc rối loạn mỡ máu không?",
-    ],
-  },
-  {
-    id: "respiratory",
-    keywords: ["ho", "sốt", "đau họng", "khò khè", "khó thở", "sổ mũi", "nghẹt mũi"],
-    departmentNames: ["Tai Mũi Họng", "Hô hấp", "Nội tổng quát"],
-    diseaseName: "Nhóm triệu chứng hô hấp hoặc tai mũi họng",
-    reasoning: "Mô tả có dấu hiệu đường hô hấp, nên khám chuyên khoa phù hợp nếu triệu chứng kéo dài hoặc nặng lên.",
-    questions: [
-      "Bạn có sốt từ 38 độ C trở lên hoặc rét run không?",
-      "Bạn có ho đờm, đau họng nhiều hoặc khó nuốt không?",
-      "Bạn có khó thở, thở rít hoặc đau ngực khi ho không?",
-    ],
-  },
-  {
-    id: "gastro",
-    keywords: ["đau bụng", "buồn nôn", "nôn", "tiêu chảy", "đầy bụng", "ợ nóng", "dạ dày"],
-    departmentNames: ["Tiêu hóa", "Nội tổng quát", "Cấp cứu"],
-    diseaseName: "Nhóm triệu chứng tiêu hóa cần sàng lọc",
-    reasoning: "Mô tả tập trung ở tiêu hóa, nên ưu tiên chuyên khoa tiêu hóa hoặc nội tổng quát.",
-    questions: [
-      "Cơn đau bụng có khu trú một vị trí rõ ràng hoặc tăng dần không?",
-      "Bạn có nôn nhiều, tiêu chảy, phân đen hoặc đi ngoài ra máu không?",
-      "Triệu chứng có xuất hiện sau ăn, dùng thuốc hoặc uống rượu bia không?",
-    ],
-  },
-  {
-    id: "neurology",
-    keywords: ["đau đầu", "chóng mặt", "tê", "yếu", "mất ngủ", "co giật", "mờ mắt"],
-    departmentNames: ["Thần kinh", "Nội tổng quát", "Cấp cứu"],
-    diseaseName: "Nhóm triệu chứng thần kinh cần theo dõi",
-    reasoning: "Mô tả có dấu hiệu thần kinh hoặc đau đầu kéo dài, cần đánh giá thêm mức độ nguy cơ.",
-    questions: [
-      "Bạn có yếu liệt, tê một bên người, nói khó hoặc nhìn mờ đột ngột không?",
-      "Đau đầu có dữ dội bất thường hoặc xuất hiện sau chấn thương không?",
-      "Bạn có chóng mặt nhiều, buồn nôn hoặc mất thăng bằng không?",
-    ],
-  },
-];
-
-const GENERIC_FALLBACK_QUESTIONS = [
-  "Triệu chứng đã kéo dài hơn 48 giờ hoặc đang nặng lên không?",
-  "Bạn có bệnh nền, đang mang thai hoặc đang dùng thuốc điều trị dài ngày không?",
-  "Triệu chứng có ảnh hưởng đến ăn uống, đi lại, ngủ hoặc sinh hoạt thường ngày không?",
-];
-
+/* Backend owns clinical question selection and diagnosis generation. */
 function confidencePercent(value) {
   const numeric = Number(value ?? 0);
   if (!Number.isFinite(numeric)) return 0;
@@ -78,13 +22,6 @@ function confidencePercent(value) {
 
 function unwrapPayload(response) {
   return response?.data?.data ?? response?.data ?? response;
-}
-
-function readCollectionItems(response) {
-  const data = unwrapPayload(response);
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
 }
 
 function getQuestionId(question, index) {
@@ -168,106 +105,6 @@ function readQuestionsPayload(response) {
 function readResultPayload(response) {
   const data = unwrapPayload(response);
   return data?.analysis ?? data?.result ?? data ?? null;
-}
-
-function normalizeSearchText(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function scoreTriageGroup(group, symptom, questions = [], answers = {}) {
-  const normalizedSymptom = normalizeSearchText(symptom);
-  let score = group.keywords.reduce(
-    (total, keyword) => total + (normalizedSymptom.includes(normalizeSearchText(keyword)) ? 3 : 0),
-    0,
-  );
-
-  for (const question of questions) {
-    if (question.triageGroup === group.id && answers[question.questionId] === true) score += 2;
-  }
-
-  return score;
-}
-
-function selectTriageGroup(symptom, questions = [], answers = {}) {
-  return [...FALLBACK_TRIAGE_GROUPS]
-    .sort((left, right) => scoreTriageGroup(right, symptom, questions, answers) - scoreTriageGroup(left, symptom, questions, answers))[0];
-}
-
-function buildFallbackQuestions(symptom) {
-  const selectedGroup = selectTriageGroup(symptom);
-  const questionTexts = [
-    ...selectedGroup.questions,
-    ...GENERIC_FALLBACK_QUESTIONS,
-  ].slice(0, 5);
-
-  return questionTexts.map((questionText, index) => ({
-    questionId: `fallback-${selectedGroup.id}-${index + 1}`,
-    questionText,
-    triageGroup: index < selectedGroup.questions.length ? selectedGroup.id : "general",
-    chapterCode: selectedGroup.id === "cardiology"
-      ? "IX"
-      : selectedGroup.id === "respiratory"
-        ? "X"
-        : selectedGroup.id === "gastro"
-          ? "XI"
-          : selectedGroup.id === "neurology"
-            ? "VI"
-            : "",
-  }));
-}
-
-function findMatchingDepartment(departments, group) {
-  const items = Array.isArray(departments) ? departments : [];
-  return items.find((department) => {
-    const departmentName = normalizeSearchText(department.departmentName);
-    return group.departmentNames.some((name) => departmentName.includes(normalizeSearchText(name)));
-  }) ?? null;
-}
-
-function buildLocalDiagnosisResult(symptom, questions, answers, departments = [], facilities = []) {
-  const group = selectTriageGroup(symptom, questions, answers);
-  const positiveAnswers = Object.values(answers).filter(Boolean).length;
-  const confidenceScore = Math.min(0.76, 0.42 + positiveAnswers * 0.06);
-  const matchedDepartment = findMatchingDepartment(departments, group);
-  const recommendedDepartment = matchedDepartment
-    ? {
-      ...matchedDepartment,
-      confidenceScore,
-      reason: group.reasoning,
-    }
-    : {
-      departmentName: group.departmentNames[0],
-      confidenceScore,
-      reason: group.reasoning,
-    };
-
-  return {
-    primaryDiagnosis: {
-      rank: 1,
-      diseaseName: group.diseaseName,
-      paGivenB: confidenceScore,
-      clinicalReasoning: `${group.reasoning} Đây là nhận định dự phòng khi backend chưa trả đủ câu hỏi lâm sàng.`,
-    },
-    diagnoses: [
-      {
-        rank: 1,
-        diseaseName: group.diseaseName,
-        paGivenB: confidenceScore,
-        clinicalReasoning: group.reasoning,
-      },
-      {
-        rank: 2,
-        diseaseName: "Cần bác sĩ khai thác thêm bệnh sử và khám trực tiếp",
-        paGivenB: Math.max(0.24, confidenceScore - 0.2),
-        clinicalReasoning: "Triệu chứng mô tả chưa đủ để kết luận bệnh cụ thể.",
-      },
-    ],
-    recommendedDepartment,
-    recommendedFacilities: Array.isArray(facilities) ? facilities : [],
-  };
 }
 
 function hasDepartmentMatch(facility, department) {
@@ -369,24 +206,20 @@ export default function DashboardPage() {
     answers,
     canSubmitAnswers,
     error,
-    fallbackNotice,
+    currentQuestionIndex,
     input,
     loading,
     questions,
     questionsPanelRef,
     resetDiagnosis,
     result,
+    setCurrentQuestionIndex,
     setInput,
     startDiagnosis,
     status,
     submitAnswers,
     updateAnswer,
   } = useSymptomIntake({
-    buildFallbackQuestions,
-    buildLocalDiagnosisResult,
-    looksLikeQuestion,
-    normalizeQuestion,
-    readCollectionItems,
     readQuestionsPayload,
     readResultPayload,
   });
@@ -524,12 +357,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {fallbackNotice && (
-          <Alert tone="warning" title="Đang dùng luồng sàng lọc dự phòng" live>
-            {fallbackNotice}
-          </Alert>
-        )}
-
         {status === "no-questions" && (
           <Alert tone="warning" title="AI chưa có câu hỏi phù hợp" live>
             Hãy mô tả rõ hơn về thời gian xuất hiện, vị trí đau, mức độ và triệu chứng đi kèm.
@@ -559,7 +386,9 @@ export default function DashboardPage() {
             </div>
 
             <div className="studio-question-list">
-              {questions.map((question) => (
+              {questions[currentQuestionIndex] && (() => {
+                const question = questions[currentQuestionIndex];
+                return (
                 <fieldset className="studio-question" key={question.questionId}>
                   <legend>{question.questionText}</legend>
                   <div>
@@ -584,18 +413,19 @@ export default function DashboardPage() {
                   </div>
                   {question.chapterCode && <small>Nhóm ICD: {question.chapterCode}</small>}
                 </fieldset>
-              ))}
+                );
+              })()}
             </div>
-
-            <Button
-              size="lg"
-              type="submit"
-              loading={status === "submitting"}
-              loadingLabel="Đang phân tích..."
-              disabled={!canSubmitAnswers}
-            >
-              Xem nhận định và bệnh viện phù hợp
-            </Button>
+            <div className="studio-question-actions">
+              <Button type="button" tone="secondary" disabled={currentQuestionIndex === 0} onClick={() => setCurrentQuestionIndex((index) => index - 1)}>Câu trước</Button>
+              {currentQuestionIndex < questions.length - 1 ? (
+                <Button type="button" disabled={answers[questions[currentQuestionIndex]?.questionId] === undefined} onClick={() => setCurrentQuestionIndex((index) => index + 1)}>Câu tiếp theo</Button>
+              ) : (
+                <Button size="lg" type="submit" loading={status === "submitting"} loadingLabel="Đang phân tích..." disabled={!canSubmitAnswers}>
+                  Xem nhận định và bệnh viện phù hợp
+                </Button>
+              )}
+            </div>
           </form>
         )}
 

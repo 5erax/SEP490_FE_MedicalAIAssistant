@@ -13,6 +13,7 @@ export const APP_ROUTES = [
   { path: "/chat", expectedPath: "/login", surface: "premium-gate" },
   { path: "/map", expectedPath: "/map", surface: "public" },
   { path: "/records", expectedPath: "/login", surface: "premium-gate" },
+  { path: "/recovery-plan", expectedPath: "/login", surface: "auth-gate" },
   { path: "/medication", expectedPath: "/login", surface: "premium-gate" },
   { path: "/pricing", expectedPath: "/pricing", surface: "public" },
   { path: "/payment/return", expectedPath: "/payment/return", surface: "payment-result" },
@@ -33,6 +34,8 @@ export const APP_ROUTES = [
   { path: "/app/admin/subscriptions", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/staff", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/departments", expectedPath: "/login", surface: "role-gate" },
+  { path: "/app/admin/icd-chapters", expectedPath: "/login", surface: "role-gate" },
+  { path: "/app/admin/clinical-questions", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/facilities", expectedPath: "/login", surface: "role-gate" },
 ];
 

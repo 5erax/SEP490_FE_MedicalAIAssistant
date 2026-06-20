@@ -149,6 +149,12 @@
   width: min(680px, 100%);
 }
 
+html[data-theme="dark"] .specialty-page {
+  background:
+    radial-gradient(circle at 50% 12%, rgba(196, 233, 149, 0.12), transparent 32%),
+    linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%);
+}
+
 .studio-diagnosis-panel,
 .studio-result-panel {
   width: 100%;
@@ -449,3 +455,4 @@
     grid-template-columns: 1fr;
   }
 }
+.studio-question-actions { display: flex; flex-wrap: wrap; gap: 10px; }

@@ -84,10 +84,10 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toBeVisible();
   await expect(page.getByText("Đang tải bản đồ…", { exact: true })).toBeHidden();
 
-  const selectFacility = page.getByRole("button", { name: "Hiển thị trên bản đồ" });
-  await selectFacility.focus();
-  await selectFacility.press("Enter");
-  await expect(selectFacility).toHaveAttribute("aria-pressed", "true");
+  const viewDetails = page.locator(".facility-select-button");
+  await viewDetails.focus();
+  await viewDetails.press("Enter");
+  await expect(page.getByRole("button", { name: "Đang xem chi tiết" })).toHaveAttribute("aria-pressed", "true");
 
   const skipMap = page.getByRole("link", { name: "Bỏ qua bản đồ, đến danh sách cơ sở" });
   await expect(skipMap).toHaveAttribute("href", "#facility-list");
@@ -139,6 +139,7 @@ test("map search matches facility departments from active backend data", async (
   await expect(page.getByText("Bệnh viện Tim", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Danh sách cơ sở y tế").getByText("Phòng khám", { exact: true })).toBeVisible();
 
+  await page.getByRole("button", { name: "Xem chi tiết" }).click();
   const callButton = page.getByRole("button", { name: "Gọi ngay" });
   await expect(callButton).toBeDisabled();
   await expect(callButton).toHaveAttribute("title", "Cơ sở chưa có số điện thoại");

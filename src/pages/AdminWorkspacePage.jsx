@@ -3,10 +3,10 @@ import {
   Activity,
   Bell,
   BookOpen,
-  BrainCircuit,
   Building2,
   CalendarDays,
   ClipboardList,
+  CircleHelp,
   CreditCard,
   LayoutDashboard,
   Search,
@@ -33,14 +33,16 @@ import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
+import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
 import {
   authApi,
   doctorInvitationsApi,
   facilityDepartmentsApi,
   getStoredAuth,
-  icdChaptersApi,
   medicalFacilitiesApi,
   medicalDepartmentsApi,
+  clinicalQuestionsApi,
+  icdChaptersApi,
   subscriptionPlansApi,
   usersApi,
 } from "../services/api";
@@ -106,6 +108,12 @@ const ADMIN_NAV_ICONS = {
   staff: UserPlus,
   facility: Building2,
   icd: BookOpen,
+  question: CircleHelp,
+};
+const QUESTION_CATALOG_CONFIG = {
+  title: "Câu hỏi lâm sàng", formTitle: "Nội dung câu hỏi", singularLabel: "câu hỏi", pluralLabel: "câu hỏi lâm sàng",
+  primaryField: "questionVi", secondaryField: "englishPrefix",
+  fields: [{ name: "questionVi", label: "Câu hỏi tiếng Việt", required: true, multiline: true }, { name: "englishPrefix", label: "Câu hỏi tiếng Anh", required: true, multiline: true }, { name: "chapterCode", label: "Mã chương ICD" }],
 };
 const ADMIN_NAV_ITEMS = getNavigationModel("admin");
 
@@ -1487,7 +1495,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 </div>
               </article>
               <article>
-                <span className="admin-stat-icon"><BrainCircuit size={17} /></span>
+                <span className="admin-stat-icon"><ClipboardList size={17} /></span>
                 <div>
                   <span>AI Configs</span>
                   <strong>{aiConfigsLoading ? "..." : aiConfigPageInfo.totalCount}</strong>
@@ -1654,6 +1662,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 onView={handleViewIcdChapter}
               />
             )}
+            {activeSection === "clinical-questions" && <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} service={clinicalQuestionsApi} />}
 
             {activeSection === "facilities" && (
               <AdminFacilitiesSection
