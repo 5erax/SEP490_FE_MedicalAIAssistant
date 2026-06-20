@@ -41,8 +41,12 @@ export default function AdminClinicalCatalogSection({ config, service }) {
     setStatus("saving");
     setMessage("");
     try {
-      if (editingId) await service.update(editingId, form);
-      else await service.create(form);
+      const payload = Object.fromEntries(config.fields.map((field) => [
+        field.name,
+        field.serialize ? field.serialize(form[field.name]) : form[field.name],
+      ]));
+      if (editingId) await service.update(editingId, payload);
+      else await service.create(payload);
       setMessage(editingId ? `Đã cập nhật ${config.singularLabel}.` : `Đã tạo ${config.singularLabel}.`);
       resetForm();
       await loadItems();
@@ -97,7 +101,7 @@ export default function AdminClinicalCatalogSection({ config, service }) {
         {config.fields.map((field) => (
           <label className="clean-field" key={field.name}>
             <span>{field.label}</span>
-            {field.multiline ? <textarea rows={4} value={form[field.name]} required={field.required} onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))} /> : <input value={form[field.name]} required={field.required} onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))} />}
+            {field.multiline ? <textarea rows={4} value={form[field.name]} required={field.required} onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))} /> : <input type={field.type || "text"} min={field.min} step={field.step} value={form[field.name]} required={field.required} onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))} />}
           </label>
         ))}
         <button className="btn btn-primary" type="submit" disabled={status === "saving"}>{status === "saving" ? "Đang lưu..." : editingId ? "Lưu cập nhật" : "Tạo mới"}</button>

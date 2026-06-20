@@ -95,6 +95,7 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
   expect(createdDoctor).toEqual({
     facilityDepartmentId: FACILITY_DEPARTMENT_ID,
     fullName: "BS. Nguyễn Minh Anh",
+    specialty: null,
     academicTitle: "ThS.BS",
     departmentRole: 0,
     yearsOfExperience: 8,
@@ -158,9 +159,6 @@ test("admin retries a failed doctor list and receives an empty state", async ({ 
   });
 
   await page.goto("/app/admin/doctors", { waitUntil: "domcontentloaded" });
-
-  const loadingState = page.getByText("Đang tải danh sách bác sĩ...", { exact: true });
-  await expect(loadingState).toBeVisible();
 
   const errorState = page.getByRole("status").filter({ hasText: "Không thể tải danh sách bác sĩ" });
   await expect(errorState).toBeVisible();

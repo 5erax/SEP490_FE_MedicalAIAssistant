@@ -228,8 +228,19 @@ export default function SymptomAnalysisPage() {
         questionId: question.questionId,
         answer: answers[question.questionId],
       }));
-      const response = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
-      setResult(readResultPayload(response));
+      const [recommendationResponse, diagnosisResponse] = await Promise.all([
+        symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload),
+        symptomAnalysisApi.submitDiagnosis(sessionId, payload),
+      ]);
+      const recommendation = readResultPayload(recommendationResponse) ?? {};
+      const diagnosis = readResultPayload(diagnosisResponse) ?? {};
+      const diagnosisItems = Array.isArray(diagnosis.diagnoses) ? diagnosis.diagnoses : [];
+      setResult({
+        ...recommendation,
+        diagnoses: diagnosisItems,
+        primaryDiagnosis: diagnosisItems[0] ?? recommendation.primaryDiagnosis ?? null,
+        diagnosisModel: diagnosis.model ?? null,
+      });
       setStatus("result");
     } catch (requestError) {
       setError(requestError.message || "Không thể gửi câu trả lời. Vui lòng thử lại.");

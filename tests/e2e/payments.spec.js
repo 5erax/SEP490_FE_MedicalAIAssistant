@@ -113,7 +113,9 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
   const popup = await popupPromise;
   await popup.waitForLoadState("domcontentloaded");
 
-  await expect(page.getByText("Thanh toán thành công", { exact: true })).toBeVisible();
+  await expect(
+    page.locator("#main-content").getByText("Thanh toán thành công", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.locator("#current-subscription").getByRole("heading", { name: "MediMate+ Monthly" }),
   ).toBeVisible();

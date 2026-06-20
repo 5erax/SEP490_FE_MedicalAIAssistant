@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, useEffect, useRef } from "react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -21,6 +21,30 @@ class MapErrorBoundary extends Component {
   render() {
     return this.state.failed ? null : this.props.children;
   }
+}
+
+function AccessibleFacilityMarker({ facility, selected, onSelect }) {
+  const markerRef = useRef(null);
+
+  useEffect(() => {
+    markerRef.current?.getElement?.().setAttribute(
+      "aria-label",
+      `Chọn ${facility.facilityName} trên bản đồ`,
+    );
+  }, [facility.facilityName]);
+
+  return (
+    <Marker
+      ref={markerRef}
+      longitude={facility.longitude}
+      latitude={facility.latitude}
+      onClick={(event) => { event.originalEvent.stopPropagation(); onSelect(facility); }}
+    >
+      <span className={`clinic-marker ${selected ? "selected" : ""}`} aria-hidden="true">
+        <span>+</span>
+      </span>
+    </Marker>
+  );
 }
 
 export default function FacilityMap({
@@ -70,16 +94,12 @@ export default function FacilityMap({
               </Marker>
             )}
             {facilities.map((facility) => (
-              <Marker key={facility.facilityId} longitude={facility.longitude} latitude={facility.latitude}>
-                <button
-                  className={`clinic-marker ${selectedFacility?.facilityId === facility.facilityId ? "selected" : ""}`}
-                  type="button"
-                  aria-label={`Chọn ${facility.facilityName} trên bản đồ`}
-                  onClick={(event) => { event.stopPropagation(); onSelect(facility); }}
-                >
-                  <span aria-hidden="true">+</span>
-                </button>
-              </Marker>
+              <AccessibleFacilityMarker
+                key={facility.facilityId}
+                facility={facility}
+                selected={selectedFacility?.facilityId === facility.facilityId}
+                onSelect={onSelect}
+              />
             ))}
             {selectedFacility?.hasValidCoordinates && (
               <Popup

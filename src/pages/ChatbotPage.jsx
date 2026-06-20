@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../router/navigation";
-import { sendAnthropicMessage } from "../services/anthropicService";
+import { webChatbotApi } from "../services/api";
 
 const WELCOME_PROMPTS = [
   "Tôi bị đau đầu và sốt nhẹ 2 ngày",
@@ -62,33 +62,14 @@ function ChatbotPage() {
       timestamp: new Date(),
     };
 
-    const history = [...messages, userMessage];
-    setMessages(history);
+    setMessages((current) => [...current, userMessage]);
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsLoading(true);
 
     try {
-      const apiKey = import.meta.env.VITE_ANTHROPIC_KEY;
-      if (!apiKey) throw new Error("Missing Anthropic key");
-
-      const data = await sendAnthropicMessage({
-        apiKey,
-        body: {
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: `Bạn là MediMate AI, trợ lý y khoa thông minh.
-Trả lời bằng tiếng Việt, ngắn gọn, dễ hiểu, thân thiện.
-Khi nói về thuốc hoặc điều trị, luôn khuyên người dùng tham khảo bác sĩ.
-Nếu triệu chứng nghiêm trọng, khuyến nghị đi cấp cứu ngay.`,
-          messages: history.map((message) => ({
-            role: message.role === "assistant" ? "assistant" : "user",
-            content: message.content,
-          })),
-        },
-      });
-
-      const aiText = data.content?.[0]?.text || "Xin lỗi, có lỗi xảy ra.";
+      const response = await webChatbotApi.message(text, { auth: true });
+      const aiText = response.data?.answer || response.message || "Xin lỗi, có lỗi xảy ra.";
       setMessages((current) => [
         ...current,
         {

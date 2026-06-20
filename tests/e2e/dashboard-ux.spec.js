@@ -24,6 +24,7 @@ test.describe("patient specialty intake", () => {
   test("asks follow-up questions and recommends a matching hospital in place", async ({ page }) => {
     let questionPayload = null;
     let answerPayload = null;
+    let diagnosisPayload = null;
 
     await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => {
       questionPayload = route.request().postDataJSON();
@@ -94,6 +95,27 @@ test.describe("patient specialty intake", () => {
       });
     });
 
+    await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => {
+      diagnosisPayload = route.request().postDataJSON();
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            sessionId: SESSION_ID,
+            model: "google/medgemma-4b-it",
+            diagnoses: [{
+              rank: 1,
+              diseaseName: "Viêm họng cấp",
+              icd10Code: "J02",
+              paGivenB: 0.86,
+              clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
+            }],
+          },
+        }),
+      });
+    });
+
     await openRoute(page, "/dashboard");
 
     const symptoms = page.getByLabel("Triệu chứng bạn đang gặp");
@@ -130,6 +152,7 @@ test.describe("patient specialty intake", () => {
       sessionId: SESSION_ID,
       answers: [{ questionId: QUESTION_ID, answer: true }],
     });
+    expect(diagnosisPayload).toEqual(answerPayload);
   });
 
   test("accepts nested backend question response shapes", async ({ page }) => {

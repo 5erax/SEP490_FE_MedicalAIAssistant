@@ -94,6 +94,24 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
     });
   });
 
+  await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        sessionId: SESSION_ID,
+        model: "google/medgemma-4b-it",
+        diagnoses: [{
+          rank: 1,
+          diseaseName: "Đau thắt ngực",
+          icd10Code: "I20",
+          paGivenB: 0.91,
+          clinicalReasoning: "Phù hợp với triệu chứng mô tả.",
+        }],
+      },
+    }),
+  }));
+
   await page.goto("/symptom", { waitUntil: "domcontentloaded" });
   await page.locator("textarea").first().fill("Đau ngực nhẹ");
   await page.getByRole("button", { name: "Bắt đầu sàng lọc" }).click();
