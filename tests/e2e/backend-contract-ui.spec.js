@@ -9,6 +9,7 @@ const TOKEN = [
 
 const FACILITY_ID = "11111111-1111-4111-8111-111111111111";
 const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
+const CHAPTER_ID = "66666666-6666-4666-8666-666666666666";
 
 async function authenticate(page) {
   await page.addInitScript((accessToken) => {
@@ -114,6 +115,7 @@ test("facility review submits the Swagger payload", async ({ page }) => {
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Bệnh viện A", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Xem chi tiết" }).click();
   await page.getByLabel("Số sao").selectOption("4");
   await page.getByLabel("Nhận xét").fill("Dịch vụ tốt");
   await page.getByRole("button", { name: "Gửi đánh giá" }).click();
@@ -298,4 +300,125 @@ test("profile page renders and updates backend user data instead of mock data", 
     dateOfBirth: "1990-01-02",
     phoneNumber: "0901234567",
   });
+});
+
+test("clinical diagnosis uses the dedicated Swagger endpoint", async ({ page }) => {
+  await preparePage(page);
+  const sessionId = "33333333-3333-4333-8333-333333333333";
+  const questionId = "77777777-7777-4777-8777-777777777777";
+  let diagnosisPayload = null;
+
+  await page.route("**/api/symptom-analysis/suggest-clinical-questions", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { sessionId, questions: [{ questionId, questionVi: "Bạn có sốt không?" }] } }),
+  }));
+  await page.route("**/api/symptom-analysis/submit-clinical-question-answers", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { analysis: { recommendedDepartment: { departmentName: "Nội tổng quát", confidenceScore: 0.7 } } } }),
+  }));
+  await page.route("**/api/symptom-analysis/submit-diagnosis", (route) => {
+    diagnosisPayload = route.request().postDataJSON();
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { diagnoses: [{ rank: 1, diseaseName: "Cúm", icd10Code: "J11", paGivenB: 0.7 }] } }),
+    });
+  });
+
+  await page.goto("/dashboard");
+  await page.getByLabel("Triệu chứng bạn đang gặp").fill("Ho và sốt");
+  await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
+  await page.getByLabel("Có").check();
+  await page.getByRole("button", { name: "Xem nhận định và bệnh viện phù hợp" }).click();
+
+  await expect(page.getByText("Cúm", { exact: true })).toBeVisible();
+  await expect(page.getByText("Nội tổng quát", { exact: true })).toBeVisible();
+  expect(diagnosisPayload).toEqual({ sessionId, answers: [{ questionId, answer: true }] });
+});
+
+test("chat sends the backend WebChatbotRequest and renders its answer", async ({ page }) => {
+  await preparePage(page);
+  await authenticate(page);
+  let chatPayload = null;
+
+  await page.route("**/api/web-chatbot/message", async (route) => {
+    chatPayload = route.request().postDataJSON();
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: { answer: "Phản hồi từ backend", recommendedPlans: [], intent: "health", needsMoreInformation: false },
+      }),
+    });
+  });
+
+  await page.goto("/chat", { waitUntil: "domcontentloaded" });
+  await page.getByPlaceholder("Nhập triệu chứng hoặc câu hỏi...").fill("Tôi bị đau đầu");
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+
+  await expect(page.getByText("Phản hồi từ backend", { exact: true })).toBeVisible();
+  expect(chatPayload).toEqual({ message: "Tôi bị đau đầu" });
+});
+
+test("admin clinical question form sends the Swagger DTO", async ({ page }) => {
+  await preparePage(page);
+  await authenticate(page);
+  let clinicalPayload = null;
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    if (url.pathname === "/api/users/me") {
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { name: "Admin", roles: ["Admin"] } }) });
+    }
+    if (url.pathname === "/api/clinical-questions" && method === "POST") {
+      clinicalPayload = route.request().postDataJSON();
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { id: "question-id", ...clinicalPayload } }) });
+    }
+    const paged = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities", "/api/clinical-questions", "/api/icd-chapters"].includes(url.pathname);
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: paged ? { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 } : [] }) });
+  });
+
+  await page.goto("/app/admin/clinical-questions", { waitUntil: "domcontentloaded" });
+  await page.getByLabel("ID chương ICD").fill(CHAPTER_ID);
+  await page.getByLabel("Mã chương ICD").fill("A-B");
+  await page.getByLabel("Câu hỏi tiếng Việt").fill("Bạn có sốt cao không?");
+  await page.getByLabel("Câu hỏi tiếng Anh").fill("Do you have a high fever?");
+  await page.getByLabel("Thứ tự").fill("2");
+  await page.getByRole("button", { name: "Tạo mới", exact: true }).click();
+
+  expect(clinicalPayload).toEqual({
+    chapterId: CHAPTER_ID,
+    chapterCode: "A-B",
+    questionVi: "Bạn có sốt cao không?",
+    englishPrefix: "Do you have a high fever?",
+    sortOrder: 2,
+  });
+});
+
+test("admin ICD form sends keywordWeights instead of unsupported description", async ({ page }) => {
+  await preparePage(page);
+  await authenticate(page);
+  let icdPayload = null;
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    if (url.pathname === "/api/users/me") {
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { name: "Admin", roles: ["Admin"] } }) });
+    }
+    if (url.pathname === "/api/icd-chapters" && method === "POST") {
+      icdPayload = route.request().postDataJSON();
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { id: CHAPTER_ID, ...icdPayload } }) });
+    }
+    const paged = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities", "/api/icd-chapters"].includes(url.pathname);
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: paged ? { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 } : [] }) });
+  });
+
+  await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
+  await page.getByLabel("Mã Chapter").fill("A-B");
+  await page.getByLabel("Tên Chapter").fill("Bệnh truyền nhiễm");
+  await page.getByLabel("Trọng số từ khóa (JSON)").fill('{"sốt":5,"ho":3}');
+  await page.getByRole("button", { name: "Tạo ICD Chapter", exact: true }).click();
+
+  expect(icdPayload).toEqual({ chapterCode: "A-B", chapterName: "Bệnh truyền nhiễm", keywordWeights: { sốt: 5, ho: 3 } });
 });

@@ -78,6 +78,13 @@ export default function AdminDepartmentsSection({
             placeholder="Mô tả chức năng, nhóm triệu chứng thường gặp..."
           />
         </Field>
+        <Field label="Mã chương ICD">
+          <input
+            value={form.chapterCode}
+            onChange={(event) => onFormChange("chapterCode", event.target.value)}
+            placeholder="Ví dụ: IX"
+          />
+        </Field>
         <button className="btn btn-primary" type="submit" disabled={saving}>
           {saving ? "Đang lưu..." : editingDepartmentId ? "Lưu cập nhật" : "Tạo chuyên khoa"}
         </button>

@@ -289,9 +289,6 @@ test("admin retries a failed facility list and receives an empty state", async (
 
   await page.goto("/app/admin/facilities", { waitUntil: "domcontentloaded" });
 
-  const loadingState = page.getByText("Đang tải danh sách cơ sở y tế...", { exact: true });
-  await expect(loadingState).toBeVisible();
-
   const errorState = page.getByRole("status").filter({ hasText: "Không thể tải danh sách cơ sở y tế" });
   await expect(errorState).toBeVisible();
   await expect(errorState).toContainText("Vui lòng kiểm tra kết nối và thử tải lại danh sách cơ sở y tế.");

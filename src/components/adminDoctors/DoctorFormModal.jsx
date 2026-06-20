@@ -4,6 +4,7 @@ import { Dialog } from "../ui";
 const EMPTY_FORM = {
   facilityDepartmentId: "",
   fullName: "",
+  specialty: "",
   academicTitle: "",
   departmentRole: "0",
   yearsOfExperience: "",
@@ -25,6 +26,7 @@ function toFormValue(doctor) {
   return {
     facilityDepartmentId: doctor.facilityDepartmentId ?? "",
     fullName: doctor.fullName ?? "",
+    specialty: doctor.specialty ?? "",
     academicTitle: doctor.academicTitle ?? "",
     departmentRole: String(doctor.departmentRole ?? 0),
     yearsOfExperience: doctor.yearsOfExperience ?? "",
@@ -57,6 +59,7 @@ function buildDoctorPayload(form) {
   return {
     facilityDepartmentId: form.facilityDepartmentId.trim(),
     fullName: form.fullName.trim(),
+    specialty: form.specialty.trim() || null,
     academicTitle: form.academicTitle.trim() || null,
     departmentRole: Number(form.departmentRole),
     yearsOfExperience: form.yearsOfExperience === "" ? null : Number(form.yearsOfExperience),
@@ -164,6 +167,10 @@ export default function DoctorFormModal({
                 aria-describedby={errors.fullName ? "doctor-full-name-error" : undefined}
               />
               {errors.fullName && <small id="doctor-full-name-error" role="alert">{errors.fullName}</small>}
+            </label>
+            <label className="clean-field">
+              <span>Chuyên môn</span>
+              <input value={form.specialty} onChange={(event) => update("specialty", event.target.value)} placeholder="Ví dụ: Tim mạch can thiệp" />
             </label>
             <label className="clean-field">
               <span>Học hàm/học vị</span>

@@ -156,6 +156,7 @@ export default function SymptomAnalysisPage() {
   const [sessionId, setSessionId] = useState("");
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -196,6 +197,7 @@ export default function SymptomAnalysisPage() {
     setResult(null);
     setQuestions([]);
     setAnswers({});
+    setCurrentQuestionIndex(0);
     setStatus("loading-questions");
 
     try {
@@ -226,8 +228,19 @@ export default function SymptomAnalysisPage() {
         questionId: question.questionId,
         answer: answers[question.questionId],
       }));
-      const response = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
-      setResult(readResultPayload(response));
+      const [recommendationResponse, diagnosisResponse] = await Promise.all([
+        symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload),
+        symptomAnalysisApi.submitDiagnosis(sessionId, payload),
+      ]);
+      const recommendation = readResultPayload(recommendationResponse) ?? {};
+      const diagnosis = readResultPayload(diagnosisResponse) ?? {};
+      const diagnosisItems = Array.isArray(diagnosis.diagnoses) ? diagnosis.diagnoses : [];
+      setResult({
+        ...recommendation,
+        diagnoses: diagnosisItems,
+        primaryDiagnosis: diagnosisItems[0] ?? recommendation.primaryDiagnosis ?? null,
+        diagnosisModel: diagnosis.model ?? null,
+      });
       setStatus("result");
     } catch (requestError) {
       setError(requestError.message || "Không thể gửi câu trả lời. Vui lòng thử lại.");
@@ -324,7 +337,8 @@ export default function SymptomAnalysisPage() {
             </div>
 
             <div className="question-list">
-              {questions.map((question, index) => {
+              {questions[currentQuestionIndex] && [questions[currentQuestionIndex]].map((question) => {
+                const index = currentQuestionIndex;
                 const questionText = formatQuestion(question, index);
                 const questionId = question.questionId;
                 return (
@@ -356,9 +370,16 @@ export default function SymptomAnalysisPage() {
               })}
             </div>
 
-            <button className="primary-action" type="submit" disabled={!canSubmitAnswers}>
-              {status === "submitting" ? "Đang phân tích..." : "Xem nhận định tham khảo"}
-            </button>
+            <div className="diagnosis-question-actions">
+              <button className="outline-action" type="button" disabled={currentQuestionIndex === 0} onClick={() => setCurrentQuestionIndex((index) => index - 1)}>Câu trước</button>
+              {currentQuestionIndex < questions.length - 1 ? (
+                <button className="primary-action" type="button" disabled={answers[questions[currentQuestionIndex]?.questionId] === undefined} onClick={() => setCurrentQuestionIndex((index) => index + 1)}>Câu tiếp theo</button>
+              ) : (
+                <button className="primary-action" type="submit" disabled={!canSubmitAnswers}>
+                  {status === "submitting" ? "Đang phân tích..." : "Xem nhận định tham khảo"}
+                </button>
+              )}
+            </div>
           </form>
         )}
 
@@ -492,6 +513,7 @@ const styles = `
 .diagnosis-question div { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .diagnosis-question label { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; padding: 0 14px; font-weight: 900; }
 .diagnosis-question small { display: inline-block; margin-top: 9px; color: var(--muted); font-weight: 800; }
+.diagnosis-question-actions, .studio-question-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .result-layout { display: grid; gap: 16px; }
 .diagnosis-summary h2, .department-card h2 { font-size: clamp(28px, 4vw, 44px); }
 .confidence-line { position: relative; height: 12px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 999px; background: #e9eee1; margin-top: 14px; }

@@ -14,6 +14,7 @@ import PaymentResultPage from "./pages/PaymentResultPage";
 import SymptomAnalysisPage from "./pages/SymptomAnalysisPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
+import RecoveryPlanPage from "./pages/RecoveryPlanPage";
 import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
 import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
 import { getStoredAuth } from "./services/api";
@@ -110,17 +111,10 @@ function App() {
       return lazyPage(<NearbyClinicPage />);
     case "patient.records":
       return userWorkspace(<MedicalRecordPage />);
+    case "patient.recovery":
+      return userWorkspace(<RecoveryPlanPage />);
     case "patient.medication":
       return userWorkspace(<MedicationScanPage />);
-    case "patient.recovery-plan":
-      return userWorkspace(
-        <section className="app-page">
-          <div className="container">
-            <p className="eyebrow">Kế hoạch hồi phục</p>
-            <h1>Kế hoạch hồi phục đang được chuẩn bị.</h1>
-          </div>
-        </section>,
-      );
     case "public.pricing":
       return <PricingPage />;
     case "payment.return":

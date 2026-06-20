@@ -149,6 +149,12 @@
   width: min(680px, 100%);
 }
 
+html[data-theme="dark"] .specialty-page {
+  background:
+    radial-gradient(circle at 50% 12%, rgba(196, 233, 149, 0.12), transparent 32%),
+    linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%);
+}
+
 .studio-diagnosis-panel,
 .studio-result-panel {
   width: 100%;
@@ -448,4 +454,31 @@
   .studio-result-panel {
     grid-template-columns: 1fr;
   }
+}
+.studio-question-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Focused patient flow: calm surfaces and one clear action per step. */
+.studio-center { width: min(920px, 100%); }
+.studio-flow { width: min(620px, 100%); display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0; padding: 0; list-style: none; }
+.studio-flow li { position: relative; display: grid; justify-items: center; gap: 7px; color: var(--color-muted); font-size: 12px; }
+.studio-flow li:not(:last-child)::after { content: ""; position: absolute; top: 17px; left: calc(50% + 22px); width: calc(100% - 44px); height: 2px; background: var(--color-line-strong); }
+.studio-flow span { z-index: 1; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--color-line-strong); border-radius: 50%; background: var(--color-surface); font-weight: 950; }
+.studio-flow li.active { color: var(--color-ink); }
+.studio-flow li.active span { border-color: #315d18; background: var(--color-primary); }
+.studio-chatbox { border: 1px solid var(--color-line-strong); border-radius: 24px; box-shadow: 0 24px 70px rgba(34, 63, 20, .11); padding: 24px; }
+.studio-diagnosis-panel, .studio-result-card { border: 1px solid var(--color-line-strong); border-radius: 22px; box-shadow: 0 18px 50px rgba(34, 63, 20, .09); }
+.studio-question { border-radius: 18px; padding: 20px; }
+.studio-question label { min-height: 48px; padding: 0 20px; cursor: pointer; }
+.studio-question label:has(input:checked) { border-color: #315d18; background: var(--color-primary-soft); box-shadow: inset 0 0 0 1px #315d18; }
+.studio-result-card.primary { background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-soft) 100%); }
+.studio-result-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.studio-result-meta small, .studio-result-meta strong { border-radius: var(--radius-pill); background: var(--color-surface); padding: 7px 10px; font-size: 12px; }
+.studio-confidence { height: 8px; overflow: hidden; border-radius: 999px; background: var(--color-line); }
+.studio-confidence i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #087f8c, var(--color-primary)); }
+.studio-diagnosis-list p > strong { display: inline-flex; align-items: center; gap: 9px; }
+.studio-diagnosis-list p > strong > span { width: 26px; height: 26px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--color-surface-soft); color: var(--color-muted); font-size: 11px; }
+
+@media (max-width: 760px) {
+  .studio-flow strong { font-size: 11px; }
+  .studio-chatbox { padding: 16px; }
 }

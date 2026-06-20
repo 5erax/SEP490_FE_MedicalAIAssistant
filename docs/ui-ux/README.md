@@ -22,7 +22,9 @@ Thư mục này chứa audit, nguyên tắc và kế hoạch nâng cấp UI/UX.
 3. [Design principles](./design-principles.md): guardrail thiết kế và nội dung.
 4. [Navigation plan](./navigation-plan.md): route registry, guard và return intent.
 5. [Roadmap](./roadmap.md): backlog P0/P1/P2 và tiêu chí nghiệm thu.
-6. [Testing baseline](../quality/testing-baseline.md): route, accessibility,
+6. [Full-screen improvement checklist](./full-screen-improvement-checklist.md):
+   bảng tiến độ thực thi theo từng route và admin section.
+7. [Testing baseline](../quality/testing-baseline.md): route, accessibility,
    visual và performance baseline.
 
 ## Phạm vi và ràng buộc

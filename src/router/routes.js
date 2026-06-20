@@ -7,6 +7,7 @@ export const ADMIN_SECTIONS = [
   "staff",
   "departments",
   "icd-chapters",
+  "clinical-questions",
   "facilities",
 ];
 
@@ -18,7 +19,8 @@ const ADMIN_SECTION_TITLES = {
   subscriptions: "Quản lý gói dịch vụ",
   staff: "Quản lý nhân viên",
   departments: "Quản lý chuyên khoa",
-  "icd-chapters": "Quản lý ICD Chapter",
+  "icd-chapters": "Quản lý chương ICD",
+  "clinical-questions": "Quản lý câu hỏi lâm sàng",
   facilities: "Quản lý cơ sở y tế",
 };
 
@@ -30,7 +32,8 @@ const ADMIN_SECTION_NAVIGATION = {
   subscriptions: { label: "Gói dịch vụ", icon: "subscription" },
   staff: { label: "Tạo staff", icon: "staff" },
   departments: { label: "Chuyên khoa", icon: "facility" },
-  "icd-chapters": { label: "ICD Chapter", icon: "icd" },
+  "icd-chapters": { label: "Chương ICD", icon: "icd" },
+  "clinical-questions": { label: "Câu hỏi lâm sàng", icon: "question" },
   facilities: { label: "Cơ sở y tế", icon: "facility" },
 };
 
@@ -101,25 +104,18 @@ const BASE_ROUTES = [
   {
     id: "patient.records",
     path: "/records",
-    title: "Hồ sơ y tế | MediMate AI",
+    title: "Kết quả xét nghiệm | MediMate AI",
     access: "premium",
     shell: "patient",
     navigation: { shell: "patient", label: "Phân tích kết quả xét nghiệm", hint: "Đọc chỉ số xét nghiệm", icon: "records", order: 50 },
   },
+  { id: "patient.recovery", path: "/recovery-plan", title: "Kế hoạch phục hồi | MediMate AI", access: "auth", shell: "patient", navigation: { shell: "patient", label: "Kế hoạch phục hồi", hint: "Theo dõi sau khám", icon: "recovery", order: 60 } },
   {
     id: "patient.medication",
     path: "/medication",
     title: "Kiểm tra thuốc | MediMate AI",
     access: "premium",
     shell: "patient",
-  },
-  {
-    id: "patient.recovery-plan",
-    path: "/recovery-plan",
-    title: "Kế hoạch hồi phục | MediMate AI",
-    access: "premium",
-    shell: "patient",
-    navigation: { shell: "patient", label: "Kế hoạch hồi phục", hint: "Theo dõi sau khám", icon: "recovery", order: 60 },
   },
   { id: "public.pricing", path: "/pricing", title: "Bảng giá | MediMate AI", access: "public" },
   { id: "payment.return", path: "/payment/return", title: "Thanh toán thành công | MediMate AI", access: "public", returnable: false },

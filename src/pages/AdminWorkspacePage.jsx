@@ -3,10 +3,10 @@ import {
   Activity,
   Bell,
   BookOpen,
-  BrainCircuit,
   Building2,
   CalendarDays,
   ClipboardList,
+  CircleHelp,
   CreditCard,
   LayoutDashboard,
   Search,
@@ -34,14 +34,16 @@ import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
+import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
 import {
   authApi,
   doctorInvitationsApi,
   facilityDepartmentsApi,
   getStoredAuth,
-  icdChaptersApi,
   medicalFacilitiesApi,
   medicalDepartmentsApi,
+  clinicalQuestionsApi,
+  icdChaptersApi,
   subscriptionPlansApi,
   usersApi,
 } from "../services/api";
@@ -51,8 +53,8 @@ import { logoutUser } from "../services/logoutService";
 import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
 
-const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
-const EMPTY_ICD_CHAPTER = { chapterCode: "", chapterName: "", description: "" };
+const EMPTY_DEPARTMENT = { departmentName: "", description: "", chapterCode: "" };
+const EMPTY_ICD_CHAPTER = { chapterCode: "", chapterName: "", keywordWeights: "{}" };
 const EMPTY_INVITATION = { email: "", doctorId: "" };
 const EMPTY_FACILITY = {
   facilityName: "",
@@ -107,6 +109,18 @@ const ADMIN_NAV_ICONS = {
   staff: UserPlus,
   facility: Building2,
   icd: BookOpen,
+  question: CircleHelp,
+};
+const QUESTION_CATALOG_CONFIG = {
+  title: "Câu hỏi lâm sàng", formTitle: "Nội dung câu hỏi", singularLabel: "câu hỏi", pluralLabel: "câu hỏi lâm sàng",
+  primaryField: "questionVi", secondaryField: "englishPrefix",
+  fields: [
+    { name: "chapterId", label: "ID chương ICD", required: true },
+    { name: "chapterCode", label: "Mã chương ICD" },
+    { name: "questionVi", label: "Câu hỏi tiếng Việt", required: true, multiline: true },
+    { name: "englishPrefix", label: "Câu hỏi tiếng Anh", required: true, multiline: true },
+    { name: "sortOrder", label: "Thứ tự", required: true, type: "number", min: 0, step: 1, serialize: Number },
+  ],
 };
 const ADMIN_NAV_ITEMS = getNavigationModel("admin");
 
@@ -1031,6 +1045,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     setDepartmentForm({
       departmentName: department.departmentName ?? "",
       description: department.description ?? "",
+      chapterCode: department.chapterCode ?? "",
     });
     openSection("departments");
   }
@@ -1094,7 +1109,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     setIcdChapterForm({
       chapterCode: getIcdChapterCode(chapter),
       chapterName: chapter.chapterName ?? chapter.name ?? chapter.title ?? "",
-      description: chapter.description ?? "",
+      keywordWeights: JSON.stringify(chapter.keywordWeights ?? {}, null, 2),
     });
     openSection("icd-chapters");
   }
@@ -1110,11 +1125,19 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     if (!chapterCode || !chapterName) {
       throw new Error("Vui lòng nhập mã và tên ICD Chapter.");
     }
-    return {
-      chapterCode,
-      chapterName,
-      description: icdChapterForm.description.trim() || null,
-    };
+    let keywordWeights;
+    try {
+      keywordWeights = JSON.parse(icdChapterForm.keywordWeights || "{}");
+    } catch {
+      throw new Error("Trọng số từ khóa phải là JSON hợp lệ.");
+    }
+    if (!keywordWeights || Array.isArray(keywordWeights) || typeof keywordWeights !== "object"
+      || Object.values(keywordWeights).some((value) => !Number.isInteger(value))) {
+      throw new Error("Trọng số từ khóa phải là JSON object với giá trị số nguyên.");
+    }
+    return editingIcdChapterId
+      ? { chapterName, keywordWeights }
+      : { chapterCode, chapterName, keywordWeights };
   }
 
   async function handleViewIcdChapter(chapter) {
@@ -1488,7 +1511,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 </div>
               </article>
               <article>
-                <span className="admin-stat-icon"><BrainCircuit size={17} /></span>
+                <span className="admin-stat-icon"><ClipboardList size={17} /></span>
                 <div>
                   <span>AI Configs</span>
                   <strong>{aiConfigsLoading ? "..." : aiConfigPageInfo.totalCount}</strong>
@@ -1655,6 +1678,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 onView={handleViewIcdChapter}
               />
             )}
+            {activeSection === "clinical-questions" && <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} service={clinicalQuestionsApi} />}
 
             {activeSection === "facilities" && (
               <AdminFacilitiesSection
