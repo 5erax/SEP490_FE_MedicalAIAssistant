@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Bell,
+  BookOpen,
   Building2,
   CalendarDays,
   ClipboardList,
   CircleHelp,
   CreditCard,
   LayoutDashboard,
-  FileText,
   Search,
   Stethoscope,
   Users,
@@ -31,6 +31,7 @@ import AdminOverviewSection from "../components/adminOverview/AdminOverviewSecti
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
 import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
+import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
 import {
@@ -52,6 +53,7 @@ import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
 
 const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
+const EMPTY_ICD_CHAPTER = { chapterCode: "", chapterName: "", description: "" };
 const EMPTY_INVITATION = { email: "", doctorId: "" };
 const EMPTY_FACILITY = {
   facilityName: "",
@@ -105,13 +107,8 @@ const ADMIN_NAV_ICONS = {
   subscription: CreditCard,
   staff: UserPlus,
   facility: Building2,
-  records: FileText,
+  icd: BookOpen,
   question: CircleHelp,
-};
-const ICD_CATALOG_CONFIG = {
-  title: "Chương phân loại ICD", formTitle: "Thông tin chương ICD", singularLabel: "chương ICD", pluralLabel: "chương ICD",
-  primaryField: "chapterCode", secondaryField: "chapterName",
-  fields: [{ name: "chapterCode", label: "Mã chương", required: true }, { name: "chapterName", label: "Tên chương", required: true }, { name: "description", label: "Mô tả", multiline: true }],
 };
 const QUESTION_CATALOG_CONFIG = {
   title: "Câu hỏi lâm sàng", formTitle: "Nội dung câu hỏi", singularLabel: "câu hỏi", pluralLabel: "câu hỏi lâm sàng",
@@ -272,6 +269,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [profile, setProfile] = useState(null);
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [icdChapters, setIcdChapters] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [facilityDepartments, setFacilityDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -290,8 +288,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [doctorFilters, setDoctorFilters] = useState(initialDoctorView.filters);
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
+  const [icdChapterForm, setIcdChapterForm] = useState(EMPTY_ICD_CHAPTER);
   const [facilityForm, setFacilityForm] = useState(EMPTY_FACILITY);
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
+  const [editingIcdChapterId, setEditingIcdChapterId] = useState("");
   const [editingFacilityId, setEditingFacilityId] = useState("");
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
@@ -304,11 +304,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [icdChaptersLoading, setIcdChaptersLoading] = useState(true);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [aiConfigsLoading, setAIConfigsLoading] = useState(true);
   const [subscriptionPlansLoading, setSubscriptionPlansLoading] = useState(true);
   const [facilitiesLoading, setFacilitiesLoading] = useState(true);
   const [savingDepartment, setSavingDepartment] = useState(false);
+  const [savingIcdChapter, setSavingIcdChapter] = useState(false);
   const [savingFacility, setSavingFacility] = useState(false);
   const [savingStaff, setSavingStaff] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
@@ -319,6 +321,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [usersMessage, setUsersMessage] = useState(null);
   const [usersLoadError, setUsersLoadError] = useState("");
   const [departmentMessage, setDepartmentMessage] = useState(null);
+  const [icdChapterMessage, setIcdChapterMessage] = useState(null);
   const [facilityMessage, setFacilityMessage] = useState(null);
   const [facilityLoadError, setFacilityLoadError] = useState("");
   const [staffMessage, setStaffMessage] = useState(null);
@@ -420,6 +423,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       authApi.me(),
       usersApi.list(1, pageInfo.pageSize),
       medicalDepartmentsApi.list(),
+      icdChaptersApi.list(),
       doctorManagementApi.list({
         ...initialDoctorView.filters,
         pageNumber: initialDoctorView.pageNumber,
@@ -434,6 +438,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         profileResult,
         usersResult,
         departmentResult,
+        icdChapterResult,
         doctorResult,
         aiConfigResult,
         facilityResult,
@@ -466,6 +471,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           setDepartments(departmentResult.value.data ?? []);
         } else {
           setDepartmentMessage({ type: "error", text: departmentResult.reason.message });
+        }
+
+        if (icdChapterResult.status === "fulfilled") {
+          const data = icdChapterResult.value.data;
+          setIcdChapters(Array.isArray(data) ? data : data?.items ?? []);
+        } else {
+          setIcdChapterMessage({ type: "error", text: icdChapterResult.reason.message });
         }
 
         if (doctorResult.status === "fulfilled") {
@@ -528,6 +540,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         setLoading(false);
         setUsersLoading(false);
         setDepartmentsLoading(false);
+        setIcdChaptersLoading(false);
         setDoctorsLoading(false);
         setAIConfigsLoading(false);
         setFacilitiesLoading(false);
@@ -578,6 +591,20 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setDepartmentMessage({ type: "error", text: error.message });
     } finally {
       setDepartmentsLoading(false);
+    }
+  }
+
+  async function loadIcdChapters() {
+    setIcdChaptersLoading(true);
+    setIcdChapterMessage(null);
+    try {
+      const response = await icdChaptersApi.list();
+      const data = response.data;
+      setIcdChapters(Array.isArray(data) ? data : data?.items ?? []);
+    } catch (error) {
+      setIcdChapterMessage({ type: "error", text: error.message });
+    } finally {
+      setIcdChaptersLoading(false);
     }
   }
 
@@ -1061,6 +1088,108 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     }
   }
 
+  function getIcdChapterId(chapter) {
+    return chapter.id ?? chapter.icdChapterId ?? "";
+  }
+
+  function getIcdChapterCode(chapter) {
+    return chapter.chapterCode ?? chapter.code ?? chapter.icdCode ?? "";
+  }
+
+  function startEditIcdChapter(chapter) {
+    setEditingIcdChapterId(getIcdChapterId(chapter));
+    setIcdChapterForm({
+      chapterCode: getIcdChapterCode(chapter),
+      chapterName: chapter.chapterName ?? chapter.name ?? chapter.title ?? "",
+      description: chapter.description ?? "",
+    });
+    openSection("icd-chapters");
+  }
+
+  function resetIcdChapterForm() {
+    setEditingIcdChapterId("");
+    setIcdChapterForm(EMPTY_ICD_CHAPTER);
+  }
+
+  function buildIcdChapterPayload() {
+    const chapterCode = icdChapterForm.chapterCode.trim();
+    const chapterName = icdChapterForm.chapterName.trim();
+    if (!chapterCode || !chapterName) {
+      throw new Error("Vui lòng nhập mã và tên ICD Chapter.");
+    }
+    return {
+      chapterCode,
+      chapterName,
+      description: icdChapterForm.description.trim() || null,
+    };
+  }
+
+  async function handleViewIcdChapter(chapter) {
+    const id = getIcdChapterId(chapter);
+    if (!id) {
+      setIcdChapterMessage({ type: "error", text: "Không tìm thấy ID ICD Chapter." });
+      return;
+    }
+
+    setIcdChapterMessage(null);
+    try {
+      const response = await icdChaptersApi.get(id);
+      startEditIcdChapter(response.data ?? chapter);
+      setIcdChapterMessage({ type: "success", text: response.message || "Đã tải chi tiết ICD Chapter." });
+    } catch (error) {
+      setIcdChapterMessage({ type: "error", text: error.message });
+    }
+  }
+
+  async function handleSaveIcdChapter(event) {
+    event.preventDefault();
+    setSavingIcdChapter(true);
+    setIcdChapterMessage(null);
+    try {
+      const payload = buildIcdChapterPayload();
+      const response = editingIcdChapterId
+        ? await icdChaptersApi.update(editingIcdChapterId, payload)
+        : await icdChaptersApi.create(payload);
+      setIcdChapterMessage({
+        type: "success",
+        text: response.message || (editingIcdChapterId ? "Đã cập nhật ICD Chapter." : "Đã tạo ICD Chapter."),
+      });
+      resetIcdChapterForm();
+      await loadIcdChapters();
+    } catch (error) {
+      setIcdChapterMessage({ type: "error", text: error.message });
+    } finally {
+      setSavingIcdChapter(false);
+    }
+  }
+
+  async function handleDeleteIcdChapter(chapter) {
+    const id = getIcdChapterId(chapter);
+    if (!id) {
+      setIcdChapterMessage({ type: "error", text: "Không tìm thấy ID ICD Chapter." });
+      return;
+    }
+
+    const confirmed = await confirmAction({
+      title: "Xóa ICD Chapter?",
+      message: `${getIcdChapterCode(chapter) || "ICD Chapter này"} sẽ bị xóa khỏi danh mục lâm sàng.`,
+      confirmLabel: "Xóa ICD Chapter",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    setIcdChapterMessage(null);
+    try {
+      const response = await icdChaptersApi.remove(id);
+      setIcdChapterMessage({ type: "success", text: response.message || "Đã xóa ICD Chapter." });
+      showToast({ type: "success", title: "Đã xóa ICD Chapter", message: response.message || "Danh mục đã được cập nhật." });
+      if (editingIcdChapterId === id) resetIcdChapterForm();
+      await loadIcdChapters();
+    } catch (error) {
+      setIcdChapterMessage({ type: "error", text: error.message });
+    }
+  }
+
   async function handleCreateInvitation(event) {
     event.preventDefault();
     const normalizedEmail = invitationForm.email.trim().toLowerCase();
@@ -1516,7 +1645,23 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
               />
             )}
 
-            {activeSection === "icd-chapters" && <AdminClinicalCatalogSection config={ICD_CATALOG_CONFIG} service={icdChaptersApi} />}
+            {activeSection === "icd-chapters" && (
+              <AdminICDChaptersSection
+                chapters={icdChapters}
+                editingChapterId={editingIcdChapterId}
+                form={icdChapterForm}
+                loading={icdChaptersLoading}
+                message={icdChapterMessage}
+                saving={savingIcdChapter}
+                onDelete={handleDeleteIcdChapter}
+                onEdit={startEditIcdChapter}
+                onFormChange={(key, value) => setIcdChapterForm((current) => ({ ...current, [key]: value }))}
+                onReload={loadIcdChapters}
+                onReset={resetIcdChapterForm}
+                onSubmit={handleSaveIcdChapter}
+                onView={handleViewIcdChapter}
+              />
+            )}
             {activeSection === "clinical-questions" && <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} service={clinicalQuestionsApi} />}
 
             {activeSection === "facilities" && (
