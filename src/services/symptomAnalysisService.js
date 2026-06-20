@@ -22,6 +22,14 @@ export const symptomAnalysisApi = {
     });
   },
 
+  submitDiagnosis(sessionId, answers) {
+    return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_DIAGNOSIS, {
+      method: "POST",
+      body: { sessionId, answers },
+      auth: true,
+    });
+  },
+
   listMySessions(pageNumber = 1, pageSize = 10) {
     const search = new URLSearchParams({
       PageNumber: String(pageNumber),

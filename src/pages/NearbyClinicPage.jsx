@@ -126,8 +126,6 @@ function NearbyClinicPage() {
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
-  const hasInitialSearchRef = useRef(Boolean(searchText.trim()));
-  const currentSearchRef = useRef(searchText);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -179,9 +177,7 @@ function NearbyClinicPage() {
         });
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
-        setSelectedFacility(
-          hasInitialSearchRef.current || currentSearchRef.current.trim() ? null : (data[0] ?? null),
-        );
+        setSelectedFacility(null);
         setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
       })
       .catch((error) => {
@@ -249,7 +245,6 @@ function NearbyClinicPage() {
   );
 
   const handleSearchChange = (event) => {
-    currentSearchRef.current = event.target.value;
     setSearchText(event.target.value);
     setSelectedFacility(null);
     setReviews([]);
@@ -353,6 +348,11 @@ function NearbyClinicPage() {
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list">Bỏ qua bản đồ, đến danh sách cơ sở</a>
       <aside className="clinic-sidebar">
+        <header className="map-sidebar-head">
+          <p>Cơ sở y tế</p>
+          <h1>Tìm nơi khám phù hợp</h1>
+          <span>Chọn một cơ sở để xem địa chỉ, chuyên khoa và đánh giá.</span>
+        </header>
         <div className="map-page-actions">
           <button type="button" onClick={() => navigate("/dashboard")}>← Trang chủ</button>
           <button type="button" onClick={handleLocateMe}>Định vị tôi</button>
@@ -387,7 +387,10 @@ function NearbyClinicPage() {
           ))}
         </div>
 
-        <p className="result-count">{loadingFacilities ? "Đang đồng bộ cơ sở y tế..." : `Tìm thấy ${filteredFacilities.length} cơ sở`}</p>
+        <div className="result-summary" aria-live="polite">
+          <p className="result-count">{loadingFacilities ? "Đang đồng bộ cơ sở y tế..." : `${filteredFacilities.length} cơ sở phù hợp`}</p>
+          {searchText && <span>cho “{searchText}”</span>}
+        </div>
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
@@ -532,6 +535,54 @@ const styles = `
 }
 @media (prefers-reduced-motion: reduce) {
   .map-loading-spinner { animation: none; }
+}
+
+/* Map workspace: list first, detail on demand, map kept visually quiet. */
+.clinic-page {
+  --ink: #111412;
+  --muted: #5d685f;
+  --paper-soft: #f7faf5;
+  --line: #dce4d9;
+  --line-strong: #bac8b6;
+  --teal: #087f8c;
+  --lime: #b8ef79;
+  --mint: #e4f4f2;
+  color-scheme: light;
+  color: var(--ink);
+  background: #eef3ec;
+}
+.clinic-sidebar { width: min(430px, 40vw); border-right: 1px solid #d7e0d3; background: rgba(252, 253, 250, .98); padding: 22px; }
+.map-sidebar-head { display: grid; gap: 5px; margin-bottom: 18px; }
+.map-sidebar-head p { margin: 0; color: var(--teal); font-size: 11px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
+.map-sidebar-head h1 { margin: 0; font-size: clamp(25px, 3vw, 34px); line-height: 1.08; }
+.map-sidebar-head span { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.map-page-actions button { border-color: var(--line); border-radius: 10px; background: var(--paper-soft); }
+.map-page-actions button:last-child { border-color: #87b65b; background: #e9f7da; }
+.clinic-search { min-height: 50px; border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 8px 24px rgba(24, 54, 31, .07); }
+.filter-row { flex-wrap: nowrap; overflow-x: auto; padding: 2px 0 7px; scrollbar-width: thin; }
+.filter-row button { flex: 0 0 auto; min-height: 38px; border-color: var(--line); background: #fff; }
+.filter-row button.active { border-color: var(--teal); background: #e4f4f2; color: #075d66; }
+.result-summary { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px; margin: 4px 0 12px; }
+.result-summary .result-count { margin: 0; color: var(--ink); font-size: 13px; }
+.result-summary span { color: var(--muted); font-size: 12px; }
+.facility-list-panel { gap: 10px; }
+.facility-result-card { border-color: var(--line); border-radius: 16px; background: #fff; padding: 15px; box-shadow: 0 7px 24px rgba(24, 54, 31, .05); }
+.facility-result-card:hover, .facility-result-card:focus-within, .facility-result-card.selected { border-color: #6e9e49; box-shadow: 0 12px 30px rgba(24, 54, 31, .11); transform: translateY(-1px); }
+.facility-select-button { min-height: 42px; border-color: var(--line-strong); border-radius: 10px; background: var(--paper-soft); }
+.facility-select-button[aria-pressed="true"] { border-color: #315d18; background: #e9f7da; color: #244611; }
+.facility-details { margin-top: 14px; padding-top: 10px; }
+.facility-reviews { border: 1px solid var(--line); border-radius: 16px; background: #fff; padding: 15px; }
+.map-panel { margin: 14px; overflow: hidden; border: 1px solid #d7e0d3; border-radius: 22px; box-shadow: 0 18px 54px rgba(24, 54, 31, .12); }
+.clinic-marker { border-color: #fff; background: var(--teal); box-shadow: 0 4px 12px rgba(17, 20, 18, .28); }
+.clinic-marker.selected { background: var(--lime); box-shadow: 0 5px 18px rgba(17, 20, 18, .35); }
+.clinic-popup .maplibregl-popup-content { border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 14px 40px rgba(17, 20, 18, .18); }
+.locate-button { border-color: #fff; border-radius: 50%; background: var(--teal); color: #fff; box-shadow: 0 8px 24px rgba(17, 20, 18, .22); }
+
+@media (max-width: 760px) {
+  .clinic-page { display: grid; grid-template-rows: minmax(38svh, 320px) auto; }
+  .map-panel { order: 1; min-height: 38svh; margin: 10px; border-radius: 18px; }
+  .clinic-sidebar { order: 2; width: 100%; max-height: none; padding: 18px 14px 96px; }
+  .map-sidebar-head h1 { font-size: 27px; }
 }
 `;
 

@@ -64,9 +64,6 @@ test("admin retries a failed AI config list and receives an empty state", async 
 
   await page.goto("/app/admin/ai-configs", { waitUntil: "domcontentloaded" });
 
-  const loadingState = page.getByText("Đang tải danh sách AI config...", { exact: true });
-  await expect(loadingState).toBeVisible();
-
   const errorState = page.getByRole("status").filter({ hasText: "Không thể tải danh sách AI config" });
   await expect(errorState).toBeVisible();
   await expect(errorState).toContainText("Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.");

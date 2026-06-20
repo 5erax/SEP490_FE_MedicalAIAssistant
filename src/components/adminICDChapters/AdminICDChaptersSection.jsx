@@ -57,7 +57,7 @@ export default function AdminICDChaptersSection({
                   <div>
                     <strong>{getChapterCode(chapter) || "Chưa có mã"}</strong>
                     <span>{getChapterName(chapter) || "Chưa đặt tên"}</span>
-                    <small>{chapter.description || id}</small>
+                    <small>{Object.keys(chapter.keywordWeights ?? {}).length} từ khóa · {id}</small>
                   </div>
                   <div className="record-actions">
                     <button className="btn btn-ghost btn-small" type="button" onClick={() => onView(chapter)}>Chi tiết</button>
@@ -95,12 +95,13 @@ export default function AdminICDChaptersSection({
             required
           />
         </Field>
-        <Field label="Mô tả">
+        <Field label="Trọng số từ khóa (JSON)">
           <textarea
-            rows={6}
-            value={form.description}
-            onChange={(event) => onFormChange("description", event.target.value)}
-            placeholder="Ghi chú phạm vi mã bệnh hoặc mô tả ngắn..."
+            rows={10}
+            value={form.keywordWeights}
+            onChange={(event) => onFormChange("keywordWeights", event.target.value)}
+            placeholder={'{"sốt": 5, "ho": 3}'}
+            spellCheck="false"
           />
         </Field>
         <button className="btn btn-primary" type="submit" disabled={saving}>

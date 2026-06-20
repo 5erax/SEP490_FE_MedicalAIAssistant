@@ -100,6 +100,7 @@ test("facility without coordinates stays in the list without a false marker", as
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
+  await page.getByRole("button", { name: "Xem chi tiết" }).click();
   await expect(page.getByText("Chưa có vị trí chính xác trên bản đồ.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveCount(0);
 

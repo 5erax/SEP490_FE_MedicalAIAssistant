@@ -1,5 +1,31 @@
 # Trạng thái contract backend/frontend
 
+## Kiểm tra live ngày 2026-06-20
+
+Nguồn kiểm tra: `http://52.77.210.243:8080/swagger/v1/swagger.json` (HTTP 200).
+
+- Swagger hiện có 63 path, 91 operation và 130 schema.
+- Tất cả path và HTTP method được khai báo trong `src/services/endpoints.js` và các domain service đều tồn tại trên Swagger live.
+- Query phân trang frontend dùng `PageNumber`/`PageSize`, khớp backend.
+- Bộ lọc doctor (`search`, `facilityId`, `departmentId`, `isActive`, `departmentRole`) khớp Swagger.
+- Response chung `{ success, message, errors, data }` khớp cách `apiRequest()` xử lý.
+- Các GET dữ liệu danh mục/public mà frontend không gửi bearer đã được smoke test trực tiếp và trả HTTP 200.
+
+Các lệch đã sửa trong đợt kiểm tra này:
+
+- Chat chính chuyển từ gọi Anthropic trực tiếp sang `POST /api/web-chatbot/message` với `{ message }`.
+- Chẩn đoán lâm sàng dùng `POST /api/symptom-analysis/submit-diagnosis`; frontend ghép danh sách chẩn đoán này với chuyên khoa/cơ sở từ `submit-clinical-question-answers` theo cùng session.
+- Clinical question gửi đủ `chapterId`, `chapterCode`, `questionVi`, `englishPrefix`, `sortOrder`; `sortOrder` là số.
+- ICD chapter dùng `keywordWeights` object; create gửi `chapterCode`, update chỉ gửi trường backend hỗ trợ.
+- Medical department giữ và gửi `chapterCode`.
+- Doctor create/update giữ trường `specialty`.
+
+Giới hạn xác minh:
+
+- Workspace không chứa source backend, nên authorization policy và mapping database chỉ được xác minh qua OpenAPI live, HTTP smoke test read-only và frontend contract tests.
+- Swagger đang khai báo Bearer security toàn cục, kể cả một số endpoint thực tế cho phép đọc không token. Backend nên mô tả `security: []` cho endpoint public để tài liệu phản ánh đúng runtime.
+- Không chạy thử mutation trên backend deploy để tránh tạo/sửa/xóa dữ liệu thật; payload mutation được xác minh bằng schema Swagger và Playwright interception.
+
 Ngày kiểm tra: **2026-06-17**
 
 Nguồn:
@@ -59,7 +85,6 @@ Kết quả đối chiếu `Swagger -> ENDPOINTS -> services/pages/tests`:
 - Frontend đã khai báo và dùng hầu hết nhóm API sản phẩm: auth, users, patient profiles, departments, facilities, doctors, invitations, symptom analysis, chatbot, feedback reviews, subscriptions, payments và AI configs.
 - Frontend chưa khai báo service cho `icd-chapters`: `/api/icd-chapters`, `/api/icd-chapters/{id}`, `/api/icd-chapters/bulk`.
 - Frontend đã có `clinicalQuestionsApi.list/get`, nhưng chưa có `bulk` service cho `/api/clinical-questions/bulk`.
-- Frontend vẫn còn endpoint legacy `SYMPTOM_ANALYSIS.ANALYZE = /api/symptom-analysis/analyze`, hiện không có trong Swagger live.
 - PayOS `payos-return`, `payos-cancel` và `payos-webhook` là backend/callback surface; frontend không cần gọi trực tiếp, nhưng trang payment result phải dựa vào status/payment detail đã xác minh.
 - `medical-facilities` đã có CRUD/status ở backend và service ở frontend; UI Admin cần dùng tiếp `PUT`, `PATCH status`, `DELETE` để khai thác đầy đủ API hiện có.
 - `feedback-reviews` đã có management API và service; frontend còn thiếu moderation queue cho Staff/Admin.

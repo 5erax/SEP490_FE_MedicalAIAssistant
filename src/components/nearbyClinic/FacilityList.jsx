@@ -17,7 +17,6 @@ export default function FacilityList({
           ref={(node) => { cardRefs.current[facility.facilityId] = node; }}
           className={`facility-result-card ${selectedFacilityId === facility.facilityId ? "selected" : ""}`}
           key={facility.facilityId}
-          onClick={() => onSelect(facility)}
         >
           <div className="facility-top">
             <strong>{facility.facilityName}</strong>

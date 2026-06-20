@@ -282,6 +282,19 @@ export default function DashboardPage() {
           <p>Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo và cơ sở phù hợp.</p>
         </div>
 
+        <ol className="studio-flow" aria-label="Tiến trình tư vấn">
+          {[
+            ["Mô tả", ["idle", "loading-questions", "no-questions"].includes(status)],
+            ["Làm rõ", ["questions", "submitting"].includes(status)],
+            ["Kết quả", status === "result"],
+          ].map(([label, active], index) => (
+            <li className={active ? "active" : ""} key={label}>
+              <span>{index + 1}</span>
+              <strong>{label}</strong>
+            </li>
+          ))}
+        </ol>
+
         {profilePromptVisible && (
           <section className="profile-nudge" aria-labelledby="profile-nudge-title">
             <span aria-hidden="true"><UserRound size={20} /></span>
@@ -379,10 +392,10 @@ export default function DashboardPage() {
           >
             <div className="studio-panel-head">
               <div>
-                <span>Câu hỏi làm rõ</span>
-                <h2>AI cần hỏi thêm để sàng lọc phù hợp hơn</h2>
+                <span>Câu hỏi {currentQuestionIndex + 1} / {questions.length}</span>
+                <h2>Chọn câu trả lời phù hợp nhất với tình trạng hiện tại</h2>
               </div>
-              <strong>{answeredCount}/{questions.length}</strong>
+              <strong>{Math.round((answeredCount / questions.length) * 100)}%</strong>
             </div>
 
             <div className="studio-question-list">
@@ -432,10 +445,13 @@ export default function DashboardPage() {
         {status === "result" && (
           <section className="studio-result-panel" aria-label="Nhận định tham khảo và gợi ý bệnh viện">
             <article className="studio-result-card primary">
-              <span>Nhận định tham khảo</span>
+              <span>Chẩn đoán lâm sàng tham khảo</span>
               <h2>{primaryDiagnosis?.diseaseName || "Chưa có nhận định chính"}</h2>
               {primaryDiagnosis?.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
-              {primaryDiagnosis?.icd10Code && <small>ICD-10: {primaryDiagnosis.icd10Code}</small>}
+              <div className="studio-result-meta">
+                {primaryDiagnosis?.icd10Code && <small>ICD-10: {primaryDiagnosis.icd10Code}</small>}
+                {primaryDiagnosis && <strong>{confidencePercent(primaryDiagnosis.paGivenB)}% phù hợp</strong>}
+              </div>
               <small>Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.</small>
             </article>
 
@@ -444,7 +460,10 @@ export default function DashboardPage() {
                 <span>Chuyên khoa nên ưu tiên</span>
                 <h2>{recommendedDepartment.departmentName || "Chuyên khoa phù hợp"}</h2>
                 <p>{recommendedDepartment.reason || "AI đề xuất dựa trên triệu chứng và câu trả lời của bạn."}</p>
-                <strong>{confidencePercent(recommendedDepartment.confidenceScore)}%</strong>
+                <div className="studio-confidence" aria-label={`Độ phù hợp ${confidencePercent(recommendedDepartment.confidenceScore)}%`}>
+                  <i style={{ width: `${confidencePercent(recommendedDepartment.confidenceScore)}%` }} />
+                </div>
+                <strong>{confidencePercent(recommendedDepartment.confidenceScore)}% phù hợp</strong>
               </article>
             )}
 
@@ -452,9 +471,9 @@ export default function DashboardPage() {
               <article className="studio-result-card">
                 <span>Khả năng liên quan</span>
                 <div className="studio-diagnosis-list">
-                  {diagnoses.map((diagnosis) => (
+                  {diagnoses.slice(0, 4).map((diagnosis) => (
                     <p key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
-                      <strong>{diagnosis.rank}. {diagnosis.diseaseName}</strong>
+                      <strong><span>{diagnosis.rank}</span>{diagnosis.diseaseName}</strong>
                       <small>{confidencePercent(diagnosis.paGivenB)}%</small>
                     </p>
                   ))}

@@ -78,8 +78,19 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
         questionId: question.questionId,
         answer: answers[question.questionId],
       }));
-      const response = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
-      setResult(readResultPayload(response));
+      const [recommendationResponse, diagnosisResponse] = await Promise.all([
+        symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload),
+        symptomAnalysisApi.submitDiagnosis(sessionId, payload),
+      ]);
+      const recommendation = readResultPayload(recommendationResponse) ?? {};
+      const diagnosis = readResultPayload(diagnosisResponse) ?? {};
+      const diagnoses = Array.isArray(diagnosis.diagnoses) ? diagnosis.diagnoses : [];
+      setResult({
+        ...recommendation,
+        diagnoses,
+        primaryDiagnosis: diagnoses[0] ?? recommendation.primaryDiagnosis ?? null,
+        diagnosisModel: diagnosis.model ?? null,
+      });
       setStatus("result");
     } catch (apiError) {
       setError(apiError.message || "Không thể gửi câu trả lời. Vui lòng thử lại.");

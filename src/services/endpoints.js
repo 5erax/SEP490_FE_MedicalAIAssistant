@@ -78,9 +78,9 @@ export const ENDPOINTS = {
     BULK: `${CLINICAL_QUESTIONS_BASE}/bulk`,
   },
   SYMPTOM_ANALYSIS: {
-    ANALYZE: `${SYMPTOM_ANALYSIS_BASE}/analyze`,
     SUGGEST_CLINICAL_QUESTIONS: `${SYMPTOM_ANALYSIS_BASE}/suggest-clinical-questions`,
     SUBMIT_CLINICAL_QUESTION_ANSWERS: `${SYMPTOM_ANALYSIS_BASE}/submit-clinical-question-answers`,
+    SUBMIT_DIAGNOSIS: `${SYMPTOM_ANALYSIS_BASE}/submit-diagnosis`,
     MY_SESSIONS: `${SYMPTOM_ANALYSIS_BASE}/my-sessions`,
     BY_SESSION: (sessionId) => byId(SYMPTOM_ANALYSIS_BASE, sessionId),
   },
@@ -113,8 +113,5 @@ export const ENDPOINTS = {
   },
   WEB_CHATBOT: {
     MESSAGE: `${WEB_CHATBOT_BASE}/message`,
-  },
-  EXTERNAL: {
-    ANTHROPIC_MESSAGES: "https://api.anthropic.com/v1/messages",
   },
 };
