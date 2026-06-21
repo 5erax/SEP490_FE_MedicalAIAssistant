@@ -1680,7 +1680,9 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 onView={handleViewIcdChapter}
               />
             )}
-            {activeSection === "clinical-questions" && <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} service={clinicalQuestionsApi} />}
+            {activeSection === "clinical-questions" && (
+              <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} icdChapters={icdChapters} service={clinicalQuestionsApi} />
+            )}
 
             {activeSection === "facilities" && (
               <AdminFacilitiesSection

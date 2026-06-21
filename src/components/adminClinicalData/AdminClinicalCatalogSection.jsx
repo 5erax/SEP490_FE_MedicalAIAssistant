@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function unwrapItems(response) {
   const data = response?.data?.data ?? response?.data ?? response;
@@ -6,13 +6,51 @@ function unwrapItems(response) {
   return data?.items ?? [];
 }
 
-export default function AdminClinicalCatalogSection({ config, service }) {
+function formatDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function getChapterCode(item, chapterById) {
+  return item.chapterCode || chapterById.get(item.chapterId)?.chapterCode || "";
+}
+
+export default function AdminClinicalCatalogSection({ config, icdChapters = [], service }) {
   const emptyForm = Object.fromEntries(config.fields.map((field) => [field.name, ""]));
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState("");
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
+  const [selectedIcdCode, setSelectedIcdCode] = useState("");
+
+  const chapterById = useMemo(() => {
+    return new Map(icdChapters.map((chapter) => [chapter.id, chapter]));
+  }, [icdChapters]);
+
+  const icdOptions = useMemo(() => {
+    const options = new Map();
+    icdChapters.forEach((chapter) => {
+      if (chapter.chapterCode) options.set(chapter.chapterCode, chapter.chapterName || chapter.chapterCode);
+    });
+    items.forEach((item) => {
+      const code = getChapterCode(item, chapterById);
+      if (code && !options.has(code)) options.set(code, code);
+    });
+    return Array.from(options.entries())
+      .map(([code, label]) => ({ code, label }))
+      .sort((left, right) => left.code.localeCompare(right.code, "vi"));
+  }, [chapterById, icdChapters, items]);
+
+  const filteredItems = useMemo(() => {
+    if (!selectedIcdCode) return items;
+    return items.filter((item) => getChapterCode(item, chapterById) === selectedIcdCode);
+  }, [chapterById, items, selectedIcdCode]);
 
   async function loadItems() {
     setStatus("loading");
@@ -81,18 +119,42 @@ export default function AdminClinicalCatalogSection({ config, service }) {
           <button className="btn btn-ghost btn-small" type="button" onClick={loadItems}>Tải lại</button>
         </div>
         {message && <div className="api-message" role="status">{message}</div>}
+        <div className="admin-toolbar">
+          <label className="clean-field">
+            <span>ICD Code</span>
+            <select value={selectedIcdCode} onChange={(event) => setSelectedIcdCode(event.target.value)}>
+              <option value="">Tất cả ICD</option>
+              {icdOptions.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.code} - {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         {status === "loading" ? <p className="muted-text">Đang tải...</p> : (
           <div className="admin-table-list">
-            {items.length === 0 && <p className="muted-text">Chưa có {config.pluralLabel}.</p>}
-            {items.map((item) => (
-              <article className="admin-user-row" key={item.id}>
-                <div><strong>{item[config.primaryField] || "Chưa có nội dung"}</strong><span>{item[config.secondaryField] || "Chưa có mô tả."}</span></div>
-                <div className="record-actions">
-                  <button className="btn btn-ghost btn-small" type="button" onClick={() => edit(item)}>Sửa</button>
-                  <button className="btn btn-dark btn-small" type="button" onClick={() => remove(item)}>Xóa</button>
-                </div>
-              </article>
-            ))}
+            {filteredItems.length === 0 && <p className="muted-text">Chưa có {config.pluralLabel}.</p>}
+            {filteredItems.map((item) => {
+              const chapterCode = getChapterCode(item, chapterById);
+              const createdAt = formatDateTime(item.createdAt);
+              return (
+                <article className="admin-user-row" key={item.id}>
+                  <div>
+                    <div className="admin-badge-stack">
+                      <span>{chapterCode || "Chưa có ICD"}</span>
+                      {createdAt && <small>Created At: {createdAt}</small>}
+                    </div>
+                    <strong>{item[config.primaryField] || "Chưa có nội dung"}</strong>
+                    <span>{item[config.secondaryField] || "Chưa có mô tả."}</span>
+                  </div>
+                  <div className="record-actions">
+                    <button className="btn btn-ghost btn-small" type="button" onClick={() => edit(item)}>Sửa</button>
+                    <button className="btn btn-dark btn-small" type="button" onClick={() => remove(item)}>Xóa</button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
