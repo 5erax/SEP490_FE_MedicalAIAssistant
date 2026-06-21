@@ -10,7 +10,7 @@ export default function FacilityList({
   return (
     <section className="facility-list-panel" id="facility-list" tabIndex="-1" aria-label="Danh sách cơ sở y tế">
       {!loading && facilities.length === 0 && (
-        <div className="sidebar-note">Không có cơ sở y tế phù hợp từ backend.</div>
+        <div className="sidebar-note">Chưa tìm thấy cơ sở y tế phù hợp với bộ lọc hoặc khu vực hiện tại. Vui lòng thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
       )}
       {facilities.map((facility) => (
         <article

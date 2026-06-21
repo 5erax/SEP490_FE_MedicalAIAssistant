@@ -456,9 +456,9 @@ const styles = `
 .clinic-search { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; padding: 0 10px; }
 .clinic-search input { min-width: 0; height: 42px; border: 0; outline: none; }
 .clinic-search button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--mint); font-size: 18px; font-weight: 900; }
-.filter-row { display: flex; gap: 8px; overflow-x: auto; padding: 14px 0 8px; scrollbar-width: none; }
+.filter-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 14px 0 8px; }
 .filter-row::-webkit-scrollbar, .department-row::-webkit-scrollbar { display: none; }
-.filter-row button { flex: 0 0 auto; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 8px 11px; font-size: 12px; font-weight: 900; }
+.filter-row button { min-width: 0; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 8px 11px; font-size: 12px; font-weight: 900; }
 .filter-row button.active { background: var(--ink); color: #fff; }
 .result-count { margin: 0 0 10px; color: var(--muted); font-size: 12px; font-weight: 800; }
 .facility-list-panel { display: grid; gap: 9px; }
@@ -559,8 +559,8 @@ const styles = `
 .map-page-actions button { border-color: var(--line); border-radius: 10px; background: var(--paper-soft); }
 .map-page-actions button:last-child { border-color: #87b65b; background: #e9f7da; }
 .clinic-search { min-height: 50px; border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 8px 24px rgba(24, 54, 31, .07); }
-.filter-row { flex-wrap: nowrap; overflow-x: auto; padding: 2px 0 7px; scrollbar-width: thin; }
-.filter-row button { flex: 0 0 auto; min-height: 38px; border-color: var(--line); background: #fff; }
+.filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 2px 0 7px; }
+.filter-row button { min-height: 38px; border-color: var(--line); background: #fff; }
 .filter-row button.active { border-color: var(--teal); background: #e4f4f2; color: #075d66; }
 .result-summary { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px; margin: 4px 0 12px; }
 .result-summary .result-count { margin: 0; color: var(--ink); font-size: 13px; }
