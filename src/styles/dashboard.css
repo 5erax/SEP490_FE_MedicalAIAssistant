@@ -1,35 +1,36 @@
 .specialty-page {
   min-height: calc(100svh - 96px);
   display: grid;
-  place-items: center;
+  align-items: start;
+  justify-items: center;
   position: relative;
-  overflow: hidden;
+  overflow: clip;
   background:
     radial-gradient(circle at 50% 12%, rgba(196, 233, 149, 0.3), transparent 32%),
     linear-gradient(180deg, #f8fbf4 0%, #edf4e7 100%);
   color: var(--color-ink);
-  padding: 52px 20px;
+  padding: clamp(32px, 5vw, 64px) clamp(18px, 4vw, 48px) 80px;
 }
 
 .studio-center {
-  width: min(860px, 100%);
+  width: min(900px, 100%);
   display: grid;
-  gap: 24px;
-  justify-items: center;
+  gap: clamp(18px, 3vw, 28px);
+  justify-items: stretch;
   position: relative;
   z-index: 1;
 }
 
 .studio-heading {
   display: grid;
-  justify-items: center;
-  gap: 12px;
-  text-align: center;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
 }
 
 .studio-mark {
-  width: 66px;
-  height: 66px;
+  width: 54px;
+  height: 54px;
   display: grid;
   place-items: center;
   border: 1.5px solid var(--color-ink);
@@ -39,43 +40,75 @@
   box-shadow: var(--shadow-hard);
 }
 
-.studio-heading h1 {
-  max-width: 780px;
+.studio-heading h2 {
+  max-width: 720px;
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(36px, 6vw, 64px);
-  line-height: 1.04;
+  font-size: clamp(32px, 4.5vw, 50px);
+  line-height: 1.06;
+  text-wrap: balance;
 }
 
 .studio-heading p {
-  max-width: 680px;
-  margin: 0;
+  max-width: 700px;
+  margin: 10px 0 0;
   color: var(--color-muted);
-  line-height: 1.7;
+  line-height: 1.65;
+}
+
+.studio-heading .studio-eyebrow {
+  margin: 0 0 7px;
+  color: #315d18;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .studio-chatbox {
   width: 100%;
   display: grid;
-  gap: 14px;
-  border: 1.5px solid var(--color-ink);
-  border-radius: var(--radius-lg);
+  gap: 18px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 24px;
   background: var(--color-surface);
-  box-shadow: var(--shadow-hard-lg);
-  padding: 18px;
+  box-shadow: 0 22px 60px rgba(34, 63, 20, 0.1);
+  padding: clamp(18px, 3vw, 28px);
 }
 
-.clinical-strip,
-.studio-prompts {
+.studio-form-heading,
+.clinical-strip {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+}
+
+.studio-form-heading {
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 16px;
+}
+
+.studio-form-heading > div:first-child > span {
+  color: #315d18;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.studio-form-heading h3 {
+  margin: 4px 0 0;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: clamp(21px, 3vw, 28px);
 }
 
 .clinical-strip span {
   border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
-  color: #315d18;
+  color: var(--color-ink);
   padding: 7px 10px;
   font-size: 12px;
   font-weight: 900;
@@ -91,7 +124,7 @@
 }
 
 .studio-chatbox .ui-field textarea {
-  min-height: 150px;
+  min-height: 138px;
   background: var(--color-surface-soft);
   font-size: 16px;
   font-weight: 600;
@@ -117,17 +150,32 @@
 }
 
 .studio-prompts {
-  justify-content: center;
+  display: grid;
+  gap: 10px;
+}
+
+.studio-prompts > span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.studio-prompts > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .studio-prompts button {
-  min-height: 42px;
+  min-height: 46px;
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-muted);
-  padding: 9px 14px;
+  padding: 10px 13px;
   font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
   transition:
     transform var(--motion-base),
     border-color var(--motion-base),
@@ -139,6 +187,18 @@
   border-color: var(--color-ink);
   background: var(--color-primary-soft);
   color: var(--color-ink);
+}
+
+.studio-prompts button[aria-pressed="true"] {
+  border-color: var(--color-ink);
+  background: var(--color-primary-soft);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
+.studio-prompts button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.32);
+  outline-offset: 2px;
 }
 
 .studio-prompts button:disabled {
@@ -153,6 +213,11 @@ html[data-theme="dark"] .specialty-page {
   background:
     radial-gradient(circle at 50% 12%, rgba(196, 233, 149, 0.12), transparent 32%),
     linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%);
+}
+
+html[data-theme="dark"] .studio-heading .studio-eyebrow,
+html[data-theme="dark"] .studio-form-heading > div:first-child > span {
+  color: var(--color-primary);
 }
 
 .studio-diagnosis-panel,
@@ -402,13 +467,30 @@ html[data-theme="dark"] .specialty-page {
     padding: 30px 14px 96px;
   }
 
-  .studio-heading h1 {
-    font-size: clamp(32px, 11vw, 48px);
+  .studio-heading {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .studio-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    box-shadow: 3px 3px 0 var(--color-ink);
+  }
+
+  .studio-heading h2 {
+    font-size: clamp(29px, 9vw, 38px);
   }
 
   .studio-chatbox {
-    padding: 14px;
-    box-shadow: var(--shadow-hard);
+    padding: 16px;
+    border-radius: 20px;
+    box-shadow: 0 16px 42px rgba(34, 63, 20, 0.1);
+  }
+
+  .studio-form-heading {
+    display: grid;
   }
 
   .studio-chat-actions {
@@ -441,14 +523,12 @@ html[data-theme="dark"] .specialty-page {
     width: 100%;
   }
 
-  .studio-prompts {
-    display: grid;
-    width: 100%;
+  .studio-prompts > div {
+    grid-template-columns: 1fr;
   }
 
-  .studio-prompts button {
-    width: 100%;
-    text-align: left;
+  .studio-chatbox .ui-field textarea {
+    min-height: 126px;
   }
 
   .studio-result-panel {
@@ -458,14 +538,14 @@ html[data-theme="dark"] .specialty-page {
 .studio-question-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 /* Focused patient flow: calm surfaces and one clear action per step. */
-.studio-center { width: min(920px, 100%); }
 .studio-flow { width: min(620px, 100%); display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0; padding: 0; list-style: none; }
 .studio-flow li { position: relative; display: grid; justify-items: center; gap: 7px; color: var(--color-muted); font-size: 12px; }
 .studio-flow li:not(:last-child)::after { content: ""; position: absolute; top: 17px; left: calc(50% + 22px); width: calc(100% - 44px); height: 2px; background: var(--color-line-strong); }
 .studio-flow span { z-index: 1; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--color-line-strong); border-radius: 50%; background: var(--color-surface); font-weight: 950; }
 .studio-flow li.active { color: var(--color-ink); }
 .studio-flow li.active span { border-color: #315d18; background: var(--color-primary); }
-.studio-chatbox { border: 1px solid var(--color-line-strong); border-radius: 24px; box-shadow: 0 24px 70px rgba(34, 63, 20, .11); padding: 24px; }
+.studio-flow li.complete span { border-color: var(--color-ink); background: var(--color-ink); color: var(--color-primary); }
+.studio-flow li.complete:not(:last-child)::after { background: var(--color-ink); }
 .studio-diagnosis-panel, .studio-result-card { border: 1px solid var(--color-line-strong); border-radius: 22px; box-shadow: 0 18px 50px rgba(34, 63, 20, .09); }
 .studio-question { border-radius: 18px; padding: 20px; }
 .studio-question label { min-height: 48px; padding: 0 20px; cursor: pointer; }
@@ -481,4 +561,32 @@ html[data-theme="dark"] .specialty-page {
 @media (max-width: 760px) {
   .studio-flow strong { font-size: 11px; }
   .studio-chatbox { padding: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-prompts button {
+    transition: none;
+  }
+
+  .studio-prompts button:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .studio-mark,
+  .studio-flow span,
+  .studio-chatbox,
+  .studio-prompts button,
+  .studio-question label {
+    border-color: ButtonText;
+  }
+
+  .studio-flow li.active span,
+  .studio-flow li.complete span,
+  .studio-prompts button[aria-pressed="true"],
+  .studio-question label:has(input:checked) {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
 }
