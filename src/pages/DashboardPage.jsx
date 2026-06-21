@@ -233,7 +233,9 @@ export default function DashboardPage() {
   const recommendedDepartment = result?.recommendedDepartment;
   const sortedFacilities = [...(result?.recommendedFacilities ?? [])]
     .sort((left, right) => scoreFacility(right, recommendedDepartment, userLocation) - scoreFacility(left, recommendedDepartment, userLocation));
-
+  const activeStep = status === "result"
+    ? 2
+    : ["questions", "submitting"].includes(status) ? 1 : 0;
 
   function dismissProfilePrompt() {
     if (typeof sessionStorage !== "undefined") {
@@ -275,20 +277,23 @@ export default function DashboardPage() {
 
   return (
     <main className="specialty-page">
-      <section className="studio-center" aria-label="Gợi ý chuyên khoa qua triệu chứng">
-        <div className="studio-heading">
-          <span className="studio-mark"><ClipboardPlus size={28} /></span>
-          <h1>Gợi ý chuyên khoa qua triệu chứng</h1>
-          <p>Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo và cơ sở phù hợp.</p>
-        </div>
+      <section className="studio-center" aria-labelledby="specialty-intake-title">
+        <header className="studio-heading">
+          <span className="studio-mark" aria-hidden="true"><ClipboardPlus size={24} /></span>
+          <div>
+            <p className="studio-eyebrow">Tư vấn chuyên khoa</p>
+            <h2 id="specialty-intake-title">Gợi ý chuyên khoa qua triệu chứng</h2>
+            <p>Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo và cơ sở phù hợp.</p>
+          </div>
+        </header>
 
         <ol className="studio-flow" aria-label="Tiến trình tư vấn">
-          {[
-            ["Mô tả", ["idle", "loading-questions", "no-questions"].includes(status)],
-            ["Làm rõ", ["questions", "submitting"].includes(status)],
-            ["Kết quả", status === "result"],
-          ].map(([label, active], index) => (
-            <li className={active ? "active" : ""} key={label}>
+          {["Mô tả", "Làm rõ", "Kết quả"].map((label, index) => (
+            <li
+              className={index === activeStep ? "active" : index < activeStep ? "complete" : ""}
+              key={label}
+              aria-current={index === activeStep ? "step" : undefined}
+            >
               <span>{index + 1}</span>
               <strong>{label}</strong>
             </li>
@@ -313,9 +318,15 @@ export default function DashboardPage() {
           event.preventDefault();
           startDiagnosis();
         }}>
-          <div className="clinical-strip">
-            <span>Tiếp nhận ban đầu</span>
-            <span>Không thay thế chẩn đoán</span>
+          <div className="studio-form-heading">
+            <div>
+              <span>Bước 1</span>
+              <h3>Mô tả điều bạn đang cảm nhận</h3>
+            </div>
+            <div className="clinical-strip" aria-label="Phạm vi tư vấn">
+              <span>Tiếp nhận ban đầu</span>
+              <span>Không thay thế chẩn đoán</span>
+            </div>
           </div>
           <Field
             id="specialty-symptoms"
@@ -331,6 +342,22 @@ export default function DashboardPage() {
               disabled={loading}
             />
           </Field>
+          <div className="studio-prompts" aria-labelledby="symptom-examples-title">
+            <span id="symptom-examples-title">Hoặc chọn một mô tả mẫu</span>
+            <div>
+              {PROMPTS.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  disabled={loading}
+                  aria-pressed={input === prompt}
+                  onClick={() => setInput(prompt)}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="studio-chat-actions">
             <span className="studio-status" aria-live="polite">
               {status === "loading-questions"
@@ -349,14 +376,6 @@ export default function DashboardPage() {
             </Button>
           </div>
         </form>
-
-        <div className="studio-prompts" aria-label="Triệu chứng mẫu">
-          {PROMPTS.map((prompt) => (
-            <button key={prompt} type="button" disabled={loading} onClick={() => setInput(prompt)}>
-              {prompt}
-            </button>
-          ))}
-        </div>
 
         {error && (
           <Alert tone="danger" title="Không thể kết nối dịch vụ phân tích" live>
