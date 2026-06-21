@@ -120,7 +120,10 @@ test.describe("patient specialty intake", () => {
 
     const symptoms = page.getByLabel("Triệu chứng bạn đang gặp");
     const submit = page.getByRole("button", { name: "Gợi ý chuyên khoa" });
+    const currentStep = page.locator('[aria-current="step"]');
 
+    await expect(page.getByRole("heading", { level: 2, name: "Gợi ý chuyên khoa qua triệu chứng" })).toBeVisible();
+    await expect(currentStep).toContainText("Mô tả");
     await expect(symptoms).toHaveAttribute(
       "aria-describedby",
       /specialty-symptoms-hint/,
@@ -128,19 +131,23 @@ test.describe("patient specialty intake", () => {
     await expect(submit).toBeDisabled();
     await expect(page.getByText("Khi nào cần cấp cứu?")).toBeVisible();
 
-    await page.getByRole("button", { name: "Sốt nhẹ 2 ngày kèm đau họng" }).click();
+    const examplePrompt = page.getByRole("button", { name: "Sốt nhẹ 2 ngày kèm đau họng" });
+    await examplePrompt.click();
+    await expect(examplePrompt).toHaveAttribute("aria-pressed", "true");
     await expect(symptoms).toHaveValue("Sốt nhẹ 2 ngày kèm đau họng");
     await expect(submit).toBeEnabled();
 
     await submit.click();
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.locator(".studio-diagnosis-panel")).toBeFocused();
+    await expect(currentStep).toContainText("Làm rõ");
     await expect(page.getByText("Bạn có sốt trên 38 độ không?")).toBeVisible();
 
     await page.getByLabel("Có").check();
     await page.getByRole("button", { name: "Xem nhận định và bệnh viện phù hợp" }).click();
 
     await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
+    await expect(currentStep).toContainText("Kết quả");
     await expect(page.getByText("Tai Mũi Họng", { exact: true })).toBeVisible();
     await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
     await expect(page.getByText("Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.")).toBeVisible();
