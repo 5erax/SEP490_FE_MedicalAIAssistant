@@ -1,6 +1,7 @@
 import { Component, useEffect, useRef } from "react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { navigate } from "../../router/navigation";
 
 const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
@@ -57,7 +58,6 @@ export default function FacilityMap({
   selectedFacility,
   userLocation,
   viewState,
-  onDirections,
   onError,
   onLocate,
   onMapLoad,
@@ -115,7 +115,7 @@ export default function FacilityMap({
                   <span>{selectedFacility.address}</span>
                   <span>{selectedFacility.phoneLabel}</span>
                   {selectedFacility.website && <a href={selectedFacility.website} target="_blank" rel="noreferrer">Website cơ sở</a>}
-                  <button type="button" onClick={() => onDirections(selectedFacility)}>Xem chi tiết</button>
+                  <button type="button" onClick={() => navigate(`/facility/${encodeURIComponent(selectedFacility.facilityId)}`)}>Xem chi tiết</button>
                 </div>
               </Popup>
             )}

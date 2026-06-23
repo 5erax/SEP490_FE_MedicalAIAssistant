@@ -1,3 +1,5 @@
+import { navigate } from "../../router/navigation";
+
 export default function FacilityList({
   cardRefs,
   facilities,
@@ -26,9 +28,13 @@ export default function FacilityList({
             className="facility-select-button"
             type="button"
             aria-pressed={selectedFacilityId === facility.facilityId}
-            onClick={(event) => { event.stopPropagation(); onSelect(facility); }}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelect(facility);
+              navigate(`/facility/${encodeURIComponent(facility.facilityId)}`);
+            }}
           >
-            {selectedFacilityId === facility.facilityId ? "Đang xem chi tiết" : "Xem chi tiết"}
+            Xem chi tiết
           </button>
           {selectedFacilityId === facility.facilityId && <div className="facility-details">
             <p>Địa chỉ: {facility.address}</p>

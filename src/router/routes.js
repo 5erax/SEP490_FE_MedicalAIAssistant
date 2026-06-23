@@ -93,6 +93,12 @@ const BASE_ROUTES = [
     navigation: { shell: "patient", label: "Bản đồ", hint: "Cơ sở gần bạn", icon: "map", order: 30, mobile: true },
   },
   {
+    id: "public.facility-detail",
+    path: "/facility/:id",
+    title: "Chi tiết cơ sở y tế | MediMate AI",
+    access: "public",
+  },
+  {
     id: "patient.profile",
     path: "/profile",
     title: "Hồ sơ cá nhân | MediMate AI",
@@ -189,7 +195,22 @@ for (const route of ROUTES) {
 }
 
 export function resolveRoute(pathname) {
-  return ROUTES_BY_PATH.get(pathname) ?? null;
+  const exactRoute = ROUTES_BY_PATH.get(pathname);
+  if (exactRoute) return exactRoute;
+
+  const facilityMatch = pathname.match(/^\/facility\/([^/]+)$/);
+  if (facilityMatch) {
+    const route = ROUTES_BY_PATH.get("/facility/:id");
+    return route
+      ? {
+        ...route,
+        path: pathname,
+        params: { id: decodeURIComponent(facilityMatch[1]) },
+      }
+      : null;
+  }
+
+  return null;
 }
 
 export function getCanonicalPath(route) {
