@@ -4,7 +4,7 @@ export default function FacilityList({
   loading,
   onCall,
   onDirections,
-  onSelect,
+  onViewDetail,
   selectedFacilityId,
 }) {
   return (
@@ -26,7 +26,7 @@ export default function FacilityList({
             className="facility-select-button"
             type="button"
             aria-pressed={selectedFacilityId === facility.facilityId}
-            onClick={(event) => { event.stopPropagation(); onSelect(facility); }}
+            onClick={(event) => { event.stopPropagation(); onViewDetail(facility); }}
           >
             {selectedFacilityId === facility.facilityId ? "Đang xem chi tiết" : "Xem chi tiết"}
           </button>
