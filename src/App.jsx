@@ -15,7 +15,6 @@ import SymptomAnalysisPage from "./pages/SymptomAnalysisPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import RecoveryPlanPage from "./pages/RecoveryPlanPage";
-import FacilityDetailPage from "./pages/FacilityDetailPage";
 import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
 import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
 import { getStoredAuth } from "./services/api";
@@ -110,8 +109,6 @@ function App() {
       return userWorkspace(<ChatbotPage />);
     case "public.map":
       return lazyPage(<NearbyClinicPage />);
-    case "public.facility-detail":
-      return userWorkspace(<FacilityDetailPage facilityId={route.params?.id} />);
     case "patient.records":
       return userWorkspace(<MedicalRecordPage />);
     case "patient.recovery":
