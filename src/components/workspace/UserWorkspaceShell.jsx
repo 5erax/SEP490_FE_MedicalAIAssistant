@@ -7,7 +7,6 @@ import {
   Crown,
   CreditCard,
   LayoutDashboard,
-  Lock,
   LogIn,
   LogOut,
   MapPin,
@@ -252,7 +251,6 @@ export default function UserWorkspaceShell({ children }) {
                   <strong>{item.label}</strong>
                   <small>{item.hint}</small>
                 </span>
-                {locked && <Lock className="nav-lock" size={14} strokeWidth={2.3} aria-hidden="true" />}
                 {isActive && <ChevronRight className="nav-caret" size={16} strokeWidth={2.4} aria-hidden="true" />}
               </>
             );
