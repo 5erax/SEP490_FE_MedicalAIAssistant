@@ -512,9 +512,9 @@ const styles = `
 .map-token-empty { height: 100%; display: grid; place-items: center; align-content: center; gap: 8px; text-align: center; background: linear-gradient(90deg, rgba(17,20,18,.06) 1px, transparent 1px), linear-gradient(rgba(17,20,18,.06) 1px, transparent 1px), #f5f7ef; background-size: 36px 36px; padding: 24px; }
 .map-token-empty strong { font-size: 24px; }
 .map-token-empty span { max-width: 420px; color: var(--muted); line-height: 1.5; }
-.clinic-marker { width: 42px; height: 42px; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 999px 999px 999px 5px; background: #bdf56d; color: var(--ink); padding: 0; font-size: 24px; font-weight: 950; line-height: 1; box-shadow: 0 3px 8px rgba(17,20,18,.28); transform: rotate(-45deg); transition: transform 180ms ease; }
+.clinic-marker { width: 42px; height: 42px; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 999px 999px 999px 5px; background: #e9f7da; color: var(--ink); padding: 0; font-size: 24px; font-weight: 950; line-height: 1; box-shadow: 0 3px 8px rgba(17,20,18,.28); transform: rotate(-45deg); transition: transform 180ms ease; }
 .clinic-marker span { transform: rotate(45deg) translateY(-1px); }
-.clinic-marker.selected { transform: rotate(-45deg) scale(1.16); background: var(--lime); color: var(--ink); }
+.clinic-marker.selected { transform: rotate(-45deg) scale(1.16); background: #bdf56d; color: var(--ink); }
 .user-marker { width: 26px; height: 26px; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 50%; background: rgba(170,237,99,.35); animation: pulse 1.4s infinite; }
 .user-marker span { width: 12px; height: 12px; border-radius: 50%; background: var(--lime); }
 .popup-card { min-width: 190px; display: grid; gap: 6px; color: var(--ink); }
@@ -573,8 +573,8 @@ const styles = `
 .facility-details { margin-top: 14px; padding-top: 10px; }
 .facility-reviews { border: 1px solid var(--line); border-radius: 16px; background: #fff; padding: 15px; }
 .map-panel { margin: 14px; overflow: hidden; border: 1px solid #d7e0d3; border-radius: 22px; box-shadow: 0 18px 54px rgba(24, 54, 31, .12); }
-.clinic-marker { border-color: var(--ink); background: #bdf56d; box-shadow: 0 4px 12px rgba(17, 20, 18, .28); }
-.clinic-marker.selected { background: var(--lime); box-shadow: 0 5px 18px rgba(17, 20, 18, .35); }
+.clinic-marker { border-color: var(--ink); background: #e9f7da; box-shadow: 0 4px 12px rgba(17, 20, 18, .28); }
+.clinic-marker.selected { background: #bdf56d; box-shadow: 0 5px 18px rgba(17, 20, 18, .35); }
 .clinic-popup .maplibregl-popup-content { border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 14px 40px rgba(17, 20, 18, .18); }
 .locate-button { border-color: #fff; border-radius: 50%; background: var(--teal); color: #fff; box-shadow: 0 8px 24px rgba(17, 20, 18, .22); }
 
