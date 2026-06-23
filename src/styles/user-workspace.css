@@ -123,6 +123,10 @@
   color: var(--workspace-ink);
 }
 
+.nav-lock {
+  color: rgba(16, 20, 17, 0.46);
+}
+
 .app-notice-backdrop {
   position: fixed;
   inset: 0;
