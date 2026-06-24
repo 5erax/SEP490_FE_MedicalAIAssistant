@@ -339,9 +339,10 @@ export default function DashboardPage() {
             <span className="studio-status" aria-live="polite">
               {status === "loading-questions"
                 ? "AI đang chọn câu hỏi cần hỏi thêm..."
-                : <><strong>Sẵn sàng.</strong> AI sẽ hỏi thêm yes/no rồi gợi ý nơi khám phù hợp.</>}
+                : <><strong>Sẵn sàng.</strong> Trả lời Yes/No</>}
             </span>
             <Button
+              className="studio-submit-icon"
               size="lg"
               loading={loading}
               loadingLabel="Đang tạo câu hỏi..."
@@ -349,7 +350,7 @@ export default function DashboardPage() {
               type="submit"
             >
               <Send size={18} />
-              Gợi ý chuyên khoa
+              <span className="sr-only">Gợi ý chuyên khoa</span>
             </Button>
           </div>
         </form>
