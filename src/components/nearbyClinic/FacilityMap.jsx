@@ -57,13 +57,13 @@ export default function FacilityMap({
   selectedFacility,
   userLocation,
   viewState,
-  onDirections,
   onError,
   onLocate,
   onMapLoad,
   onRetry,
   onSelect,
   onViewStateChange,
+  onViewDetail,
 }) {
   return (
     <section className="map-panel" aria-labelledby="interactive-map-title">
@@ -115,7 +115,7 @@ export default function FacilityMap({
                   <span>{selectedFacility.address}</span>
                   <span>{selectedFacility.phoneLabel}</span>
                   {selectedFacility.website && <a href={selectedFacility.website} target="_blank" rel="noreferrer">Website cơ sở</a>}
-                  <button type="button" onClick={() => onDirections(selectedFacility)}>Xem chi tiết</button>
+                  <button type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
                 </div>
               </Popup>
             )}

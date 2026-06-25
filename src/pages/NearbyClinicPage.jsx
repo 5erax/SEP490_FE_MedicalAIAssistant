@@ -3,6 +3,7 @@ import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import FacilityReviews from "../components/nearbyClinic/FacilityReviews";
 import { navigate } from "../router/navigation";
+import { doctorManagementApi } from "../services/doctors";
 import {
   facilityDepartmentsApi,
   feedbackReviewsApi,
@@ -10,14 +11,6 @@ import {
   medicalDepartmentsApi,
   medicalFacilitiesApi,
 } from "../services/api";
-
-const FILTERS = [
-  ["all", "Tất cả"],
-  ["hospital", "Bệnh viện"],
-  ["clinic", "Phòng khám"],
-  ["pharmacy", "Nhà thuốc"],
-  ["emergency", "Cấp cứu"],
-];
 
 const TYPE_LABELS = {
   hospital: "Bệnh viện",
@@ -65,6 +58,10 @@ function getArrayData(response) {
   return [];
 }
 
+function getObjectData(response) {
+  return response?.data?.data ?? response?.data ?? response;
+}
+
 function normalizeFacility(facility, relationDepartments = []) {
   const id = facility.facilityId ?? facility.id;
   const latitude = coordinateOrNull(facility.latitude, -90, 90);
@@ -87,6 +84,8 @@ function normalizeFacility(facility, relationDepartments = []) {
     phone,
     phoneLabel: phone || "Chưa có số điện thoại",
     website: String(facility.website ?? "").trim(),
+    imageUrl: facility.imageUrl || facility.thumbnailUrl || facility.photoUrl || "",
+    description: facility.description || facility.summary || "",
     facilityType: facility.facilityType || TYPE_LABELS[typeKey],
     facilityTypeKey: typeKey,
     facilityTypeLabel: TYPE_LABELS[typeKey],
@@ -112,8 +111,13 @@ function NearbyClinicPage() {
     () => new URLSearchParams(window.location.search).get("search") || "",
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
   const [selectedFacility, setSelectedFacility] = useState(null);
+  const [detailPanelOpen, setDetailPanelOpen] = useState(false);
+  const [detailFacility, setDetailFacility] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [detailDoctors, setDetailDoctors] = useState([]);
+  const [detailDoctorsLoading, setDetailDoctorsLoading] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: "5", comment: "" });
@@ -228,10 +232,9 @@ function NearbyClinicPage() {
         ...facility.departments,
       ].map(normalizeSearchText);
       const matchSearch = !normalized || searchable.some((value) => value.includes(normalized));
-      const matchFilter = activeFilter === "all" || facility.facilityTypeKey === activeFilter;
-      return matchSearch && matchFilter;
+      return matchSearch;
     });
-  }, [activeFilter, debouncedSearch, facilities]);
+  }, [debouncedSearch, facilities]);
 
   const mappableFacilities = useMemo(
     () => filteredFacilities.filter((facility) => facility.hasValidCoordinates),
@@ -247,13 +250,8 @@ function NearbyClinicPage() {
   const handleSearchChange = (event) => {
     setSearchText(event.target.value);
     setSelectedFacility(null);
-    setReviews([]);
-    setReviewsLoading(false);
-  };
-
-  const handleFilterChange = (value) => {
-    setActiveFilter(value);
-    setSelectedFacility(null);
+    setDetailPanelOpen(false);
+    setDetailFacility(null);
     setReviews([]);
     setReviewsLoading(false);
   };
@@ -274,6 +272,53 @@ function NearbyClinicPage() {
       behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
   };
+
+  const openFacilityDetail = async (facility) => {
+    if (!facility?.facilityId) return;
+    handleCardClick(facility);
+    setDetailPanelOpen(true);
+    setDetailFacility(facility);
+    setDetailLoading(true);
+    setDetailDoctorsLoading(true);
+    setDetailDoctors([]);
+    setDetailError("");
+
+    try {
+      const [facilityResult, doctorResult] = await Promise.allSettled([
+        medicalFacilitiesApi.get(facility.facilityId),
+        doctorManagementApi.list({ facilityId: facility.facilityId, pageNumber: 1, pageSize: 12, isActive: true }),
+      ]);
+      if (facilityResult.status === "fulfilled") {
+        setDetailFacility(normalizeFacility(getObjectData(facilityResult.value)));
+      } else {
+        throw facilityResult.reason;
+      }
+      setDetailDoctors(doctorResult.status === "fulfilled" ? getArrayData(doctorResult.value) : []);
+    } catch (error) {
+      setDetailError(error.message || "Không tải được thông tin chi tiết cơ sở y tế.");
+    } finally {
+      setDetailLoading(false);
+      setDetailDoctorsLoading(false);
+    }
+  };
+
+  const closeFacilityDetail = () => {
+    setDetailPanelOpen(false);
+    setDetailFacility(null);
+    setDetailError("");
+    setDetailDoctors([]);
+  };
+
+  const detailServices = useMemo(() => {
+    if (!detailFacility) return [];
+    return [
+      detailFacility.departments.length > 0 ? "Có thông tin chuyên khoa" : "",
+      detailFacility.openingHours && detailFacility.openingHours !== "Đang cập nhật" ? "Có giờ hoạt động" : "",
+      detailFacility.phone ? "Có số điện thoại liên hệ" : "",
+      detailFacility.website ? "Có website cơ sở" : "",
+      detailFacility.hasValidCoordinates ? "Có vị trí chỉ đường" : "",
+    ].filter(Boolean);
+  }, [detailFacility]);
 
   const handleLocateMe = () => {
     setLocationError("");
@@ -374,23 +419,6 @@ function NearbyClinicPage() {
           )}
         </div>
 
-        <div className="filter-row">
-          {FILTERS.map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={activeFilter === value ? "active" : ""}
-              onClick={() => handleFilterChange(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="result-summary" aria-live="polite">
-          <p className="result-count">{loadingFacilities ? "Đang đồng bộ cơ sở y tế..." : `${filteredFacilities.length} cơ sở phù hợp`}</p>
-          {searchText && <span>cho “{searchText}”</span>}
-        </div>
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
@@ -405,7 +433,7 @@ function NearbyClinicPage() {
           selectedFacilityId={selectedFacility?.facilityId}
           onCall={callFacility}
           onDirections={openDirections}
-          onSelect={handleCardClick}
+          onViewDetail={openFacilityDetail}
         />
 
         <FacilityReviews
@@ -423,30 +451,113 @@ function NearbyClinicPage() {
         <div className="sidebar-note">ℹ Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</div>
       </aside>
 
-      <FacilityMap
-        chatContext={chatContext}
-        facilities={mappableFacilities}
-        locationError={locationError}
-        mapRef={mapRef}
-        mapRenderKey={mapRenderKey}
-        mapStatus={mapStatus}
-        selectedFacility={selectedFacility}
-        userLocation={userLocation}
-        viewState={viewState}
-        onDirections={openDirections}
-        onError={handleMapError}
-        onLocate={handleLocateMe}
-        onMapLoad={() => setMapStatus("ready")}
-        onRetry={retryMap}
-        onSelect={(facility) => facility ? handleCardClick(facility) : setSelectedFacility(null)}
-        onViewStateChange={setViewState}
-      />
+      <section className="map-stage">
+        <FacilityMap
+          chatContext={chatContext}
+          facilities={mappableFacilities}
+          locationError={locationError}
+          mapRef={mapRef}
+          mapRenderKey={mapRenderKey}
+          mapStatus={mapStatus}
+          selectedFacility={selectedFacility}
+          userLocation={userLocation}
+          viewState={viewState}
+          onError={handleMapError}
+          onLocate={handleLocateMe}
+          onMapLoad={() => setMapStatus("ready")}
+          onRetry={retryMap}
+          onSelect={(facility) => facility ? handleCardClick(facility) : setSelectedFacility(null)}
+          onViewStateChange={setViewState}
+          onViewDetail={openFacilityDetail}
+        />
+        {detailPanelOpen && detailFacility && (
+        <section className="facility-detail-view" aria-labelledby="facility-detail-title">
+          <div className="facility-detail-hero">
+            {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
+            <div>
+              <button type="button" onClick={closeFacilityDetail}>Đóng xem chi tiết</button>
+              <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
+              <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
+              <p>{detailFacility.address}</p>
+              <div className="facility-detail-hero-actions">
+                <button type="button" disabled={!detailFacility.phone} onClick={() => callFacility(detailFacility)}>Gọi điện</button>
+                <button type="button" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}>Chỉ đường</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="facility-detail-content">
+            {detailLoading && <p className="facility-detail-status">Đang tải thông tin chi tiết...</p>}
+            {detailError && <p className="facility-detail-error">{detailError}</p>}
+
+            <section className="facility-detail-card wide">
+              <h3>Thông tin bệnh viện</h3>
+              <p>{detailFacility.description || "Backend chưa cung cấp mô tả chi tiết cho cơ sở y tế này."}</p>
+              <dl className="facility-detail-facts">
+                <div>
+                  <dt>Số điện thoại</dt>
+                  <dd>{detailFacility.phoneLabel}</dd>
+                </div>
+                <div>
+                  <dt>Giờ hoạt động</dt>
+                  <dd>{detailFacility.openingHours}</dd>
+                </div>
+                <div>
+                  <dt>Website</dt>
+                  <dd>{detailFacility.website ? <a href={detailFacility.website} target="_blank" rel="noreferrer">{detailFacility.website}</a> : "Chưa cập nhật"}</dd>
+                </div>
+              </dl>
+              <div className="facility-detail-tags">
+                {detailFacility.departments.map((department) => <span key={department}>{department}</span>)}
+              </div>
+            </section>
+
+            <section className="facility-detail-card">
+              <h3>Danh sách bác sĩ</h3>
+              <div className="facility-detail-list">
+                {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
+                {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này từ backend.</p>}
+                {detailDoctors.map((doctor) => (
+                  <article key={doctor.id}>
+                    <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
+                    <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="facility-detail-card">
+              <h3>Đánh giá người dùng</h3>
+              <div className="facility-detail-list">
+                {reviewsLoading && <p>Đang tải đánh giá...</p>}
+                {!reviewsLoading && reviews.length === 0 && <p>Chưa có đánh giá công khai cho cơ sở này.</p>}
+                {reviews.slice(0, 4).map((review) => (
+                  <article key={review.id}>
+                    <strong>{review.rating}/5 sao</strong>
+                    <span>{review.comment || "Không có nhận xét."}</span>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="facility-detail-card wide">
+              <h3>Tiện ích và dịch vụ nổi bật</h3>
+              <div className="facility-detail-services">
+                {detailServices.length
+                  ? detailServices.map((service) => <span key={service}>{service}</span>)
+                  : <p>Backend chưa cung cấp tiện ích hoặc dịch vụ nổi bật cho cơ sở này.</p>}
+              </div>
+            </section>
+          </div>
+        </section>
+        )}
+      </section>
     </main>
   );
 }
 
 const styles = `
-.clinic-page { height: 100svh; display: flex; background: var(--bg); color: var(--ink); overflow: hidden; }
+.clinic-page { position: relative; height: 100svh; display: flex; background: var(--bg); color: var(--ink); overflow: hidden; }
 .map-skip-link { position: fixed; left: 340px; top: 12px; z-index: 20; border: 2px solid var(--ink); border-radius: 8px; background: var(--lime); padding: 10px 14px; color: var(--ink); font-weight: 900; transform: translateY(calc(-100% - 24px)); transition: transform 160ms ease; }
 .map-skip-link:focus { transform: translateY(0); }
 .clinic-sidebar { width: 320px; flex: 0 0 320px; overflow-y: auto; border-right: 1.5px solid var(--ink); background: var(--paper); padding: 16px; }
@@ -456,9 +567,9 @@ const styles = `
 .clinic-search { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; padding: 0 10px; }
 .clinic-search input { min-width: 0; height: 42px; border: 0; outline: none; }
 .clinic-search button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--mint); font-size: 18px; font-weight: 900; }
-.filter-row { display: flex; gap: 8px; overflow-x: auto; padding: 14px 0 8px; scrollbar-width: none; }
+.filter-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 14px 0 8px; }
 .filter-row::-webkit-scrollbar, .department-row::-webkit-scrollbar { display: none; }
-.filter-row button { flex: 0 0 auto; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 8px 11px; font-size: 12px; font-weight: 900; }
+.filter-row button { min-width: 0; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 8px 11px; font-size: 12px; font-weight: 900; }
 .filter-row button.active { background: var(--ink); color: #fff; }
 .result-count { margin: 0 0 10px; color: var(--muted); font-size: 12px; font-weight: 800; }
 .facility-list-panel { display: grid; gap: 9px; }
@@ -494,6 +605,8 @@ const styles = `
 .review-list { display: grid; gap: 8px; }
 .review-list article { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 9px; }
 .review-list article p { margin-top: 4px; }
+.map-stage { position: relative; flex: 1; min-width: 0; }
+.map-stage > .map-panel { position: absolute; inset: 14px; margin: 0; width: auto; height: auto; }
 .map-panel { position: relative; flex: 1; min-width: 0; background: #e9eee1; }
 .map-status-overlay, .map-fallback { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 24px; text-align: center; }
 .map-status-overlay { background: rgba(245,247,239,.88); backdrop-filter: blur(3px); }
@@ -512,9 +625,9 @@ const styles = `
 .map-token-empty { height: 100%; display: grid; place-items: center; align-content: center; gap: 8px; text-align: center; background: linear-gradient(90deg, rgba(17,20,18,.06) 1px, transparent 1px), linear-gradient(rgba(17,20,18,.06) 1px, transparent 1px), #f5f7ef; background-size: 36px 36px; padding: 24px; }
 .map-token-empty strong { font-size: 24px; }
 .map-token-empty span { max-width: 420px; color: var(--muted); line-height: 1.5; }
-.clinic-marker { width: 30px; height: 34px; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 999px 999px 999px 4px; background: var(--ink); color: var(--lime); padding: 0; font-weight: 900; transform: rotate(-45deg); box-shadow: 2px 2px 0 rgba(17,20,18,.28); transition: transform 180ms ease; }
-.clinic-marker span { transform: rotate(45deg); }
-.clinic-marker.selected { transform: rotate(-45deg) scale(1.25); background: var(--lime); color: var(--ink); }
+.clinic-marker { width: 42px; height: 42px; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 999px 999px 999px 5px; background: #d8f3bd; color: var(--ink); padding: 0; font-size: 24px; font-weight: 950; line-height: 1; box-shadow: 0 3px 8px rgba(17,20,18,.28); transform: rotate(-45deg); transition: transform 180ms ease; }
+.clinic-marker span { transform: rotate(45deg) translateY(-1px); }
+.clinic-marker.selected { transform: rotate(-45deg) scale(1.16); background: #bdf56d; color: var(--ink); }
 .user-marker { width: 26px; height: 26px; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 50%; background: rgba(170,237,99,.35); animation: pulse 1.4s infinite; }
 .user-marker span { width: 12px; height: 12px; border-radius: 50%; background: var(--lime); }
 .popup-card { min-width: 190px; display: grid; gap: 6px; color: var(--ink); }
@@ -525,13 +638,48 @@ const styles = `
 .clinic-popup .maplibregl-popup-tip { display: none; }
 .locate-button { position: absolute; right: 18px; bottom: 18px; z-index: 2; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); font-size: 22px; font-weight: 900; }
 .location-error { position: absolute; right: 18px; bottom: 78px; z-index: 2; border: 1px solid rgba(239,111,97,.35); border-radius: 9px; background: #fff4f2; color: #b42318; padding: 9px 11px; font-size: 12px; font-weight: 800; }
+.facility-detail-view { position: absolute; inset: 42px; z-index: 8; overflow-y: auto; display: block; border: 1px solid var(--line-strong); border-radius: 24px; background: linear-gradient(180deg, #f8fbf4, #eef5e9); box-shadow: 0 24px 70px rgba(17,20,18,.22); transform-origin: center bottom; animation: facilityDetailReveal 520ms cubic-bezier(.16, 1, .3, 1) both; }
+.facility-detail-hero { min-height: 320px; display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1fr); gap: 0; border-bottom: 1px solid var(--line); background: #fff; }
+.facility-detail-hero > img, .facility-detail-hero > span { width: 100%; height: 100%; min-height: 320px; object-fit: cover; }
+.facility-detail-hero > span { display: grid; place-items: center; background: linear-gradient(135deg, rgba(8,127,140,.16), rgba(184,239,121,.36)), #edf6e8; color: var(--ink); font-size: 48px; font-weight: 950; }
+.facility-detail-hero > div { display: grid; align-content: center; gap: 13px; padding: clamp(24px, 4vw, 44px); }
+.facility-detail-hero h2 { max-width: 780px; margin: 0; font-size: clamp(36px, 5vw, 62px); line-height: 1.02; letter-spacing: 0; }
+.facility-detail-hero p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.55; font-weight: 780; }
+.facility-detail-hero > div > button { width: fit-content; min-height: 38px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
+.facility-detail-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 8px; }
+.facility-detail-hero-actions button { min-height: 44px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); padding: 0 16px; font-weight: 900; }
+.facility-detail-hero-actions button:first-child { background: #d8f3bd; }
+.facility-detail-hero-actions button:disabled { border-color: var(--line); background: #eef0e8; color: var(--muted); }
+.facility-detail-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: clamp(18px, 3vw, 28px); }
+.facility-detail-card { min-width: 0; display: grid; align-content: start; gap: 12px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.88); box-shadow: 0 14px 42px rgba(24,54,31,.08); padding: clamp(16px, 2vw, 22px); }
+.facility-detail-card.wide { grid-column: 1 / -1; }
+.facility-detail-card h3 { margin: 0; font-size: 21px; line-height: 1.22; }
+.facility-detail-card p, .facility-detail-status, .facility-detail-error { margin: 0; color: var(--muted); line-height: 1.55; font-size: 13px; font-weight: 760; }
+.facility-detail-error { border: 1px solid rgba(239,111,97,.28); border-radius: 12px; background: #fff4f2; color: #b42318; padding: 10px; }
+.facility-detail-status { border: 1px solid rgba(8,127,140,.18); border-radius: 12px; background: var(--mint); padding: 10px; }
+.facility-detail-facts { display: grid; gap: 8px; margin: 0; }
+.facility-detail-facts div { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-soft); padding: 10px; }
+.facility-detail-facts dt { color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.facility-detail-facts dd { margin: 5px 0 0; overflow-wrap: anywhere; color: var(--ink); font-size: 13px; font-weight: 850; }
+.facility-detail-facts a { color: var(--teal); }
+.facility-detail-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.facility-detail-tags span { border: 1px solid var(--line); border-radius: 999px; background: var(--paper-soft); padding: 6px 9px; color: #315d18; font-size: 12px; font-weight: 850; }
+.facility-detail-list, .facility-detail-services { display: grid; gap: 9px; }
+.facility-detail-list article { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-soft); padding: 11px; }
+.facility-detail-list strong { font-size: 13px; }
+.facility-detail-list span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.facility-detail-services { display: flex; flex-wrap: wrap; gap: 8px; }
+.facility-detail-services span { border: 1px solid var(--line); border-radius: 999px; background: #e4f4f2; color: #075d66; padding: 8px 10px; font-size: 12px; font-weight: 850; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(170,237,99,.55); } 100% { box-shadow: 0 0 0 14px rgba(170,237,99,0); } }
 @keyframes mapSpin { to { transform: rotate(360deg); } }
+@keyframes facilityDetailReveal { from { opacity: 0; transform: translateY(34px) scale(.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (max-width: 760px) {
   .clinic-page { flex-direction: column-reverse; }
   .clinic-sidebar { width: 100%; flex: 0 0 45vh; border-right: 0; border-top: 1.5px solid var(--ink); }
-  .map-panel { flex: 0 0 55vh; }
+  .map-stage { flex: 0 0 55vh; }
+  .map-stage > .map-panel { inset: 10px; }
   .map-skip-link { left: 12px; }
+  .facility-detail-view { inset: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .map-loading-spinner { animation: none; }
@@ -559,8 +707,8 @@ const styles = `
 .map-page-actions button { border-color: var(--line); border-radius: 10px; background: var(--paper-soft); }
 .map-page-actions button:last-child { border-color: #87b65b; background: #e9f7da; }
 .clinic-search { min-height: 50px; border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 8px 24px rgba(24, 54, 31, .07); }
-.filter-row { flex-wrap: nowrap; overflow-x: auto; padding: 2px 0 7px; scrollbar-width: thin; }
-.filter-row button { flex: 0 0 auto; min-height: 38px; border-color: var(--line); background: #fff; }
+.filter-row { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 2px 0 7px; }
+.filter-row button { min-height: 38px; border-color: var(--line); background: #fff; }
 .filter-row button.active { border-color: var(--teal); background: #e4f4f2; color: #075d66; }
 .result-summary { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px; margin: 4px 0 12px; }
 .result-summary .result-count { margin: 0; color: var(--ink); font-size: 13px; }
@@ -573,8 +721,8 @@ const styles = `
 .facility-details { margin-top: 14px; padding-top: 10px; }
 .facility-reviews { border: 1px solid var(--line); border-radius: 16px; background: #fff; padding: 15px; }
 .map-panel { margin: 14px; overflow: hidden; border: 1px solid #d7e0d3; border-radius: 22px; box-shadow: 0 18px 54px rgba(24, 54, 31, .12); }
-.clinic-marker { border-color: #fff; background: var(--teal); box-shadow: 0 4px 12px rgba(17, 20, 18, .28); }
-.clinic-marker.selected { background: var(--lime); box-shadow: 0 5px 18px rgba(17, 20, 18, .35); }
+.clinic-marker { border-color: var(--ink); background: #d8f3bd; box-shadow: 0 4px 12px rgba(17, 20, 18, .28); }
+.clinic-marker.selected { background: #bdf56d; box-shadow: 0 5px 18px rgba(17, 20, 18, .35); }
 .clinic-popup .maplibregl-popup-content { border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 14px 40px rgba(17, 20, 18, .18); }
 .locate-button { border-color: #fff; border-radius: 50%; background: var(--teal); color: #fff; box-shadow: 0 8px 24px rgba(17, 20, 18, .22); }
 

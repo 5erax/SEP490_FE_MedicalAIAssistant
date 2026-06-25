@@ -10,6 +10,7 @@ import {
   CreditCard,
   LayoutDashboard,
   Search,
+  SlidersHorizontal,
   Stethoscope,
   Users,
   UserPlus,
@@ -103,7 +104,7 @@ const ADMIN_NAV_ICONS = {
   dashboard: LayoutDashboard,
   users: Users,
   doctor: Stethoscope,
-  ai: ClipboardList,
+  ai: SlidersHorizontal,
   subscription: CreditCard,
   staff: UserPlus,
   facility: Building2,
@@ -1484,48 +1485,50 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
             <ApiMessage message={globalMessage} />
 
-            <section className="admin-stats">
-              <article>
-                <span className="admin-stat-icon"><Users size={17} /></span>
-                <div>
-                  <span>Tổng user</span>
-                  <strong>{usersLoading ? "..." : pageInfo.totalCount}</strong>
-                  <small>Tổng số tài khoản</small>
-                </div>
-              </article>
-              <article>
-                <span className="admin-stat-icon"><ClipboardList size={17} /></span>
-                <div>
-                  <span>Chờ duyệt</span>
-                  <strong>{usersLoading ? "..." : pendingUsers}</strong>
-                  <small>Trong trang hiện tại</small>
-                </div>
-              </article>
-              <article>
-                <span className="admin-stat-icon"><Stethoscope size={17} /></span>
-                <div>
-                  <span>Bác sĩ</span>
-                  <strong>{doctorsLoading ? "..." : doctorPageInfo.totalCount}</strong>
-                  <small>{activeDoctors} đang hoạt động</small>
-                </div>
-              </article>
-              <article>
-                <span className="admin-stat-icon"><ClipboardList size={17} /></span>
-                <div>
-                  <span>AI Configs</span>
-                  <strong>{aiConfigsLoading ? "..." : aiConfigPageInfo.totalCount}</strong>
-                  <small>{activeAIConfigs} active · {disabledAIConfigs} inactive</small>
-                </div>
-              </article>
-              <article>
-                <span className="admin-stat-icon"><Activity size={17} /></span>
-                <div>
-                  <span>Health score</span>
-                  <strong>{aiConfigsLoading ? "..." : `${aiHealthScore}%`}</strong>
-                  <small>AI config đang active</small>
-                </div>
-              </article>
-            </section>
+            {activeSection === "overview" && (
+              <section className="admin-stats">
+                <article>
+                  <span className="admin-stat-icon"><Users size={17} /></span>
+                  <div>
+                    <span>Tổng user</span>
+                    <strong>{usersLoading ? "..." : pageInfo.totalCount}</strong>
+                    <small>Tổng số tài khoản</small>
+                  </div>
+                </article>
+                <article>
+                  <span className="admin-stat-icon"><ClipboardList size={17} /></span>
+                  <div>
+                    <span>Chờ duyệt</span>
+                    <strong>{usersLoading ? "..." : pendingUsers}</strong>
+                    <small>Trong trang hiện tại</small>
+                  </div>
+                </article>
+                <article>
+                  <span className="admin-stat-icon"><Stethoscope size={17} /></span>
+                  <div>
+                    <span>Bác sĩ</span>
+                    <strong>{doctorsLoading ? "..." : doctorPageInfo.totalCount}</strong>
+                    <small>{activeDoctors} đang hoạt động</small>
+                  </div>
+                </article>
+                <article>
+                  <span className="admin-stat-icon"><ClipboardList size={17} /></span>
+                  <div>
+                    <span>AI Configs</span>
+                    <strong>{aiConfigsLoading ? "..." : aiConfigPageInfo.totalCount}</strong>
+                    <small>{activeAIConfigs} active · {disabledAIConfigs} inactive</small>
+                  </div>
+                </article>
+                <article>
+                  <span className="admin-stat-icon"><Activity size={17} /></span>
+                  <div>
+                    <span>Health score</span>
+                    <strong>{aiConfigsLoading ? "..." : `${aiHealthScore}%`}</strong>
+                    <small>AI config đang active</small>
+                  </div>
+                </article>
+              </section>
+            )}
 
             {activeSection === "overview" && (
               <AdminOverviewSection
@@ -1677,7 +1680,9 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 onView={handleViewIcdChapter}
               />
             )}
-            {activeSection === "clinical-questions" && <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} service={clinicalQuestionsApi} />}
+            {activeSection === "clinical-questions" && (
+              <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} icdChapters={icdChapters} service={clinicalQuestionsApi} />
+            )}
 
             {activeSection === "facilities" && (
               <AdminFacilitiesSection
