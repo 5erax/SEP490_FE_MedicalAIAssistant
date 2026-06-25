@@ -149,6 +149,15 @@
   color: var(--color-ink);
 }
 
+.studio-chat-actions .studio-submit-icon {
+  width: 76px;
+  min-width: 76px;
+  height: 52px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 12px;
+}
+
 .studio-prompts {
   display: grid;
   gap: 10px;
@@ -513,6 +522,12 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
   .studio-chat-actions .ui-button {
     width: 100%;
+  }
+
+  .studio-chat-actions .studio-submit-icon {
+    width: 86px;
+    min-width: 86px;
+    align-self: flex-end;
   }
 
   .profile-nudge-actions,

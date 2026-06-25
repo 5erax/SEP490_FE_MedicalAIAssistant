@@ -84,7 +84,6 @@ const BASE_ROUTES = [
     title: "Chat với trợ lý AI | MediMate AI",
     access: "premium",
     shell: "patient",
-    navigation: { shell: "patient", label: "Chat AI", hint: "Hỏi trợ lý", icon: "chat", order: 20, mobile: true },
   },
   {
     id: "public.map",

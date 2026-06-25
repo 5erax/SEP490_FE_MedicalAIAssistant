@@ -4,13 +4,13 @@ export default function FacilityList({
   loading,
   onCall,
   onDirections,
-  onSelect,
+  onViewDetail,
   selectedFacilityId,
 }) {
   return (
     <section className="facility-list-panel" id="facility-list" tabIndex="-1" aria-label="Danh sách cơ sở y tế">
       {!loading && facilities.length === 0 && (
-        <div className="sidebar-note">Không có cơ sở y tế phù hợp từ backend.</div>
+        <div className="sidebar-note">Chưa tìm thấy cơ sở y tế phù hợp với bộ lọc hoặc khu vực hiện tại. Vui lòng thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
       )}
       {facilities.map((facility) => (
         <article
@@ -26,7 +26,7 @@ export default function FacilityList({
             className="facility-select-button"
             type="button"
             aria-pressed={selectedFacilityId === facility.facilityId}
-            onClick={(event) => { event.stopPropagation(); onSelect(facility); }}
+            onClick={(event) => { event.stopPropagation(); onViewDetail(facility); }}
           >
             {selectedFacilityId === facility.facilityId ? "Đang xem chi tiết" : "Xem chi tiết"}
           </button>

@@ -6,13 +6,6 @@ import { getStoredAuth } from "../services/api";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
 import "../styles/dashboard.css";
 
-const PROMPTS = [
-  "Đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ",
-  "Sốt nhẹ 2 ngày kèm đau họng",
-  "Khó thở khi leo cầu thang, tim đập nhanh",
-  "Đau đầu kéo dài và mất ngủ",
-];
-
 /* Backend owns clinical question selection and diagnosis generation. */
 function confidencePercent(value) {
   const numeric = Number(value ?? 0);
@@ -342,29 +335,14 @@ export default function DashboardPage() {
               disabled={loading}
             />
           </Field>
-          <div className="studio-prompts" aria-labelledby="symptom-examples-title">
-            <span id="symptom-examples-title">Hoặc chọn một mô tả mẫu</span>
-            <div>
-              {PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  disabled={loading}
-                  aria-pressed={input === prompt}
-                  onClick={() => setInput(prompt)}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className="studio-chat-actions">
             <span className="studio-status" aria-live="polite">
               {status === "loading-questions"
                 ? "AI đang chọn câu hỏi cần hỏi thêm..."
-                : <><strong>Sẵn sàng.</strong> AI sẽ hỏi thêm yes/no rồi gợi ý nơi khám phù hợp.</>}
+                : <><strong>Sẵn sàng.</strong> Trả lời Yes/No</>}
             </span>
             <Button
+              className="studio-submit-icon"
               size="lg"
               loading={loading}
               loadingLabel="Đang tạo câu hỏi..."
@@ -372,7 +350,7 @@ export default function DashboardPage() {
               type="submit"
             >
               <Send size={18} />
-              Gợi ý chuyên khoa
+              <span className="sr-only">Gợi ý chuyên khoa</span>
             </Button>
           </div>
         </form>
