@@ -2,8 +2,11 @@ import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
 export const clinicalQuestionsApi = {
-  list(pageNumber = 1, pageSize = 20) {
-    return apiRequest(`${ENDPOINTS.CLINICAL_QUESTIONS.BASE}?${withPagination(pageNumber, pageSize)}`);
+  list(pageNumber = 1, pageSize = 20, filters = {}) {
+    const params = new URLSearchParams(withPagination(pageNumber, pageSize));
+    if (filters.chapterId) params.set("chapterId", filters.chapterId);
+    if (filters.search?.trim()) params.set("search", filters.search.trim());
+    return apiRequest(`${ENDPOINTS.CLINICAL_QUESTIONS.BASE}?${params.toString()}`);
   },
 
   get(id) {

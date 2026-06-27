@@ -1,4 +1,10 @@
+import { Filter, RotateCcw, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+const DEFAULT_FILTERS = {
+  search: "",
+  chapterId: "",
+};
 
 function unwrapItems(response) {
   const data = response?.data?.data ?? response?.data ?? response;
@@ -41,7 +47,8 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   const [editingId, setEditingId] = useState("");
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
-  const [selectedIcdCode, setSelectedIcdCode] = useState("");
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
 
   const chapterById = useMemo(() => {
@@ -49,29 +56,25 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   }, [icdChapters]);
 
   const icdOptions = useMemo(() => {
-    const options = new Map();
-    icdChapters.forEach((chapter) => {
-      if (chapter.chapterCode) options.set(chapter.chapterCode, chapter.chapterName || chapter.chapterCode);
-    });
-    items.forEach((item) => {
-      const code = getChapterCode(item, chapterById);
-      if (code && !options.has(code)) options.set(code, code);
-    });
-    return Array.from(options.entries())
-      .map(([code, label]) => ({ code, label }))
+    return icdChapters
+      .filter((chapter) => chapter.id && chapter.chapterCode)
+      .map((chapter) => ({
+        id: chapter.id,
+        code: chapter.chapterCode,
+        label: chapter.chapterName || chapter.chapterCode,
+      }))
       .sort((left, right) => left.code.localeCompare(right.code, "vi"));
-  }, [chapterById, icdChapters, items]);
+  }, [icdChapters]);
 
   const filteredItems = useMemo(() => {
-    if (!selectedIcdCode) return items;
-    return items.filter((item) => getChapterCode(item, chapterById) === selectedIcdCode);
-  }, [chapterById, items, selectedIcdCode]);
+    return items;
+  }, [items]);
 
-  async function loadItems(pageNumber = pageInfo.pageNumber, pageSize = pageInfo.pageSize) {
+  async function loadItems(pageNumber = pageInfo.pageNumber, pageSize = pageInfo.pageSize, activeFilters = appliedFilters) {
     setStatus("loading");
     setMessage("");
     try {
-      const response = await service.list(pageNumber, pageSize);
+      const response = await service.list(pageNumber, pageSize, activeFilters);
       setItems(unwrapItems(response));
       setPageInfo(unwrapPageInfo(response, pageNumber, pageSize));
       setStatus("ready");
@@ -134,6 +137,24 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
     loadItems(1, value);
   }
 
+  function updateFilter(key, value) {
+    setFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function applyFilters(event) {
+    event.preventDefault();
+    setAppliedFilters(filters);
+    setPageInfo((current) => ({ ...current, pageNumber: 1 }));
+    loadItems(1, pageInfo.pageSize, filters);
+  }
+
+  function clearFilters() {
+    setFilters(DEFAULT_FILTERS);
+    setAppliedFilters(DEFAULT_FILTERS);
+    setPageInfo((current) => ({ ...current, pageNumber: 1 }));
+    loadItems(1, pageInfo.pageSize, DEFAULT_FILTERS);
+  }
+
   return (
     <section className="admin-grid">
       <div className="admin-panel">
@@ -142,13 +163,21 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
           <button className="btn btn-ghost btn-small" type="button" onClick={() => loadItems()}>Tải lại</button>
         </div>
         {message && <div className="api-message" role="status">{message}</div>}
-        <div className="admin-toolbar">
+        <form className="admin-toolbar" onSubmit={applyFilters}>
+          <div className="ai-config-search-field">
+            <Search size={16} />
+            <input
+              value={filters.search}
+              onChange={(event) => updateFilter("search", event.target.value)}
+              placeholder="Tìm câu hỏi tiếng Việt hoặc tiếng Anh..."
+            />
+          </div>
           <label className="clean-field">
             <span>ICD Code</span>
-            <select value={selectedIcdCode} onChange={(event) => setSelectedIcdCode(event.target.value)}>
+            <select value={filters.chapterId} onChange={(event) => updateFilter("chapterId", event.target.value)}>
               <option value="">Tất cả ICD</option>
               {icdOptions.map((option) => (
-                <option key={option.code} value={option.code}>
+                <option key={option.id} value={option.id}>
                   {option.code} - {option.label}
                 </option>
               ))}
@@ -162,7 +191,11 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
               <option value="50">50 / trang</option>
             </select>
           </label>
-        </div>
+          <div className="ai-config-filter-actions">
+            <button className="btn btn-primary btn-small" type="submit"><Filter size={14} /> Apply</button>
+            <button className="btn btn-ghost btn-small" type="button" onClick={clearFilters}><RotateCcw size={14} /> Clear</button>
+          </div>
+        </form>
         {status === "loading" ? <p className="muted-text">Đang tải...</p> : (
           <div className="admin-table-list">
             {filteredItems.length === 0 && <p className="muted-text">Chưa có {config.pluralLabel}.</p>}
