@@ -120,8 +120,8 @@
 .operator-workspace .app-stats,
 .admin-operator .admin-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .operator-workspace .app-stats article,
@@ -140,9 +140,9 @@
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
-  padding: 18px;
+  padding: 16px;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -155,8 +155,8 @@
 .admin-operator .admin-stats .admin-stat-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 12px;
   background: #eef9e6;
   color: #0c5f5e;
@@ -180,7 +180,7 @@
   display: block;
   margin-top: 5px;
   color: #101411;
-  font-size: 26px;
+  font-size: 25px;
   font-weight: 780;
   line-height: 1.1;
 }
