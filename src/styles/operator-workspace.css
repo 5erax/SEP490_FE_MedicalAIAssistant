@@ -1724,14 +1724,14 @@
 }
 
 .admin-operator .ai-config-toolbar-filters {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 10px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 12px;
 }
 
 .admin-operator .ai-config-filter-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(132px, 1.08fr) minmax(132px, 1fr) minmax(132px, 1fr) minmax(150px, 1.12fr) minmax(112px, 0.72fr);
   gap: 10px;
   min-width: 0;
 }
@@ -1742,7 +1742,8 @@
 
 .admin-operator .ai-config-filter-grid select {
   min-width: 0;
-  text-overflow: ellipsis;
+  padding-inline: 12px 30px;
+  font-size: 13px;
 }
 
 .admin-operator .ai-config-search-field {
