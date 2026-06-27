@@ -1,5 +1,6 @@
-import { RefreshCw } from "lucide-react";
-import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../ui";
+import { Plus, RefreshCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Badge, Button, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -54,17 +55,50 @@ export default function AdminFacilitiesSection({
   onToggleDepartment,
   onToggleStatus,
 }) {
+  const [formOpen, setFormOpen] = useState(false);
+  const wasSavingRef = useRef(false);
+
+  useEffect(() => {
+    if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
+      setFormOpen(false);
+    }
+    wasSavingRef.current = saving;
+  }, [formOpen, message, saving]);
+
+  function openCreateForm() {
+    onReset();
+    setFormOpen(true);
+  }
+
+  function openEditForm(facility) {
+    onEdit(facility);
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    if (saving) return;
+    setFormOpen(false);
+    onReset();
+  }
+
   return (
-    <section className="admin-grid facility-admin-grid">
-      <div className="admin-panel">
-        <div className="panel-title-row">
-          <div>
-            <p className="eyebrow">Cơ sở y tế</p>
-            <h2>Danh sách cơ sở</h2>
-          </div>
-          <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>Tải lại</button>
+    <section className="admin-panel ai-config-admin-panel facility-admin-panel">
+      <div className="panel-title-row ai-config-section-heading">
+        <div>
+          <p className="eyebrow">Cơ sở y tế</p>
+          <h2>Danh sách cơ sở</h2>
+          <p className="muted-text">Quản lý bệnh viện, phòng khám và chuyên khoa liên kết dùng cho điều phối bác sĩ.</p>
         </div>
-        <ApiMessage message={message} />
+        <div className="facility-panel-actions">
+          <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>Tải lại</button>
+          <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>
+            <Plus size={15} /> Tạo cơ sở
+          </button>
+        </div>
+      </div>
+      <ApiMessage message={message} />
+
+      <div className="admin-panel">
         {loading ? (
           <LoadingState
             label="Đang tải danh sách cơ sở y tế..."
@@ -112,7 +146,7 @@ export default function AdminFacilitiesSection({
                     <Badge tone={hasValidCoordinatePair(facility) ? "success" : "warning"}>
                       {hasValidCoordinatePair(facility) ? "Đủ dữ liệu bản đồ" : "Thiếu tọa độ"}
                     </Badge>
-                    <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(facility)}>Sửa</button>
+                    <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(facility)}>Sửa</button>
                     <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(facility)}>
                       {isFacilityActive(facility) ? "Tắt" : "Bật"}
                     </button>
@@ -125,120 +159,142 @@ export default function AdminFacilitiesSection({
         )}
       </div>
 
-      <form className="admin-panel clean-form" onSubmit={onSubmit}>
-        <div className="panel-title-row">
-          <div>
-            <p className="eyebrow">{editingFacilityId ? "Update" : "Create"}</p>
-            <h2>{editingFacilityId ? "Cập nhật cơ sở y tế" : "Tạo cơ sở y tế"}</h2>
-          </div>
-          {editingFacilityId && <button className="btn btn-ghost btn-small" type="button" onClick={onReset}>Hủy sửa</button>}
-        </div>
-        <Field label="Tên cơ sở y tế">
-          <input
-            value={form.facilityName}
-            onChange={(event) => onFormChange("facilityName", event.target.value)}
-            placeholder="Ví dụ: Bệnh viện Đa khoa A"
-            required
-          />
-        </Field>
-        <Field label="Địa chỉ">
-          <input
-            value={form.address}
-            onChange={(event) => onFormChange("address", event.target.value)}
-            required
-          />
-        </Field>
-        <div className="clean-form-grid">
-          <Field label="Vĩ độ">
-            <input
-              type="number"
-              inputMode="decimal"
-              step="any"
-              min="-90"
-              max="90"
-              value={form.latitude}
-              onChange={(event) => onFormChange("latitude", event.target.value)}
-              placeholder="10.8491"
-            />
-          </Field>
-          <Field label="Kinh độ">
-            <input
-              type="number"
-              inputMode="decimal"
-              step="any"
-              min="-180"
-              max="180"
-              value={form.longitude}
-              onChange={(event) => onFormChange("longitude", event.target.value)}
-              placeholder="106.7715"
-            />
-          </Field>
-          <Field label="Số điện thoại">
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(event) => onFormChange("phone", event.target.value)}
-            />
-          </Field>
-          <Field label="Loại cơ sở">
-            <input
-              value={form.facilityType}
-              onChange={(event) => onFormChange("facilityType", event.target.value)}
-              placeholder="Bệnh viện, phòng khám..."
-            />
-          </Field>
-          <Field label="Website">
-            <input
-              type="url"
-              value={form.website}
-              onChange={(event) => onFormChange("website", event.target.value)}
-              placeholder="https://..."
-            />
-          </Field>
-          <Field label="Giờ mở cửa">
-            <input
-              value={form.openingHours}
-              onChange={(event) => onFormChange("openingHours", event.target.value)}
-              placeholder="07:00 - 17:00"
-            />
-          </Field>
-        </div>
-        <label className="clean-checkbox">
-          <input
-            type="checkbox"
-            checked={form.isActive}
-            onChange={(event) => onFormChange("isActive", event.target.checked)}
-          />
-          <span>Cho phép cơ sở này xuất hiện trong danh sách active sau khi backend lưu trạng thái.</span>
-        </label>
-        <fieldset className="facility-department-picker">
-          <legend>Chuyên khoa tại cơ sở</legend>
-          <p>Chọn ít nhất một chuyên khoa. Đây là dữ liệu form thêm bác sĩ sử dụng.</p>
-          {departments.length === 0 ? (
-            <p className="muted-text">Hãy tạo chuyên khoa trước.</p>
-          ) : (
-            <div className="facility-department-options">
-              {departments.map((department) => (
-                <label key={department.id}>
-                  <input
-                    type="checkbox"
-                    checked={form.departmentIds.includes(department.id)}
-                    onChange={() => onToggleDepartment(department.id)}
-                  />
-                  <span>{department.departmentName}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </fieldset>
-        <button
-          className="btn btn-primary"
-          type="submit"
-          disabled={saving || departments.length === 0}
+      {formOpen && (
+        <Dialog
+          backdropClassName="doctor-modal-backdrop"
+          className="doctor-modal facility-form-modal"
+          labelledBy="facility-modal-title"
+          onClose={closeForm}
+          closeOnBackdrop={!saving}
+          closeOnEscape={!saving}
         >
-          {saving ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật cơ sở" : "Tạo cơ sở và liên kết chuyên khoa"}
-        </button>
-      </form>
+          <header className="doctor-modal-header">
+            <div>
+              <p className="eyebrow">{editingFacilityId ? "Update" : "Create"}</p>
+              <h2 id="facility-modal-title">{editingFacilityId ? "Cập nhật cơ sở y tế" : "Tạo cơ sở y tế"}</h2>
+              <p>Nhập thông tin cơ sở và chọn chuyên khoa để dùng trong danh sách điều phối.</p>
+            </div>
+            <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm}>×</button>
+          </header>
+
+          <form className="clean-form doctor-form" onSubmit={onSubmit}>
+            <div className="facility-form-section">
+              <Field label="Tên cơ sở y tế">
+                <input
+                  value={form.facilityName}
+                  onChange={(event) => onFormChange("facilityName", event.target.value)}
+                  placeholder="Ví dụ: Bệnh viện Đa khoa A"
+                  required
+                />
+              </Field>
+              <Field label="Địa chỉ">
+                <input
+                  value={form.address}
+                  onChange={(event) => onFormChange("address", event.target.value)}
+                  required
+                />
+              </Field>
+              <div className="clean-form-grid">
+                <Field label="Vĩ độ">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
+                    min="-90"
+                    max="90"
+                    value={form.latitude}
+                    onChange={(event) => onFormChange("latitude", event.target.value)}
+                    placeholder="10.8491"
+                  />
+                </Field>
+                <Field label="Kinh độ">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
+                    min="-180"
+                    max="180"
+                    value={form.longitude}
+                    onChange={(event) => onFormChange("longitude", event.target.value)}
+                    placeholder="106.7715"
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="clean-form-grid">
+              <Field label="Số điện thoại">
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(event) => onFormChange("phone", event.target.value)}
+                />
+              </Field>
+              <Field label="Loại cơ sở">
+                <input
+                  value={form.facilityType}
+                  onChange={(event) => onFormChange("facilityType", event.target.value)}
+                  placeholder="Bệnh viện, phòng khám..."
+                />
+              </Field>
+              <Field label="Website">
+                <input
+                  type="url"
+                  value={form.website}
+                  onChange={(event) => onFormChange("website", event.target.value)}
+                  placeholder="https://..."
+                />
+              </Field>
+              <Field label="Giờ mở cửa">
+                <input
+                  value={form.openingHours}
+                  onChange={(event) => onFormChange("openingHours", event.target.value)}
+                  placeholder="07:00 - 17:00"
+                />
+              </Field>
+            </div>
+
+            <label className="clean-checkbox">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(event) => onFormChange("isActive", event.target.checked)}
+              />
+              <span>Cho phép cơ sở này xuất hiện trong danh sách active sau khi backend lưu trạng thái.</span>
+            </label>
+            <fieldset className="facility-department-picker">
+              <legend>Chuyên khoa tại cơ sở</legend>
+              <p>Chọn ít nhất một chuyên khoa. Đây là dữ liệu form thêm bác sĩ sử dụng.</p>
+              {departments.length === 0 ? (
+                <p className="muted-text">Hãy tạo chuyên khoa trước.</p>
+              ) : (
+                <div className="facility-department-options">
+                  {departments.map((department) => (
+                    <label key={department.id}>
+                      <input
+                        type="checkbox"
+                        checked={form.departmentIds.includes(department.id)}
+                        onChange={() => onToggleDepartment(department.id)}
+                      />
+                      <span>{department.departmentName}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </fieldset>
+            <div className="doctor-modal-actions">
+              <button className="btn btn-ghost" type="button" onClick={closeForm}>Hủy</button>
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={saving || departments.length === 0}
+              >
+                {saving ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật" : "Tạo cơ sở"}
+              </button>
+            </div>
+          </form>
+        </Dialog>
+      )}
     </section>
   );
 }

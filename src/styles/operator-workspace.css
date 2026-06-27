@@ -202,6 +202,26 @@
   align-items: start;
 }
 
+.admin-operator .facility-admin-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-operator .facility-admin-panel > .admin-panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-operator .facility-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .operator-workspace .app-card,
 .admin-operator .admin-panel {
   padding: clamp(18px, 2.4vw, 24px);
@@ -325,7 +345,7 @@
 
 .admin-operator .facility-department-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 8px;
 }
 
@@ -612,19 +632,44 @@
 }
 
 .admin-operator .facility-admin-row {
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
 }
 
 .admin-operator .facility-admin-info {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
 }
 
 .admin-operator .facility-admin-row .record-actions {
-  justify-content: flex-start;
-  margin-top: 4px;
+  max-width: 320px;
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.admin-operator .facility-admin-info strong {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.admin-operator .facility-admin-info span {
+  font-size: 13px;
+}
+
+.admin-operator .facility-admin-info small {
+  font-size: 12px;
+}
+
+.admin-operator .facility-form-modal .doctor-form {
+  gap: 14px;
+}
+
+.admin-operator .facility-form-section {
+  display: grid;
+  gap: 12px;
 }
 
 .admin-operator .admin-badge-stack {
