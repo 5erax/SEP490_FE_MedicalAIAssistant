@@ -1,5 +1,6 @@
-import { Filter, RotateCcw, Search } from "lucide-react";
+import { Filter, Plus, RotateCcw, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Dialog } from "../ui";
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -50,6 +51,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
   const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
+  const [formOpen, setFormOpen] = useState(false);
 
   const chapterById = useMemo(() => {
     return new Map(icdChapters.map((chapter) => [chapter.id, chapter]));
@@ -107,6 +109,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       else await service.create(payload);
       setMessage(editingId ? `Đã cập nhật ${config.singularLabel}.` : `Đã tạo ${config.singularLabel}.`);
       resetForm();
+      setFormOpen(false);
       await loadItems(editingId ? pageInfo.pageNumber : 1, pageInfo.pageSize);
     } catch (error) {
       setMessage(error.message || `Không thể lưu ${config.singularLabel}.`);
@@ -117,6 +120,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   function edit(item) {
     setEditingId(item.id);
     setForm(Object.fromEntries(config.fields.map((field) => [field.name, item[field.name] ?? ""])));
+    setFormOpen(true);
   }
 
   async function remove(item) {
@@ -155,48 +159,84 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
     loadItems(1, pageInfo.pageSize, DEFAULT_FILTERS);
   }
 
+  function openCreateForm() {
+    resetForm();
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    if (status === "saving") return;
+    setFormOpen(false);
+    resetForm();
+  }
+
   return (
-    <section className="admin-grid">
-      <div className="admin-panel">
-        <div className="panel-title-row">
-          <div><p className="eyebrow">Dữ liệu lâm sàng</p><h2>{config.title}</h2></div>
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => loadItems()}>Tải lại</button>
+    <section className="admin-panel ai-config-admin-panel">
+      <div className="panel-title-row ai-config-section-heading">
+        <div>
+          <p className="eyebrow">Dữ liệu lâm sàng</p>
+          <h2>{config.title}</h2>
+          <p className="muted-text">Quản lý câu hỏi lâm sàng theo ICD Chapter, hỗ trợ tìm kiếm và phân trang từ backend.</p>
         </div>
-        {message && <div className="api-message" role="status">{message}</div>}
-        <form className="admin-toolbar" onSubmit={applyFilters}>
-          <div className="ai-config-search-field">
-            <Search size={16} />
-            <input
-              value={filters.search}
-              onChange={(event) => updateFilter("search", event.target.value)}
-              placeholder="Tìm câu hỏi tiếng Việt hoặc tiếng Anh..."
-            />
+        <button className="btn btn-ghost btn-small" type="button" onClick={() => loadItems()}>Tải lại</button>
+      </div>
+      {message && <div className="api-message" role="status">{message}</div>}
+
+      <section className="ai-config-filter-card">
+        <div className="ai-config-filter-card-header">
+          <div>
+            <strong>Clinical question filters</strong>
+            <p>Lọc theo ICD Chapter hoặc nội dung câu hỏi đang dùng trong dữ liệu lâm sàng.</p>
           </div>
-          <label className="clean-field">
-            <span>ICD Code</span>
-            <select value={filters.chapterId} onChange={(event) => updateFilter("chapterId", event.target.value)}>
-              <option value="">Tất cả ICD</option>
-              {icdOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.code} - {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="clean-field">
-            <span>Per page</span>
-            <select value={pageInfo.pageSize} onChange={(event) => changePageSize(Number(event.target.value))}>
-              <option value="10">10 / trang</option>
-              <option value="20">20 / trang</option>
-              <option value="50">50 / trang</option>
-            </select>
-          </label>
-          <div className="ai-config-filter-actions">
-            <button className="btn btn-primary btn-small" type="submit"><Filter size={14} /> Apply</button>
-            <button className="btn btn-ghost btn-small" type="button" onClick={clearFilters}><RotateCcw size={14} /> Clear</button>
+        </div>
+
+        <form className="ai-config-toolbar" onSubmit={applyFilters}>
+          <div className="ai-config-toolbar-row ai-config-toolbar-primary">
+            <div className="ai-config-search-field">
+              <Search size={16} />
+              <input
+                value={filters.search}
+                onChange={(event) => updateFilter("search", event.target.value)}
+                placeholder="Tìm câu hỏi tiếng Việt hoặc tiếng Anh..."
+              />
+            </div>
+            <button className="btn btn-primary btn-small ai-config-add-button" type="button" onClick={openCreateForm}>
+              <Plus size={15} /> Tạo câu hỏi
+            </button>
+          </div>
+
+          <div className="ai-config-toolbar-row ai-config-toolbar-filters">
+            <div className="ai-config-filter-grid">
+              <label className="clean-field">
+                <span>ICD Code</span>
+                <select value={filters.chapterId} onChange={(event) => updateFilter("chapterId", event.target.value)}>
+                  <option value="">Tất cả ICD</option>
+                  {icdOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.code} - {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="clean-field">
+                <span>Per page</span>
+                <select value={pageInfo.pageSize} onChange={(event) => changePageSize(Number(event.target.value))}>
+                  <option value="10">10 / trang</option>
+                  <option value="20">20 / trang</option>
+                  <option value="50">50 / trang</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="ai-config-filter-actions">
+              <button className="btn btn-primary btn-small" type="submit"><Filter size={14} /> Apply</button>
+              <button className="btn btn-ghost btn-small" type="button" onClick={clearFilters}><RotateCcw size={14} /> Clear</button>
+            </div>
           </div>
         </form>
-        {status === "loading" ? <p className="muted-text">Đang tải...</p> : (
+      </section>
+
+      {status === "loading" ? <p className="muted-text">Đang tải...</p> : (
           <div className="admin-table-list">
             {filteredItems.length === 0 && <p className="muted-text">Chưa có {config.pluralLabel}.</p>}
             {filteredItems.map((item) => {
@@ -242,17 +282,56 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             </button>
           </div>
         )}
-      </div>
-      <form className="admin-panel clean-form" onSubmit={submit}>
-        <div className="panel-title-row"><div><p className="eyebrow">{editingId ? "Cập nhật" : "Tạo mới"}</p><h2>{config.formTitle}</h2></div>{editingId && <button className="btn btn-ghost btn-small" type="button" onClick={resetForm}>Hủy sửa</button>}</div>
-        {config.fields.map((field) => (
-          <label className="clean-field" key={field.name}>
-            <span>{field.label}</span>
-            {field.multiline ? <textarea rows={4} value={form[field.name]} required={field.required} onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))} /> : <input type={field.type || "text"} min={field.min} step={field.step} value={form[field.name]} required={field.required} onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))} />}
-          </label>
-        ))}
-        <button className="btn btn-primary" type="submit" disabled={status === "saving"}>{status === "saving" ? "Đang lưu..." : editingId ? "Lưu cập nhật" : "Tạo mới"}</button>
-      </form>
+      {formOpen && (
+        <Dialog
+          backdropClassName="doctor-modal-backdrop"
+          className="doctor-modal"
+          labelledBy="clinical-question-modal-title"
+          onClose={closeForm}
+          closeOnBackdrop={status !== "saving"}
+          closeOnEscape={status !== "saving"}
+        >
+          <header className="doctor-modal-header">
+            <div>
+              <p className="eyebrow">{editingId ? "Update" : "Create"}</p>
+              <h2 id="clinical-question-modal-title">{editingId ? `Cập nhật ${config.singularLabel}` : config.formTitle}</h2>
+              <p>Nhập ICD Chapter, câu hỏi tiếng Việt và câu hỏi tiếng Anh dùng cho luồng dữ liệu lâm sàng.</p>
+            </div>
+            <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm}>×</button>
+          </header>
+
+          <form className="clean-form doctor-form" onSubmit={submit}>
+            {config.fields.map((field) => (
+              <label className="clean-field" key={field.name}>
+                <span>{field.label}</span>
+                {field.multiline ? (
+                  <textarea
+                    rows={4}
+                    value={form[field.name]}
+                    required={field.required}
+                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                  />
+                ) : (
+                  <input
+                    type={field.type || "text"}
+                    min={field.min}
+                    step={field.step}
+                    value={form[field.name]}
+                    required={field.required}
+                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                  />
+                )}
+              </label>
+            ))}
+            <div className="doctor-modal-actions">
+              <button className="btn btn-ghost" type="button" onClick={closeForm}>Hủy</button>
+              <button className="btn btn-primary" type="submit" disabled={status === "saving"}>
+                {status === "saving" ? "Đang lưu..." : editingId ? "Lưu cập nhật" : "Tạo mới"}
+              </button>
+            </div>
+          </form>
+        </Dialog>
+      )}
     </section>
   );
 }
