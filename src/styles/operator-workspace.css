@@ -1726,16 +1726,14 @@
 .admin-operator .ai-config-toolbar-filters {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  column-gap: 16px;
-  row-gap: 12px;
+  gap: 10px;
 }
 
 .admin-operator .ai-config-filter-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
   min-width: 0;
-  max-width: 660px;
 }
 
 .admin-operator .ai-config-filter-grid .clean-field {
