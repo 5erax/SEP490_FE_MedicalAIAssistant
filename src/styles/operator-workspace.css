@@ -284,10 +284,21 @@
 .operator-workspace .clean-field,
 .admin-operator .clean-field {
   display: grid;
-  gap: 7px;
-  color: rgba(16, 20, 17, 0.68);
+  gap: 8px;
+  min-width: 0;
+  color: rgba(16, 20, 17, 0.62);
   font-size: 12px;
-  font-weight: 760;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.operator-workspace .clean-field > span,
+.admin-operator .clean-field > span {
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
 }
 
 .operator-workspace .clean-field input,
@@ -299,13 +310,29 @@
 .admin-operator .admin-toolbar select {
   width: 100%;
   border: 1px solid rgba(16, 20, 17, 0.18);
-  border-radius: 11px;
+  border-radius: 12px;
   background: #fff;
   color: #101411;
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: 44px;
+  padding: 11px 13px;
+  font: 760 14px/1.35 "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.operator-workspace .clean-field textarea,
+.admin-operator .clean-field textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.operator-workspace .clean-field input::placeholder,
+.operator-workspace .clean-field textarea::placeholder,
+.admin-operator .clean-field input::placeholder,
+.admin-operator .clean-field textarea::placeholder,
+.admin-operator .admin-toolbar input::placeholder {
+  color: rgba(16, 20, 17, 0.4);
+  font-weight: 720;
 }
 
 .operator-workspace .clean-field input:focus,
@@ -317,6 +344,36 @@
 .admin-operator .admin-toolbar select:focus {
   border-color: rgba(16, 20, 17, 0.72);
   box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
+}
+
+.operator-workspace .clean-field input:disabled,
+.operator-workspace .clean-field textarea:disabled,
+.admin-operator .clean-field input:disabled,
+.admin-operator .clean-field textarea:disabled,
+.admin-operator .clean-field select:disabled {
+  border-color: rgba(16, 20, 17, 0.1);
+  background: rgba(238, 243, 235, 0.72);
+  color: rgba(16, 20, 17, 0.58);
+  cursor: not-allowed;
+}
+
+.operator-workspace .clean-form,
+.admin-operator .clean-form,
+.doctor-form,
+.ai-config-form,
+.subscription-plan-form {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-operator .form-two-cols,
+.admin-operator .clean-form-grid,
+.doctor-form .form-two-cols,
+.ai-config-form .form-two-cols,
+.subscription-plan-form .form-two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .admin-operator .facility-department-picker {
@@ -1499,7 +1556,7 @@
 
 .doctor-modal-header h2 {
   margin: 0;
-  font-size: clamp(26px, 4vw, 36px);
+  font-size: clamp(24px, 3.2vw, 32px);
   font-weight: 760;
   line-height: 1.18;
 }
@@ -1508,7 +1565,9 @@
   max-width: 580px;
   margin: 8px 0 0;
   color: rgba(16, 20, 17, 0.62);
-  line-height: 1.6;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .doctor-modal-close {
@@ -1636,13 +1695,14 @@
   display: block;
   color: #101411;
   font-size: 14px;
-  font-weight: 760;
+  font-weight: 820;
 }
 
 .admin-operator .ai-config-filter-card-header p {
   margin: 4px 0 0;
   color: rgba(16, 20, 17, 0.56);
   font-size: 13px;
+  font-weight: 650;
   line-height: 1.5;
 }
 
@@ -1815,7 +1875,7 @@
 
 .ai-config-modal-header h2 {
   margin: 0;
-  font-size: clamp(26px, 4vw, 36px);
+  font-size: clamp(24px, 3.2vw, 32px);
   font-weight: 760;
   line-height: 1.18;
 }
@@ -1824,7 +1884,9 @@
   max-width: 620px;
   margin: 8px 0 0;
   color: rgba(16, 20, 17, 0.62);
-  line-height: 1.6;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .admin-operator .subscription-plan-admin-panel {
@@ -1954,7 +2016,8 @@
 
 .subscription-modal-header h2 {
   margin: 0;
-  font-size: clamp(26px, 4vw, 36px);
+  font-size: clamp(24px, 3.2vw, 32px);
+  font-weight: 760;
   line-height: 1.18;
 }
 
@@ -1962,7 +2025,9 @@
   max-width: 580px;
   margin: 8px 0 0;
   color: rgba(16, 20, 17, 0.62);
-  line-height: 1.6;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .subscription-plan-form {
