@@ -6,6 +6,20 @@ function unwrapItems(response) {
   return data?.items ?? [];
 }
 
+function unwrapPageInfo(response, fallbackPageNumber, fallbackPageSize) {
+  const data = response?.data?.data ?? response?.data ?? response;
+  const items = Array.isArray(data) ? data : data?.items ?? [];
+  const totalCount = data?.totalCount ?? data?.totalItems ?? items.length;
+  const pageSize = data?.pageSize ?? fallbackPageSize;
+
+  return {
+    pageNumber: data?.pageNumber ?? fallbackPageNumber,
+    pageSize,
+    totalCount,
+    totalPages: data?.totalPages ?? Math.max(1, Math.ceil(totalCount / pageSize)),
+  };
+}
+
 function formatDateTime(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -28,6 +42,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [selectedIcdCode, setSelectedIcdCode] = useState("");
+  const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
 
   const chapterById = useMemo(() => {
     return new Map(icdChapters.map((chapter) => [chapter.id, chapter]));
@@ -52,11 +67,13 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
     return items.filter((item) => getChapterCode(item, chapterById) === selectedIcdCode);
   }, [chapterById, items, selectedIcdCode]);
 
-  async function loadItems() {
+  async function loadItems(pageNumber = pageInfo.pageNumber, pageSize = pageInfo.pageSize) {
     setStatus("loading");
     setMessage("");
     try {
-      setItems(unwrapItems(await service.list()));
+      const response = await service.list(pageNumber, pageSize);
+      setItems(unwrapItems(response));
+      setPageInfo(unwrapPageInfo(response, pageNumber, pageSize));
       setStatus("ready");
     } catch {
       setMessage(`Không thể tải ${config.pluralLabel}. Vui lòng thử lại.`);
@@ -87,7 +104,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       else await service.create(payload);
       setMessage(editingId ? `Đã cập nhật ${config.singularLabel}.` : `Đã tạo ${config.singularLabel}.`);
       resetForm();
-      await loadItems();
+      await loadItems(editingId ? pageInfo.pageNumber : 1, pageInfo.pageSize);
     } catch (error) {
       setMessage(error.message || `Không thể lưu ${config.singularLabel}.`);
       setStatus("ready");
@@ -104,6 +121,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
     try {
       await service.remove(item.id);
       setItems((current) => current.filter((entry) => entry.id !== item.id));
+      setPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
       setMessage(`Đã xóa ${config.singularLabel}.`);
       if (editingId === item.id) resetForm();
     } catch (error) {
@@ -111,12 +129,17 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
     }
   }
 
+  function changePageSize(value) {
+    setPageInfo((current) => ({ ...current, pageSize: value, pageNumber: 1 }));
+    loadItems(1, value);
+  }
+
   return (
     <section className="admin-grid">
       <div className="admin-panel">
         <div className="panel-title-row">
           <div><p className="eyebrow">Dữ liệu lâm sàng</p><h2>{config.title}</h2></div>
-          <button className="btn btn-ghost btn-small" type="button" onClick={loadItems}>Tải lại</button>
+          <button className="btn btn-ghost btn-small" type="button" onClick={() => loadItems()}>Tải lại</button>
         </div>
         {message && <div className="api-message" role="status">{message}</div>}
         <div className="admin-toolbar">
@@ -129,6 +152,14 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                   {option.code} - {option.label}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="clean-field">
+            <span>Per page</span>
+            <select value={pageInfo.pageSize} onChange={(event) => changePageSize(Number(event.target.value))}>
+              <option value="10">10 / trang</option>
+              <option value="20">20 / trang</option>
+              <option value="50">50 / trang</option>
             </select>
           </label>
         </div>
@@ -155,6 +186,27 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                 </article>
               );
             })}
+          </div>
+        )}
+        {status !== "loading" && (
+          <div className="pagination-row">
+            <button
+              className="btn btn-ghost btn-small"
+              type="button"
+              disabled={pageInfo.pageNumber <= 1 || status === "loading"}
+              onClick={() => loadItems(Math.max(1, pageInfo.pageNumber - 1), pageInfo.pageSize)}
+            >
+              Trước
+            </button>
+            <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {filteredItems.length} / {pageInfo.totalCount} {config.pluralLabel}</span>
+            <button
+              className="btn btn-ghost btn-small"
+              type="button"
+              disabled={pageInfo.pageNumber >= pageInfo.totalPages || status === "loading"}
+              onClick={() => loadItems(Math.min(pageInfo.totalPages || 1, pageInfo.pageNumber + 1), pageInfo.pageSize)}
+            >
+              Sau
+            </button>
           </div>
         )}
       </div>
