@@ -1730,9 +1730,18 @@
 
 .admin-operator .ai-config-filter-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
   min-width: 0;
+}
+
+.admin-operator .ai-config-filter-grid .clean-field {
+  min-width: 0;
+}
+
+.admin-operator .ai-config-filter-grid select {
+  min-width: 0;
+  text-overflow: ellipsis;
 }
 
 .admin-operator .ai-config-search-field {
