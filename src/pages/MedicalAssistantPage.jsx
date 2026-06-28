@@ -76,7 +76,34 @@ function loadSessionState(sessionId) {
 
 function saveSessionState(sessionId, state) {
   if (!sessionId) return;
-  sessionStorage.setItem(`${SESSION_KEY_PREFIX}${sessionId}`, JSON.stringify(state));
+
+  const redactedForm = state?.form
+    ? {
+      ...state.form,
+      profileContext: "",
+      allergyNote: "",
+      chronicDiseaseNote: "",
+      medications: "",
+    }
+    : state?.form;
+
+  const redactedUserInput = state?.userInput
+    ? {
+      ...state.userInput,
+      profileContext: "",
+      allergyNote: "",
+      chronicDiseaseNote: "",
+      medications: "",
+    }
+    : state?.userInput;
+
+  const safeState = {
+    ...state,
+    form: redactedForm,
+    userInput: redactedUserInput,
+  };
+
+  sessionStorage.setItem(`${SESSION_KEY_PREFIX}${sessionId}`, JSON.stringify(safeState));
 }
 
 function loadDraft() {
