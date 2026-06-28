@@ -88,8 +88,21 @@ function loadDraft() {
   }
 }
 
+function toStorageSafeDraft(draft) {
+  if (!draft || typeof draft !== "object") return {};
+  return {
+    mainSymptom: draft.mainSymptom || "",
+    description: draft.description || "",
+    duration: draft.duration || "",
+    severity: draft.severity || "",
+    bodyLocation: draft.bodyLocation || "",
+    associatedSymptoms: draft.associatedSymptoms || "",
+  };
+}
+
 function saveDraft(draft) {
-  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  const safeDraft = toStorageSafeDraft(draft);
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(safeDraft));
 }
 
 function buildUserInput(form) {
