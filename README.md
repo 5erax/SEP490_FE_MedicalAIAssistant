@@ -1,44 +1,42 @@
 # MediMate AI Frontend
 
-Frontend cho **MediMate AI**, nền tảng định hướng trước khi đi khám. Ứng dụng giúp người dùng mô tả triệu chứng, nhận gợi ý chuyên khoa và tìm cơ sở y tế phù hợp; đồng thời cung cấp workspace vận hành cho Staff và Admin.
+Frontend cho **MediMate AI**, nền tảng định hướng trước khi đi khám. Ứng dụng
+giúp người dùng mô tả triệu chứng, nhận gợi ý chuyên khoa và tìm cơ sở y tế phù
+hợp; đồng thời cung cấp workspace vận hành cho Staff và Admin.
 
 > **Lưu ý y tế:** MediMate AI chỉ cung cấp thông tin hỗ trợ và không thay thế chẩn đoán, tư vấn hoặc điều trị từ bác sĩ hay cơ sở y tế có chuyên môn. Trong tình huống khẩn cấp, hãy liên hệ ngay dịch vụ cấp cứu tại địa phương.
 
 ## Tính năng chính
 
 - Đăng ký, đăng nhập bằng tài khoản hoặc Google OAuth.
-- Quên mật khẩu và đổi mật khẩu.
-- Phân tích triệu chứng, câu hỏi lâm sàng và phiên phân tích.
-- Tìm kiếm cơ sở y tế, chuyên khoa, khoa tại cơ sở và bác sĩ.
+- Phân tích triệu chứng và trò chuyện với trợ lý AI.
+- Tìm kiếm cơ sở y tế, chuyên khoa và bác sĩ phù hợp.
 - Quản lý hồ sơ cá nhân phục vụ onboarding và định hướng.
-- Đăng ký gói dịch vụ, checkout và xử lý kết quả PayOS đã xác minh.
-- Không gian làm việc cho Patient, Staff và Admin.
-- Quản trị người dùng, cơ sở y tế, bác sĩ, chuyên khoa, chương ICD, câu hỏi lâm sàng, gói đăng ký và cấu hình AI.
-- Đăng ký Staff chờ duyệt và đăng ký Doctor bằng liên kết mời.
-- Kiểm thử route, accessibility, performance và visual regression bằng Playwright.
+- Đăng ký gói dịch vụ và xử lý kết quả thanh toán PayOS.
+- Phân quyền không gian làm việc cho người dùng, nhân viên y tế và quản trị viên.
+- Quản trị người dùng, cơ sở y tế, bác sĩ, gói đăng ký và cấu hình AI.
+- Đăng ký bác sĩ qua liên kết mời.
+- Hỗ trợ tùy chỉnh hiển thị và kiểm thử accessibility.
 
-Các màn hình hồ sơ y tế và quản lý thuốc hiện chỉ là demo hoặc capability thử nghiệm nếu chưa có backend production và product decision rõ ràng.
+Các màn hình hồ sơ y tế và quản lý thuốc hiện chỉ là demo, chưa có backend
+production và không được xem là capability sản phẩm chính.
 
-## Công nghệ hiện tại
+## Công nghệ
 
-- React `19.3.0-canary-dbc37501-20260612`
-- React DOM `19.3.0-canary-dbc37501-20260612`
-- Vite `8.0.16`
+- React 19
+- Vite 8
+- MapLibre GL và React Map GL
 - Google OAuth
-- MapLibre GL, React Map GL
-- Playwright, axe-core
-- ESLint flat config
+- Playwright và axe-core
+- ESLint
 - Vercel
-
-> Repo đang dùng React canary theo ngày. Không nâng version React/Vite hoặc đổi framework khi chưa có PR riêng, lý do kỹ thuật rõ ràng và kết quả regression test.
 
 ## Yêu cầu
 
-- Node.js phù hợp với Vite 8. Khuyến nghị dùng Node.js LTS mới đủ hỗ trợ Vite hiện tại.
-- npm.
-- Backend MediMate AI đang hoạt động.
-- Google OAuth Client ID nếu kiểm thử đăng nhập Google.
-- Không commit khóa API, token, mật khẩu hoặc thông tin xác thực thật vào repository.
+- Node.js `20.19.0` trở lên, hoặc `22.12.0` trở lên
+- npm
+- Backend MediMate AI đang hoạt động
+- Google OAuth Client ID nếu cần kiểm thử đăng nhập Google
 
 ## Cài đặt
 
@@ -48,7 +46,7 @@ cd SEP490_FE_MedicalAIAssistant
 npm install
 ```
 
-Tạo file môi trường:
+Tạo file môi trường từ mẫu:
 
 ```bash
 cp .env.example .env.local
@@ -60,7 +58,7 @@ Trên PowerShell:
 Copy-Item .env.example .env.local
 ```
 
-Cập nhật `.env.local`:
+Cập nhật các biến trong `.env.local`:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8080
@@ -69,8 +67,10 @@ VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
 
 | Biến | Bắt buộc | Mô tả |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | Có | Backend target cho Vite proxy `/api/*`. |
-| `VITE_GOOGLE_CLIENT_ID` | Khi dùng Google OAuth | Google OAuth Client ID cho domain frontend. |
+| `VITE_API_BASE_URL` | Có | Địa chỉ backend. Vite chuyển tiếp các request `/api/*` đến địa chỉ này. |
+| `VITE_GOOGLE_CLIENT_ID` | Khi dùng Google OAuth | Client ID được cấu hình cho domain chạy frontend. |
+
+Không commit khóa API, token, mật khẩu hoặc thông tin xác thực thật vào repository.
 
 ## Chạy dự án
 
@@ -78,9 +78,9 @@ VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
 npm run dev
 ```
 
-Ứng dụng mặc định chạy tại `http://localhost:3000`.
+Ứng dụng mặc định chạy tại [http://localhost:3000](http://localhost:3000).
 
-## Các lệnh bắt buộc cần biết
+## Các lệnh hữu ích
 
 | Lệnh | Mục đích |
 | --- | --- |
@@ -89,53 +89,35 @@ npm run dev
 | `npm run preview` | Xem thử production build |
 | `npm run lint` | Kiểm tra mã nguồn bằng ESLint |
 | `npm run test:e2e` | Chạy toàn bộ kiểm thử Playwright |
-| `npm run test:e2e:routes` | Kiểm tra route, alias, redirect và uncaught page error |
+| `npm run test:e2e:routes` | Kiểm tra các route chính |
 | `npm run test:e2e:a11y` | Kiểm tra accessibility bằng Playwright và axe-core |
-| `npm run test:e2e:performance` | Chạy kiểm thử hiệu năng smoke |
-| `npm run test:e2e:visual` | Chạy kiểm thử visual regression |
-| `npm run test:e2e:visual:update` | Cập nhật snapshot sau khi thay đổi UI đã được review |
+| `npm run test:e2e:performance` | Chạy kiểm thử hiệu năng |
+| `npm run test:e2e:visual` | Chạy kiểm thử giao diện trực quan |
 
-## Kiến trúc hiện tại
+## Kiến trúc thư mục
 
 ```text
 src/
-├── components/   # Component dùng chung và workspace shell
-├── pages/        # Route/page hiện tại
-├── router/       # Route registry, access guard và navigation helper
+├── components/   # Thành phần giao diện theo miền chức năng
+├── pages/        # Các trang và workspace
+├── router/       # Điều hướng và danh sách route
 ├── services/     # API client, endpoint và domain services
-├── state/        # Trạng thái UI/personalization
-├── styles/       # CSS, token và stylesheet
+├── state/        # Trạng thái và tùy chọn hiển thị
+├── styles/       # Design tokens và stylesheet
 └── utils/        # Tiện ích dùng chung
 
-tests/e2e/         # Route, accessibility, performance và visual tests
-docs/              # Tài liệu sản phẩm, backend, kiến trúc, UI/UX và quality
+tests/e2e/         # Kiểm thử end-to-end, accessibility và visual
+docs/              # Tài liệu luồng nghiệp vụ và tích hợp backend
 ```
 
-API frontend đi theo luồng bắt buộc:
+API frontend được tổ chức theo luồng:
 
 ```text
 Page/Component -> Domain Service -> ENDPOINTS -> apiRequest() -> Backend
 ```
 
-Route frontend đi theo luồng bắt buộc:
-
-```text
-URL -> src/router/routes.js -> src/router/access.js -> src/App.jsx -> Page/Shell
-```
-
-## Quy tắc production bắt buộc
-
-Mọi PR frontend phải thỏa mãn các gate sau:
-
-1. Không hard-code endpoint trong component/page.
-2. Không gửi token, PII, triệu chứng, câu trả lời lâm sàng hoặc kết quả AI vào log, analytics, screenshot hoặc localStorage ngoài whitelist.
-3. Không thêm capability sản phẩm nếu chưa có actor, API contract, quyền truy cập và tiêu chí nghiệm thu.
-4. Không thêm thư viện lớn hoặc đổi kiến trúc khi chưa có lý do, phạm vi và test regression.
-5. Không commit code chết, file thử nghiệm, snapshot sai, mock production hoặc comment TODO mơ hồ.
-6. Build, lint và test liên quan phải đạt trước khi merge.
-7. Tài liệu phải được cập nhật nếu thay đổi route, API, state, UI pattern, env, deployment hoặc test gate.
-
-Chi tiết xem [Frontend production standards](docs/frontend-architecture/production-frontend-standards.md).
+Xem [API layer](docs/frontend-architecture/api-layer.md) để biết quy ước hiện
+tại. Endpoint mới phải được khai báo tập trung, không viết trực tiếp trong component.
 
 ## Triển khai
 
@@ -153,18 +135,14 @@ npm run build
 npm run test:e2e
 ```
 
-Không nên giữ backend IP cố định trong cấu hình production dài hạn. Khi chuyển môi trường, cần dùng cấu hình deployment/environment phù hợp và HTTPS.
+Không nên giữ địa chỉ backend cố định trong `vercel.json` khi chuyển môi trường. Hãy cập nhật cấu hình triển khai phù hợp và luôn sử dụng HTTPS cho production.
 
-## Tài liệu bắt đầu từ đâu
+## Tài liệu liên quan
 
 - [Mục lục tài liệu](docs/README.md)
 - [Định nghĩa sản phẩm và luồng nghiệp vụ](docs/product-definition/README.md)
 - [Backend và tích hợp](docs/backend/README.md)
-- [Kiến trúc frontend](docs/frontend-architecture/README.md)
-- [Frontend production standards](docs/frontend-architecture/production-frontend-standards.md)
-- [Developer workflow](docs/frontend-architecture/developer-workflow.md)
-- [Refactor & cleanup guide](docs/frontend-architecture/refactor-cleanup-guide.md)
-- [Testing baseline](docs/quality/testing-baseline.md)
+- [Kiến trúc và chiến lược frontend](docs/frontend-architecture/README.md)
 - [UI/UX](docs/ui-ux/README.md)
 
 ## Bảo mật

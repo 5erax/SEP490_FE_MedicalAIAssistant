@@ -3,254 +3,242 @@ import { openRoute, preparePage } from "./helpers.js";
 
 const ACCESS_TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
-  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwiZW1haWwiOiJwYXRpZW50QGV4YW1wbGUuY29tIn0",
   "",
 ].join(".");
-
-const USER_ID = "55555555-5555-4555-8555-555555555555";
 const SESSION_ID = "33333333-3333-4333-8333-333333333333";
 const QUESTION_ID = "77777777-7777-4777-8777-777777777777";
 const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
 
-async function authenticatePatient(page) {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.evaluate(({ accessToken, userId }) => {
-    localStorage.setItem("medimate.auth", JSON.stringify({
-      accessToken,
-      userId,
-      identityId: userId,
-      roles: ["Patient"],
-      isProfileCompleted: true,
-    }));
-  }, { accessToken: ACCESS_TOKEN, userId: USER_ID });
-}
-
-async function routeCommonPatientApis(page) {
-  await page.route("**/api/users/me", (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({
-      success: true,
-      data: {
-        id: USER_ID,
-        displayName: "Nguyen Minh",
-        email: "patient@example.com",
-      },
-    }),
-  }));
-
-  await page.route("**/api/user-subscriptions/me", (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({ success: true, data: [] }),
-  }));
-}
-
-async function routeAssessmentApis(page) {
-  let questionPayload = null;
-  let answerPayload = null;
-  let diagnosisPayload = null;
-
-  await page.route("**/api/patient-profiles**", (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({
-      success: true,
-      data: {
-        items: [{
-          id: "66666666-6666-4666-8666-666666666666",
-          userId: USER_ID,
-          bloodType: "O+",
-          height: 170,
-          weight: 65,
-          allergyNote: "Di ung penicillin",
-          chronicDiseaseNote: "Hen suyễn",
-          isProfileCompleted: true,
-        }],
-      },
-    }),
-  }));
-
-  await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => {
-    questionPayload = route.request().postDataJSON();
-    return route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          sessionId: SESSION_ID,
-          questions: [{
-            questionId: QUESTION_ID,
-            questionVi: "Ban co sot tren 38 do khong?",
-            chapterCode: "X",
-          }],
-        },
-      }),
-    });
-  });
-
-  await page.route("**/api/symptom-analysis/submit-clinical-question-answers", async (route) => {
-    answerPayload = route.request().postDataJSON();
-    return route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          analysis: {
-            recommendedDepartment: {
-              departmentId: DEPARTMENT_ID,
-              departmentName: "Tai Mui Hong",
-              confidenceScore: 0.86,
-              reason: "Nen kham chuyen khoa tai mui hong.",
-            },
-            recommendedFacilities: [],
-          },
-          answers: [{ questionId: QUESTION_ID, answer: true }],
-        },
-      }),
-    });
-  });
-
-  await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => {
-    diagnosisPayload = route.request().postDataJSON();
-    return route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          sessionId: SESSION_ID,
-          model: "google/medgemma-4b-it",
-          diagnoses: [{
-            rank: 1,
-            diseaseName: "Viem hong cap",
-            icd10Code: "J02",
-            paGivenB: 0.86,
-            clinicalReasoning: "Phu hop voi sot nhe va dau hong.",
-          }],
-        },
-      }),
-    });
-  });
-
-  await page.route(`**/api/medical-facilities/active?departmentId=${DEPARTMENT_ID}`, (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({
-      success: true,
-      data: [{
-        id: "11111111-1111-4111-8111-111111111111",
-        facilityName: "Benh vien Tai Mui Hong",
-        address: "123 Nguyen Trai",
-        latitude: 10.77,
-        longitude: 106.69,
-        phone: "0123456789",
-        isActive: true,
-        departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tai Mui Hong" }],
-      }],
-    }),
-  }));
-
-  return {
-    get questionPayload() {
-      return questionPayload;
-    },
-    get answerPayload() {
-      return answerPayload;
-    },
-    get diagnosisPayload() {
-      return diagnosisPayload;
-    },
-  };
-}
-
-test.describe("patient dashboard and assessment flow", () => {
+test.describe("patient specialty intake", () => {
   test.beforeEach(async ({ page }) => {
     await preparePage(page);
-    await authenticatePatient(page);
-    await routeCommonPatientApis(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
   });
 
-  test("dashboard is a patient hub backed by my-sessions", async ({ page }) => {
-    await page.route("**/api/symptom-analysis/my-sessions**", (route) => route.fulfill({
+  test("asks follow-up questions and recommends a matching hospital in place", async ({ page }) => {
+    let questionPayload = null;
+    let answerPayload = null;
+    let diagnosisPayload = null;
+
+    await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => {
+      questionPayload = route.request().postDataJSON();
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            sessionId: SESSION_ID,
+            questions: [{
+              questionId: QUESTION_ID,
+              questionVi: "Bạn có sốt trên 38 độ không?",
+              chapterCode: "X",
+            }],
+          },
+        }),
+      });
+    });
+
+    await page.route("**/api/symptom-analysis/submit-clinical-question-answers", async (route) => {
+      answerPayload = route.request().postDataJSON();
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            analysis: {
+              primaryDiagnosis: {
+                rank: 1,
+                diseaseName: "Viêm họng cấp",
+                icd10Code: "J02",
+                paGivenB: 0.86,
+                clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
+              },
+              diagnoses: [{
+                rank: 1,
+                diseaseName: "Viêm họng cấp",
+                paGivenB: 0.86,
+              }],
+              recommendedDepartment: {
+                departmentId: DEPARTMENT_ID,
+                departmentName: "Tai Mũi Họng",
+                confidenceScore: 0.86,
+                reason: "Nên khám chuyên khoa tai mũi họng.",
+              },
+              recommendedFacilities: [{
+                id: "11111111-1111-4111-8111-111111111111",
+                facilityName: "Bệnh viện Tai Mũi Họng",
+                address: "123 Nguyễn Trãi",
+                rating: 4.7,
+                latitude: 10.77,
+                longitude: 106.69,
+                isActive: true,
+                departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tai Mũi Họng" }],
+              }, {
+                id: "99999999-9999-4999-8999-999999999999",
+                facilityName: "Phòng khám Đánh Giá Cao",
+                address: "456 Lê Lợi",
+                rating: 5,
+                latitude: 10.78,
+                longitude: 106.7,
+                isActive: true,
+                departments: [{ departmentId: "other", departmentName: "Nội tổng quát" }],
+              }],
+            },
+          },
+        }),
+      });
+    });
+
+    await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => {
+      diagnosisPayload = route.request().postDataJSON();
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            sessionId: SESSION_ID,
+            model: "google/medgemma-4b-it",
+            diagnoses: [{
+              rank: 1,
+              diseaseName: "Viêm họng cấp",
+              icd10Code: "J02",
+              paGivenB: 0.86,
+              clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
+            }],
+          },
+        }),
+      });
+    });
+
+    await openRoute(page, "/dashboard");
+
+    const symptoms = page.getByLabel("Triệu chứng bạn đang gặp");
+    const submit = page.getByRole("button", { name: "Gợi ý chuyên khoa" });
+    const currentStep = page.locator('[aria-current="step"]');
+
+    await expect(page.getByRole("heading", { level: 2, name: "Gợi ý chuyên khoa qua triệu chứng" })).toBeVisible();
+    await expect(currentStep).toContainText("Mô tả");
+    await expect(symptoms).toHaveAttribute(
+      "aria-describedby",
+      /specialty-symptoms-hint/,
+    );
+    await expect(submit).toBeDisabled();
+    await expect(page.getByText("Khi nào cần cấp cứu?")).toBeVisible();
+
+    const examplePrompt = page.getByRole("button", { name: "Sốt nhẹ 2 ngày kèm đau họng" });
+    await examplePrompt.click();
+    await expect(examplePrompt).toHaveAttribute("aria-pressed", "true");
+    await expect(symptoms).toHaveValue("Sốt nhẹ 2 ngày kèm đau họng");
+    await expect(submit).toBeEnabled();
+
+    await submit.click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.locator(".studio-diagnosis-panel")).toBeFocused();
+    await expect(currentStep).toContainText("Làm rõ");
+    await expect(page.getByText("Bạn có sốt trên 38 độ không?")).toBeVisible();
+
+    await page.getByLabel("Có").check();
+    await page.getByRole("button", { name: "Xem nhận định và bệnh viện phù hợp" }).click();
+
+    await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
+    await expect(currentStep).toContainText("Kết quả");
+    await expect(page.getByText("Tai Mũi Họng", { exact: true })).toBeVisible();
+    await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
+    await expect(page.getByText("Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.")).toBeVisible();
+    await expect(page.getByText("#1")).toBeVisible();
+    await expect(page.getByText("Ưu tiên vì có chuyên khoa liên quan, có tọa độ sẵn sàng điều hướng, 4.7 sao đánh giá, đang hoạt động.")).toBeVisible();
+
+    expect(questionPayload).toEqual({ userInput: "Sốt nhẹ 2 ngày kèm đau họng" });
+    expect(answerPayload).toEqual({
+      sessionId: SESSION_ID,
+      answers: [{ questionId: QUESTION_ID, answer: true }],
+    });
+    expect(diagnosisPayload).toEqual(answerPayload);
+  });
+
+  test("accepts nested backend question response shapes", async ({ page }) => {
+    await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
         data: {
-          items: [{
-            sessionId: SESSION_ID,
-            inputText: "Ho va dau hong",
-            status: "completed",
-            createdAt: "2026-06-20T08:00:00Z",
-          }],
-          pageNumber: 1,
-          pageSize: 5,
-          totalCount: 1,
-          totalPages: 1,
+          result: {
+            sessionID: SESSION_ID,
+            clinicalQuestionSuggestions: [{
+              id: QUESTION_ID,
+              questionText: "Bạn có ho kéo dài trên 3 ngày không?",
+            }],
+          },
         },
       }),
     }));
 
     await openRoute(page, "/dashboard");
+    await page.getByLabel("Triệu chứng bạn đang gặp").fill("Ho và đau họng");
+    await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
 
-    await expect(page.getByRole("heading", { level: 1, name: /Xin chao/ })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Danh gia trieu chung moi/ })).toBeVisible();
-    await expect(page.getByText("Ho va dau hong", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Xem chi tiet" })).toBeVisible();
+    await expect(page.getByText("Bạn có ho kéo dài trên 3 ngày không?")).toBeVisible();
+    await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeHidden();
   });
 
-  test("intake preloads patient profile and completes assessment to result", async ({ page }) => {
-    await page.route("**/api/symptom-analysis/my-sessions**", (route) => route.fulfill({
+  test("offers recovery actions when no follow-up question is returned", async ({ page }) => {
+    await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ success: true, data: { items: [] } }),
+      body: JSON.stringify({
+        success: true,
+        data: {
+          sessionId: SESSION_ID,
+          questions: [],
+        },
+      }),
     }));
-    const payloads = await routeAssessmentApis(page);
 
-    const profileResponse = page.waitForResponse(/\/api\/patient-profiles/);
-    await openRoute(page, "/symptom");
-    await profileResponse;
+    await openRoute(page, "/dashboard");
+    await page.getByLabel("Triệu chứng bạn đang gặp").fill("Đau không rõ vị trí");
+    await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
 
-    await expect(page.getByLabel("Thong tin ho so suc khoe")).toHaveValue("Nhom mau O+, Chieu cao 170 cm, Can nang 65 kg");
-    await expect(page.getByLabel("Benh nen")).toHaveValue("Hen suyễn");
-    await expect(page.getByLabel("Di ung")).toHaveValue("Di ung penicillin");
+    await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Quay lại biểu mẫu" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Thử lại với mô tả hiện tại" })).toBeVisible();
 
-    await page.getByLabel("Trieu chung chinh").fill("Sot nhe");
-    await page.getByLabel("Mo ta them").fill("Sot nhe 2 ngay kem dau hong");
-    await page.getByRole("button", { name: "Tao cau hoi lam sang" }).click();
+    await page.getByRole("button", { name: "Quay lại biểu mẫu" }).click();
+    await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeHidden();
+    await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toHaveValue("Đau không rõ vị trí");
+  });
 
-    await expect(page).toHaveURL(new RegExp(`/assessment/${SESSION_ID}$`));
-    await expect(page.getByText("Ban co sot tren 38 do khong?")).toBeVisible();
-    await page.getByLabel("Co").check();
-    await page.getByRole("button", { name: "Xem ket qua" }).click();
-
-    await expect(page).toHaveURL(new RegExp(`/assessment/${SESSION_ID}/result$`));
-    await expect(page.getByText("Tai Mui Hong", { exact: true })).toBeVisible();
-    await expect(page.getByText("Viem hong cap", { exact: true })).toBeVisible();
-    await expect(page.getByText("Benh vien Tai Mui Hong", { exact: true })).toBeVisible();
-
-    expect(payloads.questionPayload.userInput).toContain("Trieu chung chinh: Sot nhe");
-    expect(payloads.questionPayload.userInput).toContain("Thong tin ho so suc khoe: Nhom mau O+, Chieu cao 170 cm, Can nang 65 kg");
-    expect(payloads.questionPayload.userInput).toContain("Benh nen: Hen suyễn");
-    expect(payloads.questionPayload.userInput).toContain("Di ung: Di ung penicillin");
-    expect(payloads.answerPayload).toEqual({
-      sessionId: SESSION_ID,
-      answers: [{ questionId: QUESTION_ID, answer: true }],
+  test("loads symptom prefill directly into specialty consultation", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("medimate.symptom.prefill", "Headache for three days with poor sleep");
     });
-    expect(payloads.diagnosisPayload).toEqual(payloads.answerPayload);
+
+    await openRoute(page, "/dashboard");
+
+    await expect(page.locator("#specialty-symptoms")).toHaveValue("Headache for three days with poor sleep");
+    await expect(page).toHaveURL(/\/dashboard$/);
   });
 
-  test("no-question response asks the user to supplement intake details", async ({ page }) => {
-    await page.route("**/api/patient-profiles**", (route) => route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ success: true, data: { items: [] } }),
-    }));
-    await page.route("**/api/symptom-analysis/suggest-clinical-questions", (route) => route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ success: true, data: { sessionId: SESSION_ID, questions: [] } }),
-    }));
+  test("shows a dismissible profile nudge without blocking diagnosis", async ({ page }) => {
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+        isProfileCompleted: false,
+      }));
+    }, ACCESS_TOKEN);
 
-    await openRoute(page, "/symptom");
-    await page.getByLabel("Trieu chung chinh").fill("Dau khong ro vi tri");
-    await page.getByLabel("Mo ta them").fill("Mo ta ngan");
-    await page.getByRole("button", { name: "Tao cau hoi lam sang" }).click();
+    await openRoute(page, "/dashboard");
 
-    await expect(page).toHaveURL(new RegExp(`/assessment/${SESSION_ID}$`));
-    await expect(page.getByText("Backend chua tao duoc cau hoi lam sang")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Quay lai bo sung thong tin" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ khi bạn sẵn sàng" })).toBeVisible();
+    await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toBeVisible();
+
+    await page.getByRole("button", { name: "Để sau" }).click();
+    await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ khi bạn sẵn sàng" })).toBeHidden();
+    await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toBeVisible();
   });
 });
