@@ -1,74 +1,208 @@
 # Baseline kiểm thử frontend
 
-Tài liệu này ghi baseline route, accessibility, visual và performance. Các
-finding UI/UX được quản lý trong [UI/UX roadmap](../ui-ux/roadmap.md).
+Ngày cập nhật: **2026-06-26**.
 
-## Pham vi da tu dong hoa
+Tài liệu này ghi baseline kiểm thử route, accessibility, visual và performance cho MediMate AI Frontend. Finding UI/UX được quản lý trong [UI/UX roadmap](../ui-ux/roadmap.md). Tiêu chuẩn production bắt buộc nằm tại [Frontend production standards](../frontend-architecture/production-frontend-standards.md).
 
-- Route smoke: moi route/alias/redirect trong `src/App.jsx` va moi static route.
-- Accessibility smoke: 10 surface dai dien, gate o muc violation `critical`.
-- Visual baseline: 7 surface dai dien tai 320, 375, 768 va 1440 px.
-- Performance smoke: landing, login, patient dashboard va nearby clinic.
-- Runtime guard: moi route smoke khong duoc phat sinh uncaught page error.
+## 1. Công cụ
 
-## Lenh chay
+Repo đang dùng Playwright cho:
+
+- Route smoke.
+- Accessibility smoke với axe-core.
+- Performance smoke.
+- Visual regression.
+- Runtime page error guard.
+
+Cấu hình chính:
+
+- Test directory: `tests/e2e`.
+- Base URL: `http://127.0.0.1:3000`.
+- Web server: `npm run dev -- --host 127.0.0.1`.
+- Browser project chính: Chromium Desktop Chrome.
+- Trace/screenshot/video được giữ khi fail.
+
+## 2. Script hiện có
+
+| Lệnh | Mục đích |
+| --- | --- |
+| `npm run test:e2e` | Chạy toàn bộ Playwright suite |
+| `npm run test:e2e:routes` | Route, alias, redirect và page error smoke |
+| `npm run test:e2e:a11y` | Accessibility smoke |
+| `npm run test:e2e:performance` | Performance smoke |
+| `npm run test:e2e:visual` | Visual regression |
+| `npm run test:e2e:visual:update` | Update snapshot sau khi thay đổi UI đã review |
+
+## 3. Gate tối thiểu
+
+Mọi PR frontend phải chạy:
 
 ```bash
+npm run lint
+npm run build
 npm run test:e2e:routes
+```
+
+PR có thay đổi UI phải chạy thêm:
+
+```bash
 npm run test:e2e:a11y
-npm run test:e2e:performance
+```
+
+PR có thay đổi visual/layout quan trọng phải chạy thêm:
+
+```bash
 npm run test:e2e:visual
 ```
 
-Tao hoac cap nhat anh baseline sau khi thay doi da duoc review:
+PR có thay đổi landing, dashboard, map, admin shell, route loading hoặc dependency lớn phải chạy thêm:
 
 ```bash
-npm run test:e2e:visual:update
+npm run test:e2e:performance
 ```
 
-Bao cao HTML duoc tao tai `playwright-report/`; trace, video va screenshot khi loi
-nam trong `test-results/`. Hai thu muc nay khong commit.
+PR có thay đổi route/access/payment/map/admin phải ưu tiên chạy:
 
-## Quy tac cap nhat visual baseline
+```bash
+npm run test:e2e
+```
 
-1. Chay route va accessibility test truoc.
-2. Xem tung visual diff o cac viewport bi anh huong.
-3. Chi cap nhat snapshot khi thay doi la co chu dich va da duoc review.
-4. Commit snapshot cung thay doi UI tao ra snapshot.
+## 4. Phạm vi đã tự động hóa
 
-## Gioi han baseline hien tai
+- Route smoke cho app routes, aliases, redirects và static routes.
+- Runtime guard: route smoke không được phát sinh uncaught page error.
+- Accessibility smoke cho các surface đại diện.
+- Visual baseline ở nhiều viewport.
+- Performance smoke cho surface quan trọng.
+- Một số interaction/regression test cho các luồng đặc thù.
 
-- Route can auth/role duoc test tai gate khi chua dang nhap.
-- Chua mock backend cho patient premium, staff CRUD va admin data section.
-- Axe tu dong khong thay the keyboard, zoom, screen reader va contrast review thu cong.
-- Performance smoke dung lab Navigation Timing, LCP va CLS; day la regression guard,
-  khong thay the du lieu Real User Monitoring.
+## 5. Route smoke
 
-## Performance budget ban dau
+Route smoke phải đảm bảo:
+
+- Mỗi route render không crash.
+- Alias redirect/canonicalize đúng.
+- Route protected không leak page sai.
+- Back/Forward hoặc reload không phá route chính.
+- Known conflict phải được đánh dấu rõ bằng `test.fixme` kèm lý do.
+
+Khi thêm route:
+
+- Cập nhật route manifest/test nếu cần.
+- Kiểm tra expected path.
+- Kiểm tra route access.
+- Kiểm tra title/navigation nếu route có shell.
+
+## 6. Accessibility smoke
+
+Accessibility smoke không thay thế review thủ công, nhưng là gate bắt buộc.
+
+Bắt buộc kiểm tra thủ công khi UI đổi:
+
+- Keyboard navigation.
+- Focus visible.
+- Dialog/drawer focus trap.
+- Form label/error.
+- Contrast.
+- Heading/landmark.
+- Screen-reader name cho icon button.
+- Text alternative cho map hoặc chart.
+
+Không merge nếu có critical violation không được giải thích và xử lý.
+
+## 7. Visual regression
+
+Quy tắc update snapshot:
+
+1. Chạy route test trước.
+2. Chạy accessibility test trước.
+3. Xem từng visual diff.
+4. Chỉ update khi thay đổi có chủ đích.
+5. Commit snapshot cùng PR tạo thay đổi.
+6. Ghi rõ lý do trong PR.
+
+Không update snapshot để che bug layout.
+
+## 8. Performance smoke
+
+Budget baseline local:
 
 | Metric | Budget |
 | --- | --- |
-| DOMContentLoaded | < 5,000 ms |
-| Load | < 8,000 ms |
-| Largest Contentful Paint | < 5,000 ms |
-| Cumulative Layout Shift | < 0.25 |
+| DOMContentLoaded | `< 5,000 ms` |
+| Load | `< 8,000 ms` |
+| Largest Contentful Paint | `< 5,000 ms` |
+| Cumulative Layout Shift | `< 0.25` |
 
-Budget nay co chu dich rong cho baseline local. Phase hardening se dieu chinh theo
-Lighthouse va du lieu thiet bi/mang dai dien.
+Budget hiện tại còn rộng để tránh flaky local test. Nếu production cần tối ưu, tạo task riêng với Lighthouse/RUM hoặc profile bundle.
 
-## Known baseline issue
+## 9. Test data và privacy
 
-- `/api` co noi dung trong `StaticPage` nhung bi Vite proxy va production API rewrite
-  giu truoc khi React render. Route smoke danh dau `fixme` cho den khi trang public nay
-  duoc doi URL hoac bo khoi content registry.
+Không được đưa vào test output:
 
-## Verification hien tai
+- Token thật.
+- Email/số điện thoại thật.
+- Nội dung triệu chứng thật.
+- Câu trả lời lâm sàng thật.
+- Kết quả AI thật.
+- Payment/order thật.
+- Hồ sơ y tế thật.
 
-- Full Playwright suite: 84 passed, 1 skipped (`/api` known conflict).
-- Route smoke: 41 passed, 1 skipped.
-- Accessibility smoke: 10 passed.
-- Performance smoke: 4 passed.
-- Visual regression: 28 passed, 28 baseline snapshots.
-- Specialty intake interaction: 1 passed.
-- `npm run lint` va `npm run build`: passed.
-- Build van canh bao MapLibre chunk lon hon 500 kB; backlog `P2-06` theo doi viec nay.
+Test phải dùng mock hoặc dữ liệu giả rõ ràng.
+
+## 10. Khi test fail
+
+Không được:
+
+- Xóa test.
+- Tăng timeout tùy tiện.
+- Update snapshot ngay.
+- Bỏ qua bằng `test.skip` không lý do.
+- Chuyển lỗi thành known issue nếu chưa có phân tích.
+
+Phải làm:
+
+1. Đọc trace/screenshot/video.
+2. Xác định lỗi code, test hay môi trường.
+3. Fix nguyên nhân.
+4. Nếu là known issue thật, dùng `test.fixme` kèm lý do cụ thể và link/ticket nếu có.
+5. Cập nhật docs/backlog nếu baseline thay đổi.
+
+## 11. Báo cáo HTML và artifacts
+
+- `playwright-report/` không commit.
+- `test-results/` không commit.
+- Trace/video/screenshot failure không commit trừ khi được dùng tạm trong issue/PR và xóa trước merge.
+
+## 12. Coverage cần bổ sung tiếp theo
+
+Ưu tiên bổ sung test cho:
+
+- Full symptom flow: suggest -> submit -> result.
+- Empty clinical questions và AI timeout.
+- Symptom history list/detail.
+- Payment result success/pending/failed/cancelled.
+- Subscription cancel.
+- Map marker only when valid coordinates.
+- Review create success/failure.
+- Admin CRUD critical paths.
+- Auth storage không chứa PII.
+- API error message UTF-8 fallback.
+- Route/access for Doctor Invitee và Staff Applicant.
+
+## 13. Verification record
+
+Khi cập nhật baseline, ghi trong PR:
+
+```md
+## Verification
+
+- npm run lint: passed/failed
+- npm run build: passed/failed
+- npm run test:e2e:routes: passed/failed
+- npm run test:e2e:a11y: passed/failed
+- npm run test:e2e:performance: passed/failed/not run
+- npm run test:e2e:visual: passed/failed/not run
+```
+
+Không ghi “tested locally” nếu không có lệnh cụ thể.

@@ -5,6 +5,7 @@ const WORKSPACE_PATHS = new Set([
   "/dashboard",
   "/profile",
   "/symptom",
+  "/assessment/history",
   "/chat",
   "/map",
   "/records",

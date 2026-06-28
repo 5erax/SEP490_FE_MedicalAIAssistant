@@ -15,6 +15,7 @@ const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
 test("diagnosis flow asks clinical yes/no questions and renders recommendations", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
+    window.name = "__medimate_e2e_prepared__";
     localStorage.setItem("medimate.auth", JSON.stringify({
       accessToken,
       roles: ["Patient"],
@@ -24,6 +25,11 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
 
   let questionPayload = null;
   let answerPayload = null;
+
+  await page.route("**/api/patient-profiles**", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { items: [] } }),
+  }));
 
   await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => {
     questionPayload = route.request().postDataJSON();
@@ -35,7 +41,7 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
           sessionId: SESSION_ID,
           questions: [{
             questionId: QUESTION_ID,
-            questionVi: "Bạn có đau ngực khi gắng sức không?",
+            questionVi: "Ban co dau nguc khi gang suc khong?",
             chapterCode: "IX",
             totalScore: 12,
           }],
@@ -52,41 +58,41 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
         success: true,
         data: {
           sessionId: SESSION_ID,
-          userInput: "Đau ngực nhẹ",
+          userInput: "Dau nguc nhe",
           answers: [{ questionId: QUESTION_ID, answer: true }],
           analysis: {
             sessionId: SESSION_ID,
             primaryDiagnosis: {
               rank: 1,
-              diseaseName: "Đau thắt ngực",
+              diseaseName: "Dau that nguc",
               icd10Code: "I20",
               paGivenB: 0.91,
-              clinicalReasoning: "Phù hợp với triệu chứng mô tả.",
+              clinicalReasoning: "Phu hop voi trieu chung mo ta.",
             },
             diagnoses: [{
               rank: 1,
-              diseaseName: "Đau thắt ngực",
+              diseaseName: "Dau that nguc",
               icd10Code: "I20",
               paGivenB: 0.91,
-              clinicalReasoning: "Phù hợp với triệu chứng mô tả.",
+              clinicalReasoning: "Phu hop voi trieu chung mo ta.",
             }],
             recommendedDepartment: {
               departmentId: DEPARTMENT_ID,
-              departmentName: "Tim mạch",
+              departmentName: "Tim mach",
               confidenceScore: 0.91,
-              reason: "Cần đánh giá chuyên khoa tim mạch.",
+              reason: "Can danh gia chuyen khoa tim mach.",
               priorityRank: 1,
               isEmergencySuggested: false,
             },
             recommendedFacilities: [{
               id: FACILITY_ID,
-              facilityName: "Bệnh viện Tim",
-              address: "123 Nguyễn Trãi",
+              facilityName: "Benh vien Tim",
+              address: "123 Nguyen Trai",
               latitude: 10.77,
               longitude: 106.69,
               phone: "0123456789",
               isActive: true,
-              departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tim mạch" }],
+              departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tim mach" }],
             }],
           },
         },
@@ -103,29 +109,32 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
         model: "google/medgemma-4b-it",
         diagnoses: [{
           rank: 1,
-          diseaseName: "Đau thắt ngực",
+          diseaseName: "Dau that nguc",
           icd10Code: "I20",
           paGivenB: 0.91,
-          clinicalReasoning: "Phù hợp với triệu chứng mô tả.",
+          clinicalReasoning: "Phu hop voi trieu chung mo ta.",
         }],
       },
     }),
   }));
 
   await page.goto("/symptom", { waitUntil: "domcontentloaded" });
-  await page.locator("textarea").first().fill("Đau ngực nhẹ");
-  await page.getByRole("button", { name: "Bắt đầu sàng lọc" }).click();
+  await page.getByLabel("Trieu chung chinh").fill("Dau nguc nhe");
+  await page.getByLabel("Mo ta them").fill("Dau nguc nhe khi gang suc");
+  await page.getByRole("button", { name: "Tao cau hoi lam sang" }).click();
 
-  await expect(page.getByText("Bạn có đau ngực khi gắng sức không?")).toBeVisible();
-  await expect(page.locator(".question-card")).toBeFocused();
-  await page.getByLabel("Có").check();
-  await page.getByRole("button", { name: "Xem nhận định tham khảo" }).click();
+  await expect(page).toHaveURL(new RegExp(`/assessment/${SESSION_ID}$`));
+  await expect(page.getByText("Ban co dau nguc khi gang suc khong?")).toBeVisible();
+  await page.getByLabel("Co").check();
+  await page.getByRole("button", { name: "Xem ket qua" }).click();
 
-  await expect(page.getByText("Đau thắt ngực", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("Tim mạch", { exact: true })).toBeVisible();
-  await expect(page.getByText("Bệnh viện Tim", { exact: true })).toBeVisible();
-  await expect(page.getByText("91%", { exact: true }).first()).toBeVisible();
-  expect(questionPayload).toEqual({ userInput: "Đau ngực nhẹ" });
+  await expect(page).toHaveURL(new RegExp(`/assessment/${SESSION_ID}/result$`));
+  await expect(page.getByText("Dau that nguc", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Tim mach", { exact: true })).toBeVisible();
+  await expect(page.getByText("Benh vien Tim", { exact: true })).toBeVisible();
+  await expect(page.getByText("91% phu hop", { exact: true })).toBeVisible();
+  expect(questionPayload.userInput).toContain("Trieu chung chinh: Dau nguc nhe");
+  expect(questionPayload.userInput).toContain("Mo ta them: Dau nguc nhe khi gang suc");
   expect(answerPayload).toEqual({
     sessionId: SESSION_ID,
     answers: [{ questionId: QUESTION_ID, answer: true }],

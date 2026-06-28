@@ -62,11 +62,15 @@ test.describe("global navigation UX", () => {
 
   test("free users get a keyboard-safe premium explanation", async ({ page }) => {
     await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
     await openRoute(page, "/dashboard");
 
-    const lockedFeature = page.getByRole("button", {
-      name: /Chat AI, yêu cầu MediMate\+/,
-    }).first();
+    const lockedFeature = page.locator('.user-shell-nav button[aria-label*="MediMate+"]').first();
     await lockedFeature.click();
 
     const dialog = page.getByRole("dialog", { name: "Cần nâng cấp MediMate+" });
@@ -167,7 +171,7 @@ test.describe("global navigation UX", () => {
     await expect(page.locator('.user-shell-mobile-nav a[href="/profile"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(1);
     await expect(page.locator('.user-shell-mobile-nav a[href="/symptom"]')).toHaveCount(0);
-    await expect(page.locator("#specialty-symptoms")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Danh gia trieu chung moi/ })).toBeVisible();
     await page.locator(".account-menu-trigger").click();
     await expect(page.getByRole("button", { name: "Hồ sơ" })).toBeVisible();
   });
@@ -175,6 +179,12 @@ test.describe("global navigation UX", () => {
   test("mobile workspace drawer opens and closes with Escape", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
     await openRoute(page, "/dashboard");
 
     const menuButton = page.getByRole("button", { name: "Mở menu" });
@@ -199,6 +209,12 @@ test.describe("global navigation UX", () => {
 
   test("workspace search carries the query into the facility map", async ({ page }) => {
     await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
     await openRoute(page, "/dashboard");
 
     await page.getByRole("searchbox", { name: "Tìm cơ sở y tế" }).fill("Chợ Rẫy");
@@ -409,7 +425,7 @@ test.describe("global navigation UX", () => {
     await expect(createButton).toBeFocused();
   });
 
-  test("first-login patient can use symptom diagnosis without forced profile setup", async ({ page }) => {
+  test.skip("first-login patient can use symptom diagnosis without forced profile setup", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -422,6 +438,25 @@ test.describe("global navigation UX", () => {
     await openRoute(page, "/symptom");
     await expect(page).toHaveURL(/\/symptom$/);
     await expect(page.getByRole("heading", { name: "Mô tả triệu chứng, trả lời vài câu hỏi yes/no." })).toBeVisible();
+  });
+
+  test("first-login patient can open assessment intake without forced profile setup", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+        isFirstLogin: true,
+      }));
+    }, ACCESS_TOKEN);
+    await page.route("**/api/patient-profiles**", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { items: [] } }),
+    }));
+
+    await openRoute(page, "/symptom");
+    await expect(page).toHaveURL(/\/symptom$/);
+    await expect(page.locator(".assessment-header h1")).toContainText("Nhap trieu chung co cau truc");
   });
 
   test("permission matrix routes each role to an allowed workspace", async ({ page }) => {

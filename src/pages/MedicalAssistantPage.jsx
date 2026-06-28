@@ -1,129 +1,776 @@
-import { useMemo, useState } from "react";
-import ChatSidebar from "../components/medicalAssistant/ChatSidebar";
-import MedicalMap from "../components/medicalAssistant/MedicalMap";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, ClipboardList, History, MapPin, Stethoscope } from "lucide-react";
+import { Alert, Button, EmptyState, ErrorState, Field, LoadingState, Textarea, TextInput } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getStoredAuth } from "../services/api";
-import { getDefaultMapLocation } from "../services/hospitalRecommendations";
+import { medicalFacilitiesApi } from "../services/facilityService";
+import { patientProfilesApi } from "../services/patientProfileService";
+import { symptomAnalysisApi } from "../services/symptomAnalysisService";
+import "../styles/medical-assessment.css";
 
-const SUGGESTED_PROMPTS = [
-  "Tôi bị sốt nhẹ 2 ngày",
-  "Tôi nên khám khoa nào?",
-  "Triệu chứng nào cần cấp cứu?",
-  "Bệnh viện gần tôi nhất?",
+const DRAFT_KEY = "medimate.assessment.draft";
+const SESSION_KEY_PREFIX = "medimate.assessment.session.";
+
+const RED_FLAGS = [
+  "Dau nguc du doi",
+  "Kho tho nang",
+  "Ngat, co giat hoac mat y thuc",
+  "Yeu hoac liet mot ben co the",
+  "Meo mieng, noi kho",
+  "Chay mau nhieu",
+  "Dau dau du doi dot ngot",
+  "Sung mat/moi kem kho tho hoac nghi phan ve",
 ];
 
-function EmptyAuth() {
+const SEVERITY_OPTIONS = [
+  ["mild", "Nhe"],
+  ["moderate", "Vua"],
+  ["severe", "Nang"],
+];
+
+function unwrapData(response) {
+  return response?.data?.data ?? response?.data ?? response;
+}
+
+function getPagedItems(response) {
+  const data = unwrapData(response);
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
+function getQuestionId(question, index) {
+  return question?.questionId ?? question?.id ?? `question-${index + 1}`;
+}
+
+function normalizeQuestions(questions = []) {
+  return questions.map((question, index) => ({
+    ...question,
+    questionId: getQuestionId(question, index),
+    questionText: question?.questionVi || question?.questionText || question?.text || `Cau hoi lam sang ${index + 1}`,
+  }));
+}
+
+function readSuggestResponse(response) {
+  const data = unwrapData(response) ?? {};
+  return {
+    sessionId: data.sessionId || "",
+    questions: normalizeQuestions(Array.isArray(data.questions) ? data.questions : []),
+  };
+}
+
+function confidencePercent(value) {
+  const numeric = Number(value ?? 0);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
+}
+
+function loadSessionState(sessionId) {
+  try {
+    const raw = sessionStorage.getItem(`${SESSION_KEY_PREFIX}${sessionId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSessionState(sessionId, state) {
+  if (!sessionId) return;
+
+  const redactedForm = state?.form
+    ? {
+      ...state.form,
+      profileContext: "",
+      allergyNote: "",
+      chronicDiseaseNote: "",
+      medications: "",
+    }
+    : state?.form;
+
+  const redactedUserInput = state?.userInput
+    ? {
+      ...state.userInput,
+      profileContext: "",
+      allergyNote: "",
+      chronicDiseaseNote: "",
+      medications: "",
+    }
+    : state?.userInput;
+
+  const safeState = {
+    ...state,
+    form: redactedForm,
+    userInput: redactedUserInput,
+  };
+
+  sessionStorage.setItem(`${SESSION_KEY_PREFIX}${sessionId}`, JSON.stringify(safeState));
+}
+
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function toStorageSafeDraft(draft) {
+  if (!draft || typeof draft !== "object") return {};
+  return {
+    mainSymptom: draft.mainSymptom || "",
+    description: draft.description || "",
+    duration: draft.duration || "",
+    severity: draft.severity || "",
+    bodyLocation: draft.bodyLocation || "",
+    associatedSymptoms: draft.associatedSymptoms || "",
+  };
+}
+
+function saveDraft(draft) {
+  const safeDraft = toStorageSafeDraft(draft);
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(safeDraft));
+}
+
+function buildUserInput(form) {
+  return [
+    `Trieu chung chinh: ${form.mainSymptom}`,
+    form.description ? `Mo ta them: ${form.description}` : "",
+    form.duration ? `Thoi gian bat dau: ${form.duration}` : "",
+    form.severity ? `Muc do: ${form.severity}` : "",
+    form.bodyLocation ? `Vi tri: ${form.bodyLocation}` : "",
+    form.associatedSymptoms ? `Trieu chung di kem: ${form.associatedSymptoms}` : "",
+    form.profileContext ? `Thong tin ho so suc khoe: ${form.profileContext}` : "",
+    form.chronicDiseaseNote ? `Benh nen: ${form.chronicDiseaseNote}` : "",
+    form.allergyNote ? `Di ung: ${form.allergyNote}` : "",
+    form.medications ? `Thuoc dang dung: ${form.medications}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+function getRecommendedDepartment(result) {
+  return result?.recommendedDepartment || result?.analysis?.recommendedDepartment || result?.recommendedDepartments?.[0] || null;
+}
+
+function getDiagnoses(result) {
+  return result?.diagnoses || result?.analysis?.diagnoses || [];
+}
+
+function getPrimaryDiagnosis(result) {
+  return result?.primaryDiagnosis || result?.analysis?.primaryDiagnosis || getDiagnoses(result)[0] || null;
+}
+
+function getFacilities(result) {
+  return result?.recommendedFacilities || result?.analysis?.recommendedFacilities || [];
+}
+
+function facilityKey(facility) {
+  return facility?.id || facility?.facilityId || facility?.facilityName;
+}
+
+function AssessmentShell({ eyebrow, title, description, children }) {
   return (
-    <main className="workspace-root">
-      <section className="app-page">
-        <div className="container app-empty">
-          <p className="eyebrow">AI Assistant</p>
-          <h1>Bạn cần đăng nhập để dùng trợ lý triệu chứng nâng cao.</h1>
-          <div className="hero-actions">
-            <a className="btn btn-primary" href="/login">Đăng nhập</a>
-            <a className="btn btn-ghost" href="/signup">Tạo tài khoản</a>
+    <main className="assessment-page">
+      <section className="assessment-shell" aria-labelledby="assessment-title">
+        <header className="assessment-header">
+          <span className="assessment-icon" aria-hidden="true"><Stethoscope size={24} /></span>
+          <div>
+            <p className="eyebrow">{eyebrow}</p>
+            <h1 id="assessment-title">{title}</h1>
+            {description && <p>{description}</p>}
           </div>
-        </div>
+        </header>
+        {children}
       </section>
     </main>
   );
 }
 
-export default function MedicalAssistantPage() {
-  const auth = useMemo(() => getStoredAuth(), []);
-  const defaultLocation = getDefaultMapLocation();
-  const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [hospitals] = useState([]);
-  const [selectedHospital, setSelectedHospital] = useState(null);
-  const [chatLoading, setChatLoading] = useState(false);
-  const [hospitalsLoading, setHospitalsLoading] = useState(false);
-  const [mapLoading, setMapLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [viewState, setViewState] = useState({
-    ...defaultLocation,
-    zoom: 12.2,
-    pitch: 20,
-    bearing: -8,
-  });
+function Stepper({ active }) {
+  const steps = ["An toan", "Nhap trieu chung", "Cau hoi", "Ket qua"];
+  return (
+    <ol className="assessment-stepper" aria-label="Tien trinh danh gia">
+      {steps.map((step, index) => (
+        <li className={index === active ? "active" : index < active ? "complete" : ""} key={step} aria-current={index === active ? "step" : undefined}>
+          <span>{index + 1}</span>
+          <strong>{step}</strong>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
-  function focusHospital(hospital) {
-    if (!hospital) return;
-    setSelectedHospital(hospital);
-    setViewState((current) => ({
-      ...current,
-      longitude: hospital.longitude,
-      latitude: hospital.latitude,
-      zoom: Math.max(current.zoom, 13.2),
-    }));
-  }
+function EntryPage() {
+  return (
+    <AssessmentShell
+      eyebrow="MediMate AI"
+      title="Ho tro danh gia trieu chung va dieu huong cham soc y te"
+      description="MediMate giup ban mo ta trieu chung co cau truc, tra loi mot so cau hoi lam sang va tim chuyen khoa phu hop. Ket qua chi mang tinh dinh huong, khong thay the bac si."
+    >
+      <div className="assessment-grid">
+        <article>
+          <ClipboardList size={24} aria-hidden="true" />
+          <h2>Luon bat dau bang an toan</h2>
+          <p>Neu co dau hieu nguy hiem, ung dung se dung flow AI va huong dan ban tim cham soc khan cap.</p>
+        </article>
+        <article>
+          <Stethoscope size={24} aria-hidden="true" />
+          <h2>Hoi dap lam sang tung buoc</h2>
+          <p>Backend chon cau hoi yes/no theo trieu chung ban nhap, sau do moi tao ket qua tham khao.</p>
+        </article>
+        <article>
+          <MapPin size={24} aria-hidden="true" />
+          <h2>Dieu huong co so y te</h2>
+          <p>Khi co chuyen khoa goi y, MediMate tim co so y te active tu backend theo chuyen khoa do.</p>
+        </article>
+      </div>
+      <div className="assessment-actions">
+        <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>Bat dau danh gia trieu chung</Button>
+        <Button tone="secondary" onClick={() => navigate("/map")}>Tim co so y te</Button>
+      </div>
+    </AssessmentShell>
+  );
+}
 
-  if (!auth) return <EmptyAuth />;
+function SafetyPage() {
+  const [checked, setChecked] = useState([]);
+  const hasRedFlag = checked.length > 0;
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    const symptomText = draft.trim();
-    if (!symptomText || chatLoading) return;
-
-    setMessages((current) => [...current, { from: "user", text: symptomText }]);
-    setDraft("");
-    setChatLoading(true);
-    setHospitalsLoading(true);
-    setErrorMessage("");
-
-    try {
-      sessionStorage.setItem("medimate.symptom.prefill", symptomText);
-      navigate("/dashboard");
-    } catch (error) {
-      setErrorMessage(error.message);
-      setMessages((current) => [
-        ...current,
-        {
-          from: "assistant",
-          text: "Hiện chưa thể mở luồng chẩn đoán. Bạn có thể thử lại hoặc đi khám sớm nếu triệu chứng nặng lên.",
-        },
-      ]);
-    } finally {
-      setChatLoading(false);
-      setHospitalsLoading(false);
-    }
-  }
-
-  function handlePromptSelect(prompt) {
-    setDraft(prompt);
-  }
-
-  function handleSelectHospital(hospital) {
-    focusHospital(hospital);
+  function toggle(flag) {
+    setChecked((current) => current.includes(flag)
+      ? current.filter((item) => item !== flag)
+      : [...current, flag]);
   }
 
   return (
-    <main className="workspace-root medical-assistant-root">
-      <section className="medical-assistant-shell">
-        <ChatSidebar
-          draft={draft}
-          prompts={SUGGESTED_PROMPTS}
-          messages={messages}
-          hospitals={hospitals}
-          chatLoading={chatLoading}
-          hospitalsLoading={hospitalsLoading}
-          errorMessage={errorMessage}
-          selectedHospital={selectedHospital}
-          onDraftChange={setDraft}
-          onSubmit={handleSubmit}
-          onPromptSelect={handlePromptSelect}
-          onSelectHospital={handleSelectHospital}
-        />
-        <MedicalMap
-          hospitals={hospitals}
-          loading={mapLoading || hospitalsLoading}
-          selectedHospital={selectedHospital}
-          viewState={viewState}
-          onMove={setViewState}
-          onSelectHospital={handleSelectHospital}
-          onMapLoad={() => setMapLoading(false)}
-        />
-      </section>
-    </main>
+    <AssessmentShell
+      eyebrow="Buoc 1"
+      title="Truoc khi bat dau"
+      description="Hay kiem tra nhanh cac dau hieu can cham soc y te khan cap. Neu co, khong nen tiep tuc tu danh gia bang AI."
+    >
+      <Stepper active={0} />
+      <fieldset className="safety-checklist">
+        <legend>Ban co dang gap mot trong cac dau hieu sau khong?</legend>
+        {RED_FLAGS.map((flag) => (
+          <label key={flag}>
+            <input type="checkbox" checked={checked.includes(flag)} onChange={() => toggle(flag)} />
+            <span>{flag}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      {hasRedFlag && (
+        <section className="emergency-panel" role="alert">
+          <AlertTriangle size={28} aria-hidden="true" />
+          <div>
+            <h2>Day co the la tinh huong can cham soc khan cap</h2>
+            <p>Vui long goi cap cuu dia phuong, hoac den co so y te gan nhat. Khong tiep tuc tu danh gia bang AI trong tinh huong nay.</p>
+            <div className="assessment-actions">
+              <Button onClick={() => navigate("/map?search=cap%20cuu")}>Tim co so y te gan nhat</Button>
+              <Button tone="secondary" onClick={() => navigate("/")}>Ve trang chu</Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {!hasRedFlag && (
+        <div className="assessment-actions">
+          <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>Khong, tiep tuc danh gia</Button>
+          <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>Quay lai</Button>
+        </div>
+      )}
+    </AssessmentShell>
   );
+}
+
+function IntakePage() {
+  const auth = getStoredAuth();
+  const [form, setForm] = useState(() => loadDraft() ?? {
+    mainSymptom: "",
+    description: "",
+    duration: "",
+    severity: "moderate",
+    bodyLocation: "",
+    associatedSymptoms: "",
+    profileContext: "",
+    allergyNote: "",
+    chronicDiseaseNote: "",
+    medications: "",
+  });
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+  const [profileStatus, setProfileStatus] = useState(() => (auth?.userId || auth?.identityId ? "loading" : "idle"));
+
+  useEffect(() => {
+    const userId = auth?.userId || auth?.identityId;
+    if (!userId) return;
+
+    let active = true;
+
+    patientProfilesApi.findByUserId(userId)
+      .then((profile) => {
+        if (!active) return;
+        if (!profile) {
+          setProfileStatus("empty");
+          return;
+        }
+
+        const profileContext = [
+          profile.bloodType ? `Nhom mau ${profile.bloodType}` : "",
+          profile.height ? `Chieu cao ${profile.height} cm` : "",
+          profile.weight ? `Can nang ${profile.weight} kg` : "",
+        ].filter(Boolean).join(", ");
+
+        setForm((current) => {
+          const next = {
+            ...current,
+            profileContext: current.profileContext || profileContext,
+            allergyNote: current.allergyNote || profile.allergyNote || "",
+            chronicDiseaseNote: current.chronicDiseaseNote || profile.chronicDiseaseNote || "",
+          };
+          saveDraft(next);
+          return next;
+        });
+        setProfileStatus("ready");
+      })
+      .catch(() => {
+        if (active) setProfileStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [auth?.identityId, auth?.userId]);
+
+  function updateField(key, value) {
+    setForm((current) => {
+      const next = { ...current, [key]: value };
+      saveDraft(next);
+      return next;
+    });
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!form.mainSymptom.trim() || !form.description.trim()) {
+      setError("Vui long nhap trieu chung chinh va mo ta toi thieu.");
+      return;
+    }
+
+    setStatus("loading");
+    setError("");
+    const userInput = buildUserInput(form);
+
+    try {
+      const response = await symptomAnalysisApi.suggestClinicalQuestions(userInput);
+      const data = readSuggestResponse(response);
+      if (!data.sessionId) throw new Error("Backend chua tra ve sessionId cho phien danh gia.");
+
+      saveSessionState(data.sessionId, {
+        sessionId: data.sessionId,
+        userInput,
+        form,
+        questions: data.questions,
+        answers: {},
+      });
+      navigate(`/assessment/${data.sessionId}`);
+    } catch (requestError) {
+      setError(requestError.status === 502
+        ? "AI tam thoi khong phan hoi. Vui long thu lai sau."
+        : requestError.message || "Khong the tao cau hoi lam sang luc nay.");
+    } finally {
+      setStatus("idle");
+    }
+  }
+
+  return (
+    <AssessmentShell
+      eyebrow="Buoc 2"
+      title="Nhap trieu chung co cau truc"
+      description="Thong tin nay se duoc gom thanh userInput va gui den endpoint suggest-clinical-questions cua backend."
+    >
+      <Stepper active={1} />
+      {!auth && (
+        <Alert tone="warning" title="Can dang nhap">
+          Backend hien yeu cau token cho phien danh gia. Hay dang nhap de tiep tuc va luu lich su phien.
+        </Alert>
+      )}
+      {auth && profileStatus === "loading" && (
+        <Alert tone="info" live>Dang tai ho so suc khoe de dien san thong tin nen neu co.</Alert>
+      )}
+      {auth && profileStatus === "ready" && (
+        <Alert tone="success" live>Da dien san thong tin ho so suc khoe co san. Ban co the chinh sua truoc khi gui.</Alert>
+      )}
+      {auth && profileStatus === "empty" && (
+        <Alert tone="warning">Chua tim thay ho so suc khoe. Ban van co the nhap thu cong benh nen va di ung.</Alert>
+      )}
+      <form className="assessment-form" onSubmit={submit}>
+        <Field label="Trieu chung chinh" required>
+          <TextInput value={form.mainSymptom} onChange={(event) => updateField("mainSymptom", event.target.value)} disabled={status === "loading"} />
+        </Field>
+        <Field label="Mo ta them" hint="Mo ta boi canh, dien tien, dieu lam nang/giam trieu chung." required>
+          <Textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} disabled={status === "loading"} rows={4} />
+        </Field>
+        <div className="assessment-form-grid">
+          <Field label="Thoi gian bat dau">
+            <TextInput value={form.duration} onChange={(event) => updateField("duration", event.target.value)} disabled={status === "loading"} placeholder="Vi du: 2 ngay" />
+          </Field>
+          <Field label="Muc do">
+            <select value={form.severity} onChange={(event) => updateField("severity", event.target.value)} disabled={status === "loading"}>
+              {SEVERITY_OPTIONS.map(([value, label]) => <option key={value} value={label}>{label}</option>)}
+            </select>
+          </Field>
+          <Field label="Vi tri dau/kho chiu">
+            <TextInput value={form.bodyLocation} onChange={(event) => updateField("bodyLocation", event.target.value)} disabled={status === "loading"} />
+          </Field>
+          <Field label="Trieu chung di kem">
+            <TextInput value={form.associatedSymptoms} onChange={(event) => updateField("associatedSymptoms", event.target.value)} disabled={status === "loading"} />
+          </Field>
+        </div>
+        <div className="assessment-form-grid">
+          <Field label="Thong tin ho so suc khoe" hint="Tu dong lay nhom mau, chieu cao, can nang neu ho so backend co du lieu.">
+            <Textarea value={form.profileContext} onChange={(event) => updateField("profileContext", event.target.value)} disabled={status === "loading"} rows={3} />
+          </Field>
+          <Field label="Benh nen">
+            <Textarea value={form.chronicDiseaseNote} onChange={(event) => updateField("chronicDiseaseNote", event.target.value)} disabled={status === "loading"} rows={3} />
+          </Field>
+        </div>
+        <div className="assessment-form-grid">
+          <Field label="Di ung">
+            <Textarea value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} disabled={status === "loading"} rows={3} />
+          </Field>
+          <Field label="Thuoc dang dung">
+            <TextInput value={form.medications} onChange={(event) => updateField("medications", event.target.value)} disabled={status === "loading"} />
+          </Field>
+        </div>
+        {error && <Alert tone="danger" live>{error}</Alert>}
+        <div className="assessment-actions">
+          <Button type="submit" size="lg" loading={status === "loading"} loadingLabel="Dang tao cau hoi...">Tao cau hoi lam sang</Button>
+          <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>Quay lai safety gate</Button>
+        </div>
+      </form>
+    </AssessmentShell>
+  );
+}
+
+function QuestionsPage({ sessionId }) {
+  const [session, setSession] = useState(() => loadSessionState(sessionId));
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  const questions = session?.questions ?? [];
+  const answers = session?.answers ?? {};
+  const answeredCount = Object.values(answers).filter((value) => value === true || value === false).length;
+  const canSubmit = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
+
+  function updateAnswer(questionId, answer) {
+    setSession((current) => {
+      const next = { ...current, answers: { ...(current?.answers ?? {}), [questionId]: answer } };
+      saveSessionState(sessionId, next);
+      return next;
+    });
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!canSubmit) return;
+
+    const payload = questions.map((question) => ({
+      questionId: question.questionId,
+      answer: answers[question.questionId],
+    }));
+
+    setStatus("submitting");
+    setError("");
+
+    try {
+      const recommendationResponse = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
+      const recommendationData = unwrapData(recommendationResponse) ?? {};
+      const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
+      const diagnosisData = unwrapData(diagnosisResponse) ?? {};
+
+      const analysis = recommendationData.analysis || recommendationData;
+      let result = {
+        ...analysis,
+        answers: recommendationData.answers ?? analysis.answers ?? payload,
+        diagnoses: diagnosisData.diagnoses ?? analysis.diagnoses ?? [],
+        primaryDiagnosis: diagnosisData.diagnoses?.[0] ?? analysis.primaryDiagnosis ?? null,
+        diagnosisModel: diagnosisData.model ?? analysis.model ?? null,
+      };
+
+      const department = getRecommendedDepartment(result);
+      if (department?.departmentId && getFacilities(result).length === 0) {
+        const facilitiesResponse = await medicalFacilitiesApi.active({ departmentId: department.departmentId });
+        result = { ...result, recommendedFacilities: getPagedItems(facilitiesResponse) };
+      }
+
+      const next = { ...session, answers: Object.fromEntries(payload.map((item) => [item.questionId, item.answer])), result };
+      saveSessionState(sessionId, next);
+      navigate(`/assessment/${sessionId}/result`);
+    } catch (requestError) {
+      setError(requestError.status === 502
+        ? "AI tam thoi khong phan hoi. Du lieu ban da nhap van duoc giu lai de thu lai."
+        : requestError.message || "Khong the gui cau tra loi luc nay.");
+      setStatus("idle");
+    }
+  }
+
+  if (!session) {
+    return (
+      <AssessmentShell eyebrow="Phien danh gia" title="Khong tim thay cau hoi cua phien nay">
+        <ErrorState
+          title="Phien danh gia chua san sang"
+          description="Hay bat dau lai tu form nhap trieu chung de backend tao sessionId va danh sach cau hoi."
+          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Nhap trieu chung</Button>}
+        />
+      </AssessmentShell>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <AssessmentShell eyebrow="Buoc 3" title="Chua co cau hoi phu hop">
+        <Stepper active={2} />
+        <EmptyState
+          title="Backend chua tao duoc cau hoi lam sang"
+          description="Hay bo sung trieu chung chinh, thoi gian bat dau, muc do, vi tri va trieu chung di kem."
+          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Quay lai bo sung thong tin</Button>}
+        />
+      </AssessmentShell>
+    );
+  }
+
+  const question = questions[currentIndex];
+
+  return (
+    <AssessmentShell
+      eyebrow="Buoc 3"
+      title="Tra loi cau hoi lam sang"
+      description="Tra loi tung cau hoi yes/no. Frontend chi goi submit sau khi ban tra loi het danh sach backend tra ve."
+    >
+      <Stepper active={2} />
+      <form className="question-panel" onSubmit={submit}>
+        <div className="question-progress">
+          <span>Cau {currentIndex + 1}/{questions.length}</span>
+          <strong>{Math.round((answeredCount / questions.length) * 100)}%</strong>
+        </div>
+        <fieldset className="question-card">
+          <legend>{question.questionText}</legend>
+          <div>
+            <label>
+              <input type="radio" name={`answer-${question.questionId}`} checked={answers[question.questionId] === true} onChange={() => updateAnswer(question.questionId, true)} />
+              Co
+            </label>
+            <label>
+              <input type="radio" name={`answer-${question.questionId}`} checked={answers[question.questionId] === false} onChange={() => updateAnswer(question.questionId, false)} />
+              Khong
+            </label>
+          </div>
+          {question.chapterCode && <small>Nhom ICD: {question.chapterCode}</small>}
+        </fieldset>
+        {error && <Alert tone="danger" live>{error}</Alert>}
+        <div className="assessment-actions">
+          <Button tone="secondary" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => index - 1)}>Cau truoc</Button>
+          {currentIndex < questions.length - 1 ? (
+            <Button disabled={answers[question.questionId] === undefined} onClick={() => setCurrentIndex((index) => index + 1)}>Cau tiep theo</Button>
+          ) : (
+            <Button type="submit" loading={status === "submitting"} loadingLabel="Dang phan tich..." disabled={!canSubmit}>Xem ket qua</Button>
+          )}
+        </div>
+      </form>
+    </AssessmentShell>
+  );
+}
+
+function ResultPage({ sessionId }) {
+  const [state, setState] = useState(() => loadSessionState(sessionId));
+  const [remoteStatus, setRemoteStatus] = useState(() => loadSessionState(sessionId)?.result ? "idle" : "loading");
+  const [remoteError, setRemoteError] = useState("");
+
+  useEffect(() => {
+    if (state?.result) return;
+    let active = true;
+    symptomAnalysisApi.get(sessionId)
+      .then((response) => {
+        if (!active) return;
+        const data = unwrapData(response);
+        const next = { ...(state ?? { sessionId }), result: data, userInput: data?.inputText };
+        setState(next);
+        saveSessionState(sessionId, next);
+      })
+      .catch((error) => {
+        if (active) setRemoteError(error.message || "Khong the tai ket qua phien danh gia.");
+      })
+      .finally(() => {
+        if (active) setRemoteStatus("idle");
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionId, state]);
+
+  const result = state?.result;
+  const department = getRecommendedDepartment(result);
+  const diagnoses = getDiagnoses(result);
+  const primaryDiagnosis = getPrimaryDiagnosis(result);
+  const facilities = getFacilities(result);
+  const isEmergency = department?.isEmergencySuggested;
+
+  function openMap() {
+    const search = new URLSearchParams();
+    if (department?.departmentId) search.set("departmentId", department.departmentId);
+    if (department?.departmentName) search.set("search", department.departmentName);
+    search.set("sessionId", sessionId);
+    navigate(`/map?${search.toString()}`);
+  }
+
+  if (remoteStatus === "loading") {
+    return <AssessmentShell eyebrow="Ket qua" title="Dang tai ket qua"><LoadingState label="Dang tai phien danh gia..." /></AssessmentShell>;
+  }
+
+  if (!result) {
+    return (
+      <AssessmentShell eyebrow="Ket qua" title="Khong tim thay ket qua">
+        <ErrorState
+          title="Phien danh gia khong ton tai"
+          description={remoteError || "Hay bat dau phien danh gia moi hoac mo lai tu lich su neu phien da duoc luu."}
+          action={<Button onClick={() => navigate("/assessment/history")}>Xem lich su</Button>}
+        />
+      </AssessmentShell>
+    );
+  }
+
+  return (
+    <AssessmentShell
+      eyebrow="Buoc 4"
+      title="Ket qua dinh huong cham soc"
+      description="Ket qua nay chi mang tinh ho tro dinh huong va can bac si xac nhan."
+    >
+      <Stepper active={3} />
+      <Alert tone={isEmergency ? "danger" : "warning"} title={isEmergency ? "Can uu tien tham kham khan cap" : "Khong phai chan doan chinh thuc"}>
+        {isEmergency
+          ? "Ket qua cho thay ban co the can duoc danh gia y te som. Hay lien he co so y te phu hop."
+          : "Thong tin nay giup ban chuan bi khi di kham, khong thay the chan doan hoac dieu tri cua bac si."}
+      </Alert>
+      <section className="result-grid">
+        {department && (
+          <article className="result-card priority">
+            <span>Chuyen khoa goi y</span>
+            <h2>{department.departmentName || "Chuyen khoa phu hop"}</h2>
+            <p>{department.reason || "Backend de xuat dua tren trieu chung va cau tra loi lam sang."}</p>
+            <strong>{confidencePercent(department.confidenceScore)}% phu hop</strong>
+          </article>
+        )}
+        {primaryDiagnosis && (
+          <article className="result-card">
+            <span>Kha nang can bac si kiem tra</span>
+            <h2>{primaryDiagnosis.diseaseName || "Nhan dinh tham khao"}</h2>
+            {primaryDiagnosis.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
+            {primaryDiagnosis.icd10Code && <small>ICD-10: {primaryDiagnosis.icd10Code}</small>}
+          </article>
+        )}
+        {diagnoses.length > 0 && (
+          <article className="result-card">
+            <span>Cac kha nang lien quan</span>
+            <div className="diagnosis-stack">
+              {diagnoses.slice(0, 4).map((diagnosis, index) => (
+                <p key={`${diagnosis.rank || index}-${diagnosis.diseaseName}`}>
+                  <strong>{diagnosis.rank || index + 1}. {diagnosis.diseaseName || "Nhan dinh"}</strong>
+                  <small>{confidencePercent(diagnosis.paGivenB)}%</small>
+                </p>
+              ))}
+            </div>
+          </article>
+        )}
+        <article className="result-card facilities">
+          <span>Co so y te lien quan</span>
+          <h2>Uu tien co so co chuyen khoa phu hop</h2>
+          {facilities.length === 0 ? (
+            <p>Backend chua tra co so cu the cho phien nay. Ban co the mo ban do de loc theo chuyen khoa goi y.</p>
+          ) : (
+            <div className="facility-stack">
+              {facilities.slice(0, 5).map((facility) => (
+                <article key={facilityKey(facility)}>
+                  <strong>{facility.facilityName || "Co so y te"}</strong>
+                  <span>{facility.address || "Chua co dia chi"}</span>
+                  {facility.phone && <a href={`tel:${facility.phone}`}>{facility.phone}</a>}
+                </article>
+              ))}
+            </div>
+          )}
+        </article>
+      </section>
+      <div className="assessment-actions">
+        <Button onClick={openMap}><MapPin size={18} /> Xem tren ban do</Button>
+        <Button tone="secondary" onClick={() => navigate("/assessment/history")}><History size={18} /> Xem lich su</Button>
+        <Button tone="secondary" onClick={() => navigate("/medical-assistant/intake")}>Danh gia moi</Button>
+      </div>
+    </AssessmentShell>
+  );
+}
+
+function HistoryPage() {
+  const [sessions, setSessions] = useState([]);
+  const [status, setStatus] = useState("loading");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    symptomAnalysisApi.listMySessions(1, 10)
+      .then((response) => {
+        if (active) setSessions(getPagedItems(response));
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.message || "Khong the tai lich su danh gia.");
+      })
+      .finally(() => {
+        if (active) setStatus("idle");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <AssessmentShell
+      eyebrow="Lich su"
+      title="Lich su phien danh gia trieu chung"
+      description="Du lieu lay tu endpoint my-sessions cua backend."
+    >
+      {status === "loading" && <LoadingState label="Dang tai lich su danh gia..." />}
+      {error && <ErrorState title="Khong the tai lich su" description={error} action={<Button onClick={() => window.location.reload()}>Thu lai</Button>} />}
+      {status !== "loading" && !error && sessions.length === 0 && (
+        <EmptyState
+          title="Chua co phien danh gia nao"
+          description="Bat dau phien moi de MediMate tao cau hoi lam sang va luu lich su."
+          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Danh gia moi</Button>}
+        />
+      )}
+      {sessions.length > 0 && (
+        <div className="history-list">
+          {sessions.map((session) => (
+            <article key={session.sessionId}>
+              <div>
+                <strong>{session.inputText || "Phien danh gia"}</strong>
+                <span>{session.createdAt ? new Date(session.createdAt).toLocaleString("vi-VN") : "Chua co ngay tao"}</span>
+              </div>
+              <small>{session.status || "Dang cap nhat"}</small>
+              <Button tone="secondary" onClick={() => navigate(`/assessment/${session.sessionId}/result`)}>Xem chi tiet</Button>
+            </article>
+          ))}
+        </div>
+      )}
+    </AssessmentShell>
+  );
+}
+
+export default function MedicalAssistantPage({ mode = "entry", sessionId = "" }) {
+  const activeMode = useMemo(() => mode, [mode]);
+
+  if (activeMode === "safety") return <SafetyPage />;
+  if (activeMode === "intake") return <IntakePage />;
+  if (activeMode === "questions") return <QuestionsPage sessionId={sessionId} />;
+  if (activeMode === "result") return <ResultPage sessionId={sessionId} />;
+  if (activeMode === "history") return <HistoryPage />;
+  return <EntryPage />;
 }

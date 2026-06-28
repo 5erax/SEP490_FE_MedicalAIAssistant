@@ -32,4 +32,11 @@ export const patientProfilesApi = {
       auth: true,
     });
   },
+
+  async findByUserId(userId, pageNumber = 1, pageSize = 100) {
+    if (!userId) return null;
+    const response = await this.list(pageNumber, pageSize);
+    const items = response.data?.items ?? response.data?.data?.items ?? [];
+    return items.find((item) => String(item.userId).toLowerCase() === String(userId).toLowerCase()) ?? null;
+  },
 };
