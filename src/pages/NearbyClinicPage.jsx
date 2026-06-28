@@ -110,6 +110,9 @@ function NearbyClinicPage() {
   const [searchText, setSearchText] = useState(
     () => new URLSearchParams(window.location.search).get("search") || "",
   );
+  const [initialDepartmentId] = useState(
+    () => new URLSearchParams(window.location.search).get("departmentId") || "",
+  );
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
@@ -148,7 +151,7 @@ function NearbyClinicPage() {
     let active = true;
 
     Promise.allSettled([
-      medicalFacilitiesApi.active(),
+      medicalFacilitiesApi.active({ departmentId: initialDepartmentId }),
       medicalDepartmentsApi.list(1, 100),
       facilityDepartmentsApi.active(),
     ])
@@ -198,7 +201,7 @@ function NearbyClinicPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialDepartmentId]);
 
   useEffect(() => {
     if (!selectedFacility?.facilityId) return;
