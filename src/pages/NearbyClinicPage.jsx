@@ -3,7 +3,7 @@ import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import FacilityReviews from "../components/nearbyClinic/FacilityReviews";
 import { navigate } from "../router/navigation";
-import { doctorManagementApi } from "../services/doctors";
+import { doctorsApi } from "../services/doctorService";
 import {
   facilityDepartmentsApi,
   feedbackReviewsApi,
@@ -112,6 +112,9 @@ function NearbyClinicPage() {
   );
   const [initialDepartmentId] = useState(
     () => new URLSearchParams(window.location.search).get("departmentId") || "",
+  );
+  const [initialSessionId] = useState(
+    () => new URLSearchParams(window.location.search).get("sessionId") || "",
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedFacility, setSelectedFacility] = useState(null);
@@ -289,7 +292,12 @@ function NearbyClinicPage() {
     try {
       const [facilityResult, doctorResult] = await Promise.allSettled([
         medicalFacilitiesApi.get(facility.facilityId),
-        doctorManagementApi.list({ facilityId: facility.facilityId, pageNumber: 1, pageSize: 12, isActive: true }),
+        doctorsApi.active({
+          facilityId: facility.facilityId,
+          departmentId: initialDepartmentId,
+          pageNumber: 1,
+          pageSize: 12,
+        }),
       ]);
       if (facilityResult.status === "fulfilled") {
         setDetailFacility(normalizeFacility(getObjectData(facilityResult.value)));
@@ -405,6 +413,21 @@ function NearbyClinicPage() {
           <button type="button" onClick={() => navigate("/dashboard")}>← Trang chủ</button>
           <button type="button" onClick={handleLocateMe}>Định vị tôi</button>
         </div>
+        {(initialDepartmentId || initialSessionId) && (
+          <div className="assessment-map-context">
+            <strong>Dang loc theo ket qua tu van</strong>
+            <span>
+              {initialDepartmentId
+                ? "Danh sach uu tien co so va bac si theo chuyen khoa backend de xuat."
+                : "Ban do dang mo tu phien danh gia trieu chung."}
+            </span>
+            {initialSessionId && (
+              <button type="button" onClick={() => navigate(`/assessment/${initialSessionId}/result`)}>
+                Quay lai ket qua
+              </button>
+            )}
+          </div>
+        )}
         <div className="clinic-search">
           <span aria-hidden="true">⌕</span>
           <label className="sr-only" htmlFor="facility-search">Tìm cơ sở y tế</label>
@@ -567,6 +590,10 @@ const styles = `
 .map-page-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
 .map-page-actions button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 900; }
 .map-page-actions button:last-child { background: var(--lime); }
+.assessment-map-context { display: grid; gap: 7px; margin-bottom: 12px; border: 1px solid rgba(8,127,140,.28); border-radius: 12px; background: #e8f6f5; padding: 12px; color: var(--ink); }
+.assessment-map-context strong { font-size: 13px; }
+.assessment-map-context span { color: var(--muted); font-size: 12px; line-height: 1.45; font-weight: 800; }
+.assessment-map-context button { justify-self: start; min-height: 32px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); padding: 0 10px; font-size: 12px; font-weight: 900; }
 .clinic-search { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; padding: 0 10px; }
 .clinic-search input { min-width: 0; height: 42px; border: 0; outline: none; }
 .clinic-search button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--mint); font-size: 18px; font-weight: 900; }
