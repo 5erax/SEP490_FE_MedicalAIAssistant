@@ -23,7 +23,7 @@ export default function WorkspaceRedirect() {
             <h1>Bạn có thể trải nghiệm trước khi đăng ký.</h1>
             <p>Dùng tư vấn chuyên khoa và bản đồ ở chế độ khách. Khi cần lưu hồ sơ hoặc dùng tính năng nâng cao, hãy đăng nhập hoặc tạo tài khoản.</p>
             <div className="hero-actions">
-              <a className="btn btn-primary" href="/medical-assistant">Trải nghiệm ngay</a>
+              <a className="btn btn-primary" href="/dashboard">Trải nghiệm ngay</a>
               <a className="btn btn-ghost" href="/login">Đăng nhập</a>
             </div>
           </div>

@@ -26,9 +26,8 @@ export const doctorsApi = {
     return apiRequest(`${ENDPOINTS.DOCTORS.BASE}?${withPagination(pageNumber, pageSize)}`);
   },
 
-  active(filters = {}) {
-    const query = buildDoctorQuery(filters);
-    return apiRequest(`${ENDPOINTS.DOCTORS.ACTIVE}${query ? `?${query}` : ""}`);
+  active() {
+    return apiRequest(ENDPOINTS.DOCTORS.ACTIVE);
   },
 
   get(id) {
