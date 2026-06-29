@@ -13,7 +13,6 @@ import {
   SlidersHorizontal,
   Stethoscope,
   Users,
-  UserPlus,
 } from "lucide-react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
@@ -30,7 +29,6 @@ import SubscriptionPlanFormModal from "../components/adminSubscriptions/Subscrip
 import AdminSubscriptionsSection from "../components/adminSubscriptions/AdminSubscriptionsSection";
 import AdminOverviewSection from "../components/adminOverview/AdminOverviewSection";
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
-import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
@@ -68,16 +66,6 @@ const EMPTY_FACILITY = {
   isActive: true,
   departmentIds: [],
 };
-const EMPTY_STAFF = {
-  email: "",
-  userName: "",
-  password: "",
-  confirmPassword: "",
-  displayName: "",
-  address: "",
-  gender: "1",
-  dateOfBirth: "",
-};
 const EMPTY_DOCTOR_FILTERS = {
   search: "",
   facilityId: "",
@@ -106,7 +94,6 @@ const ADMIN_NAV_ICONS = {
   doctor: Stethoscope,
   ai: SlidersHorizontal,
   subscription: CreditCard,
-  staff: UserPlus,
   facility: Building2,
   icd: BookOpen,
   question: CircleHelp,
@@ -230,8 +217,6 @@ function formatRoles(roles) {
 }
 
 function AccessDenied({ auth, roles }) {
-  const path = hasRole(roles, "staff") ? "/app/staff" : "/dashboard";
-
   return (
     <main className="workspace-root admin-operator">
       <section className="app-page">

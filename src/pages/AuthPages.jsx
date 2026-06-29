@@ -203,7 +203,7 @@ export function LoginPage() {
     try {
       const response = await authApi.login(form);
       const authData = response.data ?? response;
-      if (invitationContext && !hasAuthRole(authData, "staff")) {
+      if (invitationContext && !hasAuthRole(authData, "doctor")) {
         rejectDoctorInvitationLogin(setMessage);
         return;
       }
@@ -230,7 +230,7 @@ export function LoginPage() {
     try {
       const response = await authApi.googleLogin(credential);
       const authData = await refreshAuthRoles(response.data ?? response);
-      if (invitationContext && !hasAuthRole(authData, "staff")) {
+      if (invitationContext && !hasAuthRole(authData, "doctor")) {
         rejectDoctorInvitationLogin(setMessage);
         return;
       }

@@ -17,7 +17,7 @@ const INITIAL_FORM = {
 };
 
 const DEPARTMENT_ROLES = [
-  { value: "0", label: "Nhân viên (Staff)" },
+  { value: "0", label: "Bác sĩ" },
   { value: "1", label: "Phó khoa (Deputy Head)" },
   { value: "2", label: "Trưởng khoa (Head)" },
   { value: "3", label: "Chuyên gia đầu ngành (Leading Expert)" },
@@ -210,7 +210,7 @@ export default function DoctorRegisterInvitationPage() {
   const errorSummaryRef = useRef(null);
   const statusHeadingRef = useRef(null);
   const isLinkedProfile = Boolean(invitation?.isLinkedToExistingDoctorProfile);
-  const loginPath = withReturnTo("/login", "/app/staff");
+  const loginPath = withReturnTo("/login", "/dashboard");
 
   const openDoctorLogin = useCallback(() => {
     replaceRoute(loginPath, {

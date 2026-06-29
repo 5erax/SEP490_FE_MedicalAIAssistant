@@ -3,7 +3,6 @@ import LandingPage from "./pages/LandingPage";
 import UserWorkspaceShell from "./components/workspace/UserWorkspaceShell";
 import StaticPage from "./pages/StaticPage";
 import WorkspaceRedirect from "./pages/WorkspaceRedirect";
-import StaffWorkspacePage from "./pages/StaffWorkspacePage";
 import AdminWorkspacePage from "./pages/AdminWorkspacePage";
 import ChatbotPage from "./pages/ChatbotPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -14,7 +13,6 @@ import PaymentResultPage from "./pages/PaymentResultPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import RecoveryPlanPage from "./pages/RecoveryPlanPage";
-import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
 import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
 import { getStoredAuth } from "./services/api";
 import {
@@ -92,8 +90,6 @@ function App() {
       return <SignupPage />;
     case "auth.doctor-register":
       return <DoctorRegisterInvitationPage />;
-    case "auth.staff-register":
-      return <StaffRegisterPortalPage />;
     case "auth.forgot-password":
       return <ForgotPasswordPage />;
     case "auth.change-password":
@@ -122,8 +118,6 @@ function App() {
       return <PaymentResultPage expectedResult="cancel" />;
     case "workspace.redirect":
       return <WorkspaceRedirect />;
-    case "workspace.staff":
-      return <StaffWorkspacePage />;
     case "assistant.main":
       return lazyPage(<MedicalAssistantPage mode="entry" />);
     case "assistant.safety":
