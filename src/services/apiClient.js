@@ -158,7 +158,7 @@ export async function apiRequest(path, options = {}) {
       payload = {
         success: false,
         message:
-          "Dá»‹ch vá»¥ Ä‘ang pháº£n há»“i khÃ´ng á»•n Ä‘á»‹nh. Vui lÃ²ng thá»­ láº¡i sau.",
+          "Dịch vụ đang phản hồi không ổn định. Vui lòng thử lại sau.",
       };
     }
   }
