@@ -43,7 +43,7 @@ export function hasRole(roles = [], role) {
   return normalizedRoles.some((current) => {
     if (current === wanted) return true;
     if (wanted === "admin") return ["administrator", "superadmin"].includes(current);
-    if (wanted === "staff") return ["doctor", "clinician", "medicalstaff"].includes(current);
+    if (wanted === "doctor") return ["clinician"].includes(current);
     return false;
   });
 }
@@ -56,7 +56,6 @@ export function getWorkspacePath(authOrUser) {
   const roles = normalizeRoles(collectRoleValues(authOrUser));
 
   if (hasRole(roles, "admin")) return "/app/admin";
-  if (hasRole(roles, "staff")) return "/app/staff";
   return "/dashboard";
 }
 
@@ -70,7 +69,7 @@ export function shouldSetupPatientProfile(authOrUser) {
     && !isProfileCompleted
     && hasRole(roles, "patient")
     && !hasRole(roles, "admin")
-    && !hasRole(roles, "staff")
+    && !hasRole(roles, "doctor")
   );
 }
 
