@@ -11,8 +11,24 @@ function useTypewriter() {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [cursor, setCursor] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
+    const query = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!query) return undefined;
+
+    function updateMotionPreference() {
+      setReducedMotion(query.matches);
+    }
+
+    updateMotionPreference();
+    query.addEventListener?.("change", updateMotionPreference);
+    return () => query.removeEventListener?.("change", updateMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) return undefined;
+
     const phrase = PROMPTS[phraseIndex];
     const doneTyping = !deleting && cursor === phrase.length;
     const doneDeleting = deleting && cursor === 0;
@@ -36,9 +52,9 @@ function useTypewriter() {
     );
 
     return () => clearTimeout(timer);
-  }, [cursor, deleting, phraseIndex]);
+  }, [cursor, deleting, phraseIndex, reducedMotion]);
 
-  return PROMPTS[phraseIndex].slice(0, cursor);
+  return reducedMotion ? PROMPTS[0] : PROMPTS[phraseIndex].slice(0, cursor);
 }
 
 export function HeroSection() {
@@ -61,7 +77,25 @@ export function HeroSection() {
             <a className="btn btn-primary" href="/dashboard">
               Trải nghiệm ngay
             </a>
+            <a className="btn btn-ghost" href="/map">
+              Tìm cơ sở y tế
+            </a>
           </div>
+
+          <ul className="hero-outcomes" aria-label="Kết quả chính">
+            <li>
+              <strong>Sàng lọc có cấu trúc</strong>
+              <span>Ghi triệu chứng và trả lời câu hỏi làm rõ.</span>
+            </li>
+            <li>
+              <strong>Chuyên khoa phù hợp</strong>
+              <span>Hiểu nơi nên bắt đầu khi chuẩn bị đi khám.</span>
+            </li>
+            <li>
+              <strong>Cơ sở y tế liên quan</strong>
+              <span>Mở bản đồ theo dữ liệu hệ thống cung cấp.</span>
+            </li>
+          </ul>
 
           <div className="trust-row" aria-label="Điểm tin cậy">
             <span className="trust-pill">Nguồn y khoa có kiểm chứng</span>
