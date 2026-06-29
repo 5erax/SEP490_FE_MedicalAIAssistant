@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
@@ -297,20 +297,7 @@ export function LoginPage() {
     </AuthShell>
   );
 
-  if (!GOOGLE_LOGIN_ENABLED) return loginContent;
-
-  return (
-    <GoogleOAuthProvider
-      clientId={GOOGLE_CLIENT_ID}
-      script_props={{
-        async: true,
-        defer: true,
-        crossOrigin: "anonymous",
-      }}
-    >
-      {loginContent}
-    </GoogleOAuthProvider>
-  );
+  return loginContent;
 }
 
 export function SignupPage() {
