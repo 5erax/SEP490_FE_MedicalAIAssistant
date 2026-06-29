@@ -8,10 +8,11 @@ import { patientProfilesApi } from "../services/patientProfileService";
 import { symptomAnalysisApi } from "../services/symptomAnalysisService";
 import "../styles/medical-assessment.css";
 
-const DRAFT_KEY = "medimate.assessment.draft";
 const SESSION_KEY_PREFIX = "medimate.assessment.session.";
 const SAFETY_CONFIRMATION_KEY = "medimate.assessment.safetyConfirmedAt";
 const SAFETY_CONFIRMATION_MAX_AGE_MS = 30 * 60 * 1000;
+const assessmentSessionCache = new Map();
+let assessmentDraftCache = null;
 
 const RED_FLAGS = [
   "Dau nguc du doi",
@@ -68,30 +69,20 @@ function confidencePercent(value) {
 }
 
 function loadSessionState(sessionId) {
-  try {
-    const raw = sessionStorage.getItem(`${SESSION_KEY_PREFIX}${sessionId}`);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return assessmentSessionCache.get(`${SESSION_KEY_PREFIX}${sessionId}`) ?? null;
 }
 
 function saveSessionState(sessionId, state) {
   if (!sessionId) return;
-  sessionStorage.setItem(`${SESSION_KEY_PREFIX}${sessionId}`, JSON.stringify(state));
+  assessmentSessionCache.set(`${SESSION_KEY_PREFIX}${sessionId}`, state);
 }
 
 function loadDraft() {
-  try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return assessmentDraftCache;
 }
 
 function saveDraft(draft) {
-  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  assessmentDraftCache = draft;
 }
 
 function confirmSafetyGate() {
