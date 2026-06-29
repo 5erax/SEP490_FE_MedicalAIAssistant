@@ -3,7 +3,6 @@ import { AlertTriangle, ClipboardList, History, MapPin, Stethoscope } from "luci
 import { Alert, Button, EmptyState, ErrorState, Field, LoadingState, Textarea, TextInput } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getStoredAuth } from "../services/api";
-import { medicalFacilitiesApi } from "../services/facilityService";
 import { patientProfilesApi } from "../services/patientProfileService";
 import { symptomAnalysisApi } from "../services/symptomAnalysisService";
 import "../styles/medical-assessment.css";
@@ -491,12 +490,6 @@ function QuestionsPage({ sessionId }) {
         primaryDiagnosis: diagnosisData.diagnoses?.[0] ?? analysis.primaryDiagnosis ?? null,
         diagnosisModel: diagnosisData.model ?? analysis.model ?? null,
       };
-
-      const department = getRecommendedDepartment(result);
-      if (department?.departmentId && getFacilities(result).length === 0) {
-        const facilitiesResponse = await medicalFacilitiesApi.active({ departmentId: department.departmentId });
-        result = { ...result, recommendedFacilities: getPagedItems(facilitiesResponse) };
-      }
 
       const next = { ...session, answers: Object.fromEntries(payload.map((item) => [item.questionId, item.answer])), result };
       saveSessionState(sessionId, next);

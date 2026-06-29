@@ -37,13 +37,21 @@ export default function LandingAIChatbox() {
     setDraft("");
     setLoading(true);
 
-    const response = await sendLandingChatMessage(nextText);
-    const loginHint = response.answer.length > 0 && !hasUserMessage
-      ? "\n\nBạn có thể đăng nhập để lưu hồ sơ và mở trợ lý triệu chứng nâng cao."
-      : "";
+    try {
+      const response = await sendLandingChatMessage(nextText);
+      const loginHint = response.answer.length > 0 && !hasUserMessage
+        ? "\n\nBạn có thể đăng nhập để lưu hồ sơ và mở trợ lý triệu chứng nâng cao."
+        : "";
 
-    setMessages((current) => [...current, { from: "assistant", text: `${response.answer}${loginHint}` }]);
-    setLoading(false);
+      setMessages((current) => [...current, { from: "assistant", text: `${response.answer}${loginHint}` }]);
+    } catch {
+      setMessages((current) => [...current, {
+        from: "assistant",
+        text: "Dịch vụ AI chưa phản hồi. Vui lòng thử lại sau.",
+      }]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleSubmit(event) {
