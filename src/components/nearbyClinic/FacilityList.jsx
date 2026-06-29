@@ -8,11 +8,24 @@ export default function FacilityList({
   selectedFacilityId,
 }) {
   return (
-    <section className="facility-list-panel" id="facility-list" tabIndex="-1" aria-label="Danh sách cơ sở y tế">
+    <section className="facility-list-panel" id="facility-list" tabIndex="-1" aria-labelledby="facility-list-title">
+      <div className="result-summary">
+        <div>
+          <h2 id="facility-list-title">Danh sách cơ sở</h2>
+          <span>{loading ? "Đang tải dữ liệu" : `${facilities.length} kết quả phù hợp`}</span>
+        </div>
+      </div>
+      {loading && [0, 1, 2].map((item) => (
+        <article className="facility-result-card facility-result-skeleton" key={item} aria-hidden="true">
+          <span className="skeleton-line" />
+          <span className="skeleton-line short" />
+          <span className="skeleton-line" />
+        </article>
+      ))}
       {!loading && facilities.length === 0 && (
         <div className="sidebar-note">Chưa tìm thấy cơ sở y tế phù hợp với bộ lọc hoặc khu vực hiện tại. Vui lòng thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
       )}
-      {facilities.map((facility) => (
+      {!loading && facilities.map((facility) => (
         <article
           ref={(node) => { cardRefs.current[facility.facilityId] = node; }}
           className={`facility-result-card ${selectedFacilityId === facility.facilityId ? "selected" : ""}`}
@@ -22,10 +35,16 @@ export default function FacilityList({
             <strong>{facility.facilityName}</strong>
             <span className={`type-badge ${facility.facilityTypeKey}`}>{facility.facilityTypeLabel}</span>
           </div>
+          <p className="facility-card-address">{facility.address}</p>
+          <div className="facility-card-meta">
+            <span>{facility.openingHours}</span>
+            <span>{facility.hasValidCoordinates ? "Có vị trí bản đồ" : "Thiếu tọa độ"}</span>
+          </div>
           <button
             className="facility-select-button"
             type="button"
             aria-pressed={selectedFacilityId === facility.facilityId}
+            aria-label={`Xem chi tiết ${facility.facilityName}`}
             onClick={(event) => { event.stopPropagation(); onViewDetail(facility); }}
           >
             {selectedFacilityId === facility.facilityId ? "Đang xem chi tiết" : "Xem chi tiết"}
@@ -42,6 +61,7 @@ export default function FacilityList({
             <button
               type="button"
               disabled={!facility.phone}
+              aria-label={`Gọi ${facility.facilityName}`}
               title={facility.phone ? undefined : "Cơ sở chưa có số điện thoại"}
               onClick={(event) => { event.stopPropagation(); onCall(facility); }}
             >
@@ -50,6 +70,7 @@ export default function FacilityList({
             <button
               type="button"
               disabled={!facility.hasValidCoordinates}
+              aria-label={`Chỉ đường đến ${facility.facilityName}`}
               title={facility.hasValidCoordinates ? undefined : "Cơ sở chưa có tọa độ chính xác"}
               onClick={(event) => { event.stopPropagation(); onDirections(facility); }}
             >

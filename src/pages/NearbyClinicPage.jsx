@@ -151,7 +151,9 @@ function NearbyClinicPage() {
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
+  const detailCloseButtonRef = useRef(null);
   const requestedFacilityOpenedRef = useRef(false);
+  const lastFittedBoundsRef = useRef("");
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -281,7 +283,15 @@ function NearbyClinicPage() {
     () => filteredFacilities.filter((facility) => facility.hasValidCoordinates),
     [filteredFacilities],
   );
+  const mapBoundsKey = useMemo(
+    () => mappableFacilities.map((facility) => `${facility.facilityId}:${facility.longitude}:${facility.latitude}`).join("|"),
+    [mappableFacilities],
+  );
+  const unmappableFacilityCount = filteredFacilities.length - mappableFacilities.length;
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
+  const mapSummaryText = loadingFacilities
+    ? "Đang tải dữ liệu cơ sở y tế."
+    : `${filteredFacilities.length} cơ sở phù hợp, ${mappableFacilities.length} cơ sở có tọa độ hiển thị trên bản đồ${unmappableFacilityCount > 0 ? `, ${unmappableFacilityCount} cơ sở thiếu tọa độ nhưng vẫn có trong danh sách` : ""}.`;
 
   const prefersReducedMotion = useCallback(() => (
     document.documentElement.dataset.motion === "reduce"
@@ -313,6 +323,37 @@ function NearbyClinicPage() {
       behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
   }, [mapStatus, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (mapStatus !== "ready" || selectedFacility || mappableFacilities.length === 0) return;
+    if (lastFittedBoundsRef.current === mapBoundsKey) return;
+    lastFittedBoundsRef.current = mapBoundsKey;
+
+    const duration = prefersReducedMotion() ? 0 : 900;
+
+    if (mappableFacilities.length === 1) {
+      const [facility] = mappableFacilities;
+      mapRef.current?.flyTo?.({
+        center: [facility.longitude, facility.latitude],
+        zoom: 14,
+        duration,
+      });
+      return;
+    }
+
+    const longitudes = mappableFacilities.map((facility) => facility.longitude);
+    const latitudes = mappableFacilities.map((facility) => facility.latitude);
+    mapRef.current?.fitBounds?.(
+      [
+        [Math.min(...longitudes), Math.min(...latitudes)],
+        [Math.max(...longitudes), Math.max(...latitudes)],
+      ],
+      {
+        duration,
+        padding: { top: 72, right: 72, bottom: 72, left: 72 },
+      },
+    );
+  }, [mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
 
   const openFacilityDetail = useCallback(async (facility) => {
     if (!facility?.facilityId) return;
@@ -361,11 +402,30 @@ function NearbyClinicPage() {
     return () => window.clearTimeout(timeoutId);
   }, [facilities, loadingFacilities, openFacilityDetail, requestedFacilityId]);
 
+  useEffect(() => {
+    if (!detailPanelOpen) return undefined;
+    const focusId = window.setTimeout(() => detailCloseButtonRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusId);
+  }, [detailPanelOpen, detailFacility?.facilityId]);
+
+  useEffect(() => {
+    if (!detailPanelOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [detailPanelOpen]);
+
   const closeFacilityDetail = () => {
+    const facilityId = detailFacility?.facilityId;
     setDetailPanelOpen(false);
     setDetailFacility(null);
     setDetailError("");
     setDetailDoctors([]);
+    window.setTimeout(() => {
+      cardRefs.current[facilityId]?.querySelector?.(".facility-select-button")?.focus();
+    }, 0);
   };
 
   const detailServices = useMemo(() => {
@@ -478,6 +538,26 @@ function NearbyClinicPage() {
           )}
         </div>
 
+        <section className="map-results-summary" aria-label="Tóm tắt kết quả bản đồ">
+          <div>
+            <strong>{loadingFacilities ? "..." : filteredFacilities.length}</strong>
+            <span>Kết quả</span>
+          </div>
+          <div>
+            <strong>{loadingFacilities ? "..." : mappableFacilities.length}</strong>
+            <span>Có tọa độ</span>
+          </div>
+          <div>
+            <strong>{loadingFacilities ? "..." : unmappableFacilityCount}</strong>
+            <span>Thiếu tọa độ</span>
+          </div>
+        </section>
+
+        <div className="map-text-alternative" role="status" aria-live="polite">
+          <strong>Kết quả hiện tại</strong>
+          <span>{mapSummaryText}</span>
+        </div>
+
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
@@ -530,11 +610,18 @@ function NearbyClinicPage() {
           onViewDetail={openFacilityDetail}
         />
         {detailPanelOpen && detailFacility && (
-        <section className="facility-detail-view" aria-labelledby="facility-detail-title">
+        <section
+          className="facility-detail-view"
+          aria-labelledby="facility-detail-title"
+          tabIndex="-1"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") closeFacilityDetail();
+          }}
+        >
           <div className="facility-detail-hero">
             {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
             <div>
-              <button type="button" onClick={closeFacilityDetail}>Đóng xem chi tiết</button>
+              <button ref={detailCloseButtonRef} type="button" onClick={closeFacilityDetail}>Đóng xem chi tiết</button>
               <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
               <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
               <p>{detailFacility.address}</p>
@@ -790,6 +877,233 @@ const styles = `
   .map-panel { order: 1; min-height: 38svh; margin: 10px; border-radius: 18px; }
   .clinic-sidebar { order: 2; width: 100%; max-height: none; padding: 18px 14px 96px; }
   .map-sidebar-head h1 { font-size: 27px; }
+}
+
+/* Focused /map UX refinements: text alternative, keyboard markers, compact detail panel. */
+.map-results-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 10px;
+}
+.map-results-summary div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+}
+.map-results-summary strong,
+.map-results-summary span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.map-results-summary strong {
+  color: var(--ink);
+  font-size: 21px;
+  line-height: 1;
+}
+.map-results-summary span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+.map-text-alternative {
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(8, 127, 140, .2);
+  border-radius: 13px;
+  background: #f2fbfa;
+  color: var(--ink);
+  padding: 11px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.map-text-alternative strong {
+  font-size: 12px;
+}
+.map-text-alternative span {
+  color: var(--muted);
+  font-weight: 760;
+}
+.result-summary {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+.result-summary h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
+}
+.result-summary span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.facility-result-skeleton {
+  display: grid;
+  gap: 10px;
+}
+.facility-result-skeleton .short {
+  width: 62%;
+}
+.facility-result-card {
+  cursor: default;
+}
+.facility-card-address {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.facility-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.facility-card-meta span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-soft);
+  color: var(--muted);
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.clinic-search:focus-within {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, .12), 0 8px 24px rgba(24, 54, 31, .07);
+}
+.clinic-marker {
+  appearance: none;
+  cursor: pointer;
+}
+.clinic-marker:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, .5);
+  outline-offset: 4px;
+}
+.clinic-marker[aria-pressed="true"] {
+  border-color: #315d18;
+}
+.popup-card {
+  max-width: 230px;
+}
+.popup-card button:focus-visible,
+.facility-select-button:focus-visible,
+.facility-actions button:focus-visible,
+.facility-detail-hero button:focus-visible,
+.facility-reviews button:focus-visible,
+.locate-button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, .42);
+  outline-offset: 3px;
+}
+.facility-detail-view {
+  inset: 28px;
+  border-radius: 20px;
+  background: #f7faf5;
+  animation-duration: 320ms;
+}
+.facility-detail-hero {
+  min-height: 240px;
+  grid-template-columns: minmax(240px, .58fr) minmax(0, 1fr);
+}
+.facility-detail-hero > img,
+.facility-detail-hero > span {
+  min-height: 240px;
+}
+.facility-detail-hero > div {
+  align-content: center;
+  padding: clamp(22px, 3vw, 34px);
+}
+.facility-detail-hero h2 {
+  max-width: 700px;
+  font-size: clamp(30px, 4vw, 48px);
+  overflow-wrap: anywhere;
+}
+.facility-detail-hero p {
+  overflow-wrap: anywhere;
+}
+.facility-detail-content {
+  gap: 14px;
+  padding: clamp(16px, 2.4vw, 24px);
+}
+.facility-detail-card {
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(24, 54, 31, .07);
+}
+
+@media (max-width: 1080px) {
+  .clinic-sidebar {
+    width: min(390px, 42vw);
+  }
+  .facility-detail-view {
+    inset: 20px;
+  }
+  .facility-detail-hero {
+    grid-template-columns: 1fr;
+  }
+  .facility-detail-hero > img,
+  .facility-detail-hero > span {
+    min-height: 170px;
+    max-height: 220px;
+  }
+  .facility-detail-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .clinic-page {
+    min-height: 100svh;
+    height: auto;
+    overflow: visible;
+  }
+  .map-stage {
+    min-height: 320px;
+  }
+  .clinic-sidebar {
+    width: 100%;
+  }
+  .map-results-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .map-results-summary div {
+    padding: 9px 8px;
+  }
+  .map-results-summary strong {
+    font-size: 18px;
+  }
+  .facility-detail-view {
+    position: fixed;
+    inset: 12px;
+    z-index: 60;
+    border-radius: 18px;
+    max-height: calc(100svh - 24px);
+  }
+  .facility-detail-hero {
+    min-height: 0;
+  }
+  .facility-detail-hero > img,
+  .facility-detail-hero > span {
+    min-height: 132px;
+    max-height: 160px;
+  }
+  .facility-detail-hero h2 {
+    font-size: clamp(26px, 8vw, 34px);
+  }
+  .facility-detail-hero-actions button,
+  .facility-actions button,
+  .map-page-actions button {
+    width: 100%;
+  }
 }
 `;
 
