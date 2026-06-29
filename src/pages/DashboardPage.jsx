@@ -143,6 +143,10 @@ function getFacilityDistanceKm(facility, userLocation) {
   return distanceKmBetween(userLocation, facilityLocation);
 }
 
+function getFacilityId(facility) {
+  return facility?.facilityId || facility?.id || "";
+}
+
 function formatDistance(distanceKm) {
   if (distanceKm == null) return "";
   if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
@@ -206,6 +210,7 @@ export default function DashboardPage() {
     questionsPanelRef,
     resetDiagnosis,
     result,
+    sessionId,
     setCurrentQuestionIndex,
     setInput,
     startDiagnosis,
@@ -264,8 +269,18 @@ export default function DashboardPage() {
   }
 
   function openFacilities() {
-    const search = recommendedDepartment?.departmentName || primaryDiagnosis?.diseaseName || input;
-    navigate(`/map?search=${encodeURIComponent(search)}`);
+    const topFacility = sortedFacilities[0] ?? null;
+    const params = new URLSearchParams();
+    const facilityId = getFacilityId(topFacility);
+    const search = topFacility?.facilityName || recommendedDepartment?.departmentName || primaryDiagnosis?.diseaseName || input;
+
+    if (facilityId) params.set("facilityId", facilityId);
+    if (recommendedDepartment?.departmentId) params.set("departmentId", recommendedDepartment.departmentId);
+    if (search) params.set("search", search);
+    if (sessionId) params.set("sessionId", sessionId);
+
+    const query = params.toString();
+    navigate(query ? `/map?${query}` : "/map");
   }
 
   return (

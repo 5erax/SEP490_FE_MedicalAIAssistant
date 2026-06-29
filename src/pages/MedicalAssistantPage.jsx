@@ -129,6 +129,10 @@ function facilityKey(facility) {
   return facility?.id || facility?.facilityId || facility?.facilityName;
 }
 
+function facilityId(facility) {
+  return facility?.facilityId || facility?.id || "";
+}
+
 function AssessmentShell({ eyebrow, title, description, children }) {
   return (
     <main className="assessment-page">
@@ -608,8 +612,14 @@ function ResultPage({ sessionId }) {
 
   function openMap() {
     const search = new URLSearchParams();
+    const topFacility = facilities[0] ?? null;
+    const topFacilityId = facilityId(topFacility);
+
+    if (topFacilityId) search.set("facilityId", topFacilityId);
     if (department?.departmentId) search.set("departmentId", department.departmentId);
-    if (department?.departmentName) search.set("search", department.departmentName);
+    if (topFacility?.facilityName || department?.departmentName) {
+      search.set("search", topFacility?.facilityName || department.departmentName);
+    }
     search.set("sessionId", sessionId);
     navigate(`/map?${search.toString()}`);
   }
