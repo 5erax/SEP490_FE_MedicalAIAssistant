@@ -156,7 +156,7 @@ export default function SymptomAnalysisPage() {
   const [sessionId, setSessionId] = useState("");
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [, setCurrentQuestionIndex] = useState(0);
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -322,7 +322,7 @@ export default function SymptomAnalysisPage() {
 
         {["questions", "submitting"].includes(status) && (
           <form
-            className="symptom-card question-card"
+            className="symptom-card question-card question-flow-card"
             onSubmit={submitAnswers}
             ref={questionsPanelRef}
             tabIndex={-1}
@@ -331,55 +331,59 @@ export default function SymptomAnalysisPage() {
             <div className="question-card-head">
               <div>
                 <p className="mini-label">Câu hỏi lâm sàng</p>
-                <h2>Trả lời yes/no để hoàn tất sàng lọc</h2>
+                <h2>Hệ thống tìm thấy {questions.length} câu hỏi để làm rõ triệu chứng.</h2>
               </div>
               <span>{answeredCount}/{questions.length}</span>
             </div>
 
+            <div className="answer-progress" aria-label={`Đã trả lời ${answeredCount} trên ${questions.length} câu hỏi`}>
+              <div>
+                <span>Đã trả lời</span>
+                <strong>{answeredCount}/{questions.length}</strong>
+              </div>
+              <span className="answer-track">
+                <i style={{ width: `${questions.length ? Math.round((answeredCount / questions.length) * 100) : 0}%` }} />
+              </span>
+            </div>
+
             <div className="question-list">
-              {questions[currentQuestionIndex] && [questions[currentQuestionIndex]].map((question) => {
-                const index = currentQuestionIndex;
+              {questions.map((question, index) => {
                 const questionText = formatQuestion(question, index);
                 const questionId = question.questionId;
                 return (
-                  <fieldset className="diagnosis-question" key={questionId}>
-                    <legend>{questionText}</legend>
-                    <div>
-                      <label>
-                        <input
-                          type="radio"
-                          name={`answer-${questionId}`}
-                          checked={answers[questionId] === true}
-                          onChange={() => updateAnswer(questionId, true)}
-                        />
+                  <article className="diagnosis-question" key={questionId}>
+                    <span className="question-index">{index + 1}</span>
+                    <p>{questionText}</p>
+                    <div className="segmented-answer" role="group" aria-label={`Trả lời câu hỏi ${index + 1}`}>
+                      <button
+                        className={answers[questionId] === true ? "selected yes" : ""}
+                        type="button"
+                        aria-pressed={answers[questionId] === true}
+                        onClick={() => updateAnswer(questionId, true)}
+                      >
                         Có
-                      </label>
-                      <label>
-                        <input
-                          type="radio"
-                          name={`answer-${questionId}`}
-                          checked={answers[questionId] === false}
-                          onChange={() => updateAnswer(questionId, false)}
-                        />
+                      </button>
+                      <button
+                        className={answers[questionId] === false ? "selected no" : ""}
+                        type="button"
+                        aria-pressed={answers[questionId] === false}
+                        onClick={() => updateAnswer(questionId, false)}
+                      >
                         Không
-                      </label>
+                      </button>
                     </div>
-                    {question.chapterCode && <small>Nhóm ICD: {question.chapterCode}</small>}
-                  </fieldset>
+                  </article>
                 );
               })}
             </div>
 
-            <div className="diagnosis-question-actions">
-              <button className="outline-action" type="button" disabled={currentQuestionIndex === 0} onClick={() => setCurrentQuestionIndex((index) => index - 1)}>Câu trước</button>
-              {currentQuestionIndex < questions.length - 1 ? (
-                <button className="primary-action" type="button" disabled={answers[questions[currentQuestionIndex]?.questionId] === undefined} onClick={() => setCurrentQuestionIndex((index) => index + 1)}>Câu tiếp theo</button>
-              ) : (
-                <button className="primary-action" type="submit" disabled={!canSubmitAnswers}>
-                  {status === "submitting" ? "Đang phân tích..." : "Xem nhận định tham khảo"}
+            {canSubmitAnswers && (
+              <div className="diagnosis-question-actions">
+                <button className="primary-action" type="submit">
+                  {status === "submitting" ? "Đang phân tích..." : "Tiếp tục phân tích"}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </form>
         )}
 
@@ -507,11 +511,21 @@ const styles = `
 .question-card:focus { outline: 3px solid rgba(8,127,140,.28); outline-offset: 4px; }
 .question-card-head h2 { font-size: clamp(24px, 3vw, 36px); }
 .question-card-head > span, .soft-badge, .emergency-badge { display: inline-flex; width: fit-content; border-radius: 999px; background: var(--mint); color: var(--teal); padding: 6px 10px; font-size: 12px; font-weight: 950; }
+.answer-progress { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper-soft); padding: 12px; margin-bottom: 14px; }
+.answer-progress div { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; font-weight: 900; }
+.answer-progress strong { color: var(--ink); }
+.answer-track { display: block; height: 9px; overflow: hidden; border-radius: 999px; background: var(--line); }
+.answer-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), var(--lime)); transition: width .24s ease; }
 .question-list { display: grid; gap: 12px; }
-.diagnosis-question { min-width: 0; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--paper-soft); padding: 14px; }
-.diagnosis-question legend { color: var(--ink); font-weight: 950; line-height: 1.45; }
-.diagnosis-question div { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-.diagnosis-question label { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; padding: 0 14px; font-weight: 900; }
+.diagnosis-question { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--paper-soft); padding: 16px; animation: questionFadeUp .24s ease both; }
+.question-index { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #fff; color: var(--muted); font-size: 13px; font-weight: 950; }
+.diagnosis-question p { margin: 0; color: var(--ink); font-weight: 950; line-height: 1.45; }
+.segmented-answer { display: inline-grid; grid-template-columns: repeat(2, minmax(82px, 1fr)); gap: 6px; border: 1px solid var(--line); border-radius: 999px; background: #fff; padding: 5px; }
+.segmented-answer button { min-height: 42px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); padding: 0 14px; font-weight: 900; transition: background .22s ease, color .22s ease, transform .22s ease; }
+.segmented-answer button:hover { transform: translateY(-1px); color: var(--ink); }
+.segmented-answer button.selected.yes { background: rgba(22, 163, 74, .16); color: #166534; }
+.segmented-answer button.selected.no { background: rgba(239, 68, 68, .14); color: #991b1b; }
+.segmented-answer button:focus-visible { outline: 3px solid rgba(8,127,140,.35); outline-offset: 2px; }
 .diagnosis-question small { display: inline-block; margin-top: 9px; color: var(--muted); font-weight: 800; }
 .diagnosis-question-actions, .studio-question-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .result-layout { display: grid; gap: 16px; }
@@ -534,9 +548,11 @@ const styles = `
 .soft-empty { color: var(--muted); line-height: 1.6; }
 .result-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes questionFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 760px) {
   .symptom-page { padding: 14px; }
-  .diagnosis-steps, .diagnosis-list > div, .facility-list article { grid-template-columns: 1fr; }
+  .diagnosis-steps, .diagnosis-question, .diagnosis-list > div, .facility-list article { grid-template-columns: 1fr; }
+  .segmented-answer { width: 100%; }
   .question-card-head { display: grid; }
   .result-actions, .result-actions button, .outline-action, .primary-action { width: 100%; }
 }
