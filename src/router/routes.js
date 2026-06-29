@@ -54,13 +54,13 @@ const BASE_ROUTES = [
   {
     id: "patient.dashboard",
     path: "/dashboard",
-    title: "Tư vấn chuyên khoa | MediMate AI",
-    access: "public",
+    title: "Dashboard bệnh nhân | MediMate AI",
+    access: "auth",
     shell: "patient",
     navigation: {
       shell: "patient",
-      label: "Tư vấn chuyên khoa",
-      hint: "Gợi ý nơi khám",
+      label: "Dashboard",
+      hint: "Lịch sử và hồ sơ",
       icon: "dashboard",
       order: 10,
       mobile: true,
@@ -71,12 +71,13 @@ const BASE_ROUTES = [
     ],
   },
   {
-    id: "patient.symptom",
+    id: "assistant.intake",
     path: "/symptom",
-    title: "Phân tích triệu chứng | MediMate AI",
+    title: "Nhập triệu chứng | MediMate AI",
     access: "auth",
     shell: "patient",
-    navigation: { shell: "patient", label: "Phân tích lâm sàng", hint: "Đánh giá triệu chứng", icon: "symptom", order: 40 },
+    navigation: { shell: "patient", label: "Đánh giá triệu chứng", hint: "Bắt đầu phiên mới", icon: "symptom", order: 40 },
+    aliases: ["/medical-assistant/intake"],
   },
   {
     id: "patient.chat",
@@ -106,7 +107,7 @@ const BASE_ROUTES = [
     title: "Kết quả xét nghiệm | MediMate AI",
     access: "premium",
     shell: "patient",
-    navigation: { shell: "patient", label: "Phân tích kết quả xét nghiệm", hint: "Đọc chỉ số xét nghiệm", icon: "records", order: 50 },
+    navigation: { shell: "patient", label: "Phân tích xét nghiệm", hint: "Đọc chỉ số xét nghiệm", icon: "records", order: 50 },
   },
   { id: "patient.recovery", path: "/recovery-plan", title: "Kế hoạch phục hồi | MediMate AI", access: "auth", shell: "patient", navigation: { shell: "patient", label: "Kế hoạch phục hồi", hint: "Theo dõi sau khám", icon: "recovery", order: 60 } },
   {
@@ -134,6 +135,31 @@ const BASE_ROUTES = [
     title: "Trợ lý y tế | MediMate AI",
     access: "public",
     aliases: ["/symptom-chat"],
+  },
+  {
+    id: "assistant.safety",
+    path: "/medical-assistant/safety",
+    title: "Kiểm tra an toàn | MediMate AI",
+    access: "public",
+  },
+  {
+    id: "assessment.session",
+    path: "/assessment/:sessionId",
+    title: "Câu hỏi lâm sàng | MediMate AI",
+    access: "auth",
+  },
+  {
+    id: "assessment.result",
+    path: "/assessment/:sessionId/result",
+    title: "Kết quả đánh giá | MediMate AI",
+    access: "auth",
+  },
+  {
+    id: "assessment.history",
+    path: "/assessment/history",
+    title: "Lịch sử đánh giá | MediMate AI",
+    access: "auth",
+    shell: "patient",
   },
   {
     id: "patient.profile-setup",
@@ -188,12 +214,37 @@ for (const route of ROUTES) {
   }
 }
 
+function matchDynamicRoute(pathname) {
+  const currentParts = pathname.split("/").filter(Boolean);
+
+  for (const route of ROUTES) {
+    if (!route.path.includes(":")) continue;
+    const routeParts = route.path.split("/").filter(Boolean);
+    if (routeParts.length !== currentParts.length) continue;
+
+    const params = {};
+    const matches = routeParts.every((part, index) => {
+      if (part.startsWith(":")) {
+        params[part.slice(1)] = decodeURIComponent(currentParts[index]);
+        return true;
+      }
+      return part === currentParts[index];
+    });
+
+    if (matches) {
+      return { ...route, params, matchedPath: pathname };
+    }
+  }
+
+  return null;
+}
+
 export function resolveRoute(pathname) {
-  return ROUTES_BY_PATH.get(pathname) ?? null;
+  return ROUTES_BY_PATH.get(pathname) ?? matchDynamicRoute(pathname);
 }
 
 export function getCanonicalPath(route) {
-  return route?.canonicalPath ?? route?.path ?? "";
+  return route?.canonicalPath ?? route?.matchedPath ?? route?.path ?? "";
 }
 
 export function getAdminSectionPath(section) {

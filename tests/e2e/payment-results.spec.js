@@ -18,21 +18,7 @@ test.beforeEach(async ({ page }) => {
   }, ACCESS_TOKEN);
 });
 
-test("payment return verifies the order and opens the activated experience", async ({ page }) => {
-  await page.route("**/api/payments/payos-status/987654321", (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({
-      success: true,
-      data: {
-        orderCode: "987654321",
-        paymentStatus: "Paid",
-        subscriptionStatus: "Active",
-        isPaid: true,
-        isActive: true,
-        isCancelled: false,
-      },
-    }),
-  }));
+async function mockRefreshPremium(page) {
   await page.route("**/api/user-subscriptions/me", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({ success: true, data: [{ status: 1, statusName: "Active" }] }),
@@ -49,14 +35,36 @@ test("payment return verifies the order and opens the activated experience", asy
       },
     }),
   }));
+}
 
+test("payment return verifies the order and opens the activated experience", async ({ page }) => {
+  await page.route("**/api/payments/payos-status/987654321", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        orderCode: "987654321",
+        paymentStatus: "Paid",
+        subscriptionStatus: "Active",
+        isPaid: true,
+        isActive: true,
+        isCancelled: false,
+      },
+    }),
+  }));
+  await mockRefreshPremium(page);
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => {
+    sessionStorage.setItem("medimate.returnTo", "/map?search=tim%20mach#results");
+  });
   await page.goto("/payment/return?orderCode=987654321", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "MediMate+ đã sẵn sàng." })).toBeVisible();
-  await page.getByRole("button", { name: "Bắt đầu sử dụng" }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "MediMate+ da san sang." })).toBeVisible();
+  await page.getByRole("button", { name: "Tiep tuc tac vu" }).click();
+  await expect(page).toHaveURL(/\/map\?search=tim%20mach#results$/);
 });
 
-test("payment cancel keeps the user safe and offers a clear retry path", async ({ page }) => {
+test("payment cancel verifies backend status before showing a retry path", async ({ page }) => {
   let statusRequests = 0;
   await page.route("**/api/payments/payos-status/123456789", (route) => {
     statusRequests += 1;
@@ -77,10 +85,30 @@ test("payment cancel keeps the user safe and offers a clear retry path", async (
   });
 
   await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Bạn chưa bị tính phí." })).toBeVisible();
-  await expect(page.getByText("Đã hủy", { exact: true })).toBeVisible();
-  await page.waitForTimeout(500);
-  expect(statusRequests).toBe(0);
-  await page.getByRole("button", { name: "Chọn lại gói" }).click();
+  await expect(page.getByRole("heading", { name: "Cho PayOS xac nhan mot chut." })).toBeVisible();
+  await expect.poll(() => statusRequests).toBeGreaterThan(0);
+  await expect(page.getByText("Dang xac minh", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Ve bang gia" }).click();
   await expect(page).toHaveURL(/\/pricing$/);
+});
+
+test("payment cancel trusts backend success over the cancel URL", async ({ page }) => {
+  await page.route("**/api/payments/payos-status/123456789", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        orderCode: "123456789",
+        paymentStatus: "Paid",
+        subscriptionStatus: "Active",
+        isPaid: true,
+        isActive: true,
+        isCancelled: false,
+      },
+    }),
+  }));
+  await mockRefreshPremium(page);
+
+  await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "MediMate+ da san sang." })).toBeVisible();
 });

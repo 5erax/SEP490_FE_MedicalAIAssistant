@@ -11,7 +11,6 @@ import MedicalRecordPage from "./pages/MedicalRecordPage";
 import MedicationScanPage from "./pages/MedicationScanPage";
 import PricingPage from "./pages/PricingPage";
 import PaymentResultPage from "./pages/PaymentResultPage";
-import SymptomAnalysisPage from "./pages/SymptomAnalysisPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import RecoveryPlanPage from "./pages/RecoveryPlanPage";
@@ -77,7 +76,7 @@ function App() {
 
   if (!route) return <StaticPage path={path} />;
 
-  const requestedPath = canonicalPath || path;
+  const requestedPath = `${canonicalPath || path}${window.location.search}${window.location.hash}`;
   const redirectPath = resolveRouteAccess(route, getStoredAuth(), requestedPath);
   if (redirectPath) {
     return <RouteRedirect to={redirectPath} />;
@@ -103,8 +102,8 @@ function App() {
       return userWorkspace(<DashboardPage />);
     case "patient.profile":
       return userWorkspace(<UserProfilePage />);
-    case "patient.symptom":
-      return userWorkspace(<SymptomAnalysisPage />);
+    case "assistant.intake":
+      return userWorkspace(lazyPage(<MedicalAssistantPage mode="intake" />));
     case "patient.chat":
       return userWorkspace(<ChatbotPage />);
     case "public.map":
@@ -126,7 +125,15 @@ function App() {
     case "workspace.staff":
       return <StaffWorkspacePage />;
     case "assistant.main":
-      return lazyPage(<MedicalAssistantPage />);
+      return lazyPage(<MedicalAssistantPage mode="entry" />);
+    case "assistant.safety":
+      return lazyPage(<MedicalAssistantPage mode="safety" />);
+    case "assessment.session":
+      return userWorkspace(lazyPage(<MedicalAssistantPage mode="questions" sessionId={route.params?.sessionId} />));
+    case "assessment.result":
+      return userWorkspace(lazyPage(<MedicalAssistantPage mode="result" sessionId={route.params?.sessionId} />));
+    case "assessment.history":
+      return userWorkspace(lazyPage(<MedicalAssistantPage mode="history" />));
     case "patient.profile-setup":
       return <PersonalPatientProfilePage />;
     default:

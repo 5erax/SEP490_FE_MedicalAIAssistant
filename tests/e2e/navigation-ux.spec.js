@@ -62,11 +62,15 @@ test.describe("global navigation UX", () => {
 
   test("free users get a keyboard-safe premium explanation", async ({ page }) => {
     await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
     await openRoute(page, "/dashboard");
 
-    const lockedFeature = page.getByRole("button", {
-      name: /Chat AI, yêu cầu MediMate\+/,
-    }).first();
+    const lockedFeature = page.locator('.user-shell-nav button[aria-label*="MediMate+"]').first();
     await lockedFeature.click();
 
     const dialog = page.getByRole("dialog", { name: "Cần nâng cấp MediMate+" });
@@ -167,7 +171,6 @@ test.describe("global navigation UX", () => {
     await expect(page.locator('.user-shell-mobile-nav a[href="/profile"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(1);
     await expect(page.locator('.user-shell-mobile-nav a[href="/symptom"]')).toHaveCount(0);
-    await expect(page.locator("#specialty-symptoms")).toBeVisible();
     await page.locator(".account-menu-trigger").click();
     await expect(page.getByRole("button", { name: "Hồ sơ" })).toBeVisible();
   });
@@ -175,6 +178,12 @@ test.describe("global navigation UX", () => {
   test("mobile workspace drawer opens and closes with Escape", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
     await openRoute(page, "/dashboard");
 
     const menuButton = page.getByRole("button", { name: "Mở menu" });
@@ -199,6 +208,12 @@ test.describe("global navigation UX", () => {
 
   test("workspace search carries the query into the facility map", async ({ page }) => {
     await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
     await openRoute(page, "/dashboard");
 
     await page.getByRole("searchbox", { name: "Tìm cơ sở y tế" }).fill("Chợ Rẫy");
@@ -208,7 +223,7 @@ test.describe("global navigation UX", () => {
     await expect(page.getByRole("searchbox", { name: "Tìm cơ sở y tế" })).toHaveValue("Chợ Rẫy");
   });
 
-  test("signup opens the requested app route without forced profile setup", async ({ page }) => {
+  test("signup sends first-login patients to profile setup before return intent", async ({ page }) => {
     await preparePage(page);
     await page.route("**/api/authentication/register", (route) => route.fulfill({
       status: 200,
@@ -224,7 +239,7 @@ test.describe("global navigation UX", () => {
       }),
     }));
 
-    await openRoute(page, "/signup?returnTo=%2Fdashboard");
+    await openRoute(page, "/signup?returnTo=%2Fmap%3Fsearch%3Dtim%2520mach%23results");
     await page.getByLabel("Email").fill("new.patient@example.com");
     await page.getByLabel("Tên đăng nhập").fill("new-patient");
     await page.getByLabel("Tên hiển thị").fill("New Patient");
@@ -233,7 +248,7 @@ test.describe("global navigation UX", () => {
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: "Tạo tài khoản" }).click();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/patient\/profile\/setup\?returnTo=%2Fmap%3Fsearch%3Dtim%2520mach%23results$/);
   });
 
   test("completed patient profile does not reopen onboarding after login", async ({ page }) => {
@@ -274,6 +289,59 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).not.toHaveProperty("phoneNumber");
     expect(storedAuth).not.toHaveProperty("address");
     expect(storedAuth).not.toHaveProperty("refreshToken");
+  });
+
+  test("patient profile lookup scans later pages before reopening onboarding", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        roles: ["Patient"],
+        isFirstLogin: true,
+        isProfileCompleted: false,
+      }));
+    }, ACCESS_TOKEN);
+    await page.route("**/api/users/me", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          id: "55555555-5555-4555-8555-555555555555",
+          displayName: "Patient Example",
+        },
+      }),
+    }));
+    await page.route("**/api/patient-profiles**", (route) => {
+      const url = new URL(route.request().url());
+      const pageNumber = Number(url.searchParams.get("PageNumber") || 1);
+      const items = pageNumber === 1
+        ? [{ id: "other-profile", userId: "other-user" }]
+        : [{ id: "matched-profile", userId: "55555555-5555-4555-8555-555555555555" }];
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items,
+            pageNumber,
+            pageSize: 100,
+            totalPages: 2,
+          },
+        }),
+      });
+    });
+
+    await openRoute(page, "/patient/profile/setup?returnTo=%2Fdashboard");
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const storedAuth = await page.evaluate(() => JSON.parse(localStorage.getItem("medimate.auth")));
+    expect(storedAuth).toMatchObject({
+      firstLogin: false,
+      isFirstLogin: false,
+      isProfileCompleted: true,
+    });
   });
 
   test("existing auth storage removes personal data when the session is read", async ({ page }) => {
@@ -409,7 +477,8 @@ test.describe("global navigation UX", () => {
     await expect(createButton).toBeFocused();
   });
 
-  test("first-login patient can use symptom diagnosis without forced profile setup", async ({ page }) => {
+
+  test("first-login patient is sent to profile setup before symptom intake", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -418,10 +487,53 @@ test.describe("global navigation UX", () => {
         isFirstLogin: true,
       }));
     }, ACCESS_TOKEN);
+    await openRoute(page, "/symptom");
+    await expect(page).toHaveURL(/\/patient\/profile\/setup\?returnTo=%2Fsymptom$/);
+    await expect(page.locator(".profile-setup-heading h2")).toBeVisible();
+  });
+
+  test("completed patient must pass safety gate before assessment intake", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+        isFirstLogin: false,
+        isProfileCompleted: true,
+      }));
+    }, ACCESS_TOKEN);
 
     await openRoute(page, "/symptom");
     await expect(page).toHaveURL(/\/symptom$/);
-    await expect(page.getByRole("heading", { name: "Mô tả triệu chứng, trả lời vài câu hỏi yes/no." })).toBeVisible();
+    await expect(page.locator(".assessment-header h1")).toContainText("Hay hoan tat safety gate");
+  });
+
+  test("safety gate confirmation opens assessment intake", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+        isFirstLogin: false,
+        isProfileCompleted: true,
+      }));
+    }, ACCESS_TOKEN);
+
+    await openRoute(page, "/medical-assistant/safety");
+    await page.getByRole("button", { name: "Khong, tiep tuc danh gia" }).click();
+    await expect(page).toHaveURL(/\/symptom$/);
+    await expect(page.locator(".assessment-header h1")).toContainText("Nhap trieu chung co cau truc");
+  });
+
+  test("safety gate red flag stops AI intake and points to urgent care", async ({ page }) => {
+    await preparePage(page);
+
+    await openRoute(page, "/medical-assistant/safety");
+    await page.getByLabel("Dau nguc du doi").check();
+    await expect(page.getByRole("alert")).toContainText("cham soc khan cap");
+    await expect(page.getByRole("button", { name: "Khong, tiep tuc danh gia" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Tim co so y te gan nhat" }).click();
+    await expect(page).toHaveURL(/\/map\?search=cap%20cuu$/);
   });
 
   test("permission matrix routes each role to an allowed workspace", async ({ page }) => {
@@ -449,5 +561,18 @@ test.describe("global navigation UX", () => {
     await page.evaluate(() => localStorage.clear());
     await page.goto("/app/admin");
     await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fadmin$/);
+  });
+
+  test("staff role does not grant patient premium entitlement", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Staff"],
+      }));
+    }, STAFF_ACCESS_TOKEN);
+
+    await openRoute(page, "/chat");
+    await expect(page).toHaveURL(/\/pricing\?returnTo=%2Fchat$/);
   });
 });
