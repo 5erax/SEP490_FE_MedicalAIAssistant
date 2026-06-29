@@ -1746,6 +1746,14 @@
   font-size: 13px;
 }
 
+.admin-operator .facility-admin-panel .ai-config-toolbar-primary {
+  grid-template-columns: 1fr;
+}
+
+.admin-operator .facility-filter-grid {
+  grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1.3fr) minmax(120px, 0.7fr);
+}
+
 .admin-operator .ai-config-search-field {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

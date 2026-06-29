@@ -1,4 +1,4 @@
-import { Plus, RefreshCw } from "lucide-react";
+import { Filter, Plus, RefreshCw, RotateCcw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Badge, Button, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
 
@@ -41,14 +41,21 @@ export default function AdminFacilitiesSection({
   editingFacilityId,
   facilities,
   facilityDepartments,
+  filters,
   form,
   loadError,
   loading,
   message,
+  pageInfo,
   saving,
   onDelete,
   onEdit,
+  onApplyFilters,
+  onClearFilters,
+  onFilterChange,
   onFormChange,
+  onLoadPage,
+  onPageSizeChange,
   onReload,
   onReset,
   onSubmit,
@@ -97,6 +104,69 @@ export default function AdminFacilitiesSection({
         </div>
       </div>
       <ApiMessage message={message} />
+
+      <section className="ai-config-filter-card">
+        <div className="ai-config-filter-card-header">
+          <div>
+            <strong>Medical facility filters</strong>
+            <p>Lọc theo tên cơ sở, địa chỉ và trạng thái đang được backend hỗ trợ.</p>
+          </div>
+        </div>
+
+        <form className="ai-config-toolbar" onSubmit={onApplyFilters}>
+          <div className="ai-config-toolbar-row ai-config-toolbar-primary">
+            <div className="ai-config-search-field">
+              <Search size={16} />
+              <input
+                value={filters.search}
+                onChange={(event) => onFilterChange("search", event.target.value)}
+                placeholder="Tìm tên bệnh viện, địa chỉ hoặc chuyên khoa..."
+              />
+            </div>
+          </div>
+
+          <div className="ai-config-toolbar-row ai-config-toolbar-filters">
+            <div className="ai-config-filter-grid facility-filter-grid">
+              <label className="clean-field">
+                <span>Trạng thái</span>
+                <select value={filters.isActive} onChange={(event) => onFilterChange("isActive", event.target.value)}>
+                  <option value="">Tất cả</option>
+                  <option value="true">Đang hoạt động</option>
+                  <option value="false">Đã vô hiệu hóa</option>
+                </select>
+              </label>
+              <label className="clean-field">
+                <span>Chuyên khoa</span>
+                <select value={filters.departmentId} onChange={(event) => onFilterChange("departmentId", event.target.value)}>
+                  <option value="">Tất cả chuyên khoa</option>
+                  {departments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.departmentName || department.name || "Chuyên khoa chưa đặt tên"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="clean-field">
+                <span>Per page</span>
+                <select value={pageInfo.pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
+                  <option value="10">10 / trang</option>
+                  <option value="20">20 / trang</option>
+                  <option value="50">50 / trang</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="ai-config-filter-actions">
+              <button className="btn btn-primary btn-small" type="submit" disabled={loading}>
+                <Filter size={14} /> Apply
+              </button>
+              <button className="btn btn-ghost btn-small" type="button" onClick={onClearFilters} disabled={loading}>
+                <RotateCcw size={14} /> Clear
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
 
       <div className="admin-panel">
         {loading ? (
@@ -158,6 +228,27 @@ export default function AdminFacilitiesSection({
           </div>
         )}
       </div>
+      {!loading && !loadError && (
+        <div className="pagination-row">
+          <button
+            className="btn btn-ghost btn-small"
+            type="button"
+            disabled={pageInfo.pageNumber <= 1 || loading}
+            onClick={() => onLoadPage(Math.max(1, pageInfo.pageNumber - 1))}
+          >
+            Trước
+          </button>
+          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {facilities.length} / {pageInfo.totalCount} cơ sở y tế</span>
+          <button
+            className="btn btn-ghost btn-small"
+            type="button"
+            disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading}
+            onClick={() => onLoadPage(Math.min(pageInfo.totalPages || 1, pageInfo.pageNumber + 1))}
+          >
+            Sau
+          </button>
+        </div>
+      )}
 
       {formOpen && (
         <Dialog
