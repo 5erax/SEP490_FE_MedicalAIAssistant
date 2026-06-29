@@ -121,11 +121,11 @@ const QUESTION_CATALOG_CONFIG = {
   title: "Câu hỏi lâm sàng", formTitle: "Nội dung câu hỏi", singularLabel: "câu hỏi", pluralLabel: "câu hỏi lâm sàng",
   primaryField: "questionVi", secondaryField: "englishPrefix",
   fields: [
-    { name: "chapterId", label: "ID chương ICD", required: true },
-    { name: "chapterCode", label: "Mã chương ICD" },
+    { name: "chapterId", label: "Chương ICD", required: true, type: "icd-select" },
     { name: "questionVi", label: "Câu hỏi tiếng Việt", required: true, multiline: true },
     { name: "englishPrefix", label: "Câu hỏi tiếng Anh", required: true, multiline: true },
     { name: "sortOrder", label: "Thứ tự", required: true, type: "number", min: 0, step: 1, serialize: Number },
+    { name: "answers", label: "Đáp án", type: "answers" },
   ],
 };
 const ADMIN_NAV_ITEMS = getNavigationModel("admin");

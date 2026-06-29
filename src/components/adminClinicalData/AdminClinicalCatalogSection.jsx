@@ -41,8 +41,54 @@ function getChapterCode(item, chapterById) {
   return item.chapterCode || chapterById.get(item.chapterId)?.chapterCode || "";
 }
 
+function createEmptyForm(fields) {
+  return Object.fromEntries(fields.map((field) => [field.name, field.type === "answers" ? [] : ""]));
+}
+
+function answersDictionaryToRows(answers) {
+  if (!answers || typeof answers !== "object" || Array.isArray(answers)) return [];
+  return Object.entries(answers).map(([vietnameseLabel, englishLabel]) => ({
+    id: crypto.randomUUID(),
+    vietnameseLabel,
+    englishLabel,
+  }));
+}
+
+function answersRowsToDictionary(rows) {
+  return rows.reduce((result, row) => {
+    const vietnameseLabel = row.vietnameseLabel.trim();
+    const englishLabel = row.englishLabel.trim();
+    if (vietnameseLabel || englishLabel) {
+      result[vietnameseLabel] = englishLabel;
+    }
+    return result;
+  }, {});
+}
+
+function getAnswerValidationErrors(rows) {
+  const errors = [];
+  const seenLabels = new Set();
+
+  rows.forEach((row, index) => {
+    const vietnameseLabel = row.vietnameseLabel.trim();
+    const englishLabel = row.englishLabel.trim();
+    if (!vietnameseLabel && !englishLabel) return;
+    if (!vietnameseLabel) errors.push(`Đáp án ${index + 1}: nhãn tiếng Việt không được rỗng.`);
+    if (!englishLabel) errors.push(`Đáp án ${index + 1}: nhãn tiếng Anh không được rỗng.`);
+    if (vietnameseLabel) {
+      const normalizedLabel = vietnameseLabel.toLowerCase();
+      if (seenLabels.has(normalizedLabel)) {
+        errors.push(`Đáp án ${index + 1}: nhãn tiếng Việt bị trùng.`);
+      }
+      seenLabels.add(normalizedLabel);
+    }
+  });
+
+  return errors;
+}
+
 export default function AdminClinicalCatalogSection({ config, icdChapters = [], service }) {
-  const emptyForm = Object.fromEntries(config.fields.map((field) => [field.name, ""]));
+  const emptyForm = createEmptyForm(config.fields);
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState("");
@@ -101,9 +147,19 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
     setStatus("saving");
     setMessage("");
     try {
+      const answerRows = form.answers ?? [];
+      const answerErrors = getAnswerValidationErrors(answerRows);
+      if (answerErrors.length > 0) {
+        setMessage(answerErrors.join(" "));
+        setStatus("ready");
+        return;
+      }
+
       const payload = Object.fromEntries(config.fields.map((field) => [
         field.name,
-        field.serialize ? field.serialize(form[field.name]) : form[field.name],
+        field.type === "answers"
+          ? answersRowsToDictionary(form[field.name] ?? [])
+          : field.serialize ? field.serialize(form[field.name]) : form[field.name],
       ]));
       if (editingId) await service.update(editingId, payload);
       else await service.create(payload);
@@ -119,8 +175,37 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
 
   function edit(item) {
     setEditingId(item.id);
-    setForm(Object.fromEntries(config.fields.map((field) => [field.name, item[field.name] ?? ""])));
+    setForm(Object.fromEntries(config.fields.map((field) => [
+      field.name,
+      field.type === "answers" ? answersDictionaryToRows(item[field.name]) : item[field.name] ?? "",
+    ])));
     setFormOpen(true);
+  }
+
+  function addAnswerRow() {
+    setForm((current) => ({
+      ...current,
+      answers: [
+        ...(current.answers ?? []),
+        { id: crypto.randomUUID(), vietnameseLabel: "", englishLabel: "" },
+      ],
+    }));
+  }
+
+  function updateAnswerRow(rowId, key, value) {
+    setForm((current) => ({
+      ...current,
+      answers: (current.answers ?? []).map((row) => (
+        row.id === rowId ? { ...row, [key]: value } : row
+      )),
+    }));
+  }
+
+  function removeAnswerRow(rowId) {
+    setForm((current) => ({
+      ...current,
+      answers: (current.answers ?? []).filter((row) => row.id !== rowId),
+    }));
   }
 
   async function remove(item) {
@@ -304,7 +389,44 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             {config.fields.map((field) => (
               <label className="clean-field" key={field.name}>
                 <span>{field.label}</span>
-                {field.multiline ? (
+                {field.type === "icd-select" ? (
+                  <select
+                    value={form[field.name]}
+                    required={field.required}
+                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                  >
+                    <option value="">Chọn ICD Chapter</option>
+                    {icdOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.code} - {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : field.type === "answers" ? (
+                  <div className="clinical-answer-editor">
+                    {(form.answers ?? []).map((row, index) => (
+                      <div className="clinical-answer-row" key={row.id}>
+                        <input
+                          value={row.vietnameseLabel}
+                          onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
+                          placeholder={`Đáp án tiếng Việt ${index + 1}`}
+                        />
+                        <input
+                          value={row.englishLabel}
+                          onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
+                          placeholder={`Đáp án tiếng Anh ${index + 1}`}
+                        />
+                        <button className="btn btn-ghost btn-small" type="button" onClick={() => removeAnswerRow(row.id)}>
+                          Xóa
+                        </button>
+                      </div>
+                    ))}
+                    <button className="btn btn-ghost btn-small" type="button" onClick={addAnswerRow}>
+                      + Thêm đáp án
+                    </button>
+                    <small>Mỗi đáp án cần đủ nhãn tiếng Việt và tiếng Anh nếu được thêm.</small>
+                  </div>
+                ) : field.multiline ? (
                   <textarea
                     rows={4}
                     value={form[field.name]}
