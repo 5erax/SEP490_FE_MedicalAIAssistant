@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { symptomAnalysisApi } from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
 
-const INTAKE_STATE_KEY = "medimate.specialty.intake";
 const RESUMABLE_STATUSES = new Set(["idle", "questions", "no-questions", "result"]);
+let intakeStateCache = null;
 
 function readSymptomPrefill() {
   if (typeof sessionStorage === "undefined") return "";
@@ -13,19 +13,10 @@ function readSymptomPrefill() {
 }
 
 function readStoredIntakeState() {
-  if (typeof sessionStorage === "undefined") return null;
-
-  try {
-    const raw = sessionStorage.getItem(INTAKE_STATE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return intakeStateCache;
 }
 
 function writeStoredIntakeState(state) {
-  if (typeof sessionStorage === "undefined") return;
-
   const hasMeaningfulState = Boolean(
     state.input?.trim()
     || state.sessionId
@@ -34,16 +25,7 @@ function writeStoredIntakeState(state) {
     || state.status !== "idle",
   );
 
-  try {
-    if (!hasMeaningfulState) {
-      sessionStorage.removeItem(INTAKE_STATE_KEY);
-      return;
-    }
-
-    sessionStorage.setItem(INTAKE_STATE_KEY, JSON.stringify(state));
-  } catch {
-    // Keep the in-memory flow usable if the browser blocks or fills sessionStorage.
-  }
+  intakeStateCache = hasMeaningfulState ? state : null;
 }
 
 function normalizeInitialState(storedState, prefill) {

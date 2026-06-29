@@ -9,7 +9,6 @@ import { symptomAnalysisApi } from "../services/symptomAnalysisService";
 import "../styles/medical-assessment.css";
 
 const SESSION_KEY_PREFIX = "medimate.assessment.session.";
-const DRAFT_KEY = "medimate.assessment.draft";
 const SAFETY_CONFIRMATION_KEY = "medimate.assessment.safetyConfirmedAt";
 const SAFETY_CONFIRMATION_MAX_AGE_MS = 30 * 60 * 1000;
 const assessmentSessionCache = new Map();
@@ -70,49 +69,20 @@ function confidencePercent(value) {
 }
 
 function loadSessionState(sessionId) {
-  const key = `${SESSION_KEY_PREFIX}${sessionId}`;
-  const cached = assessmentSessionCache.get(key);
-  if (cached) return cached;
-
-  try {
-    const raw = sessionStorage.getItem(key);
-    const state = raw ? JSON.parse(raw) : null;
-    if (state) assessmentSessionCache.set(key, state);
-    return state;
-  } catch {
-    return null;
-  }
+  return assessmentSessionCache.get(`${SESSION_KEY_PREFIX}${sessionId}`) ?? null;
 }
 
 function saveSessionState(sessionId, state) {
   if (!sessionId) return;
-  const key = `${SESSION_KEY_PREFIX}${sessionId}`;
-  assessmentSessionCache.set(key, state);
-  try {
-    sessionStorage.setItem(key, JSON.stringify(state));
-  } catch {
-    // Keep the current in-memory assessment usable when sessionStorage is unavailable.
-  }
+  assessmentSessionCache.set(`${SESSION_KEY_PREFIX}${sessionId}`, state);
 }
 
 function loadDraft() {
-  if (assessmentDraftCache) return assessmentDraftCache;
-  try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
-    assessmentDraftCache = raw ? JSON.parse(raw) : null;
-    return assessmentDraftCache;
-  } catch {
-    return null;
-  }
+  return assessmentDraftCache;
 }
 
 function saveDraft(draft) {
   assessmentDraftCache = draft;
-  try {
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  } catch {
-    // Draft persistence is best-effort; form state still lives in React memory.
-  }
 }
 
 function confirmSafetyGate() {
