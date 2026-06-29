@@ -9,23 +9,23 @@
     radial-gradient(circle at 50% 12%, rgba(196, 233, 149, 0.3), transparent 32%),
     linear-gradient(180deg, #f8fbf4 0%, #edf4e7 100%);
   color: var(--color-ink);
-  padding: clamp(32px, 5vw, 64px) clamp(18px, 4vw, 48px) 80px;
+  padding: clamp(36px, 5vw, 64px) clamp(20px, 4vw, 48px) 80px;
 }
 
 .studio-center {
-  width: min(900px, 100%);
+  width: min(1160px, 100%);
   display: grid;
-  gap: clamp(18px, 3vw, 28px);
-  justify-items: stretch;
+  gap: clamp(22px, 3vw, 34px);
+  justify-items: center;
   position: relative;
   z-index: 1;
 }
 
 .studio-heading {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 18px;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
 }
 
 .studio-mark {
@@ -41,7 +41,7 @@
 }
 
 .studio-heading h2 {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0;
   font-family: var(--font-display);
   font-size: clamp(32px, 4.5vw, 50px);
@@ -50,8 +50,8 @@
 }
 
 .studio-heading p {
-  max-width: 700px;
-  margin: 10px 0 0;
+  max-width: 760px;
+  margin: 10px auto 0;
   color: var(--color-muted);
   line-height: 1.65;
 }
@@ -66,14 +66,14 @@
 }
 
 .studio-chatbox {
-  width: 100%;
+  width: min(980px, 100%);
   display: grid;
-  gap: 18px;
+  gap: 20px;
   border: 1px solid var(--color-line-strong);
   border-radius: 24px;
   background: var(--color-surface);
   box-shadow: 0 22px 60px rgba(34, 63, 20, 0.1);
-  padding: clamp(18px, 3vw, 28px);
+  padding: clamp(22px, 3vw, 30px);
 }
 
 .studio-form-heading,
@@ -86,8 +86,9 @@
 .studio-form-heading {
   align-items: flex-start;
   justify-content: space-between;
+  gap: 18px 28px;
   border-bottom: 1px solid var(--color-line);
-  padding-bottom: 16px;
+  padding-bottom: 18px;
 }
 
 .studio-form-heading > div:first-child > span {
@@ -105,13 +106,23 @@
   font-size: clamp(21px, 3vw, 28px);
 }
 
+.clinical-strip {
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 2px;
+}
+
 .clinical-strip span {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
   color: var(--color-ink);
-  padding: 7px 10px;
+  padding: 7px 13px;
   font-size: 12px;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .studio-chatbox .ui-field {
@@ -124,19 +135,21 @@
 }
 
 .studio-chatbox .ui-field textarea {
-  min-height: 138px;
+  min-height: 148px;
   background: var(--color-surface-soft);
+  padding: 18px;
   font-size: 16px;
   font-weight: 600;
+  line-height: 1.55;
 }
 
 .studio-chat-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 18px;
   border-top: 1px solid var(--color-line);
-  padding-top: 14px;
+  padding-top: 18px;
 }
 
 .studio-status {
@@ -477,7 +490,6 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   }
 
   .studio-heading {
-    grid-template-columns: 44px minmax(0, 1fr);
     gap: 12px;
   }
 
@@ -500,6 +512,10 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
   .studio-form-heading {
     display: grid;
+  }
+
+  .clinical-strip {
+    justify-content: flex-start;
   }
 
   .studio-chat-actions {
@@ -553,14 +569,65 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 .studio-question-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 /* Focused patient flow: calm surfaces and one clear action per step. */
-.studio-flow { width: min(620px, 100%); display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0; padding: 0; list-style: none; }
-.studio-flow li { position: relative; display: grid; justify-items: center; gap: 7px; color: var(--color-muted); font-size: 12px; }
-.studio-flow li:not(:last-child)::after { content: ""; position: absolute; top: 17px; left: calc(50% + 22px); width: calc(100% - 44px); height: 2px; background: var(--color-line-strong); }
-.studio-flow span { z-index: 1; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--color-line-strong); border-radius: 50%; background: var(--color-surface); font-weight: 950; }
-.studio-flow li.active { color: var(--color-ink); }
-.studio-flow li.active span { border-color: #315d18; background: var(--color-primary); }
-.studio-flow li.complete span { border-color: var(--color-ink); background: var(--color-ink); color: var(--color-primary); }
-.studio-flow li.complete:not(:last-child)::after { background: var(--color-ink); }
+.studio-flow {
+  width: min(740px, 68%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-flow li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.studio-flow li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 17px;
+  left: calc(50% + 22px);
+  width: calc(100% - 44px);
+  height: 2px;
+  background: var(--color-line-strong);
+}
+
+.studio-flow span {
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 50%;
+  background: var(--color-surface);
+  font-weight: 950;
+}
+
+.studio-flow li.active {
+  color: var(--color-ink);
+}
+
+.studio-flow li.active span {
+  border-color: #315d18;
+  background: var(--color-primary);
+}
+
+.studio-flow li.complete span {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-primary);
+}
+
+.studio-flow li.complete:not(:last-child)::after {
+  background: var(--color-ink);
+}
 .studio-diagnosis-panel, .studio-result-card { border: 1px solid var(--color-line-strong); border-radius: 22px; box-shadow: 0 18px 50px rgba(34, 63, 20, .09); }
 .studio-question { border-radius: 18px; padding: 20px; }
 .studio-question label { min-height: 48px; padding: 0 20px; cursor: pointer; }
@@ -574,8 +641,15 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 .studio-diagnosis-list p > strong > span { width: 26px; height: 26px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--color-surface-soft); color: var(--color-muted); font-size: 11px; }
 
 @media (max-width: 760px) {
+  .studio-flow {
+    width: min(100%, 460px);
+  }
+
   .studio-flow strong { font-size: 11px; }
-  .studio-chatbox { padding: 16px; }
+
+  .studio-chatbox {
+    padding: 16px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
