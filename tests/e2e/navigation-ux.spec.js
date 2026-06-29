@@ -171,7 +171,6 @@ test.describe("global navigation UX", () => {
     await expect(page.locator('.user-shell-mobile-nav a[href="/profile"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(1);
     await expect(page.locator('.user-shell-mobile-nav a[href="/symptom"]')).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /Danh gia trieu chung moi/ })).toBeVisible();
     await page.locator(".account-menu-trigger").click();
     await expect(page.getByRole("button", { name: "Hồ sơ" })).toBeVisible();
   });

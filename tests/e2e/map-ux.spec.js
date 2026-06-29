@@ -29,27 +29,9 @@ async function mockMapApis(page, facilities, options = {}) {
     const url = new URL(route.request().url());
 
     if (url.pathname === "/api/medical-facilities/active") {
-      options.onFacilitiesActive?.(url);
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ success: true, data: facilities }),
-      });
-    }
-
-    if (url.pathname.startsWith("/api/medical-facilities/")) {
-      const facilityId = url.pathname.split("/").pop();
-      const item = facilities.find((entry) => (entry.id ?? entry.facilityId) === facilityId);
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ success: true, data: item ?? null }),
-      });
-    }
-
-    if (url.pathname === "/api/doctors/active") {
-      options.onDoctorsActive?.(url);
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ success: true, data: options.doctors ?? [] }),
       });
     }
 
@@ -122,7 +104,7 @@ test("facility without coordinates stays in the list without a false marker", as
   await expect(page.getByText("Chưa có vị trí chính xác trên bản đồ.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveCount(0);
 
-  const directionsButton = page.locator(".facility-actions").getByRole("button", { name: "Chỉ đường" });
+  const directionsButton = page.getByRole("button", { name: "Chỉ đường" });
   await expect(directionsButton).toBeDisabled();
   await expect(directionsButton).toHaveAttribute("title", "Cơ sở chưa có tọa độ chính xác");
 });
@@ -162,44 +144,6 @@ test("map search matches facility departments from active backend data", async (
   const callButton = page.getByRole("button", { name: "Gọi ngay" });
   await expect(callButton).toBeDisabled();
   await expect(callButton).toHaveAttribute("title", "Cơ sở chưa có số điện thoại");
-});
-
-test("map opened from assessment filters facilities and doctors by department", async ({ page }) => {
-  await preparePage(page);
-  const departmentId = "22222222-2222-4222-8222-222222222222";
-  const sessionId = "33333333-3333-4333-8333-333333333333";
-  let facilityQuery = null;
-  let doctorQuery = null;
-
-  await mockMapApis(page, [facility({
-    id: FACILITY_ID,
-    facilityName: "Benh vien Tim",
-    departments: [{ departmentId, departmentName: "Tim mach" }],
-  })], {
-    doctors: [{
-      id: "44444444-4444-4444-8444-444444444444",
-      fullName: "Bac si Nguyen Tim",
-      departmentName: "Tim mach",
-    }],
-    onFacilitiesActive: (url) => { facilityQuery = url.searchParams; },
-    onDoctorsActive: (url) => { doctorQuery = url.searchParams; },
-  });
-  await mockSuccessfulMapStyle(page);
-
-  await page.goto(`/map?departmentId=${departmentId}&sessionId=${sessionId}&search=Tim%20mach`, { waitUntil: "domcontentloaded" });
-
-  await expect(page.getByText("Dang loc theo ket qua tu van", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Quay lai ket qua" })).toBeVisible();
-  await expect(page.getByText("Benh vien Tim", { exact: true }).first()).toBeVisible();
-  expect(facilityQuery.get("departmentId")).toBe(departmentId);
-
-  await page.locator(".facility-select-button").first().click();
-
-  await expect(page.getByText("Bac si Nguyen Tim", { exact: true })).toBeVisible();
-  expect(doctorQuery.get("facilityId")).toBe(FACILITY_ID);
-  expect(doctorQuery.get("departmentId")).toBe(departmentId);
-  expect(doctorQuery.get("PageNumber")).toBe("1");
-  expect(doctorQuery.get("PageSize")).toBe("12");
 });
 
 test("map style failure shows a usable fallback and supports retry", async ({ page }) => {

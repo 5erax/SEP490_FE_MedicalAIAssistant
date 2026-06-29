@@ -120,8 +120,8 @@
 .operator-workspace .app-stats,
 .admin-operator .admin-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .operator-workspace .app-stats article,
@@ -140,9 +140,9 @@
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
-  padding: 18px;
+  padding: 16px;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -155,8 +155,8 @@
 .admin-operator .admin-stats .admin-stat-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 12px;
   background: #eef9e6;
   color: #0c5f5e;
@@ -180,7 +180,7 @@
   display: block;
   margin-top: 5px;
   color: #101411;
-  font-size: 26px;
+  font-size: 25px;
   font-weight: 780;
   line-height: 1.1;
 }
@@ -200,6 +200,26 @@
 .admin-operator .facility-admin-grid {
   grid-template-columns: minmax(480px, 1fr) minmax(340px, 420px);
   align-items: start;
+}
+
+.admin-operator .facility-admin-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-operator .facility-admin-panel > .admin-panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-operator .facility-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .operator-workspace .app-card,
@@ -264,10 +284,21 @@
 .operator-workspace .clean-field,
 .admin-operator .clean-field {
   display: grid;
-  gap: 7px;
-  color: rgba(16, 20, 17, 0.68);
+  gap: 8px;
+  min-width: 0;
+  color: rgba(16, 20, 17, 0.62);
   font-size: 12px;
-  font-weight: 760;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.operator-workspace .clean-field > span,
+.admin-operator .clean-field > span {
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
 }
 
 .operator-workspace .clean-field input,
@@ -279,13 +310,29 @@
 .admin-operator .admin-toolbar select {
   width: 100%;
   border: 1px solid rgba(16, 20, 17, 0.18);
-  border-radius: 11px;
+  border-radius: 12px;
   background: #fff;
   color: #101411;
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: 44px;
+  padding: 11px 13px;
+  font: 760 14px/1.35 "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.operator-workspace .clean-field textarea,
+.admin-operator .clean-field textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.operator-workspace .clean-field input::placeholder,
+.operator-workspace .clean-field textarea::placeholder,
+.admin-operator .clean-field input::placeholder,
+.admin-operator .clean-field textarea::placeholder,
+.admin-operator .admin-toolbar input::placeholder {
+  color: rgba(16, 20, 17, 0.4);
+  font-weight: 720;
 }
 
 .operator-workspace .clean-field input:focus,
@@ -297,6 +344,36 @@
 .admin-operator .admin-toolbar select:focus {
   border-color: rgba(16, 20, 17, 0.72);
   box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
+}
+
+.operator-workspace .clean-field input:disabled,
+.operator-workspace .clean-field textarea:disabled,
+.admin-operator .clean-field input:disabled,
+.admin-operator .clean-field textarea:disabled,
+.admin-operator .clean-field select:disabled {
+  border-color: rgba(16, 20, 17, 0.1);
+  background: rgba(238, 243, 235, 0.72);
+  color: rgba(16, 20, 17, 0.58);
+  cursor: not-allowed;
+}
+
+.operator-workspace .clean-form,
+.admin-operator .clean-form,
+.doctor-form,
+.ai-config-form,
+.subscription-plan-form {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-operator .form-two-cols,
+.admin-operator .clean-form-grid,
+.doctor-form .form-two-cols,
+.ai-config-form .form-two-cols,
+.subscription-plan-form .form-two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .admin-operator .facility-department-picker {
@@ -325,7 +402,7 @@
 
 .admin-operator .facility-department-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 8px;
 }
 
@@ -612,19 +689,102 @@
 }
 
 .admin-operator .facility-admin-row {
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
 }
 
 .admin-operator .facility-admin-info {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
 }
 
 .admin-operator .facility-admin-row .record-actions {
-  justify-content: flex-start;
-  margin-top: 4px;
+  max-width: 320px;
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.admin-operator .facility-admin-info strong {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.admin-operator .facility-admin-info span {
+  font-size: 13px;
+}
+
+.admin-operator .facility-admin-info small {
+  font-size: 12px;
+}
+
+.admin-operator .facility-form-modal .doctor-form {
+  gap: 14px;
+}
+
+.admin-operator .facility-form-section {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-operator .admin-staff-panel {
+  display: grid;
+  gap: 16px;
+  max-width: 980px;
+}
+
+.admin-operator .admin-staff-form {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-operator .admin-staff-form-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 18px;
+  background: #fbfcf7;
+  padding: 16px;
+}
+
+.admin-operator .admin-staff-form-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+  padding-bottom: 12px;
+}
+
+.admin-operator .admin-staff-form-heading strong {
+  display: block;
+  color: #101411;
+  font-size: 15px;
+  font-weight: 820;
+}
+
+.admin-operator .admin-staff-form-heading p {
+  margin: 4px 0 0;
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.admin-operator .admin-staff-form .form-two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-operator .admin-staff-submit {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-operator .admin-staff-submit .btn {
+  min-width: 220px;
 }
 
 .admin-operator .admin-badge-stack {
@@ -1396,7 +1556,7 @@
 
 .doctor-modal-header h2 {
   margin: 0;
-  font-size: clamp(26px, 4vw, 36px);
+  font-size: clamp(24px, 3.2vw, 32px);
   font-weight: 760;
   line-height: 1.18;
 }
@@ -1405,7 +1565,9 @@
   max-width: 580px;
   margin: 8px 0 0;
   color: rgba(16, 20, 17, 0.62);
-  line-height: 1.6;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .doctor-modal-close {
@@ -1533,13 +1695,14 @@
   display: block;
   color: #101411;
   font-size: 14px;
-  font-weight: 760;
+  font-weight: 820;
 }
 
 .admin-operator .ai-config-filter-card-header p {
   margin: 4px 0 0;
   color: rgba(16, 20, 17, 0.56);
   font-size: 13px;
+  font-weight: 650;
   line-height: 1.5;
 }
 
@@ -1561,15 +1724,26 @@
 }
 
 .admin-operator .ai-config-toolbar-filters {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 12px;
 }
 
 .admin-operator .ai-config-filter-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(118px, 1fr));
+  grid-template-columns: minmax(132px, 1.08fr) minmax(132px, 1fr) minmax(132px, 1fr) minmax(150px, 1.12fr) minmax(112px, 0.72fr);
   gap: 10px;
   min-width: 0;
+}
+
+.admin-operator .ai-config-filter-grid .clean-field {
+  min-width: 0;
+}
+
+.admin-operator .ai-config-filter-grid select {
+  min-width: 0;
+  padding-inline: 12px 30px;
+  font-size: 13px;
 }
 
 .admin-operator .ai-config-search-field {
@@ -1712,7 +1886,7 @@
 
 .ai-config-modal-header h2 {
   margin: 0;
-  font-size: clamp(26px, 4vw, 36px);
+  font-size: clamp(24px, 3.2vw, 32px);
   font-weight: 760;
   line-height: 1.18;
 }
@@ -1721,7 +1895,9 @@
   max-width: 620px;
   margin: 8px 0 0;
   color: rgba(16, 20, 17, 0.62);
-  line-height: 1.6;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .admin-operator .subscription-plan-admin-panel {
@@ -1851,7 +2027,8 @@
 
 .subscription-modal-header h2 {
   margin: 0;
-  font-size: clamp(26px, 4vw, 36px);
+  font-size: clamp(24px, 3.2vw, 32px);
+  font-weight: 760;
   line-height: 1.18;
 }
 
@@ -1859,7 +2036,9 @@
   max-width: 580px;
   margin: 8px 0 0;
   color: rgba(16, 20, 17, 0.62);
-  line-height: 1.6;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .subscription-plan-form {

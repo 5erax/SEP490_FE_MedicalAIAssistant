@@ -4,14 +4,6 @@ import { useChatAutoScroll } from "../../utils/useChatAutoScroll";
 import ChatInput from "./ChatInput";
 import ChatMessage from "./ChatMessage";
 import FloatingChatButton from "./FloatingChatButton";
-import SuggestionChips from "./SuggestionChips";
-
-const QUICK_ACTIONS = [
-  "Tôi nên khám khoa nào?",
-  "Bệnh viện gần tôi?",
-  "Tôi bị sốt nên làm gì?",
-  "Hướng dẫn đăng ký khám",
-];
 
 const WELCOME_MESSAGE = {
   from: "assistant",
@@ -59,10 +51,6 @@ export default function LandingAIChatbox() {
     sendMessage(draft);
   }
 
-  function handleSuggestionSelect(suggestion) {
-    sendMessage(suggestion);
-  }
-
   return (
     <>
       {open && <div className="landing-ai-chatbox open" role="dialog" aria-label="Trợ lý MediMate AI">
@@ -85,8 +73,6 @@ export default function LandingAIChatbox() {
             {loading && <TypingDots />}
             <div ref={endRef} />
           </div>
-
-          <SuggestionChips suggestions={QUICK_ACTIONS} disabled={loading} onSelect={handleSuggestionSelect} />
         </div>
 
         <footer className="landing-chat-footer">

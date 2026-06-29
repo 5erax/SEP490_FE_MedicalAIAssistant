@@ -1,126 +1,70 @@
 # Kiến trúc frontend MediMate AI
 
-Ngày cập nhật: **2026-06-26**.
+Tài liệu này xác định cấu trúc frontend mục tiêu, dependency nên sử dụng và quy
+ước tổ chức code cho React/Vite. Phạm vi nghiệp vụ vẫn phải tuân theo
+[product definition](../product-definition/README.md).
 
-Tài liệu này xác định kiến trúc frontend hiện tại, kiến trúc mục tiêu và quy tắc bắt buộc khi phát triển React/Vite cho MediMate AI. Phạm vi nghiệp vụ vẫn phải tuân theo [product definition](../product-definition/README.md).
+Tài liệu liên quan:
 
-## Tài liệu liên quan
+1. [Chiến lược styling và design system](./styling-strategy.md)
+2. [Kế hoạch migration frontend](./migration-plan.md)
+3. [API layer hiện tại](./api-layer.md)
+4. [Checklist nhiệm vụ frontend](./task-checklist.md)
+5. [Kế hoạch khôi phục bản đồ](./map-recovery-plan.md)
+6. [Frontend delivery backlog](./frontend-delivery-backlog.md)
+7. [Frontend web-scale checklist](./frontend-web-scale-checklist.md)
 
-1. [Frontend production standards](./production-frontend-standards.md)
-2. [Developer workflow](./developer-workflow.md)
-3. [Refactor & cleanup guide](./refactor-cleanup-guide.md)
-4. [API layer](./api-layer.md)
-5. [Chiến lược styling và design system](./styling-strategy.md)
-6. [Kế hoạch migration frontend](./migration-plan.md)
-7. [Checklist nhiệm vụ frontend](./task-checklist.md)
-8. [Kế hoạch khôi phục bản đồ](./map-recovery-plan.md)
-9. [Frontend delivery backlog](./frontend-delivery-backlog.md)
-10. [Frontend web-scale checklist](./frontend-web-scale-checklist.md)
+## 1. Đánh giá cấu trúc hiện tại
 
-## 1. Stack hiện tại
+Điểm tốt:
 
-Repo hiện dùng:
+- API endpoint đã được tập trung trong `src/services/endpoints.js`.
+- Có `apiClient`, service theo domain, design token và UI primitive ban đầu.
+- Có Playwright cho route, accessibility, payment, visual và performance.
+- SPA navigation đã phản ứng với History API mà không reload toàn trang.
 
-- React `19.3.0-canary-dbc37501-20260612`.
-- React DOM `19.3.0-canary-dbc37501-20260612`.
-- Vite `8.0.16`.
-- JavaScript/JSX là nguồn chính.
-- Playwright cho E2E, accessibility, performance và visual regression.
-- ESLint flat config.
-- MapLibre GL và React Map GL.
-- Google OAuth.
-- Vercel rewrite cho `/api/*`.
+Vấn đề cần xử lý:
 
-Quy tắc bắt buộc:
+- `src/App.jsx` đồng thời match route, đặt title, redirect và kiểm tra quyền.
+- Tất cả page được import eager; map, admin và các trang lớn đi vào initial bundle.
+- `AdminWorkspacePage.jsx` gần 1.900 dòng và chứa nhiều domain quản trị.
+- `pages/` chứa cả route component, business logic, form và CSS string.
+- `services/` có file trùng vai trò hoặc chỉ re-export một dòng.
+- Server state được quản lý thủ công nên dễ lặp loading/error/refetch/cache logic.
+- Nhiều page chèn `<style>` trực tiếp; CSS global và page style có thể ảnh hưởng nhau.
+- Chưa có unit/component test; E2E phải gánh cả lỗi logic nhỏ.
+- Repo đang dùng React canary theo ngày. Đây là rủi ro nếu dự án không chủ động
+  thử nghiệm API chưa ổn định.
 
-- Không nâng React canary, Vite, Playwright hoặc MapLibre trong PR tính năng thông thường.
-- Không đổi sang Next.js, React Router framework mode, Tailwind, Redux/Zustand hoặc UI framework lớn nếu chưa có ADR.
-- Không thêm TypeScript đại trà trong PR refactor nhỏ. TypeScript phải được migration theo phase.
+## 2. Nguyên tắc kiến trúc
 
-## 2. Cấu trúc hiện tại
+1. Tổ chức theo business capability, không theo loại file trên toàn dự án.
+2. Route chỉ compose feature; không chứa chi tiết API hoặc business rule.
+3. Server state, form state, UI state và URL state là bốn loại state khác nhau.
+4. Shared chỉ chứa code thật sự được dùng bởi ít nhất hai feature.
+5. Dependency chỉ đi theo hướng:
+   `app -> routes -> features -> shared`.
+6. Feature không import trực tiếp implementation nội bộ của feature khác.
+7. Không tạo barrel export lớn cho toàn repo; ưu tiên import trực tiếp để tránh
+   dependency vòng và làm bundle khó phân tích.
+8. Một file page trên 300 dòng hoặc component có nhiều hơn một business concern
+   phải được xem xét tách.
 
-```text
-src/
-├── components/   # Component dùng chung, workspace shell, UI primitive
-├── pages/        # Route/page hiện tại
-├── router/       # Route registry, access guard, navigation helper
-├── services/     # API client, endpoints và service theo domain
-├── state/        # State/personalization dùng chung
-├── styles/       # CSS, design token, layout, utility
-└── utils/        # Hàm tiện ích thuần
-
-tests/e2e/         # Playwright tests
-docs/              # Product, backend, architecture, UI/UX, quality
-```
-
-Luồng route hiện tại:
-
-```text
-URL
-  -> src/router/routes.js
-  -> src/router/access.js
-  -> src/App.jsx
-  -> Page hoặc Workspace Shell
-```
-
-Luồng API hiện tại:
-
-```text
-Page/Component
-  -> Domain Service
-  -> ENDPOINTS
-  -> apiRequest()
-  -> Backend
-```
-
-## 3. Điểm đã cải thiện so với docs cũ
-
-- Route metadata đã được gom trong `src/router/routes.js`.
-- Access guard được tách khỏi page bằng `src/router/access.js`.
-- `src/App.jsx` đã giảm trách nhiệm so với trạng thái trước: chủ yếu resolve route, canonicalize và render page.
-- Một số route nặng đã được lazy-load bằng `React.lazy`/`Suspense`.
-- Endpoint backend đã được tập trung trong `src/services/endpoints.js`.
-- `apiClient` giữ request behavior, auth header, JSON parse, error normalization và auth storage whitelist.
-- Admin navigation có route riêng cho từng section.
-- Playwright đã có route/accessibility/performance/visual baseline.
-
-## 4. Vấn đề còn phải kiểm soát
-
-Các vấn đề sau không nhất thiết phải sửa trong một PR, nhưng phải được xem là rủi ro kiến trúc:
-
-- Nhiều page vẫn chứa business logic, form logic và UI logic trong cùng file.
-- `AdminWorkspacePage.jsx` và các workspace lớn cần tiếp tục tách theo domain.
-- Server state vẫn được quản lý thủ công ở nhiều nơi; dễ lặp loading/error/refetch/cache.
-- Một số capability thử nghiệm phải được gắn nhãn demo hoặc ẩn khỏi production navigation.
-- ESLint hiện chỉ target `**/*.{js,jsx}`; nếu thêm TypeScript phải cập nhật lint config.
-- `apiClient.js` đang có chuỗi lỗi fallback bị mojibake; cần sửa thành UTF-8 rõ ràng trong task code riêng.
-- Cấu hình production đang rewrite đến backend IP cố định; cần thay bằng config môi trường khi có deployment strategy ổn định.
-- MapLibre/React Map GL có nguy cơ chunk lớn; cần tiếp tục lazy-load và kiểm soát budget.
-
-## 5. Nguyên tắc kiến trúc bắt buộc
-
-1. Tổ chức theo business capability khi refactor, không tạo thêm layer kỹ thuật vô nghĩa.
-2. Route chỉ compose page/shell; không chứa chi tiết API hoặc business rule sâu.
-3. Component không gọi `fetch` trực tiếp đến backend.
-4. Component/page không hard-code `/api/...`.
-5. Service không điều hướng, không toast, không đọc DOM và không chứa copy UI.
-6. Endpoint mới phải khai báo trong `src/services/endpoints.js`.
-7. Access rule mới phải đi qua route metadata và `src/router/access.js`.
-8. Shared code chỉ được tạo khi có ít nhất hai nơi dùng thật hoặc có lý do foundation rõ ràng.
-9. Không tạo barrel export lớn cho toàn repo.
-10. Không để file compatibility facade phình to; facade chỉ re-export hoặc adapter mỏng.
-11. Không mix mock/demo data vào production flow nếu chưa gắn nhãn rõ.
-12. Không thêm dependency nếu vấn đề có thể giải quyết bằng code hiện có với chi phí hợp lý.
-
-## 6. Cấu trúc mục tiêu khi refactor lớn
+## 3. Cấu trúc thư mục mục tiêu
 
 ```text
 src/
 ├── app/
 │   ├── App.jsx
 │   ├── providers/
+│   │   ├── AppProviders.jsx
+│   │   └── QueryProvider.jsx
 │   ├── router/
+│   │   ├── router.jsx
+│   │   ├── route-meta.js
+│   │   └── guards.jsx
 │   └── config/
+│       └── env.js
 ├── routes/
 │   ├── public/
 │   ├── patient/
@@ -138,6 +82,9 @@ src/
 │   └── ai-configuration/
 ├── shared/
 │   ├── api/
+│   │   ├── client.js
+│   │   ├── endpoints.js
+│   │   └── errors.js
 │   ├── components/
 │   │   ├── ui/
 │   │   └── layout/
@@ -145,6 +92,12 @@ src/
 │   ├── lib/
 │   ├── config/
 │   └── styles/
+│       ├── index.css
+│       ├── tokens.css
+│       ├── reset.css
+│       ├── base.css
+│       ├── layouts.css
+│       └── utilities.css
 └── main.jsx
 
 tests/
@@ -153,11 +106,12 @@ tests/
 └── e2e/
 ```
 
-Không cần tạo toàn bộ thư mục rỗng ngay. Mỗi thư mục chỉ được tạo khi có code thật được chuyển vào.
+Không cần tạo toàn bộ thư mục rỗng ngay. Mỗi feature được tạo khi có code thật
+được chuyển vào.
 
-## 7. Cấu trúc một feature
+## 4. Cấu trúc một feature
 
-Ví dụ `features/symptom-analysis/`:
+Ví dụ `symptom-analysis`:
 
 ```text
 features/symptom-analysis/
@@ -166,8 +120,8 @@ features/symptom-analysis/
 │   └── symptom-analysis.queries.js
 ├── components/
 │   ├── SymptomForm.jsx
-│   ├── ClinicalQuestionStep.jsx
-│   └── AnalysisResult.jsx
+│   ├── AnalysisResult.jsx
+│   └── EmergencyNotice.jsx
 ├── hooks/
 │   └── useSymptomDraft.js
 ├── model/
@@ -176,106 +130,188 @@ features/symptom-analysis/
 ├── pages/
 │   └── SymptomAnalysisPage.jsx
 ├── styles/
-│   └── SymptomAnalysisPage.module.css
+│   ├── SymptomForm.module.css
+│   └── AnalysisResult.module.css
 └── index.js
 ```
 
 Quy tắc:
 
-- `api/`: gọi backend và chuẩn hóa request/response boundary.
+- `api/`: gọi backend và query/mutation options.
 - `model/`: schema, mapper và business calculation thuần.
 - `components/`: UI thuộc riêng feature.
 - `hooks/`: orchestration phía React, không thay thế service API.
-- `pages/`: compose feature thành route, không chứa CSS string hoặc raw API URL.
+- `pages/`: compose feature thành route, không chứa CSS string hoặc API URL.
 - `index.js`: public API nhỏ của feature; code nội bộ dùng import tương đối.
 
-## 8. Phân loại state
+## 5. Phân loại state
 
-| Loại state | Cách xử lý hiện tại | Hướng mục tiêu |
-| --- | --- | --- |
-| URL state | Route registry, query string, History API helper | Chuẩn hóa qua router layer |
-| Server state | `useState`/`useEffect` thủ công trong page | TanStack Query khi migration |
-| Form state | Local state trong form/page | React Hook Form + schema khi form phức tạp |
-| Validation/schema | Logic thủ công | Zod khi migration TypeScript/form boundary |
-| UI local state | `useState`/`useReducer` | Giữ local nếu chỉ thuộc component |
-| Global UI preference | Context/state riêng | Chỉ giữ trạng thái thật sự global |
+| Loại state | Công cụ | Ví dụ |
+|---|---|---|
+| URL state | React Router | route, search, filter, tab, return intent |
+| Server state | TanStack Query | user, facilities, reviews, plans, analysis |
+| Form state | React Hook Form | login, profile, admin CRUD |
+| Validation/schema | Zod | form input, env và response boundary quan trọng |
+| UI local state | `useState`/`useReducer` | dialog, drawer, selected row tạm thời |
+| Global UI preference | Context hoặc external store nhỏ | theme, contrast, font size |
 
-Không thêm Redux/Zustand ở giai đoạn này nếu chưa có global client state đủ phức tạp.
+Không thêm Redux/Zustand ở giai đoạn này. Repo chưa có global client state đủ
+phức tạp để biện minh cho một store tổng quát.
 
-## 9. Routing bắt buộc
+## 6. Dependency đề xuất
 
-- Route mới phải khai báo trong `src/router/routes.js`.
-- Route phải có `id`, `path`, `title`, `access`.
-- Route cần navigation phải có `navigation.shell`, `label`, `icon`, `order`.
-- Admin section mới phải cập nhật `ADMIN_SECTIONS`, title và navigation.
-- Route auth/role/premium phải được kiểm soát qua `resolveRouteAccess`.
-- Alias phải có canonical path rõ ràng.
-- Không dùng `window.location.href` để điều hướng nội bộ nếu navigation helper đáp ứng được.
-- Route mới phải có route smoke test hoặc được thêm vào route manifest tương ứng.
+### Nên thêm trong giai đoạn nền tảng
 
-## 10. Data access bắt buộc
+| Package | Dùng để làm gì trên web | Lý do |
+|---|---|---|
+| `react-router` | Route tree, nested layout, guard, params, search và lazy route | Thay custom `if` router và metadata rải rác |
+| `@tanstack/react-query` | Fetch/cache/refetch, mutation, retry và invalidation | Giảm state API thủ công và request trùng |
+| `react-hook-form` | Quản lý form auth, profile và CRUD | Giảm re-render và chuẩn hóa dirty/error/submit |
+| `zod` | Validate input, env và dữ liệu không tin cậy | Một schema dùng cho form và boundary API |
+| `@hookform/resolvers` | Kết nối Zod với React Hook Form | Tránh viết adapter validation lặp lại |
+| `clsx` | Ghép class theo state/variant | Thay nối chuỗi class thủ công |
+
+Lệnh đề xuất khi bắt đầu migration:
+
+```powershell
+npm.cmd install react-router @tanstack/react-query react-hook-form zod @hookform/resolvers clsx
+```
+
+### Nên thêm cho kiểm thử
+
+| Package | Dùng để làm gì |
+|---|---|
+| `vitest` | Unit test cho mapper, schema, role và query logic |
+| `@testing-library/react` | Component test theo hành vi người dùng |
+| `@testing-library/dom` | Peer dependency và DOM query |
+| `@testing-library/user-event` | Mô phỏng tương tác bàn phím, nhập và click |
+| `@testing-library/jest-dom` | Matcher DOM dễ đọc |
+| `jsdom` | Môi trường DOM cho test nhanh |
+| `msw` | Mock HTTP ở component test mà không sửa application code |
+
+```powershell
+npm.cmd install -D vitest jsdom @testing-library/react @testing-library/dom @testing-library/user-event @testing-library/jest-dom msw
+```
+
+Playwright vẫn giữ cho E2E, accessibility và visual regression. Vitest không
+thay thế Playwright.
+
+### Chỉ thêm khi design system đã có đủ component
+
+| Package | Khi nào cần |
+|---|---|
+| `storybook` | Khi có khoảng 10-15 primitive/component cần tài liệu state độc lập |
+| `class-variance-authority` | Khi Button, Badge, Alert, Input có nhiều variant chuẩn |
+| `@tanstack/react-query-devtools` | Chỉ dùng development để kiểm tra cache/query |
+
+Storybook nên được thêm sau khi Button, Field, Dialog, Table, Alert và DataState
+đã có API ổn định. Thêm sớm sẽ tạo nhiều story cho component còn thay đổi liên tục.
+
+### Không đề xuất lúc này
+
+- **Tailwind CSS:** sẽ tạo hai hệ styling song song và buộc rewrite nhiều CSS.
+- **Redux/Zustand:** chưa có nhu cầu global client state đủ lớn.
+- **Axios:** `fetch` và `apiClient` hiện đủ; TanStack Query không yêu cầu Axios.
+- **Material UI/Ant Design:** khó giữ nhận diện MediMate và làm bundle/style nặng.
+- **Sass:** CSS custom properties và CSS Modules đã đủ cho kiến trúc đề xuất.
+- **CSS-in-JS runtime:** không cần thêm runtime styling cho ứng dụng Vite này.
+
+## 7. TypeScript
+
+Khuyến nghị migration dần sang TypeScript, không đổi toàn bộ repo trong một PR.
+
+Thứ tự:
+
+1. Thêm `tsconfig.json` với `allowJs: true`, `checkJs: false`, `strict: true`.
+2. Chuyển shared API types, schema và utility thuần trước.
+3. Chuyển UI primitive và feature mới sang `.tsx`.
+4. Chuyển page cũ khi đang được refactor, không đổi đuôi file chỉ để đạt chỉ tiêu.
+5. Bật kiểm tra chặt hơn sau khi phần lớn boundary đã có type.
+
+Zod chỉ phát huy đầy đủ type inference khi TypeScript strict được bật.
+
+## 8. Routing mục tiêu
+
+Sử dụng React Router theo declarative hoặc data mode trong SPA hiện tại:
+
+- Public layout: landing, auth, pricing, map.
+- Patient layout: dashboard, profile, symptom, chat.
+- Staff layout: directory và review operations.
+- Admin layout: users, doctors, invitations, plans, AI config.
+- Guard tách riêng: authentication, account status, role, profile completion,
+  capability/entitlement.
+- Route metadata chứa title, navigation label, shell và breadcrumb.
+- Route-level lazy loading cho map, admin, chat và trang hiếm dùng.
+
+Không chuyển sang React Router framework mode hoặc đổi sang Next.js trong đợt
+refactor này. Mục tiêu là sửa kiến trúc SPA, không đổi nền tảng deployment.
+
+## 9. Data access mục tiêu
 
 ```text
 Route/Page
-  -> domain service
-    -> ENDPOINTS
-      -> apiRequest()
+  -> feature query/mutation hook
+    -> feature API function
+      -> shared api client
         -> backend
 ```
 
 Quy tắc:
 
-- Component không import `ENDPOINTS` trừ trường hợp rất đặc biệt có ghi lý do.
-- Service không hard-code string endpoint.
+- Component không import `endpoints.js`.
 - API function không hiển thị toast hoặc điều hướng.
-- Mapper chuyển response backend thành model UI tại boundary.
-- Không sao chép server response vào global context nếu local/page state đủ.
-- Không gọi PayOS webhook/return/cancel như API sản phẩm từ frontend.
-- AI provider key không được đặt trong Vite/client.
+- Query key nằm cùng feature và có factory nhất quán.
+- Mutation thành công invalidate đúng query liên quan.
+- Mapper chuyển response backend thành model UI ở boundary.
+- Không sao chép server response vào global context nếu Query cache đã quản lý.
 
-## 11. Quy ước file và tên
+## 10. Quy ước file và tên
 
 - Component/page: `PascalCase.jsx` hoặc `.tsx`.
 - Hook: `useSomething.js`.
-- API/service: `domainService.js` hoặc `domain.api.js` khi migration.
-- Query: `domain.queries.js` khi migration sang Query.
+- API: `domain.api.js`.
+- Query: `domain.queries.js`.
 - Schema: `domain.schema.js`.
 - Mapper: `domain.mapper.js`.
-- CSS module: `ComponentName.module.css`.
-- Test E2E: `feature-name.spec.js`.
-- Tên file phải mô tả chức năng thật; không dùng `new`, `old`, `final`, `test2`.
+- CSS Module: `ComponentName.module.css`.
+- Test colocated: `ComponentName.test.jsx`; E2E giữ trong `tests/e2e`.
+- Boolean bắt đầu bằng `is`, `has`, `can`, `should`.
+- Event handler bắt đầu bằng `handle`; callback prop bắt đầu bằng `on`.
 
-## 12. Dependency policy
+## 11. Quality gate
 
-Được cân nhắc khi có task nền tảng rõ ràng:
+Mỗi feature mới hoặc refactor phải đạt:
 
-- `react-router`
-- `@tanstack/react-query`
-- `react-hook-form`
-- `zod`
-- `@hookform/resolvers`
-- `clsx`
-- `vitest`
-- `@testing-library/react`
-- `msw`
+```powershell
+npm.cmd run lint
+npm.cmd run test
+npm.cmd run build
+npm.cmd run test:e2e:routes
+npm.cmd run test:e2e:a11y
+```
 
-Không đề xuất thêm ở thời điểm này nếu chưa có ADR:
+Sau khi thêm Vitest, bổ sung script:
 
-- Tailwind CSS nếu đang tiếp tục CSS token/module hiện tại.
-- Redux/Zustand nếu chưa có global client state rõ.
-- Axios nếu `fetch` + `apiRequest` vẫn đủ.
-- Material UI/Ant Design nếu chưa có quyết định đổi design system.
-- CSS-in-JS runtime nếu CSS hiện tại đáp ứng được.
-- Storybook nếu component API chưa ổn định.
+```json
+{
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  }
+}
+```
 
-## 13. Definition of Done kiến trúc
+Critical flow như auth, symptom-to-map và payment tiếp tục có Playwright E2E.
+Mapper, schema, guard và component form phải có unit/component test.
 
-Một PR frontend chỉ đạt khi:
+## 12. Nguồn tham khảo
 
-- Scope nhỏ, đúng một vertical slice hoặc một refactor có boundary rõ.
-- Không phá route/access/navigation hiện có.
-- Không hard-code endpoint hoặc duplicate service logic.
-- Không làm tăng coupling giữa page lớn và service/domain khác.
-- Không thêm code chết, file rỗng, facade dày hoặc dependency không dùng.
-- Loading, empty, error và permission state được xử lý.
-- Docs/test được cập nhật khi hành vi thay đổi.
+- [React Router routing](https://reactrouter.com/start/declarative/routing)
+- [TanStack Query overview](https://tanstack.com/query/latest/docs/framework/react/overview)
+- [React Hook Form](https://react-hook-form.com/get-started)
+- [Zod](https://zod.dev/)
+- [Vite CSS Modules](https://vite.dev/guide/features)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+- [Vitest request mocking](https://vitest.dev/guide/mocking/requests)
+- [Storybook](https://storybook.js.org/docs)
