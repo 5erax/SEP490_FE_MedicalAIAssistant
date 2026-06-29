@@ -8,12 +8,7 @@ function numberOrNull(value) {
 }
 
 export async function findPatientProfileByUserId(userId, pageNumber = 1, pageSize = 100) {
-  if (!userId) return null;
-
-  const response = await patientProfilesApi.list(pageNumber, pageSize);
-  const items = response.data?.items ?? [];
-
-  return items.find((item) => String(item.userId).toLowerCase() === String(userId).toLowerCase()) ?? null;
+  return patientProfilesApi.findByUserId(userId, pageNumber, pageSize);
 }
 
 export async function savePatientProfileSetup({ userId, existingProfileId, form }) {

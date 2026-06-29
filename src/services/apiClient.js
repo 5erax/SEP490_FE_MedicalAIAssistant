@@ -106,7 +106,6 @@ export function isAuthenticated() {
 export function hasPremiumAccess(auth = getStoredAuth()) {
   const planName = String(auth?.planName ?? auth?.subscriptionPlan ?? auth?.plan ?? "").toLowerCase();
   const subscriptionStatus = String(auth?.subscriptionStatus ?? auth?.subscription?.status ?? "").toLowerCase();
-  const roles = Array.isArray(auth?.roles) ? auth.roles.map((role) => String(role).toLowerCase()) : [];
 
   return Boolean(
     auth?.isPremium ||
@@ -114,9 +113,7 @@ export function hasPremiumAccess(auth = getStoredAuth()) {
     auth?.hasPremiumAccess ||
     planName.includes("premium") ||
     planName.includes("medimate+") ||
-    subscriptionStatus === "active" ||
-    roles.includes("admin") ||
-    roles.includes("staff")
+    subscriptionStatus === "active"
   );
 }
 

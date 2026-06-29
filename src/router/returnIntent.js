@@ -14,7 +14,7 @@ export function sanitizeReturnTo(value) {
     const route = resolveRoute(destination.pathname);
     if (!route || route.returnable === false) return "";
 
-    return getCanonicalPath(route);
+    return `${getCanonicalPath(route)}${destination.search}${destination.hash}`;
   } catch {
     return "";
   }
@@ -41,7 +41,11 @@ export function withReturnTo(path, returnTo) {
 
 export function getPostAuthDestination(authOrUser, search = window.location.search) {
   const returnTo = getReturnToFromSearch(search);
-  return returnTo || getPostLoginPath(authOrUser);
+  const postLoginPath = getPostLoginPath(authOrUser);
+  if (postLoginPath === "/patient/profile/setup") {
+    return withReturnTo(postLoginPath, returnTo);
+  }
+  return returnTo || postLoginPath;
 }
 
 export function rememberReturnTo(value) {

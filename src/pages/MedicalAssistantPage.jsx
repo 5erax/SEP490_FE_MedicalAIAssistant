@@ -10,6 +10,8 @@ import "../styles/medical-assessment.css";
 
 const DRAFT_KEY = "medimate.assessment.draft";
 const SESSION_KEY_PREFIX = "medimate.assessment.session.";
+const SAFETY_CONFIRMATION_KEY = "medimate.assessment.safetyConfirmedAt";
+const SAFETY_CONFIRMATION_MAX_AGE_MS = 30 * 60 * 1000;
 
 const RED_FLAGS = [
   "Dau nguc du doi",
@@ -90,6 +92,15 @@ function loadDraft() {
 
 function saveDraft(draft) {
   sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+}
+
+function confirmSafetyGate() {
+  sessionStorage.setItem(SAFETY_CONFIRMATION_KEY, String(Date.now()));
+}
+
+function hasRecentSafetyConfirmation() {
+  const confirmedAt = Number(sessionStorage.getItem(SAFETY_CONFIRMATION_KEY) ?? 0);
+  return Number.isFinite(confirmedAt) && Date.now() - confirmedAt <= SAFETY_CONFIRMATION_MAX_AGE_MS;
 }
 
 function buildUserInput(form) {
@@ -234,7 +245,15 @@ function SafetyPage() {
 
       {!hasRedFlag && (
         <div className="assessment-actions">
-          <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>Khong, tiep tuc danh gia</Button>
+          <Button
+            size="lg"
+            onClick={() => {
+              confirmSafetyGate();
+              navigate("/medical-assistant/intake");
+            }}
+          >
+            Khong, tiep tuc danh gia
+          </Button>
           <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>Quay lai</Button>
         </div>
       )}
@@ -244,6 +263,7 @@ function SafetyPage() {
 
 function IntakePage() {
   const auth = getStoredAuth();
+  const [safetyConfirmed] = useState(hasRecentSafetyConfirmation);
   const [form, setForm] = useState(() => loadDraft() ?? {
     mainSymptom: "",
     description: "",
@@ -300,6 +320,25 @@ function IntakePage() {
       active = false;
     };
   }, [auth?.identityId, auth?.userId]);
+
+  if (!safetyConfirmed) {
+    return (
+      <AssessmentShell
+        eyebrow="Can kiem tra an toan"
+        title="Hay hoan tat safety gate truoc khi nhap trieu chung"
+        description="MediMate can loai tru dau hieu khan cap truoc khi goi AI tao cau hoi lam sang."
+      >
+        <Stepper active={0} />
+        <Alert tone="warning" title="Chua xac nhan buoc an toan">
+          Direct URL vao form intake da bi chan. Hay quay lai buoc safety gate; neu co dau hieu nguy hiem, ung dung se dung flow AI va huong dan tim cham soc khan cap.
+        </Alert>
+        <div className="assessment-actions">
+          <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>Mo safety gate</Button>
+          <Button tone="secondary" onClick={() => navigate("/map?search=cap%20cuu")}>Tim co so cap cuu</Button>
+        </div>
+      </AssessmentShell>
+    );
+  }
 
   function updateField(key, value) {
     setForm((current) => {

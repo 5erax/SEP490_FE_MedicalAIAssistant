@@ -75,5 +75,6 @@ export function shouldSetupPatientProfile(authOrUser) {
 }
 
 export function getPostLoginPath(authOrUser) {
+  if (shouldSetupPatientProfile(authOrUser)) return "/patient/profile/setup";
   return getWorkspacePath(authOrUser);
 }

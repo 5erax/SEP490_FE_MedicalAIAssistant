@@ -21,65 +21,86 @@ function classifyPayment(data) {
   if (data?.isCancelled) return "cancelled";
 
   const paymentStatus = String(data?.paymentStatus ?? "").toLowerCase();
-  const subscriptionStatus = String(data?.subscriptionStatus ?? "").toLowerCase();
-  if (["failed", "expired", "cancelled", "canceled"].includes(paymentStatus)) return "cancelled";
+  const subscriptionStatus = String(data?.subscriptionStatus ?? data?.subscription?.status ?? "").toLowerCase();
+
+  if (["paid", "completed", "success", "succeeded"].includes(paymentStatus)) return "success";
+  if (["cancelled", "canceled"].includes(paymentStatus)) return "cancelled";
+  if (paymentStatus === "failed") return "failed";
+  if (paymentStatus === "expired") return "expired";
   if (["active", "paid", "completed"].includes(subscriptionStatus)) return "success";
+  if (subscriptionStatus === "failed") return "failed";
+  if (subscriptionStatus === "expired") return "expired";
   return "pending";
 }
 
 function getView(status, expectedResult) {
   if (status === "success") {
     return {
-      eyebrow: "Thanh toán hoàn tất",
-      title: "MediMate+ đã sẵn sàng.",
-      description: "Thanh toán đã được xác nhận và quyền lợi nâng cao đã được kích hoạt cho tài khoản của bạn.",
+      eyebrow: "Thanh toan hoan tat",
+      title: "MediMate+ da san sang.",
+      description: "Thanh toan da duoc xac nhan va quyen loi nang cao da duoc kich hoat cho tai khoan cua ban.",
       icon: CheckCircle2,
       tone: "success",
     };
   }
   if (status === "cancelled") {
     return {
-      eyebrow: "Giao dịch đã dừng",
-      title: "Bạn chưa bị tính phí.",
-      description: "Thanh toán đã được hủy. Tài khoản vẫn giữ nguyên gói hiện tại và bạn có thể đăng ký lại bất cứ lúc nào.",
+      eyebrow: "Giao dich da dung",
+      title: "Giao dich da duoc xac nhan huy.",
+      description: "Backend da xac nhan thanh toan khong hoan tat. Tai khoan van giu nguyen goi hien tai va ban co the dang ky lai bat cu luc nao.",
       icon: CircleX,
       tone: "cancelled",
     };
   }
+  if (status === "failed" || status === "expired") {
+    return {
+      eyebrow: status === "expired" ? "Giao dich da het han" : "Giao dich khong thanh cong",
+      title: status === "expired" ? "Lien ket thanh toan da het han." : "Thanh toan chua hoan tat.",
+      description: "Backend da tra ve trang thai cuoi cung khong thanh cong. Hay chon lai goi neu ban muon thu thanh toan moi.",
+      icon: CircleX,
+      tone: "error",
+    };
+  }
   if (status === "pending" || status === "checking") {
     return {
-      eyebrow: "Đang xác minh giao dịch",
-      title: "Chờ PayOS xác nhận một chút.",
+      eyebrow: "Dang xac minh giao dich",
+      title: "Cho PayOS xac nhan mot chut.",
       description: expectedResult === "cancel"
-        ? "MediMate đang kiểm tra trạng thái cuối cùng để bảo đảm giao dịch đã được hủy chính xác."
-        : "Thanh toán có thể đã hoàn tất nhưng webhook vẫn đang được xử lý. Trang sẽ tự kiểm tra lại.",
+        ? "MediMate dang kiem tra trang thai cuoi cung de bao dam giao dich da duoc huy chinh xac."
+        : "Thanh toan co the da hoan tat nhung webhook van dang duoc xu ly. Trang se tu kiem tra lai.",
       icon: LoaderCircle,
       tone: "pending",
     };
   }
   if (status === "missing") {
     return {
-      eyebrow: "Thiếu thông tin giao dịch",
-      title: "Không tìm thấy mã thanh toán.",
-      description: "Liên kết quay về không có mã giao dịch. Bạn có thể mở bảng giá để kiểm tra gói hiện tại hoặc thử thanh toán lại.",
+      eyebrow: "Thieu thong tin giao dich",
+      title: "Khong tim thay ma thanh toan.",
+      description: "Lien ket quay ve khong co ma giao dich. Ban co the mo bang gia de kiem tra goi hien tai hoac thu thanh toan lai.",
       icon: CreditCard,
       tone: "error",
     };
   }
   return {
-    eyebrow: "Chưa xác minh được",
-    title: "Không thể kiểm tra giao dịch lúc này.",
-    description: "Kết nối xác minh đang gián đoạn. Không tạo thanh toán mới cho đến khi bạn kiểm tra lại trạng thái gói.",
+    eyebrow: "Chua xac minh duoc",
+    title: "Khong the kiem tra giao dich luc nay.",
+    description: "Ket noi xac minh dang gian doan. Khong tao thanh toan moi cho den khi ban kiem tra lai trang thai goi.",
     icon: Clock3,
     tone: "error",
   };
 }
 
+function getStatusLabel(status) {
+  if (status === "success") return "Da kich hoat";
+  if (status === "cancelled") return "Da huy";
+  if (status === "failed") return "That bai";
+  if (status === "expired") return "Het han";
+  return "Dang xac minh";
+}
+
 export default function PaymentResultPage({ expectedResult }) {
   const [orderCode] = useState(getOrderCode);
-  const [status, setStatus] = useState(
-    expectedResult === "cancel" ? "cancelled" : orderCode ? "checking" : "missing",
-  );
+  const [status, setStatus] = useState(orderCode ? "checking" : "missing");
   const [message, setMessage] = useState("");
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
@@ -113,7 +134,7 @@ export default function PaymentResultPage({ expectedResult }) {
   }, [orderCode, refreshPremiumState]);
 
   useEffect(() => {
-    if (!orderCode || expectedResult === "cancel") return undefined;
+    if (!orderCode) return undefined;
     let active = true;
     let timer;
     let attempts = 0;
@@ -125,14 +146,14 @@ export default function PaymentResultPage({ expectedResult }) {
         if (!active || nextStatus !== "pending") return;
         if (attempts >= MAX_STATUS_CHECKS) {
           setStatus("error");
-          setMessage("Giao dịch vẫn đang chờ xử lý. Hãy kiểm tra lại gói đăng ký sau ít phút.");
+          setMessage("Giao dich van dang cho xu ly. Hay kiem tra lai goi dang ky sau it phut.");
           return;
         }
         timer = window.setTimeout(verify, STATUS_CHECK_DELAY);
       } catch {
         if (!active) return;
         setStatus("error");
-        setMessage("MediMate chưa nhận được trạng thái chính thức từ PayOS. Vui lòng kiểm tra lại sau ít phút.");
+        setMessage("MediMate chua nhan duoc trang thai chinh thuc tu PayOS. Vui long kiem tra lai sau it phut.");
       }
     };
 
@@ -141,7 +162,7 @@ export default function PaymentResultPage({ expectedResult }) {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [checkStatus, expectedResult, orderCode]);
+  }, [checkStatus, orderCode]);
 
   async function handleCheckAgain() {
     setCheckingAgain(true);
@@ -150,14 +171,14 @@ export default function PaymentResultPage({ expectedResult }) {
       await checkStatus();
     } catch {
       setStatus("error");
-      setMessage("MediMate chưa nhận được trạng thái chính thức từ PayOS. Vui lòng kiểm tra lại sau ít phút.");
+      setMessage("MediMate chua nhan duoc trang thai chinh thuc tu PayOS. Vui long kiem tra lai sau it phut.");
     } finally {
       setCheckingAgain(false);
     }
   }
 
   const success = status === "success";
-  const settled = success || status === "cancelled";
+  const settled = success || status === "cancelled" || status === "failed" || status === "expired";
 
   function continueAfterPayment() {
     if (success && returnTo) {
@@ -186,10 +207,10 @@ export default function PaymentResultPage({ expectedResult }) {
 
         {orderCode && (
           <dl className="payment-result-reference">
-            <div><dt>Mã giao dịch</dt><dd>{orderCode}</dd></div>
+            <div><dt>Ma giao dich</dt><dd>{orderCode}</dd></div>
             <div>
-              <dt>Trạng thái</dt>
-              <dd>{success ? "Đã kích hoạt" : status === "cancelled" ? "Đã hủy" : "Đang xác minh"}</dd>
+              <dt>Trang thai</dt>
+              <dd>{getStatusLabel(status)}</dd>
             </div>
           </dl>
         )}
@@ -198,16 +219,16 @@ export default function PaymentResultPage({ expectedResult }) {
           {success ? (
             <>
               <button className="payment-result-primary" type="button" onClick={continueAfterPayment}>
-                {returnTo ? "Tiếp tục tác vụ" : "Bắt đầu sử dụng"} <ArrowRight size={17} />
+                {returnTo ? "Tiep tuc tac vu" : "Bat dau su dung"} <ArrowRight size={17} />
               </button>
-              <button type="button" onClick={() => navigate("/pricing#current-subscription")}>Xem gói hiện tại</button>
+              <button type="button" onClick={() => navigate("/pricing#current-subscription")}>Xem goi hien tai</button>
             </>
           ) : (
             <>
               <button className="payment-result-primary" type="button" onClick={() => navigate("/pricing")}>
-                {status === "cancelled" ? "Chọn lại gói" : "Về bảng giá"} <ArrowRight size={17} />
+                {settled ? "Chon lai goi" : "Ve bang gia"} <ArrowRight size={17} />
               </button>
-              <button type="button" onClick={() => navigate("/dashboard")}>Tiếp tục với gói hiện tại</button>
+              <button type="button" onClick={() => navigate("/dashboard")}>Tiep tuc voi goi hien tai</button>
             </>
           )}
         </div>
@@ -215,15 +236,15 @@ export default function PaymentResultPage({ expectedResult }) {
         {!settled && orderCode && (
           <button className="payment-result-retry" type="button" onClick={handleCheckAgain} disabled={checkingAgain}>
             <RefreshCw className={checkingAgain ? "is-spinning" : ""} size={16} />
-            {checkingAgain ? "Đang kiểm tra..." : "Kiểm tra lại trạng thái"}
+            {checkingAgain ? "Dang kiem tra..." : "Kiem tra lai trang thai"}
           </button>
         )}
       </section>
 
       <p className="payment-result-support">
         {status === "cancelled"
-          ? "Giao dịch đã dừng và gói hiện tại của bạn không thay đổi. Bạn có thể đóng trang hoặc chọn lại gói."
-          : "Không đóng trình duyệt trong lúc xác minh. Nếu tiền đã trừ nhưng gói chưa kích hoạt, hãy giữ lại mã giao dịch để liên hệ hỗ trợ."}
+          ? "Giao dich da duoc backend xac nhan huy va goi hien tai cua ban khong thay doi. Ban co the dong trang hoac chon lai goi."
+          : "Khong dong trinh duyet trong luc xac minh. Neu tien da tru nhung goi chua kich hoat, hay giu lai ma giao dich de lien he ho tro."}
       </p>
     </main>
   );

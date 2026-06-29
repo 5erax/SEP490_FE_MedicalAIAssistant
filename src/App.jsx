@@ -76,7 +76,7 @@ function App() {
 
   if (!route) return <StaticPage path={path} />;
 
-  const requestedPath = canonicalPath || path;
+  const requestedPath = `${canonicalPath || path}${window.location.search}${window.location.hash}`;
   const redirectPath = resolveRouteAccess(route, getStoredAuth(), requestedPath);
   if (redirectPath) {
     return <RouteRedirect to={redirectPath} />;
