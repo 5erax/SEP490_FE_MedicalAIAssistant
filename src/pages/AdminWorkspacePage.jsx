@@ -68,16 +68,18 @@ const EMPTY_FACILITY = {
   isActive: true,
   departmentIds: [],
 };
-const EMPTY_STAFF = {
-  email: "",
-  userName: "",
-  password: "",
-  confirmPassword: "",
-  displayName: "",
-  address: "",
-  gender: "1",
-  dateOfBirth: "",
-};
+function createEmptyStaffForm() {
+  return {
+    email: "",
+    userName: "",
+    password: "",
+    confirmPassword: "",
+    displayName: "",
+    address: "",
+    gender: "1",
+    dateOfBirth: "",
+  };
+}
 const EMPTY_DOCTOR_FILTERS = {
   search: "",
   facilityId: "",
@@ -300,7 +302,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [editingIcdChapterId, setEditingIcdChapterId] = useState("");
   const [editingFacilityId, setEditingFacilityId] = useState("");
-  const [staffForm, setStaffForm] = useState(EMPTY_STAFF);
+  const [staffForm, setStaffForm] = useState(createEmptyStaffForm);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
   const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
   const [lastInvitation, setLastInvitation] = useState(null);
@@ -1411,7 +1413,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         dateOfBirth: staffForm.dateOfBirth || null,
       });
       setStaffMessage({ type: "success", text: response.message || "Đã tạo tài khoản staff." });
-      setStaffForm(EMPTY_STAFF);
+      setStaffForm(createEmptyStaffForm());
       await loadUsers();
     } catch (error) {
       setStaffMessage({ type: "error", text: error.message });
