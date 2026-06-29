@@ -190,7 +190,11 @@ export default function AdminICDChaptersSection({
                 onChange={(event) => onFormChange("chapterCode", event.target.value)}
                 placeholder="Ví dụ: I"
                 required
+                disabled={Boolean(editingChapterId)}
               />
+              {editingChapterId && (
+                <small className="muted-text">Ma Chapter dang duoc dung lam khoa lien ket, chi doi khi Backend da ho tro migrate du lieu lien quan.</small>
+              )}
             </Field>
             <Field label="Tên Chapter">
               <input
