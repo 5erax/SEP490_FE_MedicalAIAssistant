@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { getStoredAuth } from "../../services/api";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 
@@ -20,16 +21,26 @@ function Logo() {
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const [auth] = useState(() => getStoredAuth());
+  const menuButtonRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     function handleKeyDown(event) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        menuButtonRef.current?.focus();
+      }
     }
 
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [open]);
 
   return (
@@ -59,6 +70,7 @@ export function Navbar() {
         </div>
 
         <button
+          ref={menuButtonRef}
           className="menu-btn"
           type="button"
           aria-label={open ? "Đóng menu" : "Mở menu"}
@@ -66,26 +78,34 @@ export function Navbar() {
           aria-controls="mobile-navigation"
           onClick={() => setOpen((value) => !value)}
         >
-          {open ? "×" : "☰"}
+          {open ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
         </button>
       </div>
 
       {open && (
-        <nav id="mobile-navigation" className="container mobile-menu" aria-label="Điều hướng di động">
-          <DisplayPreferences />
-          {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
-              {link.name}
-            </a>
-          ))}
-          <a
-            className="btn btn-primary"
-            href={auth ? "/app" : "/login"}
+        <>
+          <button
+            className="mobile-menu-backdrop"
+            type="button"
+            aria-label="Đóng menu điều hướng"
             onClick={() => setOpen(false)}
-          >
-            {auth ? "Vào app" : "Đăng nhập"}
-          </a>
-        </nav>
+          />
+          <nav id="mobile-navigation" className="container mobile-menu" aria-label="Điều hướng di động">
+            <DisplayPreferences />
+            {NAV_LINKS.map((link) => (
+              <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
+                {link.name}
+              </a>
+            ))}
+            <a
+              className="btn btn-primary"
+              href={auth ? "/app" : "/login"}
+              onClick={() => setOpen(false)}
+            >
+              {auth ? "Vào app" : "Đăng nhập"}
+            </a>
+          </nav>
+        </>
       )}
     </header>
   );
