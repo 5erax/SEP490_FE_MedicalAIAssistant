@@ -1,9 +1,11 @@
-import { apiRequest } from "./apiClient";
+import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
 export const icdChaptersApi = {
-  list() {
-    return apiRequest(ENDPOINTS.ICD_CHAPTERS.BASE, { auth: true });
+  list(pageNumber = 1, pageSize = 10, filters = {}) {
+    const params = new URLSearchParams(withPagination(pageNumber, pageSize));
+    if (filters.search?.trim()) params.set("search", filters.search.trim());
+    return apiRequest(`${ENDPOINTS.ICD_CHAPTERS.BASE}?${params.toString()}`, { auth: true });
   },
 
   get(id) {
