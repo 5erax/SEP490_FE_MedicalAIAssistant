@@ -24,25 +24,20 @@ class MapErrorBoundary extends Component {
 }
 
 function AccessibleFacilityMarker({ facility, selected, onSelect }) {
-  const markerRef = useRef(null);
-
-  useEffect(() => {
-    markerRef.current?.getElement?.().setAttribute(
-      "aria-label",
-      `Chọn ${facility.facilityName} trên bản đồ`,
-    );
-  }, [facility.facilityName]);
-
   return (
     <Marker
-      ref={markerRef}
       longitude={facility.longitude}
       latitude={facility.latitude}
-      onClick={(event) => { event.originalEvent.stopPropagation(); onSelect(facility); }}
     >
-      <span className={`clinic-marker ${selected ? "selected" : ""}`} aria-hidden="true">
-        <span>+</span>
-      </span>
+      <button
+        className={`clinic-marker ${selected ? "selected" : ""}`}
+        type="button"
+        aria-label={`Chọn ${facility.facilityName} trên bản đồ`}
+        aria-pressed={selected}
+        onClick={(event) => { event.stopPropagation(); onSelect(facility); }}
+      >
+        <span aria-hidden="true">+</span>
+      </button>
     </Marker>
   );
 }
@@ -65,9 +60,20 @@ export default function FacilityMap({
   onViewStateChange,
   onViewDetail,
 }) {
+  const popupActionRef = useRef(null);
+
+  useEffect(() => {
+    if (!selectedFacility?.hasValidCoordinates) return undefined;
+    const focusId = window.setTimeout(() => popupActionRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusId);
+  }, [selectedFacility?.facilityId, selectedFacility?.hasValidCoordinates]);
+
   return (
-    <section className="map-panel" aria-labelledby="interactive-map-title">
+    <section className="map-panel" aria-labelledby="interactive-map-title" aria-describedby="interactive-map-description">
       <h2 className="sr-only" id="interactive-map-title">Bản đồ tương tác các cơ sở y tế</h2>
+      <p className="sr-only" id="interactive-map-description">
+        Bản đồ hiển thị các cơ sở có tọa độ hợp lệ. Danh sách cơ sở bên cạnh cung cấp cùng thông tin ở dạng văn bản.
+      </p>
       {chatContext && (
         <aside className="map-chat-context" aria-label="Khung chat gợi ý chuyên khoa">
           <strong>Gợi ý chuyên khoa qua triệu chứng</strong>
@@ -90,7 +96,7 @@ export default function FacilityMap({
             <NavigationControl position="top-right" />
             {userLocation && (
               <Marker longitude={userLocation.lng} latitude={userLocation.lat}>
-                <div className="user-marker"><span /></div>
+                <div className="user-marker" role="img" aria-label="Vị trí hiện tại của bạn"><span /></div>
               </Marker>
             )}
             {facilities.map((facility) => (
@@ -110,12 +116,19 @@ export default function FacilityMap({
                 offset={28}
                 className="clinic-popup"
               >
-                <div className="popup-card">
+                <div
+                  className="popup-card"
+                  role="dialog"
+                  aria-label={`Thông tin ${selectedFacility.facilityName}`}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") onSelect(null);
+                  }}
+                >
                   <strong>{selectedFacility.facilityName}</strong>
                   <span>{selectedFacility.address}</span>
                   <span>{selectedFacility.phoneLabel}</span>
                   {selectedFacility.website && <a href={selectedFacility.website} target="_blank" rel="noreferrer">Website cơ sở</a>}
-                  <button type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
+                  <button ref={popupActionRef} type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
                 </div>
               </Popup>
             )}
