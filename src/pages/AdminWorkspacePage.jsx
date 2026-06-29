@@ -13,7 +13,6 @@ import {
   SlidersHorizontal,
   Stethoscope,
   Users,
-  UserPlus,
 } from "lucide-react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
@@ -30,11 +29,11 @@ import SubscriptionPlanFormModal from "../components/adminSubscriptions/Subscrip
 import AdminSubscriptionsSection from "../components/adminSubscriptions/AdminSubscriptionsSection";
 import AdminOverviewSection from "../components/adminOverview/AdminOverviewSection";
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
-import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
+import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -80,6 +79,11 @@ function createEmptyStaffForm() {
     dateOfBirth: "",
   };
 }
+const EMPTY_FACILITY_FILTERS = {
+  search: "",
+  isActive: "",
+  departmentId: "",
+};
 const EMPTY_DOCTOR_FILTERS = {
   search: "",
   facilityId: "",
@@ -88,6 +92,7 @@ const EMPTY_DOCTOR_FILTERS = {
   departmentRole: "",
 };
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
+const DEFAULT_FACILITY_PAGE_SIZE = 10;
 const USER_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách tài khoản.";
 const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.";
@@ -108,7 +113,6 @@ const ADMIN_NAV_ICONS = {
   doctor: Stethoscope,
   ai: SlidersHorizontal,
   subscription: CreditCard,
-  staff: UserPlus,
   facility: Building2,
   icd: BookOpen,
   question: CircleHelp,
@@ -232,8 +236,6 @@ function formatRoles(roles) {
 }
 
 function AccessDenied({ auth, roles }) {
-  const path = hasRole(roles, "staff") ? "/app/staff" : "/dashboard";
-
   return (
     <main className="workspace-root admin-operator">
       <section className="app-page">
@@ -244,7 +246,7 @@ function AccessDenied({ auth, roles }) {
             Phiên hiện tại là {auth?.email || "người dùng"} với role {formatRoles(roles)}. Hãy dùng tài khoản Admin hoặc quay về workspace phù hợp.
           </p>
           <div className="hero-actions">
-            <a className="btn btn-primary" href={path}>Mở workspace của tôi</a>
+            <a className="btn btn-primary" href="/app">Mở workspace của tôi</a>
             <a className="btn btn-ghost" href="/login">Đăng nhập tài khoản khác</a>
           </div>
         </div>
@@ -292,8 +294,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     totalPages: 1,
   });
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
+  const [facilityPageInfo, setFacilityPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_FACILITY_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const activeSection = initialSection;
   const [search, setSearch] = useState("");
+  const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
+  const [appliedFacilityFilters, setAppliedFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [doctorFilters, setDoctorFilters] = useState(initialDoctorView.filters);
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
@@ -439,7 +444,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         pageSize: initialDoctorView.pageSize,
       }),
       aiConfigManagementApi.list(1, DEFAULT_AI_CONFIG_PAGE_SIZE),
-      medicalFacilitiesApi.list(1, 100),
+      medicalFacilitiesApi.list(1, DEFAULT_FACILITY_PAGE_SIZE, EMPTY_FACILITY_FILTERS),
       facilityDepartmentsApi.active(),
       subscriptionPlansApi.list(),
     ])
@@ -520,7 +525,14 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         }
 
         if (facilityResult.status === "fulfilled") {
-          setFacilities(facilityResult.value.data?.items ?? facilityResult.value.data ?? []);
+          const data = facilityResult.value.data ?? {};
+          setFacilities(data.items ?? []);
+          setFacilityPageInfo({
+            pageNumber: data.pageNumber ?? 1,
+            pageSize: data.pageSize ?? DEFAULT_FACILITY_PAGE_SIZE,
+            totalCount: data.totalCount ?? 0,
+            totalPages: data.totalPages ?? 1,
+          });
         }
 
         if (facilityDepartmentResult.status === "fulfilled") {
@@ -617,16 +629,27 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     }
   }
 
-  async function loadFacilities() {
+  async function loadFacilities(
+    pageNumber = facilityPageInfo.pageNumber,
+    pageSize = facilityPageInfo.pageSize,
+    filters = appliedFacilityFilters,
+  ) {
     setFacilitiesLoading(true);
     setFacilityMessage(null);
     setFacilityLoadError("");
     try {
       const [facilityResponse, facilityDepartmentResponse] = await Promise.all([
-        medicalFacilitiesApi.list(1, 100),
+        medicalFacilitiesApi.list(pageNumber, pageSize, filters),
         facilityDepartmentsApi.active(),
       ]);
-      setFacilities(facilityResponse.data?.items ?? facilityResponse.data ?? []);
+      const facilityData = facilityResponse.data ?? {};
+      setFacilities(facilityData.items ?? []);
+      setFacilityPageInfo({
+        pageNumber: facilityData.pageNumber ?? pageNumber,
+        pageSize: facilityData.pageSize ?? pageSize,
+        totalCount: facilityData.totalCount ?? 0,
+        totalPages: facilityData.totalPages ?? 1,
+      });
       const data = facilityDepartmentResponse.data;
       setFacilityDepartments(Array.isArray(data) ? data : data?.items ?? []);
     } catch {
@@ -639,6 +662,29 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     } finally {
       setFacilitiesLoading(false);
     }
+  }
+
+  function updateFacilityFilter(key, value) {
+    setFacilityFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function applyFacilityFilters(event) {
+    event.preventDefault();
+    setAppliedFacilityFilters(facilityFilters);
+    setFacilityPageInfo((current) => ({ ...current, pageNumber: 1 }));
+    loadFacilities(1, facilityPageInfo.pageSize, facilityFilters);
+  }
+
+  function clearFacilityFilters() {
+    setFacilityFilters(EMPTY_FACILITY_FILTERS);
+    setAppliedFacilityFilters(EMPTY_FACILITY_FILTERS);
+    setFacilityPageInfo((current) => ({ ...current, pageNumber: 1 }));
+    loadFacilities(1, facilityPageInfo.pageSize, EMPTY_FACILITY_FILTERS);
+  }
+
+  function changeFacilityPageSize(pageSize) {
+    setFacilityPageInfo((current) => ({ ...current, pageSize, pageNumber: 1 }));
+    loadFacilities(1, pageSize, appliedFacilityFilters);
   }
 
   async function loadDoctors(pageNumber = doctorPageInfo.pageNumber, filters = doctorFilters) {
@@ -1344,7 +1390,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         message: "Dữ liệu cơ sở y tế đã được đồng bộ với backend.",
       });
       resetFacilityForm();
-      await loadFacilities();
+      await loadFacilities(editingFacilityId ? facilityPageInfo.pageNumber : 1, facilityPageInfo.pageSize);
       setFacilityMessage({
         type: "success",
         text: response.message || (editingFacilityId ? "Đã cập nhật cơ sở y tế." : "Đã tạo cơ sở y tế và liên kết chuyên khoa."),
@@ -1369,7 +1415,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         title: updatedFacility.isActive ? "Đã bật cơ sở y tế" : "Đã tắt cơ sở y tế",
         message: response.message || "Trạng thái cơ sở y tế đã được cập nhật.",
       });
-      await loadFacilities();
+      await loadFacilities(facilityPageInfo.pageNumber, facilityPageInfo.pageSize);
     } catch (error) {
       setFacilityMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không đổi được trạng thái cơ sở y tế", message: error.message });
@@ -1391,7 +1437,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setFacilities((current) => current.filter((item) => item.id !== facility.id));
       showToast({ type: "success", title: "Đã xóa cơ sở y tế", message: response.message || "Danh sách cơ sở y tế đã được cập nhật." });
       if (editingFacilityId === facility.id) resetFacilityForm();
-      await loadFacilities();
+      await loadFacilities(facilityPageInfo.pageNumber, facilityPageInfo.pageSize);
     } catch (error) {
       setFacilityMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không xóa được cơ sở y tế", message: error.message });
@@ -1692,15 +1738,22 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 editingFacilityId={editingFacilityId}
                 facilities={facilities}
                 facilityDepartments={facilityDepartments}
+                filters={facilityFilters}
                 form={facilityForm}
                 loadError={facilityLoadError}
                 loading={facilitiesLoading}
                 message={facilityMessage}
+                pageInfo={facilityPageInfo}
                 saving={savingFacility}
                 onDelete={handleDeleteFacility}
                 onEdit={startEditFacility}
+                onFilterChange={updateFacilityFilter}
+                onApplyFilters={applyFacilityFilters}
+                onClearFilters={clearFacilityFilters}
                 onFormChange={(key, value) => setFacilityForm((current) => ({ ...current, [key]: value }))}
-                onReload={loadFacilities}
+                onLoadPage={(pageNumber) => loadFacilities(pageNumber, facilityPageInfo.pageSize)}
+                onPageSizeChange={changeFacilityPageSize}
+                onReload={() => loadFacilities(facilityPageInfo.pageNumber, facilityPageInfo.pageSize)}
                 onReset={resetFacilityForm}
                 onSubmit={handleSaveFacility}
                 onToggleDepartment={toggleFacilityDepartment}

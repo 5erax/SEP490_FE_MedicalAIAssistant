@@ -2,8 +2,13 @@ import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
 export const medicalFacilitiesApi = {
-  list(pageNumber = 1, pageSize = 50) {
-    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.BASE}?${withPagination(pageNumber, pageSize)}`);
+  list(pageNumber = 1, pageSize = 50, filters = {}) {
+    const params = new URLSearchParams(withPagination(pageNumber, pageSize));
+    if (filters.search?.trim()) params.set("search", filters.search.trim());
+    if (filters.isActive !== "" && filters.isActive !== undefined && filters.isActive !== null) {
+      params.set("isActive", String(filters.isActive));
+    }
+    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.BASE}?${params.toString()}`);
   },
 
   active(filters = {}) {
