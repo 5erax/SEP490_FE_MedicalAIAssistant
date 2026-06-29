@@ -84,6 +84,9 @@ const EMPTY_FACILITY_FILTERS = {
   isActive: "",
   departmentId: "",
 };
+const EMPTY_ICD_CHAPTER_FILTERS = {
+  search: "",
+};
 const EMPTY_DOCTOR_FILTERS = {
   search: "",
   facilityId: "",
@@ -93,6 +96,7 @@ const EMPTY_DOCTOR_FILTERS = {
 };
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
 const DEFAULT_FACILITY_PAGE_SIZE = 10;
+const DEFAULT_ICD_CHAPTER_PAGE_SIZE = 10;
 const USER_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách tài khoản.";
 const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.";
@@ -121,11 +125,11 @@ const QUESTION_CATALOG_CONFIG = {
   title: "Câu hỏi lâm sàng", formTitle: "Nội dung câu hỏi", singularLabel: "câu hỏi", pluralLabel: "câu hỏi lâm sàng",
   primaryField: "questionVi", secondaryField: "englishPrefix",
   fields: [
-    { name: "chapterId", label: "ID chương ICD", required: true },
-    { name: "chapterCode", label: "Mã chương ICD" },
+    { name: "chapterId", label: "Chương ICD", required: true, type: "icd-select" },
     { name: "questionVi", label: "Câu hỏi tiếng Việt", required: true, multiline: true },
     { name: "englishPrefix", label: "Câu hỏi tiếng Anh", required: true, multiline: true },
     { name: "sortOrder", label: "Thứ tự", required: true, type: "number", min: 0, step: 1, serialize: Number },
+    { name: "answers", label: "Đáp án", type: "answers" },
   ],
 };
 const ADMIN_NAV_ITEMS = getNavigationModel("admin");
@@ -293,12 +297,15 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     totalCount: 0,
     totalPages: 1,
   });
+  const [icdChapterPageInfo, setIcdChapterPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_ICD_CHAPTER_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [facilityPageInfo, setFacilityPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_FACILITY_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const activeSection = initialSection;
   const [search, setSearch] = useState("");
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [appliedFacilityFilters, setAppliedFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
+  const [icdChapterFilters, setIcdChapterFilters] = useState(EMPTY_ICD_CHAPTER_FILTERS);
+  const [appliedIcdChapterFilters, setAppliedIcdChapterFilters] = useState(EMPTY_ICD_CHAPTER_FILTERS);
   const [doctorFilters, setDoctorFilters] = useState(initialDoctorView.filters);
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
@@ -437,7 +444,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       authApi.me(),
       usersApi.list(1, pageInfo.pageSize),
       medicalDepartmentsApi.list(),
-      icdChaptersApi.list(),
+      icdChaptersApi.list(1, DEFAULT_ICD_CHAPTER_PAGE_SIZE, EMPTY_ICD_CHAPTER_FILTERS),
       doctorManagementApi.list({
         ...initialDoctorView.filters,
         pageNumber: initialDoctorView.pageNumber,
@@ -488,8 +495,14 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         }
 
         if (icdChapterResult.status === "fulfilled") {
-          const data = icdChapterResult.value.data;
-          setIcdChapters(Array.isArray(data) ? data : data?.items ?? []);
+          const data = icdChapterResult.value.data ?? {};
+          setIcdChapters(data.items ?? []);
+          setIcdChapterPageInfo({
+            pageNumber: data.pageNumber ?? 1,
+            pageSize: data.pageSize ?? DEFAULT_ICD_CHAPTER_PAGE_SIZE,
+            totalCount: data.totalCount ?? 0,
+            totalPages: data.totalPages ?? 1,
+          });
         } else {
           setIcdChapterMessage({ type: "error", text: icdChapterResult.reason.message });
         }
@@ -615,18 +628,51 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     }
   }
 
-  async function loadIcdChapters() {
+  async function loadIcdChapters(
+    pageNumber = icdChapterPageInfo.pageNumber,
+    pageSize = icdChapterPageInfo.pageSize,
+    filters = appliedIcdChapterFilters,
+  ) {
     setIcdChaptersLoading(true);
     setIcdChapterMessage(null);
     try {
-      const response = await icdChaptersApi.list();
-      const data = response.data;
-      setIcdChapters(Array.isArray(data) ? data : data?.items ?? []);
+      const response = await icdChaptersApi.list(pageNumber, pageSize, filters);
+      const data = response.data ?? {};
+      setIcdChapters(data.items ?? []);
+      setIcdChapterPageInfo({
+        pageNumber: data.pageNumber ?? pageNumber,
+        pageSize: data.pageSize ?? pageSize,
+        totalCount: data.totalCount ?? 0,
+        totalPages: data.totalPages ?? 1,
+      });
     } catch (error) {
       setIcdChapterMessage({ type: "error", text: error.message });
     } finally {
       setIcdChaptersLoading(false);
     }
+  }
+
+  function updateIcdChapterFilter(key, value) {
+    setIcdChapterFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function applyIcdChapterFilters(event) {
+    event.preventDefault();
+    setAppliedIcdChapterFilters(icdChapterFilters);
+    setIcdChapterPageInfo((current) => ({ ...current, pageNumber: 1 }));
+    loadIcdChapters(1, icdChapterPageInfo.pageSize, icdChapterFilters);
+  }
+
+  function clearIcdChapterFilters() {
+    setIcdChapterFilters(EMPTY_ICD_CHAPTER_FILTERS);
+    setAppliedIcdChapterFilters(EMPTY_ICD_CHAPTER_FILTERS);
+    setIcdChapterPageInfo((current) => ({ ...current, pageNumber: 1 }));
+    loadIcdChapters(1, icdChapterPageInfo.pageSize, EMPTY_ICD_CHAPTER_FILTERS);
+  }
+
+  function changeIcdChapterPageSize(pageSize) {
+    setIcdChapterPageInfo((current) => ({ ...current, pageSize, pageNumber: 1 }));
+    loadIcdChapters(1, pageSize, appliedIcdChapterFilters);
   }
 
   async function loadFacilities(
@@ -1219,7 +1265,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         text: response.message || (editingIcdChapterId ? "Đã cập nhật ICD Chapter." : "Đã tạo ICD Chapter."),
       });
       resetIcdChapterForm();
-      await loadIcdChapters();
+      await loadIcdChapters(editingIcdChapterId ? icdChapterPageInfo.pageNumber : 1, icdChapterPageInfo.pageSize);
     } catch (error) {
       setIcdChapterMessage({ type: "error", text: error.message });
     } finally {
@@ -1248,7 +1294,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setIcdChapterMessage({ type: "success", text: response.message || "Đã xóa ICD Chapter." });
       showToast({ type: "success", title: "Đã xóa ICD Chapter", message: response.message || "Danh mục đã được cập nhật." });
       if (editingIcdChapterId === id) resetIcdChapterForm();
-      await loadIcdChapters();
+      await loadIcdChapters(icdChapterPageInfo.pageNumber, icdChapterPageInfo.pageSize);
     } catch (error) {
       setIcdChapterMessage({ type: "error", text: error.message });
     }
@@ -1715,14 +1761,21 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
               <AdminICDChaptersSection
                 chapters={icdChapters}
                 editingChapterId={editingIcdChapterId}
+                filters={icdChapterFilters}
                 form={icdChapterForm}
                 loading={icdChaptersLoading}
                 message={icdChapterMessage}
+                pageInfo={icdChapterPageInfo}
                 saving={savingIcdChapter}
                 onDelete={handleDeleteIcdChapter}
                 onEdit={startEditIcdChapter}
+                onApplyFilters={applyIcdChapterFilters}
+                onClearFilters={clearIcdChapterFilters}
+                onFilterChange={updateIcdChapterFilter}
                 onFormChange={(key, value) => setIcdChapterForm((current) => ({ ...current, [key]: value }))}
-                onReload={loadIcdChapters}
+                onLoadPage={(pageNumber) => loadIcdChapters(pageNumber, icdChapterPageInfo.pageSize)}
+                onPageSizeChange={changeIcdChapterPageSize}
+                onReload={() => loadIcdChapters(icdChapterPageInfo.pageNumber, icdChapterPageInfo.pageSize)}
                 onReset={resetIcdChapterForm}
                 onSubmit={handleSaveIcdChapter}
                 onView={handleViewIcdChapter}

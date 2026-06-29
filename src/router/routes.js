@@ -50,7 +50,7 @@ const BASE_ROUTES = [
     navigation: {
       shell: "patient",
       label: "Dashboard",
-      hint: "Lịch sử và hồ sơ",
+      hint: "Triệu chứng chuyên khoa",
       icon: "dashboard",
       order: 10,
       mobile: true,

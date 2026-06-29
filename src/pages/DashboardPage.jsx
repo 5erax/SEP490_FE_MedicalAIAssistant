@@ -203,7 +203,6 @@ export default function DashboardPage() {
     answers,
     canSubmitAnswers,
     error,
-    currentQuestionIndex,
     input,
     loading,
     questions,
@@ -211,7 +210,6 @@ export default function DashboardPage() {
     resetDiagnosis,
     result,
     sessionId,
-    setCurrentQuestionIndex,
     setInput,
     startDiagnosis,
     status,
@@ -396,7 +394,7 @@ export default function DashboardPage() {
 
         {["questions", "submitting"].includes(status) && (
           <form
-            className="studio-diagnosis-panel"
+            className="studio-diagnosis-panel studio-question-flow"
             onSubmit={submitAnswers}
             ref={questionsPanelRef}
             tabIndex={-1}
@@ -404,53 +402,58 @@ export default function DashboardPage() {
           >
             <div className="studio-panel-head">
               <div>
-                <span>Câu hỏi {currentQuestionIndex + 1} / {questions.length}</span>
-                <h2>Chọn câu trả lời phù hợp nhất với tình trạng hiện tại</h2>
+                <span>Câu hỏi làm rõ</span>
+                <h2>Hệ thống tìm thấy {questions.length} câu hỏi để làm rõ triệu chứng.</h2>
               </div>
-              <strong>{Math.round((answeredCount / questions.length) * 100)}%</strong>
+              <strong>{answeredCount}/{questions.length}</strong>
+            </div>
+
+            <div className="studio-answer-progress" aria-label={`Đã trả lời ${answeredCount} trên ${questions.length} câu hỏi`}>
+              <div>
+                <span>Đã trả lời</span>
+                <strong>{answeredCount}/{questions.length}</strong>
+              </div>
+              <span className="studio-answer-track">
+                <i style={{ width: `${questions.length ? Math.round((answeredCount / questions.length) * 100) : 0}%` }} />
+              </span>
             </div>
 
             <div className="studio-question-list">
-              {questions[currentQuestionIndex] && (() => {
-                const question = questions[currentQuestionIndex];
+              {questions.map((question, index) => {
+                const questionId = question.questionId;
                 return (
-                <fieldset className="studio-question" key={question.questionId}>
-                  <legend>{question.questionText}</legend>
-                  <div>
-                    <label>
-                      <input
-                        type="radio"
-                        name={`answer-${question.questionId}`}
-                        checked={answers[question.questionId] === true}
-                        onChange={() => updateAnswer(question.questionId, true)}
-                      />
-                      Có
-                    </label>
-                    <label>
-                      <input
-                        type="radio"
-                        name={`answer-${question.questionId}`}
-                        checked={answers[question.questionId] === false}
-                        onChange={() => updateAnswer(question.questionId, false)}
-                      />
-                      Không
-                    </label>
-                  </div>
-                  {question.chapterCode && <small>Nhóm ICD: {question.chapterCode}</small>}
-                </fieldset>
+                  <article className="studio-question" key={questionId}>
+                    <span className="studio-question-index">{index + 1}</span>
+                    <p>{question.questionText}</p>
+                    <div className="studio-segmented-answer" role="group" aria-label={`Trả lời câu hỏi ${index + 1}`}>
+                      <button
+                        className={answers[questionId] === true ? "selected yes" : ""}
+                        type="button"
+                        aria-pressed={answers[questionId] === true}
+                        onClick={() => updateAnswer(questionId, true)}
+                      >
+                        Có
+                      </button>
+                      <button
+                        className={answers[questionId] === false ? "selected no" : ""}
+                        type="button"
+                        aria-pressed={answers[questionId] === false}
+                        onClick={() => updateAnswer(questionId, false)}
+                      >
+                        Không
+                      </button>
+                    </div>
+                  </article>
                 );
-              })()}
+              })}
             </div>
-            <div className="studio-question-actions">
-              <Button type="button" tone="secondary" disabled={currentQuestionIndex === 0} onClick={() => setCurrentQuestionIndex((index) => index - 1)}>Câu trước</Button>
-              {currentQuestionIndex < questions.length - 1 ? (
-                <Button type="button" disabled={answers[questions[currentQuestionIndex]?.questionId] === undefined} onClick={() => setCurrentQuestionIndex((index) => index + 1)}>Câu tiếp theo</Button>
-              ) : (
-                <Button size="lg" type="submit" loading={status === "submitting"} loadingLabel="Đang phân tích..." disabled={!canSubmitAnswers}>
-                  Xem nhận định và bệnh viện phù hợp
+            {canSubmitAnswers && (
+              <div className="studio-question-actions">
+                <Button size="lg" type="submit" loading={status === "submitting"} loadingLabel="Đang phân tích...">
+                  Tiếp tục phân tích
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </form>
         )}
 

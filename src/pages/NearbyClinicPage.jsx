@@ -610,27 +610,35 @@ function NearbyClinicPage() {
           onViewDetail={openFacilityDetail}
         />
         {detailPanelOpen && detailFacility && (
-        <section
-          className="facility-detail-view"
-          aria-labelledby="facility-detail-title"
-          tabIndex="-1"
-          onKeyDown={(event) => {
-            if (event.key === "Escape") closeFacilityDetail();
-          }}
-        >
-          <div className="facility-detail-hero">
-            {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
-            <div>
-              <button ref={detailCloseButtonRef} type="button" onClick={closeFacilityDetail}>Đóng xem chi tiết</button>
-              <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
-              <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
-              <p>{detailFacility.address}</p>
-              <div className="facility-detail-hero-actions">
-                <button type="button" disabled={!detailFacility.phone} onClick={() => callFacility(detailFacility)}>Gọi điện</button>
-                <button type="button" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}>Chỉ đường</button>
+          <section
+            className="facility-detail-view"
+            aria-labelledby="facility-detail-title"
+            tabIndex="-1"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") closeFacilityDetail();
+            }}
+          >
+            <button
+              ref={detailCloseButtonRef}
+              className="facility-detail-close"
+              type="button"
+              onClick={closeFacilityDetail}
+              aria-label="Đóng xem chi tiết"
+            >
+              ×
+            </button>
+            <div className="facility-detail-hero">
+              {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
+              <div>
+                <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
+                <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
+                <p>{detailFacility.address}</p>
+                <div className="facility-detail-hero-actions">
+                  <button type="button" disabled={!detailFacility.phone} onClick={() => callFacility(detailFacility)}>Gọi điện</button>
+                  <button type="button" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}>Chỉ đường</button>
+                </div>
               </div>
             </div>
-          </div>
 
           <div className="facility-detail-content">
             {detailLoading && <p className="facility-detail-status">Đang tải thông tin chi tiết...</p>}
@@ -785,6 +793,8 @@ const styles = `
 .locate-button { position: absolute; right: 18px; bottom: 18px; z-index: 2; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); font-size: 22px; font-weight: 900; }
 .location-error { position: absolute; right: 18px; bottom: 78px; z-index: 2; border: 1px solid rgba(239,111,97,.35); border-radius: 9px; background: #fff4f2; color: #b42318; padding: 9px 11px; font-size: 12px; font-weight: 800; }
 .facility-detail-view { position: absolute; inset: 42px; z-index: 8; overflow-y: auto; display: block; border: 1px solid var(--line-strong); border-radius: 24px; background: linear-gradient(180deg, #f8fbf4, #eef5e9); box-shadow: 0 24px 70px rgba(17,20,18,.22); transform-origin: center bottom; animation: facilityDetailReveal 520ms cubic-bezier(.16, 1, .3, 1) both; }
+.facility-detail-close { position: absolute; top: 18px; right: 18px; z-index: 12; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid rgba(180, 35, 24, .24); border-radius: 50%; background: #fff4f2; color: #b42318; box-shadow: 0 12px 28px rgba(180, 35, 24, .18); font-size: 28px; line-height: 1; font-weight: 900; cursor: pointer; transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease; }
+.facility-detail-close:hover, .facility-detail-close:focus-visible { background: #b42318; color: #fff; box-shadow: 0 16px 34px rgba(180, 35, 24, .28); transform: scale(1.04); outline: none; }
 .facility-detail-hero { min-height: 320px; display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1fr); gap: 0; border-bottom: 1px solid var(--line); background: #fff; }
 .facility-detail-hero > img, .facility-detail-hero > span { width: 100%; height: 100%; min-height: 320px; object-fit: cover; }
 .facility-detail-hero > span { display: grid; place-items: center; background: linear-gradient(135deg, rgba(8,127,140,.16), rgba(184,239,121,.36)), #edf6e8; color: var(--ink); font-size: 48px; font-weight: 950; }
