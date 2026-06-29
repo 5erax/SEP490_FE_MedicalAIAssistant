@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import FacilityReviews from "../components/nearbyClinic/FacilityReviews";
@@ -21,6 +21,15 @@ const TYPE_LABELS = {
 };
 
 const MAP_LOAD_TIMEOUT_MS = 12_000;
+
+function readMapQuery() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    departmentId: params.get("departmentId") || "",
+    facilityId: params.get("facilityId") || "",
+    search: params.get("search") || "",
+  };
+}
 
 function coordinateOrNull(value, minimum, maximum) {
   if (value === null || value === undefined || value === "") return null;
@@ -62,14 +71,22 @@ function getObjectData(response) {
   return response?.data?.data ?? response?.data ?? response;
 }
 
-function normalizeFacility(facility, relationDepartments = []) {
+function normalizeFacility(facility, relationDepartments = [], relationDepartmentIds = []) {
   const id = facility.facilityId ?? facility.id;
   const latitude = coordinateOrNull(facility.latitude, -90, 90);
   const longitude = coordinateOrNull(facility.longitude, -180, 180);
   const embeddedDepartments = Array.isArray(facility.departments)
     ? facility.departments.map((item) => item.departmentName ?? item.name ?? item).filter(Boolean)
     : [];
+  const embeddedDepartmentIds = Array.isArray(facility.departments)
+    ? facility.departments.map((item) => item.departmentId ?? item.id).filter(Boolean)
+    : [];
   const departments = Array.from(new Set([...embeddedDepartments, ...relationDepartments].filter(Boolean)));
+  const departmentIds = Array.from(new Set(
+    [...embeddedDepartmentIds, ...relationDepartmentIds]
+      .map((value) => String(value ?? "").trim())
+      .filter(Boolean),
+  ));
   const typeKey = normalizeFacilityType(facility.facilityType);
   const phone = normalizePhone(facility.phone);
 
@@ -91,11 +108,15 @@ function normalizeFacility(facility, relationDepartments = []) {
     facilityTypeLabel: TYPE_LABELS[typeKey],
     openingHours: facility.openingHours || "Đang cập nhật",
     departments: departments.length ? departments : ["Đa khoa"],
+    departmentIds,
   };
 }
 
 function NearbyClinicPage() {
   const auth = getStoredAuth();
+  const [mapQuery] = useState(readMapQuery);
+  const requestedDepartmentId = mapQuery.departmentId;
+  const requestedFacilityId = mapQuery.facilityId;
   const [chatContext] = useState(() => {
     try {
       const raw = sessionStorage.getItem("medimate.map.chat");
@@ -108,7 +129,7 @@ function NearbyClinicPage() {
   const [loadingFacilities, setLoadingFacilities] = useState(true);
   const [apiNotice, setApiNotice] = useState("");
   const [searchText, setSearchText] = useState(
-    () => new URLSearchParams(window.location.search).get("search") || "",
+    () => mapQuery.search,
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedFacility, setSelectedFacility] = useState(null);
@@ -130,6 +151,7 @@ function NearbyClinicPage() {
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
+  const requestedFacilityOpenedRef = useRef(false);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -166,18 +188,32 @@ function NearbyClinicPage() {
             .filter(([id, name]) => id && name),
         );
         const relations = relationResult.status === "fulfilled" ? getArrayData(relationResult.value) : [];
-        const relationDepartmentsByFacility = relations.reduce((map, relation) => {
+        const relationDepartmentsByFacility = new globalThis.Map();
+        const relationDepartmentIdsByFacility = new globalThis.Map();
+        relations.forEach((relation) => {
           const facilityId = relation.facilityId;
+          if (!facilityId) return;
+
           const departmentName = relation.departmentName || departmentNamesById.get(relation.departmentId);
-          if (!facilityId || !departmentName) return map;
-          const names = map.get(facilityId) ?? [];
-          names.push(departmentName);
-          map.set(facilityId, names);
-          return map;
-        }, new globalThis.Map());
+          if (departmentName) {
+            const names = relationDepartmentsByFacility.get(facilityId) ?? [];
+            names.push(departmentName);
+            relationDepartmentsByFacility.set(facilityId, names);
+          }
+
+          if (relation.departmentId) {
+            const ids = relationDepartmentIdsByFacility.get(facilityId) ?? [];
+            ids.push(relation.departmentId);
+            relationDepartmentIdsByFacility.set(facilityId, ids);
+          }
+        });
         const data = rawFacilities.map((facility) => {
           const facilityId = facility.facilityId ?? facility.id;
-          return normalizeFacility(facility, relationDepartmentsByFacility.get(facilityId) ?? []);
+          return normalizeFacility(
+            facility,
+            relationDepartmentsByFacility.get(facilityId) ?? [],
+            relationDepartmentIdsByFacility.get(facilityId) ?? [],
+          );
         });
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
@@ -222,6 +258,8 @@ function NearbyClinicPage() {
 
   const filteredFacilities = useMemo(() => {
     const normalized = normalizeSearchText(debouncedSearch);
+    const normalizedDepartmentId = String(requestedDepartmentId).trim();
+    const normalizedDepartmentSearch = normalizeSearchText(requestedDepartmentId);
     return facilities.filter((facility) => {
       const searchable = [
         facility.facilityName,
@@ -232,9 +270,12 @@ function NearbyClinicPage() {
         ...facility.departments,
       ].map(normalizeSearchText);
       const matchSearch = !normalized || searchable.some((value) => value.includes(normalized));
-      return matchSearch;
+      const matchDepartment = !normalizedDepartmentId
+        || facility.departmentIds?.some((departmentId) => String(departmentId) === normalizedDepartmentId)
+        || facility.departments.map(normalizeSearchText).some((value) => value.includes(normalizedDepartmentSearch));
+      return matchSearch && matchDepartment;
     });
-  }, [debouncedSearch, facilities]);
+  }, [debouncedSearch, facilities, requestedDepartmentId]);
 
   const mappableFacilities = useMemo(
     () => filteredFacilities.filter((facility) => facility.hasValidCoordinates),
@@ -242,10 +283,10 @@ function NearbyClinicPage() {
   );
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
 
-  const prefersReducedMotion = () => (
+  const prefersReducedMotion = useCallback(() => (
     document.documentElement.dataset.motion === "reduce"
     || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
-  );
+  ), []);
 
   const handleSearchChange = (event) => {
     setSearchText(event.target.value);
@@ -256,7 +297,7 @@ function NearbyClinicPage() {
     setReviewsLoading(false);
   };
 
-  const handleCardClick = (facility) => {
+  const handleCardClick = useCallback((facility) => {
     setReviewsLoading(true);
     setReviewMessage("");
     setSelectedFacility(facility);
@@ -271,9 +312,9 @@ function NearbyClinicPage() {
       block: "nearest",
       behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
-  };
+  }, [mapStatus, prefersReducedMotion]);
 
-  const openFacilityDetail = async (facility) => {
+  const openFacilityDetail = useCallback(async (facility) => {
     if (!facility?.facilityId) return;
     handleCardClick(facility);
     setDetailPanelOpen(true);
@@ -289,7 +330,11 @@ function NearbyClinicPage() {
         doctorManagementApi.list({ facilityId: facility.facilityId, pageNumber: 1, pageSize: 12, isActive: true }),
       ]);
       if (facilityResult.status === "fulfilled") {
-        setDetailFacility(normalizeFacility(getObjectData(facilityResult.value)));
+        setDetailFacility(normalizeFacility(
+          getObjectData(facilityResult.value),
+          facility.departments,
+          facility.departmentIds,
+        ));
       } else {
         throw facilityResult.reason;
       }
@@ -300,7 +345,21 @@ function NearbyClinicPage() {
       setDetailLoading(false);
       setDetailDoctorsLoading(false);
     }
-  };
+  }, [handleCardClick]);
+
+  useEffect(() => {
+    if (loadingFacilities || !requestedFacilityId || requestedFacilityOpenedRef.current) return;
+
+    const matchedFacility = facilities.find((facility) => String(facility.facilityId) === String(requestedFacilityId));
+    requestedFacilityOpenedRef.current = true;
+
+    if (!matchedFacility) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      openFacilityDetail(matchedFacility);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [facilities, loadingFacilities, openFacilityDetail, requestedFacilityId]);
 
   const closeFacilityDetail = () => {
     setDetailPanelOpen(false);

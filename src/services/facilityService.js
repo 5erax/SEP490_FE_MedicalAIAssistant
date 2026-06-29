@@ -6,8 +6,12 @@ export const medicalFacilitiesApi = {
     return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.BASE}?${withPagination(pageNumber, pageSize)}`);
   },
 
-  active() {
-    return apiRequest(ENDPOINTS.MEDICAL_FACILITIES.ACTIVE);
+  active(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.departmentId) params.set("departmentId", filters.departmentId);
+    if (filters.search) params.set("search", filters.search);
+    const query = params.toString();
+    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.ACTIVE}${query ? `?${query}` : ""}`);
   },
 
   get(id) {

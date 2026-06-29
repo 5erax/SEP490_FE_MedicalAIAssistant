@@ -9,6 +9,7 @@ import { symptomAnalysisApi } from "../services/symptomAnalysisService";
 import "../styles/medical-assessment.css";
 
 const SESSION_KEY_PREFIX = "medimate.assessment.session.";
+const DRAFT_KEY = "medimate.assessment.draft";
 const SAFETY_CONFIRMATION_KEY = "medimate.assessment.safetyConfirmedAt";
 const SAFETY_CONFIRMATION_MAX_AGE_MS = 30 * 60 * 1000;
 const assessmentSessionCache = new Map();
@@ -69,20 +70,49 @@ function confidencePercent(value) {
 }
 
 function loadSessionState(sessionId) {
-  return assessmentSessionCache.get(`${SESSION_KEY_PREFIX}${sessionId}`) ?? null;
+  const key = `${SESSION_KEY_PREFIX}${sessionId}`;
+  const cached = assessmentSessionCache.get(key);
+  if (cached) return cached;
+
+  try {
+    const raw = sessionStorage.getItem(key);
+    const state = raw ? JSON.parse(raw) : null;
+    if (state) assessmentSessionCache.set(key, state);
+    return state;
+  } catch {
+    return null;
+  }
 }
 
 function saveSessionState(sessionId, state) {
   if (!sessionId) return;
-  assessmentSessionCache.set(`${SESSION_KEY_PREFIX}${sessionId}`, state);
+  const key = `${SESSION_KEY_PREFIX}${sessionId}`;
+  assessmentSessionCache.set(key, state);
+  try {
+    sessionStorage.setItem(key, JSON.stringify(state));
+  } catch {
+    // Keep the current in-memory assessment usable when sessionStorage is unavailable.
+  }
 }
 
 function loadDraft() {
-  return assessmentDraftCache;
+  if (assessmentDraftCache) return assessmentDraftCache;
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    assessmentDraftCache = raw ? JSON.parse(raw) : null;
+    return assessmentDraftCache;
+  } catch {
+    return null;
+  }
 }
 
 function saveDraft(draft) {
   assessmentDraftCache = draft;
+  try {
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // Draft persistence is best-effort; form state still lives in React memory.
+  }
 }
 
 function confirmSafetyGate() {
@@ -127,6 +157,10 @@ function getFacilities(result) {
 
 function facilityKey(facility) {
   return facility?.id || facility?.facilityId || facility?.facilityName;
+}
+
+function facilityId(facility) {
+  return facility?.facilityId || facility?.id || "";
 }
 
 function AssessmentShell({ eyebrow, title, description, children }) {
@@ -608,8 +642,14 @@ function ResultPage({ sessionId }) {
 
   function openMap() {
     const search = new URLSearchParams();
+    const topFacility = facilities[0] ?? null;
+    const topFacilityId = facilityId(topFacility);
+
+    if (topFacilityId) search.set("facilityId", topFacilityId);
     if (department?.departmentId) search.set("departmentId", department.departmentId);
-    if (department?.departmentName) search.set("search", department.departmentName);
+    if (topFacility?.facilityName || department?.departmentName) {
+      search.set("search", topFacility?.facilityName || department.departmentName);
+    }
     search.set("sessionId", sessionId);
     navigate(`/map?${search.toString()}`);
   }

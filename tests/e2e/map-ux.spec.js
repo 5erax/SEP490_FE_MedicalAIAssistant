@@ -104,7 +104,7 @@ test("facility without coordinates stays in the list without a false marker", as
   await expect(page.getByText("Chưa có vị trí chính xác trên bản đồ.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveCount(0);
 
-  const directionsButton = page.getByRole("button", { name: "Chỉ đường" });
+  const directionsButton = page.getByLabel("Danh sách cơ sở y tế").getByRole("button", { name: "Chỉ đường" });
   await expect(directionsButton).toBeDisabled();
   await expect(directionsButton).toHaveAttribute("title", "Cơ sở chưa có tọa độ chính xác");
 });

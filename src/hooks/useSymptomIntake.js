@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { symptomAnalysisApi } from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
 
+const INTAKE_STATE_KEY = "medimate.specialty.intake";
+const RESUMABLE_STATUSES = new Set(["idle", "questions", "no-questions", "result"]);
+
 function readSymptomPrefill() {
   if (typeof sessionStorage === "undefined") return "";
   const prefill = sessionStorage.getItem("medimate.symptom.prefill") ?? "";
@@ -9,15 +12,77 @@ function readSymptomPrefill() {
   return prefill;
 }
 
+function readStoredIntakeState() {
+  if (typeof sessionStorage === "undefined") return null;
+
+  try {
+    const raw = sessionStorage.getItem(INTAKE_STATE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredIntakeState(state) {
+  if (typeof sessionStorage === "undefined") return;
+
+  const hasMeaningfulState = Boolean(
+    state.input?.trim()
+    || state.sessionId
+    || state.questions.length
+    || state.result
+    || state.status !== "idle",
+  );
+
+  try {
+    if (!hasMeaningfulState) {
+      sessionStorage.removeItem(INTAKE_STATE_KEY);
+      return;
+    }
+
+    sessionStorage.setItem(INTAKE_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Keep the in-memory flow usable if the browser blocks or fills sessionStorage.
+  }
+}
+
+function normalizeInitialState(storedState, prefill) {
+  const questions = Array.isArray(storedState?.questions) ? storedState.questions : [];
+  const result = storedState?.result ?? null;
+  const status = RESUMABLE_STATUSES.has(storedState?.status) ? storedState.status : "idle";
+  const currentQuestionIndex = Math.max(
+    0,
+    Math.min(Number(storedState?.currentQuestionIndex) || 0, Math.max(questions.length - 1, 0)),
+  );
+
+  return {
+    input: prefill || storedState?.input || "",
+    sessionId: prefill ? "" : storedState?.sessionId || "",
+    questions: prefill ? [] : questions,
+    answers: prefill || !storedState?.answers || typeof storedState.answers !== "object" ? {} : storedState.answers,
+    currentQuestionIndex: prefill ? 0 : currentQuestionIndex,
+    result: prefill ? null : result,
+    status: prefill || (status === "result" && !result) || (status === "questions" && questions.length === 0)
+      ? "idle"
+      : status,
+  };
+}
+
+function readInitialIntakeState() {
+  const prefill = readSymptomPrefill();
+  return normalizeInitialState(prefill ? null : readStoredIntakeState(), prefill);
+}
+
 export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
   const questionsPanelRef = useRef(null);
-  const [input, setInput] = useState(readSymptomPrefill);
-  const [sessionId, setSessionId] = useState("");
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [result, setResult] = useState(null);
-  const [status, setStatus] = useState("idle");
+  const [initialState] = useState(readInitialIntakeState);
+  const [input, setInput] = useState(initialState.input);
+  const [sessionId, setSessionId] = useState(initialState.sessionId);
+  const [questions, setQuestions] = useState(initialState.questions);
+  const [answers, setAnswers] = useState(initialState.answers);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(initialState.currentQuestionIndex);
+  const [result, setResult] = useState(initialState.result);
+  const [status, setStatus] = useState(initialState.status);
   const [error, setError] = useState("");
 
   const loading = status === "loading-questions" || status === "submitting";
@@ -32,6 +97,18 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
     }, 80);
     return () => window.clearTimeout(handle);
   }, [questions.length, status]);
+
+  useEffect(() => {
+    writeStoredIntakeState({
+      input,
+      sessionId,
+      questions,
+      answers,
+      currentQuestionIndex,
+      result,
+      status,
+    });
+  }, [answers, currentQuestionIndex, input, questions, result, sessionId, status]);
 
   function resetDiagnosis({ clearInput = false } = {}) {
     setError("");
@@ -104,7 +181,7 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
 
   return {
     answeredCount, answers, canSubmitAnswers, currentQuestionIndex, error, input, loading,
-    questions, questionsPanelRef, resetDiagnosis, result, setCurrentQuestionIndex, setInput,
+    questions, questionsPanelRef, resetDiagnosis, result, sessionId, setCurrentQuestionIndex, setInput,
     startDiagnosis, status, submitAnswers, updateAnswer,
   };
 }

@@ -9,6 +9,13 @@ const ACCESS_TOKEN = [
 const SESSION_ID = "33333333-3333-4333-8333-333333333333";
 const QUESTION_ID = "77777777-7777-4777-8777-777777777777";
 const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
+const FACILITY_ID = "11111111-1111-4111-8111-111111111111";
+const MAP_STYLE = {
+  version: 8,
+  name: "E2E map style",
+  sources: {},
+  layers: [],
+};
 
 test.describe("patient specialty intake", () => {
   test.beforeEach(async ({ page }) => {
@@ -25,6 +32,26 @@ test.describe("patient specialty intake", () => {
     let questionPayload = null;
     let answerPayload = null;
     let diagnosisPayload = null;
+    const recommendedFacility = {
+      id: FACILITY_ID,
+      facilityName: "Bệnh viện Tai Mũi Họng",
+      address: "123 Nguyễn Trãi",
+      rating: 4.7,
+      latitude: 10.77,
+      longitude: 106.69,
+      isActive: true,
+      departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tai Mũi Họng" }],
+    };
+    const secondaryFacility = {
+      id: "99999999-9999-4999-8999-999999999999",
+      facilityName: "Phòng khám Đánh Giá Cao",
+      address: "456 Lê Lợi",
+      rating: 5,
+      latitude: 10.78,
+      longitude: 106.7,
+      isActive: true,
+      departments: [{ departmentId: "other", departmentName: "Nội tổng quát" }],
+    };
 
     await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => {
       questionPayload = route.request().postDataJSON();
@@ -70,25 +97,7 @@ test.describe("patient specialty intake", () => {
                 confidenceScore: 0.86,
                 reason: "Nên khám chuyên khoa tai mũi họng.",
               },
-              recommendedFacilities: [{
-                id: "11111111-1111-4111-8111-111111111111",
-                facilityName: "Bệnh viện Tai Mũi Họng",
-                address: "123 Nguyễn Trãi",
-                rating: 4.7,
-                latitude: 10.77,
-                longitude: 106.69,
-                isActive: true,
-                departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tai Mũi Họng" }],
-              }, {
-                id: "99999999-9999-4999-8999-999999999999",
-                facilityName: "Phòng khám Đánh Giá Cao",
-                address: "456 Lê Lợi",
-                rating: 5,
-                latitude: 10.78,
-                longitude: 106.7,
-                isActive: true,
-                departments: [{ departmentId: "other", departmentName: "Nội tổng quát" }],
-              }],
+              recommendedFacilities: [recommendedFacility, secondaryFacility],
             },
           },
         }),
@@ -116,6 +125,41 @@ test.describe("patient specialty intake", () => {
       });
     });
 
+    await page.route("**/api/medical-facilities/active", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [recommendedFacility, secondaryFacility] }),
+    }));
+
+    await page.route(`**/api/medical-facilities/${FACILITY_ID}`, (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: recommendedFacility }),
+    }));
+
+    await page.route("**/api/medical-departments**", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [{ id: DEPARTMENT_ID, departmentName: "Tai Mũi Họng" }] }),
+    }));
+
+    await page.route("**/api/facility-departments/active", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [{ facilityId: FACILITY_ID, departmentId: DEPARTMENT_ID }] }),
+    }));
+
+    await page.route("**/api/doctors**", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 12, totalCount: 0, totalPages: 0 } }),
+    }));
+
+    await page.route(`**/api/feedback-reviews/facility/${FACILITY_ID}**`, (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 0 } }),
+    }));
+
+    await page.route("https://basemaps.cartocdn.com/**", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(MAP_STYLE),
+    }));
+
     await openRoute(page, "/dashboard");
 
     const symptoms = page.getByLabel("Triệu chứng bạn đang gặp");
@@ -131,9 +175,7 @@ test.describe("patient specialty intake", () => {
     await expect(submit).toBeDisabled();
     await expect(page.getByText("Khi nào cần cấp cứu?")).toBeVisible();
 
-    const examplePrompt = page.getByRole("button", { name: "Sốt nhẹ 2 ngày kèm đau họng" });
-    await examplePrompt.click();
-    await expect(examplePrompt).toHaveAttribute("aria-pressed", "true");
+    await symptoms.fill("Sốt nhẹ 2 ngày kèm đau họng");
     await expect(symptoms).toHaveValue("Sốt nhẹ 2 ngày kèm đau họng");
     await expect(submit).toBeEnabled();
 
@@ -153,6 +195,17 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByText("Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.")).toBeVisible();
     await expect(page.getByText("#1")).toBeVisible();
     await expect(page.getByText("Ưu tiên vì có chuyên khoa liên quan, có tọa độ sẵn sàng điều hướng, 4.7 sao đánh giá, đang hoạt động.")).toBeVisible();
+
+    await page.getByRole("button", { name: "Mở bản đồ" }).click();
+    await expect(page).toHaveURL(new RegExp(`/map\\?[^#]*facilityId=${FACILITY_ID}`));
+    await expect(page.locator(".facility-detail-view").getByRole("heading", { name: "Bệnh viện Tai Mũi Họng", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Đang xem chi tiết" })).toBeVisible();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(currentStep).toContainText("Kết quả");
+    await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
 
     expect(questionPayload).toEqual({ userInput: "Sốt nhẹ 2 ngày kèm đau họng" });
     expect(answerPayload).toEqual({
