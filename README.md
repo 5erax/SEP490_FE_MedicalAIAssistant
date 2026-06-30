@@ -147,12 +147,12 @@ Không nên giữ địa chỉ backend cố định trong `vercel.json` khi chuy
 
 ## Đóng góp
 
-- [Hướng dẫn đóng góp](CONTRIBUTING.md)
-- [Quy tắc ứng xử](CODE_OF_CONDUCT.md)
+- [Hướng dẫn đóng góp](.github/CONTRIBUTING.md)
+- [Quy tắc ứng xử](.github/CODE_OF_CONDUCT.md)
 
 ## Bảo mật
 
-Không báo cáo lỗ hổng bảo mật trong issue công khai. Vui lòng đọc [SECURITY.md](SECURITY.md) để biết phạm vi hỗ trợ và cách gửi báo cáo riêng tư.
+Không báo cáo lỗ hổng bảo mật trong issue công khai. Vui lòng đọc [SECURITY.md](.github/SECURITY.md) để biết phạm vi hỗ trợ và cách gửi báo cáo riêng tư.
 
 ## Giấy phép
 
