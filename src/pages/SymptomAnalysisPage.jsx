@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../router/navigation";
-import { symptomAnalysisApi } from "../services/api";
+import {
+  buildClinicalQuestionAnswerItems,
+  symptomAnalysisApi,
+} from "../services/api";
 
 const QUICK_SYMPTOMS = ["Đau đầu", "Sốt", "Ho", "Đau bụng", "Mệt mỏi", "Khó thở", "Đau họng", "Chóng mặt"];
 
@@ -224,10 +227,7 @@ export default function SymptomAnalysisPage() {
     setStatus("submitting");
 
     try {
-      const payload = questions.map((question) => ({
-        questionId: question.questionId,
-        answer: answers[question.questionId],
-      }));
+      const payload = buildClinicalQuestionAnswerItems(questions, answers);
       const [recommendationResponse, diagnosisResponse] = await Promise.all([
         symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload),
         symptomAnalysisApi.submitDiagnosis(sessionId, payload),

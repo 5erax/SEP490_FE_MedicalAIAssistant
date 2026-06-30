@@ -12,7 +12,7 @@ const QUESTION_ID = "77777777-7777-4777-8777-777777777777";
 const FACILITY_ID = "11111111-1111-4111-8111-111111111111";
 const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
 
-test("diagnosis flow asks clinical yes/no questions and renders recommendations", async ({ page }) => {
+test("diagnosis flow asks clinical questions and renders recommendations", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -35,9 +35,13 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
           sessionId: SESSION_ID,
           questions: [{
             questionId: QUESTION_ID,
-            questionVi: "Bạn có đau ngực khi gắng sức không?",
+            questionVi: "Do you have chest pain during exertion?",
             chapterCode: "IX",
             totalScore: 12,
+            answers: {
+              yes: "Yes",
+              no: "No",
+            },
           }],
         },
       }),
@@ -52,41 +56,41 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
         success: true,
         data: {
           sessionId: SESSION_ID,
-          userInput: "Đau ngực nhẹ",
-          answers: [{ questionId: QUESTION_ID, answer: true }],
+          userInput: "Trieu chung chinh: Mild chest pain\nMo ta them: Mild chest pain during exertion\nMuc do: moderate",
+          answers: [{ questionId: QUESTION_ID, answers: { yes: true, no: false } }],
           analysis: {
             sessionId: SESSION_ID,
             primaryDiagnosis: {
               rank: 1,
-              diseaseName: "Đau thắt ngực",
+              diseaseName: "Angina",
               icd10Code: "I20",
               paGivenB: 0.91,
-              clinicalReasoning: "Phù hợp với triệu chứng mô tả.",
+              clinicalReasoning: "Matches the described symptoms.",
             },
             diagnoses: [{
               rank: 1,
-              diseaseName: "Đau thắt ngực",
+              diseaseName: "Angina",
               icd10Code: "I20",
               paGivenB: 0.91,
-              clinicalReasoning: "Phù hợp với triệu chứng mô tả.",
+              clinicalReasoning: "Matches the described symptoms.",
             }],
             recommendedDepartment: {
               departmentId: DEPARTMENT_ID,
-              departmentName: "Tim mạch",
+              departmentName: "Cardiology",
               confidenceScore: 0.91,
-              reason: "Cần đánh giá chuyên khoa tim mạch.",
+              reason: "Specialist review is recommended.",
               priorityRank: 1,
               isEmergencySuggested: false,
             },
             recommendedFacilities: [{
               id: FACILITY_ID,
-              facilityName: "Bệnh viện Tim",
-              address: "123 Nguyễn Trãi",
+              facilityName: "Heart Hospital",
+              address: "123 Nguyen Trai",
               latitude: 10.77,
               longitude: 106.69,
               phone: "0123456789",
               isActive: true,
-              departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tim mạch" }],
+              departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Cardiology" }],
             }],
           },
         },
@@ -103,31 +107,33 @@ test("diagnosis flow asks clinical yes/no questions and renders recommendations"
         model: "google/medgemma-4b-it",
         diagnoses: [{
           rank: 1,
-          diseaseName: "Đau thắt ngực",
+          diseaseName: "Angina",
           icd10Code: "I20",
           paGivenB: 0.91,
-          clinicalReasoning: "Phù hợp với triệu chứng mô tả.",
+          clinicalReasoning: "Matches the described symptoms.",
         }],
       },
     }),
   }));
 
   await page.goto("/symptom", { waitUntil: "domcontentloaded" });
-  await page.locator("textarea").first().fill("Đau ngực nhẹ");
-  await page.getByRole("button", { name: "Bắt đầu sàng lọc" }).click();
+  await page.locator("#intake-mainSymptom").fill("Mild chest pain");
+  await page.locator("#intake-description").fill("Mild chest pain during exertion");
+  await page.locator(".intake-form").getByRole("button").first().click();
 
-  await expect(page.getByText("Bạn có đau ngực khi gắng sức không?")).toBeVisible();
-  await expect(page.locator(".question-card")).toBeFocused();
-  await page.getByLabel("Có").check();
-  await page.getByRole("button", { name: "Xem nhận định tham khảo" }).click();
+  await expect(page.getByText("Do you have chest pain during exertion?")).toBeVisible();
+  await page.getByLabel("Yes").check();
+  await page.getByRole("button", { name: "Xem ket qua" }).click();
 
-  await expect(page.getByText("Đau thắt ngực", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("Tim mạch", { exact: true })).toBeVisible();
-  await expect(page.getByText("Bệnh viện Tim", { exact: true })).toBeVisible();
+  await expect(page.getByText("Angina", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Cardiology", { exact: true })).toBeVisible();
+  await expect(page.getByText("Heart Hospital", { exact: true })).toBeVisible();
   await expect(page.getByText("91%", { exact: true }).first()).toBeVisible();
-  expect(questionPayload).toEqual({ userInput: "Đau ngực nhẹ" });
+  expect(questionPayload).toEqual({
+    userInput: "Trieu chung chinh: Mild chest pain\nMo ta them: Mild chest pain during exertion\nMuc do: moderate",
+  });
   expect(answerPayload).toEqual({
     sessionId: SESSION_ID,
-    answers: [{ questionId: QUESTION_ID, answer: true }],
+    answers: [{ questionId: QUESTION_ID, answers: { yes: true, no: false } }],
   });
 });

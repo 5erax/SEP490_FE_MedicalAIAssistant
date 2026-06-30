@@ -304,6 +304,12 @@ test("profile page renders and updates backend user data instead of mock data", 
 
 test("clinical diagnosis uses the dedicated Swagger endpoint", async ({ page }) => {
   await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      roles: ["Patient"],
+    }));
+  }, TOKEN);
   const sessionId = "33333333-3333-4333-8333-333333333333";
   const questionId = "77777777-7777-4777-8777-777777777777";
   let diagnosisPayload = null;
@@ -327,12 +333,12 @@ test("clinical diagnosis uses the dedicated Swagger endpoint", async ({ page }) 
   await page.goto("/dashboard");
   await page.getByLabel("Triệu chứng bạn đang gặp").fill("Ho và sốt");
   await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
-  await page.getByLabel("Có").check();
-  await page.getByRole("button", { name: "Xem nhận định và bệnh viện phù hợp" }).click();
+  await page.getByRole("button", { name: "Có" }).click();
+  await page.getByRole("button", { name: "Tiếp tục phân tích" }).click();
 
   await expect(page.getByText("Cúm", { exact: true })).toBeVisible();
   await expect(page.getByText("Nội tổng quát", { exact: true })).toBeVisible();
-  expect(diagnosisPayload).toEqual({ sessionId, answers: [{ questionId, answer: true }] });
+  expect(diagnosisPayload).toEqual({ sessionId, answers: [{ questionId, answers: { yes: true, no: false } }] });
 });
 
 test("chat sends the backend WebChatbotRequest and renders its answer", async ({ page }) => {

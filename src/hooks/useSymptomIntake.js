@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { symptomAnalysisApi } from "../services/api";
+import {
+  buildClinicalQuestionAnswerItems,
+  symptomAnalysisApi,
+} from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
 
 const RESUMABLE_STATUSES = new Set(["idle", "questions", "no-questions", "result"]);
@@ -133,10 +136,7 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
     setError("");
     setStatus("submitting");
     try {
-      const payload = questions.map((question) => ({
-        questionId: question.questionId,
-        answer: answers[question.questionId],
-      }));
+      const payload = buildClinicalQuestionAnswerItems(questions, answers);
       const [recommendationResponse, diagnosisResponse] = await Promise.all([
         symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload),
         symptomAnalysisApi.submitDiagnosis(sessionId, payload),

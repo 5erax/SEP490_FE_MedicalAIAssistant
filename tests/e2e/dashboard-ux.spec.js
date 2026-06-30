@@ -185,8 +185,8 @@ test.describe("patient specialty intake", () => {
     await expect(currentStep).toContainText("Làm rõ");
     await expect(page.getByText("Bạn có sốt trên 38 độ không?")).toBeVisible();
 
-    await page.getByLabel("Có").check();
-    await page.getByRole("button", { name: "Xem nhận định và bệnh viện phù hợp" }).click();
+    await page.getByRole("button", { name: "Có" }).click();
+    await page.getByRole("button", { name: "Tiếp tục phân tích" }).click();
 
     await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
     await expect(currentStep).toContainText("Kết quả");
@@ -199,7 +199,7 @@ test.describe("patient specialty intake", () => {
     await page.getByRole("button", { name: "Mở bản đồ" }).click();
     await expect(page).toHaveURL(new RegExp(`/map\\?[^#]*facilityId=${FACILITY_ID}`));
     await expect(page.locator(".facility-detail-view").getByRole("heading", { name: "Bệnh viện Tai Mũi Họng", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Đang xem chi tiết" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ })).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(/\/dashboard$/);
@@ -210,7 +210,7 @@ test.describe("patient specialty intake", () => {
     expect(questionPayload).toEqual({ userInput: "Sốt nhẹ 2 ngày kèm đau họng" });
     expect(answerPayload).toEqual({
       sessionId: SESSION_ID,
-      answers: [{ questionId: QUESTION_ID, answer: true }],
+      answers: [{ questionId: QUESTION_ID, answers: { yes: true, no: false } }],
     });
     expect(diagnosisPayload).toEqual(answerPayload);
   });
