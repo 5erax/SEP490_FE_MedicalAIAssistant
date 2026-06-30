@@ -923,7 +923,9 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
     outline: 2px solid Highlight;
     outline-offset: 2px;
   }
-  /* Single-question specialty flow. Add this at the end of src/styles/dashboard.css */
+}
+
+/* Single-question specialty flow. Add this at the end of src/styles/dashboard.css */
 .studio-question-focus {
   width: min(980px, 100%);
 }
@@ -1009,6 +1011,4 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   .studio-question-single p {
     font-size: clamp(23px, 8vw, 32px);
   }
-}
-
 }

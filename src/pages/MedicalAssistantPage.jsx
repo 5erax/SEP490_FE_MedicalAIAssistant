@@ -492,16 +492,6 @@ function QuestionsPage({ sessionId }) {
   const booleanPrompts = getClinicalQuestionBooleanPrompts(question);
   const questionComplete = isClinicalQuestionAnswered(question, selectedAnswer);
   const progressPercent = Math.round((answeredCount / questions.length) * 100);
-  const booleanQuestionValue = isPlainObject(selectedAnswer) && booleanPrompts.length > 0
-    ? (
-      booleanPrompts.every((prompt) => selectedAnswer[prompt.key] === true)
-        ? true
-        : booleanPrompts.every((prompt) => selectedAnswer[prompt.key] === false)
-          ? false
-          : undefined
-    )
-    : undefined;
-
   return (
     <AssessmentShell
       eyebrow="Làm rõ triệu chứng"
@@ -533,25 +523,48 @@ function QuestionsPage({ sessionId }) {
               ))}
             </div>
           ) : (
-            <div className="question-choice-grid" role="radiogroup" aria-label={question.questionText}>
-              <label>
-                <input
-                  type="radio"
-                  name={`answer-${question.questionId}-boolean`}
-                  checked={booleanQuestionValue === true}
-                  onChange={() => updateBooleanQuestionAnswer(question.questionId, booleanPrompts, true)}
-                />
-                Có
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name={`answer-${question.questionId}-boolean`}
-                  checked={booleanQuestionValue === false}
-                  onChange={() => updateBooleanQuestionAnswer(question.questionId, booleanPrompts, false)}
-                />
-                Không
-              </label>
+            <div className="boolean-prompt-list">
+              {booleanPrompts.map((prompt) => {
+                const selectedValue = isPlainObject(selectedAnswer)
+                  ? selectedAnswer[prompt.key]
+                  : undefined;
+
+                return (
+                  <section
+                    className="boolean-prompt"
+                    key={prompt.key}
+                    aria-labelledby={`clinical-prompt-${currentIndex}-${prompt.key}`}
+                  >
+                    <div className="boolean-prompt-copy">
+                      <strong id={`clinical-prompt-${currentIndex}-${prompt.key}`}>
+                        {prompt.label}
+                      </strong>
+                    </div>
+
+                    <div className="boolean-answer-group" role="radiogroup" aria-label={prompt.label}>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`answer-${question.questionId}-${prompt.key}`}
+                          checked={selectedValue === true}
+                          onChange={() => updateBooleanAnswer(question.questionId, prompt.key, true)}
+                        />
+                        <span>Có</span>
+                      </label>
+
+                      <label>
+                        <input
+                          type="radio"
+                          name={`answer-${question.questionId}-${prompt.key}`}
+                          checked={selectedValue === false}
+                          onChange={() => updateBooleanAnswer(question.questionId, prompt.key, false)}
+                        />
+                        <span>Không</span>
+                      </label>
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           )}
         </fieldset>
