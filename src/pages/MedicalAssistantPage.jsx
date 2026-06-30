@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ClipboardList, History, MapPin, Stethoscope } from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, Field, LoadingState, Textarea, TextInput } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getStoredAuth } from "../services/api";
 import { patientProfilesApi } from "../services/patientProfileService";
-import { symptomAnalysisApi } from "../services/symptomAnalysisService";
+import {
+  buildClinicalQuestionAnswerItems,
+  getClinicalQuestionAnswerOptions,
+  symptomAnalysisApi,
+} from "../services/symptomAnalysisService";
 import "../styles/medical-assessment.css";
 
 const SESSION_KEY_PREFIX = "medimate.assessment.session.";
@@ -27,6 +31,11 @@ const SEVERITY_OPTIONS = [
   ["moderate", "Vua"],
   ["severe", "Nang"],
 ];
+
+const INTAKE_REQUIRED_FIELDS = {
+  mainSymptom: "Vui lòng nhập triệu chứng chính.",
+  description: "Vui lòng mô tả thêm bối cảnh và diễn tiến triệu chứng.",
+};
 
 function unwrapData(response) {
   return response?.data?.data ?? response?.data ?? response;
@@ -240,6 +249,7 @@ function SafetyPage() {
 
 function IntakePage() {
   const auth = getStoredAuth();
+  const errorSummaryRef = useRef(null);
   const [form, setForm] = useState(() => loadDraft() ?? {
     mainSymptom: "",
     description: "",
@@ -254,7 +264,11 @@ function IntakePage() {
   });
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [profileStatus, setProfileStatus] = useState(() => (auth?.userId || auth?.identityId ? "loading" : "idle"));
+
+  const requiredErrorEntries = Object.entries(fieldErrors);
+  const showIntakeSidePanel = !auth || ["loading", "ready", "empty"].includes(profileStatus);
 
   useEffect(() => {
     const userId = auth?.userId || auth?.identityId;
@@ -303,17 +317,32 @@ function IntakePage() {
       saveDraft(next);
       return next;
     });
+    if (fieldErrors[key]) {
+      setFieldErrors((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+    }
   }
 
   async function submit(event) {
     event.preventDefault();
-    if (!form.mainSymptom.trim() || !form.description.trim()) {
-      setError("Vui long nhap trieu chung chinh va mo ta toi thieu.");
+    const nextFieldErrors = Object.fromEntries(
+      Object.entries(INTAKE_REQUIRED_FIELDS)
+        .filter(([field]) => !String(form[field] ?? "").trim()),
+    );
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError("");
+      window.setTimeout(() => errorSummaryRef.current?.focus(), 0);
       return;
     }
 
     setStatus("loading");
     setError("");
+    setFieldErrors({});
     const userInput = buildUserInput(form);
 
     try {
@@ -340,70 +369,114 @@ function IntakePage() {
 
   return (
     <AssessmentShell
-      eyebrow="Buoc 2"
-      title="Nhap trieu chung co cau truc"
-      description="Thong tin nay se duoc gom thanh userInput va gui den endpoint suggest-clinical-questions cua backend."
+      eyebrow="Bước 2"
+      title="Nhập triệu chứng để tạo câu hỏi lâm sàng"
+      description="Mô tả ngắn gọn vấn đề chính. MediMate sẽ dùng thông tin này để đề xuất câu hỏi tiếp theo trước khi đưa ra định hướng chăm sóc."
     >
       <Stepper active={1} />
-      {!auth && (
-        <Alert tone="warning" title="Can dang nhap">
-          Backend hien yeu cau token cho phien danh gia. Hay dang nhap de tiep tuc va luu lich su phien.
-        </Alert>
-      )}
-      {auth && profileStatus === "loading" && (
-        <Alert tone="info" live>Dang tai ho so suc khoe de dien san thong tin nen neu co.</Alert>
-      )}
-      {auth && profileStatus === "ready" && (
-        <Alert tone="success" live>Da dien san thong tin ho so suc khoe co san. Ban co the chinh sua truoc khi gui.</Alert>
-      )}
-      {auth && profileStatus === "empty" && (
-        <Alert tone="warning">Chua tim thay ho so suc khoe. Ban van co the nhap thu cong benh nen va di ung.</Alert>
-      )}
-      <form className="assessment-form" onSubmit={submit}>
-        <Field label="Trieu chung chinh" required>
-          <TextInput value={form.mainSymptom} onChange={(event) => updateField("mainSymptom", event.target.value)} disabled={status === "loading"} />
-        </Field>
-        <Field label="Mo ta them" hint="Mo ta boi canh, dien tien, dieu lam nang/giam trieu chung." required>
-          <Textarea value={form.description} onChange={(event) => updateField("description", event.target.value)} disabled={status === "loading"} rows={4} />
-        </Field>
-        <div className="assessment-form-grid">
-          <Field label="Thoi gian bat dau">
-            <TextInput value={form.duration} onChange={(event) => updateField("duration", event.target.value)} disabled={status === "loading"} placeholder="Vi du: 2 ngay" />
-          </Field>
-          <Field label="Muc do">
-            <select value={form.severity} onChange={(event) => updateField("severity", event.target.value)} disabled={status === "loading"}>
-              {SEVERITY_OPTIONS.map(([value, label]) => <option key={value} value={label}>{label}</option>)}
-            </select>
-          </Field>
-          <Field label="Vi tri dau/kho chiu">
-            <TextInput value={form.bodyLocation} onChange={(event) => updateField("bodyLocation", event.target.value)} disabled={status === "loading"} />
-          </Field>
-          <Field label="Trieu chung di kem">
-            <TextInput value={form.associatedSymptoms} onChange={(event) => updateField("associatedSymptoms", event.target.value)} disabled={status === "loading"} />
-          </Field>
-        </div>
-        <div className="assessment-form-grid">
-          <Field label="Thong tin ho so suc khoe" hint="Tu dong lay nhom mau, chieu cao, can nang neu ho so backend co du lieu.">
-            <Textarea value={form.profileContext} onChange={(event) => updateField("profileContext", event.target.value)} disabled={status === "loading"} rows={3} />
-          </Field>
-          <Field label="Benh nen">
-            <Textarea value={form.chronicDiseaseNote} onChange={(event) => updateField("chronicDiseaseNote", event.target.value)} disabled={status === "loading"} rows={3} />
-          </Field>
-        </div>
-        <div className="assessment-form-grid">
-          <Field label="Di ung">
-            <Textarea value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} disabled={status === "loading"} rows={3} />
-          </Field>
-          <Field label="Thuoc dang dung">
-            <TextInput value={form.medications} onChange={(event) => updateField("medications", event.target.value)} disabled={status === "loading"} />
-          </Field>
-        </div>
-        {error && <Alert tone="danger" live>{error}</Alert>}
-        <div className="assessment-actions">
-          <Button type="submit" size="lg" loading={status === "loading"} loadingLabel="Dang tao cau hoi...">Tao cau hoi lam sang</Button>
-          <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>Quay lai safety gate</Button>
-        </div>
-      </form>
+      <div className={`intake-layout ${showIntakeSidePanel ? "" : "intake-layout-single"}`.trim()}>
+        <form className="assessment-form intake-form" onSubmit={submit} noValidate>
+          {requiredErrorEntries.length > 0 && (
+            <div className="assessment-error-summary" ref={errorSummaryRef} role="alert" tabIndex="-1">
+              <strong>Cần bổ sung {requiredErrorEntries.length} thông tin</strong>
+              <ul>
+                {requiredErrorEntries.map(([field, message]) => (
+                  <li key={field}>
+                    <a href={`#intake-${field}`}>{message}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <fieldset className="intake-section">
+            <legend>Triệu chứng chính</legend>
+            <p>Hai thông tin này giúp backend tạo câu hỏi lâm sàng phù hợp hơn.</p>
+            <Field id="intake-mainSymptom" label="Triệu chứng chính" required error={fieldErrors.mainSymptom}>
+              <TextInput
+                value={form.mainSymptom}
+                onChange={(event) => updateField("mainSymptom", event.target.value)}
+                disabled={status === "loading"}
+                autoComplete="off"
+              />
+            </Field>
+            <Field id="intake-description" label="Mô tả thêm" hint="Ví dụ: diễn tiến, lúc nào nặng hơn, điều gì làm giảm triệu chứng." required error={fieldErrors.description}>
+              <Textarea
+                value={form.description}
+                onChange={(event) => updateField("description", event.target.value)}
+                disabled={status === "loading"}
+                rows={5}
+              />
+            </Field>
+          </fieldset>
+
+          <fieldset className="intake-section">
+            <legend>Ngữ cảnh triệu chứng</legend>
+            <div className="assessment-form-grid">
+              <Field label="Thời gian bắt đầu" optional>
+                <TextInput value={form.duration} onChange={(event) => updateField("duration", event.target.value)} disabled={status === "loading"} placeholder="Ví dụ: 2 ngày" />
+              </Field>
+              <Field label="Mức độ">
+                <select value={form.severity} onChange={(event) => updateField("severity", event.target.value)} disabled={status === "loading"}>
+                  {SEVERITY_OPTIONS.map(([value, label]) => <option key={value} value={label}>{label}</option>)}
+                </select>
+              </Field>
+              <Field label="Vị trí đau/khó chịu" optional>
+                <TextInput value={form.bodyLocation} onChange={(event) => updateField("bodyLocation", event.target.value)} disabled={status === "loading"} />
+              </Field>
+              <Field label="Triệu chứng đi kèm" optional>
+                <TextInput value={form.associatedSymptoms} onChange={(event) => updateField("associatedSymptoms", event.target.value)} disabled={status === "loading"} />
+              </Field>
+            </div>
+          </fieldset>
+
+          <fieldset className="intake-section">
+            <legend>Thông tin sức khỏe liên quan</legend>
+            <p>Phần này có thể được điền sẵn từ hồ sơ, nhưng bạn vẫn chỉnh sửa được trước khi gửi.</p>
+            <div className="assessment-form-grid">
+              <Field label="Thông tin hồ sơ sức khỏe" hint="Tự động lấy nhóm máu, chiều cao, cân nặng nếu backend có dữ liệu." optional>
+                <Textarea value={form.profileContext} onChange={(event) => updateField("profileContext", event.target.value)} disabled={status === "loading"} rows={3} />
+              </Field>
+              <Field label="Bệnh nền" optional>
+                <Textarea value={form.chronicDiseaseNote} onChange={(event) => updateField("chronicDiseaseNote", event.target.value)} disabled={status === "loading"} rows={3} />
+              </Field>
+            </div>
+            <div className="assessment-form-grid">
+              <Field label="Dị ứng" optional>
+                <Textarea value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} disabled={status === "loading"} rows={3} />
+              </Field>
+              <Field label="Thuốc đang dùng" optional>
+                <TextInput value={form.medications} onChange={(event) => updateField("medications", event.target.value)} disabled={status === "loading"} />
+              </Field>
+            </div>
+          </fieldset>
+
+          {error && <Alert tone="danger" live>{error}</Alert>}
+          <div className="assessment-actions intake-actions">
+            <Button type="submit" size="lg" loading={status === "loading"} loadingLabel="Đang tạo câu hỏi...">Tạo câu hỏi lâm sàng</Button>
+            <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>Kiểm tra dấu hiệu khẩn cấp</Button>
+          </div>
+        </form>
+
+        {showIntakeSidePanel && (
+          <aside className="intake-side-panel" aria-label="Trạng thái hồ sơ đánh giá">
+            {!auth && (
+              <Alert tone="warning" title="Cần đăng nhập">
+                Backend hiện yêu cầu token cho phiên đánh giá. Hãy đăng nhập để tiếp tục và lưu lịch sử phiên.
+              </Alert>
+            )}
+            {auth && profileStatus === "loading" && (
+              <Alert tone="info" live>Đang tải hồ sơ sức khỏe để điền sẵn thông tin nền nếu có.</Alert>
+            )}
+            {auth && profileStatus === "ready" && (
+              <Alert tone="success" live>Đã điền sẵn thông tin hồ sơ sức khỏe có sẵn. Bạn có thể chỉnh sửa trước khi gửi.</Alert>
+            )}
+            {auth && profileStatus === "empty" && (
+              <Alert tone="warning">Chưa tìm thấy hồ sơ sức khỏe. Bạn vẫn có thể nhập thủ công bệnh nền và dị ứng.</Alert>
+            )}
+          </aside>
+        )}
+      </div>
     </AssessmentShell>
   );
 }
@@ -416,12 +489,12 @@ function QuestionsPage({ sessionId }) {
 
   const questions = session?.questions ?? [];
   const answers = session?.answers ?? {};
-  const answeredCount = Object.values(answers).filter((value) => value === true || value === false).length;
+  const answeredCount = Object.values(answers).filter(Boolean).length;
   const canSubmit = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
 
-  function updateAnswer(questionId, answer) {
+  function updateAnswer(questionId, answerKey) {
     setSession((current) => {
-      const next = { ...current, answers: { ...(current?.answers ?? {}), [questionId]: answer } };
+      const next = { ...current, answers: { ...(current?.answers ?? {}), [questionId]: answerKey } };
       saveSessionState(sessionId, next);
       return next;
     });
@@ -431,10 +504,7 @@ function QuestionsPage({ sessionId }) {
     event.preventDefault();
     if (!canSubmit) return;
 
-    const payload = questions.map((question) => ({
-      questionId: question.questionId,
-      answer: answers[question.questionId],
-    }));
+    const payload = buildClinicalQuestionAnswerItems(questions, answers);
 
     setStatus("submitting");
     setError("");
@@ -507,14 +577,17 @@ function QuestionsPage({ sessionId }) {
         <fieldset className="question-card">
           <legend>{question.questionText}</legend>
           <div>
-            <label>
-              <input type="radio" name={`answer-${question.questionId}`} checked={answers[question.questionId] === true} onChange={() => updateAnswer(question.questionId, true)} />
-              Co
-            </label>
-            <label>
-              <input type="radio" name={`answer-${question.questionId}`} checked={answers[question.questionId] === false} onChange={() => updateAnswer(question.questionId, false)} />
-              Khong
-            </label>
+            {getClinicalQuestionAnswerOptions(question).map(([answerKey, label]) => (
+              <label key={answerKey}>
+                <input
+                  type="radio"
+                  name={`answer-${question.questionId}`}
+                  checked={answers[question.questionId] === answerKey}
+                  onChange={() => updateAnswer(question.questionId, answerKey)}
+                />
+                {label}
+              </label>
+            ))}
           </div>
           {question.chapterCode && <small>Nhom ICD: {question.chapterCode}</small>}
         </fieldset>
@@ -522,7 +595,7 @@ function QuestionsPage({ sessionId }) {
         <div className="assessment-actions">
           <Button tone="secondary" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => index - 1)}>Cau truoc</Button>
           {currentIndex < questions.length - 1 ? (
-            <Button disabled={answers[question.questionId] === undefined} onClick={() => setCurrentIndex((index) => index + 1)}>Cau tiep theo</Button>
+            <Button disabled={!answers[question.questionId]} onClick={() => setCurrentIndex((index) => index + 1)}>Cau tiep theo</Button>
           ) : (
             <Button type="submit" loading={status === "submitting"} loadingLabel="Dang phan tich..." disabled={!canSubmit}>Xem ket qua</Button>
           )}

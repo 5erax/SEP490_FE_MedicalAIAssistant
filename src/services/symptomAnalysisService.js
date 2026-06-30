@@ -1,6 +1,43 @@
 import { apiRequest } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
+const FALLBACK_ANSWER_OPTIONS = [
+  ["yes", "Có"],
+  ["no", "Không"],
+];
+
+export function getClinicalQuestionAnswerOptions(question) {
+  const entries = Object.entries(question?.answers ?? {})
+    .filter(([key]) => Boolean(String(key).trim()));
+
+  if (entries.length > 0) {
+    return entries.map(([key, label]) => [key, String(label || key)]);
+  }
+
+  return FALLBACK_ANSWER_OPTIONS;
+}
+
+export function buildClinicalQuestionAnswerItems(questions = [], selectedAnswers = {}) {
+  return questions.map((question) => {
+    const selected = selectedAnswers[question.questionId];
+    const options = getClinicalQuestionAnswerOptions(question);
+
+    return {
+      questionId: question.questionId,
+      answers: Object.fromEntries(options.map(([key, label], index) => {
+        if (typeof selected === "boolean") {
+          const normalized = `${key} ${label}`.toLowerCase();
+          const isPositive = /\byes\b|\btrue\b|\bc[oó]\b/.test(normalized) || index === 0;
+          const isNegative = /\bno\b|\bfalse\b|\bkh[oô]ng\b/.test(normalized) || index === 1;
+          return [key, selected ? isPositive : isNegative];
+        }
+
+        return [key, selected === key];
+      })),
+    };
+  });
+}
+
 export const symptomAnalysisApi = {
   analyze(message) {
     return this.suggestClinicalQuestions(message);

@@ -19,7 +19,11 @@ export { feedbackReviewsApi } from "./feedbackReviewService";
 export { icdChaptersApi } from "./icdChapterService";
 export { patientProfilesApi } from "./patientProfileService";
 export { clinicalQuestionsApi } from "./clinicalQuestionService";
-export { symptomAnalysisApi } from "./symptomAnalysisService";
+export {
+  buildClinicalQuestionAnswerItems,
+  getClinicalQuestionAnswerOptions,
+  symptomAnalysisApi,
+} from "./symptomAnalysisService";
 export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
