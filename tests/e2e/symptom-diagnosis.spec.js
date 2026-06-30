@@ -39,8 +39,7 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
             chapterCode: "IX",
             totalScore: 12,
             answers: {
-              yes: "Yes",
-              no: "No",
+              "Do you have chest pain during exertion?": "",
             },
           }],
         },
@@ -57,7 +56,7 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
         data: {
           sessionId: SESSION_ID,
           userInput: "Trieu chung chinh: Mild chest pain\nMo ta them: Mild chest pain during exertion\nMuc do: moderate",
-          answers: [{ questionId: QUESTION_ID, answers: { yes: true, no: false } }],
+          answers: [{ questionId: QUESTION_ID, answers: { "Do you have chest pain during exertion?": true } }],
           analysis: {
             sessionId: SESSION_ID,
             primaryDiagnosis: {
@@ -121,9 +120,10 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
   await page.locator("#intake-description").fill("Mild chest pain during exertion");
   await page.locator(".intake-form").getByRole("button").first().click();
 
-  await expect(page.getByText("Do you have chest pain during exertion?")).toBeVisible();
-  await page.getByLabel("Yes").check();
-  await page.getByRole("button", { name: "Xem goi y" }).click();
+  await expect(page.getByText("Bạn có đau ngực khi gắng sức không?")).toBeVisible();
+  await expect(page.getByText("Gốc tiếng Anh: Do you have chest pain during exertion?").first()).toBeVisible();
+  await page.locator(".boolean-answer-group").getByRole("radio").first().check();
+  await page.getByRole("button", { name: "Xem gợi ý" }).click();
 
   await expect(page.getByText("Angina", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Cardiology", { exact: true })).toBeVisible();
@@ -134,6 +134,6 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
   });
   expect(answerPayload).toEqual({
     sessionId: SESSION_ID,
-    answers: [{ questionId: QUESTION_ID, answers: { yes: true, no: false } }],
+    answers: [{ questionId: QUESTION_ID, answers: { "Do you have chest pain during exertion?": true } }],
   });
 });
