@@ -776,30 +776,12 @@ function ResultPage({ sessionId }) {
               <div className="diagnosis-bar-chart" aria-label="Biểu đồ cột xác suất chẩn đoán">
                 {diagnosisRows.map((diagnosis) => (
                   <div className="diagnosis-bar-item" key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
+                    <em>{diagnosis.probability}%</em>
                     <div className="diagnosis-bar-track">
                       <span style={{ height: `${Math.max(6, diagnosis.probability)}%` }} />
                     </div>
                     <strong>{diagnosis.rank}</strong>
                     <small>{diagnosis.diseaseName}</small>
-                  </div>
-                ))}
-              </div>
-
-              <div className="diagnosis-probability-table" role="table" aria-label="Bảng xác suất P(A|B)">
-                <div role="row" className="diagnosis-table-head">
-                  <span role="columnheader">#</span>
-                  <span role="columnheader">Bệnh</span>
-                  <span role="columnheader">P(A|B)</span>
-                </div>
-
-                {diagnosisRows.map((diagnosis) => (
-                  <div role="row" key={`${diagnosis.rank}-${diagnosis.icd10Code || diagnosis.diseaseName}`}>
-                    <span role="cell">{diagnosis.rank}</span>
-                    <span role="cell">
-                      <strong>{diagnosis.diseaseName}</strong>
-                      {diagnosis.icd10Code && <small>ICD-10: {diagnosis.icd10Code}</small>}
-                    </span>
-                    <b role="cell">{diagnosis.probability}%</b>
                   </div>
                 ))}
               </div>

@@ -627,34 +627,17 @@ export default function DashboardPage() {
                 <h2>Xếp hạng bệnh theo PAGivenB</h2>
                 <div className="diagnosis-bar-chart" aria-label="Biểu đồ cột thứ tự bệnh">
                   {diagnosisRows.map((row) => (
-                    <div className="diagnosis-bar-row" key={`${row.rank}-${row.name}`}>
+                    <div className="diagnosis-bar-column" key={`${row.rank}-${row.name}`}>
+                      <em>{row.probability}%</em>
+                      <div className="diagnosis-column-track">
+                        <i style={{ height: `${Math.max(6, row.probability)}%` }} />
+                      </div>
                       <strong>#{row.rank}</strong>
                       <span>{row.name}</span>
-                      <i style={{ width: `${row.probability}%` }} />
-                      <em>{row.probability}%</em>
+                      {row.icd10Code && <small>ICD-10: {row.icd10Code}</small>}
                     </div>
                   ))}
                 </div>
-                <table className="diagnosis-probability-table">
-                  <thead>
-                    <tr>
-                      <th>Thứ tự</th>
-                      <th>Bệnh</th>
-                      <th>ICD-10</th>
-                      <th>PAGivenB</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {diagnosisRows.map((row) => (
-                      <tr key={`${row.rank}-${row.name}-table`}>
-                        <td>#{row.rank}</td>
-                        <td>{row.name}</td>
-                        <td>{row.icd10Code || "Chưa có"}</td>
-                        <td>{row.paGivenB.toFixed(4)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </article>
             )}
 

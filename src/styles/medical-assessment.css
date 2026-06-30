@@ -648,35 +648,42 @@
 }
 
 .diagnosis-analytics-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
-  gap: 18px;
-  align-items: stretch;
+  display: block;
 }
 
 .diagnosis-bar-chart {
-  min-height: 280px;
+  min-height: 340px;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(76px, 1fr);
-  gap: 14px;
+  grid-auto-columns: minmax(92px, 1fr);
+  gap: 18px;
   align-items: end;
   border: 1px solid var(--assessment-line);
   border-radius: var(--assessment-radius-lg);
   background:
     linear-gradient(180deg, rgba(185, 239, 124, .12), rgba(255, 255, 255, .72)),
     var(--assessment-surface-soft);
-  padding: 18px 16px 16px;
+  padding: 22px 20px 18px;
   overflow-x: auto;
 }
 
 .diagnosis-bar-item {
   min-width: 0;
   display: grid;
-  grid-template-rows: 1fr auto auto;
+  grid-template-rows: auto 1fr auto auto;
   gap: 8px;
   justify-items: center;
   text-align: center;
+}
+
+.diagnosis-bar-item em {
+  border-radius: 999px;
+  background: var(--assessment-primary-soft);
+  color: var(--assessment-ink);
+  padding: 5px 8px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
 }
 
 .diagnosis-bar-track {
@@ -709,67 +716,11 @@
 }
 
 .diagnosis-bar-item small {
-  max-width: 110px;
+  max-width: 130px;
   color: var(--assessment-muted);
   font-size: 11px;
   font-weight: 850;
   line-height: 1.25;
-}
-
-.diagnosis-probability-table {
-  display: grid;
-  align-content: start;
-  border: 1px solid var(--assessment-line);
-  border-radius: var(--assessment-radius-lg);
-  background: var(--assessment-surface);
-  overflow: hidden;
-}
-
-.diagnosis-probability-table > div {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 76px;
-  gap: 10px;
-  align-items: center;
-  border-bottom: 1px solid var(--assessment-line);
-  padding: 13px 14px;
-}
-
-.diagnosis-probability-table > div:last-child {
-  border-bottom: 0;
-}
-
-.diagnosis-probability-table .diagnosis-table-head {
-  background: var(--assessment-surface-soft);
-  color: var(--assessment-muted);
-  font-size: 11px;
-  font-weight: 950;
-  text-transform: uppercase;
-}
-
-.diagnosis-probability-table strong,
-.diagnosis-probability-table small {
-  display: block;
-}
-
-.diagnosis-probability-table strong {
-  color: var(--assessment-ink);
-  line-height: 1.25;
-}
-
-.diagnosis-probability-table small {
-  margin-top: 3px;
-  color: var(--assessment-muted);
-  font-size: 11px;
-}
-
-.diagnosis-probability-table b {
-  width: fit-content;
-  justify-self: end;
-  border-radius: 999px;
-  background: var(--assessment-primary-soft);
-  padding: 6px 9px;
-  color: var(--assessment-ink);
-  font-size: 12px;
 }
 
 .facility-stack span,
