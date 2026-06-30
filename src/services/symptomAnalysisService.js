@@ -136,7 +136,13 @@ function getRawAnswerEntries(question) {
   if (!isPlainObject(answers)) return [];
 
   return Object.entries(answers)
-    .map(([key, label]) => [normalizeText(key), normalizeText(label || key)])
+    .map(([key, label]) => {
+      const answerKey = normalizeText(key);
+      const answerValue = normalizeText(label || key);
+      const shouldDisplayKey = hasVietnameseText(answerKey) || answerKey.length > 20;
+
+      return [answerKey, shouldDisplayKey ? answerKey : answerValue];
+    })
     .filter(([key]) => Boolean(key));
 }
 
