@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ClipboardList, History, MapPin, Send, Stethoscope } from "lucide-react";
+import { AlertTriangle, ClipboardList, MapPin, Send, Stethoscope } from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -113,19 +113,6 @@ function getPrimaryDiagnosis(result) {
     || result?.analysis?.primaryDiagnosis
     || getDiagnoses(result)[0]
     || null;
-}
-
-function getFacilities(result) {
-  const facilities = result?.recommendedFacilities || result?.analysis?.recommendedFacilities || [];
-  return Array.isArray(facilities) ? facilities : [];
-}
-
-function facilityKey(facility) {
-  return facility?.id || facility?.facilityId || facility?.facilityName;
-}
-
-function facilityId(facility) {
-  return facility?.facilityId || facility?.id || "";
 }
 
 function AssessmentShell({ eyebrow, title, description, activeStep, children }) {
@@ -678,7 +665,6 @@ function ResultPage({ sessionId }) {
   const department = getRecommendedDepartment(result);
   const diagnoses = getDiagnoses(result);
   const primaryDiagnosis = getPrimaryDiagnosis(result);
-  const facilities = getFacilities(result);
   const isEmergency = department?.isEmergencySuggested;
   const diagnosisRows = diagnoses.map((diagnosis, index) => ({
     rank: diagnosisRank(diagnosis, index),
@@ -689,21 +675,6 @@ function ResultPage({ sessionId }) {
     paGivenB: diagnosisPAGivenB(diagnosis),
     probability: confidencePercent(diagnosisPAGivenB(diagnosis)),
   }));
-
-  function openMap() {
-    const search = new URLSearchParams();
-    const topFacility = facilities[0] ?? null;
-    const topFacilityId = facilityId(topFacility);
-
-    if (topFacilityId) search.set("facilityId", topFacilityId);
-    if (department?.departmentId) search.set("departmentId", department.departmentId);
-    if (topFacility?.facilityName || department?.departmentName) {
-      search.set("search", topFacility?.facilityName || department.departmentName);
-    }
-
-    search.set("sessionId", sessionId);
-    navigate(`/map?${search.toString()}`);
-  }
 
   if (remoteStatus === "loading") {
     return (
@@ -789,39 +760,7 @@ function ResultPage({ sessionId }) {
           </article>
         )}
 
-        <article className="result-card facilities">
-          <span>Cơ sở y tế liên quan</span>
-          <h2>Ưu tiên cơ sở có chuyên khoa phù hợp</h2>
-
-          {facilities.length === 0 ? (
-            <p>Backend chưa trả cơ sở cụ thể cho phiên này. Bạn có thể mở bản đồ để tìm cơ sở y tế phù hợp.</p>
-          ) : (
-            <div className="facility-stack">
-              {facilities.slice(0, 5).map((facility) => (
-                <article key={facilityKey(facility)}>
-                  <strong>{facility.facilityName || "Cơ sở y tế"}</strong>
-                  <span>{facility.address || "Chưa có địa chỉ"}</span>
-                  {facility.phone && <a href={`tel:${facility.phone}`}>{facility.phone}</a>}
-                </article>
-              ))}
-            </div>
-          )}
-        </article>
       </section>
-
-      <div className="assessment-actions clinical-actions-center">
-        <Button onClick={openMap}>
-          <MapPin size={18} /> Xem trên bản đồ
-        </Button>
-
-        <Button tone="secondary" onClick={() => navigate("/assessment/history")}>
-          <History size={18} /> Xem lịch sử
-        </Button>
-
-        <Button tone="secondary" onClick={() => navigate("/medical-assistant/intake")}>
-          Đánh giá mới
-        </Button>
-      </div>
     </AssessmentShell>
   );
 }
