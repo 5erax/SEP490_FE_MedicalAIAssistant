@@ -20,6 +20,14 @@ export const icdChaptersApi = {
     });
   },
 
+  bulk(payload) {
+    return apiRequest(ENDPOINTS.ICD_CHAPTERS.BULK, {
+      method: "POST",
+      body: Array.isArray(payload) ? { chapters: payload } : payload,
+      auth: true,
+    });
+  },
+
   update(id, payload) {
     return apiRequest(ENDPOINTS.ICD_CHAPTERS.BY_ID(id), {
       method: "PUT",
