@@ -1,4 +1,4 @@
-import { Filter, Plus, RotateCcw, Search } from "lucide-react";
+import { FileText, Filter, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Dialog } from "../ui";
 
@@ -255,6 +255,55 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
     resetForm();
   }
 
+  const chapterField = config.fields.find((field) => field.name === "chapterId");
+  const sortOrderField = config.fields.find((field) => field.name === "sortOrder");
+  const questionViField = config.fields.find((field) => field.name === "questionVi");
+  const englishPrefixField = config.fields.find((field) => field.name === "englishPrefix");
+  const answersField = config.fields.find((field) => field.type === "answers");
+
+  function renderFormControl(field) {
+    if (!field) return null;
+
+    if (field.type === "icd-select") {
+      return (
+        <select
+          value={form[field.name]}
+          required={field.required}
+          onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+        >
+          <option value="">Chọn ICD Chapter</option>
+          {icdOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.code} - {option.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    if (field.multiline) {
+      return (
+        <textarea
+          rows={5}
+          value={form[field.name]}
+          required={field.required}
+          onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+        />
+      );
+    }
+
+    return (
+      <input
+        type={field.type || "text"}
+        min={field.min}
+        step={field.step}
+        value={form[field.name]}
+        required={field.required}
+        onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+      />
+    );
+  }
+
   return (
     <section className="admin-panel ai-config-admin-panel">
       <div className="panel-title-row ai-config-section-heading">
@@ -370,7 +419,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       {formOpen && (
         <Dialog
           backdropClassName="doctor-modal-backdrop"
-          className="doctor-modal"
+          className="doctor-modal clinical-question-modal"
           labelledBy="clinical-question-modal-title"
           onClose={closeForm}
           closeOnBackdrop={status !== "saving"}
@@ -379,91 +428,107 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
           <header className="doctor-modal-header">
             <div>
               <p className="eyebrow">{editingId ? "Update" : "Create"}</p>
-              <h2 id="clinical-question-modal-title">{editingId ? `Cập nhật ${config.singularLabel}` : config.formTitle}</h2>
-              <p>Nhập ICD Chapter, câu hỏi tiếng Việt và câu hỏi tiếng Anh dùng cho luồng dữ liệu lâm sàng.</p>
+              <h2 id="clinical-question-modal-title">
+                {editingId ? "Cập nhật câu hỏi lâm sàng" : config.formTitle}
+              </h2>
+              <p>Chỉnh sửa câu hỏi dùng trong luồng AI phân tích triệu chứng.</p>
             </div>
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm}>×</button>
           </header>
 
-          <form className="clean-form doctor-form" onSubmit={submit}>
-            {config.fields.map((field) => (
-              <label className="clean-field" key={field.name}>
-                <span>{field.label}</span>
-                {field.type === "icd-select" ? (
-                  <select
-                    value={form[field.name]}
-                    required={field.required}
-                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                  >
-                    <option value="">Chọn ICD Chapter</option>
-                    {icdOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.code} - {option.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : field.type === "answers" ? (
-                  <div className="clinical-answer-editor">
-                    <div className="clinical-answer-editor-head">
-                      <strong>{field.label}</strong>
-                      <p>Mỗi đáp án gồm nội dung tiếng Việt và bản dịch tiếng Anh.</p>
-                    </div>
-                    {(form.answers ?? []).map((row, index) => (
-                      <article className="clinical-answer-card" key={row.id}>
-                        <div className="clinical-answer-card-head">
-                          <strong>Đáp án {index + 1}</strong>
-                          <button className="clinical-answer-remove" type="button" onClick={() => removeAnswerRow(row.id)}>
-                            Xóa
-                          </button>
-                        </div>
-                        <div className="clinical-answer-fields">
-                          <div className="clinical-answer-field">
-                            <span>Tiếng Việt</span>
-                            <input
-                              value={row.vietnameseLabel}
-                              onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
-                              placeholder={`Nhập nội dung tiếng Việt ${index + 1}`}
-                            />
-                          </div>
-                          <div className="clinical-answer-field">
-                            <span>Tiếng Anh</span>
-                            <input
-                              value={row.englishLabel}
-                              onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
-                              placeholder={`Nhập bản dịch tiếng Anh ${index + 1}`}
-                            />
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                    {(form.answers ?? []).length === 0 && (
-                      <div className="clinical-answer-empty">
-                        Chưa có đáp án nào. Thêm đáp án để hỗ trợ luồng câu hỏi lâm sàng.
+          <form className="clean-form doctor-form clinical-question-form" onSubmit={submit}>
+            <section className="clinical-form-section">
+              <div className="clinical-form-section-head">
+                <strong>Thông tin câu hỏi</strong>
+              </div>
+              <div className="clinical-form-two-column">
+                {[chapterField, sortOrderField].filter(Boolean).map((field) => (
+                  <label className="clean-field" key={field.name}>
+                    <span>{field.label}</span>
+                    {renderFormControl(field)}
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <section className="clinical-form-section">
+              <div className="clinical-form-section-head">
+                <strong>Nội dung câu hỏi</strong>
+              </div>
+              <div className="clinical-form-content-grid">
+                {[questionViField, englishPrefixField].filter(Boolean).map((field) => (
+                  <label className="clean-field" key={field.name}>
+                    <span>{field.label}</span>
+                    {renderFormControl(field)}
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {answersField && (
+              <section className="clinical-form-section clinical-answer-section">
+                <div className="clinical-answer-editor">
+                  <div className="clinical-answer-editor-head">
+                    <div>
+                      <div className="clinical-answer-editor-title">
+                        <FileText size={18} aria-hidden="true" />
+                        <strong>Danh sách đáp án</strong>
                       </div>
-                    )}
+                      <p>Các đáp án mà người dùng có thể lựa chọn trong quá trình phân tích triệu chứng.</p>
+                    </div>
                     <button className="clinical-answer-add" type="button" onClick={addAnswerRow}>
-                      + Thêm đáp án
+                      <Plus size={16} aria-hidden="true" />
+                      <span>Thêm đáp án</span>
                     </button>
                   </div>
-                ) : field.multiline ? (
-                  <textarea
-                    rows={4}
-                    value={form[field.name]}
-                    required={field.required}
-                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                  />
-                ) : (
-                  <input
-                    type={field.type || "text"}
-                    min={field.min}
-                    step={field.step}
-                    value={form[field.name]}
-                    required={field.required}
-                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                  />
-                )}
-              </label>
-            ))}
+                  {(form.answers ?? []).map((row, index) => (
+                    <article className="clinical-answer-card" key={row.id}>
+                      <div className="clinical-answer-card-head">
+                        <div className="clinical-answer-card-title">
+                          <FileText size={16} aria-hidden="true" />
+                          <strong>Đáp án #{index + 1}</strong>
+                        </div>
+                      </div>
+                      <div className="clinical-answer-fields">
+                        <div className="clinical-answer-field">
+                          <span>Tiếng Việt</span>
+                          <input
+                            value={row.vietnameseLabel}
+                            onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
+                            placeholder={`Nhập nội dung tiếng Việt ${index + 1}`}
+                          />
+                        </div>
+                        <div className="clinical-answer-field">
+                          <span>Tiếng Anh</span>
+                          <input
+                            value={row.englishLabel}
+                            onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
+                            placeholder={`Nhập bản dịch tiếng Anh ${index + 1}`}
+                          />
+                        </div>
+                      </div>
+                      <div className="clinical-answer-card-actions">
+                        <button
+                          className="clinical-answer-remove"
+                          type="button"
+                          aria-label={`Xóa đáp án ${index + 1}`}
+                          onClick={() => removeAnswerRow(row.id)}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                          <span>Xóa</span>
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                  {(form.answers ?? []).length === 0 && (
+                    <div className="clinical-answer-empty">
+                      Chưa có đáp án nào. Thêm đáp án để hỗ trợ luồng câu hỏi lâm sàng.
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
             <div className="doctor-modal-actions">
               <button className="btn btn-ghost" type="button" onClick={closeForm}>Hủy</button>
               <button className="btn btn-primary" type="submit" disabled={status === "saving"}>

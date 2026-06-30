@@ -282,7 +282,8 @@
 }
 
 .operator-workspace .clean-field,
-.admin-operator .clean-field {
+.admin-operator .clean-field,
+.clinical-question-modal .clean-field {
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -293,7 +294,8 @@
 }
 
 .operator-workspace .clean-field > span,
-.admin-operator .clean-field > span {
+.admin-operator .clean-field > span,
+.clinical-question-modal .clean-field > span {
   color: rgba(16, 20, 17, 0.62);
   font-size: 11px;
   font-weight: 860;
@@ -306,6 +308,9 @@
 .admin-operator .clean-field input,
 .admin-operator .clean-field textarea,
 .admin-operator .clean-field select,
+.clinical-question-modal .clean-field input,
+.clinical-question-modal .clean-field textarea,
+.clinical-question-modal .clean-field select,
 .admin-operator .admin-toolbar input,
 .admin-operator .admin-toolbar select {
   width: 100%;
@@ -321,7 +326,8 @@
 }
 
 .operator-workspace .clean-field textarea,
-.admin-operator .clean-field textarea {
+.admin-operator .clean-field textarea,
+.clinical-question-modal .clean-field textarea {
   min-height: 108px;
   resize: vertical;
 }
@@ -330,6 +336,8 @@
 .operator-workspace .clean-field textarea::placeholder,
 .admin-operator .clean-field input::placeholder,
 .admin-operator .clean-field textarea::placeholder,
+.clinical-question-modal .clean-field input::placeholder,
+.clinical-question-modal .clean-field textarea::placeholder,
 .admin-operator .admin-toolbar input::placeholder {
   color: rgba(16, 20, 17, 0.4);
   font-weight: 720;
@@ -340,6 +348,9 @@
 .admin-operator .clean-field input:focus,
 .admin-operator .clean-field textarea:focus,
 .admin-operator .clean-field select:focus,
+.clinical-question-modal .clean-field input:focus,
+.clinical-question-modal .clean-field textarea:focus,
+.clinical-question-modal .clean-field select:focus,
 .admin-operator .admin-toolbar input:focus,
 .admin-operator .admin-toolbar select:focus {
   border-color: rgba(16, 20, 17, 0.72);
@@ -1536,14 +1547,14 @@
 }
 
 .doctor-modal {
-  width: min(760px, 100%);
+  width: min(900px, 100%);
   max-height: calc(100svh - 40px);
   overflow: auto;
   border: 1px solid rgba(16, 20, 17, 0.14);
-  border-radius: 20px;
-  background: #fff;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fff, #fbfcf7);
   box-shadow: 0 30px 90px rgba(16, 20, 17, 0.22);
-  padding: clamp(20px, 3vw, 28px);
+  padding: 0;
   animation: doctorModalIn 180ms ease both;
 }
 
@@ -1551,14 +1562,17 @@
   display: flex;
   justify-content: space-between;
   gap: 18px;
-  margin-bottom: 18px;
+  border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+  padding: clamp(22px, 3vw, 30px) clamp(22px, 3vw, 32px) 20px;
 }
 
 .doctor-modal-header h2 {
   margin: 0;
-  font-size: clamp(24px, 3.2vw, 32px);
-  font-weight: 760;
-  line-height: 1.18;
+  color: #101411;
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 860;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .doctor-modal-header p:not(.eyebrow) {
@@ -1572,18 +1586,26 @@
 
 .doctor-modal-close {
   flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border: 1px solid rgba(16, 20, 17, 0.16);
   border-radius: 999px;
   background: #fbfcf7;
   color: #101411;
   font-size: 24px;
   line-height: 1;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.doctor-modal-close:hover {
+  border-color: rgba(16, 20, 17, 0.28);
+  background: #fff;
+  transform: translateY(-1px);
 }
 
 .doctor-form {
-  gap: 16px;
+  gap: 18px;
 }
 
 .doctor-field-error input,
@@ -1601,7 +1623,55 @@
   justify-content: flex-end;
   gap: 10px;
   border-top: 1px solid rgba(16, 20, 17, 0.1);
-  padding-top: 14px;
+  margin: 4px clamp(22px, 3vw, 32px) 0;
+  padding: 18px 0 clamp(22px, 3vw, 28px);
+}
+
+.clinical-question-modal .clinical-question-form {
+  padding: 22px clamp(22px, 3vw, 32px) 0;
+}
+
+.clinical-question-modal .clinical-form-section {
+  display: grid;
+  gap: 18px;
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 20px;
+  box-shadow: 0 14px 34px rgba(16, 20, 17, 0.045);
+}
+
+.clinical-question-modal .clinical-form-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.clinical-question-modal .clinical-form-section-head strong {
+  color: #101411;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.clinical-question-modal .clinical-form-two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 180px);
+  gap: 16px;
+  align-items: start;
+}
+
+.clinical-question-modal .clinical-form-content-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.clinical-question-modal .clinical-question-form textarea {
+  min-height: 128px;
+  resize: vertical;
+  line-height: 1.55;
+  padding: 14px 16px;
 }
 
 .admin-operator .ai-config-admin-panel {
@@ -1795,96 +1865,149 @@
   white-space: nowrap;
 }
 
-.admin-operator .clinical-answer-editor {
+.clinical-question-modal .clinical-answer-editor {
   display: grid;
-  gap: 14px;
-}
-
-.admin-operator .clinical-answer-editor-head {
-  display: grid;
-  gap: 4px;
+  gap: 22px;
   margin-top: 2px;
 }
 
-.admin-operator .clinical-answer-editor-head strong {
+.clinical-question-modal .clinical-answer-editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.clinical-question-modal .clinical-answer-editor-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0f3f37;
+}
+
+.clinical-question-modal .clinical-answer-editor-title svg {
+  flex: 0 0 auto;
+  color: #0b6f68;
+}
+
+.clinical-question-modal .clinical-answer-editor-head strong {
   color: #101411;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 900;
 }
 
-.admin-operator .clinical-answer-editor-head p {
+.clinical-question-modal .clinical-answer-editor-head p {
   margin: 0;
-  color: rgba(16, 20, 17, 0.58);
-  font-size: 13px;
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 14px;
   font-weight: 650;
-  line-height: 1.45;
+  line-height: 1.55;
 }
 
-.admin-operator .clinical-answer-card {
+.clinical-question-modal .clinical-answer-card {
   display: grid;
-  gap: 14px;
+  gap: 18px;
   border: 1px solid rgba(16, 20, 17, 0.12);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.86);
-  padding: 14px;
-  box-shadow: 0 14px 36px rgba(16, 20, 17, 0.06);
+  border-radius: 18px;
+  background: #fff;
+  padding: 22px;
+  box-shadow: 0 12px 30px rgba(16, 20, 17, 0.055);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.admin-operator .clinical-answer-card-head {
+.clinical-question-modal .clinical-answer-card:hover {
+  border-color: rgba(11, 111, 104, 0.24);
+  box-shadow: 0 22px 54px rgba(16, 20, 17, 0.09);
+  transform: translateY(-1px);
+}
+
+.clinical-question-modal .clinical-answer-card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.admin-operator .clinical-answer-card-head strong {
+.clinical-question-modal .clinical-answer-card-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #101411;
+}
+
+.clinical-question-modal .clinical-answer-card-title svg {
+  color: #0b6f68;
+}
+
+.clinical-question-modal .clinical-answer-card-head strong {
   color: #101411;
   font-size: 15px;
   font-weight: 920;
 }
 
-.admin-operator .clinical-answer-fields {
+.clinical-question-modal .clinical-answer-fields {
   display: grid;
-  gap: 12px;
+  gap: 20px;
 }
 
-.admin-operator .clinical-answer-field {
+.clinical-question-modal .clinical-answer-field {
   display: grid;
-  gap: 7px;
+  gap: 9px;
 }
 
-.admin-operator .clinical-answer-field > span {
+.clinical-question-modal .clinical-answer-field > span {
   color: rgba(16, 20, 17, 0.66);
   font-size: 13px;
   font-weight: 850;
 }
 
-.admin-operator .clinical-answer-field input {
+.clinical-question-modal .clinical-answer-field input {
   width: 100%;
-  min-height: 44px;
+  min-height: 50px;
   border-radius: 12px;
-  background: rgba(251, 252, 247, 0.92);
-  padding-inline: 14px;
+  border-color: rgba(16, 20, 17, 0.16);
+  background: rgba(251, 252, 247, 0.96);
+  padding-inline: 16px;
+  font-size: 14px;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
-.admin-operator .clinical-answer-remove {
-  min-height: 36px;
+.clinical-question-modal .clinical-answer-field input:focus {
+  border-color: rgba(11, 111, 104, 0.42);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(11, 111, 104, 0.08);
+}
+
+.clinical-question-modal .clinical-answer-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clinical-question-modal .clinical-answer-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
   border: 1px solid rgba(185, 28, 28, 0.18);
   border-radius: 999px;
   background: #fff;
   color: #991b1b;
-  padding: 0 13px;
+  padding: 0 14px;
   font-size: 13px;
   font-weight: 900;
   cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
 }
 
-.admin-operator .clinical-answer-remove:hover {
+.clinical-question-modal .clinical-answer-remove:hover {
   border-color: rgba(185, 28, 28, 0.34);
   background: rgba(254, 226, 226, 0.72);
+  color: #7f1d1d;
+  transform: translateY(-1px);
 }
 
-.admin-operator .clinical-answer-empty {
+.clinical-question-modal .clinical-answer-empty {
   border: 1px dashed rgba(16, 20, 17, 0.18);
   border-radius: 14px;
   background: rgba(251, 252, 247, 0.72);
@@ -1895,37 +2018,78 @@
   line-height: 1.5;
 }
 
-.admin-operator .clinical-answer-add {
+.clinical-question-modal .clinical-answer-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
   width: fit-content;
-  min-height: 42px;
-  border: 1px solid rgba(16, 20, 17, 0.16);
-  border-radius: 999px;
-  background: #fff;
-  color: #101411;
-  padding: 0 16px;
+  min-height: 46px;
+  border: 1px solid rgba(11, 111, 104, 0.28);
+  border-radius: 14px;
+  background: #0f766e;
+  color: #fff;
+  padding: 0 18px;
   font-weight: 900;
   cursor: pointer;
+  box-shadow: 0 16px 32px rgba(15, 118, 110, 0.18);
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.admin-operator .clinical-answer-add:hover {
-  border-color: rgba(16, 20, 17, 0.38);
-  background: rgba(196, 233, 149, 0.28);
+.clinical-question-modal .clinical-answer-add:hover {
+  background: #0b5f58;
+  box-shadow: 0 18px 38px rgba(15, 118, 110, 0.24);
+  transform: translateY(-1px);
 }
 
-.admin-operator .clinical-answer-editor small {
+.clinical-question-modal .clinical-answer-editor small {
   color: rgba(16, 20, 17, 0.56);
   font-size: 12px;
   font-weight: 650;
 }
 
 @media (max-width: 760px) {
-  .admin-operator .clinical-answer-card {
+  .doctor-modal-backdrop {
+    align-items: stretch;
     padding: 12px;
   }
 
-  .admin-operator .clinical-answer-card-head {
+  .doctor-modal-header {
+    padding: 20px 18px 16px;
+  }
+
+  .clinical-question-modal .clinical-question-form {
+    padding-inline: 18px;
+  }
+
+  .clinical-question-modal .clinical-form-section {
+    padding: 16px;
+  }
+
+  .clinical-question-modal .clinical-form-two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-question-modal .clinical-answer-editor-head {
+    flex-direction: column;
+  }
+
+  .clinical-question-modal .clinical-answer-card {
+    padding: 16px;
+  }
+
+  .clinical-question-modal .clinical-answer-card-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .clinical-question-modal .clinical-answer-remove,
+  .clinical-question-modal .clinical-answer-add {
+    width: 100%;
+  }
+
+  .doctor-modal-actions {
+    margin-inline: 18px;
   }
 }
 
