@@ -10,8 +10,10 @@ import {
   getClinicalQuestionBooleanPrompts,
   getClinicalQuestionAnswerOptions,
   isClinicalQuestionAnswered,
+  readAnalysisPayload,
+  readSuggestClinicalQuestionsPayload,
   symptomAnalysisApi,
-  translateClinicalText,
+  unwrapApiData,
 } from "../services/symptomAnalysisService";
 import "../styles/medical-assessment.css";
 
@@ -41,44 +43,15 @@ const INTAKE_REQUIRED_FIELDS = {
   description: "Vui lòng mô tả thêm bối cảnh và diễn tiến triệu chứng.",
 };
 
-function unwrapData(response) {
-  return response?.data?.data ?? response?.data ?? response;
-}
-
 function getPagedItems(response) {
-  const data = unwrapData(response);
+  const data = unwrapApiData(response);
   if (Array.isArray(data?.items)) return data.items;
   if (Array.isArray(data)) return data;
   return [];
 }
 
-function getQuestionId(question, index) {
-  return question?.questionId ?? question?.id ?? `question-${index + 1}`;
-}
-
-function normalizeQuestions(questions = []) {
-  return questions.map((question, index) => {
-    const sourceText = question?.questionVi || question?.questionText || question?.text || `Câu hỏi lâm sàng ${index + 1}`;
-    const translatedText = translateClinicalText(sourceText);
-    return {
-      ...question,
-      questionId: getQuestionId(question, index),
-      questionText: translatedText,
-      questionOriginalText: translatedText === sourceText ? "" : sourceText,
-    };
-  });
-}
-
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function readSuggestResponse(response) {
-  const data = unwrapData(response) ?? {};
-  return {
-    sessionId: data.sessionId || "",
-    questions: normalizeQuestions(Array.isArray(data.questions) ? data.questions : []),
-  };
 }
 
 function confidencePercent(value) {
@@ -106,33 +79,41 @@ function saveDraft(draft) {
 
 function buildUserInput(form) {
   return [
-    `Trieu chung chinh: ${form.mainSymptom}`,
-    form.description ? `Mo ta them: ${form.description}` : "",
-    form.duration ? `Thoi gian bat dau: ${form.duration}` : "",
-    form.severity ? `Muc do: ${form.severity}` : "",
-    form.bodyLocation ? `Vi tri: ${form.bodyLocation}` : "",
-    form.associatedSymptoms ? `Trieu chung di kem: ${form.associatedSymptoms}` : "",
-    form.profileContext ? `Thong tin ho so suc khoe: ${form.profileContext}` : "",
-    form.chronicDiseaseNote ? `Benh nen: ${form.chronicDiseaseNote}` : "",
-    form.allergyNote ? `Di ung: ${form.allergyNote}` : "",
-    form.medications ? `Thuoc dang dung: ${form.medications}` : "",
+    `Triệu chứng chính: ${form.mainSymptom}`,
+    form.description ? `Mô tả thêm: ${form.description}` : "",
+    form.duration ? `Thời gian bắt đầu: ${form.duration}` : "",
+    form.severity ? `Mức độ: ${form.severity}` : "",
+    form.bodyLocation ? `Vị trí: ${form.bodyLocation}` : "",
+    form.associatedSymptoms ? `Triệu chứng đi kèm: ${form.associatedSymptoms}` : "",
+    form.profileContext ? `Thông tin hồ sơ sức khỏe: ${form.profileContext}` : "",
+    form.chronicDiseaseNote ? `Bệnh nền: ${form.chronicDiseaseNote}` : "",
+    form.allergyNote ? `Dị ứng: ${form.allergyNote}` : "",
+    form.medications ? `Thuốc đang dùng: ${form.medications}` : "",
   ].filter(Boolean).join("\n");
 }
 
 function getRecommendedDepartment(result) {
-  return result?.recommendedDepartment || result?.analysis?.recommendedDepartment || result?.recommendedDepartments?.[0] || null;
+  return result?.recommendedDepartment
+    || result?.analysis?.recommendedDepartment
+    || result?.recommendedDepartments?.[0]
+    || null;
 }
 
 function getDiagnoses(result) {
-  return result?.diagnoses || result?.analysis?.diagnoses || [];
+  const diagnoses = result?.diagnoses || result?.analysis?.diagnoses || [];
+  return Array.isArray(diagnoses) ? diagnoses : [];
 }
 
 function getPrimaryDiagnosis(result) {
-  return result?.primaryDiagnosis || result?.analysis?.primaryDiagnosis || getDiagnoses(result)[0] || null;
+  return result?.primaryDiagnosis
+    || result?.analysis?.primaryDiagnosis
+    || getDiagnoses(result)[0]
+    || null;
 }
 
 function getFacilities(result) {
-  return result?.recommendedFacilities || result?.analysis?.recommendedFacilities || [];
+  const facilities = result?.recommendedFacilities || result?.analysis?.recommendedFacilities || [];
+  return Array.isArray(facilities) ? facilities : [];
 }
 
 function facilityKey(facility) {
@@ -143,12 +124,20 @@ function facilityId(facility) {
   return facility?.facilityId || facility?.id || "";
 }
 
+function getQuestionKeywords(question) {
+  return Array.isArray(question?.matchedKeywords)
+    ? question.matchedKeywords.filter(Boolean)
+    : [];
+}
+
 function AssessmentShell({ eyebrow, title, description, children }) {
   return (
     <main className="assessment-page">
       <section className="assessment-shell" aria-labelledby="assessment-title">
         <header className="assessment-header">
-          <span className="assessment-icon" aria-hidden="true"><Stethoscope size={24} /></span>
+          <span className="assessment-icon" aria-hidden="true">
+            <Stethoscope size={24} />
+          </span>
           <div>
             <p className="eyebrow">{eyebrow}</p>
             <h1 id="assessment-title">{title}</h1>
@@ -163,10 +152,15 @@ function AssessmentShell({ eyebrow, title, description, children }) {
 
 function Stepper({ active }) {
   const steps = ["An toàn", "Dữ liệu", "Câu hỏi", "Kết quả"];
+
   return (
     <ol className="assessment-stepper" aria-label="Tiến trình đánh giá">
       {steps.map((step, index) => (
-        <li className={index === active ? "active" : index < active ? "complete" : ""} key={step} aria-current={index === active ? "step" : undefined}>
+        <li
+          className={index === active ? "active" : index < active ? "complete" : ""}
+          key={step}
+          aria-current={index === active ? "step" : undefined}
+        >
           <span>{index + 1}</span>
           <strong>{step}</strong>
         </li>
@@ -188,20 +182,27 @@ function EntryPage() {
           <h2>Luôn bắt đầu bằng an toàn</h2>
           <p>Nếu có dấu hiệu nguy hiểm, ứng dụng sẽ dừng flow AI và hướng dẫn bạn tìm chăm sóc khẩn cấp.</p>
         </article>
+
         <article>
           <Stethoscope size={24} aria-hidden="true" />
           <h2>Hỏi đáp lâm sàng từng bước</h2>
-          <p>Backend chọn câu hỏi Có/Không theo triệu chứng bạn nhập, sau đó mới tạo kết quả tham khảo.</p>
+          <p>Backend chọn câu hỏi theo triệu chứng bạn nhập, sau đó mới tạo kết quả tham khảo.</p>
         </article>
+
         <article>
           <MapPin size={24} aria-hidden="true" />
           <h2>Điều hướng cơ sở y tế</h2>
           <p>Khi có chuyên khoa gợi ý, MediMate tìm cơ sở y tế active từ backend theo chuyên khoa đó.</p>
         </article>
       </div>
+
       <div className="assessment-actions">
-        <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>Bắt đầu phân tích lâm sàng</Button>
-        <Button tone="secondary" onClick={() => navigate("/map")}>Tìm cơ sở y tế</Button>
+        <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>
+          Bắt đầu phân tích lâm sàng
+        </Button>
+        <Button tone="secondary" onClick={() => navigate("/map")}>
+          Tìm cơ sở y tế
+        </Button>
       </div>
     </AssessmentShell>
   );
@@ -212,9 +213,11 @@ function SafetyPage() {
   const hasRedFlag = checked.length > 0;
 
   function toggle(flag) {
-    setChecked((current) => current.includes(flag)
-      ? current.filter((item) => item !== flag)
-      : [...current, flag]);
+    setChecked((current) => (
+      current.includes(flag)
+        ? current.filter((item) => item !== flag)
+        : [...current, flag]
+    ));
   }
 
   return (
@@ -224,11 +227,16 @@ function SafetyPage() {
       description="Hãy kiểm tra nhanh các dấu hiệu cần chăm sóc y tế khẩn cấp. Nếu có, không nên tiếp tục tự đánh giá bằng AI."
     >
       <Stepper active={0} />
+
       <fieldset className="safety-checklist">
         <legend>Bạn có đang gặp một trong các dấu hiệu sau không?</legend>
         {RED_FLAGS.map((flag) => (
           <label key={flag}>
-            <input type="checkbox" checked={checked.includes(flag)} onChange={() => toggle(flag)} />
+            <input
+              type="checkbox"
+              checked={checked.includes(flag)}
+              onChange={() => toggle(flag)}
+            />
             <span>{flag}</span>
           </label>
         ))}
@@ -239,10 +247,17 @@ function SafetyPage() {
           <AlertTriangle size={28} aria-hidden="true" />
           <div>
             <h2>Đây có thể là tình huống cần chăm sóc khẩn cấp</h2>
-            <p>Vui lòng gọi cấp cứu địa phương, hoặc đến cơ sở y tế gần nhất. Không tiếp tục tự đánh giá bằng AI trong tình huống này.</p>
+            <p>
+              Vui lòng gọi cấp cứu địa phương, hoặc đến cơ sở y tế gần nhất.
+              Không tiếp tục tự đánh giá bằng AI trong tình huống này.
+            </p>
             <div className="assessment-actions">
-              <Button onClick={() => navigate("/map?search=cap%20cuu")}>Tìm cơ sở y tế gần nhất</Button>
-              <Button tone="secondary" onClick={() => navigate("/")}>Về trang chủ</Button>
+              <Button onClick={() => navigate("/map?search=cap%20cuu")}>
+                Tìm cơ sở y tế gần nhất
+              </Button>
+              <Button tone="secondary" onClick={() => navigate("/")}>
+                Về trang chủ
+              </Button>
             </div>
           </div>
         </section>
@@ -253,7 +268,9 @@ function SafetyPage() {
           <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
             Không, tiếp tục đánh giá
           </Button>
-          <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>Quay lại</Button>
+          <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>
+            Quay lại
+          </Button>
         </div>
       )}
     </AssessmentShell>
@@ -263,6 +280,7 @@ function SafetyPage() {
 function IntakePage() {
   const auth = getStoredAuth();
   const errorSummaryRef = useRef(null);
+
   const [form, setForm] = useState(() => loadDraft() ?? {
     mainSymptom: "",
     description: "",
@@ -275,13 +293,16 @@ function IntakePage() {
     chronicDiseaseNote: "",
     medications: "",
   });
+
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
-  const [profileStatus, setProfileStatus] = useState(() => (auth?.userId || auth?.identityId ? "loading" : "idle"));
+  const [profileStatus, setProfileStatus] = useState(() => (
+    auth?.userId || auth?.identityId ? "loading" : "idle"
+  ));
 
   const requiredErrorEntries = Object.entries(fieldErrors);
-  const showIntakeSidePanel = !auth || ["loading", "ready", "empty"].includes(profileStatus);
+  const showIntakeSidePanel = !auth || ["loading", "ready", "empty", "error"].includes(profileStatus);
 
   useEffect(() => {
     const userId = auth?.userId || auth?.identityId;
@@ -292,6 +313,7 @@ function IntakePage() {
     patientProfilesApi.findByUserId(userId)
       .then((profile) => {
         if (!active) return;
+
         if (!profile) {
           setProfileStatus("empty");
           return;
@@ -313,6 +335,7 @@ function IntakePage() {
           saveDraft(next);
           return next;
         });
+
         setProfileStatus("ready");
       })
       .catch(() => {
@@ -330,6 +353,7 @@ function IntakePage() {
       saveDraft(next);
       return next;
     });
+
     if (fieldErrors[key]) {
       setFieldErrors((current) => {
         const next = { ...current };
@@ -341,6 +365,7 @@ function IntakePage() {
 
   async function submit(event) {
     event.preventDefault();
+
     const nextFieldErrors = Object.fromEntries(
       Object.entries(INTAKE_REQUIRED_FIELDS)
         .filter(([field]) => !String(form[field] ?? "").trim()),
@@ -356,12 +381,16 @@ function IntakePage() {
     setStatus("loading");
     setError("");
     setFieldErrors({});
+
     const userInput = buildUserInput(form);
 
     try {
       const response = await symptomAnalysisApi.suggestClinicalQuestions(userInput);
-      const data = readSuggestResponse(response);
-      if (!data.sessionId) throw new Error("Backend chưa trả về sessionId cho phiên đánh giá.");
+      const data = readSuggestClinicalQuestionsPayload(response);
+
+      if (!data.sessionId) {
+        throw new Error("Backend chưa trả về sessionId cho phiên đánh giá.");
+      }
 
       saveSessionState(data.sessionId, {
         sessionId: data.sessionId,
@@ -370,11 +399,14 @@ function IntakePage() {
         questions: data.questions,
         answers: {},
       });
+
       navigate(`/assessment/${data.sessionId}`);
     } catch (requestError) {
-      setError(requestError.status === 502
-        ? "AI tạm thời không phản hồi. Vui lòng thử lại sau."
-        : requestError.message || "Không thể tạo câu hỏi lâm sàng lúc này.");
+      setError(
+        requestError.status === 502
+          ? "AI tạm thời không phản hồi. Vui lòng thử lại sau."
+          : requestError.message || "Không thể tạo câu hỏi lâm sàng lúc này.",
+      );
     } finally {
       setStatus("idle");
     }
@@ -387,6 +419,7 @@ function IntakePage() {
       description="Nhập thông tin chính về tình trạng hiện tại để MediMate tạo bộ câu hỏi lâm sàng và chuẩn bị gợi ý chuyên khoa."
     >
       <Stepper active={1} />
+
       <section className="clinical-overview" aria-label="Tóm tắt phân tích lâm sàng">
         <article>
           <span>01</span>
@@ -404,10 +437,16 @@ function IntakePage() {
           <p>Kết quả ưu tiên chuyên khoa và cơ sở y tế phù hợp để bạn tiếp tục xử lý.</p>
         </article>
       </section>
+
       <div className={`intake-layout ${showIntakeSidePanel ? "" : "intake-layout-single"}`.trim()}>
         <form className="assessment-form intake-form" onSubmit={submit} noValidate>
           {requiredErrorEntries.length > 0 && (
-            <div className="assessment-error-summary" ref={errorSummaryRef} role="alert" tabIndex="-1">
+            <div
+              className="assessment-error-summary"
+              ref={errorSummaryRef}
+              role="alert"
+              tabIndex="-1"
+            >
               <strong>Cần bổ sung {requiredErrorEntries.length} thông tin</strong>
               <ul>
                 {requiredErrorEntries.map(([field, message]) => (
@@ -422,7 +461,13 @@ function IntakePage() {
           <fieldset className="intake-section">
             <legend>Thông tin lâm sàng chính</legend>
             <p>Hai thông tin này là nền cho bộ câu hỏi lâm sàng và gợi ý chuyên khoa.</p>
-            <Field id="intake-mainSymptom" label="Triệu chứng chính" required error={fieldErrors.mainSymptom}>
+
+            <Field
+              id="intake-mainSymptom"
+              label="Triệu chứng chính"
+              required
+              error={fieldErrors.mainSymptom}
+            >
               <TextInput
                 value={form.mainSymptom}
                 onChange={(event) => updateField("mainSymptom", event.target.value)}
@@ -430,7 +475,14 @@ function IntakePage() {
                 autoComplete="off"
               />
             </Field>
-            <Field id="intake-description" label="Mô tả thêm" hint="Ví dụ: diễn tiến, lúc nào nặng hơn, điều gì làm giảm triệu chứng." required error={fieldErrors.description}>
+
+            <Field
+              id="intake-description"
+              label="Mô tả thêm"
+              hint="Ví dụ: diễn tiến, lúc nào nặng hơn, điều gì làm giảm triệu chứng."
+              required
+              error={fieldErrors.description}
+            >
               <Textarea
                 value={form.description}
                 onChange={(event) => updateField("description", event.target.value)}
@@ -442,20 +494,43 @@ function IntakePage() {
 
           <fieldset className="intake-section">
             <legend>Ngữ cảnh triệu chứng</legend>
+
             <div className="assessment-form-grid">
               <Field label="Thời gian bắt đầu" optional>
-                <TextInput value={form.duration} onChange={(event) => updateField("duration", event.target.value)} disabled={status === "loading"} placeholder="Ví dụ: 2 ngày" />
+                <TextInput
+                  value={form.duration}
+                  onChange={(event) => updateField("duration", event.target.value)}
+                  disabled={status === "loading"}
+                  placeholder="Ví dụ: 2 ngày"
+                />
               </Field>
+
               <Field label="Mức độ">
-                <select value={form.severity} onChange={(event) => updateField("severity", event.target.value)} disabled={status === "loading"}>
-                  {SEVERITY_OPTIONS.map(([value, label]) => <option key={value} value={label}>{label}</option>)}
+                <select
+                  value={form.severity}
+                  onChange={(event) => updateField("severity", event.target.value)}
+                  disabled={status === "loading"}
+                >
+                  {SEVERITY_OPTIONS.map(([, label]) => (
+                    <option key={label} value={label}>{label}</option>
+                  ))}
                 </select>
               </Field>
+
               <Field label="Vị trí đau/khó chịu" optional>
-                <TextInput value={form.bodyLocation} onChange={(event) => updateField("bodyLocation", event.target.value)} disabled={status === "loading"} />
+                <TextInput
+                  value={form.bodyLocation}
+                  onChange={(event) => updateField("bodyLocation", event.target.value)}
+                  disabled={status === "loading"}
+                />
               </Field>
+
               <Field label="Triệu chứng đi kèm" optional>
-                <TextInput value={form.associatedSymptoms} onChange={(event) => updateField("associatedSymptoms", event.target.value)} disabled={status === "loading"} />
+                <TextInput
+                  value={form.associatedSymptoms}
+                  onChange={(event) => updateField("associatedSymptoms", event.target.value)}
+                  disabled={status === "loading"}
+                />
               </Field>
             </div>
           </fieldset>
@@ -463,28 +538,66 @@ function IntakePage() {
           <fieldset className="intake-section">
             <legend>Thông tin sức khỏe liên quan</legend>
             <p>Phần này có thể được điền sẵn từ hồ sơ, nhưng bạn vẫn chỉnh sửa được trước khi gửi.</p>
+
             <div className="assessment-form-grid">
-              <Field label="Thông tin hồ sơ sức khỏe" hint="Tự động lấy nhóm máu, chiều cao, cân nặng nếu backend có dữ liệu." optional>
-                <Textarea value={form.profileContext} onChange={(event) => updateField("profileContext", event.target.value)} disabled={status === "loading"} rows={3} />
+              <Field
+                label="Thông tin hồ sơ sức khỏe"
+                hint="Tự động lấy nhóm máu, chiều cao, cân nặng nếu backend có dữ liệu."
+                optional
+              >
+                <Textarea
+                  value={form.profileContext}
+                  onChange={(event) => updateField("profileContext", event.target.value)}
+                  disabled={status === "loading"}
+                  rows={3}
+                />
               </Field>
+
               <Field label="Bệnh nền" optional>
-                <Textarea value={form.chronicDiseaseNote} onChange={(event) => updateField("chronicDiseaseNote", event.target.value)} disabled={status === "loading"} rows={3} />
+                <Textarea
+                  value={form.chronicDiseaseNote}
+                  onChange={(event) => updateField("chronicDiseaseNote", event.target.value)}
+                  disabled={status === "loading"}
+                  rows={3}
+                />
               </Field>
             </div>
+
             <div className="assessment-form-grid">
               <Field label="Dị ứng" optional>
-                <Textarea value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} disabled={status === "loading"} rows={3} />
+                <Textarea
+                  value={form.allergyNote}
+                  onChange={(event) => updateField("allergyNote", event.target.value)}
+                  disabled={status === "loading"}
+                  rows={3}
+                />
               </Field>
+
               <Field label="Thuốc đang dùng" optional>
-                <TextInput value={form.medications} onChange={(event) => updateField("medications", event.target.value)} disabled={status === "loading"} />
+                <TextInput
+                  value={form.medications}
+                  onChange={(event) => updateField("medications", event.target.value)}
+                  disabled={status === "loading"}
+                />
               </Field>
             </div>
           </fieldset>
 
           {error && <Alert tone="danger" live>{error}</Alert>}
+
           <div className="assessment-actions intake-actions">
-            <Button type="submit" size="lg" loading={status === "loading"} loadingLabel="Đang tạo câu hỏi...">Tạo bộ câu hỏi lâm sàng</Button>
-            <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>Kiểm tra dấu hiệu khẩn cấp</Button>
+            <Button
+              type="submit"
+              size="lg"
+              loading={status === "loading"}
+              loadingLabel="Đang tạo câu hỏi..."
+            >
+              Tạo bộ câu hỏi lâm sàng
+            </Button>
+
+            <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>
+              Kiểm tra dấu hiệu khẩn cấp
+            </Button>
           </div>
         </form>
 
@@ -495,14 +608,29 @@ function IntakePage() {
                 Backend hiện yêu cầu token cho phiên đánh giá. Hãy đăng nhập để tiếp tục và lưu lịch sử phiên.
               </Alert>
             )}
+
             {auth && profileStatus === "loading" && (
-              <Alert tone="info" live>Đang tải hồ sơ sức khỏe để điền sẵn thông tin nền nếu có.</Alert>
+              <Alert tone="info" live>
+                Đang tải hồ sơ sức khỏe để điền sẵn thông tin nền nếu có.
+              </Alert>
             )}
+
             {auth && profileStatus === "ready" && (
-              <Alert tone="success" live>Đã điền sẵn thông tin hồ sơ sức khỏe có sẵn. Bạn có thể chỉnh sửa trước khi gửi.</Alert>
+              <Alert tone="success" live>
+                Đã điền sẵn thông tin hồ sơ sức khỏe có sẵn. Bạn có thể chỉnh sửa trước khi gửi.
+              </Alert>
             )}
+
             {auth && profileStatus === "empty" && (
-              <Alert tone="warning">Chưa tìm thấy hồ sơ sức khỏe. Bạn vẫn có thể nhập thủ công bệnh nền và dị ứng.</Alert>
+              <Alert tone="warning">
+                Chưa tìm thấy hồ sơ sức khỏe. Bạn vẫn có thể nhập thủ công bệnh nền và dị ứng.
+              </Alert>
+            )}
+
+            {auth && profileStatus === "error" && (
+              <Alert tone="warning">
+                Không thể tải hồ sơ sức khỏe. Bạn vẫn có thể tiếp tục bằng thông tin nhập thủ công.
+              </Alert>
             )}
           </aside>
         )}
@@ -519,12 +647,21 @@ function QuestionsPage({ sessionId }) {
 
   const questions = session?.questions ?? [];
   const answers = session?.answers ?? {};
-  const answeredCount = questions.filter((item) => isClinicalQuestionAnswered(item, answers[item.questionId])).length;
+  const answeredCount = questions.filter((item) => (
+    isClinicalQuestionAnswered(item, answers[item.questionId])
+  )).length;
   const canSubmit = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
 
   function updateAnswer(questionId, answerKey) {
     setSession((current) => {
-      const next = { ...current, answers: { ...(current?.answers ?? {}), [questionId]: answerKey } };
+      const next = {
+        ...current,
+        answers: {
+          ...(current?.answers ?? {}),
+          [questionId]: answerKey,
+        },
+      };
+
       saveSessionState(sessionId, next);
       return next;
     });
@@ -537,7 +674,15 @@ function QuestionsPage({ sessionId }) {
         ...(isPlainObject(currentAnswer) ? currentAnswer : {}),
         [answerKey]: value,
       };
-      const next = { ...current, answers: { ...(current?.answers ?? {}), [questionId]: nextAnswer } };
+
+      const next = {
+        ...current,
+        answers: {
+          ...(current?.answers ?? {}),
+          [questionId]: nextAnswer,
+        },
+      };
+
       saveSessionState(sessionId, next);
       return next;
     });
@@ -554,26 +699,35 @@ function QuestionsPage({ sessionId }) {
 
     try {
       const recommendationResponse = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
-      const recommendationData = unwrapData(recommendationResponse) ?? {};
       const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
-      const diagnosisData = unwrapData(diagnosisResponse) ?? {};
 
-      const analysis = recommendationData.analysis || recommendationData;
-      let result = {
-        ...analysis,
-        answers: recommendationData.answers ?? analysis.answers ?? payload,
-        diagnoses: diagnosisData.diagnoses ?? analysis.diagnoses ?? [],
-        primaryDiagnosis: diagnosisData.diagnoses?.[0] ?? analysis.primaryDiagnosis ?? null,
-        diagnosisModel: diagnosisData.model ?? analysis.model ?? null,
+      const recommendationData = unwrapApiData(recommendationResponse) ?? {};
+      const recommendationAnalysis = readAnalysisPayload(recommendationResponse) ?? {};
+      const diagnosisData = readAnalysisPayload(diagnosisResponse) ?? {};
+
+      const diagnosisItems = Array.isArray(diagnosisData?.diagnoses)
+        ? diagnosisData.diagnoses
+        : [];
+
+      const result = {
+        ...recommendationAnalysis,
+        answers: recommendationData.answers ?? recommendationAnalysis.answers ?? payload,
+        diagnoses: diagnosisItems.length > 0 ? diagnosisItems : getDiagnoses(recommendationAnalysis),
+        primaryDiagnosis: diagnosisItems[0] ?? getPrimaryDiagnosis(recommendationAnalysis),
+        diagnosisModel: diagnosisData?.model ?? recommendationAnalysis?.model ?? null,
+        diagnosisStatus: diagnosisData?.status ?? recommendationAnalysis?.status ?? null,
       };
 
       const next = { ...session, answers, result };
+
       saveSessionState(sessionId, next);
       navigate(`/assessment/${sessionId}/result`);
     } catch (requestError) {
-      setError(requestError.status === 502
-        ? "AI tạm thời không phản hồi. Dữ liệu bạn đã nhập vẫn được giữ lại để thử lại."
-        : requestError.message || "Không thể gửi câu trả lời lúc này.");
+      setError(
+        requestError.status === 502
+          ? "AI tạm thời không phản hồi. Dữ liệu bạn đã nhập vẫn được giữ lại để thử lại."
+          : requestError.message || "Không thể gửi câu trả lời lúc này.",
+      );
       setStatus("idle");
     }
   }
@@ -606,8 +760,14 @@ function QuestionsPage({ sessionId }) {
   const question = questions[currentIndex];
   const answerMode = getClinicalQuestionAnswerMode(question);
   const selectedAnswer = answers[question.questionId];
+  const answerOptions = getClinicalQuestionAnswerOptions(question);
   const booleanPrompts = getClinicalQuestionBooleanPrompts(question);
   const questionComplete = isClinicalQuestionAnswered(question, selectedAnswer);
+  const progressPercent = Math.round((answeredCount / questions.length) * 100);
+  const keywords = getQuestionKeywords(question);
+  const singleBooleanPrompt = answerMode !== "choice" && booleanPrompts.length === 1
+    ? booleanPrompts[0]
+    : null;
 
   return (
     <AssessmentShell
@@ -616,17 +776,38 @@ function QuestionsPage({ sessionId }) {
       description="Trả lời từng câu hỏi để MediMate hoàn tất phân tích và tạo gợi ý chuyên khoa."
     >
       <Stepper active={2} />
+
       <form className="question-panel" onSubmit={submit}>
         <div className="question-progress">
           <span>Câu {currentIndex + 1}/{questions.length}</span>
-          <strong>{Math.round((answeredCount / questions.length) * 100)}%</strong>
+          <strong>{progressPercent}%</strong>
         </div>
+
         <fieldset className="question-card">
           <legend>{question.questionText}</legend>
-          {question.questionOriginalText && <p className="question-original">Gốc tiếng Anh: {question.questionOriginalText}</p>}
+
+          {keywords.length > 0 && (
+            <small>Liên quan đến: {keywords.slice(0, 5).join(", ")}</small>
+          )}
+
+          {question.chapterCode && (
+            <small>Nhóm tham chiếu: {question.chapterCode}</small>
+          )}
+
+          {Number(question.totalScore) > 0 && (
+            <small>Điểm khớp dữ liệu: {question.totalScore}</small>
+          )}
+
+          {question.questionOriginalText && (
+            <details className="question-original">
+              <summary>Xem câu hỏi gốc</summary>
+              <span>{question.questionOriginalText}</span>
+            </details>
+          )}
+
           {answerMode === "choice" ? (
             <div className="question-choice-grid">
-              {getClinicalQuestionAnswerOptions(question).map(([answerKey, label]) => (
+              {answerOptions.map(([answerKey, label]) => (
                 <label key={answerKey}>
                   <input
                     type="radio"
@@ -638,19 +819,52 @@ function QuestionsPage({ sessionId }) {
                 </label>
               ))}
             </div>
+          ) : singleBooleanPrompt ? (
+            <div className="question-choice-grid" role="radiogroup" aria-label={question.questionText}>
+              <label>
+                <input
+                  type="radio"
+                  name={`answer-${question.questionId}-${singleBooleanPrompt.key}`}
+                  checked={isPlainObject(selectedAnswer) && selectedAnswer[singleBooleanPrompt.key] === true}
+                  onChange={() => updateBooleanAnswer(question.questionId, singleBooleanPrompt.key, true)}
+                />
+                Có
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name={`answer-${question.questionId}-${singleBooleanPrompt.key}`}
+                  checked={isPlainObject(selectedAnswer) && selectedAnswer[singleBooleanPrompt.key] === false}
+                  onChange={() => updateBooleanAnswer(question.questionId, singleBooleanPrompt.key, false)}
+                />
+                Không
+              </label>
+            </div>
           ) : (
             <div className="boolean-prompt-list">
               {booleanPrompts.map((prompt, promptIndex) => {
-                const selectedValue = isPlainObject(selectedAnswer) ? selectedAnswer[prompt.key] : undefined;
-                const promptLabel = prompt.label === question.questionText ? "Câu trả lời của bạn" : prompt.label;
-                const promptOriginal = prompt.original && prompt.original !== question.questionOriginalText ? prompt.original : "";
+                const selectedValue = isPlainObject(selectedAnswer)
+                  ? selectedAnswer[prompt.key]
+                  : undefined;
+
+                const promptOriginal = prompt.original && prompt.original !== question.questionOriginalText
+                  ? prompt.original
+                  : "";
+
                 return (
-                  <section className="boolean-prompt" key={prompt.key} aria-labelledby={`clinical-prompt-${currentIndex}-${promptIndex}`}>
+                  <section
+                    className="boolean-prompt"
+                    key={prompt.key}
+                    aria-labelledby={`clinical-prompt-${currentIndex}-${promptIndex}`}
+                  >
                     <div className="boolean-prompt-copy">
-                      <span>Ý lâm sàng {promptIndex + 1}</span>
-                      <strong id={`clinical-prompt-${currentIndex}-${promptIndex}`}>{promptLabel}</strong>
-                      {promptOriginal && <small>Gốc tiếng Anh: {promptOriginal}</small>}
+                      <span>Tiêu chí {promptIndex + 1}</span>
+                      <strong id={`clinical-prompt-${currentIndex}-${promptIndex}`}>
+                        {prompt.label}
+                      </strong>
+                      {promptOriginal && <small>Gốc: {promptOriginal}</small>}
                     </div>
+
                     <div className="boolean-answer-group" role="radiogroup" aria-label={prompt.label}>
                       <label>
                         <input
@@ -661,6 +875,7 @@ function QuestionsPage({ sessionId }) {
                         />
                         <span>Có</span>
                       </label>
+
                       <label>
                         <input
                           type="radio"
@@ -676,15 +891,35 @@ function QuestionsPage({ sessionId }) {
               })}
             </div>
           )}
-          {question.chapterCode && <small>Nhóm ICD: {question.chapterCode}</small>}
         </fieldset>
+
         {error && <Alert tone="danger" live>{error}</Alert>}
+
         <div className="assessment-actions">
-          <Button tone="secondary" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => index - 1)}>Câu trước</Button>
+          <Button
+            tone="secondary"
+            disabled={currentIndex === 0}
+            onClick={() => setCurrentIndex((index) => index - 1)}
+          >
+            Câu trước
+          </Button>
+
           {currentIndex < questions.length - 1 ? (
-            <Button disabled={!questionComplete} onClick={() => setCurrentIndex((index) => index + 1)}>Câu tiếp theo</Button>
+            <Button
+              disabled={!questionComplete}
+              onClick={() => setCurrentIndex((index) => index + 1)}
+            >
+              Câu tiếp theo
+            </Button>
           ) : (
-            <Button type="submit" loading={status === "submitting"} loadingLabel="Đang phân tích..." disabled={!canSubmit}>Xem gợi ý</Button>
+            <Button
+              type="submit"
+              loading={status === "submitting"}
+              loadingLabel="Đang phân tích..."
+              disabled={!canSubmit}
+            >
+              Xem gợi ý
+            </Button>
           )}
         </div>
       </form>
@@ -694,26 +929,40 @@ function QuestionsPage({ sessionId }) {
 
 function ResultPage({ sessionId }) {
   const [state, setState] = useState(() => loadSessionState(sessionId));
-  const [remoteStatus, setRemoteStatus] = useState(() => loadSessionState(sessionId)?.result ? "idle" : "loading");
+  const [remoteStatus, setRemoteStatus] = useState(() => (
+    loadSessionState(sessionId)?.result ? "idle" : "loading"
+  ));
   const [remoteError, setRemoteError] = useState("");
 
   useEffect(() => {
     if (state?.result) return;
+
     let active = true;
+
     symptomAnalysisApi.get(sessionId)
       .then((response) => {
         if (!active) return;
-        const data = unwrapData(response);
-        const next = { ...(state ?? { sessionId }), result: data, userInput: data?.inputText };
+
+        const data = unwrapApiData(response);
+        const analysis = readAnalysisPayload(response);
+        const next = {
+          ...(state ?? { sessionId }),
+          result: analysis ?? data,
+          userInput: data?.inputText,
+        };
+
         setState(next);
         saveSessionState(sessionId, next);
       })
       .catch((error) => {
-        if (active) setRemoteError(error.message || "Không thể tải kết quả phiên đánh giá.");
+        if (active) {
+          setRemoteError(error.message || "Không thể tải kết quả phiên đánh giá.");
+        }
       })
       .finally(() => {
         if (active) setRemoteStatus("idle");
       });
+
     return () => {
       active = false;
     };
@@ -736,12 +985,17 @@ function ResultPage({ sessionId }) {
     if (topFacility?.facilityName || department?.departmentName) {
       search.set("search", topFacility?.facilityName || department.departmentName);
     }
+
     search.set("sessionId", sessionId);
     navigate(`/map?${search.toString()}`);
   }
 
   if (remoteStatus === "loading") {
-    return <AssessmentShell eyebrow="Kết quả" title="Đang tải kết quả"><LoadingState label="Đang tải phiên đánh giá..." /></AssessmentShell>;
+    return (
+      <AssessmentShell eyebrow="Kết quả" title="Đang tải kết quả">
+        <LoadingState label="Đang tải phiên đánh giá..." />
+      </AssessmentShell>
+    );
   }
 
   if (!result) {
@@ -763,11 +1017,16 @@ function ResultPage({ sessionId }) {
       description="Tổng hợp kết quả phân tích lâm sàng, mức ưu tiên và cơ sở y tế liên quan."
     >
       <Stepper active={3} />
-      <Alert tone={isEmergency ? "danger" : "info"} title={isEmergency ? "Cần ưu tiên thăm khám khẩn cấp" : "Đã tạo gợi ý chuyên khoa"}>
+
+      <Alert
+        tone={isEmergency ? "danger" : "info"}
+        title={isEmergency ? "Cần ưu tiên thăm khám khẩn cấp" : "Đã tạo gợi ý chuyên khoa"}
+      >
         {isEmergency
           ? "Kết quả cho thấy bạn có thể cần được đánh giá y tế sớm. Hãy liên hệ cơ sở y tế phù hợp."
           : "Thông tin dưới đây giúp bạn chọn chuyên khoa và cơ sở y tế phù hợp cho bước tiếp theo."}
       </Alert>
+
       <section className="result-grid">
         {department && (
           <article className="result-card priority">
@@ -777,6 +1036,7 @@ function ResultPage({ sessionId }) {
             <strong>{confidencePercent(department.confidenceScore)}% phù hợp</strong>
           </article>
         )}
+
         {primaryDiagnosis && (
           <article className="result-card">
             <span>Khả năng cần bác sĩ kiểm tra</span>
@@ -785,6 +1045,7 @@ function ResultPage({ sessionId }) {
             {primaryDiagnosis.icd10Code && <small>ICD-10: {primaryDiagnosis.icd10Code}</small>}
           </article>
         )}
+
         {diagnoses.length > 0 && (
           <article className="result-card">
             <span>Các khả năng liên quan</span>
@@ -798,9 +1059,11 @@ function ResultPage({ sessionId }) {
             </div>
           </article>
         )}
+
         <article className="result-card facilities">
           <span>Cơ sở y tế liên quan</span>
           <h2>Ưu tiên cơ sở có chuyên khoa phù hợp</h2>
+
           {facilities.length === 0 ? (
             <p>Backend chưa trả cơ sở cụ thể cho phiên này. Bạn có thể mở bản đồ để lọc theo chuyên khoa gợi ý.</p>
           ) : (
@@ -816,10 +1079,19 @@ function ResultPage({ sessionId }) {
           )}
         </article>
       </section>
+
       <div className="assessment-actions">
-        <Button onClick={openMap}><MapPin size={18} /> Xem trên bản đồ</Button>
-        <Button tone="secondary" onClick={() => navigate("/assessment/history")}><History size={18} /> Xem lịch sử</Button>
-        <Button tone="secondary" onClick={() => navigate("/medical-assistant/intake")}>Đánh giá mới</Button>
+        <Button onClick={openMap}>
+          <MapPin size={18} /> Xem trên bản đồ
+        </Button>
+
+        <Button tone="secondary" onClick={() => navigate("/assessment/history")}>
+          <History size={18} /> Xem lịch sử
+        </Button>
+
+        <Button tone="secondary" onClick={() => navigate("/medical-assistant/intake")}>
+          Đánh giá mới
+        </Button>
       </div>
     </AssessmentShell>
   );
@@ -832,6 +1104,7 @@ function HistoryPage() {
 
   useEffect(() => {
     let active = true;
+
     symptomAnalysisApi.listMySessions(1, 10)
       .then((response) => {
         if (active) setSessions(getPagedItems(response));
@@ -842,6 +1115,7 @@ function HistoryPage() {
       .finally(() => {
         if (active) setStatus("idle");
       });
+
     return () => {
       active = false;
     };
@@ -853,8 +1127,18 @@ function HistoryPage() {
       title="Lịch sử phiên đánh giá triệu chứng"
       description="Dữ liệu lấy từ endpoint my-sessions của backend."
     >
-      {status === "loading" && <LoadingState label="Đang tải lịch sử đánh giá..." />}
-      {error && <ErrorState title="Không thể tải lịch sử" description={error} action={<Button onClick={() => window.location.reload()}>Thử lại</Button>} />}
+      {status === "loading" && (
+        <LoadingState label="Đang tải lịch sử đánh giá..." />
+      )}
+
+      {error && (
+        <ErrorState
+          title="Không thể tải lịch sử"
+          description={error}
+          action={<Button onClick={() => window.location.reload()}>Thử lại</Button>}
+        />
+      )}
+
       {status !== "loading" && !error && sessions.length === 0 && (
         <EmptyState
           title="Chưa có phiên đánh giá nào"
@@ -862,16 +1146,28 @@ function HistoryPage() {
           action={<Button onClick={() => navigate("/medical-assistant/intake")}>Đánh giá mới</Button>}
         />
       )}
+
       {sessions.length > 0 && (
         <div className="history-list">
           {sessions.map((session) => (
             <article key={session.sessionId}>
               <div>
                 <strong>{session.inputText || "Phiên đánh giá"}</strong>
-                <span>{session.createdAt ? new Date(session.createdAt).toLocaleString("vi-VN") : "Chưa có ngày tạo"}</span>
+                <span>
+                  {session.createdAt
+                    ? new Date(session.createdAt).toLocaleString("vi-VN")
+                    : "Chưa có ngày tạo"}
+                </span>
               </div>
+
               <small>{session.status || "Đang cập nhật"}</small>
-              <Button tone="secondary" onClick={() => navigate(`/assessment/${session.sessionId}/result`)}>Xem chi tiết</Button>
+
+              <Button
+                tone="secondary"
+                onClick={() => navigate(`/assessment/${session.sessionId}/result`)}
+              >
+                Xem chi tiết
+              </Button>
             </article>
           ))}
         </div>
@@ -888,5 +1184,6 @@ export default function MedicalAssistantPage({ mode = "entry", sessionId = "" })
   if (activeMode === "questions") return <QuestionsPage sessionId={sessionId} />;
   if (activeMode === "result") return <ResultPage sessionId={sessionId} />;
   if (activeMode === "history") return <HistoryPage />;
+
   return <EntryPage />;
 }
