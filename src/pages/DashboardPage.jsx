@@ -245,6 +245,8 @@ export default function DashboardPage() {
   const questionProgressPercent = questions.length
     ? Math.round((answeredCount / questions.length) * 100)
     : 0;
+  const showIntakeForm = ["idle", "loading-questions", "no-questions"].includes(status);
+  const showQuestionFlow = ["questions", "submitting"].includes(status) && currentQuestion;
 
   function dismissProfilePrompt() {
     if (typeof sessionStorage !== "undefined") {
@@ -327,7 +329,7 @@ export default function DashboardPage() {
           ))}
         </ol>
 
-        {profilePromptVisible && (
+        {showIntakeForm && profilePromptVisible && (
           <section className="profile-nudge" aria-labelledby="profile-nudge-title">
             <span aria-hidden="true"><UserRound size={20} /></span>
             <div>
@@ -341,55 +343,57 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <form className="studio-chatbox" onSubmit={(event) => {
-          event.preventDefault();
-          startDiagnosis();
-        }}>
-          <div className="studio-form-heading">
-            <div>
-              <span>Bước 1</span>
-              <h3>Mô tả điều bạn đang cảm nhận</h3>
+        {showIntakeForm && (
+          <form className="studio-chatbox" onSubmit={(event) => {
+            event.preventDefault();
+            startDiagnosis();
+          }}>
+            <div className="studio-form-heading">
+              <div>
+                <span>Bước 1</span>
+                <h3>Mô tả điều bạn đang cảm nhận</h3>
+              </div>
+              <div className="clinical-strip" aria-label="Phạm vi tư vấn">
+                <span>Tiếp nhận ban đầu</span>
+                <span>Không thay thế chẩn đoán</span>
+              </div>
             </div>
-            <div className="clinical-strip" aria-label="Phạm vi tư vấn">
-              <span>Tiếp nhận ban đầu</span>
-              <span>Không thay thế chẩn đoán</span>
-            </div>
-          </div>
 
-          <Field
-            id="specialty-symptoms"
-            label="Triệu chứng bạn đang gặp"
-            hint="Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm để gợi ý phù hợp hơn."
-            required
-          >
-            <Textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ..."
-              rows={4}
-              disabled={loading}
-            />
-          </Field>
-
-          <div className="studio-chat-actions">
-            <span className="studio-status" aria-live="polite">
-              {status === "loading-questions"
-                ? "AI đang chọn câu hỏi cần hỏi thêm..."
-                : <><strong>Sẵn sàng.</strong> Trả lời Yes/No</>}
-            </span>
-            <Button
-              className="studio-submit-icon"
-              size="lg"
-              loading={loading}
-              loadingLabel="Đang tạo câu hỏi..."
-              disabled={!input.trim()}
-              type="submit"
+            <Field
+              id="specialty-symptoms"
+              label="Triệu chứng bạn đang gặp"
+              hint="Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm để gợi ý phù hợp hơn."
+              required
             >
-              <Send size={18} />
-              <span className="sr-only">Gợi ý chuyên khoa</span>
-            </Button>
-          </div>
-        </form>
+              <Textarea
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ..."
+                rows={4}
+                disabled={loading}
+              />
+            </Field>
+
+            <div className="studio-chat-actions">
+              <span className="studio-status" aria-live="polite">
+                {status === "loading-questions"
+                  ? "AI đang chọn câu hỏi cần hỏi thêm..."
+                  : <><strong>Sẵn sàng.</strong> Trả lời Yes/No</>}
+              </span>
+              <Button
+                className="studio-submit-icon"
+                size="lg"
+                loading={loading}
+                loadingLabel="Đang tạo câu hỏi..."
+                disabled={!input.trim()}
+                type="submit"
+              >
+                <Send size={18} />
+                <span className="sr-only">Gợi ý chuyên khoa</span>
+              </Button>
+            </div>
+          </form>
+        )}
 
         {error && (
           <Alert tone="danger" title="Không thể kết nối dịch vụ phân tích" live>
@@ -415,7 +419,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {["questions", "submitting"].includes(status) && currentQuestion && (
+        {showQuestionFlow && (
           <form
             className="studio-diagnosis-panel studio-question-focus specialty-question-flow"
             onSubmit={submitAnswers}
