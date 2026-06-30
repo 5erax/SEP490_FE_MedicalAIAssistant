@@ -47,6 +47,34 @@ function confidencePercent(value) {
   return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
 }
 
+function diagnosisField(diagnosis, camelKey, pascalKey, fallback = "") {
+  return diagnosis?.[camelKey] ?? diagnosis?.[pascalKey] ?? fallback;
+}
+
+function diagnosisRank(diagnosis, index = 0) {
+  return Number(diagnosisField(diagnosis, "rank", "Rank", index + 1)) || index + 1;
+}
+
+function diagnosisName(diagnosis) {
+  return diagnosisField(diagnosis, "diseaseName", "DiseaseName", "Chưa xác định");
+}
+
+function diagnosisIcd(diagnosis) {
+  return diagnosisField(diagnosis, "icd10Code", "Icd10Code", "");
+}
+
+function diagnosisKeyword(diagnosis) {
+  return diagnosisField(diagnosis, "searchKeyword", "SearchKeyword", "");
+}
+
+function diagnosisReasoning(diagnosis) {
+  return diagnosisField(diagnosis, "clinicalReasoning", "ClinicalReasoning", "");
+}
+
+function diagnosisPAGivenB(diagnosis) {
+  return Number(diagnosisField(diagnosis, "paGivenB", "PAGivenB", 0)) || 0;
+}
+
 function loadSessionState(sessionId) {
   return assessmentSessionCache.get(`${SESSION_KEY_PREFIX}${sessionId}`) ?? null;
 }
@@ -72,7 +100,11 @@ function getRecommendedDepartment(result) {
 }
 
 function getDiagnoses(result) {
-  const diagnoses = result?.diagnoses || result?.analysis?.diagnoses || [];
+  const diagnoses = result?.diagnoses
+    || result?.Diagnoses
+    || result?.analysis?.diagnoses
+    || result?.analysis?.Diagnoses
+    || [];
   return Array.isArray(diagnoses) ? diagnoses : [];
 }
 
@@ -432,8 +464,8 @@ function QuestionsPage({ sessionId }) {
         answers: diagnosisData.answers ?? payload,
         diagnoses: diagnosisItems.length > 0 ? diagnosisItems : getDiagnoses(diagnosisData),
         primaryDiagnosis: diagnosisItems[0] ?? getPrimaryDiagnosis(diagnosisData),
-        diagnosisModel: diagnosisData?.model ?? null,
-        diagnosisStatus: diagnosisData?.status ?? null,
+        diagnosisModel: diagnosisData?.model ?? diagnosisData?.Model ?? null,
+        diagnosisStatus: diagnosisData?.status ?? diagnosisData?.Status ?? null,
       };
 
       const next = { ...session, answers, result };
@@ -495,7 +527,7 @@ function QuestionsPage({ sessionId }) {
     <AssessmentShell
       eyebrow="Làm rõ triệu chứng"
       title="Câu hỏi lâm sàng"
-      description="Trả lời từng câu hỏi để MediMate hoàn tất phân tích và tạo gợi ý chuyên khoa."
+      description="Trả lời từng câu hỏi để MediMate hoàn tất phân tích và tạo chẩn đoán lâm sàng tham khảo."
       activeStep={1}
     >
       <form className="clinical-card question-panel" onSubmit={submit}>
@@ -648,6 +680,15 @@ function ResultPage({ sessionId }) {
   const primaryDiagnosis = getPrimaryDiagnosis(result);
   const facilities = getFacilities(result);
   const isEmergency = department?.isEmergencySuggested;
+  const diagnosisRows = diagnoses.map((diagnosis, index) => ({
+    rank: diagnosisRank(diagnosis, index),
+    diseaseName: diagnosisName(diagnosis),
+    icd10Code: diagnosisIcd(diagnosis),
+    searchKeyword: diagnosisKeyword(diagnosis),
+    clinicalReasoning: diagnosisReasoning(diagnosis),
+    paGivenB: diagnosisPAGivenB(diagnosis),
+    probability: confidencePercent(diagnosisPAGivenB(diagnosis)),
+  }));
 
   function openMap() {
     const search = new URLSearchParams();
@@ -697,48 +738,71 @@ function ResultPage({ sessionId }) {
   return (
     <AssessmentShell
       eyebrow="Bước 3"
-      title="Gợi ý chuyên khoa"
-      description="Tổng hợp kết quả phân tích lâm sàng, mức ưu tiên và cơ sở y tế liên quan."
+      title="Chẩn đoán lâm sàng"
+      description="Tổng hợp kết quả từ mô hình Bayesian, thứ tự khả năng bệnh và xác suất P(A|B) tham khảo."
       activeStep={2}
     >
       <Alert
         tone={isEmergency ? "danger" : "info"}
-        title={isEmergency ? "Cần ưu tiên thăm khám khẩn cấp" : "Đã tạo gợi ý chuyên khoa"}
+        title={isEmergency ? "Cần ưu tiên thăm khám khẩn cấp" : "Đã tạo chẩn đoán lâm sàng tham khảo"}
       >
         {isEmergency
           ? "Kết quả cho thấy bạn có thể cần được đánh giá y tế sớm. Hãy liên hệ cơ sở y tế phù hợp."
-          : "Thông tin dưới đây giúp bạn chọn chuyên khoa và cơ sở y tế phù hợp cho bước tiếp theo."}
+          : "Kết quả dưới đây chỉ mang tính tham khảo, không thay thế chẩn đoán của bác sĩ."}
       </Alert>
 
       <section className="result-grid">
-        {department && (
-          <article className="result-card priority">
-            <span>Chuyên khoa gợi ý</span>
-            <h2>{department.departmentName || "Chuyên khoa phù hợp"}</h2>
-            <p>{department.reason || "Backend đề xuất dựa trên triệu chứng và câu trả lời lâm sàng."}</p>
-            <strong>{confidencePercent(department.confidenceScore)}% phù hợp</strong>
-          </article>
-        )}
-
         {primaryDiagnosis && (
-          <article className="result-card">
-            <span>Khả năng cần bác sĩ kiểm tra</span>
-            <h2>{primaryDiagnosis.diseaseName || "Nhận định tham khảo"}</h2>
-            {primaryDiagnosis.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
-            {primaryDiagnosis.icd10Code && <small>ICD-10: {primaryDiagnosis.icd10Code}</small>}
+          <article className="result-card priority diagnosis-primary-card">
+            <span>Chẩn đoán tham khảo ưu tiên</span>
+            <h2>{diagnosisName(primaryDiagnosis)}</h2>
+            {diagnosisReasoning(primaryDiagnosis) && <p>{diagnosisReasoning(primaryDiagnosis)}</p>}
+            <div className="diagnosis-meta-row">
+              {diagnosisIcd(primaryDiagnosis) && <small>ICD-10: {diagnosisIcd(primaryDiagnosis)}</small>}
+              <strong>{confidencePercent(diagnosisPAGivenB(primaryDiagnosis))}% P(A|B)</strong>
+              {diagnosisKeyword(primaryDiagnosis) && <small>{diagnosisKeyword(primaryDiagnosis)}</small>}
+            </div>
           </article>
         )}
 
-        {diagnoses.length > 0 && (
-          <article className="result-card">
-            <span>Các khả năng liên quan</span>
-            <div className="diagnosis-stack">
-              {diagnoses.slice(0, 4).map((diagnosis, index) => (
-                <p key={`${diagnosis.rank || index}-${diagnosis.diseaseName}`}>
-                  <strong>{diagnosis.rank || index + 1}. {diagnosis.diseaseName || "Nhận định"}</strong>
-                  <small>{confidencePercent(diagnosis.paGivenB)}%</small>
-                </p>
-              ))}
+        {diagnosisRows.length > 0 && (
+          <article className="result-card diagnosis-analytics-card">
+            <div>
+              <span>Thứ tự khả năng bệnh</span>
+              <h2>Biểu đồ P(A|B)</h2>
+            </div>
+
+            <div className="diagnosis-analytics-grid">
+              <div className="diagnosis-bar-chart" aria-label="Biểu đồ cột xác suất chẩn đoán">
+                {diagnosisRows.map((diagnosis) => (
+                  <div className="diagnosis-bar-item" key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
+                    <div className="diagnosis-bar-track">
+                      <span style={{ height: `${Math.max(6, diagnosis.probability)}%` }} />
+                    </div>
+                    <strong>{diagnosis.rank}</strong>
+                    <small>{diagnosis.diseaseName}</small>
+                  </div>
+                ))}
+              </div>
+
+              <div className="diagnosis-probability-table" role="table" aria-label="Bảng xác suất P(A|B)">
+                <div role="row" className="diagnosis-table-head">
+                  <span role="columnheader">#</span>
+                  <span role="columnheader">Bệnh</span>
+                  <span role="columnheader">P(A|B)</span>
+                </div>
+
+                {diagnosisRows.map((diagnosis) => (
+                  <div role="row" key={`${diagnosis.rank}-${diagnosis.icd10Code || diagnosis.diseaseName}`}>
+                    <span role="cell">{diagnosis.rank}</span>
+                    <span role="cell">
+                      <strong>{diagnosis.diseaseName}</strong>
+                      {diagnosis.icd10Code && <small>ICD-10: {diagnosis.icd10Code}</small>}
+                    </span>
+                    <b role="cell">{diagnosis.probability}%</b>
+                  </div>
+                ))}
+              </div>
             </div>
           </article>
         )}
@@ -748,7 +812,7 @@ function ResultPage({ sessionId }) {
           <h2>Ưu tiên cơ sở có chuyên khoa phù hợp</h2>
 
           {facilities.length === 0 ? (
-            <p>Backend chưa trả cơ sở cụ thể cho phiên này. Bạn có thể mở bản đồ để lọc theo chuyên khoa gợi ý.</p>
+            <p>Backend chưa trả cơ sở cụ thể cho phiên này. Bạn có thể mở bản đồ để tìm cơ sở y tế phù hợp.</p>
           ) : (
             <div className="facility-stack">
               {facilities.slice(0, 5).map((facility) => (

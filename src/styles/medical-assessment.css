@@ -628,6 +628,150 @@
   overflow-wrap: anywhere;
 }
 
+.diagnosis-primary-card {
+  align-content: start;
+}
+
+.diagnosis-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.diagnosis-analytics-card {
+  grid-column: 1 / -1;
+}
+
+.diagnosis-analytics-card h2 {
+  margin: 4px 0 0;
+}
+
+.diagnosis-analytics-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.diagnosis-bar-chart {
+  min-height: 280px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(76px, 1fr);
+  gap: 14px;
+  align-items: end;
+  border: 1px solid var(--assessment-line);
+  border-radius: var(--assessment-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(185, 239, 124, .12), rgba(255, 255, 255, .72)),
+    var(--assessment-surface-soft);
+  padding: 18px 16px 16px;
+  overflow-x: auto;
+}
+
+.diagnosis-bar-item {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+}
+
+.diagnosis-bar-track {
+  width: 100%;
+  height: 190px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(215, 223, 207, .58);
+  padding: 5px;
+}
+
+.diagnosis-bar-track span {
+  width: min(48px, 78%);
+  border-radius: 14px 14px 8px 8px;
+  background: linear-gradient(180deg, #b9ef7c 0%, #47751e 100%);
+  box-shadow: 0 12px 26px rgba(71, 117, 30, .2);
+}
+
+.diagnosis-bar-item strong {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--assessment-ink);
+  color: var(--assessment-primary);
+  font-size: 12px;
+}
+
+.diagnosis-bar-item small {
+  max-width: 110px;
+  color: var(--assessment-muted);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.diagnosis-probability-table {
+  display: grid;
+  align-content: start;
+  border: 1px solid var(--assessment-line);
+  border-radius: var(--assessment-radius-lg);
+  background: var(--assessment-surface);
+  overflow: hidden;
+}
+
+.diagnosis-probability-table > div {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 76px;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--assessment-line);
+  padding: 13px 14px;
+}
+
+.diagnosis-probability-table > div:last-child {
+  border-bottom: 0;
+}
+
+.diagnosis-probability-table .diagnosis-table-head {
+  background: var(--assessment-surface-soft);
+  color: var(--assessment-muted);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.diagnosis-probability-table strong,
+.diagnosis-probability-table small {
+  display: block;
+}
+
+.diagnosis-probability-table strong {
+  color: var(--assessment-ink);
+  line-height: 1.25;
+}
+
+.diagnosis-probability-table small {
+  margin-top: 3px;
+  color: var(--assessment-muted);
+  font-size: 11px;
+}
+
+.diagnosis-probability-table b {
+  width: fit-content;
+  justify-self: end;
+  border-radius: 999px;
+  background: var(--assessment-primary-soft);
+  padding: 6px 9px;
+  color: var(--assessment-ink);
+  font-size: 12px;
+}
+
 .facility-stack span,
 .history-list span {
   color: var(--assessment-muted);
@@ -692,6 +836,7 @@
 
   .clinical-entry-card,
   .result-grid,
+  .diagnosis-analytics-grid,
   .safety-checklist,
   .boolean-prompt,
   .history-list article {

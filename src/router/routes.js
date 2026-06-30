@@ -44,12 +44,12 @@ const BASE_ROUTES = [
   {
     id: "patient.dashboard",
     path: "/dashboard",
-    title: "Gợi ý chuyên khoa | MediMate AI",
+    title: "Chẩn đoán lâm sàng | MediMate AI",
     access: "auth",
     shell: "patient",
     navigation: {
       shell: "patient",
-      label: "Gợi ý chuyên khoa",
+      label: "Chẩn đoán lâm sàng",
       hint: "Theo triệu chứng",
       icon: "dashboard",
       order: 10,
