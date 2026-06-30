@@ -1797,20 +1797,107 @@
 
 .admin-operator .clinical-answer-editor {
   display: grid;
+  gap: 12px;
+  border: 1px solid rgba(16, 20, 17, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  padding: 12px;
+}
+
+.admin-operator .clinical-answer-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 38px;
   gap: 10px;
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .admin-operator .clinical-answer-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 38px;
+  gap: 10px;
+  align-items: end;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 10px;
+}
+
+.admin-operator .clinical-answer-row label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-operator .clinical-answer-row label > span {
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.admin-operator .clinical-answer-row input {
+  min-height: 42px;
+}
+
+.admin-operator .clinical-answer-remove {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(16, 20, 17, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  color: rgba(16, 20, 17, 0.74);
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-operator .clinical-answer-remove:hover {
+  border-color: rgba(185, 28, 28, 0.32);
+  background: rgba(254, 226, 226, 0.72);
+  color: #991b1b;
+}
+
+.admin-operator .clinical-answer-add {
+  width: fit-content;
+  min-height: 40px;
+  border: 1px solid rgba(16, 20, 17, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  color: #101411;
+  padding: 0 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-operator .clinical-answer-add:hover {
+  border-color: rgba(16, 20, 17, 0.38);
+  background: rgba(196, 233, 149, 0.28);
 }
 
 .admin-operator .clinical-answer-editor small {
   color: rgba(16, 20, 17, 0.56);
   font-size: 12px;
   font-weight: 650;
+}
+
+@media (max-width: 760px) {
+  .admin-operator .clinical-answer-header {
+    display: none;
+  }
+
+  .admin-operator .clinical-answer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .clinical-answer-remove {
+    justify-self: end;
+  }
 }
 
 .ai-config-primary-cell {

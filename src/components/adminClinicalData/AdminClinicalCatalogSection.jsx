@@ -404,27 +404,37 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                   </select>
                 ) : field.type === "answers" ? (
                   <div className="clinical-answer-editor">
+                    <div className="clinical-answer-header" aria-hidden="true">
+                      <span>Key tiếng Việt</span>
+                      <span>Value tiếng Anh</span>
+                    </div>
                     {(form.answers ?? []).map((row, index) => (
                       <div className="clinical-answer-row" key={row.id}>
-                        <input
-                          value={row.vietnameseLabel}
-                          onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
-                          placeholder={`Đáp án tiếng Việt ${index + 1}`}
-                        />
-                        <input
-                          value={row.englishLabel}
-                          onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
-                          placeholder={`Đáp án tiếng Anh ${index + 1}`}
-                        />
-                        <button className="btn btn-ghost btn-small" type="button" onClick={() => removeAnswerRow(row.id)}>
-                          Xóa
+                        <label>
+                          <span>Key</span>
+                          <input
+                            value={row.vietnameseLabel}
+                            onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
+                            placeholder={`Đáp án tiếng Việt ${index + 1}`}
+                          />
+                        </label>
+                        <label>
+                          <span>Value</span>
+                          <input
+                            value={row.englishLabel}
+                            onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
+                            placeholder={`Đáp án tiếng Anh ${index + 1}`}
+                          />
+                        </label>
+                        <button className="clinical-answer-remove" type="button" onClick={() => removeAnswerRow(row.id)} aria-label={`Xóa đáp án ${index + 1}`}>
+                          ×
                         </button>
                       </div>
                     ))}
-                    <button className="btn btn-ghost btn-small" type="button" onClick={addAnswerRow}>
+                    <button className="clinical-answer-add" type="button" onClick={addAnswerRow}>
                       + Thêm đáp án
                     </button>
-                    <small>Mỗi đáp án cần đủ nhãn tiếng Việt và tiếng Anh nếu được thêm.</small>
+                    <small>Dữ liệu lưu dạng dictionary string:string, ví dụ: "sốt cao kéo dài": "persistent high fever".</small>
                   </div>
                 ) : field.multiline ? (
                   <textarea
