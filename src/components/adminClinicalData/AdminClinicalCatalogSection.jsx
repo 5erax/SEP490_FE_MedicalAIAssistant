@@ -404,27 +404,46 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                   </select>
                 ) : field.type === "answers" ? (
                   <div className="clinical-answer-editor">
+                    <div className="clinical-answer-editor-head">
+                      <strong>{field.label}</strong>
+                      <p>Mỗi đáp án gồm nội dung tiếng Việt và bản dịch tiếng Anh.</p>
+                    </div>
                     {(form.answers ?? []).map((row, index) => (
-                      <div className="clinical-answer-row" key={row.id}>
-                        <input
-                          value={row.vietnameseLabel}
-                          onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
-                          placeholder={`Đáp án tiếng Việt ${index + 1}`}
-                        />
-                        <input
-                          value={row.englishLabel}
-                          onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
-                          placeholder={`Đáp án tiếng Anh ${index + 1}`}
-                        />
-                        <button className="btn btn-ghost btn-small" type="button" onClick={() => removeAnswerRow(row.id)}>
-                          Xóa
-                        </button>
-                      </div>
+                      <article className="clinical-answer-card" key={row.id}>
+                        <div className="clinical-answer-card-head">
+                          <strong>Đáp án {index + 1}</strong>
+                          <button className="clinical-answer-remove" type="button" onClick={() => removeAnswerRow(row.id)}>
+                            Xóa
+                          </button>
+                        </div>
+                        <div className="clinical-answer-fields">
+                          <div className="clinical-answer-field">
+                            <span>Tiếng Việt</span>
+                            <input
+                              value={row.vietnameseLabel}
+                              onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
+                              placeholder={`Nhập nội dung tiếng Việt ${index + 1}`}
+                            />
+                          </div>
+                          <div className="clinical-answer-field">
+                            <span>Tiếng Anh</span>
+                            <input
+                              value={row.englishLabel}
+                              onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
+                              placeholder={`Nhập bản dịch tiếng Anh ${index + 1}`}
+                            />
+                          </div>
+                        </div>
+                      </article>
                     ))}
-                    <button className="btn btn-ghost btn-small" type="button" onClick={addAnswerRow}>
+                    {(form.answers ?? []).length === 0 && (
+                      <div className="clinical-answer-empty">
+                        Chưa có đáp án nào. Thêm đáp án để hỗ trợ luồng câu hỏi lâm sàng.
+                      </div>
+                    )}
+                    <button className="clinical-answer-add" type="button" onClick={addAnswerRow}>
                       + Thêm đáp án
                     </button>
-                    <small>Mỗi đáp án cần đủ nhãn tiếng Việt và tiếng Anh nếu được thêm.</small>
                   </div>
                 ) : field.multiline ? (
                   <textarea

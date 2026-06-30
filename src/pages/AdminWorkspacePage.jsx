@@ -129,7 +129,7 @@ const QUESTION_CATALOG_CONFIG = {
     { name: "questionVi", label: "Câu hỏi tiếng Việt", required: true, multiline: true },
     { name: "englishPrefix", label: "Câu hỏi tiếng Anh", required: true, multiline: true },
     { name: "sortOrder", label: "Thứ tự", required: true, type: "number", min: 0, step: 1, serialize: Number },
-    { name: "answers", label: "Đáp án", type: "answers" },
+    { name: "answers", label: "Các đáp án", type: "answers" },
   ],
 };
 const ADMIN_NAV_ITEMS = getNavigationModel("admin");

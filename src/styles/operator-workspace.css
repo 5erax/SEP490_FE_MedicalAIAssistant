@@ -1797,20 +1797,136 @@
 
 .admin-operator .clinical-answer-editor {
   display: grid;
-  gap: 10px;
+  gap: 14px;
 }
 
-.admin-operator .clinical-answer-row {
+.admin-operator .clinical-answer-editor-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.admin-operator .clinical-answer-editor-head strong {
+  color: #101411;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.admin-operator .clinical-answer-editor-head p {
+  margin: 0;
+  color: rgba(16, 20, 17, 0.58);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.admin-operator .clinical-answer-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(16, 20, 17, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 14px;
+  box-shadow: 0 14px 36px rgba(16, 20, 17, 0.06);
+}
+
+.admin-operator .clinical-answer-card-head {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-operator .clinical-answer-card-head strong {
+  color: #101411;
+  font-size: 15px;
+  font-weight: 920;
+}
+
+.admin-operator .clinical-answer-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-operator .clinical-answer-field {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-operator .clinical-answer-field > span {
+  color: rgba(16, 20, 17, 0.66);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.admin-operator .clinical-answer-field input {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  background: rgba(251, 252, 247, 0.92);
+  padding-inline: 14px;
+}
+
+.admin-operator .clinical-answer-remove {
+  min-height: 36px;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  color: #991b1b;
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-operator .clinical-answer-remove:hover {
+  border-color: rgba(185, 28, 28, 0.34);
+  background: rgba(254, 226, 226, 0.72);
+}
+
+.admin-operator .clinical-answer-empty {
+  border: 1px dashed rgba(16, 20, 17, 0.18);
+  border-radius: 14px;
+  background: rgba(251, 252, 247, 0.72);
+  color: rgba(16, 20, 17, 0.58);
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.admin-operator .clinical-answer-add {
+  width: fit-content;
+  min-height: 42px;
+  border: 1px solid rgba(16, 20, 17, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  color: #101411;
+  padding: 0 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-operator .clinical-answer-add:hover {
+  border-color: rgba(16, 20, 17, 0.38);
+  background: rgba(196, 233, 149, 0.28);
 }
 
 .admin-operator .clinical-answer-editor small {
   color: rgba(16, 20, 17, 0.56);
   font-size: 12px;
   font-weight: 650;
+}
+
+@media (max-width: 760px) {
+  .admin-operator .clinical-answer-card {
+    padding: 12px;
+  }
+
+  .admin-operator .clinical-answer-card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .ai-config-primary-cell {
