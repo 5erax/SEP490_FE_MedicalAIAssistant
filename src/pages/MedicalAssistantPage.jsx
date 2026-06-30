@@ -740,7 +740,6 @@ function ResultPage({ sessionId }) {
           <article className="result-card diagnosis-analytics-card">
             <div>
               <span>Thứ tự khả năng bệnh</span>
-              <h2>Biểu đồ P(A|B)</h2>
             </div>
 
             <div className="diagnosis-analytics-grid">
