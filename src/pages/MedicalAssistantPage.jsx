@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ClipboardList, History, MapPin, Stethoscope } from "lucide-react";
-import { Alert, Button, EmptyState, ErrorState, Field, LoadingState, Textarea, TextInput } from "../components/ui";
+import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
-import { getStoredAuth } from "../services/api";
-import { patientProfilesApi } from "../services/patientProfileService";
 import {
   buildClinicalQuestionAnswerItems,
   getClinicalQuestionAnswerMode,
@@ -19,7 +17,7 @@ import "../styles/medical-assessment.css";
 
 const SESSION_KEY_PREFIX = "medimate.assessment.session.";
 const assessmentSessionCache = new Map();
-let assessmentDraftCache = null;
+let assessmentDraftCache = "";
 
 const RED_FLAGS = [
   "Đau ngực dữ dội",
@@ -31,17 +29,6 @@ const RED_FLAGS = [
   "Đau đầu dữ dội đột ngột",
   "Sưng mặt/môi kèm khó thở hoặc nghi phản vệ",
 ];
-
-const SEVERITY_OPTIONS = [
-  ["mild", "Nhẹ"],
-  ["moderate", "Vừa"],
-  ["severe", "Nặng"],
-];
-
-const INTAKE_REQUIRED_FIELDS = {
-  mainSymptom: "Vui lòng nhập triệu chứng chính.",
-  description: "Vui lòng mô tả thêm bối cảnh và diễn tiến triệu chứng.",
-};
 
 function getPagedItems(response) {
   const data = unwrapApiData(response);
@@ -73,23 +60,8 @@ function loadDraft() {
   return assessmentDraftCache;
 }
 
-function saveDraft(draft) {
-  assessmentDraftCache = draft;
-}
-
-function buildUserInput(form) {
-  return [
-    `Triệu chứng chính: ${form.mainSymptom}`,
-    form.description ? `Mô tả thêm: ${form.description}` : "",
-    form.duration ? `Thời gian bắt đầu: ${form.duration}` : "",
-    form.severity ? `Mức độ: ${form.severity}` : "",
-    form.bodyLocation ? `Vị trí: ${form.bodyLocation}` : "",
-    form.associatedSymptoms ? `Triệu chứng đi kèm: ${form.associatedSymptoms}` : "",
-    form.profileContext ? `Thông tin hồ sơ sức khỏe: ${form.profileContext}` : "",
-    form.chronicDiseaseNote ? `Bệnh nền: ${form.chronicDiseaseNote}` : "",
-    form.allergyNote ? `Dị ứng: ${form.allergyNote}` : "",
-    form.medications ? `Thuốc đang dùng: ${form.medications}` : "",
-  ].filter(Boolean).join("\n");
+function saveDraft(value) {
+  assessmentDraftCache = value;
 }
 
 function getRecommendedDepartment(result) {
@@ -151,7 +123,7 @@ function AssessmentShell({ eyebrow, title, description, children }) {
 }
 
 function Stepper({ active }) {
-  const steps = ["An toàn", "Dữ liệu", "Câu hỏi", "Kết quả"];
+  const steps = ["An toàn", "Triệu chứng", "Câu hỏi", "Kết quả"];
 
   return (
     <ol className="assessment-stepper" aria-label="Tiến trình đánh giá">
@@ -174,31 +146,31 @@ function EntryPage() {
     <AssessmentShell
       eyebrow="MediMate AI"
       title="Phân tích lâm sàng và gợi ý chuyên khoa"
-      description="MediMate giúp bạn mô tả vấn đề sức khỏe có cấu trúc, trả lời câu hỏi lâm sàng và tìm chuyên khoa phù hợp để chuẩn bị bước chăm sóc tiếp theo."
+      description="Mô tả triệu chứng bằng một đoạn văn ngắn, MediMate sẽ tạo câu hỏi lâm sàng tiếp theo và gợi ý chuyên khoa phù hợp."
     >
       <div className="assessment-grid">
         <article>
           <ClipboardList size={24} aria-hidden="true" />
-          <h2>Luôn bắt đầu bằng an toàn</h2>
-          <p>Nếu có dấu hiệu nguy hiểm, ứng dụng sẽ dừng flow AI và hướng dẫn bạn tìm chăm sóc khẩn cấp.</p>
+          <h2>Nhập một mô tả duy nhất</h2>
+          <p>Backend chỉ cần trường userInput, vì vậy người dùng chỉ cần nhập tình trạng đang gặp.</p>
         </article>
 
         <article>
           <Stethoscope size={24} aria-hidden="true" />
           <h2>Hỏi đáp lâm sàng từng bước</h2>
-          <p>Backend chọn câu hỏi theo triệu chứng bạn nhập, sau đó mới tạo kết quả tham khảo.</p>
+          <p>Backend chọn câu hỏi theo mô tả triệu chứng, sau đó frontend ghi nhận câu trả lời Có/Không.</p>
         </article>
 
         <article>
           <MapPin size={24} aria-hidden="true" />
           <h2>Điều hướng cơ sở y tế</h2>
-          <p>Khi có chuyên khoa gợi ý, MediMate tìm cơ sở y tế active từ backend theo chuyên khoa đó.</p>
+          <p>Khi có chuyên khoa gợi ý, MediMate tìm cơ sở y tế liên quan để người dùng xử lý bước tiếp theo.</p>
         </article>
       </div>
 
       <div className="assessment-actions">
         <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>
-          Bắt đầu phân tích lâm sàng
+          Bắt đầu
         </Button>
         <Button tone="secondary" onClick={() => navigate("/map")}>
           Tìm cơ sở y tế
@@ -224,7 +196,7 @@ function SafetyPage() {
     <AssessmentShell
       eyebrow="Bước 1"
       title="Trước khi bắt đầu"
-      description="Hãy kiểm tra nhanh các dấu hiệu cần chăm sóc y tế khẩn cấp. Nếu có, không nên tiếp tục tự đánh giá bằng AI."
+      description="Kiểm tra nhanh các dấu hiệu cần chăm sóc y tế khẩn cấp. Nếu có, không nên tiếp tục tự đánh giá bằng AI."
     >
       <Stepper active={0} />
 
@@ -248,7 +220,7 @@ function SafetyPage() {
           <div>
             <h2>Đây có thể là tình huống cần chăm sóc khẩn cấp</h2>
             <p>
-              Vui lòng gọi cấp cứu địa phương, hoặc đến cơ sở y tế gần nhất.
+              Vui lòng gọi cấp cứu địa phương hoặc đến cơ sở y tế gần nhất.
               Không tiếp tục tự đánh giá bằng AI trong tình huống này.
             </p>
             <div className="assessment-actions">
@@ -266,7 +238,7 @@ function SafetyPage() {
       {!hasRedFlag && (
         <div className="assessment-actions">
           <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
-            Không, tiếp tục đánh giá
+            Không, tiếp tục
           </Button>
           <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>
             Quay lại
@@ -278,114 +250,32 @@ function SafetyPage() {
 }
 
 function IntakePage() {
-  const auth = getStoredAuth();
-  const errorSummaryRef = useRef(null);
-
-  const [form, setForm] = useState(() => loadDraft() ?? {
-    mainSymptom: "",
-    description: "",
-    duration: "",
-    severity: "moderate",
-    bodyLocation: "",
-    associatedSymptoms: "",
-    profileContext: "",
-    allergyNote: "",
-    chronicDiseaseNote: "",
-    medications: "",
-  });
-
+  const [userInput, setUserInput] = useState(() => loadDraft() || "");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [profileStatus, setProfileStatus] = useState(() => (
-    auth?.userId || auth?.identityId ? "loading" : "idle"
-  ));
 
-  const requiredErrorEntries = Object.entries(fieldErrors);
-  const showIntakeSidePanel = !auth || ["loading", "ready", "empty", "error"].includes(profileStatus);
+  const trimmedInput = userInput.trim();
+  const isSubmitting = status === "loading";
 
-  useEffect(() => {
-    const userId = auth?.userId || auth?.identityId;
-    if (!userId) return;
-
-    let active = true;
-
-    patientProfilesApi.findByUserId(userId)
-      .then((profile) => {
-        if (!active) return;
-
-        if (!profile) {
-          setProfileStatus("empty");
-          return;
-        }
-
-        const profileContext = [
-          profile.bloodType ? `Nhóm máu ${profile.bloodType}` : "",
-          profile.height ? `Chiều cao ${profile.height} cm` : "",
-          profile.weight ? `Cân nặng ${profile.weight} kg` : "",
-        ].filter(Boolean).join(", ");
-
-        setForm((current) => {
-          const next = {
-            ...current,
-            profileContext: current.profileContext || profileContext,
-            allergyNote: current.allergyNote || profile.allergyNote || "",
-            chronicDiseaseNote: current.chronicDiseaseNote || profile.chronicDiseaseNote || "",
-          };
-          saveDraft(next);
-          return next;
-        });
-
-        setProfileStatus("ready");
-      })
-      .catch(() => {
-        if (active) setProfileStatus("error");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [auth?.identityId, auth?.userId]);
-
-  function updateField(key, value) {
-    setForm((current) => {
-      const next = { ...current, [key]: value };
-      saveDraft(next);
-      return next;
-    });
-
-    if (fieldErrors[key]) {
-      setFieldErrors((current) => {
-        const next = { ...current };
-        delete next[key];
-        return next;
-      });
-    }
+  function updateUserInput(value) {
+    setUserInput(value);
+    saveDraft(value);
+    if (error) setError("");
   }
 
   async function submit(event) {
     event.preventDefault();
 
-    const nextFieldErrors = Object.fromEntries(
-      Object.entries(INTAKE_REQUIRED_FIELDS)
-        .filter(([field]) => !String(form[field] ?? "").trim()),
-    );
-
-    if (Object.keys(nextFieldErrors).length > 0) {
-      setFieldErrors(nextFieldErrors);
-      setError("");
-      window.setTimeout(() => errorSummaryRef.current?.focus(), 0);
+    if (!trimmedInput) {
+      setError("Vui lòng mô tả triệu chứng hoặc tình trạng hiện tại.");
       return;
     }
 
     setStatus("loading");
     setError("");
-    setFieldErrors({});
-
-    const userInput = buildUserInput(form);
 
     try {
-      const response = await symptomAnalysisApi.suggestClinicalQuestions(userInput);
+      const response = await symptomAnalysisApi.suggestClinicalQuestions(trimmedInput);
       const data = readSuggestClinicalQuestionsPayload(response);
 
       if (!data.sessionId) {
@@ -394,12 +284,12 @@ function IntakePage() {
 
       saveSessionState(data.sessionId, {
         sessionId: data.sessionId,
-        userInput,
-        form,
+        userInput: trimmedInput,
         questions: data.questions,
         answers: {},
       });
 
+      saveDraft("");
       navigate(`/assessment/${data.sessionId}`);
     } catch (requestError) {
       setError(
@@ -415,226 +305,50 @@ function IntakePage() {
   return (
     <AssessmentShell
       eyebrow="Bước 2"
-      title="Phân tích lâm sàng"
-      description="Nhập thông tin chính về tình trạng hiện tại để MediMate tạo bộ câu hỏi lâm sàng và chuẩn bị gợi ý chuyên khoa."
+      title="Mô tả triệu chứng"
+      description="Nhập đúng phần backend cần: một đoạn mô tả triệu chứng hoặc tình trạng hiện tại."
     >
       <Stepper active={1} />
 
-      <section className="clinical-overview" aria-label="Tóm tắt phân tích lâm sàng">
-        <article>
-          <span>01</span>
-          <strong>Dữ liệu đầu vào</strong>
-          <p>Tập trung vào triệu chứng chính, diễn tiến và bối cảnh sức khỏe liên quan.</p>
-        </article>
-        <article>
-          <span>02</span>
-          <strong>Câu hỏi lâm sàng</strong>
-          <p>Backend đề xuất câu hỏi tiếp theo dựa trên nội dung bạn cung cấp.</p>
-        </article>
-        <article>
-          <span>03</span>
-          <strong>Gợi ý chuyên khoa</strong>
-          <p>Kết quả ưu tiên chuyên khoa và cơ sở y tế phù hợp để bạn tiếp tục xử lý.</p>
-        </article>
-      </section>
+      <form className="assessment-form intake-form" onSubmit={submit} noValidate>
+        <fieldset className="intake-section">
+          <legend>Triệu chứng của bạn</legend>
+          <p>
+            Ví dụ: Tôi bị sốt 3 ngày, đau đầu, mệt mỏi, uống thuốc hạ sốt nhưng không giảm.
+          </p>
 
-      <div className={`intake-layout ${showIntakeSidePanel ? "" : "intake-layout-single"}`.trim()}>
-        <form className="assessment-form intake-form" onSubmit={submit} noValidate>
-          {requiredErrorEntries.length > 0 && (
-            <div
-              className="assessment-error-summary"
-              ref={errorSummaryRef}
-              role="alert"
-              tabIndex="-1"
-            >
-              <strong>Cần bổ sung {requiredErrorEntries.length} thông tin</strong>
-              <ul>
-                {requiredErrorEntries.map(([field, message]) => (
-                  <li key={field}>
-                    <a href={`#intake-${field}`}>{message}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <label className="simple-symptom-input" htmlFor="clinical-user-input">
+            <span>Mô tả triệu chứng</span>
+            <Textarea
+              id="clinical-user-input"
+              value={userInput}
+              onChange={(event) => updateUserInput(event.target.value)}
+              disabled={isSubmitting}
+              rows={7}
+              placeholder="Nhập triệu chứng hoặc tình trạng hiện tại của bạn..."
+              autoFocus
+            />
+          </label>
+        </fieldset>
 
-          <fieldset className="intake-section">
-            <legend>Thông tin lâm sàng chính</legend>
-            <p>Hai thông tin này là nền cho bộ câu hỏi lâm sàng và gợi ý chuyên khoa.</p>
+        {error && <Alert tone="danger" live>{error}</Alert>}
 
-            <Field
-              id="intake-mainSymptom"
-              label="Triệu chứng chính"
-              required
-              error={fieldErrors.mainSymptom}
-            >
-              <TextInput
-                value={form.mainSymptom}
-                onChange={(event) => updateField("mainSymptom", event.target.value)}
-                disabled={status === "loading"}
-                autoComplete="off"
-              />
-            </Field>
+        <div className="assessment-actions intake-actions">
+          <Button
+            type="submit"
+            size="lg"
+            loading={isSubmitting}
+            loadingLabel="Đang tạo câu hỏi..."
+            disabled={!trimmedInput}
+          >
+            Tiếp tục
+          </Button>
 
-            <Field
-              id="intake-description"
-              label="Mô tả thêm"
-              hint="Ví dụ: diễn tiến, lúc nào nặng hơn, điều gì làm giảm triệu chứng."
-              required
-              error={fieldErrors.description}
-            >
-              <Textarea
-                value={form.description}
-                onChange={(event) => updateField("description", event.target.value)}
-                disabled={status === "loading"}
-                rows={5}
-              />
-            </Field>
-          </fieldset>
-
-          <fieldset className="intake-section">
-            <legend>Ngữ cảnh triệu chứng</legend>
-
-            <div className="assessment-form-grid">
-              <Field label="Thời gian bắt đầu" optional>
-                <TextInput
-                  value={form.duration}
-                  onChange={(event) => updateField("duration", event.target.value)}
-                  disabled={status === "loading"}
-                  placeholder="Ví dụ: 2 ngày"
-                />
-              </Field>
-
-              <Field label="Mức độ">
-                <select
-                  value={form.severity}
-                  onChange={(event) => updateField("severity", event.target.value)}
-                  disabled={status === "loading"}
-                >
-                  {SEVERITY_OPTIONS.map(([, label]) => (
-                    <option key={label} value={label}>{label}</option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field label="Vị trí đau/khó chịu" optional>
-                <TextInput
-                  value={form.bodyLocation}
-                  onChange={(event) => updateField("bodyLocation", event.target.value)}
-                  disabled={status === "loading"}
-                />
-              </Field>
-
-              <Field label="Triệu chứng đi kèm" optional>
-                <TextInput
-                  value={form.associatedSymptoms}
-                  onChange={(event) => updateField("associatedSymptoms", event.target.value)}
-                  disabled={status === "loading"}
-                />
-              </Field>
-            </div>
-          </fieldset>
-
-          <fieldset className="intake-section">
-            <legend>Thông tin sức khỏe liên quan</legend>
-            <p>Phần này có thể được điền sẵn từ hồ sơ, nhưng bạn vẫn chỉnh sửa được trước khi gửi.</p>
-
-            <div className="assessment-form-grid">
-              <Field
-                label="Thông tin hồ sơ sức khỏe"
-                hint="Tự động lấy nhóm máu, chiều cao, cân nặng nếu backend có dữ liệu."
-                optional
-              >
-                <Textarea
-                  value={form.profileContext}
-                  onChange={(event) => updateField("profileContext", event.target.value)}
-                  disabled={status === "loading"}
-                  rows={3}
-                />
-              </Field>
-
-              <Field label="Bệnh nền" optional>
-                <Textarea
-                  value={form.chronicDiseaseNote}
-                  onChange={(event) => updateField("chronicDiseaseNote", event.target.value)}
-                  disabled={status === "loading"}
-                  rows={3}
-                />
-              </Field>
-            </div>
-
-            <div className="assessment-form-grid">
-              <Field label="Dị ứng" optional>
-                <Textarea
-                  value={form.allergyNote}
-                  onChange={(event) => updateField("allergyNote", event.target.value)}
-                  disabled={status === "loading"}
-                  rows={3}
-                />
-              </Field>
-
-              <Field label="Thuốc đang dùng" optional>
-                <TextInput
-                  value={form.medications}
-                  onChange={(event) => updateField("medications", event.target.value)}
-                  disabled={status === "loading"}
-                />
-              </Field>
-            </div>
-          </fieldset>
-
-          {error && <Alert tone="danger" live>{error}</Alert>}
-
-          <div className="assessment-actions intake-actions">
-            <Button
-              type="submit"
-              size="lg"
-              loading={status === "loading"}
-              loadingLabel="Đang tạo câu hỏi..."
-            >
-              Tạo bộ câu hỏi lâm sàng
-            </Button>
-
-            <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>
-              Kiểm tra dấu hiệu khẩn cấp
-            </Button>
-          </div>
-        </form>
-
-        {showIntakeSidePanel && (
-          <aside className="intake-side-panel" aria-label="Trạng thái hồ sơ đánh giá">
-            {!auth && (
-              <Alert tone="warning" title="Cần đăng nhập">
-                Backend hiện yêu cầu token cho phiên đánh giá. Hãy đăng nhập để tiếp tục và lưu lịch sử phiên.
-              </Alert>
-            )}
-
-            {auth && profileStatus === "loading" && (
-              <Alert tone="info" live>
-                Đang tải hồ sơ sức khỏe để điền sẵn thông tin nền nếu có.
-              </Alert>
-            )}
-
-            {auth && profileStatus === "ready" && (
-              <Alert tone="success" live>
-                Đã điền sẵn thông tin hồ sơ sức khỏe có sẵn. Bạn có thể chỉnh sửa trước khi gửi.
-              </Alert>
-            )}
-
-            {auth && profileStatus === "empty" && (
-              <Alert tone="warning">
-                Chưa tìm thấy hồ sơ sức khỏe. Bạn vẫn có thể nhập thủ công bệnh nền và dị ứng.
-              </Alert>
-            )}
-
-            {auth && profileStatus === "error" && (
-              <Alert tone="warning">
-                Không thể tải hồ sơ sức khỏe. Bạn vẫn có thể tiếp tục bằng thông tin nhập thủ công.
-              </Alert>
-            )}
-          </aside>
-        )}
-      </div>
+          <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>
+            Kiểm tra dấu hiệu khẩn cấp
+          </Button>
+        </div>
+      </form>
     </AssessmentShell>
   );
 }
@@ -750,8 +464,8 @@ function QuestionsPage({ sessionId }) {
         <Stepper active={2} />
         <EmptyState
           title="Backend chưa tạo được câu hỏi lâm sàng"
-          description="Hãy bổ sung triệu chứng chính, thời gian bắt đầu, mức độ, vị trí và triệu chứng đi kèm."
-          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Quay lại bổ sung thông tin</Button>}
+          description="Hãy mô tả triệu chứng rõ hơn để backend có đủ dữ liệu tạo câu hỏi."
+          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Quay lại nhập lại</Button>}
         />
       </AssessmentShell>
     );
