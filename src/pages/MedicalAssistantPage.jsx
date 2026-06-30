@@ -388,11 +388,13 @@ function QuestionsPage({ sessionId }) {
     });
   }
 
-  function updateBooleanQuestionAnswer(questionId, prompts, value) {
+  function updateBooleanAnswer(questionId, answerKey, value) {
     setSession((current) => {
-      const nextAnswer = Object.fromEntries(
-        prompts.map((prompt) => [prompt.key, value]),
-      );
+      const currentAnswer = current?.answers?.[questionId];
+      const nextAnswer = {
+        ...(isPlainObject(currentAnswer) ? currentAnswer : {}),
+        [answerKey]: value,
+      };
 
       const next = {
         ...current,
