@@ -1,6 +1,17 @@
 import { apiRequest } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
+function withQuery(path, params = {}) {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== "" && value !== null && value !== undefined) {
+      search.set(key, String(value));
+    }
+  });
+  const query = search.toString();
+  return query ? `${path}?${query}` : path;
+}
+
 export const subscriptionPlansApi = {
   list() {
     return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BASE);
@@ -74,6 +85,21 @@ export const userSubscriptionsApi = {
 export const paymentsApi = {
   get(id) {
     return apiRequest(ENDPOINTS.PAYMENTS.BY_ID(id), { auth: true });
+  },
+
+  payOsReturn(params = {}) {
+    return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_RETURN, params));
+  },
+
+  payOsCancel(params = {}) {
+    return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_CANCEL, params));
+  },
+
+  payOsWebhook(payload = {}) {
+    return apiRequest(ENDPOINTS.PAYMENTS.PAYOS_WEBHOOK, {
+      method: "POST",
+      body: payload,
+    });
   },
 
   payOsStatus(orderCode) {

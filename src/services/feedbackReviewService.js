@@ -16,6 +16,10 @@ export const feedbackReviewsApi = {
     );
   },
 
+  get(id) {
+    return apiRequest(ENDPOINTS.FEEDBACK_REVIEWS.BY_ID(id), { auth: true });
+  },
+
   create(payload) {
     return apiRequest(ENDPOINTS.FEEDBACK_REVIEWS.BASE, {
       method: "POST",

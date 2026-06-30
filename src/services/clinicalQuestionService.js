@@ -15,6 +15,13 @@ export const clinicalQuestionsApi = {
   create(payload) {
     return apiRequest(ENDPOINTS.CLINICAL_QUESTIONS.BASE, { method: "POST", body: payload, auth: true });
   },
+  bulk(payload) {
+    return apiRequest(ENDPOINTS.CLINICAL_QUESTIONS.BULK, {
+      method: "POST",
+      body: Array.isArray(payload) ? { questions: payload } : payload,
+      auth: true,
+    });
+  },
   update(id, payload) {
     return apiRequest(ENDPOINTS.CLINICAL_QUESTIONS.BY_ID(id), { method: "PUT", body: payload, auth: true });
   },

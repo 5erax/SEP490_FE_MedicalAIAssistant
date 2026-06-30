@@ -71,6 +71,7 @@ export const ENDPOINTS = {
   ICD_CHAPTERS: {
     BASE: ICD_CHAPTERS_BASE,
     BY_ID: (id) => byId(ICD_CHAPTERS_BASE, id),
+    BULK: `${ICD_CHAPTERS_BASE}/bulk`,
   },
   CLINICAL_QUESTIONS: {
     BASE: CLINICAL_QUESTIONS_BASE,
@@ -102,6 +103,9 @@ export const ENDPOINTS = {
   },
   PAYMENTS: {
     BY_ID: (id) => byId(PAYMENTS_BASE, id),
+    PAYOS_RETURN: `${PAYMENTS_BASE}/payos-return`,
+    PAYOS_CANCEL: `${PAYMENTS_BASE}/payos-cancel`,
+    PAYOS_WEBHOOK: `${PAYMENTS_BASE}/payos-webhook`,
     PAYOS_STATUS: (orderCode) => `${PAYMENTS_BASE}/payos-status/${encodeURIComponent(orderCode)}`,
   },
   AI_CONFIGS: {
