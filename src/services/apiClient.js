@@ -1,5 +1,7 @@
-// Keep browser requests same-origin by default. Local Vite can point directly at a backend with VITE_API_BASE_URL.
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+// Production uses same-origin /api so Vercel rewrites can avoid mixed-content and CORS issues.
+const API_BASE_URL = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
+  : "";
 const AUTH_STORAGE_KEY = "medimate.auth";
 
 function buildUrl(path) {
