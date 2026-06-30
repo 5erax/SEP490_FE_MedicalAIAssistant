@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ClipboardList, History, MapPin, Stethoscope } from "lucide-react";
+import { AlertTriangle, ClipboardList, History, MapPin, Send, Stethoscope } from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -102,20 +102,20 @@ function getQuestionKeywords(question) {
     : [];
 }
 
-function AssessmentShell({ eyebrow, title, description, children }) {
+function AssessmentShell({ eyebrow, title, description, activeStep, children }) {
   return (
-    <main className="assessment-page">
-      <section className="assessment-shell" aria-labelledby="assessment-title">
-        <header className="assessment-header">
-          <span className="assessment-icon" aria-hidden="true">
-            <Stethoscope size={24} />
+    <main className="assessment-page clinical-page">
+      <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
+        <header className="assessment-header clinical-hero">
+          <span className="assessment-icon clinical-hero-icon" aria-hidden="true">
+            <Stethoscope size={25} />
           </span>
-          <div>
-            <p className="eyebrow">{eyebrow}</p>
-            <h1 id="assessment-title">{title}</h1>
-            {description && <p>{description}</p>}
-          </div>
+          <p className="eyebrow clinical-eyebrow">{eyebrow}</p>
+          <h1 id="assessment-title">{title}</h1>
+          {description && <p className="clinical-hero-description">{description}</p>}
         </header>
+
+        <Stepper active={activeStep} />
         {children}
       </section>
     </main>
@@ -123,10 +123,10 @@ function AssessmentShell({ eyebrow, title, description, children }) {
 }
 
 function Stepper({ active }) {
-  const steps = ["An toàn", "Triệu chứng", "Câu hỏi", "Kết quả"];
+  const steps = ["Mô tả", "Làm rõ", "Kết quả"];
 
   return (
-    <ol className="assessment-stepper" aria-label="Tiến trình đánh giá">
+    <ol className="assessment-stepper clinical-stepper" aria-label="Tiến trình phân tích lâm sàng">
       {steps.map((step, index) => (
         <li
           className={index === active ? "active" : index < active ? "complete" : ""}
@@ -144,33 +144,34 @@ function Stepper({ active }) {
 function EntryPage() {
   return (
     <AssessmentShell
-      eyebrow="MediMate AI"
-      title="Phân tích lâm sàng và gợi ý chuyên khoa"
-      description="Mô tả triệu chứng bằng một đoạn văn ngắn, MediMate sẽ tạo câu hỏi lâm sàng tiếp theo và gợi ý chuyên khoa phù hợp."
+      eyebrow="Tư vấn lâm sàng"
+      title="Phân tích lâm sàng qua triệu chứng"
+      description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
+      activeStep={0}
     >
-      <div className="assessment-grid">
+      <div className="clinical-entry-card">
         <article>
           <ClipboardList size={24} aria-hidden="true" />
-          <h2>Nhập một mô tả duy nhất</h2>
-          <p>Backend chỉ cần trường userInput, vì vậy người dùng chỉ cần nhập tình trạng đang gặp.</p>
+          <h2>Một ô nhập duy nhất</h2>
+          <p>Backend chỉ cần userInput, vì vậy người dùng chỉ cần nhập mô tả triệu chứng.</p>
         </article>
 
         <article>
           <Stethoscope size={24} aria-hidden="true" />
-          <h2>Hỏi đáp lâm sàng từng bước</h2>
-          <p>Backend chọn câu hỏi theo mô tả triệu chứng, sau đó frontend ghi nhận câu trả lời Có/Không.</p>
+          <h2>Làm rõ bằng câu hỏi</h2>
+          <p>Hệ thống chọn câu hỏi lâm sàng phù hợp dựa trên nội dung người dùng cung cấp.</p>
         </article>
 
         <article>
           <MapPin size={24} aria-hidden="true" />
-          <h2>Điều hướng cơ sở y tế</h2>
-          <p>Khi có chuyên khoa gợi ý, MediMate tìm cơ sở y tế liên quan để người dùng xử lý bước tiếp theo.</p>
+          <h2>Gợi ý bước tiếp theo</h2>
+          <p>Kết quả gồm nhận định tham khảo, chuyên khoa và cơ sở y tế liên quan.</p>
         </article>
       </div>
 
-      <div className="assessment-actions">
-        <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>
-          Bắt đầu
+      <div className="assessment-actions clinical-actions-center">
+        <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
+          Bắt đầu phân tích
         </Button>
         <Button tone="secondary" onClick={() => navigate("/map")}>
           Tìm cơ sở y tế
@@ -194,57 +195,66 @@ function SafetyPage() {
 
   return (
     <AssessmentShell
-      eyebrow="Bước 1"
+      eyebrow="Kiểm tra an toàn"
       title="Trước khi bắt đầu"
-      description="Kiểm tra nhanh các dấu hiệu cần chăm sóc y tế khẩn cấp. Nếu có, không nên tiếp tục tự đánh giá bằng AI."
+      description="Nếu có dấu hiệu nguy hiểm, không nên tiếp tục tự đánh giá bằng AI. Hãy ưu tiên chăm sóc y tế khẩn cấp."
+      activeStep={0}
     >
-      <Stepper active={0} />
-
-      <fieldset className="safety-checklist">
-        <legend>Bạn có đang gặp một trong các dấu hiệu sau không?</legend>
-        {RED_FLAGS.map((flag) => (
-          <label key={flag}>
-            <input
-              type="checkbox"
-              checked={checked.includes(flag)}
-              onChange={() => toggle(flag)}
-            />
-            <span>{flag}</span>
-          </label>
-        ))}
-      </fieldset>
-
-      {hasRedFlag && (
-        <section className="emergency-panel" role="alert">
-          <AlertTriangle size={28} aria-hidden="true" />
+      <section className="clinical-card">
+        <div className="clinical-card-head">
           <div>
-            <h2>Đây có thể là tình huống cần chăm sóc khẩn cấp</h2>
-            <p>
-              Vui lòng gọi cấp cứu địa phương hoặc đến cơ sở y tế gần nhất.
-              Không tiếp tục tự đánh giá bằng AI trong tình huống này.
-            </p>
-            <div className="assessment-actions">
-              <Button onClick={() => navigate("/map?search=cap%20cuu")}>
-                Tìm cơ sở y tế gần nhất
-              </Button>
-              <Button tone="secondary" onClick={() => navigate("/")}>
-                Về trang chủ
-              </Button>
-            </div>
+            <p className="clinical-step-label">Sàng lọc an toàn</p>
+            <h2>Bạn có đang gặp một trong các dấu hiệu sau không?</h2>
           </div>
-        </section>
-      )}
-
-      {!hasRedFlag && (
-        <div className="assessment-actions">
-          <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
-            Không, tiếp tục
-          </Button>
-          <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>
-            Quay lại
-          </Button>
+          <span>Không thay thế cấp cứu</span>
         </div>
-      )}
+
+        <fieldset className="safety-checklist">
+          <legend className="sr-only">Dấu hiệu khẩn cấp</legend>
+          {RED_FLAGS.map((flag) => (
+            <label key={flag}>
+              <input
+                type="checkbox"
+                checked={checked.includes(flag)}
+                onChange={() => toggle(flag)}
+              />
+              <span>{flag}</span>
+            </label>
+          ))}
+        </fieldset>
+
+        {hasRedFlag && (
+          <section className="emergency-panel" role="alert">
+            <AlertTriangle size={28} aria-hidden="true" />
+            <div>
+              <h2>Đây có thể là tình huống cần chăm sóc khẩn cấp</h2>
+              <p>
+                Vui lòng gọi cấp cứu địa phương hoặc đến cơ sở y tế gần nhất.
+                Không tiếp tục tự đánh giá bằng AI trong tình huống này.
+              </p>
+              <div className="assessment-actions">
+                <Button onClick={() => navigate("/map?search=cap%20cuu")}>
+                  Tìm cơ sở y tế gần nhất
+                </Button>
+                <Button tone="secondary" onClick={() => navigate("/")}>
+                  Về trang chủ
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {!hasRedFlag && (
+          <div className="assessment-actions clinical-card-actions">
+            <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
+              Không, tiếp tục
+            </Button>
+            <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>
+              Quay lại
+            </Button>
+          </div>
+        )}
+      </section>
     </AssessmentShell>
   );
 }
@@ -304,48 +314,51 @@ function IntakePage() {
 
   return (
     <AssessmentShell
-      eyebrow="Bước 2"
-      title="Mô tả triệu chứng"
-      description="Nhập đúng phần backend cần: một đoạn mô tả triệu chứng hoặc tình trạng hiện tại."
+      eyebrow="Tư vấn lâm sàng"
+      title="Phân tích lâm sàng qua triệu chứng"
+      description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
+      activeStep={0}
     >
-      <Stepper active={1} />
+      <form className="clinical-card clinical-intake-card" onSubmit={submit} noValidate>
+        <div className="clinical-card-head">
+          <div>
+            <p className="clinical-step-label">Bước 1</p>
+            <h2>Mô tả điều bạn đang cảm nhận</h2>
+          </div>
 
-      <form className="assessment-form intake-form" onSubmit={submit} noValidate>
-        <fieldset className="intake-section">
-          <legend>Triệu chứng của bạn</legend>
-          <p>
-            Ví dụ: Tôi bị sốt 3 ngày, đau đầu, mệt mỏi, uống thuốc hạ sốt nhưng không giảm.
-          </p>
+          <div className="clinical-card-tags" aria-label="Đặc điểm bước nhập triệu chứng">
+            <span>Tiếp nhận ban đầu</span>
+            <span>Không thay thế chẩn đoán</span>
+          </div>
+        </div>
 
-          <label className="simple-symptom-input" htmlFor="clinical-user-input">
-            <span>Mô tả triệu chứng</span>
-            <Textarea
-              id="clinical-user-input"
-              value={userInput}
-              onChange={(event) => updateUserInput(event.target.value)}
-              disabled={isSubmitting}
-              rows={7}
-              placeholder="Nhập triệu chứng hoặc tình trạng hiện tại của bạn..."
-              autoFocus
-            />
-          </label>
-        </fieldset>
+        <label className="simple-symptom-input" htmlFor="clinical-user-input">
+          <span>Triệu chứng bạn đang gặp <strong aria-hidden="true">*</strong></span>
+          <Textarea
+            id="clinical-user-input"
+            value={userInput}
+            onChange={(event) => updateUserInput(event.target.value)}
+            disabled={isSubmitting}
+            rows={6}
+            placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ..."
+            autoFocus
+          />
+          <small>Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm để gợi ý phù hợp hơn.</small>
+        </label>
 
         {error && <Alert tone="danger" live>{error}</Alert>}
 
-        <div className="assessment-actions intake-actions">
+        <div className="clinical-submit-row">
+          <span>Sẵn sàng. Trả lời Yes/No ở bước tiếp theo.</span>
           <Button
             type="submit"
             size="lg"
             loading={isSubmitting}
             loadingLabel="Đang tạo câu hỏi..."
             disabled={!trimmedInput}
+            aria-label="Tiếp tục phân tích lâm sàng"
           >
-            Tiếp tục
-          </Button>
-
-          <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>
-            Kiểm tra dấu hiệu khẩn cấp
+            <Send size={18} />
           </Button>
         </div>
       </form>
@@ -448,7 +461,12 @@ function QuestionsPage({ sessionId }) {
 
   if (!session) {
     return (
-      <AssessmentShell eyebrow="Phiên đánh giá" title="Không tìm thấy câu hỏi của phiên này">
+      <AssessmentShell
+        eyebrow="Phiên đánh giá"
+        title="Không tìm thấy câu hỏi"
+        description="Hãy bắt đầu lại từ bước mô tả triệu chứng để backend tạo sessionId và danh sách câu hỏi."
+        activeStep={1}
+      >
         <ErrorState
           title="Phiên đánh giá chưa sẵn sàng"
           description="Hãy bắt đầu lại từ form nhập triệu chứng để backend tạo sessionId và danh sách câu hỏi."
@@ -460,8 +478,12 @@ function QuestionsPage({ sessionId }) {
 
   if (questions.length === 0) {
     return (
-      <AssessmentShell eyebrow="Bước 3" title="Chưa có câu hỏi phù hợp">
-        <Stepper active={2} />
+      <AssessmentShell
+        eyebrow="Bước 2"
+        title="Chưa có câu hỏi phù hợp"
+        description="Backend chưa tạo được câu hỏi lâm sàng cho mô tả hiện tại."
+        activeStep={1}
+      >
         <EmptyState
           title="Backend chưa tạo được câu hỏi lâm sàng"
           description="Hãy mô tả triệu chứng rõ hơn để backend có đủ dữ liệu tạo câu hỏi."
@@ -485,13 +507,12 @@ function QuestionsPage({ sessionId }) {
 
   return (
     <AssessmentShell
-      eyebrow="Bước 3"
+      eyebrow="Làm rõ triệu chứng"
       title="Câu hỏi lâm sàng"
       description="Trả lời từng câu hỏi để MediMate hoàn tất phân tích và tạo gợi ý chuyên khoa."
+      activeStep={1}
     >
-      <Stepper active={2} />
-
-      <form className="question-panel" onSubmit={submit}>
+      <form className="clinical-card question-panel" onSubmit={submit}>
         <div className="question-progress">
           <span>Câu {currentIndex + 1}/{questions.length}</span>
           <strong>{progressPercent}%</strong>
@@ -706,7 +727,12 @@ function ResultPage({ sessionId }) {
 
   if (remoteStatus === "loading") {
     return (
-      <AssessmentShell eyebrow="Kết quả" title="Đang tải kết quả">
+      <AssessmentShell
+        eyebrow="Kết quả"
+        title="Đang tải kết quả"
+        description="MediMate đang lấy lại kết quả phiên đánh giá."
+        activeStep={2}
+      >
         <LoadingState label="Đang tải phiên đánh giá..." />
       </AssessmentShell>
     );
@@ -714,7 +740,12 @@ function ResultPage({ sessionId }) {
 
   if (!result) {
     return (
-      <AssessmentShell eyebrow="Kết quả" title="Không tìm thấy kết quả">
+      <AssessmentShell
+        eyebrow="Kết quả"
+        title="Không tìm thấy kết quả"
+        description="Không thể tải dữ liệu cho phiên đánh giá này."
+        activeStep={2}
+      >
         <ErrorState
           title="Phiên đánh giá không tồn tại"
           description={remoteError || "Hãy bắt đầu phiên đánh giá mới hoặc mở lại từ lịch sử nếu phiên đã được lưu."}
@@ -726,12 +757,11 @@ function ResultPage({ sessionId }) {
 
   return (
     <AssessmentShell
-      eyebrow="Bước 4"
+      eyebrow="Bước 3"
       title="Gợi ý chuyên khoa"
       description="Tổng hợp kết quả phân tích lâm sàng, mức ưu tiên và cơ sở y tế liên quan."
+      activeStep={2}
     >
-      <Stepper active={3} />
-
       <Alert
         tone={isEmergency ? "danger" : "info"}
         title={isEmergency ? "Cần ưu tiên thăm khám khẩn cấp" : "Đã tạo gợi ý chuyên khoa"}
@@ -794,7 +824,7 @@ function ResultPage({ sessionId }) {
         </article>
       </section>
 
-      <div className="assessment-actions">
+      <div className="assessment-actions clinical-actions-center">
         <Button onClick={openMap}>
           <MapPin size={18} /> Xem trên bản đồ
         </Button>
@@ -840,6 +870,7 @@ function HistoryPage() {
       eyebrow="Lịch sử"
       title="Lịch sử phiên đánh giá triệu chứng"
       description="Dữ liệu lấy từ endpoint my-sessions của backend."
+      activeStep={2}
     >
       {status === "loading" && (
         <LoadingState label="Đang tải lịch sử đánh giá..." />
