@@ -520,7 +520,7 @@ test.describe("global navigation UX", () => {
     }, ACCESS_TOKEN);
 
     await openRoute(page, "/medical-assistant/safety");
-    await page.getByRole("button", { name: "Khong, tiep tuc danh gia" }).click();
+    await page.getByRole("button", { name: "Không, tiếp tục đánh giá" }).click();
     await expect(page).toHaveURL(/\/symptom$/);
     await expect(page.locator(".assessment-header h1")).toContainText("Phân tích lâm sàng");
   });
@@ -529,10 +529,10 @@ test.describe("global navigation UX", () => {
     await preparePage(page);
 
     await openRoute(page, "/medical-assistant/safety");
-    await page.getByLabel("Dau nguc du doi").check();
-    await expect(page.getByRole("alert")).toContainText("cham soc khan cap");
-    await expect(page.getByRole("button", { name: "Khong, tiep tuc danh gia" })).toHaveCount(0);
-    await page.getByRole("button", { name: "Tim co so y te gan nhat" }).click();
+    await page.getByLabel("Đau ngực dữ dội").check();
+    await expect(page.getByRole("alert")).toContainText("chăm sóc khẩn cấp");
+    await expect(page.getByRole("button", { name: "Không, tiếp tục đánh giá" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Tìm cơ sở y tế gần nhất" }).click();
     await expect(page).toHaveURL(/\/map\?search=cap%20cuu$/);
   });
 

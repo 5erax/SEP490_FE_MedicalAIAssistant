@@ -6,8 +6,12 @@ import { getStoredAuth } from "../services/api";
 import { patientProfilesApi } from "../services/patientProfileService";
 import {
   buildClinicalQuestionAnswerItems,
+  getClinicalQuestionAnswerMode,
+  getClinicalQuestionBooleanPrompts,
   getClinicalQuestionAnswerOptions,
+  isClinicalQuestionAnswered,
   symptomAnalysisApi,
+  translateClinicalText,
 } from "../services/symptomAnalysisService";
 import "../styles/medical-assessment.css";
 
@@ -16,20 +20,20 @@ const assessmentSessionCache = new Map();
 let assessmentDraftCache = null;
 
 const RED_FLAGS = [
-  "Dau nguc du doi",
-  "Kho tho nang",
-  "Ngat, co giat hoac mat y thuc",
-  "Yeu hoac liet mot ben co the",
-  "Meo mieng, noi kho",
-  "Chay mau nhieu",
-  "Dau dau du doi dot ngot",
-  "Sung mat/moi kem kho tho hoac nghi phan ve",
+  "Đau ngực dữ dội",
+  "Khó thở nặng",
+  "Ngất, co giật hoặc mất ý thức",
+  "Yếu hoặc liệt một bên cơ thể",
+  "Méo miệng, nói khó",
+  "Chảy máu nhiều",
+  "Đau đầu dữ dội đột ngột",
+  "Sưng mặt/môi kèm khó thở hoặc nghi phản vệ",
 ];
 
 const SEVERITY_OPTIONS = [
-  ["mild", "Nhe"],
-  ["moderate", "Vua"],
-  ["severe", "Nang"],
+  ["mild", "Nhẹ"],
+  ["moderate", "Vừa"],
+  ["severe", "Nặng"],
 ];
 
 const INTAKE_REQUIRED_FIELDS = {
@@ -53,11 +57,20 @@ function getQuestionId(question, index) {
 }
 
 function normalizeQuestions(questions = []) {
-  return questions.map((question, index) => ({
-    ...question,
-    questionId: getQuestionId(question, index),
-    questionText: question?.questionVi || question?.questionText || question?.text || `Cau hoi lam sang ${index + 1}`,
-  }));
+  return questions.map((question, index) => {
+    const sourceText = question?.questionVi || question?.questionText || question?.text || `Câu hỏi lâm sàng ${index + 1}`;
+    const translatedText = translateClinicalText(sourceText);
+    return {
+      ...question,
+      questionId: getQuestionId(question, index),
+      questionText: translatedText,
+      questionOriginalText: translatedText === sourceText ? "" : sourceText,
+    };
+  });
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function readSuggestResponse(response) {
@@ -149,9 +162,9 @@ function AssessmentShell({ eyebrow, title, description, children }) {
 }
 
 function Stepper({ active }) {
-  const steps = ["An toan", "Du lieu", "Cau hoi", "Ket qua"];
+  const steps = ["An toàn", "Dữ liệu", "Câu hỏi", "Kết quả"];
   return (
-    <ol className="assessment-stepper" aria-label="Tien trinh danh gia">
+    <ol className="assessment-stepper" aria-label="Tiến trình đánh giá">
       {steps.map((step, index) => (
         <li className={index === active ? "active" : index < active ? "complete" : ""} key={step} aria-current={index === active ? "step" : undefined}>
           <span>{index + 1}</span>
@@ -166,29 +179,29 @@ function EntryPage() {
   return (
     <AssessmentShell
       eyebrow="MediMate AI"
-      title="Phan tich lam sang va goi y chuyen khoa"
-      description="MediMate giup ban mo ta van de suc khoe co cau truc, tra loi cau hoi lam sang va tim chuyen khoa phu hop de chuan bi buoc cham soc tiep theo."
+      title="Phân tích lâm sàng và gợi ý chuyên khoa"
+      description="MediMate giúp bạn mô tả vấn đề sức khỏe có cấu trúc, trả lời câu hỏi lâm sàng và tìm chuyên khoa phù hợp để chuẩn bị bước chăm sóc tiếp theo."
     >
       <div className="assessment-grid">
         <article>
           <ClipboardList size={24} aria-hidden="true" />
-          <h2>Luon bat dau bang an toan</h2>
-          <p>Neu co dau hieu nguy hiem, ung dung se dung flow AI va huong dan ban tim cham soc khan cap.</p>
+          <h2>Luôn bắt đầu bằng an toàn</h2>
+          <p>Nếu có dấu hiệu nguy hiểm, ứng dụng sẽ dừng flow AI và hướng dẫn bạn tìm chăm sóc khẩn cấp.</p>
         </article>
         <article>
           <Stethoscope size={24} aria-hidden="true" />
-          <h2>Hoi dap lam sang tung buoc</h2>
-          <p>Backend chon cau hoi yes/no theo trieu chung ban nhap, sau do moi tao ket qua tham khao.</p>
+          <h2>Hỏi đáp lâm sàng từng bước</h2>
+          <p>Backend chọn câu hỏi Có/Không theo triệu chứng bạn nhập, sau đó mới tạo kết quả tham khảo.</p>
         </article>
         <article>
           <MapPin size={24} aria-hidden="true" />
-          <h2>Dieu huong co so y te</h2>
-          <p>Khi co chuyen khoa goi y, MediMate tim co so y te active tu backend theo chuyen khoa do.</p>
+          <h2>Điều hướng cơ sở y tế</h2>
+          <p>Khi có chuyên khoa gợi ý, MediMate tìm cơ sở y tế active từ backend theo chuyên khoa đó.</p>
         </article>
       </div>
       <div className="assessment-actions">
-        <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>Bat dau phan tich lam sang</Button>
-        <Button tone="secondary" onClick={() => navigate("/map")}>Tim co so y te</Button>
+        <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>Bắt đầu phân tích lâm sàng</Button>
+        <Button tone="secondary" onClick={() => navigate("/map")}>Tìm cơ sở y tế</Button>
       </div>
     </AssessmentShell>
   );
@@ -206,13 +219,13 @@ function SafetyPage() {
 
   return (
     <AssessmentShell
-      eyebrow="Buoc 1"
-      title="Truoc khi bat dau"
-      description="Hay kiem tra nhanh cac dau hieu can cham soc y te khan cap. Neu co, khong nen tiep tuc tu danh gia bang AI."
+      eyebrow="Bước 1"
+      title="Trước khi bắt đầu"
+      description="Hãy kiểm tra nhanh các dấu hiệu cần chăm sóc y tế khẩn cấp. Nếu có, không nên tiếp tục tự đánh giá bằng AI."
     >
       <Stepper active={0} />
       <fieldset className="safety-checklist">
-        <legend>Ban co dang gap mot trong cac dau hieu sau khong?</legend>
+        <legend>Bạn có đang gặp một trong các dấu hiệu sau không?</legend>
         {RED_FLAGS.map((flag) => (
           <label key={flag}>
             <input type="checkbox" checked={checked.includes(flag)} onChange={() => toggle(flag)} />
@@ -225,11 +238,11 @@ function SafetyPage() {
         <section className="emergency-panel" role="alert">
           <AlertTriangle size={28} aria-hidden="true" />
           <div>
-            <h2>Day co the la tinh huong can cham soc khan cap</h2>
-            <p>Vui long goi cap cuu dia phuong, hoac den co so y te gan nhat. Khong tiep tuc tu danh gia bang AI trong tinh huong nay.</p>
+            <h2>Đây có thể là tình huống cần chăm sóc khẩn cấp</h2>
+            <p>Vui lòng gọi cấp cứu địa phương, hoặc đến cơ sở y tế gần nhất. Không tiếp tục tự đánh giá bằng AI trong tình huống này.</p>
             <div className="assessment-actions">
-              <Button onClick={() => navigate("/map?search=cap%20cuu")}>Tim co so y te gan nhat</Button>
-              <Button tone="secondary" onClick={() => navigate("/")}>Ve trang chu</Button>
+              <Button onClick={() => navigate("/map?search=cap%20cuu")}>Tìm cơ sở y tế gần nhất</Button>
+              <Button tone="secondary" onClick={() => navigate("/")}>Về trang chủ</Button>
             </div>
           </div>
         </section>
@@ -238,9 +251,9 @@ function SafetyPage() {
       {!hasRedFlag && (
         <div className="assessment-actions">
           <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
-            Khong, tiep tuc danh gia
+            Không, tiếp tục đánh giá
           </Button>
-          <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>Quay lai</Button>
+          <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>Quay lại</Button>
         </div>
       )}
     </AssessmentShell>
@@ -285,9 +298,9 @@ function IntakePage() {
         }
 
         const profileContext = [
-          profile.bloodType ? `Nhom mau ${profile.bloodType}` : "",
-          profile.height ? `Chieu cao ${profile.height} cm` : "",
-          profile.weight ? `Can nang ${profile.weight} kg` : "",
+          profile.bloodType ? `Nhóm máu ${profile.bloodType}` : "",
+          profile.height ? `Chiều cao ${profile.height} cm` : "",
+          profile.weight ? `Cân nặng ${profile.weight} kg` : "",
         ].filter(Boolean).join(", ");
 
         setForm((current) => {
@@ -348,7 +361,7 @@ function IntakePage() {
     try {
       const response = await symptomAnalysisApi.suggestClinicalQuestions(userInput);
       const data = readSuggestResponse(response);
-      if (!data.sessionId) throw new Error("Backend chua tra ve sessionId cho phien danh gia.");
+      if (!data.sessionId) throw new Error("Backend chưa trả về sessionId cho phiên đánh giá.");
 
       saveSessionState(data.sessionId, {
         sessionId: data.sessionId,
@@ -360,8 +373,8 @@ function IntakePage() {
       navigate(`/assessment/${data.sessionId}`);
     } catch (requestError) {
       setError(requestError.status === 502
-        ? "AI tam thoi khong phan hoi. Vui long thu lai sau."
-        : requestError.message || "Khong the tao cau hoi lam sang luc nay.");
+        ? "AI tạm thời không phản hồi. Vui lòng thử lại sau."
+        : requestError.message || "Không thể tạo câu hỏi lâm sàng lúc này.");
     } finally {
       setStatus("idle");
     }
@@ -506,12 +519,25 @@ function QuestionsPage({ sessionId }) {
 
   const questions = session?.questions ?? [];
   const answers = session?.answers ?? {};
-  const answeredCount = Object.values(answers).filter(Boolean).length;
+  const answeredCount = questions.filter((item) => isClinicalQuestionAnswered(item, answers[item.questionId])).length;
   const canSubmit = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
 
   function updateAnswer(questionId, answerKey) {
     setSession((current) => {
       const next = { ...current, answers: { ...(current?.answers ?? {}), [questionId]: answerKey } };
+      saveSessionState(sessionId, next);
+      return next;
+    });
+  }
+
+  function updateBooleanAnswer(questionId, answerKey, value) {
+    setSession((current) => {
+      const currentAnswer = current?.answers?.[questionId];
+      const nextAnswer = {
+        ...(isPlainObject(currentAnswer) ? currentAnswer : {}),
+        [answerKey]: value,
+      };
+      const next = { ...current, answers: { ...(current?.answers ?? {}), [questionId]: nextAnswer } };
       saveSessionState(sessionId, next);
       return next;
     });
@@ -541,24 +567,24 @@ function QuestionsPage({ sessionId }) {
         diagnosisModel: diagnosisData.model ?? analysis.model ?? null,
       };
 
-      const next = { ...session, answers: Object.fromEntries(payload.map((item) => [item.questionId, item.answer])), result };
+      const next = { ...session, answers, result };
       saveSessionState(sessionId, next);
       navigate(`/assessment/${sessionId}/result`);
     } catch (requestError) {
       setError(requestError.status === 502
-        ? "AI tam thoi khong phan hoi. Du lieu ban da nhap van duoc giu lai de thu lai."
-        : requestError.message || "Khong the gui cau tra loi luc nay.");
+        ? "AI tạm thời không phản hồi. Dữ liệu bạn đã nhập vẫn được giữ lại để thử lại."
+        : requestError.message || "Không thể gửi câu trả lời lúc này.");
       setStatus("idle");
     }
   }
 
   if (!session) {
     return (
-      <AssessmentShell eyebrow="Phien danh gia" title="Khong tim thay cau hoi cua phien nay">
+      <AssessmentShell eyebrow="Phiên đánh giá" title="Không tìm thấy câu hỏi của phiên này">
         <ErrorState
-          title="Phien danh gia chua san sang"
-          description="Hay bat dau lai tu form nhap trieu chung de backend tao sessionId va danh sach cau hoi."
-          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Nhap trieu chung</Button>}
+          title="Phiên đánh giá chưa sẵn sàng"
+          description="Hãy bắt đầu lại từ form nhập triệu chứng để backend tạo sessionId và danh sách câu hỏi."
+          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Nhập triệu chứng</Button>}
         />
       </AssessmentShell>
     );
@@ -566,55 +592,99 @@ function QuestionsPage({ sessionId }) {
 
   if (questions.length === 0) {
     return (
-      <AssessmentShell eyebrow="Buoc 3" title="Chua co cau hoi phu hop">
+      <AssessmentShell eyebrow="Bước 3" title="Chưa có câu hỏi phù hợp">
         <Stepper active={2} />
         <EmptyState
-          title="Backend chua tao duoc cau hoi lam sang"
-          description="Hay bo sung trieu chung chinh, thoi gian bat dau, muc do, vi tri va trieu chung di kem."
-          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Quay lai bo sung thong tin</Button>}
+          title="Backend chưa tạo được câu hỏi lâm sàng"
+          description="Hãy bổ sung triệu chứng chính, thời gian bắt đầu, mức độ, vị trí và triệu chứng đi kèm."
+          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Quay lại bổ sung thông tin</Button>}
         />
       </AssessmentShell>
     );
   }
 
   const question = questions[currentIndex];
+  const answerMode = getClinicalQuestionAnswerMode(question);
+  const selectedAnswer = answers[question.questionId];
+  const booleanPrompts = getClinicalQuestionBooleanPrompts(question);
+  const questionComplete = isClinicalQuestionAnswered(question, selectedAnswer);
 
   return (
     <AssessmentShell
-      eyebrow="Buoc 3"
-      title="Cau hoi lam sang"
-      description="Tra loi tung cau hoi de MediMate hoan tat phan tich va tao goi y chuyen khoa."
+      eyebrow="Bước 3"
+      title="Câu hỏi lâm sàng"
+      description="Trả lời từng câu hỏi để MediMate hoàn tất phân tích và tạo gợi ý chuyên khoa."
     >
       <Stepper active={2} />
       <form className="question-panel" onSubmit={submit}>
         <div className="question-progress">
-          <span>Cau {currentIndex + 1}/{questions.length}</span>
+          <span>Câu {currentIndex + 1}/{questions.length}</span>
           <strong>{Math.round((answeredCount / questions.length) * 100)}%</strong>
         </div>
         <fieldset className="question-card">
           <legend>{question.questionText}</legend>
-          <div>
-            {getClinicalQuestionAnswerOptions(question).map(([answerKey, label]) => (
-              <label key={answerKey}>
-                <input
-                  type="radio"
-                  name={`answer-${question.questionId}`}
-                  checked={answers[question.questionId] === answerKey}
-                  onChange={() => updateAnswer(question.questionId, answerKey)}
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-          {question.chapterCode && <small>Nhom ICD: {question.chapterCode}</small>}
+          {question.questionOriginalText && <p className="question-original">Gốc tiếng Anh: {question.questionOriginalText}</p>}
+          {answerMode === "choice" ? (
+            <div className="question-choice-grid">
+              {getClinicalQuestionAnswerOptions(question).map(([answerKey, label]) => (
+                <label key={answerKey}>
+                  <input
+                    type="radio"
+                    name={`answer-${question.questionId}`}
+                    checked={selectedAnswer === answerKey}
+                    onChange={() => updateAnswer(question.questionId, answerKey)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <div className="boolean-prompt-list">
+              {booleanPrompts.map((prompt, promptIndex) => {
+                const selectedValue = isPlainObject(selectedAnswer) ? selectedAnswer[prompt.key] : undefined;
+                const promptLabel = prompt.label === question.questionText ? "Câu trả lời của bạn" : prompt.label;
+                const promptOriginal = prompt.original && prompt.original !== question.questionOriginalText ? prompt.original : "";
+                return (
+                  <section className="boolean-prompt" key={prompt.key} aria-labelledby={`clinical-prompt-${currentIndex}-${promptIndex}`}>
+                    <div className="boolean-prompt-copy">
+                      <span>Ý lâm sàng {promptIndex + 1}</span>
+                      <strong id={`clinical-prompt-${currentIndex}-${promptIndex}`}>{promptLabel}</strong>
+                      {promptOriginal && <small>Gốc tiếng Anh: {promptOriginal}</small>}
+                    </div>
+                    <div className="boolean-answer-group" role="radiogroup" aria-label={prompt.label}>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`answer-${question.questionId}-${prompt.key}`}
+                          checked={selectedValue === true}
+                          onChange={() => updateBooleanAnswer(question.questionId, prompt.key, true)}
+                        />
+                        <span>Có</span>
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`answer-${question.questionId}-${prompt.key}`}
+                          checked={selectedValue === false}
+                          onChange={() => updateBooleanAnswer(question.questionId, prompt.key, false)}
+                        />
+                        <span>Không</span>
+                      </label>
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+          {question.chapterCode && <small>Nhóm ICD: {question.chapterCode}</small>}
         </fieldset>
         {error && <Alert tone="danger" live>{error}</Alert>}
         <div className="assessment-actions">
-          <Button tone="secondary" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => index - 1)}>Cau truoc</Button>
+          <Button tone="secondary" disabled={currentIndex === 0} onClick={() => setCurrentIndex((index) => index - 1)}>Câu trước</Button>
           {currentIndex < questions.length - 1 ? (
-            <Button disabled={!answers[question.questionId]} onClick={() => setCurrentIndex((index) => index + 1)}>Cau tiep theo</Button>
+            <Button disabled={!questionComplete} onClick={() => setCurrentIndex((index) => index + 1)}>Câu tiếp theo</Button>
           ) : (
-            <Button type="submit" loading={status === "submitting"} loadingLabel="Dang phan tich..." disabled={!canSubmit}>Xem goi y</Button>
+            <Button type="submit" loading={status === "submitting"} loadingLabel="Đang phân tích..." disabled={!canSubmit}>Xem gợi ý</Button>
           )}
         </div>
       </form>
@@ -639,7 +709,7 @@ function ResultPage({ sessionId }) {
         saveSessionState(sessionId, next);
       })
       .catch((error) => {
-        if (active) setRemoteError(error.message || "Khong the tai ket qua phien danh gia.");
+        if (active) setRemoteError(error.message || "Không thể tải kết quả phiên đánh giá.");
       })
       .finally(() => {
         if (active) setRemoteStatus("idle");
@@ -671,16 +741,16 @@ function ResultPage({ sessionId }) {
   }
 
   if (remoteStatus === "loading") {
-    return <AssessmentShell eyebrow="Ket qua" title="Dang tai ket qua"><LoadingState label="Dang tai phien danh gia..." /></AssessmentShell>;
+    return <AssessmentShell eyebrow="Kết quả" title="Đang tải kết quả"><LoadingState label="Đang tải phiên đánh giá..." /></AssessmentShell>;
   }
 
   if (!result) {
     return (
-      <AssessmentShell eyebrow="Ket qua" title="Khong tim thay ket qua">
+      <AssessmentShell eyebrow="Kết quả" title="Không tìm thấy kết quả">
         <ErrorState
-          title="Phien danh gia khong ton tai"
-          description={remoteError || "Hay bat dau phien danh gia moi hoac mo lai tu lich su neu phien da duoc luu."}
-          action={<Button onClick={() => navigate("/assessment/history")}>Xem lich su</Button>}
+          title="Phiên đánh giá không tồn tại"
+          description={remoteError || "Hãy bắt đầu phiên đánh giá mới hoặc mở lại từ lịch sử nếu phiên đã được lưu."}
+          action={<Button onClick={() => navigate("/assessment/history")}>Xem lịch sử</Button>}
         />
       </AssessmentShell>
     );
@@ -688,40 +758,40 @@ function ResultPage({ sessionId }) {
 
   return (
     <AssessmentShell
-      eyebrow="Buoc 4"
-      title="Goi y chuyen khoa"
-      description="Tong hop ket qua phan tich lam sang, muc uu tien va co so y te lien quan."
+      eyebrow="Bước 4"
+      title="Gợi ý chuyên khoa"
+      description="Tổng hợp kết quả phân tích lâm sàng, mức ưu tiên và cơ sở y tế liên quan."
     >
       <Stepper active={3} />
-      <Alert tone={isEmergency ? "danger" : "info"} title={isEmergency ? "Can uu tien tham kham khan cap" : "Da tao goi y chuyen khoa"}>
+      <Alert tone={isEmergency ? "danger" : "info"} title={isEmergency ? "Cần ưu tiên thăm khám khẩn cấp" : "Đã tạo gợi ý chuyên khoa"}>
         {isEmergency
-          ? "Ket qua cho thay ban co the can duoc danh gia y te som. Hay lien he co so y te phu hop."
-          : "Thong tin duoi day giup ban chon chuyen khoa va co so y te phu hop cho buoc tiep theo."}
+          ? "Kết quả cho thấy bạn có thể cần được đánh giá y tế sớm. Hãy liên hệ cơ sở y tế phù hợp."
+          : "Thông tin dưới đây giúp bạn chọn chuyên khoa và cơ sở y tế phù hợp cho bước tiếp theo."}
       </Alert>
       <section className="result-grid">
         {department && (
           <article className="result-card priority">
-            <span>Chuyen khoa goi y</span>
-            <h2>{department.departmentName || "Chuyen khoa phu hop"}</h2>
-            <p>{department.reason || "Backend de xuat dua tren trieu chung va cau tra loi lam sang."}</p>
-            <strong>{confidencePercent(department.confidenceScore)}% phu hop</strong>
+            <span>Chuyên khoa gợi ý</span>
+            <h2>{department.departmentName || "Chuyên khoa phù hợp"}</h2>
+            <p>{department.reason || "Backend đề xuất dựa trên triệu chứng và câu trả lời lâm sàng."}</p>
+            <strong>{confidencePercent(department.confidenceScore)}% phù hợp</strong>
           </article>
         )}
         {primaryDiagnosis && (
           <article className="result-card">
-            <span>Kha nang can bac si kiem tra</span>
-            <h2>{primaryDiagnosis.diseaseName || "Nhan dinh tham khao"}</h2>
+            <span>Khả năng cần bác sĩ kiểm tra</span>
+            <h2>{primaryDiagnosis.diseaseName || "Nhận định tham khảo"}</h2>
             {primaryDiagnosis.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
             {primaryDiagnosis.icd10Code && <small>ICD-10: {primaryDiagnosis.icd10Code}</small>}
           </article>
         )}
         {diagnoses.length > 0 && (
           <article className="result-card">
-            <span>Cac kha nang lien quan</span>
+            <span>Các khả năng liên quan</span>
             <div className="diagnosis-stack">
               {diagnoses.slice(0, 4).map((diagnosis, index) => (
                 <p key={`${diagnosis.rank || index}-${diagnosis.diseaseName}`}>
-                  <strong>{diagnosis.rank || index + 1}. {diagnosis.diseaseName || "Nhan dinh"}</strong>
+                  <strong>{diagnosis.rank || index + 1}. {diagnosis.diseaseName || "Nhận định"}</strong>
                   <small>{confidencePercent(diagnosis.paGivenB)}%</small>
                 </p>
               ))}
@@ -729,16 +799,16 @@ function ResultPage({ sessionId }) {
           </article>
         )}
         <article className="result-card facilities">
-          <span>Co so y te lien quan</span>
-          <h2>Uu tien co so co chuyen khoa phu hop</h2>
+          <span>Cơ sở y tế liên quan</span>
+          <h2>Ưu tiên cơ sở có chuyên khoa phù hợp</h2>
           {facilities.length === 0 ? (
-            <p>Backend chua tra co so cu the cho phien nay. Ban co the mo ban do de loc theo chuyen khoa goi y.</p>
+            <p>Backend chưa trả cơ sở cụ thể cho phiên này. Bạn có thể mở bản đồ để lọc theo chuyên khoa gợi ý.</p>
           ) : (
             <div className="facility-stack">
               {facilities.slice(0, 5).map((facility) => (
                 <article key={facilityKey(facility)}>
-                  <strong>{facility.facilityName || "Co so y te"}</strong>
-                  <span>{facility.address || "Chua co dia chi"}</span>
+                  <strong>{facility.facilityName || "Cơ sở y tế"}</strong>
+                  <span>{facility.address || "Chưa có địa chỉ"}</span>
                   {facility.phone && <a href={`tel:${facility.phone}`}>{facility.phone}</a>}
                 </article>
               ))}
@@ -747,9 +817,9 @@ function ResultPage({ sessionId }) {
         </article>
       </section>
       <div className="assessment-actions">
-        <Button onClick={openMap}><MapPin size={18} /> Xem tren ban do</Button>
-        <Button tone="secondary" onClick={() => navigate("/assessment/history")}><History size={18} /> Xem lich su</Button>
-        <Button tone="secondary" onClick={() => navigate("/medical-assistant/intake")}>Danh gia moi</Button>
+        <Button onClick={openMap}><MapPin size={18} /> Xem trên bản đồ</Button>
+        <Button tone="secondary" onClick={() => navigate("/assessment/history")}><History size={18} /> Xem lịch sử</Button>
+        <Button tone="secondary" onClick={() => navigate("/medical-assistant/intake")}>Đánh giá mới</Button>
       </div>
     </AssessmentShell>
   );
@@ -767,7 +837,7 @@ function HistoryPage() {
         if (active) setSessions(getPagedItems(response));
       })
       .catch((requestError) => {
-        if (active) setError(requestError.message || "Khong the tai lich su danh gia.");
+        if (active) setError(requestError.message || "Không thể tải lịch sử đánh giá.");
       })
       .finally(() => {
         if (active) setStatus("idle");
@@ -779,17 +849,17 @@ function HistoryPage() {
 
   return (
     <AssessmentShell
-      eyebrow="Lich su"
-      title="Lich su phien danh gia trieu chung"
-      description="Du lieu lay tu endpoint my-sessions cua backend."
+      eyebrow="Lịch sử"
+      title="Lịch sử phiên đánh giá triệu chứng"
+      description="Dữ liệu lấy từ endpoint my-sessions của backend."
     >
-      {status === "loading" && <LoadingState label="Dang tai lich su danh gia..." />}
-      {error && <ErrorState title="Khong the tai lich su" description={error} action={<Button onClick={() => window.location.reload()}>Thu lai</Button>} />}
+      {status === "loading" && <LoadingState label="Đang tải lịch sử đánh giá..." />}
+      {error && <ErrorState title="Không thể tải lịch sử" description={error} action={<Button onClick={() => window.location.reload()}>Thử lại</Button>} />}
       {status !== "loading" && !error && sessions.length === 0 && (
         <EmptyState
-          title="Chua co phien danh gia nao"
-          description="Bat dau phien moi de MediMate tao cau hoi lam sang va luu lich su."
-          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Danh gia moi</Button>}
+          title="Chưa có phiên đánh giá nào"
+          description="Bắt đầu phiên mới để MediMate tạo câu hỏi lâm sàng và lưu lịch sử."
+          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Đánh giá mới</Button>}
         />
       )}
       {sessions.length > 0 && (
@@ -797,11 +867,11 @@ function HistoryPage() {
           {sessions.map((session) => (
             <article key={session.sessionId}>
               <div>
-                <strong>{session.inputText || "Phien danh gia"}</strong>
-                <span>{session.createdAt ? new Date(session.createdAt).toLocaleString("vi-VN") : "Chua co ngay tao"}</span>
+                <strong>{session.inputText || "Phiên đánh giá"}</strong>
+                <span>{session.createdAt ? new Date(session.createdAt).toLocaleString("vi-VN") : "Chưa có ngày tạo"}</span>
               </div>
-              <small>{session.status || "Dang cap nhat"}</small>
-              <Button tone="secondary" onClick={() => navigate(`/assessment/${session.sessionId}/result`)}>Xem chi tiet</Button>
+              <small>{session.status || "Đang cập nhật"}</small>
+              <Button tone="secondary" onClick={() => navigate(`/assessment/${session.sessionId}/result`)}>Xem chi tiết</Button>
             </article>
           ))}
         </div>
