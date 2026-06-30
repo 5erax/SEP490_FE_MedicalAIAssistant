@@ -28,7 +28,19 @@ function readMapQuery() {
     departmentId: params.get("departmentId") || "",
     facilityId: params.get("facilityId") || "",
     search: params.get("search") || "",
+    source: params.get("source") || "",
   };
+}
+
+function readMapRecommendationContext() {
+  if (typeof sessionStorage === "undefined") return null;
+
+  try {
+    const raw = sessionStorage.getItem("medimate.map.recommendation");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 function coordinateOrNull(value, minimum, maximum) {
@@ -125,6 +137,7 @@ function NearbyClinicPage() {
       return null;
     }
   });
+  const [recommendationContext] = useState(readMapRecommendationContext);
   const [facilities, setFacilities] = useState([]);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
   const [apiNotice, setApiNotice] = useState("");
@@ -397,10 +410,20 @@ function NearbyClinicPage() {
     if (!matchedFacility) return undefined;
 
     const timeoutId = window.setTimeout(() => {
-      openFacilityDetail(matchedFacility);
+      if (mapQuery.source === "clinical") {
+        handleCardClick(matchedFacility);
+      } else {
+        openFacilityDetail(matchedFacility);
+      }
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [facilities, loadingFacilities, openFacilityDetail, requestedFacilityId]);
+  }, [facilities, handleCardClick, loadingFacilities, mapQuery.source, openFacilityDetail, requestedFacilityId]);
+
+  useEffect(() => {
+    if (mapQuery.source !== "clinical" || requestedFacilityId || selectedFacility || mappableFacilities.length === 0) return;
+    const timeoutId = window.setTimeout(() => handleCardClick(mappableFacilities[0]), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [handleCardClick, mapQuery.source, mappableFacilities, requestedFacilityId, selectedFacility]);
 
   useEffect(() => {
     if (!detailPanelOpen) return undefined;
@@ -599,6 +622,7 @@ function NearbyClinicPage() {
           mapRenderKey={mapRenderKey}
           mapStatus={mapStatus}
           selectedFacility={selectedFacility}
+          recommendationContext={recommendationContext}
           userLocation={userLocation}
           viewState={viewState}
           onError={handleMapError}
@@ -1005,6 +1029,66 @@ const styles = `
 }
 .popup-card {
   max-width: 230px;
+}
+.popup-ai-summary {
+  display: grid;
+  gap: 6px;
+  max-width: 280px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid rgba(8, 127, 140, .18);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f2fbfa, #fff);
+  padding: 10px;
+}
+.popup-ai-summary small {
+  width: fit-content;
+  border-radius: 999px;
+  background: #d8f3bd;
+  color: #244611;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.popup-ai-summary b {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.2;
+}
+.popup-ai-summary em {
+  width: fit-content;
+  border-radius: 999px;
+  background: #fff7d8;
+  color: #6b5100;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+}
+.popup-ai-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.popup-ai-summary ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.popup-ai-summary li {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 850;
 }
 .popup-card button:focus-visible,
 .facility-select-button:focus-visible,

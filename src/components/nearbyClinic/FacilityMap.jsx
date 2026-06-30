@@ -50,6 +50,7 @@ export default function FacilityMap({
   mapRenderKey,
   mapStatus,
   selectedFacility,
+  recommendationContext,
   userLocation,
   viewState,
   onError,
@@ -61,6 +62,19 @@ export default function FacilityMap({
   onViewDetail,
 }) {
   const popupActionRef = useRef(null);
+  const primaryDiagnosis = recommendationContext?.primaryDiagnosis;
+  const recommendedDepartment = recommendationContext?.recommendedDepartment;
+  const diagnoses = Array.isArray(recommendationContext?.diagnoses)
+    ? recommendationContext.diagnoses
+    : [];
+  const recommendedFacility = Array.isArray(recommendationContext?.recommendedFacilities)
+    ? recommendationContext.recommendedFacilities.find((facility) => (
+      String(facility.facilityId ?? facility.id) === String(selectedFacility?.facilityId)
+    ))
+    : null;
+  const confidence = Math.round(Number(primaryDiagnosis?.paGivenB ?? recommendedDepartment?.confidenceScore ?? 0) <= 1
+    ? Number(primaryDiagnosis?.paGivenB ?? recommendedDepartment?.confidenceScore ?? 0) * 100
+    : Number(primaryDiagnosis?.paGivenB ?? recommendedDepartment?.confidenceScore ?? 0));
 
   useEffect(() => {
     if (!selectedFacility?.hasValidCoordinates) return undefined;
@@ -126,6 +140,25 @@ export default function FacilityMap({
                 >
                   <strong>{selectedFacility.facilityName}</strong>
                   <span>{selectedFacility.address}</span>
+                  {recommendationContext && (
+                    <div className="popup-ai-summary">
+                      <small>Gợi ý từ AI</small>
+                      {primaryDiagnosis?.diseaseName && <b>{primaryDiagnosis.diseaseName}</b>}
+                      {recommendedDepartment?.departmentName && <span>{recommendedDepartment.departmentName}</span>}
+                      {Number.isFinite(confidence) && confidence > 0 && <em>{confidence}% phù hợp</em>}
+                      {primaryDiagnosis?.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
+                      {diagnoses.length > 0 && (
+                        <ul>
+                          {diagnoses.slice(0, 3).map((diagnosis) => (
+                            <li key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
+                              {diagnosis.diseaseName}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {recommendedFacility?.reason && <p>{recommendedFacility.reason}</p>}
+                    </div>
+                  )}
                   <span>{selectedFacility.phoneLabel}</span>
                   {selectedFacility.website && <a href={selectedFacility.website} target="_blank" rel="noreferrer">Website cơ sở</a>}
                   <button ref={popupActionRef} type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClipboardPlus, MapPin, Send, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -153,6 +153,11 @@ function getFacilityId(facility) {
   return facility?.facilityId || facility?.id || "";
 }
 
+function saveMapRecommendationContext(context) {
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.setItem("medimate.map.recommendation", JSON.stringify(context));
+}
+
 function formatDistance(distanceKm) {
   if (distanceKm == null) return "";
   if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
@@ -208,6 +213,7 @@ function isPlainObject(value) {
 
 export default function DashboardPage() {
   const auth = getStoredAuth();
+  const routedResultRef = useRef("");
   const {
     answeredCount,
     answers,
@@ -302,14 +308,33 @@ export default function DashboardPage() {
     const facilityId = getFacilityId(topFacility);
     const search = topFacility?.facilityName || recommendedDepartment?.departmentName || primaryDiagnosis?.diseaseName || input;
 
+    params.set("source", "clinical");
     if (facilityId) params.set("facilityId", facilityId);
     if (recommendedDepartment?.departmentId) params.set("departmentId", recommendedDepartment.departmentId);
     if (search) params.set("search", search);
     if (sessionId) params.set("sessionId", sessionId);
 
+    saveMapRecommendationContext({
+      symptom: input,
+      sessionId,
+      primaryDiagnosis,
+      diagnoses,
+      recommendedDepartment,
+      recommendedFacilities: sortedFacilities,
+      selectedFacilityId: facilityId,
+    });
+
     const query = params.toString();
     navigate(query ? `/map?${query}` : "/map");
   }
+
+  useEffect(() => {
+    if (status !== "result" || !result) return;
+    const routeKey = `${sessionId || "no-session"}:${primaryDiagnosis?.diseaseName || recommendedDepartment?.departmentName || "result"}`;
+    if (routedResultRef.current === routeKey) return;
+    routedResultRef.current = routeKey;
+    openFacilities();
+  }, [result, status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function goToPreviousQuestion() {
     setCurrentQuestionIndex((index) => Math.max(0, index - 1));
