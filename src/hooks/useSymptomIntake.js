@@ -140,17 +140,13 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
     setStatus("submitting");
     try {
       const payload = buildClinicalQuestionAnswerItems(questions, answers);
-      const [recommendationResponse, diagnosisResponse] = await Promise.all([
-        symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload),
-        symptomAnalysisApi.submitDiagnosis(sessionId, payload),
-      ]);
-      const recommendation = readResultPayload(recommendationResponse) ?? {};
+      const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
       const diagnosis = readResultPayload(diagnosisResponse) ?? {};
       const diagnoses = Array.isArray(diagnosis.diagnoses) ? diagnosis.diagnoses : [];
       setResult({
-        ...recommendation,
+        ...diagnosis,
         diagnoses,
-        primaryDiagnosis: diagnoses[0] ?? recommendation.primaryDiagnosis ?? null,
+        primaryDiagnosis: diagnoses[0] ?? diagnosis.primaryDiagnosis ?? null,
         diagnosisModel: diagnosis.model ?? null,
       });
       setStatus("result");

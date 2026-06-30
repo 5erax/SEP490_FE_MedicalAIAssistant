@@ -419,11 +419,8 @@ function QuestionsPage({ sessionId }) {
     setError("");
 
     try {
-      const recommendationResponse = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
       const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
 
-      const recommendationData = unwrapApiData(recommendationResponse) ?? {};
-      const recommendationAnalysis = readAnalysisPayload(recommendationResponse) ?? {};
       const diagnosisData = readAnalysisPayload(diagnosisResponse) ?? {};
 
       const diagnosisItems = Array.isArray(diagnosisData?.diagnoses)
@@ -431,12 +428,12 @@ function QuestionsPage({ sessionId }) {
         : [];
 
       const result = {
-        ...recommendationAnalysis,
-        answers: recommendationData.answers ?? recommendationAnalysis.answers ?? payload,
-        diagnoses: diagnosisItems.length > 0 ? diagnosisItems : getDiagnoses(recommendationAnalysis),
-        primaryDiagnosis: diagnosisItems[0] ?? getPrimaryDiagnosis(recommendationAnalysis),
-        diagnosisModel: diagnosisData?.model ?? recommendationAnalysis?.model ?? null,
-        diagnosisStatus: diagnosisData?.status ?? recommendationAnalysis?.status ?? null,
+        ...diagnosisData,
+        answers: diagnosisData.answers ?? payload,
+        diagnoses: diagnosisItems.length > 0 ? diagnosisItems : getDiagnoses(diagnosisData),
+        primaryDiagnosis: diagnosisItems[0] ?? getPrimaryDiagnosis(diagnosisData),
+        diagnosisModel: diagnosisData?.model ?? null,
+        diagnosisStatus: diagnosisData?.status ?? null,
       };
 
       const next = { ...session, answers, result };

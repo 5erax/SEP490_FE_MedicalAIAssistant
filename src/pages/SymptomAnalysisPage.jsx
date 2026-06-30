@@ -228,17 +228,13 @@ export default function SymptomAnalysisPage() {
 
     try {
       const payload = buildClinicalQuestionAnswerItems(questions, answers);
-      const [recommendationResponse, diagnosisResponse] = await Promise.all([
-        symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload),
-        symptomAnalysisApi.submitDiagnosis(sessionId, payload),
-      ]);
-      const recommendation = readResultPayload(recommendationResponse) ?? {};
+      const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
       const diagnosis = readResultPayload(diagnosisResponse) ?? {};
       const diagnosisItems = Array.isArray(diagnosis.diagnoses) ? diagnosis.diagnoses : [];
       setResult({
-        ...recommendation,
+        ...diagnosis,
         diagnoses: diagnosisItems,
-        primaryDiagnosis: diagnosisItems[0] ?? recommendation.primaryDiagnosis ?? null,
+        primaryDiagnosis: diagnosisItems[0] ?? diagnosis.primaryDiagnosis ?? null,
         diagnosisModel: diagnosis.model ?? null,
       });
       setStatus("result");
