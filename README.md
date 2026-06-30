@@ -145,6 +145,11 @@ Không nên giữ địa chỉ backend cố định trong `vercel.json` khi chuy
 - [Kiến trúc và chiến lược frontend](docs/frontend-architecture/README.md)
 - [UI/UX](docs/ui-ux/README.md)
 
+## Đóng góp
+
+- [Hướng dẫn đóng góp](CONTRIBUTING.md)
+- [Quy tắc ứng xử](CODE_OF_CONDUCT.md)
+
 ## Bảo mật
 
 Không báo cáo lỗ hổng bảo mật trong issue công khai. Vui lòng đọc [SECURITY.md](SECURITY.md) để biết phạm vi hỗ trợ và cách gửi báo cáo riêng tư.
