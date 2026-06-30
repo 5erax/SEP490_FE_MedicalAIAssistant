@@ -23,6 +23,36 @@ class MapErrorBoundary extends Component {
   }
 }
 
+function confidencePercent(value) {
+  const numeric = Number(value ?? 0);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
+}
+
+function getDiagnosisField(diagnosis, camelKey, pascalKey, fallback = "") {
+  return diagnosis?.[camelKey] ?? diagnosis?.[pascalKey] ?? fallback;
+}
+
+function getDiagnosisName(diagnosis) {
+  return getDiagnosisField(diagnosis, "diseaseName", "DiseaseName", "Chưa xác định");
+}
+
+function getDiagnosisRank(diagnosis, index = 0) {
+  return Number(getDiagnosisField(diagnosis, "rank", "Rank", index + 1)) || index + 1;
+}
+
+function getDiagnosisIcd(diagnosis) {
+  return getDiagnosisField(diagnosis, "icd10Code", "Icd10Code", "");
+}
+
+function getDiagnosisReasoning(diagnosis) {
+  return getDiagnosisField(diagnosis, "clinicalReasoning", "ClinicalReasoning", "");
+}
+
+function getDiagnosisPAGivenB(diagnosis) {
+  return Number(getDiagnosisField(diagnosis, "paGivenB", "PAGivenB", 0)) || 0;
+}
+
 function AccessibleFacilityMarker({ facility, selected, onSelect }) {
   return (
     <Marker
@@ -67,14 +97,21 @@ export default function FacilityMap({
   const diagnoses = Array.isArray(recommendationContext?.diagnoses)
     ? recommendationContext.diagnoses
     : [];
+  const diagnosisRows = diagnoses
+    .map((diagnosis, index) => ({
+      rank: getDiagnosisRank(diagnosis, index),
+      name: getDiagnosisName(diagnosis),
+      icd10Code: getDiagnosisIcd(diagnosis),
+      paGivenB: getDiagnosisPAGivenB(diagnosis),
+      probability: confidencePercent(getDiagnosisPAGivenB(diagnosis)),
+    }))
+    .sort((left, right) => left.rank - right.rank);
   const recommendedFacility = Array.isArray(recommendationContext?.recommendedFacilities)
     ? recommendationContext.recommendedFacilities.find((facility) => (
       String(facility.facilityId ?? facility.id) === String(selectedFacility?.facilityId)
     ))
     : null;
-  const confidence = Math.round(Number(primaryDiagnosis?.paGivenB ?? recommendedDepartment?.confidenceScore ?? 0) <= 1
-    ? Number(primaryDiagnosis?.paGivenB ?? recommendedDepartment?.confidenceScore ?? 0) * 100
-    : Number(primaryDiagnosis?.paGivenB ?? recommendedDepartment?.confidenceScore ?? 0));
+  const confidence = confidencePercent(getDiagnosisPAGivenB(primaryDiagnosis) || recommendedDepartment?.confidenceScore);
 
   useEffect(() => {
     if (!selectedFacility?.hasValidCoordinates) return undefined;
@@ -142,19 +179,39 @@ export default function FacilityMap({
                   <span>{selectedFacility.address}</span>
                   {recommendationContext && (
                     <div className="popup-ai-summary">
-                      <small>Gợi ý từ AI</small>
-                      {primaryDiagnosis?.diseaseName && <b>{primaryDiagnosis.diseaseName}</b>}
-                      {recommendedDepartment?.departmentName && <span>{recommendedDepartment.departmentName}</span>}
+                      <small>Chẩn đoán lâm sàng</small>
+                      {primaryDiagnosis && <b>{getDiagnosisName(primaryDiagnosis)}</b>}
                       {Number.isFinite(confidence) && confidence > 0 && <em>{confidence}% phù hợp</em>}
-                      {primaryDiagnosis?.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
-                      {diagnoses.length > 0 && (
-                        <ul>
-                          {diagnoses.slice(0, 3).map((diagnosis) => (
-                            <li key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
-                              {diagnosis.diseaseName}
-                            </li>
-                          ))}
-                        </ul>
+                      {getDiagnosisReasoning(primaryDiagnosis) && <p>{getDiagnosisReasoning(primaryDiagnosis)}</p>}
+                      {diagnosisRows.length > 0 && (
+                        <>
+                          <div className="popup-diagnosis-chart">
+                            {diagnosisRows.slice(0, 4).map((row) => (
+                              <div key={`${row.rank}-${row.name}`}>
+                                <span>#{row.rank}</span>
+                                <strong>{row.name}</strong>
+                                <i style={{ width: `${row.probability}%` }} />
+                                <em>{row.probability}%</em>
+                              </div>
+                            ))}
+                          </div>
+                          <table className="popup-diagnosis-table">
+                            <thead>
+                              <tr>
+                                <th>Bệnh</th>
+                                <th>PAGivenB</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {diagnosisRows.slice(0, 4).map((row) => (
+                                <tr key={`${row.rank}-${row.name}-popup-table`}>
+                                  <td>{row.name}</td>
+                                  <td>{row.paGivenB.toFixed(4)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </>
                       )}
                       {recommendedFacility?.reason && <p>{recommendedFacility.reason}</p>}
                     </div>

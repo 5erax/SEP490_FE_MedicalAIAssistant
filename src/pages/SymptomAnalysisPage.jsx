@@ -230,12 +230,14 @@ export default function SymptomAnalysisPage() {
       const payload = buildClinicalQuestionAnswerItems(questions, answers);
       const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
       const diagnosis = readResultPayload(diagnosisResponse) ?? {};
-      const diagnosisItems = Array.isArray(diagnosis.diagnoses) ? diagnosis.diagnoses : [];
+      const diagnosisItems = Array.isArray(diagnosis.diagnoses)
+        ? diagnosis.diagnoses
+        : Array.isArray(diagnosis.Diagnoses) ? diagnosis.Diagnoses : [];
       setResult({
         ...diagnosis,
         diagnoses: diagnosisItems,
-        primaryDiagnosis: diagnosisItems[0] ?? diagnosis.primaryDiagnosis ?? null,
-        diagnosisModel: diagnosis.model ?? null,
+        primaryDiagnosis: diagnosisItems[0] ?? diagnosis.primaryDiagnosis ?? diagnosis.PrimaryDiagnosis ?? null,
+        diagnosisModel: diagnosis.model ?? diagnosis.Model ?? null,
       });
       setStatus("result");
     } catch (requestError) {

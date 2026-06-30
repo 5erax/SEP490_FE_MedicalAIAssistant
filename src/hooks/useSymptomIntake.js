@@ -142,12 +142,14 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
       const payload = buildClinicalQuestionAnswerItems(questions, answers);
       const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
       const diagnosis = readResultPayload(diagnosisResponse) ?? {};
-      const diagnoses = Array.isArray(diagnosis.diagnoses) ? diagnosis.diagnoses : [];
+      const diagnoses = Array.isArray(diagnosis.diagnoses)
+        ? diagnosis.diagnoses
+        : Array.isArray(diagnosis.Diagnoses) ? diagnosis.Diagnoses : [];
       setResult({
         ...diagnosis,
         diagnoses,
-        primaryDiagnosis: diagnoses[0] ?? diagnosis.primaryDiagnosis ?? null,
-        diagnosisModel: diagnosis.model ?? null,
+        primaryDiagnosis: diagnoses[0] ?? diagnosis.primaryDiagnosis ?? diagnosis.PrimaryDiagnosis ?? null,
+        diagnosisModel: diagnosis.model ?? diagnosis.Model ?? null,
       });
       setStatus("result");
     } catch (apiError) {

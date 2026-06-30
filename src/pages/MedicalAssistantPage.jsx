@@ -425,7 +425,7 @@ function QuestionsPage({ sessionId }) {
 
       const diagnosisItems = Array.isArray(diagnosisData?.diagnoses)
         ? diagnosisData.diagnoses
-        : [];
+        : Array.isArray(diagnosisData?.Diagnoses) ? diagnosisData.Diagnoses : [];
 
       const result = {
         ...diagnosisData,

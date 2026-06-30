@@ -19,6 +19,30 @@ function confidencePercent(value) {
   return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
 }
 
+function getDiagnosisField(diagnosis, camelKey, pascalKey, fallback = "") {
+  return diagnosis?.[camelKey] ?? diagnosis?.[pascalKey] ?? fallback;
+}
+
+function getDiagnosisName(diagnosis) {
+  return getDiagnosisField(diagnosis, "diseaseName", "DiseaseName", "Chưa xác định");
+}
+
+function getDiagnosisRank(diagnosis, index = 0) {
+  return Number(getDiagnosisField(diagnosis, "rank", "Rank", index + 1)) || index + 1;
+}
+
+function getDiagnosisIcd(diagnosis) {
+  return getDiagnosisField(diagnosis, "icd10Code", "Icd10Code", "");
+}
+
+function getDiagnosisReasoning(diagnosis) {
+  return getDiagnosisField(diagnosis, "clinicalReasoning", "ClinicalReasoning", "");
+}
+
+function getDiagnosisPAGivenB(diagnosis) {
+  return Number(getDiagnosisField(diagnosis, "paGivenB", "PAGivenB", 0)) || 0;
+}
+
 function unwrapPayload(response) {
   return response?.data?.data ?? response?.data ?? response;
 }
@@ -246,6 +270,16 @@ export default function DashboardPage() {
 
   const primaryDiagnosis = result?.primaryDiagnosis;
   const diagnoses = result?.diagnoses ?? [];
+  const diagnosisRows = diagnoses
+    .map((diagnosis, index) => ({
+      diagnosis,
+      rank: getDiagnosisRank(diagnosis, index),
+      name: getDiagnosisName(diagnosis),
+      icd10Code: getDiagnosisIcd(diagnosis),
+      paGivenB: getDiagnosisPAGivenB(diagnosis),
+      probability: confidencePercent(getDiagnosisPAGivenB(diagnosis)),
+    }))
+    .sort((left, right) => left.rank - right.rank);
   const recommendedDepartment = result?.recommendedDepartment;
   const sortedFacilities = [...(result?.recommendedFacilities ?? [])]
     .sort((left, right) => scoreFacility(right, recommendedDepartment, userLocation) - scoreFacility(left, recommendedDepartment, userLocation));
@@ -306,7 +340,7 @@ export default function DashboardPage() {
     const topFacility = sortedFacilities[0] ?? null;
     const params = new URLSearchParams();
     const facilityId = getFacilityId(topFacility);
-    const search = topFacility?.facilityName || recommendedDepartment?.departmentName || primaryDiagnosis?.diseaseName || input;
+    const search = topFacility?.facilityName || recommendedDepartment?.departmentName || getDiagnosisName(primaryDiagnosis) || input;
 
     params.set("source", "clinical");
     if (facilityId) params.set("facilityId", facilityId);
@@ -330,7 +364,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (status !== "result" || !result) return;
-    const routeKey = `${sessionId || "no-session"}:${primaryDiagnosis?.diseaseName || recommendedDepartment?.departmentName || "result"}`;
+    const routeKey = `${sessionId || "no-session"}:${getDiagnosisName(primaryDiagnosis) || recommendedDepartment?.departmentName || "result"}`;
     if (routedResultRef.current === routeKey) return;
     routedResultRef.current = routeKey;
     openFacilities();
@@ -577,39 +611,50 @@ export default function DashboardPage() {
         {status === "result" && (
           <section className="studio-result-panel" aria-label="Nhận định tham khảo và gợi ý bệnh viện">
             <article className="studio-result-card primary">
-              <span>Chẩn đoán lâm sàng tham khảo</span>
-              <h2>{primaryDiagnosis?.diseaseName || "Chưa có nhận định chính"}</h2>
-              {primaryDiagnosis?.clinicalReasoning && <p>{primaryDiagnosis.clinicalReasoning}</p>}
+              <span>Chẩn đoán lâm sàng</span>
+              <h2>{getDiagnosisName(primaryDiagnosis)}</h2>
+              {getDiagnosisReasoning(primaryDiagnosis) && <p>{getDiagnosisReasoning(primaryDiagnosis)}</p>}
               <div className="studio-result-meta">
-                {primaryDiagnosis?.icd10Code && <small>ICD-10: {primaryDiagnosis.icd10Code}</small>}
-                {primaryDiagnosis && <strong>{confidencePercent(primaryDiagnosis.paGivenB)}% phù hợp</strong>}
+                {getDiagnosisIcd(primaryDiagnosis) && <small>ICD-10: {getDiagnosisIcd(primaryDiagnosis)}</small>}
+                {primaryDiagnosis && <strong>{confidencePercent(getDiagnosisPAGivenB(primaryDiagnosis))}% phù hợp</strong>}
               </div>
               <small>Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.</small>
             </article>
 
-            {recommendedDepartment && (
-              <article className="studio-result-card">
-                <span>Chuyên khoa nên ưu tiên</span>
-                <h2>{recommendedDepartment.departmentName || "Chuyên khoa phù hợp"}</h2>
-                <p>{recommendedDepartment.reason || "AI đề xuất dựa trên triệu chứng và câu trả lời của bạn."}</p>
-                <div className="studio-confidence" aria-label={`Độ phù hợp ${confidencePercent(recommendedDepartment.confidenceScore)}%`}>
-                  <i style={{ width: `${confidencePercent(recommendedDepartment.confidenceScore)}%` }} />
-                </div>
-                <strong>{confidencePercent(recommendedDepartment.confidenceScore)}% phù hợp</strong>
-              </article>
-            )}
-
-            {diagnoses.length > 0 && (
-              <article className="studio-result-card">
-                <span>Khả năng liên quan</span>
-                <div className="studio-diagnosis-list">
-                  {diagnoses.slice(0, 4).map((diagnosis) => (
-                    <p key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
-                      <strong><span>{diagnosis.rank}</span>{diagnosis.diseaseName}</strong>
-                      <small>{confidencePercent(diagnosis.paGivenB)}%</small>
-                    </p>
+            {diagnosisRows.length > 0 && (
+              <article className="studio-result-card diagnosis-analytics">
+                <span>Thứ tự chẩn đoán</span>
+                <h2>Xếp hạng bệnh theo PAGivenB</h2>
+                <div className="diagnosis-bar-chart" aria-label="Biểu đồ cột thứ tự bệnh">
+                  {diagnosisRows.map((row) => (
+                    <div className="diagnosis-bar-row" key={`${row.rank}-${row.name}`}>
+                      <strong>#{row.rank}</strong>
+                      <span>{row.name}</span>
+                      <i style={{ width: `${row.probability}%` }} />
+                      <em>{row.probability}%</em>
+                    </div>
                   ))}
                 </div>
+                <table className="diagnosis-probability-table">
+                  <thead>
+                    <tr>
+                      <th>Thứ tự</th>
+                      <th>Bệnh</th>
+                      <th>ICD-10</th>
+                      <th>PAGivenB</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {diagnosisRows.map((row) => (
+                      <tr key={`${row.rank}-${row.name}-table`}>
+                        <td>#{row.rank}</td>
+                        <td>{row.name}</td>
+                        <td>{row.icd10Code || "Chưa có"}</td>
+                        <td>{row.paGivenB.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </article>
             )}
 

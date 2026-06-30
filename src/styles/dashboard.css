@@ -533,6 +533,91 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   padding-bottom: 0;
 }
 
+.diagnosis-analytics {
+  grid-column: 1 / -1;
+}
+
+.diagnosis-bar-chart {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.diagnosis-bar-row {
+  display: grid;
+  grid-template-columns: 46px minmax(150px, 1fr) minmax(180px, 2fr) 56px;
+  align-items: center;
+  gap: 12px;
+}
+
+.diagnosis-bar-row > strong {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-primary);
+  font-size: 12px;
+}
+
+.diagnosis-bar-row > span {
+  min-width: 0;
+  color: var(--color-ink);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.diagnosis-bar-row > i {
+  display: block;
+  height: 18px;
+  min-width: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--color-primary), #087f8c);
+  box-shadow: 0 8px 18px rgba(8, 127, 140, 0.16);
+}
+
+.diagnosis-bar-row > em {
+  color: var(--color-muted);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 950;
+  text-align: right;
+}
+
+.diagnosis-probability-table {
+  width: 100%;
+  margin-top: 18px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.diagnosis-probability-table th,
+.diagnosis-probability-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink);
+  font-size: 13px;
+  text-align: left;
+}
+
+.diagnosis-probability-table th {
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.diagnosis-probability-table tr:last-child td {
+  border-bottom: 0;
+}
+
 @keyframes studioFadeUp {
   from {
     opacity: 0;
@@ -660,6 +745,20 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
   .studio-result-panel {
     grid-template-columns: 1fr;
+  }
+
+  .diagnosis-bar-row {
+    grid-template-columns: 40px minmax(0, 1fr) 52px;
+  }
+
+  .diagnosis-bar-row > i {
+    grid-column: 2 / -1;
+    width: 100% !important;
+  }
+
+  .diagnosis-probability-table {
+    display: block;
+    overflow-x: auto;
   }
 }
 .studio-question-actions { display: flex; flex-wrap: wrap; gap: 10px; }

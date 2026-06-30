@@ -1090,6 +1090,69 @@ const styles = `
   font-size: 10px;
   font-weight: 850;
 }
+.popup-diagnosis-chart {
+  display: grid;
+  gap: 7px;
+}
+.popup-diagnosis-chart div {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 7px;
+}
+.popup-diagnosis-chart span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 950;
+}
+.popup-diagnosis-chart strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.popup-diagnosis-chart i {
+  grid-column: 2 / -1;
+  display: block;
+  height: 7px;
+  min-width: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--lime), var(--teal));
+}
+.popup-diagnosis-chart em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 950;
+  text-align: right;
+}
+.popup-diagnosis-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 10px;
+}
+.popup-diagnosis-table th,
+.popup-diagnosis-table td {
+  padding: 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.popup-diagnosis-table th {
+  color: var(--muted);
+  font-weight: 950;
+}
+.popup-diagnosis-table tr:last-child td {
+  border-bottom: 0;
+}
 .popup-card button:focus-visible,
 .facility-select-button:focus-visible,
 .facility-actions button:focus-visible,
