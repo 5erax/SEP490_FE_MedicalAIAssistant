@@ -13,7 +13,6 @@ export default function AdminUsersSection({
   isApproved,
   loading,
   message,
-  onApprove,
   onDelete,
   onLoadPage,
   onPageSizeChange,
@@ -49,7 +48,6 @@ export default function AdminUsersSection({
       header: "Thao tác",
       render: (item) => (
         <div className="record-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onApprove(item.identityId)}>Duyệt</button>
           <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(item.identityId)}>Xóa</button>
         </div>
       ),
@@ -61,8 +59,8 @@ export default function AdminUsersSection({
       <div className="panel-title-row">
         <div>
           <p className="eyebrow">Tài khoản</p>
-          <h2>Tài khoản chờ duyệt</h2>
-          <p className="muted-text">Chỉ hiển thị các tài khoản chưa được duyệt để admin xử lý nhanh hơn.</p>
+          <h2>Quản lý người dùng</h2>
+          <p className="muted-text">Theo dõi trạng thái tài khoản và xử lý các tài khoản không còn phù hợp.</p>
         </div>
         <button className="btn btn-ghost btn-small" type="button" onClick={() => onLoadPage()}>Tải lại</button>
       </div>
@@ -90,18 +88,18 @@ export default function AdminUsersSection({
         />
       ) : (
         <DataTable
-          caption="Danh sách tài khoản đang chờ quản trị viên duyệt"
+          caption="Danh sách tài khoản trong hệ thống"
           columns={columns}
           rows={rows}
           getRowKey={(item) => item.identityId}
-          emptyState={<EmptyState title="Không có tài khoản chờ duyệt" description="Các tài khoản đã duyệt hoặc đang hoạt động đã được ẩn khỏi danh sách này." />}
+          emptyState={<EmptyState title="Không có tài khoản" description="Không tìm thấy tài khoản phù hợp với bộ lọc hiện tại." />}
         />
       )}
 
       {!error && (
         <div className="pagination-row">
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => onLoadPage(pageInfo.pageNumber - 1)}>Trước</button>
-          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {rows.length} tài khoản cần duyệt</span>
+          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {rows.length} tài khoản</span>
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => onLoadPage(pageInfo.pageNumber + 1)}>Sau</button>
         </div>
       )}
