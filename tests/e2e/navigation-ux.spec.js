@@ -492,7 +492,7 @@ test.describe("global navigation UX", () => {
     await expect(page.locator(".profile-setup-heading h2")).toBeVisible();
   });
 
-  test("completed patient must pass safety gate before assessment intake", async ({ page }) => {
+  test("completed patient can open assessment intake directly", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -505,7 +505,7 @@ test.describe("global navigation UX", () => {
 
     await openRoute(page, "/symptom");
     await expect(page).toHaveURL(/\/symptom$/);
-    await expect(page.locator(".assessment-header h1")).toContainText("Hay hoan tat safety gate");
+    await expect(page.locator(".assessment-header h1")).toContainText("Nhap trieu chung co cau truc");
   });
 
   test("safety gate confirmation opens assessment intake", async ({ page }) => {
