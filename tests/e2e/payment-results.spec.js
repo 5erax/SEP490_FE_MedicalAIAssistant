@@ -38,7 +38,7 @@ async function mockRefreshPremium(page) {
 }
 
 test("payment return verifies the order and opens the activated experience", async ({ page }) => {
-  await page.route("**/api/payments/payos-status/987654321", (route) => route.fulfill({
+  await page.route("**/api/payments/payos-return**", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
@@ -64,36 +64,36 @@ test("payment return verifies the order and opens the activated experience", asy
   await expect(page).toHaveURL(/\/map\?search=tim%20mach#results$/);
 });
 
-test("payment cancel verifies backend status before showing a retry path", async ({ page }) => {
-  let statusRequests = 0;
-  await page.route("**/api/payments/payos-status/123456789", (route) => {
-    statusRequests += 1;
+test("payment cancel calls the backend cancel callback before showing retry actions", async ({ page }) => {
+  let cancelRequests = 0;
+  await page.route("**/api/payments/payos-cancel**", (route) => {
+    cancelRequests += 1;
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
         data: {
           orderCode: "123456789",
-          paymentStatus: "Pending",
-          subscriptionStatus: "Pending",
+          paymentStatus: "Cancelled",
+          subscriptionStatus: "Cancelled",
           isPaid: false,
           isActive: false,
-          isCancelled: false,
+          isCancelled: true,
         },
       }),
     });
   });
 
   await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Cho PayOS xac nhan mot chut." })).toBeVisible();
-  await expect.poll(() => statusRequests).toBeGreaterThan(0);
-  await expect(page.getByText("Dang xac minh", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Ve bang gia" }).click();
+  await expect(page.getByRole("heading", { name: "Giao dich da duoc xac nhan huy." })).toBeVisible();
+  await expect.poll(() => cancelRequests).toBeGreaterThan(0);
+  await expect(page.getByText("Da huy", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Chon lai goi" }).click();
   await expect(page).toHaveURL(/\/pricing$/);
 });
 
 test("payment cancel trusts backend success over the cancel URL", async ({ page }) => {
-  await page.route("**/api/payments/payos-status/123456789", (route) => route.fulfill({
+  await page.route("**/api/payments/payos-cancel**", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,

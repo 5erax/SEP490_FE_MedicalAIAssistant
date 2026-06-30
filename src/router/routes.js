@@ -44,13 +44,13 @@ const BASE_ROUTES = [
   {
     id: "patient.dashboard",
     path: "/dashboard",
-    title: "Dashboard bệnh nhân | MediMate AI",
+    title: "Gợi ý chuyên khoa | MediMate AI",
     access: "auth",
     shell: "patient",
     navigation: {
       shell: "patient",
-      label: "Dashboard",
-      hint: "Triệu chứng chuyên khoa",
+      label: "Gợi ý chuyên khoa",
+      hint: "Theo triệu chứng",
       icon: "dashboard",
       order: 10,
       mobile: true,
@@ -63,10 +63,10 @@ const BASE_ROUTES = [
   {
     id: "assistant.intake",
     path: "/symptom",
-    title: "Nhập triệu chứng | MediMate AI",
+    title: "Phân tích lâm sàng | MediMate AI",
     access: "auth",
     shell: "patient",
-    navigation: { shell: "patient", label: "Đánh giá triệu chứng", hint: "Bắt đầu phiên mới", icon: "symptom", order: 40 },
+    navigation: { shell: "patient", label: "Phân tích lâm sàng", hint: "Câu hỏi lâm sàng", icon: "symptom", order: 40 },
     aliases: ["/medical-assistant/intake"],
   },
   {

@@ -149,7 +149,7 @@ function AssessmentShell({ eyebrow, title, description, children }) {
 }
 
 function Stepper({ active }) {
-  const steps = ["An toan", "Nhap trieu chung", "Cau hoi", "Ket qua"];
+  const steps = ["An toan", "Du lieu", "Cau hoi", "Ket qua"];
   return (
     <ol className="assessment-stepper" aria-label="Tien trinh danh gia">
       {steps.map((step, index) => (
@@ -166,8 +166,8 @@ function EntryPage() {
   return (
     <AssessmentShell
       eyebrow="MediMate AI"
-      title="Ho tro danh gia trieu chung va dieu huong cham soc y te"
-      description="MediMate giup ban mo ta trieu chung co cau truc, tra loi mot so cau hoi lam sang va tim chuyen khoa phu hop. Ket qua chi mang tinh dinh huong, khong thay the bac si."
+      title="Phan tich lam sang va goi y chuyen khoa"
+      description="MediMate giup ban mo ta van de suc khoe co cau truc, tra loi cau hoi lam sang va tim chuyen khoa phu hop de chuan bi buoc cham soc tiep theo."
     >
       <div className="assessment-grid">
         <article>
@@ -187,7 +187,7 @@ function EntryPage() {
         </article>
       </div>
       <div className="assessment-actions">
-        <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>Bat dau danh gia trieu chung</Button>
+        <Button size="lg" onClick={() => navigate("/medical-assistant/safety")}>Bat dau phan tich lam sang</Button>
         <Button tone="secondary" onClick={() => navigate("/map")}>Tim co so y te</Button>
       </div>
     </AssessmentShell>
@@ -370,10 +370,27 @@ function IntakePage() {
   return (
     <AssessmentShell
       eyebrow="Bước 2"
-      title="Nhập triệu chứng để tạo câu hỏi lâm sàng"
-      description="Mô tả ngắn gọn vấn đề chính. MediMate sẽ dùng thông tin này để đề xuất câu hỏi tiếp theo trước khi đưa ra định hướng chăm sóc."
+      title="Phân tích lâm sàng"
+      description="Nhập thông tin chính về tình trạng hiện tại để MediMate tạo bộ câu hỏi lâm sàng và chuẩn bị gợi ý chuyên khoa."
     >
       <Stepper active={1} />
+      <section className="clinical-overview" aria-label="Tóm tắt phân tích lâm sàng">
+        <article>
+          <span>01</span>
+          <strong>Dữ liệu đầu vào</strong>
+          <p>Tập trung vào triệu chứng chính, diễn tiến và bối cảnh sức khỏe liên quan.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <strong>Câu hỏi lâm sàng</strong>
+          <p>Backend đề xuất câu hỏi tiếp theo dựa trên nội dung bạn cung cấp.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <strong>Gợi ý chuyên khoa</strong>
+          <p>Kết quả ưu tiên chuyên khoa và cơ sở y tế phù hợp để bạn tiếp tục xử lý.</p>
+        </article>
+      </section>
       <div className={`intake-layout ${showIntakeSidePanel ? "" : "intake-layout-single"}`.trim()}>
         <form className="assessment-form intake-form" onSubmit={submit} noValidate>
           {requiredErrorEntries.length > 0 && (
@@ -390,8 +407,8 @@ function IntakePage() {
           )}
 
           <fieldset className="intake-section">
-            <legend>Triệu chứng chính</legend>
-            <p>Hai thông tin này giúp backend tạo câu hỏi lâm sàng phù hợp hơn.</p>
+            <legend>Thông tin lâm sàng chính</legend>
+            <p>Hai thông tin này là nền cho bộ câu hỏi lâm sàng và gợi ý chuyên khoa.</p>
             <Field id="intake-mainSymptom" label="Triệu chứng chính" required error={fieldErrors.mainSymptom}>
               <TextInput
                 value={form.mainSymptom}
@@ -453,7 +470,7 @@ function IntakePage() {
 
           {error && <Alert tone="danger" live>{error}</Alert>}
           <div className="assessment-actions intake-actions">
-            <Button type="submit" size="lg" loading={status === "loading"} loadingLabel="Đang tạo câu hỏi...">Tạo câu hỏi lâm sàng</Button>
+            <Button type="submit" size="lg" loading={status === "loading"} loadingLabel="Đang tạo câu hỏi...">Tạo bộ câu hỏi lâm sàng</Button>
             <Button tone="secondary" onClick={() => navigate("/medical-assistant/safety")}>Kiểm tra dấu hiệu khẩn cấp</Button>
           </div>
         </form>
@@ -565,8 +582,8 @@ function QuestionsPage({ sessionId }) {
   return (
     <AssessmentShell
       eyebrow="Buoc 3"
-      title="Tra loi cau hoi lam sang"
-      description="Tra loi tung cau hoi yes/no. Frontend chi goi submit sau khi ban tra loi het danh sach backend tra ve."
+      title="Cau hoi lam sang"
+      description="Tra loi tung cau hoi de MediMate hoan tat phan tich va tao goi y chuyen khoa."
     >
       <Stepper active={2} />
       <form className="question-panel" onSubmit={submit}>
@@ -597,7 +614,7 @@ function QuestionsPage({ sessionId }) {
           {currentIndex < questions.length - 1 ? (
             <Button disabled={!answers[question.questionId]} onClick={() => setCurrentIndex((index) => index + 1)}>Cau tiep theo</Button>
           ) : (
-            <Button type="submit" loading={status === "submitting"} loadingLabel="Dang phan tich..." disabled={!canSubmit}>Xem ket qua</Button>
+            <Button type="submit" loading={status === "submitting"} loadingLabel="Dang phan tich..." disabled={!canSubmit}>Xem goi y</Button>
           )}
         </div>
       </form>
@@ -672,14 +689,14 @@ function ResultPage({ sessionId }) {
   return (
     <AssessmentShell
       eyebrow="Buoc 4"
-      title="Ket qua dinh huong cham soc"
-      description="Ket qua nay chi mang tinh ho tro dinh huong va can bac si xac nhan."
+      title="Goi y chuyen khoa"
+      description="Tong hop ket qua phan tich lam sang, muc uu tien va co so y te lien quan."
     >
       <Stepper active={3} />
-      <Alert tone={isEmergency ? "danger" : "warning"} title={isEmergency ? "Can uu tien tham kham khan cap" : "Khong phai chan doan chinh thuc"}>
+      <Alert tone={isEmergency ? "danger" : "info"} title={isEmergency ? "Can uu tien tham kham khan cap" : "Da tao goi y chuyen khoa"}>
         {isEmergency
           ? "Ket qua cho thay ban co the can duoc danh gia y te som. Hay lien he co so y te phu hop."
-          : "Thong tin nay giup ban chuan bi khi di kham, khong thay the chan doan hoac dieu tri cua bac si."}
+          : "Thong tin duoi day giup ban chon chuyen khoa va co so y te phu hop cho buoc tiep theo."}
       </Alert>
       <section className="result-grid">
         {department && (

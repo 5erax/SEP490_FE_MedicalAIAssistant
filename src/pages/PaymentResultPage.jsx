@@ -16,11 +16,15 @@ function getOrderCode() {
   return new URLSearchParams(window.location.search).get("orderCode")?.trim() || "";
 }
 
+function getCallbackParams() {
+  return Object.fromEntries(new URLSearchParams(window.location.search).entries());
+}
+
 function classifyPayment(data) {
   if (data?.isPaid && data?.isActive) return "success";
-  if (data?.isCancelled) return "cancelled";
+  if (data?.isCancelled || data?.cancelled) return "cancelled";
 
-  const paymentStatus = String(data?.paymentStatus ?? "").toLowerCase();
+  const paymentStatus = String(data?.paymentStatus ?? data?.status ?? "").toLowerCase();
   const subscriptionStatus = String(data?.subscriptionStatus ?? data?.subscription?.status ?? "").toLowerCase();
 
   if (["paid", "completed", "success", "succeeded"].includes(paymentStatus)) return "success";
@@ -105,6 +109,7 @@ export default function PaymentResultPage({ expectedResult }) {
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
+  const [callbackParams] = useState(getCallbackParams);
   const view = getView(status, expectedResult);
   const Icon = view.icon;
 
@@ -124,14 +129,18 @@ export default function PaymentResultPage({ expectedResult }) {
       return "missing";
     }
 
-    const response = await paymentsApi.payOsStatus(orderCode);
+    const response = expectedResult === "cancel"
+      ? await paymentsApi.payOsCancel(callbackParams)
+      : expectedResult === "return"
+        ? await paymentsApi.payOsReturn(callbackParams)
+        : await paymentsApi.payOsStatus(orderCode);
     const data = response.data ?? {};
     const nextStatus = classifyPayment(data);
     setStatus(nextStatus);
     setMessage(data.message || "");
     if (nextStatus === "success") await refreshPremiumState();
     return nextStatus;
-  }, [orderCode, refreshPremiumState]);
+  }, [callbackParams, expectedResult, orderCode, refreshPremiumState]);
 
   useEffect(() => {
     if (!orderCode) return undefined;

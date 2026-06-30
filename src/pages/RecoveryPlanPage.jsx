@@ -5,25 +5,26 @@ import { navigate } from "../router/navigation";
 const recoverySteps = [
   {
     icon: Stethoscope,
-    title: "Hoàn thành phân tích lâm sàng",
-    text: "Mô tả triệu chứng để hệ thống xác định chuyên khoa cần ưu tiên trước khi lập kế hoạch.",
+    title: "Hoàn tất phân tích lâm sàng",
+    text: "Cung cấp triệu chứng chính, bối cảnh và câu trả lời lâm sàng để xác định chuyên khoa cần ưu tiên.",
   },
   {
     icon: MapPin,
-    title: "Chọn cơ sở y tế phù hợp",
-    text: "Ưu tiên cơ sở có chuyên khoa liên quan, vị trí thuận tiện và thông tin rõ ràng.",
+    title: "Chọn cơ sở phù hợp",
+    text: "Ưu tiên cơ sở có chuyên khoa liên quan, địa chỉ rõ ràng và thông tin liên hệ sẵn sàng.",
   },
   {
     icon: CalendarCheck,
     title: "Theo dõi sau khám",
-    text: "Ghi lại lịch tái khám, thuốc đang dùng và các dấu hiệu cần chú ý trong quá trình hồi phục.",
+    text: "Ghi lại lịch tái khám, thuốc đang dùng và thay đổi triệu chứng trong quá trình phục hồi.",
   },
 ];
 
 const careItems = [
-  "Lưu hướng dẫn của bác sĩ sau buổi khám.",
-  "Theo dõi triệu chứng thay đổi mỗi ngày.",
-  "Chuẩn bị câu hỏi cho lần tái khám tiếp theo.",
+  "Hướng dẫn sau khám và mốc tái khám.",
+  "Triệu chứng thay đổi theo từng ngày.",
+  "Thuốc đang dùng, dị ứng và phản ứng bất thường.",
+  "Câu hỏi cần chuẩn bị cho lần gặp tiếp theo.",
 ];
 
 export default function RecoveryPlanPage() {
@@ -34,16 +35,15 @@ export default function RecoveryPlanPage() {
       <section className="recovery-hero" aria-labelledby="recovery-plan-title">
         <div className="recovery-hero-copy">
           <span className="recovery-mark" aria-hidden="true"><ClipboardCheck size={26} /></span>
-          <p className="recovery-eyebrow">Theo dõi sau sàng lọc</p>
+          <p className="recovery-eyebrow">Theo dõi sau phân tích</p>
           <h1 id="recovery-plan-title">Kế hoạch phục hồi</h1>
           <p>
-            Kế hoạch phù hợp cần dựa trên kết quả khám và hướng dẫn của bác sĩ.
-            Hãy hoàn thành phân tích lâm sàng trước để xác định chuyên khoa cần ưu tiên.
+            Gom các việc cần chuẩn bị trước và sau khi đi khám. Bắt đầu bằng phân tích lâm sàng để MediMate có đủ dữ liệu tạo lộ trình theo dõi phù hợp.
           </p>
 
           <div className="recovery-actions">
             <Button type="button" onClick={() => navigate("/symptom")}>
-              <Stethoscope size={18} /> Bắt đầu phân tích
+              <Stethoscope size={18} /> Mở phân tích lâm sàng
             </Button>
             <Button type="button" tone="secondary" onClick={() => navigate("/map")}>
               <MapPin size={18} /> Tìm cơ sở y tế
@@ -51,25 +51,31 @@ export default function RecoveryPlanPage() {
           </div>
         </div>
 
-        <aside className="recovery-summary" aria-label="Tóm tắt kế hoạch">
+        <aside className="recovery-summary" aria-label="Trạng thái kế hoạch phục hồi">
           <span><HeartPulse size={22} /></span>
-          <strong>Chưa có kế hoạch cá nhân hóa</strong>
-          <p>Hoàn thành bước phân tích để MediMate có dữ liệu tạo lộ trình theo dõi phù hợp hơn.</p>
           <div>
             <small>Trạng thái</small>
-            <b>Đang chờ dữ liệu khám</b>
+            <strong>Chưa có kế hoạch cá nhân hóa</strong>
+            <p>Hoàn thành phân tích lâm sàng hoặc lưu kết quả khám để bắt đầu theo dõi.</p>
           </div>
+          <dl className="recovery-metrics">
+            <div><dt>Dữ liệu</dt><dd>Đang chờ</dd></div>
+            <div><dt>Theo dõi</dt><dd>3 bước</dd></div>
+          </dl>
         </aside>
       </section>
 
-      <section className="recovery-grid" aria-label="Các bước phục hồi">
-        {recoverySteps.map((step) => {
+      <section className="recovery-timeline" aria-label="Lộ trình phục hồi">
+        {recoverySteps.map((step, index) => {
           const Icon = step.icon;
           return (
             <article key={step.title} className="recovery-step">
               <span aria-hidden="true"><Icon size={20} /></span>
-              <h2>{step.title}</h2>
-              <p>{step.text}</p>
+              <div>
+                <small>Bước {index + 1}</small>
+                <h2>{step.title}</h2>
+                <p>{step.text}</p>
+              </div>
             </article>
           );
         })}
@@ -77,8 +83,9 @@ export default function RecoveryPlanPage() {
 
       <section className="recovery-followup" aria-label="Theo dõi cần chuẩn bị">
         <div>
-          <p className="recovery-eyebrow">Chuẩn bị trước khi có kế hoạch</p>
-          <h2>Những thông tin nên ghi lại</h2>
+          <p className="recovery-eyebrow">Checklist</p>
+          <h2>Thông tin nên ghi lại</h2>
+          <p>Những mục này giúp lần tái khám và theo dõi sau khám rõ ràng hơn.</p>
         </div>
         <ul>
           {careItems.map((item) => (
@@ -90,7 +97,7 @@ export default function RecoveryPlanPage() {
         </ul>
         <div className="recovery-note">
           <TimerReset size={20} aria-hidden="true" />
-          <p>Thông tin này giúp quá trình tái khám và theo dõi sau khám rõ ràng hơn.</p>
+          <p>Khi có dữ liệu từ phân tích lâm sàng hoặc kết quả khám, phần này có thể chuyển thành kế hoạch theo ngày.</p>
         </div>
       </section>
     </main>
@@ -102,28 +109,32 @@ const styles = `
   min-height: calc(100svh - 112px);
   display: grid;
   align-content: start;
-  gap: 18px;
-  padding: clamp(18px, 3vw, 30px);
-  background:
-    radial-gradient(circle at 18% 8%, rgba(196, 233, 149, .28), transparent 28%),
-    linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,243,.98));
+  gap: 16px;
+  padding: clamp(16px, 3vw, 30px);
+  background: linear-gradient(180deg, #f8fbf4, #eef5e9);
 }
 
 .recovery-hero,
 .recovery-followup,
 .recovery-step {
   border: 1px solid rgba(16, 20, 17, .14);
-  background: rgba(255, 255, 255, .84);
-  box-shadow: 0 18px 48px rgba(16, 20, 17, .08);
+  background: rgba(255, 255, 255, .88);
+  box-shadow: 0 18px 42px rgba(16, 20, 17, .07);
 }
 
 .recovery-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   gap: clamp(18px, 4vw, 34px);
-  align-items: stretch;
-  border-radius: 24px;
+  border-radius: 22px;
   padding: clamp(22px, 4vw, 38px);
+}
+
+.recovery-hero-copy,
+.recovery-summary,
+.recovery-step,
+.recovery-followup {
+  min-width: 0;
 }
 
 .recovery-hero-copy {
@@ -143,9 +154,9 @@ const styles = `
 }
 
 .recovery-mark {
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   box-shadow: 4px 4px 0 #111412;
 }
 
@@ -154,28 +165,31 @@ const styles = `
   color: #315d18;
   font-size: 12px;
   font-weight: 950;
-  letter-spacing: .1em;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
 .recovery-plan-page h1,
 .recovery-plan-page h2,
-.recovery-plan-page p {
+.recovery-plan-page p,
+.recovery-plan-page dl {
   margin: 0;
 }
 
 .recovery-plan-page h1 {
   max-width: 680px;
-  font-size: clamp(34px, 5vw, 58px);
-  line-height: 1.02;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.03;
   letter-spacing: 0;
 }
 
-.recovery-hero-copy > p:not(.recovery-eyebrow) {
-  max-width: 760px;
-  color: rgba(17, 20, 18, .68);
-  font-size: 16px;
-  line-height: 1.7;
+.recovery-hero-copy > p:not(.recovery-eyebrow),
+.recovery-followup > div > p:not(.recovery-eyebrow),
+.recovery-summary p,
+.recovery-step p,
+.recovery-note p {
+  color: rgba(17, 20, 18, .64);
+  line-height: 1.62;
 }
 
 .recovery-actions {
@@ -190,42 +204,52 @@ const styles = `
   align-content: space-between;
   gap: 16px;
   border: 1px solid rgba(16, 20, 17, .14);
-  border-radius: 20px;
+  border-radius: 18px;
   background: #f4faed;
-  padding: 22px;
+  padding: 20px;
 }
 
 .recovery-summary > span {
   width: 46px;
   height: 46px;
-  border-radius: 15px;
+  border-radius: 14px;
 }
 
 .recovery-summary strong {
+  display: block;
+  margin-top: 6px;
   font-size: 22px;
   line-height: 1.2;
 }
 
-.recovery-summary p,
-.recovery-step p,
-.recovery-note p {
-  color: rgba(17, 20, 18, .62);
-  line-height: 1.58;
-}
-
-.recovery-summary div {
-  display: grid;
-  gap: 5px;
-  border-top: 1px solid rgba(16, 20, 17, .14);
-  padding-top: 14px;
-}
-
-.recovery-summary small {
+.recovery-summary small,
+.recovery-step small,
+.recovery-metrics dt {
   color: rgba(17, 20, 18, .54);
-  font-weight: 850;
+  font-size: 12px;
+  font-weight: 900;
 }
 
-.recovery-grid {
+.recovery-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.recovery-metrics div {
+  border: 1px solid rgba(16, 20, 17, .12);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+}
+
+.recovery-metrics dd {
+  margin: 4px 0 0;
+  color: #111412;
+  font-weight: 950;
+}
+
+.recovery-timeline {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
@@ -233,9 +257,10 @@ const styles = `
 
 .recovery-step {
   display: grid;
-  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
   border-radius: 18px;
-  padding: 20px;
+  padding: 18px;
 }
 
 .recovery-step > span {
@@ -249,16 +274,17 @@ const styles = `
 
 .recovery-step h2,
 .recovery-followup h2 {
+  margin-top: 4px;
   font-size: 20px;
   line-height: 1.25;
 }
 
 .recovery-followup {
   display: grid;
-  grid-template-columns: minmax(240px, .8fr) minmax(0, 1fr) minmax(220px, .75fr);
+  grid-template-columns: minmax(230px, .75fr) minmax(0, 1fr) minmax(220px, .75fr);
   gap: 18px;
   align-items: center;
-  border-radius: 22px;
+  border-radius: 20px;
   padding: clamp(18px, 3vw, 26px);
 }
 
@@ -299,11 +325,8 @@ const styles = `
 
 @media (max-width: 980px) {
   .recovery-hero,
-  .recovery-followup {
-    grid-template-columns: 1fr;
-  }
-
-  .recovery-grid {
+  .recovery-followup,
+  .recovery-timeline {
     grid-template-columns: 1fr;
   }
 }
@@ -321,7 +344,7 @@ const styles = `
   .recovery-hero,
   .recovery-followup,
   .recovery-step {
-    border-radius: 18px;
+    border-radius: 16px;
   }
 }
 `;
