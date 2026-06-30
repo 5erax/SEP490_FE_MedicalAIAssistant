@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ClipboardPlus, MapPin, Send, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
-import { getStoredAuth } from "../services/api";
+import { getClinicalQuestionAnswerOptions, getStoredAuth } from "../services/api";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
 import "../styles/dashboard.css";
 
@@ -241,7 +241,10 @@ export default function DashboardPage() {
   const currentQuestion = questions[currentQuestionIndex] ?? null;
   const currentQuestionId = currentQuestion?.questionId ?? "";
   const currentAnswer = currentQuestionId ? answers[currentQuestionId] : undefined;
-  const currentQuestionAnswered = currentAnswer === true || currentAnswer === false;
+  const currentAnswerOptions = currentQuestion ? getClinicalQuestionAnswerOptions(currentQuestion) : [];
+  const currentQuestionAnswered = currentAnswerOptions.some(([answerKey]) => currentAnswer === answerKey)
+    || currentAnswer === true
+    || currentAnswer === false;
   const questionProgressPercent = questions.length
     ? Math.round((answeredCount / questions.length) * 100)
     : 0;
@@ -442,23 +445,21 @@ export default function DashboardPage() {
               <legend>{currentQuestion.questionText}</legend>
 
               <div className="specialty-answer-grid" role="radiogroup" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
-                <button
-                  className={currentAnswer === true ? "selected yes" : ""}
-                  type="button"
-                  aria-pressed={currentAnswer === true}
-                  onClick={() => updateAnswer(currentQuestionId, true)}
-                >
-                  Có
-                </button>
-
-                <button
-                  className={currentAnswer === false ? "selected no" : ""}
-                  type="button"
-                  aria-pressed={currentAnswer === false}
-                  onClick={() => updateAnswer(currentQuestionId, false)}
-                >
-                  Không
-                </button>
+                {currentAnswerOptions.map(([answerKey, label], answerIndex) => (
+                  <button
+                    className={[
+                      currentAnswer === answerKey ? "selected" : "",
+                      answerIndex === 0 ? "yes" : "",
+                      answerIndex === 1 ? "no" : "",
+                    ].filter(Boolean).join(" ")}
+                    type="button"
+                    key={answerKey}
+                    aria-pressed={currentAnswer === answerKey}
+                    onClick={() => updateAnswer(currentQuestionId, answerKey)}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </fieldset>
 

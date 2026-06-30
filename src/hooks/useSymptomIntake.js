@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   buildClinicalQuestionAnswerItems,
+  isClinicalQuestionAnswered,
   symptomAnalysisApi,
 } from "../services/api";
 import { trackUxEvent } from "../utils/analytics";
@@ -71,7 +72,9 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
   const [error, setError] = useState("");
 
   const loading = status === "loading-questions" || status === "submitting";
-  const answeredCount = Object.values(answers).filter((value) => value === true || value === false).length;
+  const answeredCount = questions.filter((question) => (
+    isClinicalQuestionAnswered(question, answers[question.questionId])
+  )).length;
   const canSubmitAnswers = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
 
   useEffect(() => {

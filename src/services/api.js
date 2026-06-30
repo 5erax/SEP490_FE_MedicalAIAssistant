@@ -22,6 +22,7 @@ export { clinicalQuestionsApi } from "./clinicalQuestionService";
 export {
   buildClinicalQuestionAnswerItems,
   getClinicalQuestionAnswerOptions,
+  isClinicalQuestionAnswered,
   symptomAnalysisApi,
 } from "./symptomAnalysisService";
 export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
