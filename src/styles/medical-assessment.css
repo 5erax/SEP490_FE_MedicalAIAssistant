@@ -14,12 +14,9 @@
   --assessment-info-bg: var(--color-info-bg, #e8f6f7);
   --assessment-danger: var(--color-danger, #b42318);
   --assessment-danger-bg: var(--color-danger-bg, #fff0ed);
-  --assessment-warning: #8a5a00;
-  --assessment-warning-bg: #fff7df;
-  --assessment-radius-sm: var(--radius-sm, 10px);
   --assessment-radius-md: var(--radius-md, 14px);
   --assessment-radius-lg: var(--radius-lg, 20px);
-  --assessment-shadow-card: 0 18px 48px rgba(34, 63, 20, 0.08);
+  --assessment-shadow-card: 0 24px 70px rgba(34, 63, 20, 0.1);
   --assessment-shadow-hard: var(--shadow-hard, 4px 4px 0 #08120b);
   --assessment-font-display: var(--font-display, inherit);
 }
@@ -27,24 +24,34 @@
 .assessment-page {
   min-height: 100svh;
   background:
-    radial-gradient(circle at 12% 10%, rgba(185, 239, 124, 0.2), transparent 30%),
+    radial-gradient(circle at 32% 14%, rgba(185, 239, 124, 0.34), transparent 23%),
+    radial-gradient(circle at 66% 38%, rgba(237, 248, 222, 0.68), transparent 35%),
     linear-gradient(180deg, var(--assessment-bg-start) 0%, var(--assessment-bg-end) 100%);
   color: var(--assessment-ink);
-  padding: clamp(22px, 4vw, 48px) clamp(14px, 4vw, 48px) 80px;
+  padding: clamp(28px, 4.5vw, 64px) clamp(14px, 4vw, 48px) 90px;
 }
 
 .assessment-shell {
   width: min(1120px, 100%);
   display: grid;
-  gap: 18px;
+  gap: 28px;
   margin-inline: auto;
+}
+
+.clinical-shell {
+  justify-items: center;
 }
 
 .assessment-header {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
+  gap: 8px;
+}
+
+.clinical-hero {
+  width: min(780px, 100%);
+  justify-items: center;
+  text-align: center;
+  margin-top: 6px;
 }
 
 .assessment-icon {
@@ -58,18 +65,23 @@
   box-shadow: var(--assessment-shadow-hard);
 }
 
+.clinical-hero-icon {
+  margin-bottom: 6px;
+}
+
 .assessment-header h1 {
   max-width: 860px;
   margin: 0;
   font-family: var(--assessment-font-display);
-  font-size: clamp(30px, 4vw, 48px);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
 }
 
-.assessment-header p:not(.eyebrow) {
-  max-width: 790px;
-  margin: 12px 0 0;
+.assessment-header p:not(.eyebrow),
+.clinical-hero-description {
+  max-width: 720px;
+  margin: 8px 0 0;
   color: var(--assessment-muted);
   line-height: 1.7;
 }
@@ -78,7 +90,7 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--assessment-primary-strong);
   font-size: 12px;
   font-weight: 950;
@@ -94,78 +106,49 @@
   background: currentColor;
 }
 
-.assessment-grid,
-.result-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.assessment-grid article,
-.assessment-form,
-.question-panel,
-.result-card,
-.history-list article,
-.emergency-panel,
-.safety-checklist {
-  min-width: 0;
-  border: 1px solid var(--assessment-line-strong);
-  border-radius: var(--assessment-radius-lg);
-  background: var(--assessment-surface);
-  box-shadow: var(--assessment-shadow-card);
-  padding: clamp(16px, 3vw, 24px);
-}
-
-.assessment-grid article {
-  display: grid;
-  align-content: start;
-  gap: 10px;
-}
-
-.assessment-grid h2,
-.result-card h2,
-.emergency-panel h2 {
-  margin: 0;
-  font-size: clamp(20px, 3vw, 28px);
-  line-height: 1.15;
-}
-
-.assessment-grid p,
-.result-card p,
-.emergency-panel p {
-  margin: 0;
-  color: var(--assessment-muted);
-  line-height: 1.6;
-}
-
-.assessment-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.clinical-eyebrow::before {
+  display: none;
 }
 
 .assessment-stepper {
   width: min(720px, 100%);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 auto;
   padding: 0;
   list-style: none;
 }
 
 .assessment-stepper li {
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 7px;
   color: var(--assessment-muted);
   font-size: 12px;
   text-align: center;
 }
 
+.assessment-stepper li::before {
+  content: "";
+  position: absolute;
+  top: 17px;
+  left: calc(-50% + 18px);
+  width: calc(100% - 36px);
+  height: 1px;
+  background: var(--assessment-line-strong);
+}
+
+.assessment-stepper li:first-child::before {
+  display: none;
+}
+
 .assessment-stepper span {
-  width: 34px;
-  height: 34px;
+  position: relative;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border: 1px solid var(--assessment-line-strong);
@@ -190,56 +173,187 @@
   color: var(--assessment-primary);
 }
 
-.clinical-overview {
+.clinical-card,
+.assessment-grid article,
+.assessment-form,
+.question-panel,
+.result-card,
+.history-list article,
+.emergency-panel,
+.safety-checklist {
+  min-width: 0;
+  border: 1px solid var(--assessment-line-strong);
+  border-radius: var(--assessment-radius-lg);
+  background: var(--assessment-surface);
+  box-shadow: var(--assessment-shadow-card);
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.clinical-card {
+  width: min(900px, 100%);
+}
+
+.clinical-intake-card {
+  display: grid;
+  gap: 20px;
+}
+
+.clinical-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  border-bottom: 1px solid var(--assessment-line);
+  padding-bottom: 14px;
+}
+
+.clinical-step-label {
+  margin: 0 0 5px;
+  color: var(--assessment-primary-strong);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.clinical-card-head h2 {
+  margin: 0;
+  font-family: var(--assessment-font-display);
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.clinical-card-head > span,
+.clinical-card-tags span {
+  border-radius: 999px;
+  background: var(--assessment-primary-soft);
+  color: var(--assessment-ink);
+  padding: 8px 13px;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.clinical-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.simple-symptom-input {
+  display: grid;
+  gap: 10px;
+  color: var(--assessment-ink);
+  font-weight: 900;
+}
+
+.simple-symptom-input > span {
+  font-size: 14px;
+}
+
+.simple-symptom-input strong {
+  color: var(--assessment-danger);
+}
+
+.simple-symptom-input textarea,
+.simple-symptom-input .ui-textarea,
+.assessment-form textarea {
+  width: 100%;
+  min-height: 160px;
+  border: 1px solid var(--assessment-line-strong);
+  border-radius: var(--assessment-radius-md);
+  background: var(--assessment-surface-soft);
+  color: var(--assessment-ink);
+  padding: 16px;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.65;
+  resize: vertical;
+}
+
+.simple-symptom-input textarea:focus,
+.simple-symptom-input textarea:focus-visible,
+.assessment-form textarea:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.28);
+  outline-offset: 3px;
+  border-color: var(--assessment-info);
+}
+
+.simple-symptom-input small {
+  color: var(--assessment-muted);
+  line-height: 1.5;
+}
+
+.clinical-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--assessment-line);
+  padding-top: 16px;
+  color: var(--assessment-ink);
+  font-weight: 900;
+}
+
+.clinical-submit-row .ui-button {
+  min-width: 72px;
+  min-height: 54px;
+  border-radius: var(--assessment-radius-md);
+}
+
+.clinical-actions-center {
+  justify-content: center;
+}
+
+.clinical-entry-card {
+  width: min(900px, 100%);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
-.clinical-overview article {
+.clinical-entry-card article {
   min-width: 0;
   display: grid;
-  gap: 8px;
-  border: 1px solid var(--assessment-line);
-  border-radius: var(--assessment-radius-md);
+  gap: 10px;
+  border: 1px solid var(--assessment-line-strong);
+  border-radius: var(--assessment-radius-lg);
   background: var(--assessment-surface);
-  padding: 14px;
+  box-shadow: var(--assessment-shadow-card);
+  padding: clamp(16px, 3vw, 24px);
 }
 
-.clinical-overview span {
-  width: fit-content;
-  border-radius: 999px;
-  background: var(--assessment-info-bg);
-  color: var(--assessment-info);
-  padding: 4px 9px;
-  font-size: 11px;
-  font-weight: 950;
+.clinical-entry-card h2,
+.result-card h2,
+.emergency-panel h2 {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 28px);
+  line-height: 1.15;
 }
 
-.clinical-overview strong {
-  color: var(--assessment-ink);
-  font-size: 15px;
-}
-
-.clinical-overview p {
+.clinical-entry-card p,
+.result-card p,
+.emergency-panel p {
   margin: 0;
   color: var(--assessment-muted);
-  font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+.assessment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .safety-checklist {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-}
-
-.safety-checklist legend {
-  grid-column: 1 / -1;
-  margin-bottom: 4px;
-  color: var(--assessment-ink);
-  font-size: 18px;
-  font-weight: 950;
+  box-shadow: none;
+  border-color: var(--assessment-line);
+  background: var(--assessment-surface-soft);
 }
 
 .safety-checklist label,
@@ -251,12 +365,12 @@
   min-height: 46px;
   border: 1px solid var(--assessment-line-strong);
   border-radius: var(--assessment-radius-md);
-  background: var(--assessment-surface-soft);
+  background: var(--assessment-surface);
   padding: 10px 12px;
   color: var(--assessment-ink);
   font-weight: 850;
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
 .safety-checklist label:hover,
@@ -286,126 +400,16 @@
   gap: 14px;
   border-color: rgba(180, 35, 24, 0.34);
   background: var(--assessment-danger-bg);
+  box-shadow: none;
 }
 
 .emergency-panel svg {
   color: var(--assessment-danger);
 }
 
-.assessment-form,
 .question-panel {
   display: grid;
   gap: 16px;
-}
-
-.intake-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.75fr);
-  gap: 18px;
-  align-items: start;
-}
-
-.intake-layout-single {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.intake-form {
-  gap: 14px;
-}
-
-.intake-section {
-  min-width: 0;
-  display: grid;
-  gap: 14px;
-  border: 1px solid var(--assessment-line);
-  border-radius: var(--assessment-radius-md);
-  background: var(--assessment-surface-soft);
-  padding: clamp(14px, 2vw, 18px);
-}
-
-.intake-section legend {
-  padding: 0 6px;
-  color: var(--assessment-ink);
-  font-size: 17px;
-  font-weight: 950;
-}
-
-.intake-section > p {
-  margin: 0;
-  color: var(--assessment-muted);
-  line-height: 1.55;
-}
-
-.assessment-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.assessment-form select {
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--assessment-line-strong);
-  border-radius: var(--assessment-radius-md);
-  background: var(--assessment-surface);
-  color: var(--assessment-ink);
-  padding: 0 12px;
-  font: inherit;
-  font-weight: 750;
-}
-
-.assessment-form select:focus-visible,
-.question-card input:focus-visible,
-.safety-checklist input:focus-visible,
-.question-original summary:focus-visible {
-  outline: 3px solid rgba(8, 127, 140, 0.28);
-  outline-offset: 3px;
-}
-
-.assessment-error-summary {
-  border: 1.5px solid var(--assessment-danger);
-  border-radius: var(--assessment-radius-md);
-  background: var(--assessment-danger-bg);
-  padding: 14px 16px;
-  color: var(--assessment-ink);
-}
-
-.assessment-error-summary:focus-visible {
-  outline: 3px solid var(--assessment-ink);
-  outline-offset: 3px;
-}
-
-.assessment-error-summary strong {
-  display: block;
-  margin-bottom: 8px;
-}
-
-.assessment-error-summary ul {
-  display: grid;
-  gap: 5px;
-  margin: 0;
-  padding-left: 20px;
-}
-
-.assessment-error-summary a {
-  color: var(--assessment-danger);
-  font-weight: 900;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.intake-side-panel {
-  position: sticky;
-  top: 18px;
-  display: grid;
-  gap: 12px;
-}
-
-.intake-actions {
-  align-items: center;
-  justify-content: flex-start;
-  border-top: 1px solid var(--assessment-line);
-  padding-top: 2px;
 }
 
 .question-progress {
@@ -561,7 +565,10 @@
 }
 
 .result-grid {
+  width: min(900px, 100%);
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .result-card {
@@ -595,6 +602,7 @@
 .diagnosis-stack,
 .facility-stack,
 .history-list {
+  width: min(900px, 100%);
   display: grid;
   gap: 10px;
 }
@@ -654,63 +662,63 @@
   font-weight: 900;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 @media (max-width: 760px) {
   .assessment-page {
-    padding: 14px 12px 96px;
-  }
-
-  .assessment-header {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .assessment-icon {
-    width: 40px;
-    height: 40px;
+    padding: 18px 12px 96px;
   }
 
   .assessment-header h1 {
-    font-size: clamp(25px, 7.5vw, 31px);
-    line-height: 1.04;
+    font-size: clamp(30px, 9vw, 38px);
   }
 
-  .assessment-header p:not(.eyebrow) {
-    margin-top: 8px;
-    line-height: 1.55;
+  .clinical-card-head,
+  .clinical-submit-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
-  .assessment-grid,
-  .assessment-form-grid,
-  .clinical-overview,
-  .intake-layout,
+  .clinical-card-tags {
+    justify-content: flex-start;
+  }
+
+  .clinical-entry-card,
   .result-grid,
-  .boolean-prompt,
   .safety-checklist,
+  .boolean-prompt,
   .history-list article {
     grid-template-columns: 1fr;
   }
 
-  .intake-side-panel {
-    position: static;
-  }
-
   .assessment-stepper {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 5px;
+    width: 100%;
   }
 
   .assessment-stepper li {
-    gap: 4px;
-    font-size: 10px;
+    gap: 5px;
+    font-size: 11px;
   }
 
   .assessment-stepper span {
-    width: 29px;
-    height: 29px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .assessment-stepper li::before {
+    top: 16px;
   }
 
   .assessment-actions,
   .assessment-actions .ui-button,
+  .clinical-submit-row .ui-button,
   .question-choice-grid,
   .question-choice-grid label {
     width: 100%;
