@@ -410,22 +410,22 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                     </div>
                     {(form.answers ?? []).map((row, index) => (
                       <div className="clinical-answer-row" key={row.id}>
-                        <label>
+                        <div className="clinical-answer-field">
                           <span>Key</span>
                           <input
                             value={row.vietnameseLabel}
                             onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
                             placeholder={`Đáp án tiếng Việt ${index + 1}`}
                           />
-                        </label>
-                        <label>
+                        </div>
+                        <div className="clinical-answer-field">
                           <span>Value</span>
                           <input
                             value={row.englishLabel}
                             onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
                             placeholder={`Đáp án tiếng Anh ${index + 1}`}
                           />
-                        </label>
+                        </div>
                         <button className="clinical-answer-remove" type="button" onClick={() => removeAnswerRow(row.id)} aria-label={`Xóa đáp án ${index + 1}`}>
                           ×
                         </button>
