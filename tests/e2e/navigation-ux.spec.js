@@ -505,7 +505,7 @@ test.describe("global navigation UX", () => {
 
     await openRoute(page, "/symptom");
     await expect(page).toHaveURL(/\/symptom$/);
-    await expect(page.locator(".assessment-header h1")).toContainText("Nhập triệu chứng để tạo câu hỏi lâm sàng");
+    await expect(page.locator(".assessment-header h1")).toContainText("Phân tích lâm sàng");
   });
 
   test("safety gate confirmation opens assessment intake", async ({ page }) => {
@@ -522,7 +522,7 @@ test.describe("global navigation UX", () => {
     await openRoute(page, "/medical-assistant/safety");
     await page.getByRole("button", { name: "Khong, tiep tuc danh gia" }).click();
     await expect(page).toHaveURL(/\/symptom$/);
-    await expect(page.locator(".assessment-header h1")).toContainText("Nhập triệu chứng để tạo câu hỏi lâm sàng");
+    await expect(page.locator(".assessment-header h1")).toContainText("Phân tích lâm sàng");
   });
 
   test("safety gate red flag stops AI intake and points to urgent care", async ({ page }) => {

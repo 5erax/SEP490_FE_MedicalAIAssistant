@@ -123,7 +123,7 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
 
   await expect(page.getByText("Do you have chest pain during exertion?")).toBeVisible();
   await page.getByLabel("Yes").check();
-  await page.getByRole("button", { name: "Xem ket qua" }).click();
+  await page.getByRole("button", { name: "Xem goi y" }).click();
 
   await expect(page.getByText("Angina", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Cardiology", { exact: true })).toBeVisible();

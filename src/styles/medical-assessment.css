@@ -141,6 +141,44 @@
   color: var(--color-primary);
 }
 
+.clinical-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.clinical-overview article {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 14px;
+}
+
+.clinical-overview span {
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.clinical-overview strong {
+  color: var(--color-ink);
+  font-size: 15px;
+}
+
+.clinical-overview p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .safety-checklist {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -447,6 +485,7 @@
 
   .assessment-grid,
   .assessment-form-grid,
+  .clinical-overview,
   .intake-layout,
   .result-grid,
   .safety-checklist,
