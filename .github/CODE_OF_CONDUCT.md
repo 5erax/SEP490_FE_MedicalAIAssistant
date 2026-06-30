@@ -31,7 +31,7 @@ Vì dự án liên quan đến trải nghiệm sức khỏe:
 - Không trình bày kết quả AI như chẩn đoán y khoa đã được xác nhận.
 - Không yêu cầu hoặc đưa dữ liệu bệnh nhân thật vào thảo luận công khai.
 - Không đưa triệu chứng thật, câu trả lời lâm sàng, payment payload, token, cookie, invitation link hoặc định danh người dùng vào ảnh chụp, log, issue, pull request hoặc comment.
-- Lỗ hổng bảo mật phải được báo cáo theo `SECURITY.md`, không tạo issue công khai.
+- Lỗ hổng bảo mật phải được báo cáo theo [SECURITY.md](SECURITY.md), không tạo issue công khai.
 
 ## Thực thi
 

@@ -4,7 +4,7 @@ Cảm ơn bạn muốn đóng góp cho MediMate AI Frontend. Dự án có các l
 
 ## Trước khi bắt đầu
 
-- Đọc `README.md`, `SECURITY.md` và tài liệu liên quan trong `docs/`.
+- Đọc [README.md](../README.md), [SECURITY.md](SECURITY.md) và tài liệu liên quan trong [docs/](../docs/).
 - Kiểm tra issue và pull request hiện có để tránh làm trùng việc.
 - Giữ mỗi thay đổi tập trung vào một lỗi, một tính năng hoặc một cập nhật tài liệu.
 - Không sửa file ngoài phạm vi và không xóa hành vi hiện có nếu issue không yêu cầu.
@@ -90,8 +90,8 @@ Contributor cần phản hồi lịch sự, làm rõ giả định và cập nh�
 
 ## Báo cáo bảo mật
 
-Không báo cáo lỗ hổng trong issue hoặc pull request công khai. Làm theo `SECURITY.md` để gửi báo cáo riêng tư.
+Không báo cáo lỗ hổng trong issue hoặc pull request công khai. Làm theo [SECURITY.md](SECURITY.md) để gửi báo cáo riêng tư.
 
 ## Quy tắc ứng xử
 
-Mọi contributor phải tuân thủ `CODE_OF_CONDUCT.md`.
+Mọi contributor phải tuân thủ [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
