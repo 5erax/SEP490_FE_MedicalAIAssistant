@@ -417,34 +417,27 @@ export default function DashboardPage() {
 
         {["questions", "submitting"].includes(status) && currentQuestion && (
           <form
-            className="studio-diagnosis-panel studio-question-focus"
+            className="studio-diagnosis-panel studio-question-focus specialty-question-flow"
             onSubmit={submitAnswers}
             ref={questionsPanelRef}
             tabIndex={-1}
             aria-live="polite"
           >
-            <div className="studio-panel-head">
-              <div>
-                <span>Câu hỏi làm rõ</span>
-                <h2>Trả lời từng câu hỏi để MediMate gợi ý chuyên khoa phù hợp.</h2>
-              </div>
-              <strong>{answeredCount}/{questions.length}</strong>
+            <div className="specialty-question-topline">
+              <span>Câu {currentQuestionIndex + 1}/{questions.length}</span>
+              <strong>{questionProgressPercent}%</strong>
             </div>
 
-            <div className="studio-answer-progress" aria-label={`Đã trả lời ${answeredCount} trên ${questions.length} câu hỏi`}>
-              <div>
-                <span>Câu {currentQuestionIndex + 1}/{questions.length}</span>
-                <strong>{questionProgressPercent}%</strong>
-              </div>
+            <div className="studio-answer-progress specialty-question-progress" aria-label={`Đã trả lời ${answeredCount} trên ${questions.length} câu hỏi`}>
               <span className="studio-answer-track">
                 <i style={{ width: `${questionProgressPercent}%` }} />
               </span>
             </div>
 
-            <article className="studio-question studio-question-single">
-              <p>{currentQuestion.questionText}</p>
+            <fieldset className="specialty-question-card">
+              <legend>{currentQuestion.questionText}</legend>
 
-              <div className="studio-single-answer" role="radiogroup" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
+              <div className="specialty-answer-grid" role="radiogroup" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
                 <button
                   className={currentAnswer === true ? "selected yes" : ""}
                   type="button"
@@ -463,9 +456,9 @@ export default function DashboardPage() {
                   Không
                 </button>
               </div>
-            </article>
+            </fieldset>
 
-            <div className="studio-question-actions">
+            <div className="studio-question-actions specialty-question-actions">
               <Button
                 type="button"
                 tone="secondary"
