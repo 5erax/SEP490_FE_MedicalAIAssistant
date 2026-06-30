@@ -782,4 +782,92 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
     outline: 2px solid Highlight;
     outline-offset: 2px;
   }
+  /* Single-question specialty flow. Add this at the end of src/styles/dashboard.css */
+.studio-question-focus {
+  width: min(980px, 100%);
+}
+
+.studio-question-single {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+  border-radius: 22px;
+  background: var(--color-surface);
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.studio-question-single p {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4vw, 44px);
+  font-weight: 950;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.studio-single-answer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 12px;
+  width: min(380px, 100%);
+}
+
+.studio-single-answer button {
+  min-height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
+  padding: 0 18px;
+  font-size: 16px;
+  font-weight: 950;
+  cursor: pointer;
+  transition:
+    background var(--motion-base),
+    border-color var(--motion-base),
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
+}
+
+.studio-single-answer button:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-ink);
+  background: var(--color-primary-soft);
+}
+
+.studio-single-answer button.selected.yes,
+.studio-single-answer button.selected.no {
+  border-color: var(--color-ink);
+  background: var(--color-primary);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
+.studio-single-answer button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.35);
+  outline-offset: 3px;
+}
+
+.studio-question-focus .studio-question-actions {
+  justify-content: flex-start;
+  border-top: 1px solid var(--color-line);
+  padding-top: 14px;
+}
+
+@media (max-width: 760px) {
+  .studio-single-answer {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .studio-question-single p {
+    font-size: clamp(23px, 8vw, 32px);
+  }
+}
+
 }

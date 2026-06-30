@@ -96,12 +96,6 @@ function facilityId(facility) {
   return facility?.facilityId || facility?.id || "";
 }
 
-function getQuestionKeywords(question) {
-  return Array.isArray(question?.matchedKeywords)
-    ? question.matchedKeywords.filter(Boolean)
-    : [];
-}
-
 function AssessmentShell({ eyebrow, title, description, activeStep, children }) {
   return (
     <main className="assessment-page clinical-page">
@@ -126,7 +120,7 @@ function Stepper({ active }) {
   const steps = ["Mô tả", "Làm rõ", "Kết quả"];
 
   return (
-    <ol className="assessment-stepper clinical-stepper" aria-label="Tiến trình phân tích lâm sàng">
+    <ol className="assessment-stepper clinical-stepper" aria-label="Tiến trình chẩn đoán lâm sàng">
       {steps.map((step, index) => (
         <li
           className={index === active ? "active" : index < active ? "complete" : ""}
@@ -145,7 +139,7 @@ function EntryPage() {
   return (
     <AssessmentShell
       eyebrow="Tư vấn lâm sàng"
-      title="Phân tích lâm sàng qua triệu chứng"
+      title="Chẩn đoán lâm sàng qua triệu chứng"
       description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
       activeStep={0}
     >
@@ -315,7 +309,7 @@ function IntakePage() {
   return (
     <AssessmentShell
       eyebrow="Tư vấn lâm sàng"
-      title="Phân tích lâm sàng qua triệu chứng"
+      title="Chẩn đoán lâm sàng qua triệu chứng"
       description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
       activeStep={0}
     >
@@ -356,7 +350,7 @@ function IntakePage() {
             loading={isSubmitting}
             loadingLabel="Đang tạo câu hỏi..."
             disabled={!trimmedInput}
-            aria-label="Tiếp tục phân tích lâm sàng"
+            aria-label="Tiếp tục chẩn đoán lâm sàng"
           >
             <Send size={18} />
           </Button>
@@ -500,7 +494,6 @@ function QuestionsPage({ sessionId }) {
   const booleanPrompts = getClinicalQuestionBooleanPrompts(question);
   const questionComplete = isClinicalQuestionAnswered(question, selectedAnswer);
   const progressPercent = Math.round((answeredCount / questions.length) * 100);
-  const keywords = getQuestionKeywords(question);
   const singleBooleanPrompt = answerMode !== "choice" && booleanPrompts.length === 1
     ? booleanPrompts[0]
     : null;
@@ -520,25 +513,6 @@ function QuestionsPage({ sessionId }) {
 
         <fieldset className="question-card">
           <legend>{question.questionText}</legend>
-
-          {keywords.length > 0 && (
-            <small>Liên quan đến: {keywords.slice(0, 5).join(", ")}</small>
-          )}
-
-          {question.chapterCode && (
-            <small>Nhóm tham chiếu: {question.chapterCode}</small>
-          )}
-
-          {Number(question.totalScore) > 0 && (
-            <small>Điểm khớp dữ liệu: {question.totalScore}</small>
-          )}
-
-          {question.questionOriginalText && (
-            <details className="question-original">
-              <summary>Xem câu hỏi gốc</summary>
-              <span>{question.questionOriginalText}</span>
-            </details>
-          )}
 
           {answerMode === "choice" ? (
             <div className="question-choice-grid">
@@ -582,10 +556,6 @@ function QuestionsPage({ sessionId }) {
                   ? selectedAnswer[prompt.key]
                   : undefined;
 
-                const promptOriginal = prompt.original && prompt.original !== question.questionOriginalText
-                  ? prompt.original
-                  : "";
-
                 return (
                   <section
                     className="boolean-prompt"
@@ -597,7 +567,6 @@ function QuestionsPage({ sessionId }) {
                       <strong id={`clinical-prompt-${currentIndex}-${promptIndex}`}>
                         {prompt.label}
                       </strong>
-                      {promptOriginal && <small>Gốc: {promptOriginal}</small>}
                     </div>
 
                     <div className="boolean-answer-group" role="radiogroup" aria-label={prompt.label}>
@@ -759,7 +728,7 @@ function ResultPage({ sessionId }) {
     <AssessmentShell
       eyebrow="Bước 3"
       title="Gợi ý chuyên khoa"
-      description="Tổng hợp kết quả phân tích lâm sàng, mức ưu tiên và cơ sở y tế liên quan."
+      description="Tổng hợp kết quả chẩn đoán lâm sàng, mức ưu tiên và cơ sở y tế liên quan."
       activeStep={2}
     >
       <Alert

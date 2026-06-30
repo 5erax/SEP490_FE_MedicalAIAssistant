@@ -202,6 +202,7 @@ export default function DashboardPage() {
     answeredCount,
     answers,
     canSubmitAnswers,
+    currentQuestionIndex,
     error,
     input,
     loading,
@@ -210,6 +211,7 @@ export default function DashboardPage() {
     resetDiagnosis,
     result,
     sessionId,
+    setCurrentQuestionIndex,
     setInput,
     startDiagnosis,
     status,
@@ -219,19 +221,30 @@ export default function DashboardPage() {
     readQuestionsPayload,
     readResultPayload,
   });
+
   const [profilePromptVisible, setProfilePromptVisible] = useState(
     auth?.isProfileCompleted === false && !readProfilePromptDismissed(),
   );
   const [userLocation, setUserLocation] = useState(null);
   const [locationStatus, setLocationStatus] = useState("idle");
+
   const primaryDiagnosis = result?.primaryDiagnosis;
   const diagnoses = result?.diagnoses ?? [];
   const recommendedDepartment = result?.recommendedDepartment;
   const sortedFacilities = [...(result?.recommendedFacilities ?? [])]
     .sort((left, right) => scoreFacility(right, recommendedDepartment, userLocation) - scoreFacility(left, recommendedDepartment, userLocation));
+
   const activeStep = status === "result"
     ? 2
     : ["questions", "submitting"].includes(status) ? 1 : 0;
+
+  const currentQuestion = questions[currentQuestionIndex] ?? null;
+  const currentQuestionId = currentQuestion?.questionId ?? "";
+  const currentAnswer = currentQuestionId ? answers[currentQuestionId] : undefined;
+  const currentQuestionAnswered = currentAnswer === true || currentAnswer === false;
+  const questionProgressPercent = questions.length
+    ? Math.round((answeredCount / questions.length) * 100)
+    : 0;
 
   function dismissProfilePrompt() {
     if (typeof sessionStorage !== "undefined") {
@@ -279,6 +292,14 @@ export default function DashboardPage() {
 
     const query = params.toString();
     navigate(query ? `/map?${query}` : "/map");
+  }
+
+  function goToPreviousQuestion() {
+    setCurrentQuestionIndex((index) => Math.max(0, index - 1));
+  }
+
+  function goToNextQuestion() {
+    setCurrentQuestionIndex((index) => Math.min(questions.length - 1, index + 1));
   }
 
   return (
@@ -334,6 +355,7 @@ export default function DashboardPage() {
               <span>Không thay thế chẩn đoán</span>
             </div>
           </div>
+
           <Field
             id="specialty-symptoms"
             label="Triệu chứng bạn đang gặp"
@@ -348,6 +370,7 @@ export default function DashboardPage() {
               disabled={loading}
             />
           </Field>
+
           <div className="studio-chat-actions">
             <span className="studio-status" aria-live="polite">
               {status === "loading-questions"
@@ -392,9 +415,9 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {["questions", "submitting"].includes(status) && (
+        {["questions", "submitting"].includes(status) && currentQuestion && (
           <form
-            className="studio-diagnosis-panel studio-question-flow"
+            className="studio-diagnosis-panel studio-question-focus"
             onSubmit={submitAnswers}
             ref={questionsPanelRef}
             tabIndex={-1}
@@ -403,57 +426,75 @@ export default function DashboardPage() {
             <div className="studio-panel-head">
               <div>
                 <span>Câu hỏi làm rõ</span>
-                <h2>Hệ thống tìm thấy {questions.length} câu hỏi để làm rõ triệu chứng.</h2>
+                <h2>Trả lời từng câu hỏi để MediMate gợi ý chuyên khoa phù hợp.</h2>
               </div>
               <strong>{answeredCount}/{questions.length}</strong>
             </div>
 
             <div className="studio-answer-progress" aria-label={`Đã trả lời ${answeredCount} trên ${questions.length} câu hỏi`}>
               <div>
-                <span>Đã trả lời</span>
-                <strong>{answeredCount}/{questions.length}</strong>
+                <span>Câu {currentQuestionIndex + 1}/{questions.length}</span>
+                <strong>{questionProgressPercent}%</strong>
               </div>
               <span className="studio-answer-track">
-                <i style={{ width: `${questions.length ? Math.round((answeredCount / questions.length) * 100) : 0}%` }} />
+                <i style={{ width: `${questionProgressPercent}%` }} />
               </span>
             </div>
 
-            <div className="studio-question-list">
-              {questions.map((question, index) => {
-                const questionId = question.questionId;
-                return (
-                  <article className="studio-question" key={questionId}>
-                    <span className="studio-question-index">{index + 1}</span>
-                    <p>{question.questionText}</p>
-                    <div className="studio-segmented-answer" role="group" aria-label={`Trả lời câu hỏi ${index + 1}`}>
-                      <button
-                        className={answers[questionId] === true ? "selected yes" : ""}
-                        type="button"
-                        aria-pressed={answers[questionId] === true}
-                        onClick={() => updateAnswer(questionId, true)}
-                      >
-                        Có
-                      </button>
-                      <button
-                        className={answers[questionId] === false ? "selected no" : ""}
-                        type="button"
-                        aria-pressed={answers[questionId] === false}
-                        onClick={() => updateAnswer(questionId, false)}
-                      >
-                        Không
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-            {canSubmitAnswers && (
-              <div className="studio-question-actions">
-                <Button size="lg" type="submit" loading={status === "submitting"} loadingLabel="Đang phân tích...">
-                  Tiếp tục phân tích
-                </Button>
+            <article className="studio-question studio-question-single">
+              <p>{currentQuestion.questionText}</p>
+
+              <div className="studio-single-answer" role="radiogroup" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
+                <button
+                  className={currentAnswer === true ? "selected yes" : ""}
+                  type="button"
+                  aria-pressed={currentAnswer === true}
+                  onClick={() => updateAnswer(currentQuestionId, true)}
+                >
+                  Có
+                </button>
+
+                <button
+                  className={currentAnswer === false ? "selected no" : ""}
+                  type="button"
+                  aria-pressed={currentAnswer === false}
+                  onClick={() => updateAnswer(currentQuestionId, false)}
+                >
+                  Không
+                </button>
               </div>
-            )}
+            </article>
+
+            <div className="studio-question-actions">
+              <Button
+                type="button"
+                tone="secondary"
+                disabled={currentQuestionIndex === 0 || status === "submitting"}
+                onClick={goToPreviousQuestion}
+              >
+                Câu trước
+              </Button>
+
+              {currentQuestionIndex < questions.length - 1 ? (
+                <Button
+                  type="button"
+                  disabled={!currentQuestionAnswered || status === "submitting"}
+                  onClick={goToNextQuestion}
+                >
+                  Câu tiếp theo
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  type="submit"
+                  loading={status === "submitting"}
+                  loadingLabel="Đang phân tích..."
+                  disabled={!canSubmitAnswers}
+                >
+                  Xem gợi ý
+                </Button>
+              )}
+            </div>
           </form>
         )}
 
@@ -552,15 +593,12 @@ export default function DashboardPage() {
             </article>
           </section>
         )}
+
         {status === "result" && (
           <div className="studio-recovery-actions">
             <Button type="button" tone="secondary" onClick={() => resetDiagnosis({ clearInput: true })}>Nhập triệu chứng mới</Button>
           </div>
         )}
-
-        <Alert className="studio-safety" tone="warning" title="Khi nào cần cấp cứu?">
-          Nếu bạn khó thở nặng, đau ngực, bất tỉnh, co giật hoặc chảy máu nhiều, hãy gọi cấp cứu 115 ngay thay vì chờ kết quả AI.
-        </Alert>
       </section>
     </main>
   );
