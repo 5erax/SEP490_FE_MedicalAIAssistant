@@ -2,7 +2,13 @@ import { useState } from "react";
 import { ClipboardPlus, MapPin, Send, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
-import { getClinicalQuestionAnswerOptions, getStoredAuth } from "../services/api";
+import {
+  getClinicalQuestionAnswerMode,
+  getClinicalQuestionAnswerOptions,
+  getClinicalQuestionBooleanPrompts,
+  getStoredAuth,
+  isClinicalQuestionAnswered,
+} from "../services/api";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
 import "../styles/dashboard.css";
 
@@ -196,6 +202,10 @@ function readProfilePromptDismissed() {
   return sessionStorage.getItem("medimate.profile.prompt.dismissed") === "true";
 }
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 export default function DashboardPage() {
   const auth = getStoredAuth();
   const {
@@ -241,10 +251,12 @@ export default function DashboardPage() {
   const currentQuestion = questions[currentQuestionIndex] ?? null;
   const currentQuestionId = currentQuestion?.questionId ?? "";
   const currentAnswer = currentQuestionId ? answers[currentQuestionId] : undefined;
+  const currentAnswerMode = currentQuestion ? getClinicalQuestionAnswerMode(currentQuestion) : "choice";
   const currentAnswerOptions = currentQuestion ? getClinicalQuestionAnswerOptions(currentQuestion) : [];
-  const currentQuestionAnswered = currentAnswerOptions.some(([answerKey]) => currentAnswer === answerKey)
-    || currentAnswer === true
-    || currentAnswer === false;
+  const currentBooleanPrompts = currentQuestion ? getClinicalQuestionBooleanPrompts(currentQuestion) : [];
+  const currentQuestionAnswered = currentQuestion
+    ? isClinicalQuestionAnswered(currentQuestion, currentAnswer)
+    : false;
   const questionProgressPercent = questions.length
     ? Math.round((answeredCount / questions.length) * 100)
     : 0;
@@ -305,6 +317,13 @@ export default function DashboardPage() {
 
   function goToNextQuestion() {
     setCurrentQuestionIndex((index) => Math.min(questions.length - 1, index + 1));
+  }
+
+  function updateBooleanAnswer(answerKey, value) {
+    updateAnswer(currentQuestionId, {
+      ...(isPlainObject(currentAnswer) ? currentAnswer : {}),
+      [answerKey]: value,
+    });
   }
 
   return (
@@ -444,23 +463,57 @@ export default function DashboardPage() {
             <fieldset className="specialty-question-card">
               <legend>{currentQuestion.questionText}</legend>
 
-              <div className="specialty-answer-grid" role="radiogroup" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
-                {currentAnswerOptions.map(([answerKey, label], answerIndex) => (
-                  <button
-                    className={[
-                      currentAnswer === answerKey ? "selected" : "",
-                      answerIndex === 0 ? "yes" : "",
-                      answerIndex === 1 ? "no" : "",
-                    ].filter(Boolean).join(" ")}
-                    type="button"
-                    key={answerKey}
-                    aria-pressed={currentAnswer === answerKey}
-                    onClick={() => updateAnswer(currentQuestionId, answerKey)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {currentAnswerMode === "boolean-list" ? (
+                <div className="specialty-answer-list" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
+                  {currentBooleanPrompts.map((prompt) => {
+                    const selectedValue = isPlainObject(currentAnswer)
+                      ? currentAnswer[prompt.key]
+                      : undefined;
+
+                    return (
+                      <section className="specialty-answer-row" key={prompt.key}>
+                        <strong>{prompt.label}</strong>
+                        <div className="specialty-answer-grid" role="group" aria-label={`Trả lời ${prompt.label}`}>
+                          <button
+                            className={selectedValue === true ? "selected yes" : ""}
+                            type="button"
+                            aria-pressed={selectedValue === true}
+                            onClick={() => updateBooleanAnswer(prompt.key, true)}
+                          >
+                            Có
+                          </button>
+                          <button
+                            className={selectedValue === false ? "selected no" : ""}
+                            type="button"
+                            aria-pressed={selectedValue === false}
+                            onClick={() => updateBooleanAnswer(prompt.key, false)}
+                          >
+                            Không
+                          </button>
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="specialty-answer-grid specialty-answer-choice-grid" role="radiogroup" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
+                  {currentAnswerOptions.map(([answerKey, label], answerIndex) => (
+                    <button
+                      className={[
+                        currentAnswer === answerKey ? "selected" : "",
+                        answerIndex === 0 ? "yes" : "",
+                        answerIndex === 1 ? "no" : "",
+                      ].filter(Boolean).join(" ")}
+                      type="button"
+                      key={answerKey}
+                      aria-pressed={currentAnswer === answerKey}
+                      onClick={() => updateAnswer(currentQuestionId, answerKey)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </fieldset>
 
             <div className="studio-question-actions specialty-question-actions">

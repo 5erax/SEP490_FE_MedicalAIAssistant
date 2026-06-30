@@ -21,7 +21,9 @@ export { patientProfilesApi } from "./patientProfileService";
 export { clinicalQuestionsApi } from "./clinicalQuestionService";
 export {
   buildClinicalQuestionAnswerItems,
+  getClinicalQuestionAnswerMode,
   getClinicalQuestionAnswerOptions,
+  getClinicalQuestionBooleanPrompts,
   isClinicalQuestionAnswered,
   symptomAnalysisApi,
 } from "./symptomAnalysisService";
