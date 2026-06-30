@@ -705,6 +705,147 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   background: var(--color-surface);
   font-weight: 950;
 }
+/* Specialty suggestion: one-question UI aligned with clinical diagnosis.
+   Add this at the end of src/styles/dashboard.css */
+
+.studio-diagnosis-panel.specialty-question-flow {
+  width: min(900px, 100%);
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 24px;
+  background: var(--color-surface);
+  box-shadow: 0 22px 60px rgba(34, 63, 20, 0.1);
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.specialty-question-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 12px;
+  color: var(--color-muted);
+  font-weight: 900;
+}
+
+.specialty-question-topline strong {
+  min-width: 54px;
+  border-radius: var(--radius-pill);
+  background: #e8f6f7;
+  color: #087f8c;
+  padding: 6px 11px;
+  text-align: center;
+}
+
+.studio-answer-progress.specialty-question-progress {
+  display: block;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.specialty-question-progress .studio-answer-track {
+  height: 9px;
+  background: var(--color-line);
+}
+
+.specialty-question-card {
+  min-width: 0;
+  display: grid;
+  gap: 22px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 22px;
+  background: var(--color-surface);
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.specialty-question-card legend {
+  display: block;
+  width: 100%;
+  padding: 0;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.6vw, 38px);
+  font-weight: 950;
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+}
+
+.specialty-answer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 12px;
+  width: min(360px, 100%);
+}
+
+.specialty-answer-grid button {
+  min-height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
+  padding: 0 18px;
+  font-size: 16px;
+  font-weight: 950;
+  cursor: pointer;
+  transition:
+    background var(--motion-base),
+    border-color var(--motion-base),
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
+}
+
+.specialty-answer-grid button:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-ink);
+  background: var(--color-primary-soft);
+}
+
+.specialty-answer-grid button.selected.yes,
+.specialty-answer-grid button.selected.no {
+  border-color: var(--color-ink);
+  background: var(--color-primary);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
+.specialty-answer-grid button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.35);
+  outline-offset: 3px;
+}
+
+.studio-question-actions.specialty-question-actions {
+  justify-content: flex-start;
+  border-top: 1px solid var(--color-line);
+  padding-top: 14px;
+}
+
+@media (max-width: 760px) {
+  .studio-diagnosis-panel.specialty-question-flow {
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .specialty-question-card {
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  .specialty-question-card legend {
+    font-size: clamp(23px, 8vw, 32px);
+  }
+
+  .specialty-answer-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+}
 
 .studio-flow li.active {
   color: var(--color-ink);

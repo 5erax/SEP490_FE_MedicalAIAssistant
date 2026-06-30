@@ -120,7 +120,7 @@ function Stepper({ active }) {
   const steps = ["Mô tả", "Làm rõ", "Kết quả"];
 
   return (
-    <ol className="assessment-stepper clinical-stepper" aria-label="Tiến trình chẩn đoán lâm sàng">
+    <ol className="assessment-stepper clinical-stepper" aria-label="Tiến trình phân tích lâm sàng">
       {steps.map((step, index) => (
         <li
           className={index === active ? "active" : index < active ? "complete" : ""}
@@ -139,7 +139,7 @@ function EntryPage() {
   return (
     <AssessmentShell
       eyebrow="Tư vấn lâm sàng"
-      title="Chẩn đoán lâm sàng qua triệu chứng"
+      title="Phân tích lâm sàng qua triệu chứng"
       description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
       activeStep={0}
     >
@@ -309,7 +309,7 @@ function IntakePage() {
   return (
     <AssessmentShell
       eyebrow="Tư vấn lâm sàng"
-      title="Chẩn đoán lâm sàng qua triệu chứng"
+      title="Phân tích lâm sàng qua triệu chứng"
       description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
       activeStep={0}
     >
@@ -350,7 +350,7 @@ function IntakePage() {
             loading={isSubmitting}
             loadingLabel="Đang tạo câu hỏi..."
             disabled={!trimmedInput}
-            aria-label="Tiếp tục chẩn đoán lâm sàng"
+            aria-label="Tiếp tục phân tích lâm sàng"
           >
             <Send size={18} />
           </Button>
@@ -388,13 +388,11 @@ function QuestionsPage({ sessionId }) {
     });
   }
 
-  function updateBooleanAnswer(questionId, answerKey, value) {
+  function updateBooleanQuestionAnswer(questionId, prompts, value) {
     setSession((current) => {
-      const currentAnswer = current?.answers?.[questionId];
-      const nextAnswer = {
-        ...(isPlainObject(currentAnswer) ? currentAnswer : {}),
-        [answerKey]: value,
-      };
+      const nextAnswer = Object.fromEntries(
+        prompts.map((prompt) => [prompt.key, value]),
+      );
 
       const next = {
         ...current,
@@ -494,9 +492,15 @@ function QuestionsPage({ sessionId }) {
   const booleanPrompts = getClinicalQuestionBooleanPrompts(question);
   const questionComplete = isClinicalQuestionAnswered(question, selectedAnswer);
   const progressPercent = Math.round((answeredCount / questions.length) * 100);
-  const singleBooleanPrompt = answerMode !== "choice" && booleanPrompts.length === 1
-    ? booleanPrompts[0]
-    : null;
+  const booleanQuestionValue = isPlainObject(selectedAnswer) && booleanPrompts.length > 0
+    ? (
+      booleanPrompts.every((prompt) => selectedAnswer[prompt.key] === true)
+        ? true
+        : booleanPrompts.every((prompt) => selectedAnswer[prompt.key] === false)
+          ? false
+          : undefined
+    )
+    : undefined;
 
   return (
     <AssessmentShell
@@ -528,75 +532,29 @@ function QuestionsPage({ sessionId }) {
                 </label>
               ))}
             </div>
-          ) : singleBooleanPrompt ? (
+          ) : (
             <div className="question-choice-grid" role="radiogroup" aria-label={question.questionText}>
               <label>
                 <input
                   type="radio"
-                  name={`answer-${question.questionId}-${singleBooleanPrompt.key}`}
-                  checked={isPlainObject(selectedAnswer) && selectedAnswer[singleBooleanPrompt.key] === true}
-                  onChange={() => updateBooleanAnswer(question.questionId, singleBooleanPrompt.key, true)}
+                  name={`answer-${question.questionId}-boolean`}
+                  checked={booleanQuestionValue === true}
+                  onChange={() => updateBooleanQuestionAnswer(question.questionId, booleanPrompts, true)}
                 />
                 Có
               </label>
               <label>
                 <input
                   type="radio"
-                  name={`answer-${question.questionId}-${singleBooleanPrompt.key}`}
-                  checked={isPlainObject(selectedAnswer) && selectedAnswer[singleBooleanPrompt.key] === false}
-                  onChange={() => updateBooleanAnswer(question.questionId, singleBooleanPrompt.key, false)}
+                  name={`answer-${question.questionId}-boolean`}
+                  checked={booleanQuestionValue === false}
+                  onChange={() => updateBooleanQuestionAnswer(question.questionId, booleanPrompts, false)}
                 />
                 Không
               </label>
             </div>
-          ) : (
-            <div className="boolean-prompt-list">
-              {booleanPrompts.map((prompt, promptIndex) => {
-                const selectedValue = isPlainObject(selectedAnswer)
-                  ? selectedAnswer[prompt.key]
-                  : undefined;
-
-                return (
-                  <section
-                    className="boolean-prompt"
-                    key={prompt.key}
-                    aria-labelledby={`clinical-prompt-${currentIndex}-${promptIndex}`}
-                  >
-                    <div className="boolean-prompt-copy">
-                      <span>Tiêu chí {promptIndex + 1}</span>
-                      <strong id={`clinical-prompt-${currentIndex}-${promptIndex}`}>
-                        {prompt.label}
-                      </strong>
-                    </div>
-
-                    <div className="boolean-answer-group" role="radiogroup" aria-label={prompt.label}>
-                      <label>
-                        <input
-                          type="radio"
-                          name={`answer-${question.questionId}-${prompt.key}`}
-                          checked={selectedValue === true}
-                          onChange={() => updateBooleanAnswer(question.questionId, prompt.key, true)}
-                        />
-                        <span>Có</span>
-                      </label>
-
-                      <label>
-                        <input
-                          type="radio"
-                          name={`answer-${question.questionId}-${prompt.key}`}
-                          checked={selectedValue === false}
-                          onChange={() => updateBooleanAnswer(question.questionId, prompt.key, false)}
-                        />
-                        <span>Không</span>
-                      </label>
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
           )}
         </fieldset>
-
         {error && <Alert tone="danger" live>{error}</Alert>}
 
         <div className="assessment-actions">
@@ -728,7 +686,7 @@ function ResultPage({ sessionId }) {
     <AssessmentShell
       eyebrow="Bước 3"
       title="Gợi ý chuyên khoa"
-      description="Tổng hợp kết quả chẩn đoán lâm sàng, mức ưu tiên và cơ sở y tế liên quan."
+      description="Tổng hợp kết quả phân tích lâm sàng, mức ưu tiên và cơ sở y tế liên quan."
       activeStep={2}
     >
       <Alert
