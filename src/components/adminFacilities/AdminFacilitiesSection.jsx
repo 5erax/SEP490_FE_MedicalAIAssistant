@@ -1,5 +1,6 @@
 import { Filter, Plus, RefreshCw, RotateCcw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { uploadImageToCloudinary } from "../../services/cloudinaryUploadService";
 import { Badge, Button, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
 
 function ApiMessage({ message }) {
@@ -63,6 +64,8 @@ export default function AdminFacilitiesSection({
   onToggleStatus,
 }) {
   const [formOpen, setFormOpen] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadMessage, setImageUploadMessage] = useState(null);
   const wasSavingRef = useRef(false);
 
   useEffect(() => {
@@ -74,18 +77,40 @@ export default function AdminFacilitiesSection({
 
   function openCreateForm() {
     onReset();
+    setImageUploadMessage(null);
     setFormOpen(true);
   }
 
   function openEditForm(facility) {
     onEdit(facility);
+    setImageUploadMessage(null);
     setFormOpen(true);
   }
 
   function closeForm() {
-    if (saving) return;
+    if (saving || imageUploading) return;
     setFormOpen(false);
+    setImageUploadMessage(null);
     onReset();
+  }
+
+  async function handleImageUpload(event) {
+    const [file] = event.target.files ?? [];
+    if (!file) return;
+
+    setImageUploading(true);
+    setImageUploadMessage(null);
+
+    try {
+      const { secureUrl } = await uploadImageToCloudinary(file);
+      onFormChange("imageUrl", secureUrl);
+      setImageUploadMessage({ type: "success", text: "Đã tải ảnh lên Cloudinary." });
+    } catch (error) {
+      setImageUploadMessage({ type: "error", text: error.message });
+    } finally {
+      setImageUploading(false);
+      event.target.value = "";
+    }
   }
 
   return (
@@ -345,6 +370,41 @@ export default function AdminFacilitiesSection({
               </Field>
             </div>
 
+            <div className="facility-image-uploader">
+              <Field label="Ảnh cơ sở y tế">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={saving || imageUploading}
+                />
+              </Field>
+              <p className="muted-text">Ảnh được tải lên Cloudinary bằng unsigned upload preset. Tối đa 5 MB.</p>
+              {imageUploadMessage && (
+                <p
+                  className={`facility-upload-message ${imageUploadMessage.type}`}
+                  role={imageUploadMessage.type === "error" ? "alert" : "status"}
+                >
+                  {imageUploadMessage.text}
+                </p>
+              )}
+              <Field label="Cloudinary image URL">
+                <input
+                  type="url"
+                  value={form.imageUrl}
+                  onChange={(event) => onFormChange("imageUrl", event.target.value)}
+                  placeholder="https://res.cloudinary.com/..."
+                />
+              </Field>
+              {form.imageUrl && (
+                <img
+                  className="facility-image-preview"
+                  src={form.imageUrl}
+                  alt="Xem trước ảnh cơ sở y tế"
+                />
+              )}
+            </div>
+
             <label className="clean-checkbox">
               <input
                 type="checkbox"
@@ -378,9 +438,9 @@ export default function AdminFacilitiesSection({
               <button
                 className="btn btn-primary"
                 type="submit"
-                disabled={saving || departments.length === 0}
+                disabled={saving || imageUploading || departments.length === 0}
               >
-                {saving ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật" : "Tạo cơ sở"}
+                {imageUploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật" : "Tạo cơ sở"}
               </button>
             </div>
           </form>

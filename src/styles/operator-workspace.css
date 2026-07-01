@@ -740,6 +740,42 @@
   gap: 12px;
 }
 
+.admin-operator .facility-image-uploader {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 14px;
+  background: #fbfcf7;
+  padding: 12px;
+}
+
+.admin-operator .facility-image-uploader .muted-text,
+.admin-operator .facility-upload-message {
+  margin: 0;
+}
+
+.admin-operator .facility-upload-message {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-operator .facility-upload-message.success {
+  color: #087f5b;
+}
+
+.admin-operator .facility-upload-message.error {
+  color: #b42318;
+}
+
+.admin-operator .facility-image-preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border: 1px solid rgba(16, 20, 17, 0.12);
+  border-radius: 12px;
+  background: #f4f7ee;
+}
+
 .admin-operator .admin-staff-panel {
   display: grid;
   gap: 16px;
