@@ -39,8 +39,8 @@ function classifyPayment(data) {
   return "pending";
 }
 
-function getView(status, expectedResult) {
-  if (expectedResult === "cancel" || status === "cancelled") {
+function getView(status) {
+  if (status === "cancelled") {
     return {
       eyebrow: "Đăng ký không thành công",
       title: "Bạn đã hủy giao dịch.",
@@ -106,16 +106,17 @@ function getView(status, expectedResult) {
 }
 
 function getStatusLabel(status, expectedResult) {
-  if (expectedResult === "cancel" || status === "cancelled") return "Đã hủy";
+  if (status === "cancelled") return "Đã hủy";
   if (status === "success") return "Đã kích hoạt";
   if (status === "failed") return "Thất bại";
   if (status === "expired") return "Hết hạn";
   if (status === "missing") return "Thiếu mã giao dịch";
+  if (expectedResult === "cancel" && status === "checking") return "Đang xác nhận hủy";
   return "Đang xác minh";
 }
 
 function getInitialStatus(orderCode, expectedResult) {
-  if (expectedResult === "cancel") return "cancelled";
+  if (expectedResult === "cancel") return orderCode ? "checking" : "cancelled";
   return orderCode ? "checking" : "missing";
 }
 
@@ -127,7 +128,7 @@ export default function PaymentResultPage({ expectedResult }) {
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
   const [callbackParams] = useState(getCallbackParams);
-  const view = getView(status, expectedResult);
+  const view = getView(status);
   const Icon = view.icon;
   const isCancelFlow = expectedResult === "cancel";
 
@@ -149,7 +150,9 @@ export default function PaymentResultPage({ expectedResult }) {
 
     const response = expectedResult === "return"
       ? await paymentsApi.payOsReturn(callbackParams)
-      : await paymentsApi.payOsStatus(orderCode);
+      : expectedResult === "cancel"
+        ? await paymentsApi.payOsCancel(callbackParams)
+        : await paymentsApi.payOsStatus(orderCode);
 
     const data = response.data ?? {};
     const nextStatus = classifyPayment(data);
@@ -161,19 +164,6 @@ export default function PaymentResultPage({ expectedResult }) {
   }, [callbackParams, expectedResult, orderCode, refreshPremiumState]);
 
   useEffect(() => {
-    if (isCancelFlow) {
-      setStatus("cancelled");
-      setMessage("");
-
-      // Gọi backend trong nền để ghi nhận callback hủy nếu PayOS có trả orderCode.
-      // Không cho lỗi verify làm vỡ UX của người dùng đã bấm hủy thanh toán.
-      if (orderCode) {
-        paymentsApi.payOsCancel(callbackParams).catch(() => {});
-      }
-
-      return undefined;
-    }
-
     if (!orderCode) return undefined;
 
     let active = true;
@@ -204,10 +194,10 @@ export default function PaymentResultPage({ expectedResult }) {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [callbackParams, checkStatus, isCancelFlow, orderCode]);
+  }, [checkStatus, orderCode]);
 
   async function handleCheckAgain() {
-    if (isCancelFlow) {
+    if (isCancelFlow && !orderCode) {
       setStatus("cancelled");
       return;
     }
@@ -226,7 +216,8 @@ export default function PaymentResultPage({ expectedResult }) {
   }
 
   const success = status === "success";
-  const settled = isCancelFlow || success || status === "cancelled" || status === "failed" || status === "expired";
+  const settled = success || status === "cancelled" || status === "failed" || status === "expired";
+  const verifying = status === "checking" || status === "pending";
 
   function continueAfterPayment() {
     if (success && returnTo) {
@@ -250,9 +241,9 @@ export default function PaymentResultPage({ expectedResult }) {
       <section
         className="payment-result-card"
         aria-live="polite"
-        aria-busy={!isCancelFlow && (status === "checking" || status === "pending")}
+        aria-busy={verifying}
       >
-        <div className={`payment-result-icon ${!isCancelFlow && (status === "checking" || status === "pending") ? "is-loading" : ""}`}>
+        <div className={`payment-result-icon ${verifying ? "is-loading" : ""}`}>
           <Icon size={38} aria-hidden="true" />
         </div>
 
@@ -304,7 +295,7 @@ export default function PaymentResultPage({ expectedResult }) {
       </section>
 
       <p className="payment-result-support">
-        {isCancelFlow || status === "cancelled"
+        {status === "cancelled"
           ? "Bạn đã rời khỏi thanh toán trước khi hoàn tất. MediMate không ghi nhận khoản thanh toán nào cho giao dịch này, gói hiện tại của bạn vẫn được giữ nguyên."
           : "Không đóng trình duyệt trong lúc xác minh. Nếu tiền đã trừ nhưng gói chưa kích hoạt, hãy giữ lại mã giao dịch để liên hệ hỗ trợ."}
       </p>

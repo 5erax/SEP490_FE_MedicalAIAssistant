@@ -59,8 +59,8 @@ test("payment return verifies the order and opens the activated experience", asy
     sessionStorage.setItem("medimate.returnTo", "/map?search=tim%20mach#results");
   });
   await page.goto("/payment/return?orderCode=987654321", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "MediMate+ da san sang." })).toBeVisible();
-  await page.getByRole("button", { name: "Tiep tuc tac vu" }).click();
+  await expect(page.getByRole("heading", { name: "MediMate+ đã sẵn sàng." })).toBeVisible();
+  await page.getByRole("button", { name: "Tiếp tục tác vụ" }).click();
   await expect(page).toHaveURL(/\/map\?search=tim%20mach#results$/);
 });
 
@@ -85,10 +85,11 @@ test("payment cancel calls the backend cancel callback before showing retry acti
   });
 
   await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Giao dich da duoc xac nhan huy." })).toBeVisible();
   await expect.poll(() => cancelRequests).toBeGreaterThan(0);
-  await expect(page.getByText("Da huy", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Chon lai goi" }).click();
+  await expect(page.getByRole("heading", { name: "Bạn đã hủy giao dịch." })).toBeVisible();
+  await expect(page.getByText("Đã hủy", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Kiểm tra lại trạng thái" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Quay lại bảng giá" }).click();
   await expect(page).toHaveURL(/\/pricing$/);
 });
 
@@ -110,5 +111,6 @@ test("payment cancel trusts backend success over the cancel URL", async ({ page 
   await mockRefreshPremium(page);
 
   await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "MediMate+ da san sang." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "MediMate+ đã sẵn sàng." })).toBeVisible();
+  await expect(page.getByText("Đã kích hoạt", { exact: true })).toBeVisible();
 });

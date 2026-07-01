@@ -84,10 +84,11 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toBeVisible();
   await expect(page.getByText("Đang tải bản đồ…", { exact: true })).toBeHidden();
 
-  const viewDetails = page.locator(".facility-select-button");
+  const viewDetails = page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" });
   await viewDetails.focus();
   await viewDetails.press("Enter");
-  await expect(page.getByRole("button", { name: "Đang xem chi tiết" })).toHaveAttribute("aria-pressed", "true");
+  await expect(viewDetails).toHaveAttribute("aria-pressed", "true");
+  await expect(viewDetails).toHaveText("Đang xem chi tiết");
 
   const skipMap = page.getByRole("link", { name: "Bỏ qua bản đồ, đến danh sách cơ sở" });
   await expect(skipMap).toHaveAttribute("href", "#facility-list");
@@ -100,11 +101,11 @@ test("facility without coordinates stays in the list without a false marker", as
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
-  await page.getByRole("button", { name: "Xem chi tiết" }).click();
+  await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
   await expect(page.getByText("Chưa có vị trí chính xác trên bản đồ.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveCount(0);
 
-  const directionsButton = page.getByLabel("Danh sách cơ sở y tế").getByRole("button", { name: "Chỉ đường" });
+  const directionsButton = page.getByRole("button", { name: "Chỉ đường đến Bệnh viện kiểm thử" });
   await expect(directionsButton).toBeDisabled();
   await expect(directionsButton).toHaveAttribute("title", "Cơ sở chưa có tọa độ chính xác");
 });
@@ -138,12 +139,53 @@ test("map search matches facility departments from active backend data", async (
   await page.getByLabel("Tìm cơ sở y tế").fill("da lieu");
   await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toBeVisible();
   await expect(page.getByText("Bệnh viện Tim", { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("Danh sách cơ sở y tế").getByText("Phòng khám", { exact: true })).toBeVisible();
+  const dermatologyCard = page.locator(".facility-result-card").filter({ hasText: "Phòng khám Da liễu" });
+  await expect(dermatologyCard.getByText("Phòng khám", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Xem chi tiết" }).click();
-  const callButton = page.getByRole("button", { name: "Gọi ngay" });
+  await dermatologyCard.getByRole("button", { name: "Xem chi tiết Phòng khám Da liễu" }).click();
+  const callButton = page.getByRole("button", { name: "Gọi Phòng khám Da liễu" });
   await expect(callButton).toBeDisabled();
   await expect(callButton).toHaveAttribute("title", "Cơ sở chưa có số điện thoại");
+});
+
+test("map supplements each department with three complete mock hospitals", async ({ page }) => {
+  await preparePage(page);
+  await mockMapApis(page, [
+    facility({
+      id: "11111111-1111-4111-8111-111111111111",
+      facilityName: "Bệnh viện Chợ Rẫy",
+      address: "201B Nguyễn Chí Thanh, Quận 5",
+      phone: null,
+      website: null,
+      openingHours: null,
+      departments: [{
+        departmentId: "department-musculoskeletal",
+        departmentName: "Khoa cơ - xương - khớp",
+      }],
+    }),
+  ], {
+    departments: [
+      { id: "department-musculoskeletal", departmentName: "Khoa cơ - xương - khớp", chapterCode: "M" },
+      { id: "department-respiratory", departmentName: "Khoa Hô Hấp", chapterCode: "J" },
+    ],
+  });
+  await mockSuccessfulMapStyle(page);
+
+  await page.goto("/map", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("6 kết quả phù hợp", { exact: true })).toBeVisible();
+  await expect(page.getByText("Backend chưa đủ 3 bệnh viện cho mỗi khoa.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Bệnh viện Chấn thương Chỉnh hình TP.HCM", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bệnh viện Phạm Ngọc Thạch", { exact: true })).toBeVisible();
+
+  const respiratoryCard = page.locator(".facility-result-card").filter({ hasText: "Bệnh viện Phạm Ngọc Thạch" });
+  await respiratoryCard.getByRole("button", { name: "Xem chi tiết" }).click();
+
+  const detail = page.locator(".facility-detail-view");
+  await expect(detail).toBeVisible();
+  await expect(detail.locator("img")).toHaveAttribute("src", /\/images\/hospitals\/respiratory-care\.svg$/);
+  await expect(detail).toContainText("028 3855 0207");
+  await expect(detail).toContainText("https://bvphamngocthach.vn");
 });
 
 test("map style failure shows a usable fallback and supports retry", async ({ page }) => {

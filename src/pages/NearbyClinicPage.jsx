@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import FacilityReviews from "../components/nearbyClinic/FacilityReviews";
+import { ensureMockFacilityCoverage } from "../data/mockMedicalFacilities";
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import {
@@ -81,6 +82,18 @@ function getArrayData(response) {
 
 function getObjectData(response) {
   return response?.data?.data ?? response?.data ?? response;
+}
+
+function mergeFacilityDetail(existingFacility, apiFacility) {
+  return {
+    ...existingFacility,
+    ...apiFacility,
+    phone: apiFacility.phone || existingFacility.phone,
+    website: apiFacility.website || existingFacility.website,
+    openingHours: apiFacility.openingHours || existingFacility.openingHours,
+    imageUrl: apiFacility.imageUrl || apiFacility.thumbnailUrl || apiFacility.photoUrl || existingFacility.imageUrl,
+    description: apiFacility.description || apiFacility.summary || existingFacility.description,
+  };
 }
 
 function normalizeFacility(facility, relationDepartments = [], relationDepartmentIds = []) {
@@ -191,11 +204,8 @@ function NearbyClinicPage() {
     ])
       .then(([facilityResult, departmentResult, relationResult]) => {
         if (!active) return;
-        if (facilityResult.status !== "fulfilled") {
-          throw facilityResult.reason;
-        }
 
-        const rawFacilities = getArrayData(facilityResult.value);
+        const rawFacilities = facilityResult.status === "fulfilled" ? getArrayData(facilityResult.value) : [];
         const departments = departmentResult.status === "fulfilled" ? getArrayData(departmentResult.value) : [];
         const departmentNamesById = new globalThis.Map(
           departments
@@ -222,7 +232,7 @@ function NearbyClinicPage() {
             relationDepartmentIdsByFacility.set(facilityId, ids);
           }
         });
-        const data = rawFacilities.map((facility) => {
+        const backendFacilities = rawFacilities.map((facility) => {
           const facilityId = facility.facilityId ?? facility.id;
           return normalizeFacility(
             facility,
@@ -230,10 +240,18 @@ function NearbyClinicPage() {
             relationDepartmentIdsByFacility.get(facilityId) ?? [],
           );
         });
+        const data = ensureMockFacilityCoverage(backendFacilities, departments).map((facility) => normalizeFacility(facility));
+        const usesMockData = data.some((facility) => facility.isMockFacility || facility.isMockAugmented);
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
         setSelectedFacility(null);
-        setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
+        if (facilityResult.status !== "fulfilled") {
+          setApiNotice("Không tải được danh sách cơ sở từ backend. Đang dùng dữ liệu mẫu cục bộ, ảnh được phục vụ từ frontend.");
+        } else if (usesMockData) {
+          setApiNotice("Backend chưa đủ 3 bệnh viện cho mỗi khoa. Danh sách đang được bổ sung bằng dữ liệu mẫu cục bộ.");
+        } else {
+          setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
+        }
       })
       .catch((error) => {
         if (active) {
@@ -253,6 +271,7 @@ function NearbyClinicPage() {
 
   useEffect(() => {
     if (!selectedFacility?.facilityId) return;
+    if (selectedFacility.isMockFacility) return;
 
     let active = true;
     feedbackReviewsApi.byFacility(selectedFacility.facilityId)
@@ -269,7 +288,7 @@ function NearbyClinicPage() {
     return () => {
       active = false;
     };
-  }, [selectedFacility?.facilityId]);
+  }, [selectedFacility?.facilityId, selectedFacility?.isMockFacility]);
 
   const filteredFacilities = useMemo(() => {
     const normalized = normalizeSearchText(debouncedSearch);
@@ -321,8 +340,13 @@ function NearbyClinicPage() {
   };
 
   const handleCardClick = useCallback((facility) => {
-    setReviewsLoading(true);
     setReviewMessage("");
+    if (facility?.isMockFacility) {
+      setReviews([]);
+      setReviewsLoading(false);
+    } else {
+      setReviewsLoading(true);
+    }
     setSelectedFacility(facility);
     if (facility.hasValidCoordinates && mapStatus === "ready") {
       mapRef.current?.flyTo?.({
@@ -378,6 +402,13 @@ function NearbyClinicPage() {
     setDetailDoctors([]);
     setDetailError("");
 
+    if (facility.isMockFacility) {
+      setDetailFacility(facility);
+      setDetailLoading(false);
+      setDetailDoctorsLoading(false);
+      return;
+    }
+
     try {
       const [facilityResult, doctorResult] = await Promise.allSettled([
         medicalFacilitiesApi.get(facility.facilityId),
@@ -385,7 +416,7 @@ function NearbyClinicPage() {
       ]);
       if (facilityResult.status === "fulfilled") {
         setDetailFacility(normalizeFacility(
-          getObjectData(facilityResult.value),
+          mergeFacilityDetail(facility, getObjectData(facilityResult.value)),
           facility.departments,
           facility.departmentIds,
         ));
