@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Bệnh viện truyền nhiễm</title>
+  <desc id="desc">Ảnh minh họa cơ sở y tế cho chuyên khoa truyền nhiễm và siêu vi.</desc>
+  <rect width="1280" height="720" fill="#fff7d8"/>
+  <rect x="0" y="500" width="1280" height="220" fill="#efe5bf"/>
+  <rect x="200" y="196" width="576" height="378" rx="32" fill="#ffffff" stroke="#2d2610" stroke-width="10"/>
+  <rect x="268" y="268" width="100" height="100" rx="18" fill="#ffe9a8"/>
+  <rect x="430" y="268" width="100" height="100" rx="18" fill="#ffe9a8"/>
+  <rect x="592" y="268" width="100" height="100" rx="18" fill="#ffe9a8"/>
+  <rect x="268" y="426" width="100" height="100" rx="18" fill="#ffe9a8"/>
+  <rect x="430" y="410" width="100" height="164" rx="18" fill="#fff4c8"/>
+  <rect x="592" y="426" width="100" height="100" rx="18" fill="#ffe9a8"/>
+  <circle cx="966" cy="368" r="138" fill="#ffffff" stroke="#2d2610" stroke-width="10"/>
+  <circle cx="966" cy="368" r="64" fill="#ef6f61"/>
+  <g stroke="#2d2610" stroke-width="10" stroke-linecap="round">
+    <path d="M966 210v66M966 460v66M808 368h66M1058 368h66M854 256l48 48M1030 432l48 48M1078 256l-48 48M902 432l-48 48"/>
+  </g>
+  <g fill="#fff7d8">
+    <circle cx="944" cy="348" r="12"/>
+    <circle cx="988" cy="376" r="10"/>
+    <circle cx="960" cy="398" r="8"/>
+  </g>
+  <path d="M178 598h942" stroke="#2d2610" stroke-width="12" stroke-linecap="round"/>
+  <text x="268" y="154" fill="#2d2610" font-family="Arial, sans-serif" font-size="42" font-weight="700">Infectious Care</text>
+</svg>
