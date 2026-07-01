@@ -174,7 +174,7 @@ test("map supplements each department with three complete mock hospitals", async
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByText("6 kết quả phù hợp", { exact: true })).toBeVisible();
-  await expect(page.getByText("Backend chưa đủ 3 bệnh viện cho mỗi khoa.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Backend chưa đủ 3 bệnh viện cho mỗi khoa.", { exact: false })).toHaveCount(0);
   await expect(page.getByText("Bệnh viện Chấn thương Chỉnh hình TP.HCM", { exact: true })).toBeVisible();
   await expect(page.getByText("Bệnh viện Phạm Ngọc Thạch", { exact: true })).toBeVisible();
 
