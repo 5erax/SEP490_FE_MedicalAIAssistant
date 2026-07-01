@@ -2,7 +2,7 @@
 
 Frontend cho **MediMate AI**, nền tảng định hướng trước khi đi khám. Ứng dụng
 giúp người dùng mô tả triệu chứng, nhận gợi ý chuyên khoa và tìm cơ sở y tế phù
-hợp; đồng thời cung cấp workspace vận hành cho Staff và Admin.
+hợp; đồng thời cung cấp workspace vận hành cho Admin.
 
 > **Lưu ý y tế:** MediMate AI chỉ cung cấp thông tin hỗ trợ và không thay thế chẩn đoán, tư vấn hoặc điều trị từ bác sĩ hay cơ sở y tế có chuyên môn. Trong tình huống khẩn cấp, hãy liên hệ ngay dịch vụ cấp cứu tại địa phương.
 
@@ -13,7 +13,7 @@ hợp; đồng thời cung cấp workspace vận hành cho Staff và Admin.
 - Tìm kiếm cơ sở y tế, chuyên khoa và bác sĩ phù hợp.
 - Quản lý hồ sơ cá nhân phục vụ onboarding và định hướng.
 - Đăng ký gói dịch vụ và xử lý kết quả thanh toán PayOS.
-- Phân quyền không gian làm việc cho người dùng, nhân viên y tế và quản trị viên.
+- Phân quyền không gian làm việc cho người dùng và quản trị viên.
 - Quản trị người dùng, cơ sở y tế, bác sĩ, gói đăng ký và cấu hình AI.
 - Đăng ký bác sĩ qua liên kết mời.
 - Hỗ trợ tùy chỉnh hiển thị và kiểm thử accessibility.

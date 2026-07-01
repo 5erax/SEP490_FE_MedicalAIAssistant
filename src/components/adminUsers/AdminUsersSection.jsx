@@ -13,7 +13,6 @@ export default function AdminUsersSection({
   isApproved,
   loading,
   message,
-  onApprove,
   onDelete,
   onLoadPage,
   onPageSizeChange,
@@ -49,7 +48,6 @@ export default function AdminUsersSection({
       header: "Thao tác",
       render: (item) => (
         <div className="record-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onApprove(item.identityId)}>Duyệt</button>
           <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(item.identityId)}>Xóa</button>
         </div>
       ),

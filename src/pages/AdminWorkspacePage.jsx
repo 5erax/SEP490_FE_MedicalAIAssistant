@@ -33,7 +33,6 @@ import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartm
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
-import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -68,18 +67,6 @@ const EMPTY_FACILITY = {
   isActive: true,
   departmentIds: [],
 };
-function createEmptyStaffForm() {
-  return {
-    email: "",
-    userName: "",
-    password: "",
-    confirmPassword: "",
-    displayName: "",
-    address: "",
-    gender: "1",
-    dateOfBirth: "",
-  };
-}
 const EMPTY_FACILITY_FILTERS = {
   search: "",
   isActive: "",
@@ -316,7 +303,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [editingIcdChapterId, setEditingIcdChapterId] = useState("");
   const [editingFacilityId, setEditingFacilityId] = useState("");
-  const [staffForm, setStaffForm] = useState(createEmptyStaffForm);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
   const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
   const [lastInvitation, setLastInvitation] = useState(null);
@@ -335,7 +321,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingIcdChapter, setSavingIcdChapter] = useState(false);
   const [savingFacility, setSavingFacility] = useState(false);
-  const [savingStaff, setSavingStaff] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
   const [savingInvitation, setSavingInvitation] = useState(false);
   const [savingAIConfig, setSavingAIConfig] = useState(false);
@@ -347,7 +332,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [icdChapterMessage, setIcdChapterMessage] = useState(null);
   const [facilityMessage, setFacilityMessage] = useState(null);
   const [facilityLoadError, setFacilityLoadError] = useState("");
-  const [staffMessage, setStaffMessage] = useState(null);
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [doctorLoadError, setDoctorLoadError] = useState("");
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
@@ -1105,17 +1089,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     }
   }
 
-  async function handleApproveUser(userId) {
-    setUsersMessage(null);
-    try {
-      const response = await usersApi.approve(userId);
-      setUsersMessage({ type: "success", text: response.message || "Đã duyệt người dùng." });
-      await loadUsers();
-    } catch (error) {
-      setUsersMessage({ type: "error", text: error.message });
-    }
-  }
-
   async function handleDeleteUser(userId) {
     const confirmed = await confirmAction({
       title: "Xóa người dùng?",
@@ -1492,30 +1465,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     }
   }
 
-  function updateStaff(key, value) {
-    setStaffForm((current) => ({ ...current, [key]: value }));
-  }
-
-  async function handleCreateStaff(event) {
-    event.preventDefault();
-    setSavingStaff(true);
-    setStaffMessage(null);
-    try {
-      const response = await authApi.registerStaff({
-        ...staffForm,
-        gender: Number(staffForm.gender),
-        dateOfBirth: staffForm.dateOfBirth || null,
-      });
-      setStaffMessage({ type: "success", text: response.message || "Đã tạo tài khoản staff." });
-      setStaffForm(createEmptyStaffForm());
-      await loadUsers();
-    } catch (error) {
-      setStaffMessage({ type: "error", text: error.message });
-    } finally {
-      setSavingStaff(false);
-    }
-  }
-
   async function handleLogout() {
     await logoutUser({ onClear: () => setAuth(null), redirect: navigate });
   }
@@ -1649,7 +1598,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 isApproved={isApprovedUser}
                 loading={usersLoading}
                 message={usersMessage}
-                onApprove={handleApproveUser}
                 onDelete={handleDeleteUser}
                 onLoadPage={loadUsers}
                 onPageSizeChange={(pageSize) => setPageInfo((current) => ({ ...current, pageSize }))}
@@ -1730,16 +1678,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 onEdit={openEditSubscriptionPlan}
                 onReload={loadSubscriptionPlans}
                 onToggleStatus={handleToggleSubscriptionPlanStatus}
-              />
-            )}
-
-            {activeSection === "staff" && (
-              <AdminStaffSection
-                form={staffForm}
-                message={staffMessage}
-                saving={savingStaff}
-                onChange={updateStaff}
-                onSubmit={handleCreateStaff}
               />
             )}
 

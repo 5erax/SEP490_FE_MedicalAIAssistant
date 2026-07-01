@@ -210,7 +210,7 @@ export default function DoctorRegisterInvitationPage() {
   const errorSummaryRef = useRef(null);
   const statusHeadingRef = useRef(null);
   const isLinkedProfile = Boolean(invitation?.isLinkedToExistingDoctorProfile);
-  const loginPath = withReturnTo("/login", "/app/staff");
+  const loginPath = withReturnTo("/login", "/dashboard");
 
   const openDoctorLogin = useCallback(() => {
     replaceRoute(loginPath, {

@@ -4,7 +4,6 @@ export const ADMIN_SECTIONS = [
   "doctors",
   "ai-configs",
   "subscriptions",
-  "staff",
   "departments",
   "icd-chapters",
   "clinical-questions",
@@ -17,7 +16,6 @@ const ADMIN_SECTION_TITLES = {
   doctors: "Quản lý bác sĩ",
   "ai-configs": "Cấu hình AI",
   subscriptions: "Quản lý gói dịch vụ",
-  staff: "Quản lý nhân sự",
   departments: "Quản lý chuyên khoa",
   "icd-chapters": "Quản lý chương ICD",
   "clinical-questions": "Quản lý câu hỏi lâm sàng",
@@ -30,7 +28,6 @@ const ADMIN_SECTION_NAVIGATION = {
   doctors: { label: "Bác sĩ", icon: "doctor" },
   "ai-configs": { label: "AI Config", icon: "ai" },
   subscriptions: { label: "Gói dịch vụ", icon: "subscription" },
-  staff: { label: "Nhân sự", icon: "users" },
   departments: { label: "Chuyên khoa", icon: "facility" },
   "icd-chapters": { label: "Chương ICD", icon: "icd" },
   "clinical-questions": { label: "Câu hỏi lâm sàng", icon: "question" },
@@ -164,24 +161,6 @@ const BASE_ROUTES = [
   },
 ];
 
-const STAFF_ROUTES = [
-  {
-    id: "auth.staff-register",
-    path: "/staff/register",
-    title: "Đăng ký nhân sự | MediMate AI",
-    access: "public",
-    aliases: ["/staff-register"],
-  },
-  {
-    id: "staff.workspace",
-    path: "/app/staff",
-    title: "Không gian nhân sự | MediMate AI",
-    access: "role",
-    roles: ["staff", "doctor", "admin"],
-    shell: "staff",
-  },
-];
-
 const ADMIN_ROUTES = ADMIN_SECTIONS.map((section) => ({
   id: `admin.${section}`,
   path: section === "overview" ? "/app/admin" : `/app/admin/${section}`,
@@ -201,7 +180,7 @@ const ADMIN_ROUTES = ADMIN_SECTIONS.map((section) => ({
       : [],
 }));
 
-export const ROUTES = [...BASE_ROUTES, ...STAFF_ROUTES, ...ADMIN_ROUTES];
+export const ROUTES = [...BASE_ROUTES, ...ADMIN_ROUTES];
 
 const ROUTES_BY_PATH = new Map();
 

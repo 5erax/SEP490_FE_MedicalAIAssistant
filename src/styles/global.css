@@ -3464,285 +3464,6 @@
   padding-top: 4px;
 }
 
-.staff-register-root {
-  min-height: 100svh;
-}
-
-.staff-register-page {
-  min-height: 100svh;
-  padding: 34px 0 72px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 248, 243, 0) 440px),
-    var(--bg);
-}
-
-.staff-register-shell {
-  display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-
-.staff-register-intro,
-.staff-register-card {
-  min-width: 0;
-  border: 1.5px solid var(--ink);
-  border-radius: 18px;
-  background: var(--paper);
-  box-shadow: 4px 4px 0 var(--ink);
-}
-
-.staff-register-intro {
-  position: sticky;
-  top: 34px;
-  display: grid;
-  gap: 22px;
-  max-height: calc(100svh - 112px);
-  overflow: auto;
-  padding: clamp(22px, 2.5vw, 30px);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(223, 248, 237, 0.86)),
-    var(--paper);
-}
-
-.staff-register-intro::-webkit-scrollbar {
-  width: 8px;
-}
-
-.staff-register-intro::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: rgba(17, 20, 18, 0.14);
-  background-clip: padding-box;
-}
-
-.staff-register-intro h1 {
-  max-width: 11ch;
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(28px, 3.6vw, 40px);
-  line-height: 1.12;
-  font-weight: 900;
-  overflow-wrap: anywhere;
-}
-
-.staff-register-intro p:not(.eyebrow) {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.68;
-  overflow-wrap: anywhere;
-}
-
-.staff-register-progress,
-.staff-register-step-list,
-.staff-register-summary {
-  display: grid;
-  gap: 12px;
-}
-
-.staff-register-progress {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 14px;
-}
-
-.staff-register-progress > div:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.staff-register-progress span,
-.staff-register-summary span {
-  color: var(--subtle);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.staff-register-progress strong {
-  color: var(--teal);
-  font-size: 22px;
-}
-
-.staff-register-step-list div {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.72);
-  padding: 11px;
-}
-
-.staff-register-step-list span {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: var(--ink);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.staff-register-step-list strong {
-  min-width: 0;
-  font-size: 14px;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.staff-register-card {
-  display: grid;
-  gap: 20px;
-  padding: clamp(22px, 2.6vw, 30px);
-}
-
-.staff-register-heading,
-.staff-register-actions {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.staff-register-heading > div {
-  min-width: 0;
-}
-
-.staff-register-heading h2,
-.staff-register-success h2 {
-  max-width: 720px;
-  margin: 0;
-  font-size: clamp(26px, 3vw, 34px);
-  line-height: 1.18;
-  overflow-wrap: anywhere;
-}
-
-.staff-register-heading p:not(.eyebrow),
-.staff-register-success p:not(.eyebrow) {
-  max-width: 680px;
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.65;
-  overflow-wrap: anywhere;
-}
-
-.staff-register-form {
-  gap: 16px;
-}
-
-.staff-register-form .profile-form-section {
-  gap: 16px;
-  padding: clamp(16px, 2vw, 20px);
-}
-
-.staff-register-form .form-two-cols {
-  gap: 15px 16px;
-}
-
-.staff-register-form .profile-section-title {
-  gap: 12px;
-}
-
-.staff-register-form .profile-section-title span {
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.staff-register-form .profile-section-title strong,
-.staff-register-heading .soft-badge {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.staff-register-field {
-  min-width: 0;
-  gap: 8px;
-  line-height: 1.35;
-}
-
-.staff-register-field span {
-  overflow-wrap: anywhere;
-}
-
-.staff-register-field input,
-.staff-register-field select {
-  min-height: 46px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.staff-register-field small {
-  line-height: 1.45;
-}
-
-.staff-register-field.has-error input,
-.staff-register-field.has-error select {
-  border-color: var(--coral);
-}
-
-.staff-register-field.has-error small {
-  color: var(--coral);
-}
-
-.staff-register-note {
-  display: flex;
-  gap: 10px;
-  border: 1px solid rgba(217, 119, 6, 0.28);
-  border-radius: var(--radius);
-  background: rgba(245, 158, 11, 0.1);
-  color: rgba(17, 20, 18, 0.72);
-  padding: 12px 14px;
-  font-size: 13px;
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-}
-
-.staff-register-note strong {
-  color: #92400e;
-}
-
-.staff-register-actions {
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
-}
-
-.staff-register-success {
-  display: grid;
-  gap: 18px;
-}
-
-.staff-register-summary {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.staff-register-summary div {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--paper-soft);
-  padding: 15px;
-}
-
-.staff-register-summary strong {
-  display: block;
-  margin-top: 7px;
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-
 .landing-chat-launcher {
   position: fixed;
   right: 24px;
@@ -4412,7 +4133,6 @@
   .cta-band,
   .medical-assistant-shell,
   .profile-setup-shell,
-  .staff-register-shell,
   .api-auth-grid,
   .api-grid,
   .account-layout,
@@ -4431,8 +4151,7 @@
 
   .app-sidebar,
   .admin-sidebar,
-  .profile-setup-intro,
-  .staff-register-intro {
+  .profile-setup-intro {
     position: static;
     max-height: none;
     overflow: visible;
@@ -4588,9 +4307,7 @@
   .admin-topbar,
   .profile-setup-heading,
   .profile-section-title,
-  .profile-setup-actions,
-  .staff-register-heading,
-  .staff-register-actions {
+  .profile-setup-actions {
     flex-direction: column;
   }
 
@@ -4688,40 +4405,11 @@
   }
 
   .profile-setup-form,
-  .profile-setup-intro,
-  .staff-register-card,
-  .staff-register-intro {
+  .profile-setup-intro {
     border-radius: 14px;
   }
 
-  .staff-register-page {
-    padding: 22px 0 58px;
-  }
-
-  .staff-register-intro {
-    gap: 18px;
-    padding: 22px;
-  }
-
-  .staff-register-intro h1 {
-    max-width: none;
-    font-size: clamp(28px, 8vw, 34px);
-  }
-
-  .staff-register-card {
-    padding: 20px;
-  }
-
-  .staff-register-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .staff-register-note {
-    flex-direction: column;
-  }
-
-  .profile-setup-actions .btn,
-  .staff-register-actions .btn {
+  .profile-setup-actions .btn {
     width: 100%;
   }
 
