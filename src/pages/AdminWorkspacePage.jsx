@@ -1229,9 +1229,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       || Object.values(keywordWeights).some((value) => !Number.isInteger(value))) {
       throw new Error("Trọng số từ khóa phải là JSON object với giá trị số nguyên.");
     }
-    return editingIcdChapterId
-      ? { chapterName, keywordWeights }
-      : { chapterCode, chapterName, keywordWeights };
+    return { chapterCode, chapterName, keywordWeights };
   }
 
   async function handleViewIcdChapter(chapter) {

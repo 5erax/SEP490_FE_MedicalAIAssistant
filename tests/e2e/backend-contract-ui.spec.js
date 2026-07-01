@@ -421,10 +421,61 @@ test("admin ICD form sends keywordWeights instead of unsupported description", a
   });
 
   await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Tạo ICD" }).click();
   await page.getByLabel("Mã Chapter").fill("A-B");
   await page.getByLabel("Tên Chapter").fill("Bệnh truyền nhiễm");
   await page.getByLabel("Trọng số từ khóa (JSON)").fill('{"sốt":5,"ho":3}');
   await page.getByRole("button", { name: "Tạo ICD Chapter", exact: true }).click();
 
   expect(icdPayload).toEqual({ chapterCode: "A-B", chapterName: "Bệnh truyền nhiễm", keywordWeights: { sốt: 5, ho: 3 } });
+});
+
+test("admin can update the ICD chapter code", async ({ page }) => {
+  await preparePage(page);
+  await authenticate(page);
+  let updatePayload = null;
+
+  const chapter = {
+    id: CHAPTER_ID,
+    chapterCode: "A-B",
+    chapterName: "Bệnh truyền nhiễm",
+    keywordWeights: { sốt: 5 },
+  };
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    if (url.pathname === "/api/users/me") {
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { name: "Admin", roles: ["Admin"] } }) });
+    }
+    if (url.pathname === "/api/icd-chapters" && method === "GET") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { items: [chapter], pageNumber: 1, pageSize: 20, totalCount: 1, totalPages: 1 } }),
+      });
+    }
+    if (url.pathname === `/api/icd-chapters/${CHAPTER_ID}` && method === "GET") {
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: chapter }) });
+    }
+    if (url.pathname === `/api/icd-chapters/${CHAPTER_ID}` && method === "PUT") {
+      updatePayload = route.request().postDataJSON();
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { ...chapter, ...updatePayload } }) });
+    }
+    const paged = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities"].includes(url.pathname);
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: paged ? { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 } : [] }) });
+  });
+
+  await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Sửa" }).click();
+  const chapterCodeField = page.getByLabel("Mã Chapter");
+  await expect(chapterCodeField).toBeEditable();
+  await chapterCodeField.fill("A-C");
+  await page.getByLabel("Tên Chapter").fill("Bệnh truyền nhiễm cập nhật");
+  await page.getByRole("button", { name: "Lưu cập nhật" }).click();
+
+  expect(updatePayload).toEqual({
+    chapterCode: "A-C",
+    chapterName: "Bệnh truyền nhiễm cập nhật",
+    keywordWeights: { sốt: 5 },
+  });
 });
