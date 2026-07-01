@@ -11,7 +11,15 @@ const EMPTY_DEPARTMENT = { departmentName: "", description: "" };
 
 function ApiMessage({ message }) {
   if (!message) return null;
-  return <div className={`api-message ${message.type}`}>{message.text}</div>;
+  return (
+    <div
+      className={`api-message ${message.type}`}
+      role={message.type === "error" ? "alert" : "status"}
+      aria-live={message.type === "error" ? "assertive" : "polite"}
+    >
+      {message.text}
+    </div>
+  );
 }
 
 function Field({ label, children }) {
@@ -21,6 +29,12 @@ function Field({ label, children }) {
       {children}
     </label>
   );
+}
+
+function getDepartmentRows(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
 }
 
 function EmptyAuth() {
@@ -88,7 +102,7 @@ export default function StaffWorkspacePage() {
         }
 
         if (departmentResult.status === "fulfilled") {
-          setDepartments(departmentResult.value.data ?? []);
+          setDepartments(getDepartmentRows(departmentResult.value.data));
         } else {
           setMessage({ type: "error", text: departmentResult.reason.message });
         }
@@ -112,7 +126,7 @@ export default function StaffWorkspacePage() {
     setMessage(null);
     try {
       const response = await medicalDepartmentsApi.list();
-      setDepartments(response.data ?? []);
+      setDepartments(getDepartmentRows(response.data));
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -255,14 +269,17 @@ export default function StaffWorkspacePage() {
               </div>
               <Field label="Tên chuyên khoa">
                 <input
+                  name="departmentName"
                   value={departmentForm.departmentName}
                   onChange={(event) => setDepartmentForm({ ...departmentForm, departmentName: event.target.value })}
                   placeholder="Ví dụ: Tim mạch"
+                  autoComplete="off"
                   required
                 />
               </Field>
               <Field label="Mô tả">
                 <textarea
+                  name="description"
                   rows={6}
                   value={departmentForm.description}
                   onChange={(event) => setDepartmentForm({ ...departmentForm, description: event.target.value })}

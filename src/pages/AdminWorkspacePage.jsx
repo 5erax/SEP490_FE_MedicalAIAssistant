@@ -302,6 +302,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [facilityPageInfo, setFacilityPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_FACILITY_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const activeSection = initialSection;
+  const activeAdminItem = ADMIN_NAV_ITEMS.find((item) => item.id === `admin.${activeSection}`);
   const [search, setSearch] = useState("");
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [appliedFacilityFilters, setAppliedFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
@@ -1556,6 +1557,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           </aside>
 
           <div className="admin-main">
+            <h1 className="sr-only">{activeAdminItem?.label ?? "Quản trị hệ thống"}</h1>
             <header className="admin-topbar">
               <label className="admin-search" aria-label="Tìm kiếm nhanh trong admin">
                 <Search size={17} />

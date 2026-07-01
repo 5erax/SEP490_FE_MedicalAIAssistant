@@ -24,7 +24,15 @@ export default function AdminStaffSection({
         </div>
         <span className="soft-badge">Tài khoản nội bộ</span>
       </div>
-      {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
+      {message && (
+        <div
+          className={`api-message ${message.type}`}
+          role={message.type === "error" ? "alert" : "status"}
+          aria-live={message.type === "error" ? "assertive" : "polite"}
+        >
+          {message.text}
+        </div>
+      )}
       <form className="clean-form admin-staff-form" onSubmit={onSubmit}>
         <section className="admin-staff-form-card">
           <div className="admin-staff-form-heading">
@@ -35,16 +43,16 @@ export default function AdminStaffSection({
           </div>
           <div className="form-two-cols">
             <Field label="Email">
-              <input type="email" value={form.email} onChange={(event) => onChange("email", event.target.value)} required />
+              <input name="email" type="email" value={form.email} onChange={(event) => onChange("email", event.target.value)} autoComplete="email" required />
             </Field>
             <Field label="Username">
-              <input value={form.userName} onChange={(event) => onChange("userName", event.target.value)} required />
+              <input name="userName" value={form.userName} onChange={(event) => onChange("userName", event.target.value)} autoComplete="username" required />
             </Field>
             <Field label="Mật khẩu">
-              <input type="password" value={form.password} onChange={(event) => onChange("password", event.target.value)} required />
+              <input name="password" type="password" value={form.password} onChange={(event) => onChange("password", event.target.value)} autoComplete="new-password" required />
             </Field>
             <Field label="Nhập lại mật khẩu">
-              <input type="password" value={form.confirmPassword} onChange={(event) => onChange("confirmPassword", event.target.value)} required />
+              <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={(event) => onChange("confirmPassword", event.target.value)} autoComplete="new-password" required />
             </Field>
           </div>
         </section>
@@ -58,19 +66,19 @@ export default function AdminStaffSection({
           </div>
           <div className="form-two-cols">
             <Field label="Tên hiển thị">
-              <input value={form.displayName} onChange={(event) => onChange("displayName", event.target.value)} required />
+              <input name="displayName" value={form.displayName} onChange={(event) => onChange("displayName", event.target.value)} autoComplete="name" required />
             </Field>
             <Field label="Địa chỉ">
-              <input value={form.address} onChange={(event) => onChange("address", event.target.value)} />
+              <input name="address" value={form.address} onChange={(event) => onChange("address", event.target.value)} autoComplete="street-address" />
             </Field>
             <Field label="Giới tính">
-              <select value={form.gender} onChange={(event) => onChange("gender", event.target.value)}>
+              <select name="gender" value={form.gender} onChange={(event) => onChange("gender", event.target.value)} autoComplete="sex">
                 <option value="1">Nam</option>
                 <option value="2">Nữ</option>
               </select>
             </Field>
             <Field label="Ngày sinh">
-              <input type="date" value={form.dateOfBirth} onChange={(event) => onChange("dateOfBirth", event.target.value)} />
+              <input name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={(event) => onChange("dateOfBirth", event.target.value)} autoComplete="bday" />
             </Field>
           </div>
         </section>

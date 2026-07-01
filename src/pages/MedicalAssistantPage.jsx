@@ -260,7 +260,7 @@ function SafetyPage() {
         {!hasRedFlag && (
           <div className="assessment-actions clinical-card-actions">
             <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
-              Không, tiếp tục
+              Không, tiếp tục đánh giá
             </Button>
             <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>
               Quay lại

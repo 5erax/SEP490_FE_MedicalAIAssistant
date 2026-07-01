@@ -14,6 +14,8 @@ import UserProfilePage from "./pages/UserProfilePage";
 import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
 import RecoveryPlanPage from "./pages/RecoveryPlanPage";
 import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
+import StaffRegisterPortalPage from "./pages/StaffRegisterPortalPage";
+import StaffWorkspacePage from "./pages/StaffWorkspacePage";
 import { getStoredAuth } from "./services/api";
 import {
   ChangePasswordPage,
@@ -90,6 +92,8 @@ function App() {
       return <SignupPage />;
     case "auth.doctor-register":
       return <DoctorRegisterInvitationPage />;
+    case "auth.staff-register":
+      return <StaffRegisterPortalPage />;
     case "auth.forgot-password":
       return <ForgotPasswordPage />;
     case "auth.change-password":
@@ -130,6 +134,8 @@ function App() {
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="history" />));
     case "patient.profile-setup":
       return <PersonalPatientProfilePage />;
+    case "staff.workspace":
+      return <StaffWorkspacePage />;
     default:
       if (route.id.startsWith("admin.")) {
         return <AdminWorkspacePage initialSection={route.section} />;

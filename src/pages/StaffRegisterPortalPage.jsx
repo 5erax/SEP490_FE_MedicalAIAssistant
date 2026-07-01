@@ -21,7 +21,15 @@ const FLOW_STEPS = [
 
 function ApiMessage({ message }) {
   if (!message) return null;
-  return <div className={`api-message ${message.type}`}>{message.text}</div>;
+  return (
+    <div
+      className={`api-message ${message.type}`}
+      role={message.type === "error" ? "alert" : "status"}
+      aria-live={message.type === "error" ? "assertive" : "polite"}
+    >
+      {message.text}
+    </div>
+  );
 }
 
 function Field({ label, error, hint, children }) {
@@ -208,6 +216,7 @@ export default function StaffRegisterPortalPage() {
                     <div className="form-two-cols">
                       <Field label="Email" error={errors.email}>
                         <input
+                          name="email"
                           type="email"
                           value={form.email}
                           onChange={(event) => updateField("email", event.target.value)}
@@ -218,6 +227,7 @@ export default function StaffRegisterPortalPage() {
                       </Field>
                       <Field label="Tên đăng nhập" error={errors.userName}>
                         <input
+                          name="userName"
                           value={form.userName}
                           onChange={(event) => updateField("userName", event.target.value)}
                           placeholder="staff.nguyen"
@@ -236,30 +246,36 @@ export default function StaffRegisterPortalPage() {
                     <div className="form-two-cols">
                       <Field label="Họ và tên hiển thị" error={errors.displayName}>
                         <input
+                          name="displayName"
                           value={form.displayName}
                           onChange={(event) => updateField("displayName", event.target.value)}
                           placeholder="Nguyễn Văn Staff"
+                          autoComplete="name"
                           required
                         />
                       </Field>
                       <Field label="Giới tính" error={errors.gender}>
-                        <select value={form.gender} onChange={(event) => updateField("gender", event.target.value)}>
+                        <select name="gender" value={form.gender} onChange={(event) => updateField("gender", event.target.value)} autoComplete="sex">
                           <option value="1">Nam</option>
                           <option value="2">Nữ</option>
                         </select>
                       </Field>
                       <Field label="Ngày sinh" hint="Backend nhận định dạng yyyy-mm-dd.">
                         <input
+                          name="dateOfBirth"
                           type="date"
                           value={form.dateOfBirth}
                           onChange={(event) => updateField("dateOfBirth", event.target.value)}
+                          autoComplete="bday"
                         />
                       </Field>
                       <Field label="Địa chỉ">
                         <input
+                          name="address"
                           value={form.address}
                           onChange={(event) => updateField("address", event.target.value)}
                           placeholder="Hà Nội"
+                          autoComplete="street-address"
                         />
                       </Field>
                     </div>
@@ -273,6 +289,7 @@ export default function StaffRegisterPortalPage() {
                     <div className="form-two-cols">
                       <Field label="Mật khẩu" error={errors.password}>
                         <input
+                          name="password"
                           type="password"
                           value={form.password}
                           onChange={(event) => updateField("password", event.target.value)}
@@ -283,6 +300,7 @@ export default function StaffRegisterPortalPage() {
                       </Field>
                       <Field label="Nhập lại mật khẩu" error={errors.confirmPassword}>
                         <input
+                          name="confirmPassword"
                           type="password"
                           value={form.confirmPassword}
                           onChange={(event) => updateField("confirmPassword", event.target.value)}
