@@ -190,10 +190,9 @@ export default function AdminICDChaptersSection({
                 onChange={(event) => onFormChange("chapterCode", event.target.value)}
                 placeholder="Ví dụ: I"
                 required
-                disabled={Boolean(editingChapterId)}
               />
               {editingChapterId && (
-                <small className="muted-text">Ma Chapter dang duoc dung lam khoa lien ket, chi doi khi Backend da ho tro migrate du lieu lien quan.</small>
+                <small className="muted-text">Cập nhật mã Chapter sẽ gửi mã mới cho backend để đồng bộ danh mục ICD liên quan.</small>
               )}
             </Field>
             <Field label="Tên Chapter">
