@@ -1,0 +1,52 @@
+"area:github":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+"area:docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "*.md"
+
+"area:api":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "api/**"
+          - "src/services/**"
+
+"area:ui":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/components/**"
+          - "src/pages/**"
+          - "src/styles/**"
+          - "public/**"
+
+"area:router":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/router/**"
+
+"area:state":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/state/**"
+          - "src/hooks/**"
+
+"area:tests":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "tests/**"
+          - "playwright.config.js"
+
+"area:config":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "package-lock.json"
+          - "vite.config.js"
+          - "eslint.config.js"
+          - "vercel.json"
+          - ".npmrc"
+          - ".env.example"
