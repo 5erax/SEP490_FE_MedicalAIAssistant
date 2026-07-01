@@ -248,7 +248,7 @@ function NearbyClinicPage() {
         if (facilityResult.status !== "fulfilled") {
           setApiNotice("Không tải được danh sách cơ sở từ backend. Đang dùng dữ liệu mẫu cục bộ, ảnh được phục vụ từ frontend.");
         } else if (usesMockData) {
-          setApiNotice("Backend chưa đủ 3 bệnh viện cho mỗi khoa. Danh sách đang được bổ sung bằng dữ liệu mẫu cục bộ.");
+          setApiNotice("");
         } else {
           setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
         }
@@ -321,9 +321,6 @@ function NearbyClinicPage() {
   );
   const unmappableFacilityCount = filteredFacilities.length - mappableFacilities.length;
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
-  const mapSummaryText = loadingFacilities
-    ? "Đang tải dữ liệu cơ sở y tế."
-    : `${filteredFacilities.length} cơ sở phù hợp, ${mappableFacilities.length} cơ sở có tọa độ hiển thị trên bản đồ${unmappableFacilityCount > 0 ? `, ${unmappableFacilityCount} cơ sở thiếu tọa độ nhưng vẫn có trong danh sách` : ""}.`;
 
   const prefersReducedMotion = useCallback(() => (
     document.documentElement.dataset.motion === "reduce"
@@ -606,11 +603,6 @@ function NearbyClinicPage() {
             <span>Thiếu tọa độ</span>
           </div>
         </section>
-
-        <div className="map-text-alternative" role="status" aria-live="polite">
-          <strong>Kết quả hiện tại</strong>
-          <span>{mapSummaryText}</span>
-        </div>
 
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
         {hasActiveFacilitiesWithoutMapData && (
@@ -973,24 +965,6 @@ const styles = `
   color: var(--muted);
   font-size: 11px;
   font-weight: 850;
-}
-.map-text-alternative {
-  display: grid;
-  gap: 5px;
-  border: 1px solid rgba(8, 127, 140, .2);
-  border-radius: 13px;
-  background: #f2fbfa;
-  color: var(--ink);
-  padding: 11px 12px;
-  font-size: 12px;
-  line-height: 1.5;
-}
-.map-text-alternative strong {
-  font-size: 12px;
-}
-.map-text-alternative span {
-  color: var(--muted);
-  font-weight: 760;
 }
 .result-summary {
   display: flex;
