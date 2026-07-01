@@ -183,7 +183,7 @@ test("map supplements each department with three complete mock hospitals", async
 
   const detail = page.locator(".facility-detail-view");
   await expect(detail).toBeVisible();
-  await expect(detail.locator("img")).toHaveAttribute("src", /\/images\/hospitals\/respiratory-care\.svg$/);
+  await expect(detail.locator("img")).toHaveAttribute("src", "https://cdn.youmed.vn/tin-tuc/wp-content/uploads/2019/05/benh-vien-pham-ngoc-thach-1024x634.png");
   await expect(detail).toContainText("028 3855 0207");
   await expect(detail).toContainText("https://bvphamngocthach.vn");
 });

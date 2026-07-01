@@ -1,5 +1,3 @@
-const MOCK_IMAGE_BASE = "/images/hospitals";
-
 const DEFAULT_DEPARTMENTS = [
   {
     id: "mock-department-musculoskeletal",
@@ -26,22 +24,18 @@ const DEFAULT_DEPARTMENTS = [
 const DEPARTMENT_KEYS = [
   {
     key: "musculoskeletal",
-    imageUrl: `${MOCK_IMAGE_BASE}/musculoskeletal-care.svg`,
     aliases: ["co xuong khop", "cơ xương khớp", "co - xuong - khop", "chapter:m"],
   },
   {
     key: "respiratory",
-    imageUrl: `${MOCK_IMAGE_BASE}/respiratory-care.svg`,
     aliases: ["ho hap", "hô hấp", "chapter:j"],
   },
   {
     key: "infectious",
-    imageUrl: `${MOCK_IMAGE_BASE}/infectious-care.svg`,
     aliases: ["truyen nhiem", "truyền nhiễm", "sieu vi", "siêu vi", "chapter:a-b"],
   },
   {
     key: "general",
-    imageUrl: `${MOCK_IMAGE_BASE}/general-care.svg`,
     aliases: ["tong quat", "tổng quát", "da khoa", "đa khoa", "chapter:r"],
   },
 ];
@@ -53,6 +47,7 @@ const FACILITY_TEMPLATES = {
       address: "201B Nguyễn Chí Thanh, Phường 12, Quận 5, TP.HCM",
       latitude: 10.7578,
       longitude: 106.6601,
+      imageUrl: "https://isofhcare-backup.s3-ap-southeast-1.amazonaws.com/guess/f8744e6c-a253-4b4a-ba84-9a0b791b5441.jpg",
       phone: "028 3855 4137",
       website: "https://choray.vn",
       openingHours: "24/7",
@@ -63,6 +58,7 @@ const FACILITY_TEMPLATES = {
       address: "929 Trần Hưng Đạo, Phường 1, Quận 5, TP.HCM",
       latitude: 10.7517,
       longitude: 106.6748,
+      imageUrl: "https://cdn.medpro.vn/medpro-production/medpro/topics/benh-vien-chan-thuong-chinh-hinh(1).jpg",
       phone: "028 3923 5791",
       website: "https://bvctch.vn",
       openingHours: "Thứ 2 - Chủ nhật, 07:00 - 20:00",
@@ -73,6 +69,7 @@ const FACILITY_TEMPLATES = {
       address: "215 Hồng Bàng, Phường 11, Quận 5, TP.HCM",
       latitude: 10.7554,
       longitude: 106.6652,
+      imageUrl: "https://bvdaihoc.com.vn/cover-homepage.jpg",
       phone: "028 3855 4269",
       website: "https://www.bvdaihoc.com.vn",
       openingHours: "Thứ 2 - Thứ 7, 06:30 - 16:30",
@@ -85,6 +82,7 @@ const FACILITY_TEMPLATES = {
       address: "120 Hồng Bàng, Phường 12, Quận 5, TP.HCM",
       latitude: 10.7547,
       longitude: 106.664,
+      imageUrl: "https://cdn.youmed.vn/tin-tuc/wp-content/uploads/2019/05/benh-vien-pham-ngoc-thach-1024x634.png",
       phone: "028 3855 0207",
       website: "https://bvphamngocthach.vn",
       openingHours: "Thứ 2 - Thứ 6, 07:00 - 16:30",
@@ -95,6 +93,7 @@ const FACILITY_TEMPLATES = {
       address: "1 Nơ Trang Long, Phường 7, Bình Thạnh, TP.HCM",
       latitude: 10.8037,
       longitude: 106.6934,
+      imageUrl: "https://bvndgiadinh.org.vn/wp-content/uploads/slider/cache/c13f44e3e64de0f302983044ab917200/1-2-1-scaled.jpg",
       phone: "028 3841 2692",
       website: "https://bvndgiadinh.org.vn",
       openingHours: "24/7",
@@ -105,6 +104,7 @@ const FACILITY_TEMPLATES = {
       address: "215 Hồng Bàng, Phường 11, Quận 5, TP.HCM",
       latitude: 10.7554,
       longitude: 106.6652,
+      imageUrl: "https://bvdaihoc.com.vn/cover-homepage.jpg",
       phone: "028 3855 4269",
       website: "https://www.bvdaihoc.com.vn",
       openingHours: "Thứ 2 - Thứ 7, 06:30 - 16:30",
@@ -117,6 +117,7 @@ const FACILITY_TEMPLATES = {
       address: "764 Võ Văn Kiệt, Phường 1, Quận 5, TP.HCM",
       latitude: 10.7529,
       longitude: 106.6784,
+      imageUrl: "https://bvbnd.vn/wp-content/uploads/2020/07/IMG_7355-1024x683.jpg",
       phone: "028 3923 5804",
       website: "https://www.bvbnd.vn",
       openingHours: "24/7",
@@ -127,6 +128,7 @@ const FACILITY_TEMPLATES = {
       address: "341 Sư Vạn Hạnh, Phường 10, Quận 10, TP.HCM",
       latitude: 10.7679,
       longitude: 106.6697,
+      imageUrl: "https://trungtamnhanhoa.vn/wp-content/uploads/2023/04/kham-tre-cham-noi-benh-vien-nhi-dong-1-scaled.jpg",
       phone: "028 3927 1119",
       website: "https://nhidong.org.vn",
       openingHours: "24/7",
@@ -137,6 +139,7 @@ const FACILITY_TEMPLATES = {
       address: "15 Võ Trần Chí, Tân Kiên, Bình Chánh, TP.HCM",
       latitude: 10.7153,
       longitude: 106.5555,
+      imageUrl: "https://bvndtp.org.vn/wp-content/uploads/2019/09/tan-tam.jpg",
       phone: "028 2253 6688",
       website: "https://bvndtp.org.vn",
       openingHours: "24/7",
@@ -149,6 +152,7 @@ const FACILITY_TEMPLATES = {
       address: "208 Nguyễn Hữu Cảnh, Phường 22, Bình Thạnh, TP.HCM",
       latitude: 10.794,
       longitude: 106.7219,
+      imageUrl: "https://www.vinmec.com/static/uploads/vinmec_central_park_a3d82b5b69.jpg",
       phone: "028 3622 1166",
       website: "https://www.vinmec.com",
       openingHours: "24/7",
@@ -159,6 +163,7 @@ const FACILITY_TEMPLATES = {
       address: "6 Nguyễn Lương Bằng, Tân Phú, Quận 7, TP.HCM",
       latitude: 10.7308,
       longitude: 106.7198,
+      imageUrl: "https://www.fvhospital.com/wp-content/uploads/2025/10/fv-hospital-view-6-1024x683.jpg",
       phone: "028 5411 3333",
       website: "https://www.fvhospital.com",
       openingHours: "24/7",
@@ -169,6 +174,7 @@ const FACILITY_TEMPLATES = {
       address: "60-60A Phan Xích Long, Phường 1, Phú Nhuận, TP.HCM",
       latitude: 10.7985,
       longitude: 106.6874,
+      imageUrl: "https://cdn.medpro.vn/medpro-production/medpro/topics/benh-vien-hoan-my-sai-gon.jpg",
       phone: "028 3995 9860",
       website: "https://www.hoanmysaigon.com",
       openingHours: "24/7",
@@ -233,13 +239,11 @@ function isMissingValue(value) {
 }
 
 function withDepartment(template, department, index) {
-  const key = getDepartmentKey(department) ?? "general";
-
   return {
     id: `mock-${departmentId(department)}-${index + 1}`,
     facilityId: `mock-${departmentId(department)}-${index + 1}`,
     ...template,
-    imageUrl: DEPARTMENT_KEYS.find((item) => item.key === key)?.imageUrl,
+    imageUrl: template.imageUrl,
     facilityType: "Bệnh viện",
     isActive: true,
     isMockFacility: true,
@@ -256,7 +260,6 @@ function enrichFacility(facility, departments) {
   const departmentKey = getDepartmentKey(matchedDepartment);
   const key = departmentKey ?? "general";
   const template = departmentKey ? findTemplate(facility, key) : null;
-  const imageUrl = departmentKey ? DEPARTMENT_KEYS.find((item) => item.key === key)?.imageUrl : "";
 
   if (!departmentKey && !template) return facility;
 
@@ -277,7 +280,7 @@ function enrichFacility(facility, departments) {
     phone: isMissingValue(facility.phone) ? (template?.phone || "028 0000 0000") : facility.phone,
     website: isMissingValue(facility.website) ? (template?.website || "https://example.com") : facility.website,
     openingHours: isMissingValue(facility.openingHours) ? (template?.openingHours || "Thứ 2 - Chủ nhật, 07:00 - 20:00") : facility.openingHours,
-    imageUrl: isMissingValue(facility.imageUrl) ? (template?.imageUrl || imageUrl) : facility.imageUrl,
+    imageUrl: isMissingValue(facility.imageUrl) ? (template?.imageUrl || "") : facility.imageUrl,
     description: isMissingValue(facility.description)
       ? (template?.description || "Cơ sở y tế demo có đầy đủ địa chỉ, tọa độ, liên hệ, website, giờ hoạt động và chuyên khoa liên kết để phục vụ kiểm thử giao diện.")
       : facility.description,
