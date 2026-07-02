@@ -109,7 +109,7 @@ test("admin uploads a facility image to Cloudinary before saving", async ({ page
   let createdFacility = null;
   let cloudinaryUploadRequested = false;
 
-  await page.route("https://api.cloudinary.com/v1_1/demo/image/upload", async (route) => {
+  await page.route(/^https:\/\/api\.cloudinary\.com\/v1_1\/[^/]+\/image\/upload$/, async (route) => {
     cloudinaryUploadRequested = true;
     return route.fulfill({
       contentType: "application/json",
