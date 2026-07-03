@@ -175,7 +175,7 @@ export async function apiRequest(path, options = {}) {
       ) ||
       formatApiErrors(payload?.errors) ||
       payload?.title ||
-      `YÃªu cáº§u tháº¥t báº¡i vá»›i mÃ£ ${response.status}`;
+      `Yêu cầu thất bại với mã ${response.status}`;
     const error = new Error(message);
     error.status = response.status;
     error.payload = payload;
