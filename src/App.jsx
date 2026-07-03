@@ -3,7 +3,6 @@ import LandingPage from "./pages/LandingPage";
 import UserWorkspaceShell from "./components/workspace/UserWorkspaceShell";
 import StaticPage from "./pages/StaticPage";
 import WorkspaceRedirect from "./pages/WorkspaceRedirect";
-import AdminWorkspacePage from "./pages/AdminWorkspacePage";
 import { getStoredAuth } from "./services/api";
 import {
   ChangePasswordPage,
@@ -17,6 +16,8 @@ import { resolveRouteAccess } from "./router/access";
 
 const NearbyClinicPage = lazy(() => import("./pages/NearbyClinicPage"));
 const MedicalAssistantPage = lazy(() => import("./pages/MedicalAssistantPage"));
+const loadAdminWorkspacePage = () => import("./pages/AdminWorkspacePage");
+const AdminWorkspacePage = lazy(loadAdminWorkspacePage);
 const ChatbotPage = lazy(() => import("./pages/ChatbotPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const DoctorRegisterInvitationPage = lazy(() => import("./pages/DoctorRegisterInvitationPage"));
@@ -28,6 +29,10 @@ const PricingPage = lazy(() => import("./pages/PricingPage"));
 const RecoveryPlanPage = lazy(() => import("./pages/RecoveryPlanPage"));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
 
+if (window.location.pathname.startsWith("/app/admin")) {
+  void loadAdminWorkspacePage();
+}
+
 function userWorkspace(page) {
   return <UserWorkspaceShell>{page}</UserWorkspaceShell>;
 }
@@ -36,10 +41,10 @@ function lazyPage(page) {
   return (
     <Suspense fallback={(
       <main className="workspace-root" data-route-loading>
-        <section className="app-page">
-          <div className="container app-empty" role="status">
-            <p className="eyebrow">Đang tải</p>
-            <h1>Đang chuẩn bị nội dung...</h1>
+        <section className="app-page app-route-loading" aria-busy="true">
+          <div className="container route-loading-state" role="status">
+            <span className="route-loading-dot" aria-hidden="true" />
+            <span>Đang tải</span>
           </div>
         </section>
       </main>

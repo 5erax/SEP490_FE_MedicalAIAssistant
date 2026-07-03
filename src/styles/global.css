@@ -3853,6 +3853,31 @@
   line-height: 1.75;
 }
 
+.app-route-loading {
+  min-height: 52svh;
+  display: grid;
+  place-items: center;
+}
+
+.route-loading-state {
+  width: min(260px, calc(100vw - 40px));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.route-loading-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--teal);
+  box-shadow: 0 0 0 5px rgba(8, 127, 140, 0.1);
+}
+
 .admin-page {
   min-height: 100svh;
   padding: 28px 0 76px;
