@@ -8,6 +8,11 @@
       "continue": true
     },
     {
+      "src": "^/api/(.+)(?:\\.(?:js))$",
+      "dest": "/api/$1",
+      "check": true
+    },
+    {
       "handle": "filesystem"
     },
     {

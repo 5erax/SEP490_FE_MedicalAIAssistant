@@ -2,7 +2,7 @@
 const API_BASE_URL = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
   : "";
-const API_PROXY_PATH = "/api/proxy";
+const API_PROXY_PATH = "/api/proxy.js";
 const AUTH_STORAGE_KEY = "medimate.auth";
 
 function buildUrl(path) {
