@@ -1,4 +1,5 @@
 import { Filter, RotateCcw, Search, Stethoscope } from "lucide-react";
+import { CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 
 export default function DoctorFilters({
   filters,
@@ -68,14 +69,13 @@ export default function DoctorFilters({
                 <option value="false">Tạm ẩn</option>
               </select>
             </label>
-            <label className="clean-field">
-              <span>Hiển thị</span>
-              <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
-                <option value="10">10 / trang</option>
-                <option value="20">20 / trang</option>
-                <option value="50">50 / trang</option>
-              </select>
-            </label>
+            <CustomSelect
+              className="clean-field"
+              label="Hiển thị"
+              value={pageSize}
+              options={PAGE_SIZE_OPTIONS}
+              onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
+            />
           </div>
 
           <div className="doctor-filter-actions">

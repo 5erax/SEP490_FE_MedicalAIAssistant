@@ -1,7 +1,7 @@
 import { Filter, Plus, RefreshCw, RotateCcw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { uploadImageToCloudinary } from "../../services/cloudinaryUploadService";
-import { Badge, Button, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
+import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services/cloudinaryUploadService";
+import { Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -36,6 +36,27 @@ function isFacilityActive(facility) {
 function formatCoordinatePair(facility) {
   if (!hasValidCoordinatePair(facility)) return "Chưa có tọa độ hợp lệ";
   return `${Number(facility.latitude).toFixed(5)}, ${Number(facility.longitude).toFixed(5)}`;
+}
+
+function isSafeImageSource(value, { allowBlob = false } = {}) {
+  if (!value || typeof value !== "string") return false;
+
+  try {
+    const url = new URL(value, "https://medimate.local");
+    return url.protocol === "http:" || url.protocol === "https:" || (allowBlob && url.protocol === "blob:");
+  } catch {
+    return false;
+  }
+}
+
+function getSafeCurrentImageUrl(previewUrl, imageUrl) {
+  const normalizedPreviewUrl = (previewUrl || "").trim();
+  if (normalizedPreviewUrl && isSafeImageSource(normalizedPreviewUrl, { allowBlob: true })) {
+    return normalizedPreviewUrl;
+  }
+
+  const normalizedImageUrl = (imageUrl || "").trim();
+  return isSafeImageSource(normalizedImageUrl) ? normalizedImageUrl : "";
 }
 
 export default function AdminFacilitiesSection({
@@ -78,11 +99,13 @@ export default function AdminFacilitiesSection({
   }, []);
 
   function replaceImagePreviewUrl(nextUrl, isObjectUrl = false) {
+    const safeNextUrl = isObjectUrl && !isSafeImageSource(nextUrl, { allowBlob: true }) ? "" : nextUrl;
+
     if (imageObjectUrlRef.current && imageObjectUrlRef.current !== nextUrl) {
       URL.revokeObjectURL(imageObjectUrlRef.current);
     }
-    imageObjectUrlRef.current = isObjectUrl ? nextUrl : "";
-    setImagePreviewUrl(nextUrl);
+    imageObjectUrlRef.current = isObjectUrl ? safeNextUrl : "";
+    setImagePreviewUrl(safeNextUrl);
   }
 
   useEffect(() => {
@@ -124,6 +147,14 @@ export default function AdminFacilitiesSection({
     const [file] = event.target.files ?? [];
     if (!file) return;
 
+    try {
+      validateCloudinaryImage(file);
+    } catch (error) {
+      setImageUploadMessage({ type: "error", text: error.message });
+      event.target.value = "";
+      return;
+    }
+
     const localPreviewUrl = URL.createObjectURL(file);
     replaceImagePreviewUrl(localPreviewUrl, true);
     setSelectedImageName(file.name);
@@ -164,7 +195,7 @@ export default function AdminFacilitiesSection({
     replaceImagePreviewUrl("");
   }
 
-  const currentImageUrl = (imagePreviewUrl || form.imageUrl || "").trim();
+  const currentImageUrl = getSafeCurrentImageUrl(imagePreviewUrl, form.imageUrl);
   const hasUploadError = imageUploadMessage?.type === "error";
   const imageChanged = (form.imageUrl || "") !== imageOriginalUrl || Boolean(imagePreviewUrl);
 
@@ -226,14 +257,13 @@ export default function AdminFacilitiesSection({
                   ))}
                 </select>
               </label>
-              <label className="clean-field">
-                <span>Per page</span>
-                <select value={pageInfo.pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
-                  <option value="10">10 / trang</option>
-                  <option value="20">20 / trang</option>
-                  <option value="50">50 / trang</option>
-                </select>
-              </label>
+              <CustomSelect
+                className="clean-field"
+                label="Per page"
+                value={pageInfo.pageSize}
+                options={PAGE_SIZE_OPTIONS}
+                onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
+              />
             </div>
 
             <div className="ai-config-filter-actions">
