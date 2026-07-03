@@ -34,7 +34,7 @@ export default function SpaRoot() {
         default: "none",
       }}
     >
-      <App key={location} />
+      <App />
     </ViewTransition>
   );
 }

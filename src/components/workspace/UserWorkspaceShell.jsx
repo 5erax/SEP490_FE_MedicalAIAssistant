@@ -23,7 +23,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { withReturnTo } from "../../router/returnIntent";
 import { getNavigationModel } from "../../router/routes";
-import { authApi, getStoredAuth, hasPremiumAccess } from "../../services/api";
+import { authApi, getStoredAuth, hasPremiumAccess, setStoredAuth } from "../../services/api";
 import { logoutUser } from "../../services/logoutService";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
@@ -48,6 +48,10 @@ const NAV_ITEMS = getNavigationModel("patient")
   }));
 
 const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
+const EMPTY_ACCOUNT_CACHE = { accessToken: "", user: null };
+
+let accountUserCache = EMPTY_ACCOUNT_CACHE;
+let accountUserRequest = { accessToken: "", promise: null };
 
 function getCurrentPath() {
   return window.location.pathname;
@@ -69,6 +73,10 @@ function getAccountName(user, auth) {
     || user?.fullName
     || user?.name
     || user?.email
+    || auth?.displayName
+    || auth?.fullName
+    || auth?.name
+    || auth?.email
     || auth?.username
     || "Người dùng";
 }
@@ -83,11 +91,54 @@ function getAccountAvatar(user) {
     || "";
 }
 
+function getCachedAccountUser(accessToken) {
+  return accountUserCache.accessToken === accessToken ? accountUserCache.user : null;
+}
+
+function setCachedAccountUser(accessToken, user) {
+  accountUserCache = { accessToken, user };
+  return user;
+}
+
+function rememberAccountUser(accessToken, user) {
+  if (!accessToken || !user) return user;
+
+  const auth = getStoredAuth();
+  if (auth?.accessToken === accessToken) {
+    setStoredAuth({ ...auth, ...user });
+  }
+
+  return setCachedAccountUser(accessToken, user);
+}
+
+function loadAccountUser(accessToken) {
+  if (accountUserRequest.accessToken === accessToken && accountUserRequest.promise) {
+    return accountUserRequest.promise;
+  }
+
+  const promise = authApi.me()
+    .then((response) => rememberAccountUser(accessToken, response.data ?? null))
+    .finally(() => {
+      if (accountUserRequest.accessToken === accessToken) {
+        accountUserRequest = { accessToken: "", promise: null };
+      }
+    });
+
+  accountUserRequest = { accessToken, promise };
+  return promise;
+}
+
 export default function UserWorkspaceShell({ children }) {
   const [notice, setNotice] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [accountUser, setAccountUser] = useState(null);
+  const [accountState, setAccountState] = useState(() => {
+    const initialAuth = getStoredAuth();
+    return {
+      accessToken: initialAuth?.accessToken ?? "",
+      user: initialAuth?.accessToken ? getCachedAccountUser(initialAuth.accessToken) : null,
+    };
+  });
   const [searchText, setSearchText] = useState("");
   const sidebarRef = useRef(null);
   const accountMenuRef = useRef(null);
@@ -106,7 +157,9 @@ export default function UserWorkspaceShell({ children }) {
   const activeItem = NAV_ITEMS.find((item) => path === item.path)
     ?? (path === "/profile" ? { label: "Hồ sơ", icon: UserRound } : NAV_ITEMS[0]);
   const ActiveIcon = activeItem.icon;
-  const visibleAccountUser = accessToken ? accountUser : null;
+  const accountUser = accountState.accessToken === accessToken ? accountState.user : null;
+  const cachedAccountUser = accessToken ? getCachedAccountUser(accessToken) : null;
+  const visibleAccountUser = accessToken ? (accountUser ?? cachedAccountUser ?? auth) : null;
   const displayName = getAccountName(visibleAccountUser, auth);
   const avatarUrl = getAccountAvatar(visibleAccountUser);
 
@@ -173,12 +226,14 @@ export default function UserWorkspaceShell({ children }) {
 
     let active = true;
 
-    authApi.me()
-      .then((response) => {
-        if (active) setAccountUser(response.data ?? null);
+    loadAccountUser(accessToken)
+      .then((user) => {
+        if (active) setAccountState({ accessToken, user });
       })
       .catch(() => {
-        if (active) setAccountUser(null);
+        if (active && !getCachedAccountUser(accessToken)) {
+          setAccountState({ accessToken, user: null });
+        }
       });
 
     return () => {

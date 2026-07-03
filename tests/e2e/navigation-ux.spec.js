@@ -151,9 +151,54 @@ test.describe("global navigation UX", () => {
     await expect(page.getByRole("heading", { name: "Thông tin cá nhân" })).toBeVisible();
 
     const storedAuth = await page.evaluate(() => JSON.parse(localStorage.getItem("medimate.auth")));
-    expect(storedAuth).not.toHaveProperty("email");
-    expect(storedAuth).not.toHaveProperty("displayName");
-    expect(storedAuth).not.toHaveProperty("avatarUrl");
+    expect(storedAuth).toMatchObject({
+      email: "patient@example.com",
+      displayName: "Nguyễn Minh",
+      avatarUrl: "https://example.com/avatar.png",
+    });
+  });
+
+  test("workspace route changes keep the account identity while user API is delayed", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        displayName: "Phước Hà",
+        email: "phuoc.ha@example.com",
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
+
+    let meRequests = 0;
+    await page.route("**/api/users/me", async (route) => {
+      meRequests += 1;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: "55555555-5555-4555-8555-555555555555",
+            displayName: "Phước Hà",
+            email: "phuoc.ha@example.com",
+            roles: ["Patient"],
+          },
+        }),
+      });
+    });
+
+    await openRoute(page, "/dashboard");
+    const accountTrigger = page.locator(".account-menu-trigger");
+    await expect(accountTrigger).toContainText("Phước Hà");
+    await expect(accountTrigger).not.toContainText("Người dùng");
+
+    await page.locator('.user-shell-nav a[href="/recovery-plan"]').click();
+    await expect(page).toHaveURL(/\/recovery-plan$/);
+    await expect(accountTrigger).toContainText("Phước Hà");
+    await expect(accountTrigger).not.toContainText("Người dùng");
+    await expect.poll(() => meRequests).toBe(1);
   });
 
   test("patient sidebar keeps diagnosis in consultation and profile in account menu", async ({ page }) => {
@@ -285,9 +330,9 @@ test.describe("global navigation UX", () => {
       firstLogin: false,
       isFirstLogin: false,
       isProfileCompleted: true,
+      email: "patient@example.com",
+      displayName: "Patient Example",
     });
-    expect(storedAuth).not.toHaveProperty("email");
-    expect(storedAuth).not.toHaveProperty("displayName");
     expect(storedAuth).not.toHaveProperty("phoneNumber");
     expect(storedAuth).not.toHaveProperty("address");
     expect(storedAuth).not.toHaveProperty("refreshToken");
@@ -346,7 +391,7 @@ test.describe("global navigation UX", () => {
     });
   });
 
-  test("existing auth storage removes personal data when the session is read", async ({ page }) => {
+  test("existing auth storage keeps display identity but removes sensitive profile data", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -366,9 +411,9 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).toMatchObject({
       userId: "55555555-5555-4555-8555-555555555555",
       roles: ["Patient"],
+      email: "patient@example.com",
+      displayName: "Patient Example",
     });
-    expect(storedAuth).not.toHaveProperty("email");
-    expect(storedAuth).not.toHaveProperty("displayName");
     expect(storedAuth).not.toHaveProperty("phoneNumber");
     expect(storedAuth).not.toHaveProperty("address");
   });
