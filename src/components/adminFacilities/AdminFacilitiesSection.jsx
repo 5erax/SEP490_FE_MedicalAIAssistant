@@ -8,11 +8,12 @@ function ApiMessage({ message }) {
   return <div className={`api-message ${message.type}`}>{message.text}</div>;
 }
 
-function Field({ label, children }) {
+function Field({ label, children, help, className = "" }) {
   return (
-    <label className="clean-field">
+    <label className={`clean-field ${className}`.trim()}>
       <span>{label}</span>
       {children}
+      {help && <small>{help}</small>}
     </label>
   );
 }
@@ -66,7 +67,23 @@ export default function AdminFacilitiesSection({
   const [formOpen, setFormOpen] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadMessage, setImageUploadMessage] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [imageOriginalUrl, setImageOriginalUrl] = useState("");
+  const [selectedImageName, setSelectedImageName] = useState("");
+  const imageObjectUrlRef = useRef("");
   const wasSavingRef = useRef(false);
+
+  useEffect(() => () => {
+    if (imageObjectUrlRef.current) URL.revokeObjectURL(imageObjectUrlRef.current);
+  }, []);
+
+  function replaceImagePreviewUrl(nextUrl, isObjectUrl = false) {
+    if (imageObjectUrlRef.current && imageObjectUrlRef.current !== nextUrl) {
+      URL.revokeObjectURL(imageObjectUrlRef.current);
+    }
+    imageObjectUrlRef.current = isObjectUrl ? nextUrl : "";
+    setImagePreviewUrl(nextUrl);
+  }
 
   useEffect(() => {
     if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
@@ -78,12 +95,19 @@ export default function AdminFacilitiesSection({
   function openCreateForm() {
     onReset();
     setImageUploadMessage(null);
+    setImageOriginalUrl("");
+    setSelectedImageName("");
+    replaceImagePreviewUrl("");
     setFormOpen(true);
   }
 
   function openEditForm(facility) {
+    const currentImageUrl = facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl ?? "";
     onEdit(facility);
     setImageUploadMessage(null);
+    setImageOriginalUrl(currentImageUrl);
+    setSelectedImageName("");
+    replaceImagePreviewUrl("");
     setFormOpen(true);
   }
 
@@ -91,6 +115,8 @@ export default function AdminFacilitiesSection({
     if (saving || imageUploading) return;
     setFormOpen(false);
     setImageUploadMessage(null);
+    setSelectedImageName("");
+    replaceImagePreviewUrl("");
     onReset();
   }
 
@@ -98,12 +124,16 @@ export default function AdminFacilitiesSection({
     const [file] = event.target.files ?? [];
     if (!file) return;
 
+    const localPreviewUrl = URL.createObjectURL(file);
+    replaceImagePreviewUrl(localPreviewUrl, true);
+    setSelectedImageName(file.name);
     setImageUploading(true);
     setImageUploadMessage(null);
 
     try {
       const { secureUrl } = await uploadImageToCloudinary(file);
       onFormChange("imageUrl", secureUrl);
+      replaceImagePreviewUrl("");
       setImageUploadMessage({ type: "success", text: "Đã tải ảnh lên Cloudinary." });
     } catch (error) {
       setImageUploadMessage({ type: "error", text: error.message });
@@ -112,6 +142,31 @@ export default function AdminFacilitiesSection({
       event.target.value = "";
     }
   }
+
+  function handleImageUrlChange(value) {
+    onFormChange("imageUrl", value);
+    setSelectedImageName(value && value !== imageOriginalUrl ? "URL nhập thủ công" : "");
+    setImageUploadMessage(null);
+    replaceImagePreviewUrl("");
+  }
+
+  function restoreOriginalImage() {
+    onFormChange("imageUrl", imageOriginalUrl);
+    setSelectedImageName("");
+    setImageUploadMessage(null);
+    replaceImagePreviewUrl("");
+  }
+
+  function clearSelectedImage() {
+    onFormChange("imageUrl", "");
+    setSelectedImageName("");
+    setImageUploadMessage(null);
+    replaceImagePreviewUrl("");
+  }
+
+  const currentImageUrl = (imagePreviewUrl || form.imageUrl || "").trim();
+  const hasUploadError = imageUploadMessage?.type === "error";
+  const imageChanged = (form.imageUrl || "") !== imageOriginalUrl || Boolean(imagePreviewUrl);
 
   return (
     <section className="admin-panel ai-config-admin-panel facility-admin-panel">
@@ -281,8 +336,8 @@ export default function AdminFacilitiesSection({
           className="doctor-modal facility-form-modal"
           labelledBy="facility-modal-title"
           onClose={closeForm}
-          closeOnBackdrop={!saving}
-          closeOnEscape={!saving}
+          closeOnBackdrop={!saving && !imageUploading}
+          closeOnEscape={!saving && !imageUploading}
         >
           <header className="doctor-modal-header">
             <div>
@@ -290,157 +345,206 @@ export default function AdminFacilitiesSection({
               <h2 id="facility-modal-title">{editingFacilityId ? "Cập nhật cơ sở y tế" : "Tạo cơ sở y tế"}</h2>
               <p>Nhập thông tin cơ sở và chọn chuyên khoa để dùng trong danh sách điều phối.</p>
             </div>
-            <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm}>×</button>
+            <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={saving || imageUploading}>×</button>
           </header>
 
-          <form className="clean-form doctor-form" onSubmit={onSubmit}>
-            <div className="facility-form-section">
-              <Field label="Tên cơ sở y tế">
-                <input
-                  value={form.facilityName}
-                  onChange={(event) => onFormChange("facilityName", event.target.value)}
-                  placeholder="Ví dụ: Bệnh viện Đa khoa A"
-                  required
-                />
-              </Field>
-              <Field label="Địa chỉ">
-                <input
-                  value={form.address}
-                  onChange={(event) => onFormChange("address", event.target.value)}
-                  required
-                />
-              </Field>
-              <div className="clean-form-grid">
-                <Field label="Vĩ độ">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="any"
-                    min="-90"
-                    max="90"
-                    value={form.latitude}
-                    onChange={(event) => onFormChange("latitude", event.target.value)}
-                    placeholder="10.8491"
-                  />
-                </Field>
-                <Field label="Kinh độ">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="any"
-                    min="-180"
-                    max="180"
-                    value={form.longitude}
-                    onChange={(event) => onFormChange("longitude", event.target.value)}
-                    placeholder="106.7715"
-                  />
-                </Field>
-              </div>
-            </div>
-
-            <div className="clean-form-grid">
-              <Field label="Số điện thoại">
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={(event) => onFormChange("phone", event.target.value)}
-                />
-              </Field>
-              <Field label="Loại cơ sở">
-                <input
-                  value={form.facilityType}
-                  onChange={(event) => onFormChange("facilityType", event.target.value)}
-                  placeholder="Bệnh viện, phòng khám..."
-                />
-              </Field>
-              <Field label="Website">
-                <input
-                  type="url"
-                  value={form.website}
-                  onChange={(event) => onFormChange("website", event.target.value)}
-                  placeholder="https://..."
-                />
-              </Field>
-              <Field label="Giờ mở cửa">
-                <input
-                  value={form.openingHours}
-                  onChange={(event) => onFormChange("openingHours", event.target.value)}
-                  placeholder="07:00 - 17:00"
-                />
-              </Field>
-            </div>
-
-            <div className="facility-image-uploader">
-              <Field label="Ảnh cơ sở y tế">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={saving || imageUploading}
-                />
-              </Field>
-              <p className="muted-text">Ảnh được tải lên Cloudinary bằng unsigned upload preset. Tối đa 5 MB.</p>
-              {imageUploadMessage && (
-                <p
-                  className={`facility-upload-message ${imageUploadMessage.type}`}
-                  role={imageUploadMessage.type === "error" ? "alert" : "status"}
-                >
-                  {imageUploadMessage.text}
-                </p>
-              )}
-              <Field label="Cloudinary image URL">
-                <input
-                  type="url"
-                  value={form.imageUrl}
-                  onChange={(event) => onFormChange("imageUrl", event.target.value)}
-                  placeholder="https://res.cloudinary.com/..."
-                />
-              </Field>
-              {form.imageUrl && (
-                <img
-                  className="facility-image-preview"
-                  src={form.imageUrl}
-                  alt="Xem trước ảnh cơ sở y tế"
-                />
-              )}
-            </div>
-
-            <label className="clean-checkbox">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(event) => onFormChange("isActive", event.target.checked)}
-              />
-              <span>Cho phép cơ sở này xuất hiện trong danh sách active sau khi backend lưu trạng thái.</span>
-            </label>
-            <fieldset className="facility-department-picker">
-              <legend>Chuyên khoa tại cơ sở</legend>
-              <p>Chọn ít nhất một chuyên khoa. Đây là dữ liệu form thêm bác sĩ sử dụng.</p>
-              {departments.length === 0 ? (
-                <p className="muted-text">Hãy tạo chuyên khoa trước.</p>
-              ) : (
-                <div className="facility-department-options">
-                  {departments.map((department) => (
-                    <label key={department.id}>
-                      <input
-                        type="checkbox"
-                        checked={form.departmentIds.includes(department.id)}
-                        onChange={() => onToggleDepartment(department.id)}
-                      />
-                      <span>{department.departmentName}</span>
-                    </label>
-                  ))}
+          <form className="clean-form doctor-form facility-form" onSubmit={onSubmit}>
+            <div className="facility-form-body">
+              <section className="facility-form-card" aria-labelledby="facility-basic-section">
+                <div className="facility-form-card-head">
+                  <h3 id="facility-basic-section">Thông tin cơ bản</h3>
+                  <p>Tên, loại hình và trạng thái xuất hiện của cơ sở trong hệ thống.</p>
                 </div>
-              )}
-            </fieldset>
-            <div className="doctor-modal-actions">
+                <div className="facility-form-grid">
+                  <Field label="Tên cơ sở y tế" className="facility-form-span-2">
+                    <input
+                      value={form.facilityName}
+                      onChange={(event) => onFormChange("facilityName", event.target.value)}
+                      placeholder="Ví dụ: Bệnh viện Đa khoa A"
+                      autoComplete="organization"
+                      required
+                    />
+                  </Field>
+                  <Field label="Loại cơ sở" help="Ví dụ: Bệnh viện, phòng khám chuyên khoa, trung tâm y tế.">
+                    <input
+                      value={form.facilityType}
+                      onChange={(event) => onFormChange("facilityType", event.target.value)}
+                      placeholder="Bệnh viện"
+                    />
+                  </Field>
+                  <label className="clean-checkbox facility-status-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={form.isActive}
+                      onChange={(event) => onFormChange("isActive", event.target.checked)}
+                    />
+                    <span>Hiển thị cơ sở này trong danh sách active sau khi backend lưu trạng thái.</span>
+                  </label>
+                </div>
+              </section>
+
+              <section className="facility-form-card" aria-labelledby="facility-contact-section">
+                <div className="facility-form-card-head">
+                  <h3 id="facility-contact-section">Liên hệ và vận hành</h3>
+                  <p>Thông tin giúp bệnh nhân kiểm tra địa chỉ, website và giờ mở cửa trước khi đến khám.</p>
+                </div>
+                <div className="facility-form-grid">
+                  <Field label="Địa chỉ" className="facility-form-span-2" help="Nên nhập địa chỉ đầy đủ để hiển thị tốt trên bản đồ và danh sách đề xuất.">
+                    <input
+                      value={form.address}
+                      onChange={(event) => onFormChange("address", event.target.value)}
+                      autoComplete="street-address"
+                      required
+                    />
+                  </Field>
+                  <Field label="Số điện thoại" help="Dùng số tổng đài hoặc số đặt lịch chính thức nếu có.">
+                    <input
+                      type="tel"
+                      value={form.phone}
+                      onChange={(event) => onFormChange("phone", event.target.value)}
+                      autoComplete="tel"
+                      placeholder="028 0000 0000"
+                    />
+                  </Field>
+                  <Field label="Website" help="Nhập URL công khai của cơ sở, bắt đầu bằng https:// nếu có.">
+                    <input
+                      type="url"
+                      value={form.website}
+                      onChange={(event) => onFormChange("website", event.target.value)}
+                      placeholder="https://..."
+                    />
+                  </Field>
+                  <Field label="Giờ mở cửa" className="facility-form-span-2" help="Ví dụ: Thứ 2 - Thứ 6, 07:00 - 17:00.">
+                    <input
+                      value={form.openingHours}
+                      onChange={(event) => onFormChange("openingHours", event.target.value)}
+                      placeholder="07:00 - 17:00"
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="facility-form-card" aria-labelledby="facility-location-section">
+                <div className="facility-form-card-head">
+                  <h3 id="facility-location-section">Tọa độ bản đồ</h3>
+                  <p>Tọa độ hợp lệ giúp cơ sở xuất hiện đúng vị trí và bật được chức năng chỉ đường.</p>
+                </div>
+                <div className="facility-form-grid">
+                  <Field label="Vĩ độ" help="Giá trị từ -90 đến 90. Ví dụ: 10.8491.">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={form.latitude}
+                      onChange={(event) => onFormChange("latitude", event.target.value)}
+                      placeholder="10.8491"
+                    />
+                  </Field>
+                  <Field label="Kinh độ" help="Giá trị từ -180 đến 180. Ví dụ: 106.7715.">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={form.longitude}
+                      onChange={(event) => onFormChange("longitude", event.target.value)}
+                      placeholder="106.7715"
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="facility-form-card" aria-labelledby="facility-image-section">
+                <div className="facility-form-card-head">
+                  <h3 id="facility-image-section">Hình ảnh hiển thị</h3>
+                  <p>Ảnh được tải lên Cloudinary, backend chỉ nhận URL ảnh trong trường imageUrl.</p>
+                </div>
+                <div className="facility-image-uploader">
+                  <div className={`facility-image-preview-shell ${currentImageUrl ? "has-image" : ""}`}>
+                    {currentImageUrl ? (
+                      <img
+                        className="facility-image-preview"
+                        src={currentImageUrl}
+                        alt={`Ảnh xem trước của ${form.facilityName || "cơ sở y tế"}`}
+                      />
+                    ) : (
+                      <div className="facility-image-empty" aria-hidden="true">Chưa có ảnh</div>
+                    )}
+                  </div>
+                  <div className="facility-image-controls">
+                    <Field label="Ảnh cơ sở y tế" help="Chọn file JPG, PNG hoặc WebP tối đa 5 MB. Ảnh sẽ upload lên Cloudinary ngay sau khi chọn.">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={saving || imageUploading}
+                      />
+                    </Field>
+                    {selectedImageName && (
+                      <p className="facility-selected-image" aria-live="polite">Đang dùng: {selectedImageName}</p>
+                    )}
+                    {imageUploadMessage && (
+                      <p
+                        className={`facility-upload-message ${imageUploadMessage.type}`}
+                        role={imageUploadMessage.type === "error" ? "alert" : "status"}
+                      >
+                        {imageUploadMessage.text}
+                      </p>
+                    )}
+                    <Field label="Cloudinary image URL" help="Có thể giữ URL hiện tại, thay bằng ảnh mới hoặc xóa để gửi imageUrl rỗng.">
+                      <input
+                        type="url"
+                        value={form.imageUrl}
+                        onChange={(event) => handleImageUrlChange(event.target.value)}
+                        placeholder="https://res.cloudinary.com/..."
+                        aria-invalid={hasUploadError ? "true" : undefined}
+                      />
+                    </Field>
+                    <div className="facility-image-action-row">
+                      {imageOriginalUrl && imageChanged && (
+                        <button className="btn btn-ghost btn-small" type="button" onClick={restoreOriginalImage}>
+                          Giữ ảnh hiện tại
+                        </button>
+                      )}
+                      {(currentImageUrl || hasUploadError) && (
+                        <button className="btn btn-ghost btn-small" type="button" onClick={clearSelectedImage}>
+                          Gỡ ảnh
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="facility-form-card" aria-labelledby="facility-department-section">
+                <fieldset className="facility-department-picker">
+                  <legend id="facility-department-section">Chuyên khoa tại cơ sở</legend>
+                  <p>Chọn ít nhất một chuyên khoa. Đây là dữ liệu form thêm bác sĩ sử dụng.</p>
+                  {departments.length === 0 ? (
+                    <p className="muted-text">Hãy tạo chuyên khoa trước.</p>
+                  ) : (
+                    <div className="facility-department-options">
+                      {departments.map((department) => (
+                        <label key={department.id}>
+                          <input
+                            type="checkbox"
+                            checked={form.departmentIds.includes(department.id)}
+                            onChange={() => onToggleDepartment(department.id)}
+                          />
+                          <span>{department.departmentName}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </fieldset>
+              </section>
+            </div>
+
+            <div className="doctor-modal-actions facility-form-actions">
               <button className="btn btn-ghost" type="button" onClick={closeForm}>Hủy</button>
               <button
                 className="btn btn-primary"
                 type="submit"
-                disabled={saving || imageUploading || departments.length === 0}
+                disabled={saving || imageUploading || hasUploadError || departments.length === 0}
               >
-                {imageUploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật" : "Tạo cơ sở"}
+                {imageUploading ? "Đang tải ảnh..." : hasUploadError ? "Xử lý lỗi upload trước" : saving ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật" : "Tạo cơ sở"}
               </button>
             </div>
           </form>

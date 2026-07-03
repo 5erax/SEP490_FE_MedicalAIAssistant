@@ -308,6 +308,12 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
   await expect(page.getByText("Đủ dữ liệu bản đồ", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Sửa" }).click();
   const facilityDialog = page.getByRole("dialog");
+  await expect(facilityDialog.locator(".facility-image-preview")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
+  await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue("https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
+  await facilityDialog.getByRole("button", { name: "Gỡ ảnh" }).click();
+  await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue("");
+  await facilityDialog.getByRole("button", { name: "Giữ ảnh hiện tại" }).click();
+  await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue("https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
   await facilityDialog.getByLabel("Tên cơ sở y tế").fill("Bệnh viện Đa khoa A - Cơ sở 2");
   await facilityDialog.getByLabel("Kinh độ").fill("106.7725");
   await facilityDialog.getByRole("button", { name: "Lưu cập nhật" }).click();
@@ -335,6 +341,92 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
   await page.getByRole("dialog").getByRole("button", { name: "Xóa cơ sở" }).click();
   await expect(page.getByText("Chưa có cơ sở y tế", { exact: true })).toBeVisible();
   expect(deleteRequested).toBe(true);
+});
+
+test("admin cannot submit a facility while image upload has an unresolved error", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      email: "admin@example.com",
+      roles: ["Admin"],
+    }));
+    window.__MEDIMATE_CLOUDINARY_CONFIG__ = {
+      cloudName: "demo",
+      uploadPreset: "unsigned-test",
+      folder: "medical-facilities",
+    };
+  }, ADMIN_TOKEN);
+
+  let createRequested = false;
+
+  await page.route(/^https:\/\/api\.cloudinary\.com\/v1_1\/[^/]+\/image\/upload$/, async (route) => route.fulfill({
+    status: 400,
+    contentType: "application/json",
+    body: JSON.stringify({ error: { message: "Upload preset disabled" } }),
+  }));
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    const pathname = url.pathname;
+
+    if (pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (pathname === "/api/medical-departments") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: [{ id: DEPARTMENT_ID, departmentName: "Tim mạch", description: "" }],
+        }),
+      });
+    }
+
+    if (pathname === "/api/medical-facilities" && method === "POST") {
+      createRequested = true;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, message: "Đã tạo cơ sở y tế.", data: { id: "facility-id" } }),
+      });
+    }
+
+    const pagedPaths = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
+    const data = pagedPaths.includes(pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Cơ sở y tế", exact: true }).click();
+  await page.getByRole("button", { name: "Tạo cơ sở" }).click();
+
+  const facilityDialog = page.getByRole("dialog");
+  await facilityDialog.getByLabel("Tên cơ sở y tế").fill("Bệnh viện Đa khoa A");
+  await facilityDialog.getByLabel("Địa chỉ").fill("123 Nguyễn Trãi");
+  await facilityDialog.getByLabel("Tim mạch").check();
+  await facilityDialog.getByLabel("Ảnh cơ sở y tế").setInputFiles({
+    name: "facility.jpg",
+    mimeType: "image/jpeg",
+    buffer: Buffer.from("fake-image"),
+  });
+
+  await expect(facilityDialog.getByText("Upload preset disabled", { exact: true })).toBeVisible();
+  await expect(facilityDialog.getByRole("button", { name: "Xử lý lỗi upload trước" })).toBeDisabled();
+
+  await facilityDialog.getByRole("button", { name: "Gỡ ảnh" }).click();
+  await expect(facilityDialog.getByRole("button", { name: "Tạo cơ sở" })).toBeEnabled();
+  expect(createRequested).toBe(false);
 });
 
 test("admin retries a failed facility list and receives an empty state", async ({ page }) => {
