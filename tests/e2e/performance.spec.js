@@ -11,7 +11,7 @@ const PERFORMANCE_ROUTES = [
 const INITIAL_BUDGET = {
   domContentLoadedMs: 5_000,
   loadMs: 8_000,
-  largestContentfulPaintMs: 5_000,
+  largestContentfulPaintMs: 2_500,
   cumulativeLayoutShift: 0.25,
 };
 
@@ -46,6 +46,8 @@ async function readMetrics(page) {
 }
 
 test.describe("performance baseline", () => {
+  test.describe.configure({ mode: "serial" });
+
   for (const route of PERFORMANCE_ROUTES) {
     test(`${route.name} stays within the initial lab budget`, async ({ page }, testInfo) => {
       await preparePage(page);

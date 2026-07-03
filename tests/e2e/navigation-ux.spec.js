@@ -54,12 +54,12 @@ test.describe("global navigation UX", () => {
     await expect(page.locator("#main-content")).toBeFocused();
   });
 
-  test("hides Google login when the current origin is not authorized", async ({ page }) => {
+  test("renders Google login when the current origin is configured", async ({ page }) => {
     await preparePage(page);
     await openRoute(page, "/login");
 
-    await expect(page.getByText("Đăng nhập Google đang tắt cho domain này.")).toBeVisible();
-    await expect(page.locator(".google-login-wrap")).toHaveCount(0);
+    await expect(page.getByText("Đăng nhập Google đang tắt cho domain này.")).toHaveCount(0);
+    await expect(page.locator(".google-login-wrap")).toHaveCount(1);
   });
 
   test("free users get a keyboard-safe premium explanation", async ({ page }) => {

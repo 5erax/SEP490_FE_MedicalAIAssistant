@@ -13,6 +13,35 @@ function getAuthorizedOrigins() {
     .filter(Boolean);
 }
 
+function escapeRegex(value) {
+  return value.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function originMatchesPattern(origin, pattern) {
+  if (pattern === "*") return true;
+  if (!pattern.includes("*")) return origin === pattern;
+
+  const expression = `^${pattern.split("*").map(escapeRegex).join(".*")}$`;
+  return new RegExp(expression).test(origin);
+}
+
+function getLoopbackEquivalentOrigins(origin) {
+  try {
+    const url = new URL(origin);
+    if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+      return [origin];
+    }
+
+    const equivalentHostname = url.hostname === "localhost" ? "127.0.0.1" : "localhost";
+    return [
+      origin,
+      `${url.protocol}//${equivalentHostname}${url.port ? `:${url.port}` : ""}`,
+    ];
+  } catch {
+    return [origin];
+  }
+}
+
 export function getGoogleClientId() {
   return GOOGLE_CLIENT_ID.trim();
 }
@@ -22,8 +51,11 @@ export function isGoogleOAuthEnabledForCurrentOrigin() {
   if (!clientId) return false;
 
   const origins = getAuthorizedOrigins();
-  if (!origins.length) return false;
+  if (!origins.length) return true;
 
   const currentOrigin = getCurrentOrigin();
-  return origins.includes("*") || origins.includes(currentOrigin);
+  const candidateOrigins = getLoopbackEquivalentOrigins(currentOrigin);
+  return candidateOrigins.some((origin) => (
+    origins.some((authorizedOrigin) => originMatchesPattern(origin, authorizedOrigin))
+  ));
 }

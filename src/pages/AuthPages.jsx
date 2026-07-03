@@ -1,11 +1,11 @@
 import { useId, useState } from "react";
-import { GoogleLogin } from "@react-oauth/google";
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
 import { getPostAuthDestination, getReturnToFromSearch, withReturnTo } from "../router/returnIntent";
 import { authApi, clearStoredAuth, setStoredAuth } from "../services/api";
-import { isGoogleOAuthEnabledForCurrentOrigin } from "../services/googleOAuthConfig";
+import { getGoogleClientId, isGoogleOAuthEnabledForCurrentOrigin } from "../services/googleOAuthConfig";
 import { findPatientProfileByUserId } from "../services/patientProfileSetup";
 import { getWorkspacePath, hasAuthRole } from "../utils/roles";
 import "../styles/auth-refresh.css";
@@ -199,6 +199,7 @@ export function LoginPage() {
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const googleLoginEnabled = isGoogleOAuthEnabledForCurrentOrigin();
+  const googleClientId = getGoogleClientId();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -253,7 +254,14 @@ export function LoginPage() {
       <form className="clean-form auth-form-clean" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
         {googleLoginEnabled ? (
-          <>
+          <GoogleOAuthProvider
+            clientId={googleClientId}
+            script_props={{
+              async: true,
+              defer: true,
+              crossOrigin: "anonymous",
+            }}
+          >
             <div className="google-login-wrap">
               <GoogleLogin
                 ux_mode="popup"
@@ -263,7 +271,7 @@ export function LoginPage() {
               />
             </div>
             <div className="auth-divider"><span>hoặc</span></div>
-          </>
+          </GoogleOAuthProvider>
         ) : (
           <p className="auth-provider-note" role="status">
             Đăng nhập Google đang tắt cho domain này. Bạn vẫn có thể đăng nhập bằng email và mật khẩu.
