@@ -7,9 +7,26 @@ import { getGoogleClientId, isGoogleOAuthEnabledForCurrentOrigin } from './servi
 import SpaRoot from './SpaRoot.jsx'
 import './index.css'
 
+const STALE_ASSET_RELOAD_KEY = 'medimate.stale-asset-reload'
 const googleClientId = getGoogleClientId()
 
+function installStaleAssetRecovery() {
+  window.setTimeout(() => {
+    sessionStorage.removeItem(STALE_ASSET_RELOAD_KEY)
+  }, 10_000)
+
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault()
+
+    if (sessionStorage.getItem(STALE_ASSET_RELOAD_KEY) === '1') return
+
+    sessionStorage.setItem(STALE_ASSET_RELOAD_KEY, '1')
+    window.location.reload()
+  })
+}
+
 installLinkNavigation()
+installStaleAssetRecovery()
 
 const appContent = (
   <FeedbackProvider>
