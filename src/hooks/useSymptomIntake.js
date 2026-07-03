@@ -140,16 +140,24 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
     setStatus("submitting");
     try {
       const payload = buildClinicalQuestionAnswerItems(questions, answers);
+      const analysisResponse = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
+      const analysis = readResultPayload(analysisResponse) ?? {};
       const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
       const diagnosis = readResultPayload(diagnosisResponse) ?? {};
+      const mergedResult = {
+        ...analysis,
+        ...diagnosis,
+        recommendedDepartment: diagnosis.recommendedDepartment ?? analysis.recommendedDepartment ?? null,
+        recommendedFacilities: diagnosis.recommendedFacilities ?? analysis.recommendedFacilities ?? [],
+      };
       const diagnoses = Array.isArray(diagnosis.diagnoses)
         ? diagnosis.diagnoses
-        : Array.isArray(diagnosis.Diagnoses) ? diagnosis.Diagnoses : [];
+        : Array.isArray(diagnosis.Diagnoses) ? diagnosis.Diagnoses : Array.isArray(analysis.diagnoses) ? analysis.diagnoses : [];
       setResult({
-        ...diagnosis,
+        ...mergedResult,
         diagnoses,
-        primaryDiagnosis: diagnoses[0] ?? diagnosis.primaryDiagnosis ?? diagnosis.PrimaryDiagnosis ?? null,
-        diagnosisModel: diagnosis.model ?? diagnosis.Model ?? null,
+        primaryDiagnosis: diagnoses[0] ?? diagnosis.primaryDiagnosis ?? diagnosis.PrimaryDiagnosis ?? analysis.primaryDiagnosis ?? null,
+        diagnosisModel: diagnosis.model ?? diagnosis.Model ?? analysis.model ?? analysis.Model ?? null,
       });
       setStatus("result");
     } catch (apiError) {

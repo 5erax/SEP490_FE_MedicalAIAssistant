@@ -336,17 +336,20 @@ function getPage(path) {
 function ContactForm() {
   return (
     <form className="static-form">
+      <p className="static-form-note" role="status">
+        Form liên hệ đang ở chế độ xem trước. Vui lòng dùng email bên dưới để gửi yêu cầu thật.
+      </p>
       <label>
         Họ và tên
-        <input placeholder="Nguyễn Văn A" />
+        <input placeholder="Nguyễn Văn A" disabled />
       </label>
       <label>
         Email
-        <input type="email" placeholder="you@example.com" />
+        <input type="email" placeholder="you@example.com" disabled />
       </label>
       <label>
         Nhu cầu
-        <select defaultValue="support">
+        <select defaultValue="support" disabled>
           <option value="support">Hỗ trợ người dùng</option>
           <option value="clinic">Hợp tác phòng khám</option>
           <option value="feedback">Góp ý sản phẩm</option>
@@ -354,9 +357,9 @@ function ContactForm() {
       </label>
       <label>
         Nội dung
-        <textarea rows={5} placeholder="Bạn muốn trao đổi điều gì?" />
+        <textarea rows={5} placeholder="Bạn muốn trao đổi điều gì?" disabled />
       </label>
-      <button className="btn btn-primary" type="button">Gửi yêu cầu</button>
+      <a className="btn btn-primary" href="mailto:hello@medimate.ai">Gửi email</a>
     </form>
   );
 }

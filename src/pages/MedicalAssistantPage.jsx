@@ -99,6 +99,13 @@ function getRecommendedDepartment(result) {
     || null;
 }
 
+function getRecommendedFacilities(result) {
+  const facilities = result?.recommendedFacilities
+    || result?.analysis?.recommendedFacilities
+    || [];
+  return Array.isArray(facilities) ? facilities : [];
+}
+
 function getDiagnoses(result) {
   const diagnoses = result?.diagnoses
     || result?.Diagnoses
@@ -135,6 +142,10 @@ function AssessmentShell({ eyebrow, title, description, activeStep, children }) 
   );
 }
 
+function MobileHeroAction({ children }) {
+  return <div className="clinical-mobile-hero-action">{children}</div>;
+}
+
 function Stepper({ active }) {
   const steps = ["Mô tả", "Làm rõ", "Kết quả"];
 
@@ -162,6 +173,12 @@ function EntryPage() {
       description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
       activeStep={0}
     >
+      <MobileHeroAction>
+        <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
+          Bắt đầu phân tích
+        </Button>
+      </MobileHeroAction>
+
       <div className="clinical-entry-card">
         <article>
           <ClipboardList size={24} aria-hidden="true" />
@@ -182,7 +199,7 @@ function EntryPage() {
         </article>
       </div>
 
-      <div className="assessment-actions clinical-actions-center">
+      <div className="assessment-actions clinical-actions-center clinical-entry-actions">
         <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
           Bắt đầu phân tích
         </Button>
@@ -213,6 +230,12 @@ function SafetyPage() {
       description="Nếu có dấu hiệu nguy hiểm, không nên tiếp tục tự đánh giá bằng AI. Hãy ưu tiên chăm sóc y tế khẩn cấp."
       activeStep={0}
     >
+      <MobileHeroAction>
+        <Button tone="secondary" onClick={() => document.getElementById("safety-checklist")?.scrollIntoView({ block: "start", behavior: "smooth" })}>
+          Xem checklist an toàn
+        </Button>
+      </MobileHeroAction>
+
       <section className="clinical-card">
         <div className="clinical-card-head">
           <div>
@@ -222,7 +245,7 @@ function SafetyPage() {
           <span>Không thay thế cấp cứu</span>
         </div>
 
-        <fieldset className="safety-checklist">
+        <fieldset className="safety-checklist" id="safety-checklist">
           <legend className="sr-only">Dấu hiệu khẩn cấp</legend>
           {RED_FLAGS.map((flag) => (
             <label key={flag}>
@@ -260,7 +283,7 @@ function SafetyPage() {
         {!hasRedFlag && (
           <div className="assessment-actions clinical-card-actions">
             <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
-              Không, tiếp tục
+              Không, tiếp tục đánh giá
             </Button>
             <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>
               Quay lại
@@ -438,21 +461,29 @@ function QuestionsPage({ sessionId }) {
     setError("");
 
     try {
+      const analysisResponse = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
+      const analysisData = readAnalysisPayload(analysisResponse) ?? {};
       const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
 
       const diagnosisData = readAnalysisPayload(diagnosisResponse) ?? {};
 
       const diagnosisItems = Array.isArray(diagnosisData?.diagnoses)
         ? diagnosisData.diagnoses
-        : Array.isArray(diagnosisData?.Diagnoses) ? diagnosisData.Diagnoses : [];
+        : Array.isArray(diagnosisData?.Diagnoses) ? diagnosisData.Diagnoses : Array.isArray(analysisData?.diagnoses) ? analysisData.diagnoses : [];
+      const mergedAnalysis = {
+        ...analysisData,
+        ...diagnosisData,
+        recommendedDepartment: diagnosisData.recommendedDepartment ?? analysisData.recommendedDepartment ?? null,
+        recommendedFacilities: diagnosisData.recommendedFacilities ?? analysisData.recommendedFacilities ?? [],
+      };
 
       const result = {
-        ...diagnosisData,
-        answers: diagnosisData.answers ?? payload,
+        ...mergedAnalysis,
+        answers: diagnosisData.answers ?? analysisData.answers ?? payload,
         diagnoses: diagnosisItems.length > 0 ? diagnosisItems : getDiagnoses(diagnosisData),
-        primaryDiagnosis: diagnosisItems[0] ?? getPrimaryDiagnosis(diagnosisData),
-        diagnosisModel: diagnosisData?.model ?? diagnosisData?.Model ?? null,
-        diagnosisStatus: diagnosisData?.status ?? diagnosisData?.Status ?? null,
+        primaryDiagnosis: diagnosisItems[0] ?? getPrimaryDiagnosis(diagnosisData) ?? getPrimaryDiagnosis(analysisData),
+        diagnosisModel: diagnosisData?.model ?? diagnosisData?.Model ?? analysisData?.model ?? analysisData?.Model ?? null,
+        diagnosisStatus: diagnosisData?.status ?? diagnosisData?.Status ?? analysisData?.status ?? analysisData?.Status ?? null,
       };
 
       const next = { ...session, answers, result };
@@ -525,6 +556,9 @@ function QuestionsPage({ sessionId }) {
 
         <fieldset className="question-card">
           <legend>{question.questionText}</legend>
+          {question.questionOriginalText && (
+            <p className="question-original">Gốc tiếng Anh: {question.questionOriginalText}</p>
+          )}
 
           {answerMode === "choice" ? (
             <div className="question-choice-grid">
@@ -663,6 +697,7 @@ function ResultPage({ sessionId }) {
 
   const result = state?.result;
   const department = getRecommendedDepartment(result);
+  const facilities = getRecommendedFacilities(result);
   const diagnoses = getDiagnoses(result);
   const primaryDiagnosis = getPrimaryDiagnosis(result);
   const isEmergency = department?.isEmergencySuggested;
@@ -756,6 +791,24 @@ function ResultPage({ sessionId }) {
                 ))}
               </div>
             </div>
+          </article>
+        )}
+
+        {(department || facilities.length > 0) && (
+          <article className="result-card recommendation-card">
+            <span>Gợi ý khám phù hợp</span>
+            {department?.departmentName && <h2>{department.departmentName}</h2>}
+            {department?.reason && <p>{department.reason}</p>}
+            {facilities.length > 0 && (
+              <div className="recommendation-facility-list">
+                {facilities.map((facility) => (
+                  <article key={facility.id || facility.facilityId || facility.facilityName}>
+                    <strong>{facility.facilityName || "Cơ sở y tế"}</strong>
+                    {facility.address && <span>{facility.address}</span>}
+                  </article>
+                ))}
+              </div>
+            )}
           </article>
         )}
 

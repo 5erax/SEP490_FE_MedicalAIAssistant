@@ -1,1 +1,0 @@
-export { registerStaffApplication } from "./staffService";

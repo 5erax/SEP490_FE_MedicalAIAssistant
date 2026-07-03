@@ -2,6 +2,7 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getStoredAuth } from "../../services/api";
 import DisplayPreferences from "../preferences/DisplayPreferences";
+import { useOverlayFocus } from "../ui/useOverlayFocus";
 
 const NAV_LINKS = [
   { name: "Tính năng", href: "/features" },
@@ -22,6 +23,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [auth] = useState(() => getStoredAuth());
   const menuButtonRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -29,19 +31,17 @@ export function Navbar() {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        menuButtonRef.current?.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
+
+  useOverlayFocus({
+    active: open,
+    containerRef: mobileMenuRef,
+    restoreFocusRef: menuButtonRef,
+    onClose: () => setOpen(false),
+  });
 
   return (
     <header className="nav">
@@ -90,7 +90,13 @@ export function Navbar() {
             aria-label="Đóng menu điều hướng"
             onClick={() => setOpen(false)}
           />
-          <nav id="mobile-navigation" className="container mobile-menu" aria-label="Điều hướng di động">
+          <nav
+            id="mobile-navigation"
+            className="container mobile-menu"
+            aria-label="Điều hướng di động"
+            ref={mobileMenuRef}
+            tabIndex={-1}
+          >
             <DisplayPreferences />
             {NAV_LINKS.map((link) => (
               <a key={link.href} href={link.href} onClick={() => setOpen(false)}>

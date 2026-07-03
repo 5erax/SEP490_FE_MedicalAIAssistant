@@ -17,6 +17,7 @@ async function authenticate(page) {
       accessToken,
       email: "admin@example.com",
       roles: ["Admin"],
+      isPremium: true,
     }));
   }, TOKEN);
 }
@@ -334,9 +335,9 @@ test("clinical diagnosis uses the dedicated Swagger endpoint", async ({ page }) 
   await page.getByLabel("Triệu chứng bạn đang gặp").fill("Ho và sốt");
   await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
   await page.getByRole("button", { name: "Có" }).click();
-  await page.getByRole("button", { name: "Tiếp tục phân tích" }).click();
+  await page.getByRole("button", { name: "Xem gợi ý" }).click();
 
-  await expect(page.getByText("Cúm", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cúm", exact: true })).toBeVisible();
   await expect(page.getByText("Nội tổng quát", { exact: true })).toBeVisible();
   expect(diagnosisPayload).toEqual({ sessionId, answers: [{ questionId, answers: { yes: true, no: false } }] });
 });
@@ -380,13 +381,28 @@ test("admin clinical question form sends the Swagger DTO", async ({ page }) => {
       clinicalPayload = route.request().postDataJSON();
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { id: "question-id", ...clinicalPayload } }) });
     }
+    if (url.pathname === "/api/icd-chapters") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items: [{ id: CHAPTER_ID, chapterCode: "A-B", chapterName: "Certain infectious diseases" }],
+            pageNumber: 1,
+            pageSize: 20,
+            totalCount: 1,
+            totalPages: 1,
+          },
+        }),
+      });
+    }
     const paged = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities", "/api/clinical-questions", "/api/icd-chapters"].includes(url.pathname);
     return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: paged ? { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 } : [] }) });
   });
 
   await page.goto("/app/admin/clinical-questions", { waitUntil: "domcontentloaded" });
-  await page.getByLabel("ID chương ICD").fill(CHAPTER_ID);
-  await page.getByLabel("Mã chương ICD").fill("A-B");
+  await page.locator(".ai-config-add-button").click();
+  await page.getByLabel("Chương ICD").selectOption(CHAPTER_ID);
   await page.getByLabel("Câu hỏi tiếng Việt").fill("Bạn có sốt cao không?");
   await page.getByLabel("Câu hỏi tiếng Anh").fill("Do you have a high fever?");
   await page.getByLabel("Thứ tự").fill("2");
@@ -394,10 +410,10 @@ test("admin clinical question form sends the Swagger DTO", async ({ page }) => {
 
   expect(clinicalPayload).toEqual({
     chapterId: CHAPTER_ID,
-    chapterCode: "A-B",
     questionVi: "Bạn có sốt cao không?",
     englishPrefix: "Do you have a high fever?",
     sortOrder: 2,
+    answers: {},
   });
 });
 

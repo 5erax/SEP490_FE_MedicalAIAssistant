@@ -75,7 +75,7 @@ test("linked doctor profile submits only account fields", async ({ page }) => {
     phoneNumber: "0900000000",
   });
   await page.getByRole("button", { name: "Đăng nhập ngay" }).click();
-  await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fstaff$/);
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fdashboard$/);
   await expect(page.getByLabel("Email")).toHaveValue("linked.doctor@example.com");
   await expect.poll(() => page.evaluate(() => JSON.stringify(localStorage))).not.toContain(
     "linked.doctor@example.com",
@@ -140,8 +140,8 @@ test("invited doctor can register, log in, and open the doctor workspace", async
   await page.getByLabel("Mật khẩu").fill("Password123!");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-  await expect(page).toHaveURL(/\/app\/staff$/);
-  await expect(page.getByRole("heading", { name: "Quản lý chuyên khoa" })).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "Chẩn đoán lâm sàng" })).toBeVisible();
   await expect(page.evaluate(() => window.history.state)).resolves.toBeNull();
 });
 
@@ -180,7 +180,7 @@ test("invitation login rejects an account without a doctor role", async ({ page 
   await page.getByLabel("Mật khẩu").fill("Password123!");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-  await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fstaff$/);
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fdashboard$/);
   await expect(page.getByRole("alert")).toContainText("chưa được cấp quyền Bác sĩ");
   await expect(page.evaluate(() => localStorage.getItem("medimate.auth"))).resolves.toBeNull();
   await expect(page.evaluate(() => window.history.state)).resolves.toBeNull();
@@ -196,7 +196,7 @@ test("invitation login keeps an inactive doctor on the login page", async ({ pag
     }),
   }));
 
-  await page.goto("/login?returnTo=%2Fapp%2Fstaff", { waitUntil: "domcontentloaded" });
+  await page.goto("/login?returnTo=%2Fdashboard", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => {
     window.history.replaceState({
       doctorInvitation: {
@@ -211,7 +211,7 @@ test("invitation login keeps an inactive doctor on the login page", async ({ pag
   await page.getByLabel("Mật khẩu").fill("Password123!");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-  await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fstaff$/);
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fdashboard$/);
   await expect(page.getByRole("alert")).toContainText("chưa được kích hoạt");
   await expect(page.evaluate(() => localStorage.getItem("medimate.auth"))).resolves.toBeNull();
 });
@@ -226,7 +226,7 @@ test("invitation login keeps the doctor email after an incorrect password", asyn
     }),
   }));
 
-  await page.goto("/login?returnTo=%2Fapp%2Fstaff", { waitUntil: "domcontentloaded" });
+  await page.goto("/login?returnTo=%2Fdashboard", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => {
     window.history.replaceState({
       doctorInvitation: {

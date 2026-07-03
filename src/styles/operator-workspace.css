@@ -731,71 +731,278 @@
   font-size: 12px;
 }
 
-.admin-operator .facility-form-modal .doctor-form {
-  gap: 14px;
-}
-
-.admin-operator .facility-form-section {
+.admin-operator .doctor-image-uploader {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 14px;
+  background: #fbfcf7;
+  padding: 12px;
 }
 
-.admin-operator .admin-staff-panel {
+.admin-operator .doctor-image-uploader .muted-text {
+  margin: 0;
+}
+
+.facility-form-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(980px, 100%);
+  overflow: hidden;
+}
+
+.facility-form-modal .doctor-modal-header {
+  align-items: flex-start;
+  padding: 22px clamp(20px, 3vw, 30px) 18px;
+}
+
+.facility-form-modal .doctor-modal-header h2 {
+  font-size: clamp(28px, 3vw, 38px);
+}
+
+.facility-form {
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+}
+
+.facility-form-body {
   display: grid;
   gap: 16px;
-  max-width: 980px;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px clamp(20px, 3vw, 30px);
 }
 
-.admin-operator .admin-staff-form {
+.facility-form-card {
   display: grid;
-  gap: 14px;
-}
-
-.admin-operator .admin-staff-form-card {
-  display: grid;
-  gap: 14px;
+  gap: 16px;
+  min-width: 0;
   border: 1px solid rgba(16, 20, 17, 0.1);
   border-radius: 18px;
-  background: #fbfcf7;
-  padding: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 18px;
+  box-shadow: 0 14px 34px rgba(16, 20, 17, 0.045);
 }
 
-.admin-operator .admin-staff-form-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid rgba(16, 20, 17, 0.08);
-  padding-bottom: 12px;
+.facility-form-card-head {
+  display: grid;
+  gap: 5px;
 }
 
-.admin-operator .admin-staff-form-heading strong {
-  display: block;
+.facility-form-card-head h3 {
+  margin: 0;
   color: #101411;
-  font-size: 15px;
-  font-weight: 820;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.25;
 }
 
-.admin-operator .admin-staff-form-heading p {
-  margin: 4px 0 0;
-  color: rgba(16, 20, 17, 0.56);
+.facility-form-card-head p {
+  margin: 0;
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.facility-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.facility-form-span-2 {
+  grid-column: 1 / -1;
+}
+
+.facility-form-modal .clean-field {
+  gap: 8px;
+}
+
+.facility-form-modal .clean-field > small {
+  color: rgba(16, 20, 17, 0.58);
   font-size: 12px;
   font-weight: 650;
   line-height: 1.45;
 }
 
-.admin-operator .admin-staff-form .form-two-cols {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.admin-operator .admin-staff-submit {
+.facility-form-modal .clean-checkbox {
   display: flex;
-  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 48px;
+  border: 1px solid rgba(16, 20, 17, 0.12);
+  border-radius: 12px;
+  background: #fbfcf7;
+  padding: 12px;
+  color: rgba(16, 20, 17, 0.68);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
 }
 
-.admin-operator .admin-staff-submit .btn {
-  min-width: 220px;
+.facility-form-modal .clean-checkbox input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: #0c5f5e;
+}
+
+.facility-form-modal .clean-checkbox:focus-within {
+  border-color: rgba(16, 20, 17, 0.72);
+  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
+}
+
+.facility-image-uploader {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.facility-upload-message,
+.facility-selected-image {
+  margin: 0;
+}
+
+.facility-upload-message {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.facility-upload-message.success {
+  color: #087f5b;
+}
+
+.facility-upload-message.error {
+  color: #b42318;
+}
+
+.facility-selected-image {
+  color: rgba(16, 20, 17, 0.66);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.facility-image-preview-shell {
+  display: grid;
+  place-items: center;
+  min-height: 230px;
+  border: 1px dashed rgba(16, 20, 17, 0.16);
+  border-radius: 16px;
+  background: #f4f7ee;
+  overflow: hidden;
+}
+
+.facility-image-preview-shell.has-image {
+  border-style: solid;
+  background: #101411;
+}
+
+.facility-image-empty {
+  color: rgba(16, 20, 17, 0.5);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.facility-image-preview {
+  width: 100%;
+  height: 100%;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.facility-image-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.facility-image-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.facility-form-modal .facility-department-picker {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+.facility-form-modal .facility-department-picker legend {
+  padding: 0;
+  color: #101411;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.facility-form-modal .facility-department-picker > p {
+  margin: 0;
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.facility-form-modal .facility-department-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.facility-form-modal .facility-department-options label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  border: 1px solid rgba(16, 20, 17, 0.11);
+  border-radius: 11px;
+  background: #fbfcf7;
+  padding: 9px 11px;
+  color: #101411;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.facility-form-modal .facility-department-options input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0c5f5e;
+}
+
+.facility-form-modal .facility-department-options label:focus-within {
+  border-color: rgba(16, 20, 17, 0.72);
+  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
+}
+
+.facility-form-actions {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  border-top: 1px solid rgba(16, 20, 17, 0.1);
+  background: rgba(251, 252, 247, 0.96);
+  padding: 16px clamp(20px, 3vw, 30px);
+  box-shadow: 0 -12px 28px rgba(16, 20, 17, 0.06);
+}
+
+.admin-operator .doctor-image-preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border: 1px solid rgba(16, 20, 17, 0.12);
+  border-radius: 12px;
+  background: #f4f7ee;
+}
+
+.admin-operator .doctor-image-preview {
+  width: 128px;
+  height: 128px;
+  border-radius: 999px;
 }
 
 .admin-operator .admin-badge-stack {
@@ -1339,6 +1546,19 @@
   color: #087f8c !important;
   font-size: 12px;
   font-weight: 820;
+  overflow: hidden;
+}
+
+.doctor-avatar.has-image {
+  border-color: rgba(16, 20, 17, 0.1);
+  background: #f8faf5;
+}
+
+.doctor-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .doctor-experience {
@@ -2090,6 +2310,37 @@
 
   .doctor-modal-actions {
     margin-inline: 18px;
+  }
+
+  .facility-form-modal {
+    width: 100%;
+    max-height: calc(100svh - 24px);
+  }
+
+  .facility-form-body {
+    padding: 16px 18px;
+  }
+
+  .facility-form-card {
+    padding: 16px;
+  }
+
+  .facility-form-grid,
+  .facility-image-uploader {
+    grid-template-columns: 1fr;
+  }
+
+  .facility-form-span-2 {
+    grid-column: auto;
+  }
+
+  .facility-form-actions {
+    margin: 0;
+    padding: 14px 18px 18px;
+  }
+
+  .facility-form-actions .btn {
+    flex: 1 1 160px;
   }
 }
 

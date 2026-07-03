@@ -40,19 +40,44 @@ function copyResponseHeaders(sourceHeaders, response) {
   });
 }
 
+function getTargetPath(request) {
+  const path = request.query?.path;
+  if (Array.isArray(path)) return path.join("/");
+  return typeof path === "string" ? path : "";
+}
+
+function buildTargetUrl(request, baseUrl) {
+  const targetPath = getTargetPath(request).replace(/^\/+/, "");
+  const targetUrl = new URL(`/api/${targetPath}`, baseUrl);
+  const requestUrl = new URL(request.url, "http://vercel.local");
+
+  requestUrl.searchParams.delete("path");
+  requestUrl.searchParams.forEach((value, key) => {
+    targetUrl.searchParams.append(key, value);
+  });
+
+  return targetUrl;
+}
+
+function getApiBaseUrl() {
+  return (process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+}
+
 export default async function handler(request, response) {
-  const baseUrl = process.env.API_BASE_URL;
+  const baseUrl = getApiBaseUrl();
   if (!baseUrl) {
     response.status(500).json({ success: false, message: "API_BASE_URL is not configured." });
     return;
   }
 
-  const targetUrl = new URL(request.url, baseUrl);
-  targetUrl.pathname = `/api/${Array.isArray(request.query.path) ? request.query.path.join("/") : request.query.path || ""}`;
+  if (!getTargetPath(request)) {
+    response.status(400).json({ success: false, message: "Missing API proxy path." });
+    return;
+  }
 
   try {
     const body = ["GET", "HEAD"].includes(request.method) ? undefined : await getBody(request);
-    const upstreamResponse = await fetch(targetUrl, {
+    const upstreamResponse = await fetch(buildTargetUrl(request, baseUrl), {
       method: request.method,
       headers: copyRequestHeaders(request.headers),
       body,

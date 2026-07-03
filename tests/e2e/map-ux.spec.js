@@ -94,6 +94,26 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   await expect(skipMap).toHaveAttribute("href", "#facility-list");
 });
 
+test("map controls meet mobile touch target size", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await preparePage(page);
+  await mockMapApis(page, [facility()]);
+  await mockSuccessfulMapStyle(page);
+
+  await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+
+  const controlSizes = await page.locator(".maplibregl-ctrl-group button").evaluateAll((buttons) => (
+    buttons.map((button) => {
+      const box = button.getBoundingClientRect();
+      return { width: box.width, height: box.height };
+    })
+  ));
+
+  expect(controlSizes.length).toBeGreaterThanOrEqual(3);
+  expect(controlSizes.every((size) => size.width >= 44 && size.height >= 44)).toBe(true);
+});
+
 test("facility without coordinates stays in the list without a false marker", async ({ page }) => {
   await preparePage(page);
   await mockMapApis(page, [facility({ latitude: null, longitude: null })]);
