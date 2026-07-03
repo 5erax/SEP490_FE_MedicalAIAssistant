@@ -1,0 +1,1 @@
+export { registerStaffApplication } from "./staffService";

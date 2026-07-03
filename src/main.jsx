@@ -3,30 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { FeedbackProvider } from './components/feedback/FeedbackProvider.jsx'
 import { installLinkNavigation } from './router/navigation.js'
-import { getGoogleClientId, isGoogleOAuthEnabledForCurrentOrigin } from './services/googleOAuthConfig.js'
 import SpaRoot from './SpaRoot.jsx'
 import './index.css'
 
-const STALE_ASSET_RELOAD_KEY = 'medimate.stale-asset-reload'
-const googleClientId = getGoogleClientId()
-
-function installStaleAssetRecovery() {
-  window.setTimeout(() => {
-    sessionStorage.removeItem(STALE_ASSET_RELOAD_KEY)
-  }, 10_000)
-
-  window.addEventListener('vite:preloadError', (event) => {
-    event.preventDefault()
-
-    if (sessionStorage.getItem(STALE_ASSET_RELOAD_KEY) === '1') return
-
-    sessionStorage.setItem(STALE_ASSET_RELOAD_KEY, '1')
-    window.location.reload()
-  })
-}
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 installLinkNavigation()
-installStaleAssetRecovery()
 
 const appContent = (
   <FeedbackProvider>
@@ -37,7 +19,7 @@ const appContent = (
   </FeedbackProvider>
 )
 
-const app = isGoogleOAuthEnabledForCurrentOrigin()
+const app = googleClientId.trim()
   ? (
     <GoogleOAuthProvider
       clientId={googleClientId}

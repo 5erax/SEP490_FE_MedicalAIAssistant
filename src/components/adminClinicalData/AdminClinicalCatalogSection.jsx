@@ -1,6 +1,6 @@
 import { FileText, Filter, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CustomSelect, Dialog, PAGE_SIZE_OPTIONS } from "../ui";
+import { Dialog } from "../ui";
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -352,13 +352,14 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                   ))}
                 </select>
               </label>
-              <CustomSelect
-                className="clean-field"
-                label="Per page"
-                value={pageInfo.pageSize}
-                options={PAGE_SIZE_OPTIONS}
-                onChange={(nextPageSize) => changePageSize(Number(nextPageSize))}
-              />
+              <label className="clean-field">
+                <span>Per page</span>
+                <select value={pageInfo.pageSize} onChange={(event) => changePageSize(Number(event.target.value))}>
+                  <option value="10">10 / trang</option>
+                  <option value="20">20 / trang</option>
+                  <option value="50">50 / trang</option>
+                </select>
+              </label>
             </div>
 
             <div className="ai-config-filter-actions">

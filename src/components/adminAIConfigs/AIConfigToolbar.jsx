@@ -1,5 +1,4 @@
 import { BrainCircuit, Filter, RotateCcw, Search } from "lucide-react";
-import { CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 import { formatEnvironment } from "./aiConfigUtils";
 
 export default function AIConfigToolbar({
@@ -75,13 +74,14 @@ export default function AIConfigToolbar({
                 ))}
               </select>
             </label>
-            <CustomSelect
-              className="clean-field"
-              label="Per page"
-              value={pageSize}
-              options={PAGE_SIZE_OPTIONS}
-              onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
-            />
+            <label className="clean-field">
+              <span>Per page</span>
+              <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
+                <option value="10">10 / trang</option>
+                <option value="20">20 / trang</option>
+                <option value="50">50 / trang</option>
+              </select>
+            </label>
           </div>
 
           <div className="ai-config-filter-actions">

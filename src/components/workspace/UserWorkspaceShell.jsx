@@ -14,7 +14,6 @@ import {
   Menu,
   MessageSquare,
   Search,
-  Pill,
   Settings2,
   UserRound,
   X,
@@ -37,7 +36,6 @@ const PATIENT_ICONS = {
   profile: UserRound,
   records: ClipboardList,
   recovery: CalendarDays,
-  medication: Pill,
 };
 
 const NAV_ITEMS = getNavigationModel("patient")

@@ -1,14 +1,16 @@
-import { useId, useState } from "react";
+import { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
 import { getPostAuthDestination, getReturnToFromSearch, withReturnTo } from "../router/returnIntent";
 import { authApi, clearStoredAuth, setStoredAuth } from "../services/api";
-import { isGoogleOAuthEnabledForCurrentOrigin } from "../services/googleOAuthConfig";
 import { findPatientProfileByUserId } from "../services/patientProfileSetup";
 import { getWorkspacePath, hasAuthRole } from "../utils/roles";
 import "../styles/auth-refresh.css";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const GOOGLE_LOGIN_ENABLED = Boolean(GOOGLE_CLIENT_ID.trim());
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -169,28 +171,23 @@ function AuthShell({ mode = "login", children }) {
 }
 
 function Field({ label, hint, ...props }) {
-  const id = useId();
-  const hintId = hint ? `${id}-hint` : undefined;
   return (
-    <div className="clean-field">
-      <label htmlFor={id}>{label}</label>
-      <input id={id} aria-describedby={hintId} {...props} />
-      {hint && <small id={hintId}>{hint}</small>}
-    </div>
+    <label className="clean-field">
+      <span>{label}</span>
+      <input {...props} />
+      {hint && <small>{hint}</small>}
+    </label>
   );
 }
 
 function SelectField({ label, children, ...props }) {
-  const id = useId();
   return (
-    <div className="clean-field">
-      <label htmlFor={id}>{label}</label>
-      <select id={id} {...props}>{children}</select>
-    </div>
+    <label className="clean-field">
+      <span>{label}</span>
+      <select {...props}>{children}</select>
+    </label>
   );
 }
-
-const PASSWORD_HINT = "Tối thiểu 8 ký tự, nên có chữ hoa, chữ thường, số và ký tự đặc biệt.";
 
 export function LoginPage() {
   const { showToast } = useFeedback();
@@ -198,7 +195,6 @@ export function LoginPage() {
   const [form, setForm] = useState({ email: invitationContext?.email || "", password: "" });
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const googleLoginEnabled = isGoogleOAuthEnabledForCurrentOrigin();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -252,7 +248,7 @@ export function LoginPage() {
     <AuthShell mode="login">
       <form className="clean-form auth-form-clean" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
-        {googleLoginEnabled ? (
+        {GOOGLE_LOGIN_ENABLED && (
           <>
             <div className="google-login-wrap">
               <GoogleLogin
@@ -264,10 +260,6 @@ export function LoginPage() {
             </div>
             <div className="auth-divider"><span>hoặc</span></div>
           </>
-        ) : (
-          <p className="auth-provider-note" role="status">
-            Đăng nhập Google đang tắt cho domain này. Bạn vẫn có thể đăng nhập bằng email và mật khẩu.
-          </p>
         )}
         <Field
           label="Email"
@@ -364,8 +356,8 @@ export function SignupPage() {
           <Field label="Tên đăng nhập" name="userName" value={form.userName} onChange={(event) => update("userName", event.target.value)} autoComplete="username" spellCheck={false} required />
           <Field label="Tên hiển thị" name="displayName" value={form.displayName} onChange={(event) => update("displayName", event.target.value)} autoComplete="name" required />
           <Field label="Địa chỉ" name="address" value={form.address} onChange={(event) => update("address", event.target.value)} autoComplete="street-address" />
-          <Field label="Mật khẩu" name="password" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" hint={PASSWORD_HINT} required />
-          <Field label="Nhập lại mật khẩu" name="confirmPassword" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" hint="Nhập lại đúng mật khẩu mới để tránh khóa nhầm tài khoản." required />
+          <Field label="Mật khẩu" name="password" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" required />
+          <Field label="Nhập lại mật khẩu" name="confirmPassword" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" required />
           <SelectField label="Giới tính" name="gender" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
             <option value="1">Nam</option>
             <option value="2">Nữ</option>
@@ -466,7 +458,7 @@ export function ChangePasswordPage() {
         <ApiMessage message={message} />
         <Field label="Email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} required />
         <Field label="Mã xác thực" value={form.otp} onChange={(event) => update("otp", event.target.value)} required />
-        <Field label="Mật khẩu mới" type="password" value={form.newPassword} onChange={(event) => update("newPassword", event.target.value)} hint={PASSWORD_HINT} required />
+        <Field label="Mật khẩu mới" type="password" value={form.newPassword} onChange={(event) => update("newPassword", event.target.value)} required />
         <Field label="Nhập lại mật khẩu mới" type="password" value={form.confirmNewPassword} onChange={(event) => update("confirmNewPassword", event.target.value)} required />
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
           {submitting ? "Đang đổi..." : "Đổi mật khẩu"}

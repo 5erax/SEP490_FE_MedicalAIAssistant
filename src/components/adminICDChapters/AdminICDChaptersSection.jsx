@@ -1,6 +1,6 @@
 import { Filter, Plus, RotateCcw, Search } from "lucide-react";
 import { useState } from "react";
-import { CustomSelect, Dialog, PAGE_SIZE_OPTIONS } from "../ui";
+import { Dialog } from "../ui";
 
 function Field({ label, children }) {
   return (
@@ -110,13 +110,14 @@ export default function AdminICDChaptersSection({
 
           <div className="ai-config-toolbar-row ai-config-toolbar-filters">
             <div className="ai-config-filter-grid">
-              <CustomSelect
-                className="clean-field"
-                label="Per page"
-                value={pageInfo.pageSize}
-                options={PAGE_SIZE_OPTIONS}
-                onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
-              />
+              <label className="clean-field">
+                <span>Per page</span>
+                <select value={pageInfo.pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
+                  <option value="10">10 / trang</option>
+                  <option value="20">20 / trang</option>
+                  <option value="50">50 / trang</option>
+                </select>
+              </label>
             </div>
 
             <div className="ai-config-filter-actions">

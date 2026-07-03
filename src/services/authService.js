@@ -43,6 +43,16 @@ export const authApi = {
     );
   },
 
+  async registerStaff(payload) {
+    return normalizeAuthResponse(
+      await apiRequest(ENDPOINTS.AUTH.REGISTER_STAFF, {
+        method: "POST",
+        body: payload,
+        auth: true,
+      }),
+    );
+  },
+
   async googleLogin(credential) {
     return normalizeAuthResponse(
       await apiRequest(ENDPOINTS.AUTH.GOOGLE, {
@@ -95,4 +105,10 @@ export const authApi = {
     });
   },
 
+  approveStaff(userId) {
+    return apiRequest(ENDPOINTS.AUTH.APPROVE_STAFF(userId), {
+      method: "POST",
+      auth: true,
+    });
+  },
 };

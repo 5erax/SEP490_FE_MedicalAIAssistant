@@ -24,11 +24,13 @@ export const ENDPOINTS = {
   AUTH: {
     LOGIN: `${AUTH_BASE}/login`,
     REGISTER: `${AUTH_BASE}/register`,
+    REGISTER_STAFF: `${AUTH_BASE}/register/staff`,
     GOOGLE: `${AUTH_BASE}/google`,
     REFRESH: `${AUTH_BASE}/refresh`,
     LOGOUT: `${AUTH_BASE}/logout`,
     FORGOT_PASSWORD: `${AUTH_BASE}/forgot-password`,
     CHANGE_PASSWORD: `${AUTH_BASE}/change-password`,
+    APPROVE_STAFF: (userId) => `${AUTH_BASE}/${userId}/approve-staff`,
   },
   USERS: {
     BASE: USERS_BASE,

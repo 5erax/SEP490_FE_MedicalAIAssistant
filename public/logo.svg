@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="medimate-logo-title medimate-logo-desc" viewBox="0 0 48 48">
-  <title id="medimate-logo-title">MediMate AI</title>
-  <desc id="medimate-logo-desc">Biểu trưng chữ thập y tế kết hợp điểm kết nối AI.</desc>
-  <rect width="48" height="48" rx="12" fill="#101411"/>
-  <path fill="#C4E995" d="M21 10h6v11h11v6H27v11h-6V27H10v-6h11V10Z"/>
-  <circle cx="35" cy="13" r="4" fill="#7CE0D3"/>
-  <circle cx="36" cy="34" r="3" fill="#7CE0D3"/>
-  <path fill="none" stroke="#7CE0D3" stroke-linecap="round" stroke-width="3" d="M33.5 16.5 28 21m6.5 10.5L28 27"/>
-</svg>

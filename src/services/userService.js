@@ -47,4 +47,10 @@ export const usersApi = {
     });
   },
 
+  approve(userId) {
+    return apiRequest(ENDPOINTS.AUTH.APPROVE_STAFF(userId), {
+      method: "POST",
+      auth: true,
+    });
+  },
 };
