@@ -740,7 +740,8 @@
   gap: 12px;
 }
 
-.admin-operator .facility-image-uploader {
+.admin-operator .facility-image-uploader,
+.admin-operator .doctor-image-uploader {
   display: grid;
   gap: 10px;
   border: 1px solid rgba(16, 20, 17, 0.1);
@@ -750,6 +751,7 @@
 }
 
 .admin-operator .facility-image-uploader .muted-text,
+.admin-operator .doctor-image-uploader .muted-text,
 .admin-operator .facility-upload-message {
   margin: 0;
 }
@@ -767,13 +769,20 @@
   color: #b42318;
 }
 
-.admin-operator .facility-image-preview {
+.admin-operator .facility-image-preview,
+.admin-operator .doctor-image-preview {
   width: 100%;
   max-height: 220px;
   object-fit: cover;
   border: 1px solid rgba(16, 20, 17, 0.12);
   border-radius: 12px;
   background: #f4f7ee;
+}
+
+.admin-operator .doctor-image-preview {
+  width: 128px;
+  height: 128px;
+  border-radius: 999px;
 }
 
 .admin-operator .admin-badge-stack {
@@ -1317,6 +1326,19 @@
   color: #087f8c !important;
   font-size: 12px;
   font-weight: 820;
+  overflow: hidden;
+}
+
+.doctor-avatar.has-image {
+  border-color: rgba(16, 20, 17, 0.1);
+  background: #f8faf5;
+}
+
+.doctor-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .doctor-experience {

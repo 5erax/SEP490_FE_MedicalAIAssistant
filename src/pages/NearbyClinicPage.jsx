@@ -84,6 +84,10 @@ function getObjectData(response) {
   return response?.data?.data ?? response?.data ?? response;
 }
 
+function getDoctorImageUrl(doctor) {
+  return doctor?.imageUrl || doctor?.avatarUrl || doctor?.photoUrl || "";
+}
+
 function mergeFacilityDetail(existingFacility, apiFacility) {
   return {
     ...existingFacility,
@@ -715,13 +719,22 @@ function NearbyClinicPage() {
 
             <section className="facility-detail-card">
               <h3>Danh sách bác sĩ</h3>
-              <div className="facility-detail-list">
+              <div className="facility-detail-list facility-detail-doctor-list">
                 {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
                 {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này từ backend.</p>}
                 {detailDoctors.map((doctor) => (
                   <article key={doctor.id}>
-                    <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
-                    <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
+                    {getDoctorImageUrl(doctor) && (
+                      <img
+                        className="facility-detail-doctor-image"
+                        src={getDoctorImageUrl(doctor)}
+                        alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
+                      />
+                    )}
+                    <div>
+                      <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
+                      <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -869,8 +882,11 @@ const styles = `
 .facility-detail-tags span { border: 1px solid var(--line); border-radius: 999px; background: var(--paper-soft); padding: 6px 9px; color: #315d18; font-size: 12px; font-weight: 850; }
 .facility-detail-list, .facility-detail-services { display: grid; gap: 9px; }
 .facility-detail-list article { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-soft); padding: 11px; }
+.facility-detail-doctor-list article { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.facility-detail-doctor-list article > div { min-width: 0; }
 .facility-detail-list strong { font-size: 13px; }
 .facility-detail-list span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.facility-detail-doctor-image { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 999px; object-fit: cover; background: #f4f7ee; }
 .facility-detail-services { display: flex; flex-wrap: wrap; gap: 8px; }
 .facility-detail-services span { border: 1px solid var(--line); border-radius: 999px; background: #e4f4f2; color: #075d66; padding: 8px 10px; font-size: 12px; font-weight: 850; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(170,237,99,.55); } 100% { box-shadow: 0 0 0 14px rgba(170,237,99,0); } }

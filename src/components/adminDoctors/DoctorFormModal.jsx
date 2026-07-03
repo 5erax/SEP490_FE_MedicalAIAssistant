@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { uploadImageToCloudinary } from "../../services/cloudinaryUploadService";
 import { Dialog } from "../ui";
 
 const EMPTY_FORM = {
@@ -6,6 +7,7 @@ const EMPTY_FORM = {
   fullName: "",
   specialty: "",
   academicTitle: "",
+  imageUrl: "",
   departmentRole: "0",
   yearsOfExperience: "",
   isActive: "true",
@@ -28,6 +30,7 @@ function toFormValue(doctor) {
     fullName: doctor.fullName ?? "",
     specialty: doctor.specialty ?? "",
     academicTitle: doctor.academicTitle ?? "",
+    imageUrl: doctor.imageUrl ?? doctor.avatarUrl ?? doctor.photoUrl ?? "",
     departmentRole: String(doctor.departmentRole ?? 0),
     yearsOfExperience: doctor.yearsOfExperience ?? "",
     isActive: String(Boolean(doctor.isActive)),
@@ -52,6 +55,21 @@ function validate(form, validFacilityDepartmentIds) {
       errors.yearsOfExperience = "Số năm kinh nghiệm phải là số nguyên không âm.";
     }
   }
+  const imageUrl = form.imageUrl.trim();
+  if (imageUrl) {
+    if (imageUrl.length > 2048) {
+      errors.imageUrl = "URL ảnh bác sĩ không được vượt quá 2048 ký tự.";
+    } else {
+      try {
+        const url = new URL(imageUrl);
+        if (!["http:", "https:"].includes(url.protocol)) {
+          errors.imageUrl = "URL ảnh bác sĩ phải bắt đầu bằng http hoặc https.";
+        }
+      } catch {
+        errors.imageUrl = "URL ảnh bác sĩ không hợp lệ.";
+      }
+    }
+  }
   return errors;
 }
 
@@ -61,6 +79,7 @@ function buildDoctorPayload(form) {
     fullName: form.fullName.trim(),
     specialty: form.specialty.trim() || null,
     academicTitle: form.academicTitle.trim() || null,
+    imageUrl: form.imageUrl.trim() || null,
     departmentRole: Number(form.departmentRole),
     yearsOfExperience: form.yearsOfExperience === "" ? null : Number(form.yearsOfExperience),
     isActive: form.isActive === "true",
@@ -78,7 +97,10 @@ export default function DoctorFormModal({
 }) {
   const [form, setForm] = useState(() => toFormValue(doctor));
   const [errors, setErrors] = useState({});
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadMessage, setImageUploadMessage] = useState(null);
   const title = mode === "edit" ? "Cập nhật bác sĩ" : "Thêm bác sĩ mới";
+  const locked = saving || imageUploading;
 
   const options = useMemo(() => {
     const current = form.facilityDepartmentId
@@ -97,6 +119,27 @@ export default function DoctorFormModal({
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: "" }));
+    if (key === "imageUrl") setImageUploadMessage(null);
+  }
+
+  async function handleImageUpload(event) {
+    const [file] = event.target.files ?? [];
+    if (!file) return;
+
+    setImageUploading(true);
+    setImageUploadMessage(null);
+    setErrors((current) => ({ ...current, imageUrl: "" }));
+
+    try {
+      const { secureUrl } = await uploadImageToCloudinary(file);
+      update("imageUrl", secureUrl);
+      setImageUploadMessage({ type: "success", text: "Đã tải ảnh bác sĩ lên Cloudinary." });
+    } catch (error) {
+      setImageUploadMessage({ type: "error", text: error.message });
+    } finally {
+      setImageUploading(false);
+      event.target.value = "";
+    }
   }
 
   function handleSubmit(event) {
@@ -113,9 +156,9 @@ export default function DoctorFormModal({
       backdropClassName="doctor-modal-backdrop"
       className="doctor-modal"
       labelledBy="doctor-modal-title"
-      onClose={onClose}
-      closeOnBackdrop={!saving}
-      closeOnEscape={!saving}
+      onClose={locked ? undefined : onClose}
+      closeOnBackdrop={!locked}
+      closeOnEscape={!locked}
       restoreFocusRef={restoreFocusRef}
     >
         <header className="doctor-modal-header">
@@ -124,7 +167,7 @@ export default function DoctorFormModal({
             <h2 id="doctor-modal-title">{title}</h2>
             <p>Điền thông tin hành chính và vị trí công tác của bác sĩ.</p>
           </div>
-          <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose}>×</button>
+          <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose} disabled={locked}>×</button>
         </header>
 
         <form className="clean-form doctor-form" onSubmit={handleSubmit}>
@@ -207,10 +250,50 @@ export default function DoctorFormModal({
             </label>
           </div>
 
+          <div className="doctor-image-uploader">
+            <label className="clean-field">
+              <span>Ảnh bác sĩ</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={locked}
+              />
+            </label>
+            <p className="muted-text">Ảnh được tải lên Cloudinary bằng unsigned upload preset. Tối đa 5 MB.</p>
+            {imageUploadMessage && (
+              <p
+                className={`facility-upload-message ${imageUploadMessage.type}`}
+                role={imageUploadMessage.type === "error" ? "alert" : "status"}
+              >
+                {imageUploadMessage.text}
+              </p>
+            )}
+            <label className={`clean-field ${errors.imageUrl ? "doctor-field-error" : ""}`}>
+              <span>Cloudinary image URL</span>
+              <input
+                type="url"
+                value={form.imageUrl}
+                onChange={(event) => update("imageUrl", event.target.value)}
+                placeholder="https://res.cloudinary.com/..."
+                aria-invalid={errors.imageUrl ? "true" : undefined}
+                aria-describedby={errors.imageUrl ? "doctor-image-url-error" : undefined}
+              />
+              {errors.imageUrl && <small id="doctor-image-url-error" role="alert">{errors.imageUrl}</small>}
+            </label>
+            {form.imageUrl && (
+              <img
+                className="doctor-image-preview"
+                src={form.imageUrl}
+                alt="Xem trước ảnh bác sĩ"
+              />
+            )}
+          </div>
+
           <div className="doctor-modal-actions">
-            <button className="btn btn-ghost" type="button" onClick={onClose}>Hủy</button>
-            <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Thêm bác sĩ"}
+            <button className="btn btn-ghost" type="button" onClick={onClose} disabled={locked}>Hủy</button>
+            <button className="btn btn-primary" type="submit" disabled={locked}>
+              {imageUploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Thêm bác sĩ"}
             </button>
           </div>
         </form>
