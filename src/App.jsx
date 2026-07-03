@@ -3,6 +3,7 @@ import LandingPage from "./pages/LandingPage";
 import UserWorkspaceShell from "./components/workspace/UserWorkspaceShell";
 import StaticPage from "./pages/StaticPage";
 import WorkspaceRedirect from "./pages/WorkspaceRedirect";
+import AdminWorkspacePage from "./pages/AdminWorkspacePage";
 import { getStoredAuth } from "./services/api";
 import {
   ChangePasswordPage,
@@ -16,7 +17,6 @@ import { resolveRouteAccess } from "./router/access";
 
 const NearbyClinicPage = lazy(() => import("./pages/NearbyClinicPage"));
 const MedicalAssistantPage = lazy(() => import("./pages/MedicalAssistantPage"));
-const AdminWorkspacePage = lazy(() => import("./pages/AdminWorkspacePage"));
 const ChatbotPage = lazy(() => import("./pages/ChatbotPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const DoctorRegisterInvitationPage = lazy(() => import("./pages/DoctorRegisterInvitationPage"));

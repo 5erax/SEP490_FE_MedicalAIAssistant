@@ -12,7 +12,9 @@ const NAV_LINKS = [
 function Logo() {
   return (
     <a className="brand" href="/" aria-label="MediMate AI">
-      <span className="brand-mark">+</span>
+      <span className="brand-mark" aria-hidden="true">
+        <img src="/logo.svg" alt="" width="36" height="36" />
+      </span>
       <span>MediMate AI</span>
     </a>
   );

@@ -1465,7 +1465,9 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         <div className="container admin-shell">
           <aside className="admin-sidebar">
             <a className="brand" href="/">
-              <span className="brand-mark">+</span>
+              <span className="brand-mark" aria-hidden="true">
+                <img src="/logo.svg" alt="" width="36" height="36" />
+              </span>
               <span>MediMate AI</span>
             </a>
 
