@@ -38,23 +38,18 @@ function formatCoordinatePair(facility) {
   return `${Number(facility.latitude).toFixed(5)}, ${Number(facility.longitude).toFixed(5)}`;
 }
 
-function isSafeImageSource(value, { allowBlob = false } = {}) {
+function isSafeImageSource(value) {
   if (!value || typeof value !== "string") return false;
 
   try {
-    const url = new URL(value, "https://medimate.local");
-    return url.protocol === "http:" || url.protocol === "https:" || (allowBlob && url.protocol === "blob:");
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
   } catch {
     return false;
   }
 }
 
-function getSafeCurrentImageUrl(previewUrl, imageUrl) {
-  const normalizedPreviewUrl = (previewUrl || "").trim();
-  if (normalizedPreviewUrl && isSafeImageSource(normalizedPreviewUrl, { allowBlob: true })) {
-    return normalizedPreviewUrl;
-  }
-
+function getSafeCurrentImageUrl(imageUrl) {
   const normalizedImageUrl = (imageUrl || "").trim();
   return isSafeImageSource(normalizedImageUrl) ? normalizedImageUrl : "";
 }
@@ -88,25 +83,9 @@ export default function AdminFacilitiesSection({
   const [formOpen, setFormOpen] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadMessage, setImageUploadMessage] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [imageOriginalUrl, setImageOriginalUrl] = useState("");
   const [selectedImageName, setSelectedImageName] = useState("");
-  const imageObjectUrlRef = useRef("");
   const wasSavingRef = useRef(false);
-
-  useEffect(() => () => {
-    if (imageObjectUrlRef.current) URL.revokeObjectURL(imageObjectUrlRef.current);
-  }, []);
-
-  function replaceImagePreviewUrl(nextUrl, isObjectUrl = false) {
-    const safeNextUrl = isObjectUrl && !isSafeImageSource(nextUrl, { allowBlob: true }) ? "" : nextUrl;
-
-    if (imageObjectUrlRef.current && imageObjectUrlRef.current !== nextUrl) {
-      URL.revokeObjectURL(imageObjectUrlRef.current);
-    }
-    imageObjectUrlRef.current = isObjectUrl ? safeNextUrl : "";
-    setImagePreviewUrl(safeNextUrl);
-  }
 
   useEffect(() => {
     if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
@@ -120,7 +99,6 @@ export default function AdminFacilitiesSection({
     setImageUploadMessage(null);
     setImageOriginalUrl("");
     setSelectedImageName("");
-    replaceImagePreviewUrl("");
     setFormOpen(true);
   }
 
@@ -130,7 +108,6 @@ export default function AdminFacilitiesSection({
     setImageUploadMessage(null);
     setImageOriginalUrl(currentImageUrl);
     setSelectedImageName("");
-    replaceImagePreviewUrl("");
     setFormOpen(true);
   }
 
@@ -139,7 +116,6 @@ export default function AdminFacilitiesSection({
     setFormOpen(false);
     setImageUploadMessage(null);
     setSelectedImageName("");
-    replaceImagePreviewUrl("");
     onReset();
   }
 
@@ -155,8 +131,6 @@ export default function AdminFacilitiesSection({
       return;
     }
 
-    const localPreviewUrl = URL.createObjectURL(file);
-    replaceImagePreviewUrl(localPreviewUrl, true);
     setSelectedImageName(file.name);
     setImageUploading(true);
     setImageUploadMessage(null);
@@ -164,7 +138,6 @@ export default function AdminFacilitiesSection({
     try {
       const { secureUrl } = await uploadImageToCloudinary(file);
       onFormChange("imageUrl", secureUrl);
-      replaceImagePreviewUrl("");
       setImageUploadMessage({ type: "success", text: "Đã tải ảnh lên Cloudinary." });
     } catch (error) {
       setImageUploadMessage({ type: "error", text: error.message });
@@ -178,26 +151,23 @@ export default function AdminFacilitiesSection({
     onFormChange("imageUrl", value);
     setSelectedImageName(value && value !== imageOriginalUrl ? "URL nhập thủ công" : "");
     setImageUploadMessage(null);
-    replaceImagePreviewUrl("");
   }
 
   function restoreOriginalImage() {
     onFormChange("imageUrl", imageOriginalUrl);
     setSelectedImageName("");
     setImageUploadMessage(null);
-    replaceImagePreviewUrl("");
   }
 
   function clearSelectedImage() {
     onFormChange("imageUrl", "");
     setSelectedImageName("");
     setImageUploadMessage(null);
-    replaceImagePreviewUrl("");
   }
 
-  const currentImageUrl = getSafeCurrentImageUrl(imagePreviewUrl, form.imageUrl);
+  const currentImageUrl = getSafeCurrentImageUrl(form.imageUrl);
   const hasUploadError = imageUploadMessage?.type === "error";
-  const imageChanged = (form.imageUrl || "") !== imageOriginalUrl || Boolean(imagePreviewUrl);
+  const imageChanged = (form.imageUrl || "") !== imageOriginalUrl;
 
   return (
     <section className="admin-panel ai-config-admin-panel facility-admin-panel">

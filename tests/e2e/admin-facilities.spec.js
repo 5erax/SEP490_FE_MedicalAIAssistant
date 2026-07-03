@@ -310,6 +310,10 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
   const facilityDialog = page.getByRole("dialog");
   await expect(facilityDialog.locator(".facility-image-preview")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
   await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue("https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
+  await facilityDialog.getByLabel("Cloudinary image URL").fill("javascript:alert(1)");
+  await expect(facilityDialog.locator(".facility-image-preview")).toHaveCount(0);
+  await facilityDialog.getByRole("button", { name: "Giữ ảnh hiện tại" }).click();
+  await expect(facilityDialog.locator(".facility-image-preview")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
   await facilityDialog.getByRole("button", { name: "Gỡ ảnh" }).click();
   await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue("");
   await facilityDialog.getByRole("button", { name: "Giữ ảnh hiện tại" }).click();
