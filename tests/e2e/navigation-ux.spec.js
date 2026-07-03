@@ -11,12 +11,6 @@ const ADMIN_ACCESS_TOKEN = [
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20ifQ",
   "",
 ].join(".");
-const STAFF_ACCESS_TOKEN = [
-  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
-  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJTdGFmZiIsImVtYWlsIjoic3RhZmZAZXhhbXBsZS5jb20ifQ",
-  "",
-].join(".");
-
 test.describe("global navigation UX", () => {
   test("internal links navigate without reloading the document", async ({ page }) => {
     await preparePage(page);
@@ -58,6 +52,14 @@ test.describe("global navigation UX", () => {
     await expect(skipLink).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.locator("#main-content")).toBeFocused();
+  });
+
+  test("hides Google login when the current origin is not authorized", async ({ page }) => {
+    await preparePage(page);
+    await openRoute(page, "/login");
+
+    await expect(page.getByText("Đăng nhập Google đang tắt cho domain này.")).toBeVisible();
+    await expect(page.locator(".google-login-wrap")).toHaveCount(0);
   });
 
   test("free users get a keyboard-safe premium explanation", async ({ page }) => {
@@ -371,7 +373,7 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).not.toHaveProperty("address");
   });
 
-  test("doctor first login opens the staff workspace instead of patient onboarding", async ({ page }) => {
+  test("doctor first login skips patient onboarding", async ({ page }) => {
     await preparePage(page);
     await page.route("**/api/authentication/login", (route) => route.fulfill({
       status: 200,
@@ -402,7 +404,7 @@ test.describe("global navigation UX", () => {
     await page.getByLabel("Mật khẩu").fill("Example123!");
     await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-    await expect(page).toHaveURL(/\/app\/staff$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
   });
 
   test("rejects external return intent after login", async ({ page }) => {
@@ -525,6 +527,17 @@ test.describe("global navigation UX", () => {
     await expect(page.locator(".assessment-header h1")).toContainText("Phân tích lâm sàng");
   });
 
+  test("medical assistant keeps primary actions visible on mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await preparePage(page);
+
+    await openRoute(page, "/medical-assistant");
+    await expect(page.getByRole("button", { name: "Bắt đầu phân tích" })).toBeVisible();
+
+    await openRoute(page, "/medical-assistant/safety");
+    await expect(page.getByRole("button", { name: "Xem checklist an toàn" })).toBeVisible();
+  });
+
   test("safety gate red flag stops AI intake and points to urgent care", async ({ page }) => {
     await preparePage(page);
 
@@ -549,30 +562,7 @@ test.describe("global navigation UX", () => {
     await expect(page).toHaveURL(/\/dashboard$/);
 
     await page.evaluate(() => localStorage.clear());
-    await page.evaluate((accessToken) => {
-      localStorage.setItem("medimate.auth", JSON.stringify({
-        accessToken,
-        roles: ["Staff"],
-      }));
-    }, STAFF_ACCESS_TOKEN);
-    await page.goto("/app/admin");
-    await expect(page).toHaveURL(/\/app\/staff$/);
-
-    await page.evaluate(() => localStorage.clear());
     await page.goto("/app/admin");
     await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fadmin$/);
-  });
-
-  test("staff role does not grant patient premium entitlement", async ({ page }) => {
-    await preparePage(page);
-    await page.addInitScript((accessToken) => {
-      localStorage.setItem("medimate.auth", JSON.stringify({
-        accessToken,
-        roles: ["Staff"],
-      }));
-    }, STAFF_ACCESS_TOKEN);
-
-    await openRoute(page, "/chat");
-    await expect(page).toHaveURL(/\/pricing\?returnTo=%2Fchat$/);
   });
 });

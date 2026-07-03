@@ -7,6 +7,17 @@ function getInitials(name = "") {
   return words.slice(-2).map((word) => word[0]).join("").toUpperCase();
 }
 
+function DoctorAvatar({ doctor }) {
+  const imageUrl = doctor.imageUrl || doctor.avatarUrl || doctor.photoUrl || "";
+  const label = doctor.fullName ? `Ảnh bác sĩ ${doctor.fullName}` : "Ảnh bác sĩ";
+
+  return (
+    <span className={`doctor-avatar ${imageUrl ? "has-image" : ""}`}>
+      {imageUrl ? <img src={imageUrl} alt={label} /> : getInitials(doctor.fullName)}
+    </span>
+  );
+}
+
 function formatExperience(years) {
   if (years === null || years === undefined || years === "") return "Chưa cập nhật";
   return `${years} năm`;
@@ -27,7 +38,7 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
       header: "Bác sĩ",
       render: (doctor) => (
         <div className="doctor-primary-cell">
-          <span className="doctor-avatar">{getInitials(doctor.fullName)}</span>
+          <DoctorAvatar doctor={doctor} />
           <div>
             <strong>{doctor.fullName || "Bác sĩ chưa đặt tên"}</strong>
             <span>{doctor.academicTitle || "Chưa cập nhật học hàm/học vị"}</span>
@@ -116,7 +127,7 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
           <article className="doctor-responsive-card" key={doctor.id}>
             <header className="doctor-responsive-card-header">
               <div className="doctor-primary-cell">
-                <span className="doctor-avatar">{getInitials(doctor.fullName)}</span>
+                <DoctorAvatar doctor={doctor} />
                 <div>
                   <strong>{doctor.fullName || "Bác sĩ chưa đặt tên"}</strong>
                   <span>{doctor.academicTitle || "Chưa cập nhật học hàm/học vị"}</span>

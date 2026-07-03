@@ -33,7 +33,6 @@ import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartm
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
-import AdminStaffSection from "../components/adminStaff/AdminStaffSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -62,23 +61,12 @@ const EMPTY_FACILITY = {
   longitude: "",
   phone: "",
   website: "",
+  imageUrl: "",
   openingHours: "",
   facilityType: "",
   isActive: true,
   departmentIds: [],
 };
-function createEmptyStaffForm() {
-  return {
-    email: "",
-    userName: "",
-    password: "",
-    confirmPassword: "",
-    displayName: "",
-    address: "",
-    gender: "1",
-    dateOfBirth: "",
-  };
-}
 const EMPTY_FACILITY_FILTERS = {
   search: "",
   isActive: "",
@@ -301,6 +289,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [facilityPageInfo, setFacilityPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_FACILITY_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const activeSection = initialSection;
+  const activeAdminItem = ADMIN_NAV_ITEMS.find((item) => item.id === `admin.${activeSection}`);
   const [search, setSearch] = useState("");
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [appliedFacilityFilters, setAppliedFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
@@ -314,7 +303,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [editingIcdChapterId, setEditingIcdChapterId] = useState("");
   const [editingFacilityId, setEditingFacilityId] = useState("");
-  const [staffForm, setStaffForm] = useState(createEmptyStaffForm);
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
   const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
   const [lastInvitation, setLastInvitation] = useState(null);
@@ -333,7 +321,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingIcdChapter, setSavingIcdChapter] = useState(false);
   const [savingFacility, setSavingFacility] = useState(false);
-  const [savingStaff, setSavingStaff] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
   const [savingInvitation, setSavingInvitation] = useState(false);
   const [savingAIConfig, setSavingAIConfig] = useState(false);
@@ -345,7 +332,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [icdChapterMessage, setIcdChapterMessage] = useState(null);
   const [facilityMessage, setFacilityMessage] = useState(null);
   const [facilityLoadError, setFacilityLoadError] = useState("");
-  const [staffMessage, setStaffMessage] = useState(null);
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [doctorLoadError, setDoctorLoadError] = useState("");
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
@@ -518,7 +504,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             totalPages: data.totalPages ?? 1,
           });
         } else {
-          console.error("Không thể tải danh sách bác sĩ:", doctorResult.reason);
           setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
         }
 
@@ -533,7 +518,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             totalPages: data.totalPages ?? 1,
           });
         } else {
-          console.error("AI Config API error:", aiConfigResult.reason);
           setAIConfigLoadError(AI_CONFIG_LOAD_ERROR_MESSAGE);
         }
 
@@ -751,8 +735,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         totalCount: data.totalCount ?? 0,
         totalPages: data.totalPages ?? 1,
       });
-    } catch (error) {
-      console.error("Doctor API error:", error);
+    } catch {
       setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
       showToast({
         type: "error",
@@ -778,8 +761,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         totalCount: data.totalCount ?? 0,
         totalPages: data.totalPages ?? 1,
       });
-    } catch (error) {
-      console.error("AI Config API error:", error);
+    } catch {
       setAIConfigLoadError(AI_CONFIG_LOAD_ERROR_MESSAGE);
       showToast({
         type: "error",
@@ -852,7 +834,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         await loadAIConfigs(1);
       }
     } catch (error) {
-      console.error("AI Config save API error:", error);
       setAIConfigMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không lưu được AI config", message: error.message });
     } finally {
@@ -872,7 +853,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         message: response.message || "Trạng thái AI config đã được cập nhật.",
       });
     } catch (error) {
-      console.error("AI Config status API error:", error);
       setAIConfigMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không đổi được trạng thái AI config", message: error.message });
     }
@@ -894,7 +874,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setAIConfigPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
       showToast({ type: "success", title: "Đã xóa AI config", message: response.message || "Danh sách AI config đã được cập nhật." });
     } catch (error) {
-      console.error("AI Config delete API error:", error);
       setAIConfigMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không xóa được AI config", message: error.message });
     }
@@ -1055,7 +1034,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         await loadDoctors(1);
       }
     } catch (error) {
-      console.error("Doctor save API error:", error);
       setDoctorMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không lưu được bác sĩ", message: error.message });
     } finally {
@@ -1075,7 +1053,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         message: response.message || "Trạng thái bác sĩ đã được cập nhật.",
       });
     } catch (error) {
-      console.error("Doctor status API error:", error);
       setDoctorMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không đổi được trạng thái", message: error.message });
     }
@@ -1097,20 +1074,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setDoctorPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
       showToast({ type: "success", title: "Đã xóa bác sĩ", message: response.message || "Danh sách bác sĩ đã được cập nhật." });
     } catch (error) {
-      console.error("Doctor delete API error:", error);
       setDoctorMessage({ type: "error", text: error.message });
       showToast({ type: "error", title: "Không xóa được bác sĩ", message: error.message });
-    }
-  }
-
-  async function handleApproveUser(userId) {
-    setUsersMessage(null);
-    try {
-      const response = await usersApi.approve(userId);
-      setUsersMessage({ type: "success", text: response.message || "Đã duyệt người dùng." });
-      await loadUsers();
-    } catch (error) {
-      setUsersMessage({ type: "error", text: error.message });
     }
   }
 
@@ -1375,6 +1340,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       longitude: facility.longitude ?? "",
       phone: facility.phone ?? "",
       website: facility.website ?? "",
+      imageUrl: facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl ?? "",
       openingHours: facility.openingHours ?? "",
       facilityType: facility.facilityType ?? "",
       isActive: facility.isActive ?? true,
@@ -1403,6 +1369,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       longitude,
       phone: facilityForm.phone.trim() || null,
       website: facilityForm.website.trim() || null,
+      imageUrl: facilityForm.imageUrl.trim() || null,
       openingHours: facilityForm.openingHours.trim() || null,
       facilityType: facilityForm.facilityType.trim() || null,
       isActive: Boolean(facilityForm.isActive),
@@ -1488,30 +1455,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     }
   }
 
-  function updateStaff(key, value) {
-    setStaffForm((current) => ({ ...current, [key]: value }));
-  }
-
-  async function handleCreateStaff(event) {
-    event.preventDefault();
-    setSavingStaff(true);
-    setStaffMessage(null);
-    try {
-      const response = await authApi.registerStaff({
-        ...staffForm,
-        gender: Number(staffForm.gender),
-        dateOfBirth: staffForm.dateOfBirth || null,
-      });
-      setStaffMessage({ type: "success", text: response.message || "Đã tạo tài khoản staff." });
-      setStaffForm(createEmptyStaffForm());
-      await loadUsers();
-    } catch (error) {
-      setStaffMessage({ type: "error", text: error.message });
-    } finally {
-      setSavingStaff(false);
-    }
-  }
-
   async function handleLogout() {
     await logoutUser({ onClear: () => setAuth(null), redirect: navigate });
   }
@@ -1522,7 +1465,9 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         <div className="container admin-shell">
           <aside className="admin-sidebar">
             <a className="brand" href="/">
-              <span className="brand-mark">+</span>
+              <span className="brand-mark" aria-hidden="true">
+                <img src="/logo.svg" alt="" width="36" height="36" />
+              </span>
               <span>MediMate AI</span>
             </a>
 
@@ -1553,6 +1498,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           </aside>
 
           <div className="admin-main">
+            <h1 className="sr-only">{activeAdminItem?.label ?? "Quản trị hệ thống"}</h1>
             <header className="admin-topbar">
               <label className="admin-search" aria-label="Tìm kiếm nhanh trong admin">
                 <Search size={17} />
@@ -1644,7 +1590,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 isApproved={isApprovedUser}
                 loading={usersLoading}
                 message={usersMessage}
-                onApprove={handleApproveUser}
                 onDelete={handleDeleteUser}
                 onLoadPage={loadUsers}
                 onPageSizeChange={(pageSize) => setPageInfo((current) => ({ ...current, pageSize }))}
@@ -1725,16 +1670,6 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 onEdit={openEditSubscriptionPlan}
                 onReload={loadSubscriptionPlans}
                 onToggleStatus={handleToggleSubscriptionPlanStatus}
-              />
-            )}
-
-            {activeSection === "staff" && (
-              <AdminStaffSection
-                form={staffForm}
-                message={staffMessage}
-                saving={savingStaff}
-                onChange={updateStaff}
-                onSubmit={handleCreateStaff}
               />
             )}
 

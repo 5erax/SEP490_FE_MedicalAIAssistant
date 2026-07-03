@@ -3,17 +3,6 @@ import LandingPage from "./pages/LandingPage";
 import UserWorkspaceShell from "./components/workspace/UserWorkspaceShell";
 import StaticPage from "./pages/StaticPage";
 import WorkspaceRedirect from "./pages/WorkspaceRedirect";
-import AdminWorkspacePage from "./pages/AdminWorkspacePage";
-import ChatbotPage from "./pages/ChatbotPage";
-import DashboardPage from "./pages/DashboardPage";
-import MedicalRecordPage from "./pages/MedicalRecordPage";
-import MedicationScanPage from "./pages/MedicationScanPage";
-import PricingPage from "./pages/PricingPage";
-import PaymentResultPage from "./pages/PaymentResultPage";
-import UserProfilePage from "./pages/UserProfilePage";
-import PersonalPatientProfilePage from "./pages/PersonalPatientProfilePage";
-import RecoveryPlanPage from "./pages/RecoveryPlanPage";
-import DoctorRegisterInvitationPage from "./pages/DoctorRegisterInvitationPage";
 import { getStoredAuth } from "./services/api";
 import {
   ChangePasswordPage,
@@ -27,6 +16,22 @@ import { resolveRouteAccess } from "./router/access";
 
 const NearbyClinicPage = lazy(() => import("./pages/NearbyClinicPage"));
 const MedicalAssistantPage = lazy(() => import("./pages/MedicalAssistantPage"));
+const loadAdminWorkspacePage = () => import("./pages/AdminWorkspacePage");
+const AdminWorkspacePage = lazy(loadAdminWorkspacePage);
+const ChatbotPage = lazy(() => import("./pages/ChatbotPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const DoctorRegisterInvitationPage = lazy(() => import("./pages/DoctorRegisterInvitationPage"));
+const MedicalRecordPage = lazy(() => import("./pages/MedicalRecordPage"));
+const MedicationScanPage = lazy(() => import("./pages/MedicationScanPage"));
+const PaymentResultPage = lazy(() => import("./pages/PaymentResultPage"));
+const PersonalPatientProfilePage = lazy(() => import("./pages/PersonalPatientProfilePage"));
+const PricingPage = lazy(() => import("./pages/PricingPage"));
+const RecoveryPlanPage = lazy(() => import("./pages/RecoveryPlanPage"));
+const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
+
+if (window.location.pathname.startsWith("/app/admin")) {
+  void loadAdminWorkspacePage();
+}
 
 function userWorkspace(page) {
   return <UserWorkspaceShell>{page}</UserWorkspaceShell>;
@@ -36,10 +41,10 @@ function lazyPage(page) {
   return (
     <Suspense fallback={(
       <main className="workspace-root" data-route-loading>
-        <section className="app-page">
-          <div className="container app-empty" role="status">
-            <p className="eyebrow">Đang tải</p>
-            <h1>Đang chuẩn bị nội dung...</h1>
+        <section className="app-page app-route-loading" aria-busy="true">
+          <div className="container route-loading-state" role="status">
+            <span className="route-loading-dot" aria-hidden="true" />
+            <span>Đang tải</span>
           </div>
         </section>
       </main>
@@ -89,33 +94,33 @@ function App() {
     case "auth.signup":
       return <SignupPage />;
     case "auth.doctor-register":
-      return <DoctorRegisterInvitationPage />;
+      return lazyPage(<DoctorRegisterInvitationPage />);
     case "auth.forgot-password":
       return <ForgotPasswordPage />;
     case "auth.change-password":
       return <ChangePasswordPage />;
     case "patient.dashboard":
-      return userWorkspace(<DashboardPage />);
+      return userWorkspace(lazyPage(<DashboardPage />));
     case "patient.profile":
-      return userWorkspace(<UserProfilePage />);
+      return userWorkspace(lazyPage(<UserProfilePage />));
     case "assistant.intake":
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="intake" />));
     case "patient.chat":
-      return userWorkspace(<ChatbotPage />);
+      return userWorkspace(lazyPage(<ChatbotPage />));
     case "public.map":
       return lazyPage(<NearbyClinicPage />);
     case "patient.records":
-      return userWorkspace(<MedicalRecordPage />);
+      return userWorkspace(lazyPage(<MedicalRecordPage />));
     case "patient.recovery":
-      return userWorkspace(<RecoveryPlanPage />);
+      return userWorkspace(lazyPage(<RecoveryPlanPage />));
     case "patient.medication":
-      return userWorkspace(<MedicationScanPage />);
+      return userWorkspace(lazyPage(<MedicationScanPage />));
     case "public.pricing":
-      return <PricingPage />;
+      return lazyPage(<PricingPage />);
     case "payment.return":
-      return <PaymentResultPage expectedResult="return" />;
+      return lazyPage(<PaymentResultPage expectedResult="return" />);
     case "payment.cancel":
-      return <PaymentResultPage expectedResult="cancel" />;
+      return lazyPage(<PaymentResultPage expectedResult="cancel" />);
     case "workspace.redirect":
       return <WorkspaceRedirect />;
     case "assistant.main":
@@ -129,10 +134,10 @@ function App() {
     case "assessment.history":
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="history" />));
     case "patient.profile-setup":
-      return <PersonalPatientProfilePage />;
+      return lazyPage(<PersonalPatientProfilePage />);
     default:
       if (route.id.startsWith("admin.")) {
-        return <AdminWorkspacePage initialSection={route.section} />;
+        return lazyPage(<AdminWorkspacePage initialSection={route.section} />);
       }
       return <StaticPage path={path} />;
   }

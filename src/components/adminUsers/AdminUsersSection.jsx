@@ -2,10 +2,12 @@ import { RefreshCw } from "lucide-react";
 import {
   Badge,
   Button,
+  CustomSelect,
   DataTable,
   EmptyState,
   ErrorState,
   LoadingState,
+  PAGE_SIZE_OPTIONS,
 } from "../ui";
 
 export default function AdminUsersSection({
@@ -13,7 +15,6 @@ export default function AdminUsersSection({
   isApproved,
   loading,
   message,
-  onApprove,
   onDelete,
   onLoadPage,
   onPageSizeChange,
@@ -49,7 +50,6 @@ export default function AdminUsersSection({
       header: "Thao tác",
       render: (item) => (
         <div className="record-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onApprove(item.identityId)}>Duyệt</button>
           <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(item.identityId)}>Xóa</button>
         </div>
       ),
@@ -69,11 +69,14 @@ export default function AdminUsersSection({
       {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
       <div className="admin-toolbar">
         <input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Tìm theo email hoặc tên..." />
-        <select value={pageInfo.pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
-          <option value="10">10 / trang</option>
-          <option value="20">20 / trang</option>
-          <option value="50">50 / trang</option>
-        </select>
+        <CustomSelect
+          className="admin-toolbar-page-size"
+          label="Per page"
+          hideLabel
+          value={pageInfo.pageSize}
+          options={PAGE_SIZE_OPTIONS}
+          onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
+        />
       </div>
 
       {loading ? (

@@ -2,10 +2,17 @@
 const API_BASE_URL = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
   : "";
+const API_PROXY_PATH = "/api/proxy.js";
 const AUTH_STORAGE_KEY = "medimate.auth";
 
 function buildUrl(path) {
   if (path.startsWith("http")) return path;
+  if (!import.meta.env.DEV) {
+    const [pathname, query = ""] = path.split("?");
+    const targetPath = pathname.replace(/^\/api\/?/, "").replace(/^\/+/, "");
+    const queryPrefix = query ? `&${query}` : "";
+    return `${API_PROXY_PATH}?path=${encodeURIComponent(targetPath)}${queryPrefix}`;
+  }
   return `${API_BASE_URL}${path}`;
 }
 
@@ -175,7 +182,7 @@ export async function apiRequest(path, options = {}) {
       ) ||
       formatApiErrors(payload?.errors) ||
       payload?.title ||
-      `YÃªu cáº§u tháº¥t báº¡i vá»›i mÃ£ ${response.status}`;
+      `Yêu cầu thất bại với mã ${response.status}`;
     const error = new Error(message);
     error.status = response.status;
     error.payload = payload;
