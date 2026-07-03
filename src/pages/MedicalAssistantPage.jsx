@@ -135,6 +135,10 @@ function AssessmentShell({ eyebrow, title, description, activeStep, children }) 
   );
 }
 
+function MobileHeroAction({ children }) {
+  return <div className="clinical-mobile-hero-action">{children}</div>;
+}
+
 function Stepper({ active }) {
   const steps = ["Mô tả", "Làm rõ", "Kết quả"];
 
@@ -162,6 +166,12 @@ function EntryPage() {
       description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
       activeStep={0}
     >
+      <MobileHeroAction>
+        <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
+          Bắt đầu phân tích
+        </Button>
+      </MobileHeroAction>
+
       <div className="clinical-entry-card">
         <article>
           <ClipboardList size={24} aria-hidden="true" />
@@ -182,7 +192,7 @@ function EntryPage() {
         </article>
       </div>
 
-      <div className="assessment-actions clinical-actions-center">
+      <div className="assessment-actions clinical-actions-center clinical-entry-actions">
         <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
           Bắt đầu phân tích
         </Button>
@@ -213,6 +223,12 @@ function SafetyPage() {
       description="Nếu có dấu hiệu nguy hiểm, không nên tiếp tục tự đánh giá bằng AI. Hãy ưu tiên chăm sóc y tế khẩn cấp."
       activeStep={0}
     >
+      <MobileHeroAction>
+        <Button tone="secondary" onClick={() => document.getElementById("safety-checklist")?.scrollIntoView({ block: "start", behavior: "smooth" })}>
+          Xem checklist an toàn
+        </Button>
+      </MobileHeroAction>
+
       <section className="clinical-card">
         <div className="clinical-card-head">
           <div>
@@ -222,7 +238,7 @@ function SafetyPage() {
           <span>Không thay thế cấp cứu</span>
         </div>
 
-        <fieldset className="safety-checklist">
+        <fieldset className="safety-checklist" id="safety-checklist">
           <legend className="sr-only">Dấu hiệu khẩn cấp</legend>
           {RED_FLAGS.map((flag) => (
             <label key={flag}>

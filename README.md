@@ -63,12 +63,15 @@ Cập nhật các biến trong `.env.local`:
 ```env
 VITE_API_BASE_URL=http://localhost:8080
 VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+VITE_GOOGLE_AUTHORIZED_ORIGINS=http://localhost:3000
 ```
 
 | Biến | Bắt buộc | Mô tả |
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | Có | Địa chỉ backend. Vite chuyển tiếp các request `/api/*` đến địa chỉ này. |
 | `VITE_GOOGLE_CLIENT_ID` | Khi dùng Google OAuth | Client ID được cấu hình cho domain chạy frontend. |
+| `VITE_GOOGLE_AUTHORIZED_ORIGINS` | Khi dùng Google OAuth | Danh sách origin được phép render Google login, phân tách bằng dấu phẩy. Origin hiện tại phải khớp Google Cloud Console để tránh lỗi `origin_mismatch`. |
+| `API_BASE_URL` | Khi deploy Vercel | Backend origin cho serverless proxy `api/[...path].js`; cấu hình trong Vercel Environment Variables, không hard-code vào `vercel.json`. |
 
 Không commit khóa API, token, mật khẩu hoặc thông tin xác thực thật vào repository.
 

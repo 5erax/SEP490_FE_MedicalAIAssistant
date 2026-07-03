@@ -9,6 +9,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      // MapLibre is isolated behind the nearby-clinic route lazy chunk.
+      chunkSizeWarningLimit: 1100,
+    },
     server: {
       port: 3000,
       strictPort: true,

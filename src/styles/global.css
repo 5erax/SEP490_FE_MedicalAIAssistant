@@ -1135,6 +1135,18 @@
   padding: 22px;
 }
 
+.static-form-note {
+  margin: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: #eef7e8;
+  color: var(--ink);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.5;
+}
+
 .static-form label {
   display: grid;
   gap: 7px;
@@ -1157,6 +1169,11 @@
 
 .static-form textarea {
   resize: vertical;
+}
+
+.static-form :disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .static-form input:focus,
@@ -1691,7 +1708,8 @@
   font-weight: 900;
 }
 
-.clean-field span {
+.clean-field span,
+.clean-field > label {
   color: rgba(17, 20, 18, 0.74);
 }
 
@@ -1735,6 +1753,18 @@
 .google-login-wrap > div,
 .google-login-wrap iframe {
   max-width: 100%;
+}
+
+.auth-provider-note {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-soft);
+  color: var(--subtle);
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.5;
 }
 
 .auth-divider {

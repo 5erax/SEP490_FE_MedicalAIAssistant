@@ -3,10 +3,11 @@ import { createRoot } from 'react-dom/client'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { FeedbackProvider } from './components/feedback/FeedbackProvider.jsx'
 import { installLinkNavigation } from './router/navigation.js'
+import { getGoogleClientId, isGoogleOAuthEnabledForCurrentOrigin } from './services/googleOAuthConfig.js'
 import SpaRoot from './SpaRoot.jsx'
 import './index.css'
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+const googleClientId = getGoogleClientId()
 
 installLinkNavigation()
 
@@ -19,7 +20,7 @@ const appContent = (
   </FeedbackProvider>
 )
 
-const app = googleClientId.trim()
+const app = isGoogleOAuthEnabledForCurrentOrigin()
   ? (
     <GoogleOAuthProvider
       clientId={googleClientId}

@@ -54,6 +54,14 @@ test.describe("global navigation UX", () => {
     await expect(page.locator("#main-content")).toBeFocused();
   });
 
+  test("hides Google login when the current origin is not authorized", async ({ page }) => {
+    await preparePage(page);
+    await openRoute(page, "/login");
+
+    await expect(page.getByText("Đăng nhập Google đang tắt cho domain này.")).toBeVisible();
+    await expect(page.locator(".google-login-wrap")).toHaveCount(0);
+  });
+
   test("free users get a keyboard-safe premium explanation", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
@@ -517,6 +525,17 @@ test.describe("global navigation UX", () => {
     await page.getByRole("button", { name: "Không, tiếp tục đánh giá" }).click();
     await expect(page).toHaveURL(/\/symptom$/);
     await expect(page.locator(".assessment-header h1")).toContainText("Phân tích lâm sàng");
+  });
+
+  test("medical assistant keeps primary actions visible on mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await preparePage(page);
+
+    await openRoute(page, "/medical-assistant");
+    await expect(page.getByRole("button", { name: "Bắt đầu phân tích" })).toBeVisible();
+
+    await openRoute(page, "/medical-assistant/safety");
+    await expect(page.getByRole("button", { name: "Xem checklist an toàn" })).toBeVisible();
   });
 
   test("safety gate red flag stops AI intake and points to urgent care", async ({ page }) => {
