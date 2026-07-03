@@ -2,10 +2,17 @@
 const API_BASE_URL = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
   : "";
+const API_PROXY_PATH = "/api/proxy";
 const AUTH_STORAGE_KEY = "medimate.auth";
 
 function buildUrl(path) {
   if (path.startsWith("http")) return path;
+  if (!import.meta.env.DEV) {
+    const [pathname, query = ""] = path.split("?");
+    const targetPath = pathname.replace(/^\/api\/?/, "").replace(/^\/+/, "");
+    const queryPrefix = query ? `&${query}` : "";
+    return `${API_PROXY_PATH}?path=${encodeURIComponent(targetPath)}${queryPrefix}`;
+  }
   return `${API_BASE_URL}${path}`;
 }
 
