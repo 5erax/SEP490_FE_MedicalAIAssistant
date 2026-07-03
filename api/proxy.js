@@ -59,8 +59,12 @@ function buildTargetUrl(request, baseUrl) {
   return targetUrl;
 }
 
+function getApiBaseUrl() {
+  return (process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+}
+
 export default async function handler(request, response) {
-  const baseUrl = process.env.API_BASE_URL;
+  const baseUrl = getApiBaseUrl();
   if (!baseUrl) {
     response.status(500).json({ success: false, message: "API_BASE_URL is not configured." });
     return;

@@ -1,23 +1,20 @@
 {
-  "routes": [
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "headers": [
     {
-      "src": "/(.*)",
-      "headers": {
-        "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
-      },
-      "continue": true
-    },
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
     {
-      "src": "^/api/(.+)(?:\\.(?:js))$",
-      "dest": "/api/$1",
-      "check": true
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }
