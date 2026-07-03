@@ -457,6 +457,14 @@
   line-height: 1.25;
 }
 
+.question-original {
+  margin: 0;
+  color: var(--assessment-muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
 .question-card > small {
   width: fit-content;
   max-width: 100%;
@@ -725,6 +733,46 @@
   font-size: 11px;
   font-weight: 850;
   line-height: 1.25;
+}
+
+.recommendation-card {
+  align-content: start;
+}
+
+.recommendation-card h2,
+.recommendation-card p {
+  margin: 0;
+}
+
+.recommendation-card p {
+  color: var(--assessment-muted);
+  line-height: 1.5;
+}
+
+.recommendation-facility-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recommendation-facility-list article {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--assessment-line);
+  border-radius: var(--assessment-radius-md);
+  background: var(--assessment-surface-soft);
+  padding: 12px;
+}
+
+.recommendation-facility-list strong,
+.recommendation-facility-list span {
+  overflow-wrap: anywhere;
+}
+
+.recommendation-facility-list span {
+  color: var(--assessment-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 800;
 }
 
 .facility-stack span,

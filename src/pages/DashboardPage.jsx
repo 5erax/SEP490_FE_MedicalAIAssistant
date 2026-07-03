@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { ClipboardPlus, MapPin, Send, UserRound } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, ClipboardPlus, MapPin, Send, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -13,6 +13,12 @@ import { useSymptomIntake } from "../hooks/useSymptomIntake";
 import "../styles/dashboard.css";
 
 /* Backend owns clinical question selection and diagnosis generation. */
+const DASHBOARD_RED_FLAGS = [
+  "Đau ngực dữ dội, khó thở nặng hoặc ngất",
+  "Yếu hoặc liệt một bên cơ thể, méo miệng, nói khó",
+  "Co giật, mất ý thức, chảy máu nhiều hoặc nghi phản vệ",
+];
+
 function confidencePercent(value) {
   const numeric = Number(value ?? 0);
   if (!Number.isFinite(numeric)) return 0;
@@ -237,7 +243,6 @@ function isPlainObject(value) {
 
 export default function DashboardPage() {
   const auth = getStoredAuth();
-  const routedResultRef = useRef("");
   const {
     answeredCount,
     answers,
@@ -362,14 +367,6 @@ export default function DashboardPage() {
     navigate(query ? `/map?${query}` : "/map");
   }
 
-  useEffect(() => {
-    if (status !== "result" || !result) return;
-    const routeKey = `${sessionId || "no-session"}:${getDiagnosisName(primaryDiagnosis) || recommendedDepartment?.departmentName || "result"}`;
-    if (routedResultRef.current === routeKey) return;
-    routedResultRef.current = routeKey;
-    openFacilities();
-  }, [result, status]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function goToPreviousQuestion() {
     setCurrentQuestionIndex((index) => Math.max(0, index - 1));
   }
@@ -439,6 +436,22 @@ export default function DashboardPage() {
                 <span>Không thay thế chẩn đoán</span>
               </div>
             </div>
+
+            <section className="dashboard-emergency-guide" aria-labelledby="dashboard-emergency-title">
+              <AlertTriangle size={22} aria-hidden="true" />
+              <div>
+                <h3 id="dashboard-emergency-title">Khi nào cần cấp cứu?</h3>
+                <p>Nếu có dấu hiệu nguy hiểm, hãy ưu tiên gọi cấp cứu hoặc đến cơ sở y tế gần nhất thay vì chờ AI phân tích.</p>
+                <ul>
+                  {DASHBOARD_RED_FLAGS.map((flag) => (
+                    <li key={flag}>{flag}</li>
+                  ))}
+                </ul>
+              </div>
+              <Button type="button" tone="secondary" onClick={() => navigate("/map?search=cap%20cuu")}>
+                Tìm cơ sở cấp cứu
+              </Button>
+            </section>
 
             <Field
               id="specialty-symptoms"
@@ -646,6 +659,9 @@ export default function DashboardPage() {
                 <div>
                   <span>Bệnh viện phù hợp</span>
                   <h2>Ưu tiên chuyên khoa liên quan, gần và có dữ liệu tốt</h2>
+                  {recommendedDepartment?.departmentName && (
+                    <strong className="recommended-department-name">{recommendedDepartment.departmentName}</strong>
+                  )}
                   <p>Khoảng cách chỉ được dùng khi bạn cho phép truy cập vị trí và cơ sở có tọa độ hợp lệ.</p>
                 </div>
                 <div className="facility-panel-actions">

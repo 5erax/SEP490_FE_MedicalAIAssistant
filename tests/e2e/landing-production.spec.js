@@ -36,3 +36,63 @@ test("landing map CTA navigates to the production map route", async ({ page }) =
   await expect(page).toHaveURL(/\/map$/);
   await expect(page.getByRole("heading", { name: "Bản đồ cơ sở y tế" })).toBeVisible();
 });
+
+test("landing chat traps focus and restores it to the launcher", async ({ page }) => {
+  await preparePage(page);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const launcher = page.locator(".landing-chat-launcher button");
+  const dialog = page.locator(".landing-ai-chatbox");
+
+  await launcher.click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute("aria-modal", "true");
+
+  for (let index = 0; index < 8; index += 1) {
+    await page.keyboard.press("Tab");
+    await expect.poll(() => page.evaluate(() => (
+      Boolean(document.querySelector(".landing-ai-chatbox")?.contains(document.activeElement))
+    ))).toBe(true);
+  }
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(launcher).toBeFocused();
+});
+
+test("landing mobile navigation traps focus and restores it to the menu button", async ({ page }) => {
+  await preparePage(page);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const menuButton = page.locator(".menu-btn");
+  const menu = page.locator("#mobile-navigation");
+
+  await menuButton.click();
+  await expect(menu).toBeVisible();
+
+  for (let index = 0; index < 8; index += 1) {
+    await page.keyboard.press("Tab");
+    await expect.poll(() => page.evaluate(() => (
+      Boolean(document.querySelector("#mobile-navigation")?.contains(document.activeElement))
+    ))).toBe(true);
+  }
+
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(menuButton).toBeFocused();
+});
+
+test("landing honors reduced motion for global marquee and chat launcher animations", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await preparePage(page);
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const animationNames = await page.evaluate(() => ({
+    ticker: getComputedStyle(document.querySelector(".ticker-track")).animationName,
+    launcher: getComputedStyle(document.querySelector(".landing-chat-launcher button")).animationName,
+  }));
+
+  expect(animationNames).toEqual({ ticker: "none", launcher: "none" });
+});

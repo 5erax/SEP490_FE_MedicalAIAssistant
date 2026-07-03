@@ -116,13 +116,12 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
   }));
 
   await page.goto("/symptom", { waitUntil: "domcontentloaded" });
-  await page.locator("#intake-mainSymptom").fill("Mild chest pain");
-  await page.locator("#intake-description").fill("Mild chest pain during exertion");
-  await page.locator(".intake-form").getByRole("button").first().click();
+  await page.locator("#clinical-user-input").fill("Mild chest pain during exertion");
+  await page.getByRole("button", { name: "Tiếp tục phân tích lâm sàng" }).click();
 
   await expect(page.getByText("Bạn có đau ngực khi gắng sức không?")).toBeVisible();
   await expect(page.getByText("Gốc tiếng Anh: Do you have chest pain during exertion?").first()).toBeVisible();
-  await page.locator(".boolean-answer-group").getByRole("radio").first().check();
+  await page.getByRole("radio", { name: "Có" }).check();
   await page.getByRole("button", { name: "Xem gợi ý" }).click();
 
   await expect(page.getByText("Angina", { exact: true }).first()).toBeVisible();
@@ -130,7 +129,7 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
   await expect(page.getByText("Heart Hospital", { exact: true })).toBeVisible();
   await expect(page.getByText("91%", { exact: true }).first()).toBeVisible();
   expect(questionPayload).toEqual({
-    userInput: "Trieu chung chinh: Mild chest pain\nMo ta them: Mild chest pain during exertion\nMuc do: moderate",
+    userInput: "Mild chest pain during exertion",
   });
   expect(answerPayload).toEqual({
     sessionId: SESSION_ID,

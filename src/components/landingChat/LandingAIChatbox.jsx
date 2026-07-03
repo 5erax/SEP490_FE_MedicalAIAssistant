@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { sendLandingChatMessage } from "../../services/landingChat";
 import { useChatAutoScroll } from "../../utils/useChatAutoScroll";
+import { useOverlayFocus } from "../ui/useOverlayFocus";
 import ChatInput from "./ChatInput";
 import ChatMessage from "./ChatMessage";
 import FloatingChatButton from "./FloatingChatButton";
@@ -26,8 +27,19 @@ export default function LandingAIChatbox() {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [loading, setLoading] = useState(false);
   const { containerRef, endRef, handleScroll } = useChatAutoScroll(`${messages.length}-${loading}-${open}`);
+  const chatboxRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const launcherButtonRef = useRef(null);
 
   const hasUserMessage = useMemo(() => messages.some((message) => message.from === "user"), [messages]);
+
+  useOverlayFocus({
+    active: open,
+    containerRef: chatboxRef,
+    initialFocusRef: closeButtonRef,
+    restoreFocusRef: launcherButtonRef,
+    onClose: () => setOpen(false),
+  });
 
   async function sendMessage(text) {
     const nextText = text.trim();
@@ -61,16 +73,24 @@ export default function LandingAIChatbox() {
 
   return (
     <>
-      {open && <div className="landing-ai-chatbox open" role="dialog" aria-label="Trợ lý MediMate AI">
+      {open && <div
+        className="landing-ai-chatbox open"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="landing-chat-title"
+        ref={chatboxRef}
+        tabIndex={-1}
+      >
         <header className="landing-chat-header">
           <div>
             <a className="brand" href="/">
               <span className="brand-mark">+</span>
               <span>MediMate</span>
             </a>
+            <h2 id="landing-chat-title" className="sr-only">Trợ lý MediMate AI</h2>
             <small>AI Assistant • Sẵn sàng hỗ trợ</small>
           </div>
-          <button type="button" onClick={() => setOpen(false)} aria-label="Đóng trợ lý AI">×</button>
+          <button ref={closeButtonRef} type="button" onClick={() => setOpen(false)} aria-label="Đóng trợ lý AI">×</button>
         </header>
 
         <div className="landing-chat-body">
@@ -92,7 +112,7 @@ export default function LandingAIChatbox() {
         </footer>
       </div>}
 
-      <FloatingChatButton open={open} onClick={() => setOpen((current) => !current)} />
+      <FloatingChatButton ref={launcherButtonRef} open={open} onClick={() => setOpen((current) => !current)} />
     </>
   );
 }

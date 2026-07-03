@@ -4155,6 +4155,30 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  .ticker-track,
+  .chat-loading span,
+  .assistant-message.loading span,
+  .assistant-message-row,
+  .landing-chat-launcher button,
+  .landing-chat-message,
+  .landing-chat-typing span,
+  .typing span {
+    animation: none !important;
+  }
+
+  .landing-chat-launcher button,
+  .assistant-message-row,
+  .landing-ai-chatbox,
+  .landing-chat-message {
+    transition-duration: 1ms !important;
+  }
+}
+
 @media (max-width: 980px) {
   .hero-grid,
   .demo-grid,

@@ -442,14 +442,10 @@ function NearbyClinicPage() {
     if (!matchedFacility) return undefined;
 
     const timeoutId = window.setTimeout(() => {
-      if (mapQuery.source === "clinical") {
-        handleCardClick(matchedFacility);
-      } else {
-        openFacilityDetail(matchedFacility);
-      }
+      openFacilityDetail(matchedFacility);
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [facilities, handleCardClick, loadingFacilities, mapQuery.source, openFacilityDetail, requestedFacilityId]);
+  }, [facilities, loadingFacilities, openFacilityDetail, requestedFacilityId]);
 
   useEffect(() => {
     if (mapQuery.source !== "clinical" || requestedFacilityId || selectedFacility || mappableFacilities.length === 0) return;
@@ -897,11 +893,16 @@ const styles = `
   .clinic-sidebar { width: 100%; flex: 0 0 45vh; border-right: 0; border-top: 1.5px solid var(--ink); }
   .map-stage { flex: 0 0 55vh; }
   .map-stage > .map-panel { inset: 10px; }
+  .map-panel .maplibregl-ctrl-group { border-radius: 12px; overflow: hidden; }
+  .map-panel .maplibregl-ctrl-group button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
   .map-skip-link { left: 12px; }
   .facility-detail-view { inset: 18px; }
 }
+@media (pointer: coarse) {
+  .map-panel .maplibregl-ctrl-group button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .map-loading-spinner { animation: none; }
+  .map-loading-spinner, .user-marker, .facility-detail-view { animation: none; }
 }
 
 /* Map workspace: list first, detail on demand, map kept visually quiet. */

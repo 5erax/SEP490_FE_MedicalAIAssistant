@@ -186,20 +186,19 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByText("Bạn có sốt trên 38 độ không?")).toBeVisible();
 
     await page.getByRole("button", { name: "Có" }).click();
-    await page.getByRole("button", { name: "Tiếp tục phân tích" }).click();
+    await page.getByRole("button", { name: "Xem gợi ý" }).click();
 
     await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
     await expect(currentStep).toContainText("Kết quả");
     await expect(page.getByText("Tai Mũi Họng", { exact: true })).toBeVisible();
     await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
     await expect(page.getByText("Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.")).toBeVisible();
-    await expect(page.getByText("#1")).toBeVisible();
+    await expect(page.locator(".studio-facility-list").getByText("#1")).toBeVisible();
     await expect(page.getByText("Ưu tiên vì có chuyên khoa liên quan, có tọa độ sẵn sàng điều hướng, 4.7 sao đánh giá, đang hoạt động.")).toBeVisible();
 
     await page.getByRole("button", { name: "Mở bản đồ" }).click();
     await expect(page).toHaveURL(new RegExp(`/map\\?[^#]*facilityId=${FACILITY_ID}`));
     await expect(page.locator(".facility-detail-view").getByRole("heading", { name: "Bệnh viện Tai Mũi Họng", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ })).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(/\/dashboard$/);

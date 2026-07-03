@@ -125,6 +125,56 @@
   white-space: nowrap;
 }
 
+.dashboard-emergency-guide {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  border: 1px solid rgba(180, 35, 24, 0.28);
+  border-radius: 16px;
+  background: #fff7ed;
+  color: #7f1d1d;
+  padding: 16px;
+}
+
+.dashboard-emergency-guide > svg {
+  margin-top: 3px;
+  color: #b42318;
+}
+
+.dashboard-emergency-guide h3,
+.dashboard-emergency-guide p,
+.dashboard-emergency-guide ul {
+  margin: 0;
+}
+
+.dashboard-emergency-guide h3 {
+  color: #7f1d1d;
+  font-size: 18px;
+}
+
+.dashboard-emergency-guide p {
+  margin-top: 5px;
+  line-height: 1.5;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.dashboard-emergency-guide ul {
+  display: grid;
+  gap: 4px;
+  margin-top: 9px;
+  padding-left: 18px;
+  color: #7f1d1d;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 800;
+}
+
+.dashboard-emergency-guide .btn {
+  white-space: nowrap;
+}
+
 .studio-chatbox .ui-field {
   width: 100%;
 }
@@ -352,6 +402,19 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   background: var(--color-primary-soft);
   padding: 7px 10px;
   text-align: center;
+}
+
+.recommended-department-name {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 10px;
+  border: 1px solid rgba(8, 127, 140, 0.22);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-ink);
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 950;
 }
 
 .studio-question-list,
@@ -696,6 +759,15 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
   .clinical-strip {
     justify-content: flex-start;
+  }
+
+  .dashboard-emergency-guide {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .dashboard-emergency-guide .btn {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .studio-chat-actions {

@@ -290,6 +290,7 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).not.toHaveProperty("displayName");
     expect(storedAuth).not.toHaveProperty("phoneNumber");
     expect(storedAuth).not.toHaveProperty("address");
+    expect(storedAuth).not.toHaveProperty("accessToken");
     expect(storedAuth).not.toHaveProperty("refreshToken");
   });
 
@@ -371,6 +372,7 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).not.toHaveProperty("displayName");
     expect(storedAuth).not.toHaveProperty("phoneNumber");
     expect(storedAuth).not.toHaveProperty("address");
+    expect(storedAuth).not.toHaveProperty("accessToken");
   });
 
   test("doctor first login skips patient onboarding", async ({ page }) => {

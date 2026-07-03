@@ -277,7 +277,7 @@ export function normalizeClinicalQuestion(question, index = 0) {
     };
   }
 
-  const hasQuestionVi = Boolean(normalizeText(question?.questionVi));
+  const hasQuestionVi = Boolean(normalizeText(question?.questionVi) && hasVietnameseText(question.questionVi));
 
   const rawQuestionText = normalizeText(
     question?.questionVi

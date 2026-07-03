@@ -4,6 +4,7 @@ const API_BASE_URL = import.meta.env.DEV
   : "";
 const API_PROXY_PATH = "/api/proxy.js";
 const AUTH_STORAGE_KEY = "medimate.auth";
+let memoryAccessToken = "";
 
 function buildUrl(path) {
   if (path.startsWith("http")) return path;
@@ -25,11 +26,10 @@ function parseStoredAuth() {
   }
 }
 
-function selectStoredAuth(auth) {
+function selectPersistentAuth(auth) {
   if (!auth || typeof auth !== "object") return null;
 
   return {
-    accessToken: auth.accessToken,
     userId: auth.userId,
     identityId: auth.identityId,
     roles: auth.roles,
@@ -66,8 +66,16 @@ function isExpiredToken(token) {
   return Number(payload.exp) * 1000 <= Date.now();
 }
 
-function isUsableAuth(auth) {
-  return Boolean(auth?.accessToken) && !isExpiredToken(auth.accessToken);
+function isExpiredAuth(auth, token = auth?.accessToken) {
+  if (token && isExpiredToken(token)) return true;
+  if (!auth?.expiresAtUtc) return false;
+
+  const expiresAt = Date.parse(auth.expiresAtUtc);
+  return Number.isFinite(expiresAt) && expiresAt <= Date.now();
+}
+
+function authWithMemoryToken(auth) {
+  return memoryAccessToken ? { ...auth, accessToken: memoryAccessToken } : auth;
 }
 
 function formatApiErrors(errors) {
@@ -86,25 +94,33 @@ function formatApiErrors(errors) {
 export function getStoredAuth() {
   if (typeof window === "undefined") return null;
   const auth = parseStoredAuth();
-  if (!isUsableAuth(auth)) {
+  if (!auth || typeof auth !== "object" || isExpiredAuth(auth)) {
     clearStoredAuth();
     return null;
   }
 
-  const storedAuth = selectStoredAuth(auth);
+  if (auth.accessToken && !isExpiredToken(auth.accessToken)) {
+    memoryAccessToken = auth.accessToken;
+  }
+
+  const storedAuth = selectPersistentAuth(auth);
   const serializedAuth = JSON.stringify(storedAuth);
   if (localStorage.getItem(AUTH_STORAGE_KEY) !== serializedAuth) {
     localStorage.setItem(AUTH_STORAGE_KEY, serializedAuth);
   }
-  return storedAuth;
+  return authWithMemoryToken(storedAuth);
 }
 
 export function setStoredAuth(auth) {
   if (!auth) return;
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(selectStoredAuth(auth)));
+  if (auth.accessToken && !isExpiredToken(auth.accessToken)) {
+    memoryAccessToken = auth.accessToken;
+  }
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(selectPersistentAuth(auth)));
 }
 
 export function clearStoredAuth() {
+  memoryAccessToken = "";
   localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
@@ -127,6 +143,8 @@ export function hasPremiumAccess(auth = getStoredAuth()) {
 }
 
 export function getAccessToken() {
+  if (memoryAccessToken && !isExpiredToken(memoryAccessToken)) return memoryAccessToken;
+  if (memoryAccessToken) memoryAccessToken = "";
   return getStoredAuth()?.accessToken ?? "";
 }
 
