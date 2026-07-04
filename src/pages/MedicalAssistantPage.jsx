@@ -176,7 +176,7 @@ function EntryPage() {
         <article>
           <ClipboardList size={24} aria-hidden="true" />
           <h2>Một ô nhập duy nhất</h2>
-          <p>Backend chỉ cần userInput, vì vậy người dùng chỉ cần nhập mô tả triệu chứng.</p>
+          <p>Người dùng chỉ cần nhập mô tả triệu chứng, hệ thống sẽ tự chọn các câu hỏi làm rõ phù hợp.</p>
         </article>
 
         <article>
@@ -318,7 +318,7 @@ function IntakePage() {
       const data = readSuggestClinicalQuestionsPayload(response);
 
       if (!data.sessionId) {
-        throw new Error("Backend chưa trả về sessionId cho phiên đánh giá.");
+        throw new Error("Chưa tạo được phiên đánh giá. Vui lòng thử lại.");
       }
 
       saveSessionState(data.sessionId, {
@@ -490,12 +490,12 @@ function QuestionsPage({ sessionId }) {
       <AssessmentShell
         eyebrow="Phiên đánh giá"
         title="Không tìm thấy câu hỏi"
-        description="Hãy bắt đầu lại từ bước mô tả triệu chứng để backend tạo sessionId và danh sách câu hỏi."
+        description="Hãy bắt đầu lại từ bước mô tả triệu chứng để tạo phiên đánh giá và danh sách câu hỏi."
         activeStep={1}
       >
         <ErrorState
           title="Phiên đánh giá chưa sẵn sàng"
-          description="Hãy bắt đầu lại từ form nhập triệu chứng để backend tạo sessionId và danh sách câu hỏi."
+          description="Hãy bắt đầu lại từ form nhập triệu chứng để tạo phiên đánh giá và danh sách câu hỏi."
           action={<Button onClick={() => navigate("/medical-assistant/intake")}>Nhập triệu chứng</Button>}
         />
       </AssessmentShell>
@@ -507,12 +507,12 @@ function QuestionsPage({ sessionId }) {
       <AssessmentShell
         eyebrow="Bước 2"
         title="Chưa có câu hỏi phù hợp"
-        description="Backend chưa tạo được câu hỏi lâm sàng cho mô tả hiện tại."
+        description="Chưa tạo được câu hỏi lâm sàng cho mô tả hiện tại."
         activeStep={1}
       >
         <EmptyState
-          title="Backend chưa tạo được câu hỏi lâm sàng"
-          description="Hãy mô tả triệu chứng rõ hơn để backend có đủ dữ liệu tạo câu hỏi."
+          title="Chưa tạo được câu hỏi lâm sàng"
+          description="Hãy mô tả triệu chứng rõ hơn để hệ thống có đủ dữ liệu tạo câu hỏi."
           action={<Button onClick={() => navigate("/medical-assistant/intake")}>Quay lại nhập lại</Button>}
         />
       </AssessmentShell>
@@ -808,7 +808,7 @@ function HistoryPage() {
     <AssessmentShell
       eyebrow="Lịch sử"
       title="Lịch sử phiên đánh giá triệu chứng"
-      description="Dữ liệu lấy từ endpoint my-sessions của backend."
+      description="Các phiên đánh giá gần đây của tài khoản này."
       activeStep={2}
     >
       {status === "loading" && (

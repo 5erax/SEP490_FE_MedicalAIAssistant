@@ -174,8 +174,8 @@ test("admin uploads a facility image to Cloudinary before saving", async ({ page
     buffer: Buffer.from("fake-image"),
   });
 
-  await expect(page.getByText("Đã tải ảnh lên Cloudinary.", { exact: true })).toBeVisible();
-  await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue(uploadedImageUrl);
+  await expect(page.getByText("Đã tải ảnh lên.", { exact: true })).toBeVisible();
+  await expect(facilityDialog.getByLabel("Đường dẫn ảnh")).toHaveValue(uploadedImageUrl);
   await expect(facilityDialog.locator(".facility-image-preview")).toHaveAttribute("src", uploadedImageUrl);
 
   await facilityDialog.getByRole("button", { name: "Tạo cơ sở" }).click();
@@ -309,15 +309,15 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
   await page.getByRole("button", { name: "Sửa" }).click();
   const facilityDialog = page.getByRole("dialog");
   await expect(facilityDialog.locator(".facility-image-preview")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
-  await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue("https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
-  await facilityDialog.getByLabel("Cloudinary image URL").fill("javascript:alert(1)");
+  await expect(facilityDialog.getByLabel("Đường dẫn ảnh")).toHaveValue("https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
+  await facilityDialog.getByLabel("Đường dẫn ảnh").fill("javascript:alert(1)");
   await expect(facilityDialog.locator(".facility-image-preview")).toHaveCount(0);
   await facilityDialog.getByRole("button", { name: "Giữ ảnh hiện tại" }).click();
   await expect(facilityDialog.locator(".facility-image-preview")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
   await facilityDialog.getByRole("button", { name: "Gỡ ảnh" }).click();
-  await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue("");
+  await expect(facilityDialog.getByLabel("Đường dẫn ảnh")).toHaveValue("");
   await facilityDialog.getByRole("button", { name: "Giữ ảnh hiện tại" }).click();
-  await expect(facilityDialog.getByLabel("Cloudinary image URL")).toHaveValue("https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
+  await expect(facilityDialog.getByLabel("Đường dẫn ảnh")).toHaveValue("https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
   await facilityDialog.getByLabel("Tên cơ sở y tế").fill("Bệnh viện Đa khoa A - Cơ sở 2");
   await facilityDialog.getByLabel("Kinh độ").fill("106.7725");
   await facilityDialog.getByRole("button", { name: "Lưu cập nhật" }).click();

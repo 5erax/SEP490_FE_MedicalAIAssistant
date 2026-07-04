@@ -236,7 +236,7 @@ function NearbyClinicPage() {
             relationDepartmentIdsByFacility.set(facilityId, ids);
           }
         });
-        const backendFacilities = rawFacilities.map((facility) => {
+        const serviceFacilities = rawFacilities.map((facility) => {
           const facilityId = facility.facilityId ?? facility.id;
           return normalizeFacility(
             facility,
@@ -244,24 +244,24 @@ function NearbyClinicPage() {
             relationDepartmentIdsByFacility.get(facilityId) ?? [],
           );
         });
-        const data = ensureMockFacilityCoverage(backendFacilities, departments).map((facility) => normalizeFacility(facility));
+        const data = ensureMockFacilityCoverage(serviceFacilities, departments).map((facility) => normalizeFacility(facility));
         const usesMockData = data.some((facility) => facility.isMockFacility || facility.isMockAugmented);
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
         setSelectedFacility(null);
         if (facilityResult.status !== "fulfilled") {
-          setApiNotice("Không tải được danh sách cơ sở từ backend. Đang dùng dữ liệu mẫu cục bộ, ảnh được phục vụ từ frontend.");
+          setApiNotice("Không tải được danh sách cơ sở y tế. Đang hiển thị dữ liệu mẫu để bạn tiếp tục tra cứu.");
         } else if (usesMockData) {
           setApiNotice("");
         } else {
-          setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
+          setApiNotice(data.length ? "" : "Chưa có cơ sở y tế đang hoạt động.");
         }
       })
       .catch((error) => {
         if (active) {
           setFacilities([]);
           setSelectedFacility(null);
-          setApiNotice(error.message || "Không tải được dữ liệu cơ sở y tế từ backend.");
+          setApiNotice(error.message || "Không tải được dữ liệu cơ sở y tế.");
         }
       })
       .finally(() => {
@@ -595,7 +595,7 @@ function NearbyClinicPage() {
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
-            Backend đã có cơ sở active nhưng chưa có tọa độ hợp lệ. Admin cần cập nhật vĩ độ và kinh độ để bản đồ hiển thị marker.
+            Cơ sở y tế hiện chưa có tọa độ hợp lệ. Quản trị viên cần cập nhật vĩ độ và kinh độ để bản đồ hiển thị điểm khám.
           </div>
         )}
 
@@ -681,7 +681,7 @@ function NearbyClinicPage() {
 
             <section className="facility-detail-card wide">
               <h3>Thông tin bệnh viện</h3>
-              <p>{detailFacility.description || "Backend chưa cung cấp mô tả chi tiết cho cơ sở y tế này."}</p>
+              <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
               <dl className="facility-detail-facts">
                 <div>
                   <dt>Số điện thoại</dt>
@@ -705,7 +705,7 @@ function NearbyClinicPage() {
               <h3>Danh sách bác sĩ</h3>
               <div className="facility-detail-list facility-detail-doctor-list">
                 {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
-                {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này từ backend.</p>}
+                {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này.</p>}
                 {detailDoctors.map((doctor) => (
                   <article key={doctor.id}>
                     {getDoctorImageUrl(doctor) && (
@@ -743,7 +743,7 @@ function NearbyClinicPage() {
               <div className="facility-detail-services">
                 {detailServices.length
                   ? detailServices.map((service) => <span key={service}>{service}</span>)
-                  : <p>Backend chưa cung cấp tiện ích hoặc dịch vụ nổi bật cho cơ sở này.</p>}
+                  : <p>Cơ sở này chưa có tiện ích hoặc dịch vụ nổi bật.</p>}
               </div>
             </section>
           </div>

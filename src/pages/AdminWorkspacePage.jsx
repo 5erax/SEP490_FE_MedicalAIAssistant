@@ -1012,7 +1012,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function handleDeleteSubscriptionPlan(plan) {
     const confirmed = await confirmAction({
       title: "Xóa gói dịch vụ?",
-      message: `${plan.planName || "Gói này"} sẽ bị xóa khỏi danh sách quản trị. Gói đang được sử dụng có thể không xóa được theo quy tắc backend.`,
+      message: `${plan.planName || "Gói này"} sẽ bị xóa khỏi danh sách quản trị. Nếu gói đang có người dùng, hệ thống có thể từ chối thao tác này.`,
       confirmLabel: "Xóa gói",
       tone: "danger",
     });
@@ -1236,11 +1236,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     try {
       keywordWeights = JSON.parse(icdChapterForm.keywordWeights || "{}");
     } catch {
-      throw new Error("Trọng số từ khóa phải là JSON hợp lệ.");
+      throw new Error("Danh sách trọng số từ khóa chưa đúng định dạng.");
     }
     if (!keywordWeights || Array.isArray(keywordWeights) || typeof keywordWeights !== "object"
       || Object.values(keywordWeights).some((value) => !Number.isInteger(value))) {
-      throw new Error("Trọng số từ khóa phải là JSON object với giá trị số nguyên.");
+      throw new Error("Mỗi từ khóa cần có điểm trọng số là số nguyên.");
     }
     return { chapterCode, chapterName, keywordWeights };
   }
@@ -1446,7 +1446,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       showToast({
         type: "success",
         title: editingFacilityId ? "Đã cập nhật cơ sở y tế" : "Đã tạo cơ sở y tế",
-        message: "Dữ liệu cơ sở y tế đã được đồng bộ với backend.",
+        message: "Dữ liệu cơ sở y tế đã được cập nhật.",
       });
       resetFacilityForm();
       await loadFacilities(editingFacilityId ? facilityPageInfo.pageNumber : 1, facilityPageInfo.pageSize);
@@ -1484,7 +1484,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function handleDeleteFacility(facility) {
     const confirmed = await confirmAction({
       title: "Xóa cơ sở y tế?",
-      message: `${facility.facilityName || "Cơ sở này"} sẽ bị xóa khỏi danh sách quản trị. Cơ sở đang được liên kết với bác sĩ hoặc review có thể không xóa được theo quy tắc backend.`,
+      message: `${facility.facilityName || "Cơ sở này"} sẽ bị xóa khỏi danh sách quản trị. Nếu cơ sở đang có bác sĩ hoặc đánh giá liên quan, hệ thống có thể từ chối thao tác này.`,
       confirmLabel: "Xóa cơ sở",
       tone: "danger",
     });
@@ -1576,9 +1576,9 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 <article>
                   <span className="admin-stat-icon"><Users size={17} /></span>
                   <div>
-                    <span>Tổng user</span>
+                    <span>Người dùng</span>
                     <strong>{usersLoading ? "..." : pageInfo.totalCount}</strong>
-                    <small>Tổng số tài khoản</small>
+                    <small>Tổng tài khoản</small>
                   </div>
                 </article>
                 <article>
@@ -1586,7 +1586,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                   <div>
                     <span>Chờ duyệt</span>
                     <strong>{usersLoading ? "..." : pendingUsers}</strong>
-                    <small>Trong trang hiện tại</small>
+                    <small>Đang cần xử lý</small>
                   </div>
                 </article>
                 <article>
@@ -1600,17 +1600,17 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 <article>
                   <span className="admin-stat-icon"><ClipboardList size={17} /></span>
                   <div>
-                    <span>AI Configs</span>
+                    <span>AI config</span>
                     <strong>{aiConfigsLoading ? "..." : aiConfigPageInfo.totalCount}</strong>
-                    <small>{activeAIConfigs} active · {disabledAIConfigs} inactive</small>
+                    <small>{activeAIConfigs} bật · {disabledAIConfigs} tắt</small>
                   </div>
                 </article>
                 <article>
                   <span className="admin-stat-icon"><Activity size={17} /></span>
                   <div>
-                    <span>Health score</span>
+                    <span>Điểm AI</span>
                     <strong>{aiConfigsLoading ? "..." : `${aiHealthScore}%`}</strong>
-                    <small>AI config đang active</small>
+                    <small>Tỷ lệ đang bật</small>
                   </div>
                 </article>
               </section>

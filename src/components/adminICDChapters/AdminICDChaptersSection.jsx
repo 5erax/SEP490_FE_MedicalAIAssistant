@@ -2,11 +2,12 @@ import { Filter, Plus, RotateCcw, Search } from "lucide-react";
 import { useState } from "react";
 import { CustomSelect, Dialog, PAGE_SIZE_OPTIONS } from "../ui";
 
-function Field({ label, children }) {
+function Field({ label, children, help, className = "" }) {
   return (
-    <label className="clean-field">
+    <label className={`clean-field ${className}`.trim()}>
       <span>{label}</span>
       {children}
+      {help && <small>{help}</small>}
     </label>
   );
 }
@@ -167,7 +168,7 @@ export default function AdminICDChaptersSection({
       {formOpen && (
         <Dialog
           backdropClassName="doctor-modal-backdrop"
-          className="doctor-modal"
+          className="doctor-modal facility-form-modal icd-chapter-modal"
           labelledBy="icd-chapter-modal-title"
           onClose={closeForm}
           closeOnBackdrop={!saving}
@@ -175,43 +176,60 @@ export default function AdminICDChaptersSection({
         >
           <header className="doctor-modal-header">
             <div>
-              <p className="eyebrow">{editingChapterId ? "Update" : "Create"}</p>
+              <p className="eyebrow">{editingChapterId ? "Cập nhật" : "Tạo mới"}</p>
               <h2 id="icd-chapter-modal-title">{editingChapterId ? "Cập nhật ICD Chapter" : "Tạo ICD Chapter"}</h2>
-              <p>Nhập mã chương, tên chương và trọng số từ khóa phục vụ phân loại dữ liệu lâm sàng.</p>
+              <p>Nhập thông tin chương ICD để hệ thống phân loại dữ liệu lâm sàng nhất quán.</p>
             </div>
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm}>×</button>
           </header>
 
-          <form className="clean-form doctor-form" onSubmit={onSubmit}>
-            <Field label="Mã Chapter">
-              <input
-                value={form.chapterCode}
-                onChange={(event) => onFormChange("chapterCode", event.target.value)}
-                placeholder="Ví dụ: I"
-                required
-              />
-              {editingChapterId && (
-                <small className="muted-text">Cập nhật mã Chapter sẽ gửi mã mới cho backend để đồng bộ danh mục ICD liên quan.</small>
-              )}
-            </Field>
-            <Field label="Tên Chapter">
-              <input
-                value={form.chapterName}
-                onChange={(event) => onFormChange("chapterName", event.target.value)}
-                placeholder="Ví dụ: Bệnh hệ tuần hoàn"
-                required
-              />
-            </Field>
-            <Field label="Trọng số từ khóa (JSON)">
-              <textarea
-                rows={10}
-                value={form.keywordWeights}
-                onChange={(event) => onFormChange("keywordWeights", event.target.value)}
-                placeholder={'{"sốt": 5, "ho": 3}'}
-                spellCheck="false"
-              />
-            </Field>
-            <div className="doctor-modal-actions">
+          <form className="clean-form facility-form icd-chapter-form" onSubmit={onSubmit}>
+            <div className="facility-form-body">
+              <section className="facility-form-card" aria-labelledby="icd-basic-section">
+                <div className="facility-form-card-head">
+                  <h3 id="icd-basic-section">Thông tin chương</h3>
+                  <p>Mã và tên chương sẽ xuất hiện trong danh mục ICD của hệ thống.</p>
+                </div>
+                <div className="facility-form-grid">
+                  <Field label="Mã Chapter">
+                    <input
+                      value={form.chapterCode}
+                      onChange={(event) => onFormChange("chapterCode", event.target.value)}
+                      placeholder="Ví dụ: I"
+                      required
+                    />
+                  </Field>
+                  <Field label="Tên Chapter">
+                    <input
+                      value={form.chapterName}
+                      onChange={(event) => onFormChange("chapterName", event.target.value)}
+                      placeholder="Ví dụ: Bệnh hệ tuần hoàn"
+                      required
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="facility-form-card" aria-labelledby="icd-keywords-section">
+                <div className="facility-form-card-head">
+                  <h3 id="icd-keywords-section">Từ khóa phân loại</h3>
+                  <p>Thêm các từ khóa thường gặp và điểm ưu tiên để hỗ trợ phân loại triệu chứng.</p>
+                </div>
+                <Field
+                  label="Danh sách từ khóa"
+                  help='Ví dụ: {"sốt": 5, "ho": 3}. Có thể để {} nếu chưa có từ khóa.'
+                >
+                  <textarea
+                    rows={10}
+                    value={form.keywordWeights}
+                    onChange={(event) => onFormChange("keywordWeights", event.target.value)}
+                    placeholder='{"sốt": 5, "ho": 3}'
+                    spellCheck="false"
+                  />
+                </Field>
+              </section>
+            </div>
+            <div className="doctor-modal-actions facility-form-actions">
               <button className="btn btn-ghost" type="button" onClick={closeForm}>Hủy</button>
               <button className="btn btn-primary" type="submit" disabled={saving}>
                 {saving ? "Đang lưu..." : editingChapterId ? "Lưu cập nhật" : "Tạo ICD Chapter"}

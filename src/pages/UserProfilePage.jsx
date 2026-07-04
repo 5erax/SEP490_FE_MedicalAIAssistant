@@ -309,7 +309,7 @@ export default function UserProfilePage() {
         {activeTab === "security" && (
           <section className="profile-card">
             <h1>Bảo mật</h1>
-            <p>Backend đổi mật khẩu bằng mã OTP gửi qua email.</p>
+            <p>Mật khẩu được xác nhận bằng mã OTP gửi qua email.</p>
             <button className="lime" type="button" onClick={() => go("/forgot-password")}>Gửi mã đổi mật khẩu</button>
           </section>
         )}

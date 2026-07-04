@@ -238,7 +238,7 @@ export default function DoctorRegisterInvitationPage() {
     } catch {
       setFacilityDepartments([]);
       setFacilityError(
-        "Backend chưa cung cấp danh sách khoa tại cơ sở y tế cho trang đăng ký công khai.",
+        "Chưa có danh sách khoa cho cơ sở y tế này. Vui lòng thử lại sau.",
       );
     } finally {
       setFacilityLoading(false);
@@ -292,7 +292,7 @@ export default function DoctorRegisterInvitationPage() {
             if (!active) return;
             setFacilityDepartments([]);
             setFacilityError(
-              "Backend chưa cung cấp danh sách khoa tại cơ sở y tế cho trang đăng ký công khai.",
+              "Chưa có danh sách khoa cho cơ sở y tế này. Vui lòng thử lại sau.",
             );
           } finally {
             if (active) setFacilityLoading(false);
@@ -608,7 +608,7 @@ export default function DoctorRegisterInvitationPage() {
                   </button>
                   {!isLinkedProfile && !facilityDepartments.length && (
                     <p className="doctor-submit-note">
-                      Chưa thể đăng ký bác sĩ mới cho đến khi backend cung cấp danh sách khoa tại cơ sở y tế.
+                      Chưa thể đăng ký bác sĩ mới cho đến khi có danh sách khoa tại cơ sở y tế.
                     </p>
                   )}
                 </form>

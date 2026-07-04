@@ -317,7 +317,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         <div>
           <p className="eyebrow">Dữ liệu lâm sàng</p>
           <h2>{config.title}</h2>
-          <p className="muted-text">Quản lý câu hỏi lâm sàng theo ICD Chapter, hỗ trợ tìm kiếm và phân trang từ backend.</p>
+          <p className="muted-text">Quản lý câu hỏi lâm sàng theo ICD Chapter để hỗ trợ luồng phân tích triệu chứng.</p>
         </div>
         <button className="btn btn-ghost btn-small" type="button" onClick={() => loadItems()}>Tải lại</button>
       </div>

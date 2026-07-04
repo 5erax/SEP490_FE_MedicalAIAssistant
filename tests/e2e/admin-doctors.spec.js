@@ -108,14 +108,14 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
   await dialog.getByLabel("Học hàm/học vị").fill("ThS.BS");
   await dialog.getByLabel("Số năm kinh nghiệm").fill("8");
   await dialog.getByLabel("Vai trò trong khoa").selectOption("0");
-  await dialog.getByLabel("Ảnh bác sĩ").setInputFiles({
+  await dialog.locator('input[type="file"]').setInputFiles({
     name: "doctor.jpg",
     mimeType: "image/jpeg",
     buffer: Buffer.from("fake-image"),
   });
 
-  await expect(page.getByText("Đã tải ảnh bác sĩ lên Cloudinary.", { exact: true })).toBeVisible();
-  await expect(dialog.getByLabel("Cloudinary image URL")).toHaveValue(uploadedImageUrl);
+  await expect(page.getByText("Đã tải ảnh bác sĩ.", { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel("Đường dẫn ảnh bác sĩ")).toHaveValue(uploadedImageUrl);
   await expect(dialog.locator(".doctor-image-preview")).toHaveAttribute("src", uploadedImageUrl);
   await dialog.getByRole("button", { name: "Thêm bác sĩ", exact: true }).click();
 

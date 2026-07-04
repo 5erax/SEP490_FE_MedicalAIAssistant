@@ -424,7 +424,7 @@ test("admin ICD form sends keywordWeights instead of unsupported description", a
   await page.getByRole("button", { name: "Tạo ICD" }).click();
   await page.getByLabel("Mã Chapter").fill("A-B");
   await page.getByLabel("Tên Chapter").fill("Bệnh truyền nhiễm");
-  await page.getByLabel("Trọng số từ khóa (JSON)").fill('{"sốt":5,"ho":3}');
+  await page.getByLabel("Danh sách từ khóa").fill('{"sốt":5,"ho":3}');
   await page.getByRole("button", { name: "Tạo ICD Chapter", exact: true }).click();
 
   expect(icdPayload).toEqual({ chapterCode: "A-B", chapterName: "Bệnh truyền nhiễm", keywordWeights: { sốt: 5, ho: 3 } });

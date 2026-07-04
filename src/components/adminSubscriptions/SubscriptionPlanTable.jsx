@@ -17,7 +17,7 @@ function summarizeLimits(value) {
     if (!entries.length) return "Không giới hạn riêng";
     return entries.slice(0, 2).map(([key, limit]) => `${key}: ${limit}`).join(" · ");
   } catch {
-    return "Dữ liệu giới hạn chưa đúng JSON";
+    return "Dữ liệu giới hạn chưa đúng định dạng";
   }
 }
 

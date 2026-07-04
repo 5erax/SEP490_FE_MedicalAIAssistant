@@ -267,7 +267,7 @@ const PAGES = {
   "/login": {
     eyebrow: "Đăng nhập",
     title: "Đăng nhập để dùng Freemium.",
-    copy: "Trang đăng nhập tĩnh mô phỏng luồng vào sản phẩm. Sau khi có backend, form này có thể nối xác thực để lưu hồ sơ và lịch sử phân tích.",
+    copy: "Trang đăng nhập mô phỏng luồng vào sản phẩm. Khi tài khoản được kích hoạt, người dùng có thể lưu hồ sơ và lịch sử phân tích.",
     primary: ["Tạo tài khoản mới", "/signup"],
     secondary: ["Thử demo trước", "/#demo"],
     stats: [["Freemium", "lưu hồ sơ"], ["History", "xem lại phân tích"], ["Upgrade", "mở Premium"]],
@@ -454,10 +454,10 @@ export default function StaticPage({ path }) {
             <div className="static-form-wrap">
               <div>
                 <p className="eyebrow">Biểu mẫu</p>
-                <h2 className="section-title">Sẵn sàng nối backend khi cần.</h2>
+                <h2 className="section-title">Sẵn sàng mở rộng khi cần.</h2>
                 <p className="section-copy">
                   Form hiện là giao diện tĩnh để hoàn thiện trải nghiệm landing.
-                  Khi có API, có thể nối xác thực, gửi liên hệ hoặc lưu lead.
+                  Khi hệ thống được kích hoạt, có thể xác thực tài khoản, gửi liên hệ hoặc lưu yêu cầu tư vấn.
                 </p>
               </div>
               <StaticForm type={page.form} />

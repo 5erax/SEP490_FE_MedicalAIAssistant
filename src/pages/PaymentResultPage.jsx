@@ -75,7 +75,7 @@ function getView(status) {
       eyebrow: status === "expired" ? "Giao dịch đã hết hạn" : "Giao dịch không thành công",
       title: status === "expired" ? "Liên kết thanh toán đã hết hạn." : "Thanh toán chưa hoàn tất.",
       description:
-        "Backend đã trả về trạng thái cuối cùng không thành công. Hãy chọn lại gói nếu bạn muốn thử thanh toán mới.",
+        "Giao dịch đã kết thúc nhưng không thành công. Hãy chọn lại gói nếu bạn muốn thử thanh toán mới.",
       icon: CircleX,
       tone: "error",
     };

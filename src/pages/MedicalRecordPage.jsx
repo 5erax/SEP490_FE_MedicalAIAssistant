@@ -6,7 +6,7 @@ const upcomingCapabilities = [
   {
     icon: FileHeart,
     title: "Tải hồ sơ y tế",
-    text: "Cần backend lưu trữ tệp, quyền truy cập và lịch sử xử lý trước khi bật cho người dùng.",
+    text: "Tính năng lưu trữ tệp, quyền truy cập và lịch sử xử lý đang được hoàn thiện trước khi bật cho người dùng.",
   },
   {
     icon: FlaskConical,
@@ -26,7 +26,7 @@ export default function MedicalRecordPage() {
       <style>{styles}</style>
       <section className="records-unavailable-card" aria-labelledby="records-title">
         <p className="mini-label">Hồ sơ y tế</p>
-        <h1 id="records-title">Tính năng hồ sơ y tế đang chờ backend chính thức</h1>
+        <h1 id="records-title">Tính năng hồ sơ y tế đang được hoàn thiện</h1>
         <p>
           Trang này không hiển thị dữ liệu mẫu hoặc kết quả phân tích giả. Khi API hồ sơ y tế
           sẵn sàng, dữ liệu tại đây sẽ đến từ hồ sơ thật của người dùng và có kiểm soát quyền truy cập.

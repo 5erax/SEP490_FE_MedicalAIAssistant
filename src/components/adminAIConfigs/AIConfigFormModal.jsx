@@ -92,7 +92,7 @@ export default function AIConfigFormModal({
           <div>
             <p className="eyebrow">AI Platform Console</p>
             <h2 id="ai-config-modal-title">{title}</h2>
-            <p>Điều chỉnh prompt, model và tham số runtime theo đúng API AIConfig của backend.</p>
+            <p>Điều chỉnh prompt, model và tham số vận hành cho từng tính năng AI.</p>
           </div>
           <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose}>×</button>
         </header>
@@ -102,7 +102,7 @@ export default function AIConfigFormModal({
             <label className={`clean-field ${errors.taskType ? "ai-config-field-error" : ""}`}>
               <span>Feature Type / Task Type</span>
               <input value={form.taskType} onChange={(event) => update("taskType", event.target.value)} placeholder="symptom-analysis" />
-              <small>{errors.taskType || "Backend dùng taskType để tìm config theo tính năng AI."}</small>
+              <small>{errors.taskType || "Dùng để phân loại cấu hình theo từng tính năng AI."}</small>
             </label>
             <label className={`clean-field ${errors.model ? "ai-config-field-error" : ""}`}>
               <span>AI Model</span>

@@ -5,7 +5,7 @@ import {
   Users,
 } from "lucide-react";
 
-const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEK_DAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
 export default function AdminOverviewSection({
   activeAIConfigs,
@@ -68,34 +68,33 @@ export default function AdminOverviewSection({
       <div className="admin-panel admin-performance-panel">
         <div className="panel-title-row">
           <div>
-            <p className="eyebrow">Performance Over Time</p>
+            <p className="eyebrow">Theo dõi vận hành</p>
             <h2>Hiệu suất vận hành</h2>
             <span className="admin-panel-date">Cập nhật theo dữ liệu trang hiện tại</span>
           </div>
           <div className="admin-panel-tools">
-            <span>Short</span>
-            <span>Filter</span>
+            <span>Trực tiếp</span>
             <button type="button" aria-label="Tùy chọn"><MoreVertical size={16} /></button>
           </div>
         </div>
         <div className="admin-overview-metrics">
           <article>
-            <span>Approval rate</span>
+            <span>Tỷ lệ duyệt</span>
             <strong>{approvalRate}%</strong>
             <small className="trend-up">+{Math.max(0, approvalRate - 80)}%</small>
           </article>
           <article>
-            <span>Doctor active</span>
+            <span>Bác sĩ hoạt động</span>
             <strong>{activeDoctors}/{doctorTotalCount}</strong>
             <small className="trend-up">{doctorActivationRate}%</small>
           </article>
           <article>
-            <span>AI enabled</span>
+            <span>AI đang bật</span>
             <strong>{activeAIConfigs}</strong>
-            <small className={disabledAIConfigs ? "trend-down" : "trend-up"}>{disabledAIConfigs} off</small>
+            <small className={disabledAIConfigs ? "trend-down" : "trend-up"}>{disabledAIConfigs} tắt</small>
           </article>
           <article>
-            <span>Departments</span>
+            <span>Chuyên khoa</span>
             <strong>{departmentsCount}</strong>
             <small className="trend-up">Catalog</small>
           </article>
@@ -105,7 +104,7 @@ export default function AdminOverviewSection({
       <div className="admin-panel admin-chart-panel">
         <div className="panel-title-row">
           <div>
-            <p className="eyebrow">Campaign Performance</p>
+            <p className="eyebrow">Chỉ số quản trị</p>
             <h2>Chỉ số quản trị</h2>
             <span className="admin-panel-date">{managementLoad} mục cần xử lý</span>
           </div>
@@ -126,7 +125,7 @@ export default function AdminOverviewSection({
       <div className="admin-panel admin-schedule-panel">
         <div className="panel-title-row">
           <div>
-            <p className="eyebrow">Operations Queue</p>
+            <p className="eyebrow">Việc cần xử lý</p>
             <h2>Lịch vận hành</h2>
           </div>
           <span className="soft-badge">{rolesLabel}</span>

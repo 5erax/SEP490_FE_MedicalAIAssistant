@@ -138,7 +138,7 @@ export default function AdminFacilitiesSection({
     try {
       const { secureUrl } = await uploadImageToCloudinary(file);
       onFormChange("imageUrl", secureUrl);
-      setImageUploadMessage({ type: "success", text: "Đã tải ảnh lên Cloudinary." });
+      setImageUploadMessage({ type: "success", text: "Đã tải ảnh lên." });
     } catch (error) {
       setImageUploadMessage({ type: "error", text: error.message });
     } finally {
@@ -202,7 +202,7 @@ export default function AdminFacilitiesSection({
         <div className="ai-config-filter-card-header">
           <div>
             <strong>Medical facility filters</strong>
-            <p>Lọc theo tên cơ sở, địa chỉ và trạng thái đang được backend hỗ trợ.</p>
+            <p>Lọc theo tên cơ sở, địa chỉ, chuyên khoa và trạng thái hiển thị.</p>
           </div>
         </div>
 
@@ -385,7 +385,7 @@ export default function AdminFacilitiesSection({
                       checked={form.isActive}
                       onChange={(event) => onFormChange("isActive", event.target.checked)}
                     />
-                    <span>Hiển thị cơ sở này trong danh sách active sau khi backend lưu trạng thái.</span>
+                    <span>Hiển thị cơ sở này trong danh sách dành cho người dùng.</span>
                   </label>
                 </div>
               </section>
@@ -461,7 +461,7 @@ export default function AdminFacilitiesSection({
               <section className="facility-form-card" aria-labelledby="facility-image-section">
                 <div className="facility-form-card-head">
                   <h3 id="facility-image-section">Hình ảnh hiển thị</h3>
-                  <p>Ảnh được tải lên Cloudinary, backend chỉ nhận URL ảnh trong trường imageUrl.</p>
+                  <p>Chọn ảnh đại diện rõ ràng để người dùng dễ nhận diện cơ sở y tế.</p>
                 </div>
                 <div className="facility-image-uploader">
                   <div className={`facility-image-preview-shell ${currentImageUrl ? "has-image" : ""}`}>
@@ -476,7 +476,7 @@ export default function AdminFacilitiesSection({
                     )}
                   </div>
                   <div className="facility-image-controls">
-                    <Field label="Ảnh cơ sở y tế" help="Chọn file JPG, PNG hoặc WebP tối đa 5 MB. Ảnh sẽ upload lên Cloudinary ngay sau khi chọn.">
+                    <Field label="Ảnh cơ sở y tế" help="Chọn file JPG, PNG hoặc WebP tối đa 5 MB. Ảnh sẽ được tải lên ngay sau khi chọn.">
                       <input
                         type="file"
                         accept="image/*"
@@ -495,7 +495,7 @@ export default function AdminFacilitiesSection({
                         {imageUploadMessage.text}
                       </p>
                     )}
-                    <Field label="Cloudinary image URL" help="Có thể giữ URL hiện tại, thay bằng ảnh mới hoặc xóa để gửi imageUrl rỗng.">
+                    <Field label="Đường dẫn ảnh" help="Bạn có thể dán link ảnh đã có hoặc để trống nếu chưa muốn hiển thị ảnh.">
                       <input
                         type="url"
                         value={form.imageUrl}

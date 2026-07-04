@@ -12,7 +12,7 @@ import {
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
 import "../styles/dashboard.css";
 
-/* Backend owns clinical question selection and diagnosis generation. */
+/* The service owns clinical question selection and diagnosis generation. */
 function confidencePercent(value) {
   const numeric = Number(value ?? 0);
   if (!Number.isFinite(numeric)) return 0;
@@ -223,7 +223,7 @@ function getFacilityRankingReason(facility, department, userLocation) {
 
   return reasons.length
     ? `Ưu tiên vì ${reasons.join(", ")}.`
-    : "Được backend đề xuất trong nhận định tham khảo.";
+    : "Được gợi ý từ nhận định tham khảo.";
 }
 
 function readProfilePromptDismissed() {
@@ -669,7 +669,7 @@ export default function DashboardPage() {
 
               {locationStatus === "denied" && (
                 <Alert tone="warning" live>
-                  Trình duyệt chưa cấp quyền vị trí. Danh sách vẫn ưu tiên chuyên khoa, tọa độ hợp lệ và đánh giá thật nếu backend cung cấp.
+                  Trình duyệt chưa cấp quyền vị trí. Danh sách vẫn ưu tiên chuyên khoa, tọa độ hợp lệ và đánh giá thật khi có dữ liệu.
                 </Alert>
               )}
               {locationStatus === "unsupported" && (
