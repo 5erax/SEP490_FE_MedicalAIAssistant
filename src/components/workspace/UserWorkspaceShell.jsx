@@ -28,6 +28,7 @@ import { logoutUser } from "../../services/logoutService";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 import { Dialog, useOverlayFocus } from "../ui";
+import PatientOnboardingAssistant from "./PatientOnboardingAssistant";
 
 const PATIENT_ICONS = {
   dashboard: LayoutDashboard,
@@ -297,7 +298,7 @@ export default function UserWorkspaceShell({ children }) {
           <X size={19} />
         </button>
 
-        <nav className="user-shell-nav">
+        <nav className="user-shell-nav" data-onboarding="patient-nav">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = path === item.path;
@@ -319,6 +320,7 @@ export default function UserWorkspaceShell({ children }) {
                 className={isActive ? "active" : ""}
                 key={item.path}
                 type="button"
+                data-onboarding={`patient-nav-${item.id}`}
                 aria-label={`${item.label}, yêu cầu MediMate+`}
                 onClick={(event) => handleLockedNav(item.path, event.currentTarget)}
               >
@@ -329,6 +331,7 @@ export default function UserWorkspaceShell({ children }) {
                 className={isActive ? "active" : ""}
                 key={item.path}
                 href={item.path}
+                data-onboarding={`patient-nav-${item.id}`}
                 aria-current={isActive ? "page" : undefined}
               >
                 {content}
@@ -347,7 +350,7 @@ export default function UserWorkspaceShell({ children }) {
 
       <main ref={mainRef} className="user-shell-main">
         <header className="user-shell-topbar">
-          <div className="user-shell-title">
+          <div className="user-shell-title" data-onboarding="patient-title">
             <button
               className="icon-btn mobile-menu-btn"
               type="button"
@@ -365,7 +368,7 @@ export default function UserWorkspaceShell({ children }) {
             </div>
           </div>
 
-          <form className="user-shell-search" role="search" onSubmit={handleSearch}>
+          <form className="user-shell-search" role="search" onSubmit={handleSearch} data-onboarding="patient-search">
             <Search size={17} />
             <label className="sr-only" htmlFor="workspace-search">Tìm cơ sở y tế</label>
             <input
@@ -390,6 +393,7 @@ export default function UserWorkspaceShell({ children }) {
                 ref={accountButtonRef}
                 className="user-chip account-menu-trigger"
                 type="button"
+                data-onboarding="patient-account"
                 aria-haspopup="true"
                 aria-expanded={accountMenuOpen}
                 aria-controls="workspace-account-menu"
@@ -507,6 +511,7 @@ export default function UserWorkspaceShell({ children }) {
             </div>
         </Dialog>
       )}
+      <PatientOnboardingAssistant auth={auth} />
     </div>
   );
 }

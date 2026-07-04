@@ -201,6 +201,75 @@ test.describe("global navigation UX", () => {
     await expect.poll(() => meRequests).toBe(1);
   });
 
+  test("patient onboarding tour auto opens once and can be restarted manually", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        displayName: "Phước Hà",
+        email: "phuoc.ha@example.com",
+        roles: ["Patient"],
+        patientOnboardingPending: true,
+      }));
+    }, ACCESS_TOKEN);
+    await page.route("**/api/users/me", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          id: "55555555-5555-4555-8555-555555555555",
+          displayName: "Phước Hà",
+          email: "phuoc.ha@example.com",
+          roles: ["Patient"],
+        },
+      }),
+    }));
+
+    await openRoute(page, "/dashboard");
+
+    const tour = page.getByRole("dialog", { name: "Bắt đầu với MediMate" });
+    await expect(tour).toBeVisible();
+    await expect(tour).toContainText("1 / 6");
+    await page.getByRole("button", { name: "Tiếp tục" }).click();
+    await expect(page.getByRole("dialog", { name: "Khu vực làm việc cá nhân" })).toBeVisible();
+    await page.getByRole("button", { name: "Quay lại" }).click();
+    await expect(tour).toBeVisible();
+    await page.getByRole("button", { name: "Bỏ qua" }).click();
+    await expect(tour).toBeHidden();
+
+    const storedAfterSkip = await page.evaluate(() => {
+      const auth = JSON.parse(localStorage.getItem("medimate.auth"));
+      const statusKey = Object.keys(localStorage).find((key) => key.startsWith("medimate.onboarding.patient.patient-v1."));
+      return {
+        auth,
+        status: statusKey ? JSON.parse(localStorage.getItem(statusKey)) : null,
+      };
+    });
+    expect(storedAfterSkip.auth.patientOnboardingPending).toBe(false);
+    expect(storedAfterSkip.status).toMatchObject({ status: "skipped", tourVersion: "patient-v1" });
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("dialog", { name: "Bắt đầu với MediMate" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Mở hướng dẫn sử dụng" }).click();
+    await expect(page.getByRole("region", { name: "Hướng dẫn sử dụng" })).toBeVisible();
+    await page.getByRole("button", { name: "Bắt đầu tour" }).click();
+    await expect(page.getByRole("dialog", { name: "Bắt đầu với MediMate" })).toBeVisible();
+
+    for (let index = 0; index < 5; index += 1) {
+      await page.getByRole("button", { name: "Tiếp tục" }).click();
+    }
+    await page.getByRole("button", { name: "Hoàn tất" }).click();
+
+    const storedAfterFinish = await page.evaluate(() => {
+      const statusKey = Object.keys(localStorage).find((key) => key.startsWith("medimate.onboarding.patient.patient-v1."));
+      return statusKey ? JSON.parse(localStorage.getItem(statusKey)) : null;
+    });
+    expect(storedAfterFinish).toMatchObject({ status: "completed", tourVersion: "patient-v1" });
+  });
+
   test("patient sidebar keeps diagnosis in consultation and profile in account menu", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {

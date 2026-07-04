@@ -49,6 +49,7 @@ function selectStoredAuth(auth) {
     firstLogin: auth.firstLogin,
     isFirstLogin: auth.isFirstLogin,
     isProfileCompleted: auth.isProfileCompleted,
+    patientOnboardingPending: auth.patientOnboardingPending,
     isPremium: auth.isPremium,
     isSubscribed: auth.isSubscribed,
     hasPremiumAccess: auth.hasPremiumAccess,

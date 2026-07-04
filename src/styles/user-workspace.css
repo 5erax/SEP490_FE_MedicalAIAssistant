@@ -529,6 +529,185 @@
   display: none;
 }
 
+.patient-help-launcher {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 70;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.patient-help-button {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--workspace-ink);
+  border-radius: 50%;
+  background: var(--workspace-lime);
+  color: var(--workspace-ink);
+  box-shadow: 4px 4px 0 var(--workspace-ink);
+}
+
+.patient-help-menu {
+  width: min(300px, calc(100vw - 40px));
+  display: grid;
+  gap: 12px;
+  border: 1.5px solid var(--workspace-ink);
+  border-radius: 16px;
+  background: var(--workspace-card);
+  color: var(--workspace-ink);
+  padding: 14px;
+  box-shadow: 0 22px 60px rgba(16, 20, 17, 0.2);
+}
+
+.patient-help-menu strong,
+.patient-help-menu p {
+  margin: 0;
+}
+
+.patient-help-menu strong {
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.patient-help-menu p {
+  margin-top: 4px;
+  color: var(--workspace-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.patient-help-menu button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1.5px solid var(--workspace-ink);
+  border-radius: 11px;
+  background: var(--workspace-lime);
+  color: var(--workspace-ink);
+  font-weight: 950;
+}
+
+.patient-tour-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: auto;
+}
+
+.patient-tour-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 20, 17, 0.48);
+}
+
+.patient-tour-highlight {
+  position: fixed;
+  z-index: 91;
+  border: 2px solid var(--workspace-lime);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 9999px rgba(16, 20, 17, 0.48),
+    0 16px 48px rgba(16, 20, 17, 0.22);
+  pointer-events: none;
+}
+
+.patient-tour-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 92px;
+  z-index: 92;
+  width: min(390px, calc(100vw - 44px));
+  display: grid;
+  gap: 12px;
+  border: 1.5px solid var(--workspace-ink);
+  border-radius: 18px;
+  background: var(--workspace-card);
+  color: var(--workspace-ink);
+  padding: 18px;
+  box-shadow: 6px 6px 0 var(--workspace-ink);
+}
+
+.patient-tour-panel.is-centered {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.patient-tour-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--workspace-muted);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.patient-tour-kicker strong {
+  border-radius: 999px;
+  background: var(--workspace-mint);
+  color: var(--workspace-ink);
+  padding: 5px 9px;
+}
+
+.patient-tour-panel h2,
+.patient-tour-panel p {
+  margin: 0;
+}
+
+.patient-tour-panel h2 {
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.patient-tour-panel p {
+  color: var(--workspace-muted);
+  font-size: 14px;
+  line-height: 1.58;
+}
+
+.patient-tour-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.patient-tour-actions button {
+  min-height: 42px;
+  border: 1.5px solid var(--workspace-ink);
+  border-radius: 11px;
+  background: #fff;
+  color: var(--workspace-ink);
+  padding: 0 13px;
+  font-weight: 950;
+}
+
+.patient-tour-actions button:first-child {
+  justify-self: start;
+  border-color: transparent;
+  color: var(--workspace-muted);
+}
+
+.patient-tour-actions button:last-child {
+  background: var(--workspace-lime);
+  box-shadow: 3px 3px 0 var(--workspace-ink);
+}
+
+.patient-tour-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.44;
+}
+
 .user-shell .dash-page,
 .user-shell .symptom-page,
 .user-shell .medication-page,
@@ -745,6 +924,40 @@
     padding: 7px;
     box-shadow: 0 18px 52px rgba(16, 20, 17, 0.16);
     backdrop-filter: blur(18px);
+  }
+
+  .patient-help-launcher {
+    right: 16px;
+    bottom: 96px;
+  }
+
+  .patient-help-menu {
+    width: min(300px, calc(100vw - 32px));
+  }
+
+  .patient-tour-panel,
+  .patient-tour-panel.is-centered {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    transform: none;
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .patient-tour-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .patient-tour-actions button {
+    width: 100%;
+  }
+
+  .patient-tour-actions button:first-child {
+    grid-column: 1 / -1;
+    justify-self: stretch;
   }
 
   .user-shell-mobile-nav button,

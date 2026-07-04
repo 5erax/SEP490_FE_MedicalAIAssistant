@@ -138,6 +138,7 @@ export default function PersonalPatientProfilePage() {
             firstLogin: false,
             isFirstLogin: false,
             isProfileCompleted: true,
+            patientOnboardingPending: auth.patientOnboardingPending ?? true,
           };
           setStoredAuth(nextAuth);
           setAuth(nextAuth);
@@ -207,6 +208,7 @@ export default function PersonalPatientProfilePage() {
         firstLogin: false,
         isFirstLogin: false,
         isProfileCompleted: true,
+        patientOnboardingPending: true,
       };
       setStoredAuth(nextAuth);
       setAuth(nextAuth);
