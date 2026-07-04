@@ -11,6 +11,8 @@ import "../styles/payment-result.css";
 
 const MAX_STATUS_CHECKS = 12;
 const STATUS_CHECK_DELAY = 2500;
+const CANCEL_FALLBACK_MESSAGE =
+  "Bạn đã quay lại từ cổng thanh toán sau khi hủy. MediMate không kích hoạt gói mới và gói hiện tại của bạn vẫn được giữ nguyên.";
 
 function getOrderCode() {
   return new URLSearchParams(window.location.search).get("orderCode")?.trim() || "";
@@ -37,6 +39,12 @@ function classifyPayment(data) {
   if (["expired", "expire"].includes(subscriptionStatus)) return "expired";
 
   return "pending";
+}
+
+function resolvePaymentStatus(data, expectedResult) {
+  const nextStatus = classifyPayment(data);
+  if (expectedResult === "cancel" && nextStatus === "pending") return "cancelled";
+  return nextStatus;
 }
 
 function getView(status) {
@@ -155,9 +163,9 @@ export default function PaymentResultPage({ expectedResult }) {
         : await paymentsApi.payOsStatus(orderCode);
 
     const data = response.data ?? {};
-    const nextStatus = classifyPayment(data);
+    const nextStatus = resolvePaymentStatus(data, expectedResult);
     setStatus(nextStatus);
-    setMessage(data.message || "");
+    setMessage(data.message || (expectedResult === "cancel" && nextStatus === "cancelled" ? CANCEL_FALLBACK_MESSAGE : ""));
 
     if (nextStatus === "success") await refreshPremiumState();
     return nextStatus;
@@ -183,6 +191,11 @@ export default function PaymentResultPage({ expectedResult }) {
         timer = window.setTimeout(verify, STATUS_CHECK_DELAY);
       } catch {
         if (!active) return;
+        if (isCancelFlow) {
+          setStatus("cancelled");
+          setMessage(CANCEL_FALLBACK_MESSAGE);
+          return;
+        }
         setStatus("error");
         setMessage("MediMate chưa nhận được trạng thái chính thức từ PayOS. Vui lòng kiểm tra lại sau ít phút.");
       }
@@ -194,7 +207,7 @@ export default function PaymentResultPage({ expectedResult }) {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [checkStatus, orderCode]);
+  }, [checkStatus, isCancelFlow, orderCode]);
 
   async function handleCheckAgain() {
     if (isCancelFlow && !orderCode) {
@@ -208,6 +221,11 @@ export default function PaymentResultPage({ expectedResult }) {
     try {
       await checkStatus();
     } catch {
+      if (isCancelFlow) {
+        setStatus("cancelled");
+        setMessage(CANCEL_FALLBACK_MESSAGE);
+        return;
+      }
       setStatus("error");
       setMessage("MediMate chưa nhận được trạng thái chính thức từ PayOS. Vui lòng kiểm tra lại sau ít phút.");
     } finally {
