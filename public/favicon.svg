@@ -1,9 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="medimate-favicon-title medimate-favicon-desc" viewBox="0 0 48 48">
   <title id="medimate-favicon-title">MediMate AI</title>
-  <desc id="medimate-favicon-desc">Biểu trưng chữ thập y tế kết hợp điểm kết nối AI.</desc>
-  <rect width="48" height="48" rx="12" fill="#101411"/>
-  <path fill="#C4E995" d="M21 10h6v11h11v6H27v11h-6V27H10v-6h11V10Z"/>
-  <circle cx="35" cy="13" r="4" fill="#7CE0D3"/>
-  <circle cx="36" cy="34" r="3" fill="#7CE0D3"/>
-  <path fill="none" stroke="#7CE0D3" stroke-linecap="round" stroke-width="3" d="M33.5 16.5 28 21m6.5 10.5L28 27"/>
+  <desc id="medimate-favicon-desc">Biểu trưng MediMate AI gồm chữ thập y tế, nhịp tim và điểm kết nối trí tuệ nhân tạo.</desc>
+  <defs>
+    <linearGradient id="medimate-favicon-bg" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#151A16" />
+      <stop offset="1" stop-color="#070C09" />
+    </linearGradient>
+    <linearGradient id="medimate-favicon-cross" x1="14" y1="9" x2="33" y2="39" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D8FF9D" />
+      <stop offset="1" stop-color="#9FEA63" />
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="14" fill="url(#medimate-favicon-bg)" />
+  <path fill="#1F2A22" d="M8 38c9.5-13.4 19.3-22.8 32-30v30H8Z" opacity=".5" />
+  <path fill="url(#medimate-favicon-cross)" d="M20 9h8a2 2 0 0 1 2 2v8h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-8v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8h-8a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h8v-8a2 2 0 0 1 2-2Z" />
+  <path fill="none" stroke="#062019" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M10 25h7l3-6 6 13 4-7h8" opacity=".32" />
+  <path fill="none" stroke="#72F0DF" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 25h7l3-6 6 13 4-7h8" />
+  <circle cx="37" cy="12" r="4" fill="#72F0DF" />
+  <circle cx="37" cy="12" r="1.8" fill="#101411" />
+  <circle cx="39" cy="36" r="3.4" fill="#72F0DF" />
+  <circle cx="39" cy="36" r="1.5" fill="#101411" />
+  <path fill="none" stroke="#72F0DF" stroke-linecap="round" stroke-width="2.4" d="M34 14.5 30 19m5.6 15.2L30 30" />
 </svg>
