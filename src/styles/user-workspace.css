@@ -1,12 +1,12 @@
 .user-shell {
-  --workspace-bg: #f4f7ef;
-  --workspace-surface: rgba(255, 255, 255, 0.86);
-  --workspace-card: #ffffff;
-  --workspace-ink: #101411;
-  --workspace-muted: rgba(16, 20, 17, 0.62);
-  --workspace-line: rgba(16, 20, 17, 0.13);
-  --workspace-lime: #c4e995;
-  --workspace-mint: #eef7e8;
+  --workspace-bg: var(--color-bg);
+  --workspace-surface: color-mix(in srgb, var(--color-surface) 86%, transparent);
+  --workspace-card: var(--color-surface);
+  --workspace-ink: var(--color-ink);
+  --workspace-muted: color-mix(in srgb, var(--color-ink) 62%, transparent);
+  --workspace-line: color-mix(in srgb, var(--color-ink) 13%, transparent);
+  --workspace-lime: var(--color-primary);
+  --workspace-mint: var(--color-primary-soft);
   min-height: 100svh;
   display: grid;
   grid-template-columns: 278px minmax(0, 1fr);
@@ -486,8 +486,8 @@
   background: var(--workspace-mint);
 }
 
-.account-menu-danger {
-  color: #9f1239 !important;
+.account-menu-panel > button.account-menu-danger {
+  color: var(--color-danger);
 }
 
 .account-menu-preferences .display-preferences {
@@ -888,25 +888,6 @@
   .user-shell .clinic-page {
     height: calc(100svh - 150px);
     border-radius: 18px;
-  }
-
-  .user-shell .clinic-page {
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  .user-shell .clinic-page .map-panel {
-    order: 0 !important;
-    flex: 0 0 52% !important;
-    min-height: 260px !important;
-  }
-
-  .user-shell .clinic-page .clinic-sidebar {
-    order: 1 !important;
-    width: 100% !important;
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    border-top: 1px solid rgba(16, 20, 17, 0.13) !important;
   }
 
   .user-shell-mobile-nav {

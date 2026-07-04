@@ -930,9 +930,10 @@ const styles = `
 .locate-button { border-color: #fff; border-radius: 50%; background: var(--teal); color: #fff; box-shadow: 0 8px 24px rgba(17, 20, 18, .22); }
 
 @media (max-width: 760px) {
-  .clinic-page { display: grid; grid-template-rows: minmax(38svh, 320px) auto; }
-  .map-panel { order: 1; min-height: 38svh; margin: 10px; border-radius: 18px; }
-  .clinic-sidebar { order: 2; width: 100%; max-height: none; padding: 18px 14px 96px; }
+  .clinic-page { display: flex; flex-direction: column; }
+  .map-stage { order: 1; flex: 0 0 52%; min-height: 260px; }
+  .map-stage > .map-panel { inset: 10px; border-radius: 18px; }
+  .clinic-sidebar { order: 2; width: 100%; flex: 1 1 auto; min-height: 0; max-height: none; border-top: 1px solid rgba(16, 20, 17, 0.13); padding: 18px 14px 96px; }
   .map-sidebar-head h1 { font-size: 27px; }
 }
 

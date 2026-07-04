@@ -752,7 +752,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
   .diagnosis-bar-row > i {
     grid-column: 2 / -1;
-    width: 100% !important;
+    width: 100%;
   }
 
   .diagnosis-probability-table {

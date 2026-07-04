@@ -1,77 +1,8 @@
-.ui-button {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  border: 1.5px solid var(--color-ink);
-  border-radius: var(--radius-sm);
-  padding: 0 16px;
-  color: var(--color-ink);
-  font-weight: 900;
-  transition: transform var(--motion-base), box-shadow var(--motion-base), background var(--motion-base);
-}
-
-.ui-button:hover:not(:disabled):not([aria-disabled="true"]) {
-  transform: translateY(-1px);
-}
-
-.ui-button-primary {
-  background: var(--color-primary);
-  box-shadow: 3px 3px 0 var(--color-ink);
-}
-
-.ui-button-secondary {
-  background: var(--color-surface);
-}
-
-.ui-button-dark {
-  background: var(--color-ink);
-  color: #fff;
-}
-
-.ui-button-danger {
-  background: var(--color-danger);
-  color: #fff;
-}
-
-.ui-button-ghost {
-  border-color: var(--color-line-strong);
-  background: transparent;
-  box-shadow: none;
-}
-
-.ui-button-lg {
-  min-height: 52px;
-  padding-inline: 22px;
-  font-size: 15px;
-}
-
-.ui-button-sm {
-  min-height: 36px;
-  padding-inline: 12px;
-  font-size: 13px;
-}
-
-.ui-button:disabled,
-.ui-button[aria-disabled="true"] {
-  cursor: not-allowed;
-  opacity: 0.52;
-  transform: none;
-  box-shadow: none;
-}
-
-.ui-button-spinner,
 .ui-state-spinner {
   border: 3px solid currentColor;
   border-right-color: transparent;
   border-radius: var(--radius-pill);
   animation: uiSpin 0.8s linear infinite;
-}
-
-.ui-button-spinner {
-  width: 17px;
-  height: 17px;
 }
 
 .ui-field {
@@ -129,8 +60,8 @@
   line-height: 1.45;
 }
 
-.ui-field-error {
-  color: var(--color-danger) !important;
+.ui-field.ui-field-error {
+  color: var(--color-danger);
 }
 
 .ui-field-invalid input,

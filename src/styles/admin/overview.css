@@ -1,0 +1,255 @@
+.admin-operator .admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  gap: 16px;
+}
+
+.admin-operator .admin-performance-panel {
+  grid-column: 1 / -1;
+  padding: clamp(20px, 2.6vw, 28px);
+}
+
+.admin-operator .admin-chart-panel,
+.admin-operator .admin-schedule-panel {
+  min-height: 380px;
+}
+
+.admin-operator .admin-panel-date {
+  display: block;
+  margin-top: 6px;
+  color: rgba(16, 20, 17, 0.58);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.admin-operator .admin-panel-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-operator .admin-panel-tools span,
+.admin-operator .admin-panel-tools button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(16, 20, 17, 0.05);
+  color: rgba(16, 20, 17, 0.66);
+  padding: 8px 11px;
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.admin-operator .admin-panel-tools button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  padding: 0;
+}
+
+.admin-operator .admin-overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 24px;
+  border-top: 1px solid rgba(16, 20, 17, 0.09);
+}
+
+.admin-operator .admin-overview-metrics article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border-right: 1px solid rgba(16, 20, 17, 0.09);
+  padding: 20px clamp(14px, 2vw, 24px) 2px 0;
+}
+
+.admin-operator .admin-overview-metrics article + article {
+  padding-left: clamp(14px, 2vw, 24px);
+}
+
+.admin-operator .admin-overview-metrics article:last-child {
+  border-right: 0;
+}
+
+.admin-operator .admin-overview-metrics span {
+  color: rgba(16, 20, 17, 0.58);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.admin-operator .admin-overview-metrics strong {
+  color: #101411;
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.admin-operator .admin-overview-metrics small {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 860;
+}
+
+.admin-operator .trend-up {
+  background: #e2f8e7;
+  color: #16834a;
+}
+
+.admin-operator .trend-down {
+  background: #ffe7e1;
+  color: #bf4c35;
+}
+
+.admin-operator .admin-bar-chart {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(44px, 1fr));
+  align-items: end;
+  gap: 10px;
+  min-height: 270px;
+  margin-top: 20px;
+  border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+}
+
+.admin-operator .admin-bar {
+  display: grid;
+  align-items: end;
+  gap: 10px;
+  height: 260px;
+  text-align: center;
+}
+
+.admin-operator .admin-bar span {
+  position: relative;
+  display: grid;
+  align-items: start;
+  min-height: 36px;
+  border-radius: 14px;
+  background: rgba(16, 20, 17, 0.06);
+  overflow: hidden;
+}
+
+.admin-operator .admin-bar span::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.96;
+}
+
+.admin-operator .admin-bar strong {
+  position: relative;
+  z-index: 1;
+  padding-top: 10px;
+  color: rgba(16, 20, 17, 0.66);
+  font-size: 12px;
+}
+
+.admin-operator .admin-bar small {
+  color: rgba(16, 20, 17, 0.56);
+  font-weight: 780;
+}
+
+.admin-operator .admin-bar-mint span::before {
+  background: linear-gradient(180deg, #cdf178, #eff8e5);
+}
+
+.admin-operator .admin-bar-teal span::before {
+  background: linear-gradient(180deg, #0c5f5e, #dff8ed);
+}
+
+.admin-operator .admin-bar-coral span::before {
+  background: linear-gradient(180deg, #ff765e, #ffe2d9);
+}
+
+.admin-operator .admin-bar-sand span::before {
+  background: linear-gradient(180deg, #ffe97e, #fff8cf);
+}
+
+.admin-operator .admin-week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.admin-operator .admin-week-strip button {
+  display: grid;
+  gap: 6px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(16, 20, 17, 0.58);
+  padding: 8px 4px;
+}
+
+.admin-operator .admin-week-strip button.active {
+  background: #eee7ff;
+  color: #554292;
+}
+
+.admin-operator .admin-week-strip span {
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.admin-operator .admin-week-strip strong {
+  font-size: 16px;
+}
+
+.admin-operator .admin-operation-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.admin-operator .admin-operation {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  color: #101411;
+  padding: 14px;
+  text-align: left;
+}
+
+.admin-operator .admin-operation-warning {
+  background: #fff08a;
+}
+
+.admin-operator .admin-operation-info {
+  background: #f6cff3;
+}
+
+.admin-operator .admin-operation-success {
+  background: #dff8ed;
+}
+
+.admin-operator .admin-operation-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.admin-operator .admin-operation strong,
+.admin-operator .admin-operation small {
+  display: block;
+}
+
+.admin-operator .admin-operation strong {
+  font-size: 13px;
+}
+
+.admin-operator .admin-operation small {
+  margin-top: 3px;
+  color: rgba(16, 20, 17, 0.6);
+  font-size: 12px;
+}

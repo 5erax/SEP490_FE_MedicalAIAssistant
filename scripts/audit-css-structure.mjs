@@ -50,6 +50,33 @@ function extractSelectors(content) {
   return selectors;
 }
 
+const reducedMotionImportantFiles = new Set([
+  "src/styles/medical-assessment.css",
+  "src/styles/personalization.css",
+  "src/styles/ux-foundation.css",
+]);
+
+function isAllowedImportant(line, lines, index, rel) {
+  if (!reducedMotionImportantFiles.has(rel)) return false;
+  if (!/(animation(?:-[\w-]+)?|transition(?:-[\w-]+)?|scroll-behavior)\s*:/.test(line)) {
+    return false;
+  }
+
+  const nearbyContext = lines
+    .slice(Math.max(0, index - 12), index + 1)
+    .join("\n");
+
+  return /prefers-reduced-motion:\s*reduce|data-motion="reduce"/.test(nearbyContext);
+}
+
+function unexpectedImportantLines(content, rel) {
+  return content
+    .split(/\r?\n/)
+    .map((line, index, lines) => ({ line, index, allowed: isAllowedImportant(line, lines, index, rel) }))
+    .filter(({ line, allowed }) => line.includes("!important") && !allowed)
+    .map(({ index }) => index + 1);
+}
+
 walk(srcDir);
 
 const errors = [];
@@ -89,9 +116,9 @@ for (const file of cssFiles) {
     warnings.push(`${rel} is ${lines} lines; consider splitting by feature or component boundary.`);
   }
 
-  const importantCount = (content.match(/!important/g) ?? []).length;
-  if (importantCount > 0) {
-    warnings.push(`${rel} contains ${importantCount} !important declaration(s).`);
+  const unexpectedImportant = unexpectedImportantLines(content, rel);
+  if (unexpectedImportant.length > 0) {
+    errors.push(`${rel} contains unapproved !important declaration(s) on line(s): ${unexpectedImportant.join(", ")}.`);
   }
 
   const longSelectors = extractSelectors(content)
@@ -120,4 +147,8 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log("\nNo blocking CSS structure errors found.");
+if (!warnings.length) {
+  console.log("\nNo CSS structure warnings found.");
+}
+
+console.log("No blocking CSS structure errors found.");
