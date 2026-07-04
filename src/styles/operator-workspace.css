@@ -2642,15 +2642,22 @@
 }
 
 .subscription-plan-primary {
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  min-width: 210px;
+  min-width: 0;
+  width: 100%;
+}
+
+.subscription-plan-primary > div {
+  min-width: 0;
 }
 
 .subscription-plan-primary strong,
 .subscription-plan-primary span {
   display: block;
+  overflow-wrap: anywhere;
 }
 
 .subscription-plan-primary div > span {
@@ -2672,20 +2679,85 @@
 }
 
 .subscription-limit-summary {
-  display: block;
+  display: grid;
+  gap: 5px;
   max-width: 320px;
   color: rgba(16, 20, 17, 0.66);
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.subscription-limit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.subscription-limit-row > span {
+  min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.subscription-limit-row > strong {
+  color: #101411;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.subscription-plan-admin-panel .ui-table-wrap {
+  overflow-x: auto;
 }
 
 .subscription-plan-admin-panel .ui-table {
   table-layout: fixed;
+  min-width: 980px;
 }
 
 .subscription-plan-admin-panel .ui-table th,
 .subscription-plan-admin-panel .ui-table td {
-  overflow-wrap: anywhere;
+  padding: 18px 16px;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.subscription-plan-admin-panel .ui-table th:nth-child(1),
+.subscription-plan-admin-panel .ui-table td:nth-child(1) {
+  width: 32%;
+}
+
+.subscription-plan-admin-panel .ui-table th:nth-child(2),
+.subscription-plan-admin-panel .ui-table td:nth-child(2) {
+  width: 12%;
+}
+
+.subscription-plan-admin-panel .ui-table th:nth-child(3),
+.subscription-plan-admin-panel .ui-table td:nth-child(3) {
+  width: 20%;
+}
+
+.subscription-plan-admin-panel .ui-table th:nth-child(4),
+.subscription-plan-admin-panel .ui-table td:nth-child(4) {
+  width: 13%;
+}
+
+.subscription-plan-admin-panel .ui-table th:nth-child(5),
+.subscription-plan-admin-panel .ui-table td:nth-child(5) {
+  width: 12%;
+}
+
+.subscription-plan-admin-panel .ui-table th:nth-child(6),
+.subscription-plan-admin-panel .ui-table td:nth-child(6) {
+  width: 11%;
+}
+
+.subscription-plan-admin-panel .record-actions {
+  justify-content: flex-start;
+}
+
+.subscription-plan-admin-panel .record-actions .btn {
+  min-width: 98px;
+  justify-content: center;
 }
 
 .subscription-plan-empty {
@@ -2975,7 +3047,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1240px) {
   .subscription-plan-admin-panel .ui-table-wrap {
     overflow: visible;
     border: 0;
@@ -2989,6 +3061,10 @@
   .subscription-plan-admin-panel .ui-table th,
   .subscription-plan-admin-panel .ui-table td {
     display: block;
+  }
+
+  .subscription-plan-admin-panel .ui-table {
+    min-width: 0;
   }
 
   .subscription-plan-admin-panel .ui-table thead {

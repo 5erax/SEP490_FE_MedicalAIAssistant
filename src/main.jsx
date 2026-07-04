@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { FeedbackProvider } from './components/feedback/FeedbackProvider.jsx'
 import { installLinkNavigation } from './router/navigation.js'
 import { getGoogleClientId, isGoogleOAuthEnabledForCurrentOrigin } from './services/googleOAuthConfig.js'
@@ -34,6 +35,7 @@ const appContent = (
     <div id="main-content" tabIndex="-1">
       <SpaRoot />
     </div>
+    <SpeedInsights />
   </FeedbackProvider>
 )
 

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
+    "@vercel/speed-insights": "^2.0.0",
     "lucide-react": "^1.16.0",
     "maplibre-gl": "^5.24.0",
     "react": "19.3.0-canary-dbc37501-20260612",
