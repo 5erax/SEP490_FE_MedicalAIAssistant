@@ -168,6 +168,18 @@ export default function AdminFacilitiesSection({
   const currentImageUrl = getSafeCurrentImageUrl(form.imageUrl);
   const hasUploadError = imageUploadMessage?.type === "error";
   const imageChanged = (form.imageUrl || "") !== imageOriginalUrl;
+  const statusOptions = [
+    { value: "", label: "Tất cả" },
+    { value: "true", label: "Đang hoạt động" },
+    { value: "false", label: "Đã vô hiệu hóa" },
+  ];
+  const departmentOptions = [
+    { value: "", label: "Tất cả chuyên khoa" },
+    ...departments.map((department) => ({
+      value: department.id,
+      label: department.departmentName || department.name || "Chuyên khoa chưa đặt tên",
+    })),
+  ];
 
   return (
     <section className="admin-panel ai-config-admin-panel facility-admin-panel">
@@ -208,25 +220,20 @@ export default function AdminFacilitiesSection({
 
           <div className="ai-config-toolbar-row ai-config-toolbar-filters">
             <div className="ai-config-filter-grid facility-filter-grid">
-              <label className="clean-field">
-                <span>Trạng thái</span>
-                <select value={filters.isActive} onChange={(event) => onFilterChange("isActive", event.target.value)}>
-                  <option value="">Tất cả</option>
-                  <option value="true">Đang hoạt động</option>
-                  <option value="false">Đã vô hiệu hóa</option>
-                </select>
-              </label>
-              <label className="clean-field">
-                <span>Chuyên khoa</span>
-                <select value={filters.departmentId} onChange={(event) => onFilterChange("departmentId", event.target.value)}>
-                  <option value="">Tất cả chuyên khoa</option>
-                  {departments.map((department) => (
-                    <option key={department.id} value={department.id}>
-                      {department.departmentName || department.name || "Chuyên khoa chưa đặt tên"}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <CustomSelect
+                className="clean-field"
+                label="Trạng thái"
+                value={filters.isActive}
+                options={statusOptions}
+                onChange={(nextValue) => onFilterChange("isActive", nextValue)}
+              />
+              <CustomSelect
+                className="clean-field"
+                label="Chuyên khoa"
+                value={filters.departmentId}
+                options={departmentOptions}
+                onChange={(nextValue) => onFilterChange("departmentId", nextValue)}
+              />
               <CustomSelect
                 className="clean-field"
                 label="Per page"

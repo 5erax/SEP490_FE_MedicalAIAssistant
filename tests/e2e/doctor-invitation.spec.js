@@ -141,7 +141,7 @@ test("invited doctor can register, log in, and open the doctor workspace", async
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: "Chẩn đoán lâm sàng" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tư vấn chuyên khoa" })).toBeVisible();
   await expect(page.evaluate(() => window.history.state)).resolves.toBeNull();
 });
 

@@ -12,6 +12,26 @@ export default function DoctorFilters({
   onReset,
   onCreate,
 }) {
+  const departmentOptions = [
+    { value: "", label: "Tất cả chuyên khoa" },
+    ...departments.map((department) => ({
+      value: department.id,
+      label: department.departmentName || "Chuyên khoa chưa đặt tên",
+    })),
+  ];
+  const facilityOptions = [
+    { value: "", label: "Tất cả bệnh viện" },
+    ...facilities.map((facility) => ({
+      value: facility.id,
+      label: facility.facilityName || "Cơ sở y tế chưa đặt tên",
+    })),
+  ];
+  const statusOptions = [
+    { value: "", label: "Tất cả trạng thái" },
+    { value: "true", label: "Đang hoạt động" },
+    { value: "false", label: "Tạm ẩn" },
+  ];
+
   return (
     <section className="doctor-filter-card">
       <div className="doctor-filter-card-header">
@@ -39,36 +59,27 @@ export default function DoctorFilters({
 
         <div className="doctor-toolbar-row doctor-toolbar-row-filters">
           <div className="doctor-filter-grid">
-            <label className="clean-field">
-              <span>Chuyên khoa</span>
-              <select value={filters.departmentId} onChange={(event) => onChange("departmentId", event.target.value)}>
-                <option value="">Tất cả chuyên khoa</option>
-                {departments.map((department) => (
-                  <option key={department.id} value={department.id}>
-                    {department.departmentName || "Chuyên khoa chưa đặt tên"}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="clean-field">
-              <span>Bệnh viện</span>
-              <select value={filters.facilityId} onChange={(event) => onChange("facilityId", event.target.value)}>
-                <option value="">Tất cả bệnh viện</option>
-                {facilities.map((facility) => (
-                  <option key={facility.id} value={facility.id}>
-                    {facility.facilityName || "Cơ sở y tế chưa đặt tên"}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="clean-field">
-              <span>Trạng thái</span>
-              <select value={filters.isActive} onChange={(event) => onChange("isActive", event.target.value)}>
-                <option value="">Tất cả trạng thái</option>
-                <option value="true">Đang hoạt động</option>
-                <option value="false">Tạm ẩn</option>
-              </select>
-            </label>
+            <CustomSelect
+              className="clean-field"
+              label="Chuyên khoa"
+              value={filters.departmentId}
+              options={departmentOptions}
+              onChange={(nextValue) => onChange("departmentId", nextValue)}
+            />
+            <CustomSelect
+              className="clean-field"
+              label="Bệnh viện"
+              value={filters.facilityId}
+              options={facilityOptions}
+              onChange={(nextValue) => onChange("facilityId", nextValue)}
+            />
+            <CustomSelect
+              className="clean-field"
+              label="Trạng thái"
+              value={filters.isActive}
+              options={statusOptions}
+              onChange={(nextValue) => onChange("isActive", nextValue)}
+            />
             <CustomSelect
               className="clean-field"
               label="Hiển thị"

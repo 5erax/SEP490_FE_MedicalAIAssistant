@@ -285,6 +285,8 @@ test.describe("global navigation UX", () => {
     await expect(page.locator('.user-shell-nav a[href="/dashboard"]')).toBeVisible();
     await expect(page.locator('.user-shell-nav a[href="/profile"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-mobile-nav a[href="/profile"]')).toHaveCount(0);
+    await expect(page.locator('.user-shell-nav a[href="/medication"], .user-shell-nav button[data-onboarding="patient-nav-patient.medication"]')).toHaveCount(0);
+    await expect(page.locator('.user-shell-mobile-nav a[href="/medication"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(1);
     await expect(page.locator('.user-shell-mobile-nav a[href="/symptom"]')).toHaveCount(0);
     await page.locator(".account-menu-trigger").click();

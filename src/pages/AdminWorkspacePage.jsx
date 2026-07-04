@@ -268,6 +268,8 @@ function EmptyAuth() {
 export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const { confirmAction, showToast } = useFeedback();
   const [initialDoctorView] = useState(readDoctorViewState);
+  const currentDoctorSearch = window.location.search;
+  const lastDoctorViewSearchRef = useRef(currentDoctorSearch);
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [profile, setProfile] = useState(null);
   const [users, setUsers] = useState([]);
@@ -569,6 +571,52 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       active = false;
     };
   }, [auth, initialDoctorView, pageInfo.pageSize]);
+
+  useEffect(() => {
+    if (!auth || activeSection !== "doctors" || lastDoctorViewSearchRef.current === currentDoctorSearch) return undefined;
+
+    lastDoctorViewSearchRef.current = currentDoctorSearch;
+    const nextView = readDoctorViewState(currentDoctorSearch);
+    let active = true;
+
+    setDoctorFilters(nextView.filters);
+    setDoctorPageInfo((current) => ({
+      ...current,
+      pageNumber: nextView.pageNumber,
+      pageSize: nextView.pageSize,
+    }));
+    setDoctorsLoading(true);
+    setDoctorMessage(null);
+    setDoctorLoadError("");
+
+    doctorManagementApi.list({
+      ...nextView.filters,
+      pageNumber: nextView.pageNumber,
+      pageSize: nextView.pageSize,
+    })
+      .then((response) => {
+        if (!active) return;
+        const data = response.data ?? {};
+        setDoctors(data.items ?? []);
+        setDoctorPageInfo({
+          pageNumber: data.pageNumber ?? nextView.pageNumber,
+          pageSize: data.pageSize ?? nextView.pageSize,
+          totalCount: data.totalCount ?? 0,
+          totalPages: data.totalPages ?? 1,
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setDoctorLoadError(DOCTOR_LOAD_ERROR_MESSAGE);
+      })
+      .finally(() => {
+        if (active) setDoctorsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeSection, auth, currentDoctorSearch]);
 
   if (!auth) return <EmptyAuth />;
   if (!loading && !isAdmin) return <AccessDenied auth={auth} roles={roles} />;

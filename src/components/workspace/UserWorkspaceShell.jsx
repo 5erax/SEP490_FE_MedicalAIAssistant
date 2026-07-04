@@ -14,7 +14,6 @@ import {
   Menu,
   MessageSquare,
   Search,
-  Pill,
   Settings2,
   UserRound,
   X,
@@ -38,11 +37,10 @@ const PATIENT_ICONS = {
   profile: UserRound,
   records: ClipboardList,
   recovery: CalendarDays,
-  medication: Pill,
 };
 
 const NAV_ITEMS = getNavigationModel("patient")
-  .filter((item) => item.id !== "patient.profile")
+  .filter((item) => !["patient.profile", "patient.medication"].includes(item.id))
   .map((item) => ({
     ...item,
     icon: PATIENT_ICONS[item.icon],
@@ -187,7 +185,7 @@ export default function UserWorkspaceShell({ children }) {
         returnTo: pathToOpen,
         text: auth
           ? "Tính năng này nằm trong gói nâng cao. Bạn có thể xem bảng giá hoặc quay lại tư vấn chuyên khoa."
-          : "Bạn vẫn có thể dùng tư vấn chuyên khoa và bản đồ. Những phần lưu hồ sơ, y bạ, thuốc và chat nâng cao cần đăng ký rồi nâng cấp MediMate+.",
+          : "Bạn vẫn có thể dùng tư vấn chuyên khoa và bản đồ. Những phần lưu hồ sơ, y bạ và chat nâng cao cần đăng ký rồi nâng cấp MediMate+.",
       });
       return;
     }
@@ -343,7 +341,7 @@ export default function UserWorkspaceShell({ children }) {
         <section className="user-shell-plan">
           <span>MediMate+</span>
           <strong>Chăm sóc sâu hơn</strong>
-          <p>Mở khoá theo dõi sức khoẻ, thuốc và tư vấn sau khám.</p>
+          <p>Mở khoá theo dõi sức khoẻ và tư vấn sau khám.</p>
           <button type="button" onClick={() => goTo("/pricing")}>Nâng cấp</button>
         </section>
       </aside>

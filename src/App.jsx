@@ -13,6 +13,7 @@ import {
 import { getCanonicalPath, resolveRoute } from "./router/routes";
 import { replaceRoute } from "./router/navigation";
 import { resolveRouteAccess } from "./router/access";
+import { AppLoading } from "./components/ui";
 
 const NearbyClinicPage = lazy(() => import("./pages/NearbyClinicPage"));
 const MedicalAssistantPage = lazy(() => import("./pages/MedicalAssistantPage"));
@@ -39,17 +40,7 @@ function userWorkspace(page) {
 
 function lazyPage(page) {
   return (
-    <Suspense fallback={(
-      <main className="workspace-root" data-route-loading>
-        <section className="app-page app-route-loading" aria-busy="true">
-          <div className="container route-loading-state" role="status">
-            <span className="route-loading-dot" aria-hidden="true" />
-            <span>Đang tải</span>
-          </div>
-        </section>
-      </main>
-    )}
-    >
+    <Suspense fallback={<AppLoading />}>
       {page}
     </Suspense>
   );

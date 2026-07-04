@@ -260,6 +260,13 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   const questionViField = config.fields.find((field) => field.name === "questionVi");
   const englishPrefixField = config.fields.find((field) => field.name === "englishPrefix");
   const answersField = config.fields.find((field) => field.type === "answers");
+  const chapterFilterOptions = [
+    { value: "", label: "Tất cả ICD" },
+    ...icdOptions.map((option) => ({
+      value: option.id,
+      label: `${option.code} - ${option.label}`,
+    })),
+  ];
 
   function renderFormControl(field) {
     if (!field) return null;
@@ -341,17 +348,13 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
 
           <div className="ai-config-toolbar-row ai-config-toolbar-filters">
             <div className="ai-config-filter-grid">
-              <label className="clean-field">
-                <span>ICD Code</span>
-                <select value={filters.chapterId} onChange={(event) => updateFilter("chapterId", event.target.value)}>
-                  <option value="">Tất cả ICD</option>
-                  {icdOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.code} - {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <CustomSelect
+                className="clean-field"
+                label="ICD Code"
+                value={filters.chapterId}
+                options={chapterFilterOptions}
+                onChange={(nextValue) => updateFilter("chapterId", nextValue)}
+              />
               <CustomSelect
                 className="clean-field"
                 label="Per page"

@@ -323,7 +323,6 @@ function NearbyClinicPage() {
     () => mappableFacilities.map((facility) => `${facility.facilityId}:${facility.longitude}:${facility.latitude}`).join("|"),
     [mappableFacilities],
   );
-  const unmappableFacilityCount = filteredFacilities.length - mappableFacilities.length;
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
 
   const prefersReducedMotion = useCallback(() => (
@@ -592,21 +591,6 @@ function NearbyClinicPage() {
             <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setSearchText(""); setSelectedFacility(null); }}>×</button>
           )}
         </div>
-
-        <section className="map-results-summary" aria-label="Tóm tắt kết quả bản đồ">
-          <div>
-            <strong>{loadingFacilities ? "..." : filteredFacilities.length}</strong>
-            <span>Kết quả</span>
-          </div>
-          <div>
-            <strong>{loadingFacilities ? "..." : mappableFacilities.length}</strong>
-            <span>Có tọa độ</span>
-          </div>
-          <div>
-            <strong>{loadingFacilities ? "..." : unmappableFacilityCount}</strong>
-            <span>Thiếu tọa độ</span>
-          </div>
-        </section>
 
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
         {hasActiveFacilitiesWithoutMapData && (
@@ -953,35 +937,6 @@ const styles = `
 }
 
 /* Focused /map UX refinements: text alternative, keyboard markers, compact detail panel. */
-.map-results-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 14px 0 10px;
-}
-.map-results-summary div {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  padding: 10px;
-}
-.map-results-summary strong,
-.map-results-summary span {
-  display: block;
-  overflow-wrap: anywhere;
-}
-.map-results-summary strong {
-  color: var(--ink);
-  font-size: 21px;
-  line-height: 1;
-}
-.map-results-summary span {
-  margin-top: 5px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 850;
-}
 .result-summary {
   display: flex;
   align-items: flex-end;
@@ -1249,15 +1204,6 @@ const styles = `
   }
   .clinic-sidebar {
     width: 100%;
-  }
-  .map-results-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .map-results-summary div {
-    padding: 9px 8px;
-  }
-  .map-results-summary strong {
-    font-size: 18px;
   }
   .facility-detail-view {
     position: fixed;
