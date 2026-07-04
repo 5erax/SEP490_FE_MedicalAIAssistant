@@ -1,24 +1,3 @@
-:root {
-  --bg: #f7f8f3;
-  --paper: #ffffff;
-  --paper-soft: #fbfcf7;
-  --ink: #111412;
-  --muted: rgba(17, 20, 18, 0.68);
-  --subtle: rgba(17, 20, 18, 0.72);
-  --line: #dde4d5;
-  --line-strong: #b9c5ad;
-  --lime: #c4e995;
-  --lime-dark: #3f641f;
-  --mint: #e6f4ee;
-  --teal: #087f8c;
-  --blue: #1d4ed8;
-  --amber: #d97706;
-  --coral: #ef6f61;
-  --shadow: 0 24px 70px rgba(17, 24, 39, 0.12);
-  --radius: 8px;
-  --display: "Be Vietnam Pro", system-ui, sans-serif;
-}
-
 .landing-page {
   min-width: 0;
   overflow-x: hidden;

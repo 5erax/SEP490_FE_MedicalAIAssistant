@@ -6,7 +6,7 @@ import { FeedbackProvider } from './components/feedback/FeedbackProvider.jsx'
 import { installLinkNavigation } from './router/navigation.js'
 import { getGoogleClientId, isGoogleOAuthEnabledForCurrentOrigin } from './services/googleOAuthConfig.js'
 import SpaRoot from './SpaRoot.jsx'
-import './index.css'
+import './styles/index.css'
 
 const STALE_ASSET_RELOAD_KEY = 'medimate.stale-asset-reload'
 const googleClientId = getGoogleClientId()

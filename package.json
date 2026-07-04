@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "lint:css:structure": "node scripts/audit-css-structure.mjs",
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:routes": "playwright test tests/e2e/routes.spec.js",
