@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="medimate-logo-title medimate-logo-desc" viewBox="0 0 48 48">
   <title id="medimate-logo-title">MediMate AI</title>
-  <desc id="medimate-logo-desc">Biểu trưng MediMate AI gồm chữ thập y tế, nhịp tim và điểm kết nối trí tuệ nhân tạo.</desc>
+  <desc id="medimate-logo-desc">Biểu trưng MediMate AI gồm chữ thập y tế và nhịp tim.</desc>
   <defs>
     <linearGradient id="medimate-logo-bg" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
       <stop stop-color="#151A16" />
@@ -16,9 +16,4 @@
   <path fill="url(#medimate-logo-cross)" d="M20 9h8a2 2 0 0 1 2 2v8h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-8v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8h-8a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h8v-8a2 2 0 0 1 2-2Z" />
   <path fill="none" stroke="#062019" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M10 25h7l3-6 6 13 4-7h8" opacity=".32" />
   <path fill="none" stroke="#72F0DF" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 25h7l3-6 6 13 4-7h8" />
-  <circle cx="37" cy="12" r="4" fill="#72F0DF" />
-  <circle cx="37" cy="12" r="1.8" fill="#101411" />
-  <circle cx="39" cy="36" r="3.4" fill="#72F0DF" />
-  <circle cx="39" cy="36" r="1.5" fill="#101411" />
-  <path fill="none" stroke="#72F0DF" stroke-linecap="round" stroke-width="2.4" d="M34 14.5 30 19m5.6 15.2L30 30" />
 </svg>
