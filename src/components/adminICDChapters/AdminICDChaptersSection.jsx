@@ -84,7 +84,7 @@ export default function AdminICDChaptersSection({
         <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>Tải lại</button>
       </div>
 
-      {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
+      {message && message.type !== "success" && <div className={`api-message ${message.type}`}>{message.text}</div>}
 
       <section className="ai-config-filter-card">
         <div className="ai-config-filter-card-header">

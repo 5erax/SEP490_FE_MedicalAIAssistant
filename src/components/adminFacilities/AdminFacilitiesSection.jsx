@@ -360,7 +360,7 @@ export default function AdminFacilitiesSection({
               <section className="facility-form-card" aria-labelledby="facility-basic-section">
                 <div className="facility-form-card-head">
                   <h3 id="facility-basic-section">Thông tin cơ bản</h3>
-                  <p>Tên, loại hình và trạng thái xuất hiện của cơ sở trong hệ thống.</p>
+                  <p>Tên và loại hình của cơ sở trong hệ thống.</p>
                 </div>
                 <div className="facility-form-grid">
                   <Field label="Tên cơ sở y tế" className="facility-form-span-2">
@@ -379,14 +379,6 @@ export default function AdminFacilitiesSection({
                       placeholder="Bệnh viện"
                     />
                   </Field>
-                  <label className="clean-checkbox facility-status-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={form.isActive}
-                      onChange={(event) => onFormChange("isActive", event.target.checked)}
-                    />
-                    <span>Hiển thị cơ sở này trong danh sách dành cho người dùng.</span>
-                  </label>
                 </div>
               </section>
 
