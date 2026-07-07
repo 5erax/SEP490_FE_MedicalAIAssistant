@@ -189,6 +189,22 @@
   gap: 8px;
 }
 
+.admin-operator .ai-config-filter-summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 42px;
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.admin-operator .ai-config-filter-summary strong {
+  color: #101411;
+  font-size: 16px;
+  font-weight: 950;
+}
+
 .admin-operator .ai-config-add-button,
 .admin-operator .ai-config-filter-actions .btn {
   min-height: 42px;
