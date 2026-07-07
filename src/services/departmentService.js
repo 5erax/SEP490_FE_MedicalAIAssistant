@@ -1,8 +1,14 @@
-import { apiRequest } from "./apiClient";
+import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
 export const medicalDepartmentsApi = {
-  list() {
+  list(pageNumber = 1, pageSize = 10, filters = {}) {
+    const params = new URLSearchParams(withPagination(pageNumber, pageSize));
+    if (filters.search?.trim()) params.set("search", filters.search.trim());
+    return apiRequest(`${ENDPOINTS.MEDICAL_DEPARTMENTS.BASE}?${params.toString()}`, { auth: true });
+  },
+
+  listAll() {
     return apiRequest(ENDPOINTS.MEDICAL_DEPARTMENTS.BASE);
   },
 

@@ -1,6 +1,6 @@
 import { Filter, Plus, RotateCcw, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Dialog } from "../ui";
+import { useEffect, useRef, useState } from "react";
+import { CustomSelect, Dialog, PAGE_SIZE_OPTIONS } from "../ui";
 
 function Field({ label, children }) {
   return (
@@ -12,22 +12,28 @@ function Field({ label, children }) {
 }
 
 export default function AdminDepartmentsSection({
+  allDepartmentsCount,
   departments,
   editingDepartmentId,
+  filters,
   form,
   loading,
   message,
+  pageInfo,
   saving,
+  onApplyFilters,
+  onClearFilters,
   onDelete,
   onEdit,
+  onFilterChange,
   onFormChange,
+  onLoadPage,
+  onPageSizeChange,
   onReload,
   onReset,
   onSubmit,
 }) {
   const [formOpen, setFormOpen] = useState(false);
-  const [searchDraft, setSearchDraft] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
   const wasSavingRef = useRef(false);
 
   useEffect(() => {
@@ -36,32 +42,6 @@ export default function AdminDepartmentsSection({
     }
     wasSavingRef.current = saving;
   }, [formOpen, message, saving]);
-
-  const filteredDepartments = useMemo(() => {
-    const query = appliedSearch.trim().toLowerCase();
-    if (!query) return departments;
-
-    return departments.filter((department) => (
-      [
-        department.departmentName,
-        department.description,
-        department.chapterCode,
-        department.id,
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query))
-    ));
-  }, [appliedSearch, departments]);
-
-  function applySearch(event) {
-    event.preventDefault();
-    setAppliedSearch(searchDraft);
-  }
-
-  function clearSearch() {
-    setSearchDraft("");
-    setAppliedSearch("");
-  }
 
   function openCreateForm() {
     onReset();
@@ -105,27 +85,32 @@ export default function AdminDepartmentsSection({
           </div>
         </div>
 
-        <form className="ai-config-toolbar" onSubmit={applySearch}>
+        <form className="ai-config-toolbar" onSubmit={onApplyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
             <div className="ai-config-search-field">
               <Search size={16} />
               <input
-                value={searchDraft}
-                onChange={(event) => setSearchDraft(event.target.value)}
+                value={filters.search}
+                onChange={(event) => onFilterChange("search", event.target.value)}
                 placeholder="Tìm tên chuyên khoa, mô tả hoặc mã ICD..."
               />
             </div>
           </div>
 
           <div className="ai-config-toolbar-row ai-config-toolbar-filters">
-            <div className="ai-config-filter-summary">
-              <strong>{filteredDepartments.length}</strong>
-              <span>/ {departments.length} chuyên khoa</span>
+            <div className="ai-config-filter-grid department-filter-grid">
+              <CustomSelect
+                className="clean-field"
+                label="Per page"
+                value={pageInfo.pageSize}
+                options={PAGE_SIZE_OPTIONS}
+                onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
+              />
             </div>
 
             <div className="ai-config-filter-actions">
-              <button className="btn btn-primary btn-small" type="submit"><Filter size={14} /> Apply</button>
-              <button className="btn btn-ghost btn-small" type="button" onClick={clearSearch}>
+              <button className="btn btn-primary btn-small" type="submit" disabled={loading}><Filter size={14} /> Apply</button>
+              <button className="btn btn-ghost btn-small" type="button" onClick={onClearFilters} disabled={loading}>
                 <RotateCcw size={14} /> Clear
               </button>
             </div>
@@ -139,10 +124,7 @@ export default function AdminDepartmentsSection({
         ) : (
           <div className="admin-table-list">
             {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa.</p>}
-            {departments.length > 0 && filteredDepartments.length === 0 && (
-              <p className="muted-text">Không tìm thấy chuyên khoa phù hợp.</p>
-            )}
-            {filteredDepartments.map((department) => (
+            {departments.map((department) => (
               <article className="admin-user-row" key={department.id}>
                 <div>
                   <strong>{department.departmentName || "Chưa đặt tên"}</strong>
@@ -158,6 +140,18 @@ export default function AdminDepartmentsSection({
           </div>
         )}
       </div>
+
+      {!loading && (
+        <div className="pagination-row">
+          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => onLoadPage(Math.max(1, pageInfo.pageNumber - 1))}>
+            Trước
+          </button>
+          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {departments.length} / {allDepartmentsCount} chuyên khoa</span>
+          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => onLoadPage(Math.min(pageInfo.totalPages || 1, pageInfo.pageNumber + 1))}>
+            Sau
+          </button>
+        </div>
+      )}
 
       {formOpen && (
         <Dialog

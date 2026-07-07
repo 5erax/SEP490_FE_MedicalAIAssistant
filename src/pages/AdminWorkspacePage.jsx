@@ -72,6 +72,9 @@ const EMPTY_FACILITY_FILTERS = {
   isActive: "",
   departmentId: "",
 };
+const EMPTY_DEPARTMENT_FILTERS = {
+  search: "",
+};
 const EMPTY_ICD_CHAPTER_FILTERS = {
   search: "",
 };
@@ -83,6 +86,7 @@ const EMPTY_DOCTOR_FILTERS = {
   departmentRole: "",
 };
 const DEFAULT_DOCTOR_PAGE_SIZE = 10;
+const DEFAULT_DEPARTMENT_PAGE_SIZE = 10;
 const DEFAULT_FACILITY_PAGE_SIZE = 10;
 const DEFAULT_ICD_CHAPTER_PAGE_SIZE = 10;
 const USER_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách tài khoản.";
@@ -223,6 +227,13 @@ function getFacilityDepartmentIds(facility, facilityDepartments) {
   return Array.from(new Set([...directIds, ...nestedIds, ...linkedIds].filter(Boolean)));
 }
 
+function getDepartmentItems(response) {
+  const data = response?.data ?? [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.items)) return data.items;
+  return [];
+}
+
 function formatRoles(roles) {
   return roles.length ? roles.join(", ") : "admin";
 }
@@ -274,6 +285,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [profile, setProfile] = useState(null);
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [departmentCatalog, setDepartmentCatalog] = useState([]);
   const [icdChapters, setIcdChapters] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [facilityDepartments, setFacilityDepartments] = useState([]);
@@ -287,6 +299,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     totalCount: 0,
     totalPages: 1,
   });
+  const [departmentPageInfo, setDepartmentPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_DEPARTMENT_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [icdChapterPageInfo, setIcdChapterPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_ICD_CHAPTER_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [facilityPageInfo, setFacilityPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_FACILITY_PAGE_SIZE, totalCount: 0, totalPages: 1 });
@@ -295,6 +308,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [search, setSearch] = useState("");
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [appliedFacilityFilters, setAppliedFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
+  const [departmentFilters, setDepartmentFilters] = useState(EMPTY_DEPARTMENT_FILTERS);
+  const [appliedDepartmentFilters, setAppliedDepartmentFilters] = useState(EMPTY_DEPARTMENT_FILTERS);
   const [icdChapterFilters, setIcdChapterFilters] = useState(EMPTY_ICD_CHAPTER_FILTERS);
   const [appliedIcdChapterFilters, setAppliedIcdChapterFilters] = useState(EMPTY_ICD_CHAPTER_FILTERS);
   const [doctorFilters, setDoctorFilters] = useState(initialDoctorView.filters);
@@ -315,6 +330,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [departmentCatalogLoading, setDepartmentCatalogLoading] = useState(true);
   const [icdChaptersLoading, setIcdChaptersLoading] = useState(true);
   const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [aiConfigsLoading, setAIConfigsLoading] = useState(true);
@@ -431,7 +447,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     Promise.allSettled([
       authApi.me(),
       usersApi.list(1, pageInfo.pageSize),
-      medicalDepartmentsApi.list(),
+      medicalDepartmentsApi.listAll(),
+      medicalDepartmentsApi.list(1, DEFAULT_DEPARTMENT_PAGE_SIZE, EMPTY_DEPARTMENT_FILTERS),
       icdChaptersApi.list(1, DEFAULT_ICD_CHAPTER_PAGE_SIZE, EMPTY_ICD_CHAPTER_FILTERS),
       doctorManagementApi.list({
         ...initialDoctorView.filters,
@@ -447,6 +464,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         profileResult,
         usersResult,
         departmentResult,
+        departmentCatalogResult,
         icdChapterResult,
         doctorResult,
         aiConfigResult,
@@ -477,9 +495,32 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         }
 
         if (departmentResult.status === "fulfilled") {
-          setDepartments(departmentResult.value.data ?? []);
+          setDepartments(getDepartmentItems(departmentResult.value));
         } else {
           setDepartmentMessage({ type: "error", text: departmentResult.reason.message });
+        }
+
+        if (departmentCatalogResult.status === "fulfilled") {
+          const data = departmentCatalogResult.value.data ?? {};
+          if (Array.isArray(data)) {
+            setDepartmentCatalog(data);
+            setDepartmentPageInfo({
+              pageNumber: 1,
+              pageSize: DEFAULT_DEPARTMENT_PAGE_SIZE,
+              totalCount: data.length,
+              totalPages: Math.max(1, Math.ceil(data.length / DEFAULT_DEPARTMENT_PAGE_SIZE)),
+            });
+          } else {
+            setDepartmentCatalog(data.items ?? []);
+            setDepartmentPageInfo({
+              pageNumber: data.pageNumber ?? 1,
+              pageSize: data.pageSize ?? DEFAULT_DEPARTMENT_PAGE_SIZE,
+              totalCount: data.totalCount ?? 0,
+              totalPages: data.totalPages ?? 1,
+            });
+          }
+        } else {
+          setDepartmentMessage({ type: "error", text: departmentCatalogResult.reason.message });
         }
 
         if (icdChapterResult.status === "fulfilled") {
@@ -560,6 +601,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         setLoading(false);
         setUsersLoading(false);
         setDepartmentsLoading(false);
+        setDepartmentCatalogLoading(false);
         setIcdChaptersLoading(false);
         setDoctorsLoading(false);
         setAIConfigsLoading(false);
@@ -649,15 +691,84 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
   async function loadDepartments() {
     setDepartmentsLoading(true);
-    setDepartmentMessage(null);
     try {
-      const response = await medicalDepartmentsApi.list();
-      setDepartments(response.data ?? []);
+      const response = await medicalDepartmentsApi.listAll();
+      setDepartments(getDepartmentItems(response));
     } catch (error) {
       setDepartmentMessage({ type: "error", text: error.message });
     } finally {
       setDepartmentsLoading(false);
     }
+  }
+
+  async function loadDepartmentCatalog(
+    pageNumber = departmentPageInfo.pageNumber,
+    pageSize = departmentPageInfo.pageSize,
+    filters = appliedDepartmentFilters,
+  ) {
+    setDepartmentCatalogLoading(true);
+    setDepartmentMessage(null);
+    try {
+      const response = await medicalDepartmentsApi.list(pageNumber, pageSize, filters);
+      const data = response.data ?? {};
+      if (Array.isArray(data)) {
+        const filtered = filters.search?.trim()
+          ? data.filter((department) => (
+            [
+              department.departmentName,
+              department.description,
+              department.chapterCode,
+              department.id,
+            ]
+              .filter(Boolean)
+              .some((value) => String(value).toLowerCase().includes(filters.search.trim().toLowerCase()))
+          ))
+          : data;
+        const startIndex = (pageNumber - 1) * pageSize;
+        setDepartmentCatalog(filtered.slice(startIndex, startIndex + pageSize));
+        setDepartmentPageInfo({
+          pageNumber,
+          pageSize,
+          totalCount: filtered.length,
+          totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)),
+        });
+      } else {
+        setDepartmentCatalog(data.items ?? []);
+        setDepartmentPageInfo({
+          pageNumber: data.pageNumber ?? pageNumber,
+          pageSize: data.pageSize ?? pageSize,
+          totalCount: data.totalCount ?? 0,
+          totalPages: data.totalPages ?? 1,
+        });
+      }
+    } catch (error) {
+      setDepartmentMessage({ type: "error", text: error.message });
+    } finally {
+      setDepartmentCatalogLoading(false);
+    }
+  }
+
+  function updateDepartmentFilter(key, value) {
+    setDepartmentFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function applyDepartmentFilters(event) {
+    event.preventDefault();
+    setAppliedDepartmentFilters(departmentFilters);
+    setDepartmentPageInfo((current) => ({ ...current, pageNumber: 1 }));
+    loadDepartmentCatalog(1, departmentPageInfo.pageSize, departmentFilters);
+  }
+
+  function clearDepartmentFilters() {
+    setDepartmentFilters(EMPTY_DEPARTMENT_FILTERS);
+    setAppliedDepartmentFilters(EMPTY_DEPARTMENT_FILTERS);
+    setDepartmentPageInfo((current) => ({ ...current, pageNumber: 1 }));
+    loadDepartmentCatalog(1, departmentPageInfo.pageSize, EMPTY_DEPARTMENT_FILTERS);
+  }
+
+  function changeDepartmentPageSize(pageSize) {
+    setDepartmentPageInfo((current) => ({ ...current, pageNumber: 1, pageSize }));
+    loadDepartmentCatalog(1, pageSize, appliedDepartmentFilters);
   }
 
   async function loadIcdChapters(
@@ -1175,7 +1286,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         text: response.message || (editingDepartmentId ? "Đã cập nhật chuyên khoa." : "Đã tạo chuyên khoa."),
       });
       resetDepartmentForm();
-      await loadDepartments();
+      await Promise.all([
+        loadDepartments(),
+        loadDepartmentCatalog(departmentPageInfo.pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters),
+      ]);
     } catch (error) {
       setDepartmentMessage({ type: "error", text: error.message });
     } finally {
@@ -1197,7 +1311,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       const response = await medicalDepartmentsApi.remove(id);
       setDepartmentMessage({ type: "success", text: response.message || "Đã xóa chuyên khoa." });
       showToast({ type: "success", title: "Đã xóa chuyên khoa", message: response.message || "Danh mục đã được cập nhật." });
-      await loadDepartments();
+      await Promise.all([
+        loadDepartments(),
+        loadDepartmentCatalog(departmentPageInfo.pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters),
+      ]);
     } catch (error) {
       setDepartmentMessage({ type: "error", text: error.message });
     }
@@ -1723,16 +1840,27 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
             {activeSection === "departments" && (
               <AdminDepartmentsSection
-                departments={departments}
+                allDepartmentsCount={departmentPageInfo.totalCount || departments.length}
+                departments={departmentCatalog}
                 editingDepartmentId={editingDepartmentId}
+                filters={departmentFilters}
                 form={departmentForm}
-                loading={departmentsLoading}
+                loading={departmentCatalogLoading}
                 message={departmentMessage}
+                pageInfo={departmentPageInfo}
                 saving={savingDepartment}
+                onApplyFilters={applyDepartmentFilters}
+                onClearFilters={clearDepartmentFilters}
                 onDelete={handleDeleteDepartment}
                 onEdit={startEditDepartment}
+                onFilterChange={updateDepartmentFilter}
                 onFormChange={(key, value) => setDepartmentForm((current) => ({ ...current, [key]: value }))}
-                onReload={loadDepartments}
+                onLoadPage={(pageNumber) => loadDepartmentCatalog(pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters)}
+                onPageSizeChange={changeDepartmentPageSize}
+                onReload={() => {
+                  loadDepartments();
+                  loadDepartmentCatalog(departmentPageInfo.pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters);
+                }}
                 onReset={resetDepartmentForm}
                 onSubmit={handleSaveDepartment}
               />
