@@ -1,3 +1,6 @@
+import { Filter, RotateCcw, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+
 function Field({ label, children }) {
   return (
     <label className="clean-field">
@@ -21,6 +24,35 @@ export default function AdminDepartmentsSection({
   onReset,
   onSubmit,
 }) {
+  const [searchDraft, setSearchDraft] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+
+  const filteredDepartments = useMemo(() => {
+    const query = appliedSearch.trim().toLowerCase();
+    if (!query) return departments;
+
+    return departments.filter((department) => (
+      [
+        department.departmentName,
+        department.description,
+        department.chapterCode,
+        department.id,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query))
+    ));
+  }, [appliedSearch, departments]);
+
+  function applySearch(event) {
+    event.preventDefault();
+    setAppliedSearch(searchDraft);
+  }
+
+  function clearSearch() {
+    setSearchDraft("");
+    setAppliedSearch("");
+  }
+
   return (
     <section className="admin-grid">
       <div className="admin-panel">
@@ -32,12 +64,52 @@ export default function AdminDepartmentsSection({
           <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>Tải lại</button>
         </div>
         {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
+
+        <section className="ai-config-filter-card">
+          <div className="ai-config-filter-card-header">
+            <div>
+              <strong>Bộ lọc chuyên khoa</strong>
+              <p>Tìm theo tên chuyên khoa, mô tả, mã chương ICD hoặc ID trong hệ thống MediMate AI.</p>
+            </div>
+          </div>
+
+          <form className="ai-config-toolbar" onSubmit={applySearch}>
+            <div className="ai-config-toolbar-row ai-config-toolbar-primary">
+              <div className="ai-config-search-field">
+                <Search size={16} />
+                <input
+                  value={searchDraft}
+                  onChange={(event) => setSearchDraft(event.target.value)}
+                  placeholder="Tìm tên chuyên khoa, mô tả hoặc mã ICD..."
+                />
+              </div>
+            </div>
+
+            <div className="ai-config-toolbar-row ai-config-toolbar-filters">
+              <div className="ai-config-filter-summary">
+                <strong>{filteredDepartments.length}</strong>
+                <span>/ {departments.length} chuyên khoa</span>
+              </div>
+
+              <div className="ai-config-filter-actions">
+                <button className="btn btn-primary btn-small" type="submit"><Filter size={14} /> Apply</button>
+                <button className="btn btn-ghost btn-small" type="button" onClick={clearSearch}>
+                  <RotateCcw size={14} /> Clear
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+
         {loading ? (
           <p className="muted-text">Đang tải chuyên khoa...</p>
         ) : (
           <div className="admin-table-list">
             {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa.</p>}
-            {departments.map((department) => (
+            {departments.length > 0 && filteredDepartments.length === 0 && (
+              <p className="muted-text">Không tìm thấy chuyên khoa phù hợp.</p>
+            )}
+            {filteredDepartments.map((department) => (
               <article className="admin-user-row" key={department.id}>
                 <div>
                   <strong>{department.departmentName || "Chưa đặt tên"}</strong>
