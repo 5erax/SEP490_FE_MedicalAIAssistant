@@ -44,12 +44,12 @@ const BASE_ROUTES = [
   {
     id: "patient.dashboard",
     path: "/dashboard",
-    title: "Chẩn đoán lâm sàng | MediMate AI",
+    title: "Tư vấn chuyên khoa | MediMate AI",
     access: "auth",
     shell: "patient",
     navigation: {
       shell: "patient",
-      label: "Chẩn đoán lâm sàng",
+      label: "Tư vấn chuyên khoa",
       hint: "Theo triệu chứng",
       icon: "dashboard",
       order: 10,
@@ -66,7 +66,7 @@ const BASE_ROUTES = [
     title: "Chẩn đoán lâm sàng | MediMate AI",
     access: "auth",
     shell: "patient",
-    navigation: { shell: "patient", label: "Chẩn đoán lâm sàng", hint: "Câu hỏi lâm sàng", icon: "symptom", order: 40 },
+    navigation: { shell: "patient", label: "Câu hỏi lâm sàng", hint: "Làm rõ triệu chứng", icon: "symptom", order: 40 },
     aliases: ["/medical-assistant/intake"],
   },
   {
@@ -106,6 +106,7 @@ const BASE_ROUTES = [
     title: "Kiểm tra thuốc | MediMate AI",
     access: "premium",
     shell: "patient",
+    navigation: { shell: "patient", label: "Kiểm tra thuốc", hint: "Nhận diện nhãn thuốc", icon: "medication", order: 70 },
   },
   { id: "public.pricing", path: "/pricing", title: "Bảng giá | MediMate AI", access: "public" },
   { id: "payment.return", path: "/payment/return", title: "Thanh toán thành công | MediMate AI", access: "public", returnable: false },

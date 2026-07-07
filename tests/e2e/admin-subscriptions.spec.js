@@ -79,7 +79,7 @@ test("admin can create a subscription plan from the workspace", async ({ page })
   await page.getByLabel("Tên gói").fill("MediMate+ Tháng");
   await page.getByLabel("Giá gói (VND)").fill("149000");
   await page.getByLabel("Thời hạn (ngày)").fill("30");
-  await page.getByLabel("Giới hạn tính năng (JSON)").fill('{"aiChatPerDay":20}');
+  await page.getByLabel("Giới hạn tính năng").fill('{"aiChatPerDay":20}');
   await page.getByRole("dialog", { name: "Tạo gói dịch vụ" })
     .getByRole("button", { name: "Tạo gói", exact: true })
     .click();

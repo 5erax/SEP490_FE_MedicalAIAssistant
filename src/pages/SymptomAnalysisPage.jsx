@@ -142,7 +142,7 @@ function getFacilityReason(facility, department) {
   if (facility.isActive) reasons.push("đang hoạt động");
   if (facility.openingHours) reasons.push("có giờ mở cửa");
   if (facility.phone) reasons.push("có số liên hệ");
-  return reasons.length ? reasons.join(", ") : "backend đề xuất cho phiên chẩn đoán này";
+  return reasons.length ? reasons.join(", ") : "hệ thống đề xuất cho phiên đánh giá này";
 }
 
 function getAnalysis(response) {
@@ -259,7 +259,7 @@ export default function SymptomAnalysisPage() {
           <p className="mini-label">Sàng lọc định hướng</p>
           <h1>Mô tả triệu chứng, trả lời vài câu hỏi yes/no.</h1>
           <p>
-            MediMate dùng câu hỏi lâm sàng từ backend để định hướng chuyên khoa và cơ sở y tế phù hợp.
+            MediMate dùng câu hỏi lâm sàng để định hướng chuyên khoa và cơ sở y tế phù hợp.
             Kết quả chỉ mang tính hỗ trợ, không thay thế bác sĩ.
           </p>
         </header>
@@ -306,7 +306,7 @@ export default function SymptomAnalysisPage() {
         {status === "loading-questions" && (
           <section className="symptom-card status-card" role="status">
             <div className="large-spinner" />
-            <h2>Backend đang chọn câu hỏi phù hợp.</h2>
+            <h2>Hệ thống đang chọn câu hỏi phù hợp.</h2>
             <p>Quá trình này giúp kết quả bám sát triệu chứng bạn mô tả hơn.</p>
           </section>
         )}
@@ -403,7 +403,7 @@ export default function SymptomAnalysisPage() {
               <article className="symptom-card department-card">
                 <p className="mini-label">Chuyên khoa đề xuất</p>
                 <h2>{recommendedDepartment.departmentName || "Chuyên khoa phù hợp"}</h2>
-                <p>{recommendedDepartment.reason || "Backend đề xuất chuyên khoa dựa trên câu trả lời của bạn."}</p>
+                <p>{recommendedDepartment.reason || "Hệ thống đề xuất chuyên khoa dựa trên câu trả lời của bạn."}</p>
                 <div className="confidence-line">
                   <span>{confidencePercent(recommendedDepartment.confidenceScore)}%</span>
                   <i style={{ width: `${confidencePercent(recommendedDepartment.confidenceScore)}%` }} />
@@ -440,7 +440,7 @@ export default function SymptomAnalysisPage() {
                 </button>
               </div>
               {sortedFacilities.length === 0 ? (
-                <p className="soft-empty">Backend chưa trả cơ sở y tế cho phiên này. Bạn vẫn có thể mở bản đồ để tìm theo chuyên khoa.</p>
+                <p className="soft-empty">Chưa có cơ sở y tế phù hợp cho phiên này. Bạn vẫn có thể mở bản đồ để tìm theo chuyên khoa.</p>
               ) : (
                 <div className="facility-list">
                   {sortedFacilities.map((facility, index) => (

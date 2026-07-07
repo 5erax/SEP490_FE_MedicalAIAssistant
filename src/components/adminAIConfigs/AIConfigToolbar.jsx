@@ -1,4 +1,5 @@
 import { BrainCircuit, Filter, RotateCcw, Search } from "lucide-react";
+import { CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 import { formatEnvironment } from "./aiConfigUtils";
 
 export default function AIConfigToolbar({
@@ -13,6 +14,24 @@ export default function AIConfigToolbar({
   onReset,
   onCreate,
 }) {
+  const statusOptions = [
+    { value: "", label: "Tất cả trạng thái" },
+    { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" },
+  ];
+  const taskTypeOptions = [
+    { value: "", label: "Tất cả feature" },
+    ...taskTypes.map((taskType) => ({ value: taskType, label: taskType })),
+  ];
+  const modelOptions = [
+    { value: "", label: "Tất cả model" },
+    ...models.map((model) => ({ value: model, label: model })),
+  ];
+  const environmentOptions = [
+    { value: "", label: "Tất cả môi trường" },
+    ...environments.map((environment) => ({ value: environment, label: formatEnvironment(environment) })),
+  ];
+
   return (
     <section className="ai-config-filter-card">
       <div className="ai-config-filter-card-header">
@@ -39,49 +58,41 @@ export default function AIConfigToolbar({
 
         <div className="ai-config-toolbar-row ai-config-toolbar-filters">
           <div className="ai-config-filter-grid">
-            <label className="clean-field">
-              <span>Status</span>
-              <select value={filters.status} onChange={(event) => onChange("status", event.target.value)}>
-                <option value="">Tất cả trạng thái</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </label>
-            <label className="clean-field">
-              <span>Feature Type</span>
-              <select value={filters.taskType} onChange={(event) => onChange("taskType", event.target.value)}>
-                <option value="">Tất cả feature</option>
-                {taskTypes.map((taskType) => (
-                  <option key={taskType} value={taskType}>{taskType}</option>
-                ))}
-              </select>
-            </label>
-            <label className="clean-field">
-              <span>AI Model</span>
-              <select value={filters.model} onChange={(event) => onChange("model", event.target.value)}>
-                <option value="">Tất cả model</option>
-                {models.map((model) => (
-                  <option key={model} value={model}>{model}</option>
-                ))}
-              </select>
-            </label>
-            <label className="clean-field">
-              <span>Environment</span>
-              <select value={filters.environment} onChange={(event) => onChange("environment", event.target.value)}>
-                <option value="">Tất cả môi trường</option>
-                {environments.map((environment) => (
-                  <option key={environment} value={environment}>{formatEnvironment(environment)}</option>
-                ))}
-              </select>
-            </label>
-            <label className="clean-field">
-              <span>Per page</span>
-              <select value={pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
-                <option value="10">10 / trang</option>
-                <option value="20">20 / trang</option>
-                <option value="50">50 / trang</option>
-              </select>
-            </label>
+            <CustomSelect
+              className="clean-field"
+              label="Status"
+              value={filters.status}
+              options={statusOptions}
+              onChange={(nextValue) => onChange("status", nextValue)}
+            />
+            <CustomSelect
+              className="clean-field"
+              label="Feature Type"
+              value={filters.taskType}
+              options={taskTypeOptions}
+              onChange={(nextValue) => onChange("taskType", nextValue)}
+            />
+            <CustomSelect
+              className="clean-field"
+              label="AI Model"
+              value={filters.model}
+              options={modelOptions}
+              onChange={(nextValue) => onChange("model", nextValue)}
+            />
+            <CustomSelect
+              className="clean-field"
+              label="Environment"
+              value={filters.environment}
+              options={environmentOptions}
+              onChange={(nextValue) => onChange("environment", nextValue)}
+            />
+            <CustomSelect
+              className="clean-field"
+              label="Per page"
+              value={pageSize}
+              options={PAGE_SIZE_OPTIONS}
+              onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
+            />
           </div>
 
           <div className="ai-config-filter-actions">

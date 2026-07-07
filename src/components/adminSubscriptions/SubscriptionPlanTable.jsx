@@ -10,14 +10,35 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString("vi-VN");
 }
 
+const FEATURE_LIMIT_LABELS = {
+  symptomAnalysisPerMonth: "Phân tích triệu chứng / tháng",
+  aiChatPerDay: "Chat AI / ngày",
+  clinicalQuestionPerMonth: "Câu hỏi lâm sàng / tháng",
+  recoveryPlanPerMonth: "Kế hoạch phục hồi / tháng",
+  medicationScanPerMonth: "Kiểm tra thuốc / tháng",
+};
+
+function formatLimitKey(key) {
+  if (FEATURE_LIMIT_LABELS[key]) return FEATURE_LIMIT_LABELS[key];
+  return String(key)
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+}
+
 function summarizeLimits(value) {
   if (!value) return "Không giới hạn riêng";
   try {
     const entries = Object.entries(JSON.parse(value));
     if (!entries.length) return "Không giới hạn riêng";
-    return entries.slice(0, 2).map(([key, limit]) => `${key}: ${limit}`).join(" · ");
+    return entries.slice(0, 3).map(([key, limit]) => (
+      <span className="subscription-limit-row" key={key}>
+        <span>{formatLimitKey(key)}</span>
+        <strong>{limit}</strong>
+      </span>
+    ));
   } catch {
-    return "Dữ liệu giới hạn chưa đúng JSON";
+    return "Dữ liệu giới hạn chưa đúng định dạng";
   }
 }
 

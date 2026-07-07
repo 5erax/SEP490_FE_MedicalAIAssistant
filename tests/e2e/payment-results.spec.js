@@ -93,6 +93,26 @@ test("payment cancel calls the backend cancel callback before showing retry acti
   await expect(page).toHaveURL(/\/pricing$/);
 });
 
+test("payment cancel stays clear when backend verification is unavailable", async ({ page }) => {
+  let cancelRequests = 0;
+  await page.route("**/api/payments/payos-cancel**", (route) => {
+    cancelRequests += 1;
+    return route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ success: false, message: "PayOS unavailable" }),
+    });
+  });
+
+  await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => cancelRequests).toBeGreaterThan(0);
+  await expect(page.getByRole("heading", { name: "Bạn đã hủy giao dịch." })).toBeVisible();
+  await expect(page.getByText("Đã hủy", { exact: true })).toBeVisible();
+  await expect(page.getByText("Chưa xác minh được")).toHaveCount(0);
+  await expect(page.getByText("Không thể kiểm tra giao dịch lúc này.")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Kiểm tra lại trạng thái" })).toHaveCount(0);
+});
+
 test("payment cancel trusts backend success over the cancel URL", async ({ page }) => {
   await page.route("**/api/payments/payos-cancel**", (route) => route.fulfill({
     contentType: "application/json",

@@ -1,0 +1,332 @@
+@keyframes doctorSkeleton {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+@keyframes doctorFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes doctorModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1240px) {
+  .admin-operator .doctor-table-wrap {
+    display: none;
+  }
+
+  .doctor-card-list {
+    display: grid;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .admin-operator .admin-shell,
+  .admin-operator .admin-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-sidebar {
+    position: static;
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+    border-radius: 18px 18px 0 0;
+  }
+
+  .admin-operator .admin-main {
+    border-radius: 0 0 18px 18px;
+  }
+
+  .admin-operator .admin-nav {
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    overflow: visible;
+  }
+
+  .admin-operator .admin-nav button {
+    min-height: 48px;
+    padding: 8px 10px;
+  }
+
+  .admin-operator .admin-overview-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .operator-workspace .app-work-grid,
+  .admin-operator .admin-shell,
+  .admin-operator .admin-grid,
+  .admin-operator .admin-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-sidebar {
+    position: static;
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+    border-radius: 18px 18px 0 0;
+  }
+
+  .admin-operator .admin-main {
+    border-radius: 0 0 18px 18px;
+  }
+
+  .admin-operator .admin-hero-panel {
+    display: grid;
+  }
+
+  .admin-operator .admin-nav {
+    grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+    overflow: visible;
+  }
+
+  .admin-operator .doctor-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-toolbar-row-primary,
+  .admin-operator .doctor-toolbar-row-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-filter-grid {
+    grid-template-columns: minmax(240px, 1.2fr) repeat(2, minmax(150px, 1fr));
+  }
+
+  .admin-operator .doctor-filter-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-operator .ai-config-toolbar-primary,
+  .admin-operator .ai-config-toolbar-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .ai-config-filter-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .admin-operator .ai-config-filter-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-operator .ai-config-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .operator-workspace .app-stats,
+  .admin-operator .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1240px) {
+  .subscription-plan-admin-panel .ui-table-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .subscription-plan-admin-panel .ui-table,
+  .subscription-plan-admin-panel .ui-table thead,
+  .subscription-plan-admin-panel .ui-table tbody,
+  .subscription-plan-admin-panel .ui-table tr,
+  .subscription-plan-admin-panel .ui-table th,
+  .subscription-plan-admin-panel .ui-table td {
+    display: block;
+  }
+
+  .subscription-plan-admin-panel .ui-table {
+    min-width: 0;
+  }
+
+  .subscription-plan-admin-panel .ui-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .subscription-plan-admin-panel .ui-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .subscription-plan-admin-panel .ui-table tr {
+    border: 1px solid rgba(16, 20, 17, 0.1);
+    border-radius: 18px;
+    background: #fff;
+    padding: 14px;
+    box-shadow: 0 14px 34px rgba(16, 20, 17, 0.055);
+  }
+
+  .subscription-plan-admin-panel .ui-table td {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.45fr) minmax(0, 1fr);
+    gap: 12px;
+    border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+    padding: 12px 0;
+  }
+
+  .subscription-plan-admin-panel .ui-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .subscription-plan-admin-panel .ui-table td::before {
+    content: attr(data-label);
+    color: rgba(16, 20, 17, 0.54);
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .subscription-plan-admin-panel .subscription-plan-primary {
+    min-width: 0;
+  }
+
+  .subscription-plan-admin-panel .record-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .operator-main,
+  .admin-operator .admin-shell {
+    width: calc(100% - 24px);
+  }
+
+  .operator-workspace .app-topbar,
+  .admin-operator .admin-topbar,
+  .operator-workspace .panel-title-row,
+  .admin-operator .panel-title-row {
+    display: grid;
+  }
+
+  .admin-operator .admin-main {
+    padding: 0 12px 14px;
+  }
+
+  .admin-operator .admin-topbar {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-operator .admin-top-profile,
+  .admin-operator .admin-profile-chip {
+    justify-content: space-between;
+  }
+
+  .admin-operator .admin-hero-panel {
+    border-radius: 0 0 18px 18px;
+  }
+
+  .operator-workspace .app-stats,
+  .admin-operator .admin-stats,
+  .admin-operator .admin-overview-metrics,
+  .operator-workspace .record-card,
+  .admin-operator .admin-toolbar,
+    .admin-operator .doctor-filter-bar,
+    .admin-operator .doctor-toolbar-row-primary,
+    .admin-operator .doctor-toolbar-row-filters,
+    .admin-operator .doctor-filter-grid,
+    .admin-operator .ai-config-toolbar-primary,
+    .admin-operator .ai-config-toolbar-filters,
+    .admin-operator .ai-config-filter-grid,
+    .admin-operator .ai-config-kpi-grid,
+    .ai-config-detail-grid,
+    .admin-operator .admin-user-row,
+    .admin-operator .form-two-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-overview-metrics article,
+  .admin-operator .admin-overview-metrics article + article {
+    border-right: 0;
+    border-bottom: 1px solid rgba(16, 20, 17, 0.09);
+    padding: 16px 0;
+  }
+
+  .admin-operator .admin-overview-metrics article:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-operator .admin-bar-chart {
+    grid-template-columns: repeat(3, minmax(52px, 1fr));
+  }
+
+  .admin-operator .admin-week-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .operator-workspace .record-actions,
+  .admin-operator .record-actions,
+    .admin-operator .admin-top-actions,
+    .admin-operator .doctor-filter-actions,
+    .admin-operator .ai-config-filter-actions,
+    .doctor-modal-actions {
+    justify-content: stretch;
+  }
+
+  .operator-workspace .record-actions .btn,
+  .admin-operator .record-actions .btn,
+    .admin-operator .admin-top-actions .btn,
+    .admin-operator .doctor-filter-actions .btn,
+    .admin-operator .doctor-add-button,
+    .admin-operator .ai-config-filter-actions .btn,
+    .admin-operator .ai-config-add-button,
+    .doctor-modal-actions .btn {
+    width: 100%;
+  }
+
+  .admin-operator .admin-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-operator .admin-nav button {
+    grid-template-columns: 30px minmax(0, 1fr);
+    min-height: 46px;
+    font-size: 13px;
+  }
+
+  .doctor-modal-header {
+    display: grid;
+  }
+
+  .ai-config-modal-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ai-config-modal-icon {
+    display: none;
+  }
+
+  .subscription-plan-kpis,
+  .subscription-modal-header {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-modal-icon {
+    display: none;
+  }
+}

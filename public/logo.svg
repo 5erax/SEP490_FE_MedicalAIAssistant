@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="medimate-logo-title medimate-logo-desc" viewBox="0 0 48 48">
+  <title id="medimate-logo-title">MediMate AI</title>
+  <desc id="medimate-logo-desc">Biểu trưng MediMate AI gồm chữ thập y tế và nhịp tim.</desc>
+  <defs>
+    <linearGradient id="medimate-logo-bg" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#151A16" />
+      <stop offset="1" stop-color="#070C09" />
+    </linearGradient>
+    <linearGradient id="medimate-logo-cross" x1="14" y1="9" x2="33" y2="39" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D8FF9D" />
+      <stop offset="1" stop-color="#9FEA63" />
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="14" fill="url(#medimate-logo-bg)" />
+  <path fill="#1F2A22" d="M8 38c9.5-13.4 19.3-22.8 32-30v30H8Z" opacity=".5" />
+  <path fill="url(#medimate-logo-cross)" d="M20 9h8a2 2 0 0 1 2 2v8h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-8v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8h-8a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h8v-8a2 2 0 0 1 2-2Z" />
+  <path fill="none" stroke="#062019" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M10 25h7l3-6 6 13 4-7h8" opacity=".32" />
+  <path fill="none" stroke="#72F0DF" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 25h7l3-6 6 13 4-7h8" />
+</svg>

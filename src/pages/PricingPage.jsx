@@ -244,7 +244,7 @@ function PricingPage() {
         paymentId: "",
         message: plansLoading
           ? "Danh sách gói đang được tải."
-          : "Backend chưa cấu hình gói subscription trả phí để tạo thanh toán.",
+          : "Chưa có gói trả phí khả dụng để tạo thanh toán.",
       });
       return;
     }
@@ -258,7 +258,7 @@ function PricingPage() {
       const checkout = response.data;
       if (!checkout?.paymentUrl || !checkout?.paymentId) {
         paymentWindow?.close();
-        throw new Error("Backend không trả về paymentUrl hoặc paymentId hợp lệ.");
+        throw new Error("Chưa tạo được liên kết thanh toán hợp lệ. Vui lòng thử lại.");
       }
 
       setCheckoutState({
@@ -348,7 +348,7 @@ function PricingPage() {
         </div>
         {!plansLoading && paidPlans.length === 0 && (
           <div className="pricing-api-message error" role="alert">
-            Backend chưa có gói subscription trả phí đang hoạt động. Quản trị viên cần tạo hoặc kích hoạt plan trước khi checkout.
+            Chưa có gói trả phí đang hoạt động. Quản trị viên cần tạo hoặc kích hoạt gói trước khi thanh toán.
           </div>
         )}
         {plansError && <div className="pricing-api-message error" role="alert">{plansError}</div>}
@@ -438,7 +438,7 @@ function PricingPage() {
             {activeSubscription ? (
               <p>
                 Có hiệu lực đến{" "}
-                <strong>{activeSubscription.endDate ? new Date(activeSubscription.endDate).toLocaleDateString("vi-VN") : "khi backend cập nhật"}</strong>.
+                <strong>{activeSubscription.endDate ? new Date(activeSubscription.endDate).toLocaleDateString("vi-VN") : "đang cập nhật"}</strong>.
                 {" "}Gia hạn tự động: <strong>{activeSubscription.autoRenew ? "Bật" : "Tắt"}</strong>.
               </p>
             ) : (

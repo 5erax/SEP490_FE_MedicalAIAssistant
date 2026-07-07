@@ -1,0 +1,455 @@
+.admin-operator .ai-config-admin-panel {
+  display: grid;
+  gap: 18px;
+  overflow: hidden;
+}
+
+.admin-operator .ai-config-section-heading {
+  align-items: center;
+  gap: 18px;
+}
+
+.admin-operator .ai-config-section-heading > div {
+  min-width: 0;
+}
+
+.admin-operator .ai-config-section-heading h2 {
+  font-size: clamp(24px, 3vw, 30px);
+}
+
+.admin-operator .ai-config-section-heading .muted-text {
+  max-width: 680px;
+  margin: 7px 0 0;
+  font-size: 14px;
+}
+
+.admin-operator .ai-config-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-operator .ai-config-kpi-grid article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  border: 1px solid rgba(16, 20, 17, 0.08);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(223, 248, 237, 0.4), rgba(255, 255, 255, 0.84)),
+    #fff;
+  padding: 14px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-operator .ai-config-kpi-grid article:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(16, 20, 17, 0.07);
+}
+
+.admin-operator .ai-config-kpi-grid article > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #dff8ed;
+  color: #087f8c;
+}
+
+.admin-operator .ai-config-kpi-grid small {
+  display: block;
+  color: rgba(16, 20, 17, 0.5);
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-operator .ai-config-kpi-grid strong {
+  display: block;
+  margin-top: 4px;
+  color: #101411;
+  font-size: 24px;
+  font-weight: 780;
+}
+
+.admin-operator .ai-config-filter-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  border: 1px solid rgba(16, 20, 17, 0.08);
+  border-radius: 18px;
+  background: rgba(251, 252, 247, 0.82);
+  padding: 14px;
+}
+
+.admin-operator .ai-config-filter-card-header strong {
+  display: block;
+  color: #101411;
+  font-size: 14px;
+  font-weight: 820;
+}
+
+.admin-operator .ai-config-filter-card-header p {
+  margin: 4px 0 0;
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.admin-operator .ai-config-toolbar {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-operator .ai-config-toolbar-row {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-operator .ai-config-toolbar-primary {
+  grid-template-columns: minmax(260px, 1fr) auto;
+  align-items: center;
+}
+
+.admin-operator .ai-config-toolbar-filters {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.admin-operator .ai-config-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(132px, 1.08fr) minmax(132px, 1fr) minmax(132px, 1fr) minmax(150px, 1.12fr) minmax(112px, 0.72fr);
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-operator .ai-config-filter-grid .clean-field {
+  min-width: 0;
+}
+
+.admin-operator .ai-config-filter-grid select {
+  min-width: 0;
+  padding-inline: 12px 30px;
+  font-size: 13px;
+}
+
+.admin-operator .ai-config-filter-grid .custom-select-trigger {
+  min-height: 44px;
+  padding-inline: 12px;
+  font-size: 13px;
+}
+
+.admin-operator .facility-admin-panel .ai-config-toolbar-primary {
+  grid-template-columns: 1fr;
+}
+
+.admin-operator .facility-filter-grid {
+  grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1.3fr) minmax(120px, 0.7fr);
+}
+
+.admin-operator .ai-config-search-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid rgba(16, 20, 17, 0.14);
+  border-radius: 12px;
+  background: #fff;
+  color: rgba(16, 20, 17, 0.48);
+  padding: 0 12px;
+}
+
+.admin-operator .ai-config-search-field input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #101411;
+  font: inherit;
+  outline: none;
+}
+
+.admin-operator .ai-config-search-field:focus-within {
+  border-color: rgba(16, 20, 17, 0.72);
+  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.22);
+}
+
+.admin-operator .ai-config-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-operator .ai-config-add-button,
+.admin-operator .ai-config-filter-actions .btn {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.clinical-question-modal .clinical-answer-editor {
+  display: grid;
+  gap: 22px;
+  margin-top: 2px;
+}
+
+.clinical-question-modal .clinical-answer-editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.clinical-question-modal .clinical-answer-editor-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0f3f37;
+}
+
+.clinical-question-modal .clinical-answer-editor-title svg {
+  flex: 0 0 auto;
+  color: #0b6f68;
+}
+
+.clinical-question-modal .clinical-answer-editor-head strong {
+  color: #101411;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.clinical-question-modal .clinical-answer-editor-head p {
+  margin: 0;
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.clinical-question-modal .clinical-answer-card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid rgba(16, 20, 17, 0.12);
+  border-radius: 18px;
+  background: #fff;
+  padding: 22px;
+  box-shadow: 0 12px 30px rgba(16, 20, 17, 0.055);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.clinical-question-modal .clinical-answer-card:hover {
+  border-color: rgba(11, 111, 104, 0.24);
+  box-shadow: 0 22px 54px rgba(16, 20, 17, 0.09);
+  transform: translateY(-1px);
+}
+
+.clinical-question-modal .clinical-answer-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clinical-question-modal .clinical-answer-card-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #101411;
+}
+
+.clinical-question-modal .clinical-answer-card-title svg {
+  color: #0b6f68;
+}
+
+.clinical-question-modal .clinical-answer-card-head strong {
+  color: #101411;
+  font-size: 15px;
+  font-weight: 920;
+}
+
+.clinical-question-modal .clinical-answer-fields {
+  display: grid;
+  gap: 20px;
+}
+
+.clinical-question-modal .clinical-answer-field {
+  display: grid;
+  gap: 9px;
+}
+
+.clinical-question-modal .clinical-answer-field > span {
+  color: rgba(16, 20, 17, 0.66);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.clinical-question-modal .clinical-answer-field input {
+  width: 100%;
+  min-height: 50px;
+  border-radius: 12px;
+  border-color: rgba(16, 20, 17, 0.16);
+  background: rgba(251, 252, 247, 0.96);
+  padding-inline: 16px;
+  font-size: 14px;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.clinical-question-modal .clinical-answer-field input:focus {
+  border-color: rgba(11, 111, 104, 0.42);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(11, 111, 104, 0.08);
+}
+
+.clinical-question-modal .clinical-answer-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clinical-question-modal .clinical-answer-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  color: #991b1b;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.clinical-question-modal .clinical-answer-remove:hover {
+  border-color: rgba(185, 28, 28, 0.34);
+  background: rgba(254, 226, 226, 0.72);
+  color: #7f1d1d;
+  transform: translateY(-1px);
+}
+
+.clinical-question-modal .clinical-answer-empty {
+  border: 1px dashed rgba(16, 20, 17, 0.18);
+  border-radius: 14px;
+  background: rgba(251, 252, 247, 0.72);
+  color: rgba(16, 20, 17, 0.58);
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.clinical-question-modal .clinical-answer-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: fit-content;
+  min-height: 46px;
+  border: 1px solid rgba(11, 111, 104, 0.28);
+  border-radius: 14px;
+  background: #0f766e;
+  color: #fff;
+  padding: 0 18px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 16px 32px rgba(15, 118, 110, 0.18);
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.clinical-question-modal .clinical-answer-add:hover {
+  background: #0b5f58;
+  box-shadow: 0 18px 38px rgba(15, 118, 110, 0.24);
+  transform: translateY(-1px);
+}
+
+.clinical-question-modal .clinical-answer-editor small {
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+@media (max-width: 760px) {
+  .doctor-modal-backdrop {
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .doctor-modal-header {
+    padding: 20px 18px 16px;
+  }
+
+  .clinical-question-modal .clinical-question-form {
+    padding-inline: 18px;
+  }
+
+  .clinical-question-modal .clinical-form-section {
+    padding: 16px;
+  }
+
+  .clinical-question-modal .clinical-form-two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-question-modal .clinical-answer-editor-head {
+    flex-direction: column;
+  }
+
+  .clinical-question-modal .clinical-answer-card {
+    padding: 16px;
+  }
+
+  .clinical-question-modal .clinical-answer-card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .clinical-question-modal .clinical-answer-remove,
+  .clinical-question-modal .clinical-answer-add {
+    width: 100%;
+  }
+
+  .doctor-modal-actions {
+    margin-inline: 18px;
+  }
+
+  .facility-form-modal {
+    width: 100%;
+    max-height: calc(100svh - 24px);
+  }
+
+  .facility-form-body {
+    padding: 16px 18px;
+  }
+
+  .facility-form-card {
+    padding: 16px;
+  }
+
+  .facility-form-grid,
+  .facility-image-uploader {
+    grid-template-columns: 1fr;
+  }
+
+  .facility-form-span-2 {
+    grid-column: auto;
+  }
+
+  .facility-form-actions {
+    margin: 0;
+    padding: 14px 18px 18px;
+  }
+
+  .facility-form-actions .btn {
+    flex: 1 1 160px;
+  }
+}

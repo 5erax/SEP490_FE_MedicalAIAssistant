@@ -1,5 +1,9 @@
 import { forwardRef } from "react";
-import "./ui.css";
+import styles from "./Button.module.css";
+
+function cx(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 export const Button = forwardRef(function Button(
   {
@@ -19,7 +23,7 @@ export const Button = forwardRef(function Button(
   const componentProps = {
     ...props,
     "aria-busy": loading || undefined,
-    className: `ui-button ui-button-${tone} ui-button-${size} ${className}`.trim(),
+    className: cx("ui-button", styles.root, styles[tone], styles[size], className),
     ref,
   };
 
@@ -33,7 +37,7 @@ export const Button = forwardRef(function Button(
 
   return (
     <Component {...componentProps}>
-      {loading && <span className="ui-button-spinner" aria-hidden="true" />}
+      {loading && <span className={cx("ui-button-spinner", styles.spinner)} aria-hidden="true" />}
       <span>{loading ? loadingLabel : children}</span>
     </Component>
   );

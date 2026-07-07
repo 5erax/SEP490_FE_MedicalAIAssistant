@@ -52,10 +52,10 @@ function validate(form) {
     try {
       const parsed = JSON.parse(form.featureLimitJson);
       if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
-        errors.featureLimitJson = "Giới hạn tính năng phải là một JSON object.";
+        errors.featureLimitJson = "Giới hạn tính năng cần nhập theo dạng danh sách hợp lệ.";
       }
     } catch {
-      errors.featureLimitJson = "JSON giới hạn tính năng chưa đúng cú pháp.";
+      errors.featureLimitJson = "Giới hạn tính năng chưa đúng định dạng.";
     }
   }
 
@@ -177,7 +177,7 @@ export default function SubscriptionPlanFormModal({
           </div>
 
           <label className={`clean-field ${errors.featureLimitJson ? "subscription-field-error" : ""}`}>
-            <span>Giới hạn tính năng (JSON)</span>
+            <span>Giới hạn tính năng</span>
             <textarea
               rows={8}
               spellCheck="false"
@@ -187,7 +187,7 @@ export default function SubscriptionPlanFormModal({
               aria-describedby="subscription-feature-help"
             />
             <small id="subscription-feature-help" role={errors.featureLimitJson ? "alert" : undefined}>
-              {errors.featureLimitJson || "Dùng JSON object để backend áp dụng hạn mức cho từng tính năng."}
+              {errors.featureLimitJson || "Nhập các hạn mức theo từng tính năng, ví dụ số lượt dùng mỗi tháng."}
             </small>
           </label>
 

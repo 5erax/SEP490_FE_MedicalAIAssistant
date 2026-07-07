@@ -1,6 +1,7 @@
 import { cloneElement, useEffect, useId, useMemo, useState } from "react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
+import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch } from "../router/returnIntent";
 import { authApi, getStoredAuth, setStoredAuth } from "../services/api";
@@ -90,6 +91,9 @@ export default function PersonalPatientProfilePage() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
   const [errors, setErrors] = useState({});
+  const [dirty, setDirty] = useState(false);
+
+  useUnsavedChangesWarning(dirty && !submitting);
 
   const currentUserId = useMemo(() => getUserId(user, auth), [auth, user]);
   const completedFields = Object.entries({
@@ -134,6 +138,7 @@ export default function PersonalPatientProfilePage() {
             firstLogin: false,
             isFirstLogin: false,
             isProfileCompleted: true,
+            patientOnboardingPending: auth.patientOnboardingPending ?? true,
           };
           setStoredAuth(nextAuth);
           setAuth(nextAuth);
@@ -167,6 +172,7 @@ export default function PersonalPatientProfilePage() {
 
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
+    setDirty(true);
     setErrors((current) => ({ ...current, [key]: "" }));
   }
 
@@ -202,9 +208,11 @@ export default function PersonalPatientProfilePage() {
         firstLogin: false,
         isFirstLogin: false,
         isProfileCompleted: true,
+        patientOnboardingPending: true,
       };
       setStoredAuth(nextAuth);
       setAuth(nextAuth);
+      setDirty(false);
       setMessage({ type: "success", text: "Đã hoàn thiện hồ sơ sức khỏe. MediMate đang mở không gian cá nhân của bạn..." });
 
       window.setTimeout(() => {

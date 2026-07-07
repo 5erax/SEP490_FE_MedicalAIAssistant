@@ -307,6 +307,10 @@
   justify-content: center;
 }
 
+.clinical-mobile-hero-action {
+  display: none;
+}
+
 .clinical-entry-card {
   width: min(900px, 100%);
   display: grid;
@@ -768,11 +772,29 @@
 
 @media (max-width: 760px) {
   .assessment-page {
-    padding: 18px 12px 96px;
+    padding: 16px 12px 96px;
+  }
+
+  .assessment-shell {
+    gap: 16px;
+  }
+
+  .clinical-hero {
+    gap: 6px;
+    margin-top: 0;
+  }
+
+  .clinical-hero-icon {
+    display: none;
   }
 
   .assessment-header h1 {
-    font-size: clamp(30px, 9vw, 38px);
+    font-size: clamp(28px, 9vw, 36px);
+  }
+
+  .clinical-hero-description {
+    margin-top: 4px;
+    line-height: 1.55;
   }
 
   .clinical-card-head,
@@ -810,6 +832,20 @@
 
   .assessment-stepper li::before {
     top: 16px;
+  }
+
+  .clinical-mobile-hero-action {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .clinical-entry-actions {
+    display: none;
+  }
+
+  .clinical-mobile-hero-action .ui-button {
+    width: 100%;
   }
 
   .assessment-actions,

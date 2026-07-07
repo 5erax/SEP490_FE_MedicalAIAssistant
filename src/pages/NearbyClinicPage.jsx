@@ -84,6 +84,10 @@ function getObjectData(response) {
   return response?.data?.data ?? response?.data ?? response;
 }
 
+function getDoctorImageUrl(doctor) {
+  return doctor?.imageUrl || doctor?.avatarUrl || doctor?.photoUrl || "";
+}
+
 function mergeFacilityDetail(existingFacility, apiFacility) {
   return {
     ...existingFacility,
@@ -232,7 +236,7 @@ function NearbyClinicPage() {
             relationDepartmentIdsByFacility.set(facilityId, ids);
           }
         });
-        const backendFacilities = rawFacilities.map((facility) => {
+        const serviceFacilities = rawFacilities.map((facility) => {
           const facilityId = facility.facilityId ?? facility.id;
           return normalizeFacility(
             facility,
@@ -240,24 +244,24 @@ function NearbyClinicPage() {
             relationDepartmentIdsByFacility.get(facilityId) ?? [],
           );
         });
-        const data = ensureMockFacilityCoverage(backendFacilities, departments).map((facility) => normalizeFacility(facility));
+        const data = ensureMockFacilityCoverage(serviceFacilities, departments).map((facility) => normalizeFacility(facility));
         const usesMockData = data.some((facility) => facility.isMockFacility || facility.isMockAugmented);
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
         setSelectedFacility(null);
         if (facilityResult.status !== "fulfilled") {
-          setApiNotice("Không tải được danh sách cơ sở từ backend. Đang dùng dữ liệu mẫu cục bộ, ảnh được phục vụ từ frontend.");
+          setApiNotice("Không tải được danh sách cơ sở y tế. Đang hiển thị dữ liệu mẫu để bạn tiếp tục tra cứu.");
         } else if (usesMockData) {
           setApiNotice("");
         } else {
-          setApiNotice(data.length ? "" : "Backend chưa có cơ sở y tế đang hoạt động.");
+          setApiNotice(data.length ? "" : "Chưa có cơ sở y tế đang hoạt động.");
         }
       })
       .catch((error) => {
         if (active) {
           setFacilities([]);
           setSelectedFacility(null);
-          setApiNotice(error.message || "Không tải được dữ liệu cơ sở y tế từ backend.");
+          setApiNotice(error.message || "Không tải được dữ liệu cơ sở y tế.");
         }
       })
       .finally(() => {
@@ -319,7 +323,6 @@ function NearbyClinicPage() {
     () => mappableFacilities.map((facility) => `${facility.facilityId}:${facility.longitude}:${facility.latitude}`).join("|"),
     [mappableFacilities],
   );
-  const unmappableFacilityCount = filteredFacilities.length - mappableFacilities.length;
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
 
   const prefersReducedMotion = useCallback(() => (
@@ -589,25 +592,10 @@ function NearbyClinicPage() {
           )}
         </div>
 
-        <section className="map-results-summary" aria-label="Tóm tắt kết quả bản đồ">
-          <div>
-            <strong>{loadingFacilities ? "..." : filteredFacilities.length}</strong>
-            <span>Kết quả</span>
-          </div>
-          <div>
-            <strong>{loadingFacilities ? "..." : mappableFacilities.length}</strong>
-            <span>Có tọa độ</span>
-          </div>
-          <div>
-            <strong>{loadingFacilities ? "..." : unmappableFacilityCount}</strong>
-            <span>Thiếu tọa độ</span>
-          </div>
-        </section>
-
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
-            Backend đã có cơ sở active nhưng chưa có tọa độ hợp lệ. Admin cần cập nhật vĩ độ và kinh độ để bản đồ hiển thị marker.
+            Cơ sở y tế hiện chưa có tọa độ hợp lệ. Quản trị viên cần cập nhật vĩ độ và kinh độ để bản đồ hiển thị điểm khám.
           </div>
         )}
 
@@ -693,7 +681,7 @@ function NearbyClinicPage() {
 
             <section className="facility-detail-card wide">
               <h3>Thông tin bệnh viện</h3>
-              <p>{detailFacility.description || "Backend chưa cung cấp mô tả chi tiết cho cơ sở y tế này."}</p>
+              <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
               <dl className="facility-detail-facts">
                 <div>
                   <dt>Số điện thoại</dt>
@@ -715,13 +703,22 @@ function NearbyClinicPage() {
 
             <section className="facility-detail-card">
               <h3>Danh sách bác sĩ</h3>
-              <div className="facility-detail-list">
+              <div className="facility-detail-list facility-detail-doctor-list">
                 {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
-                {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này từ backend.</p>}
+                {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này.</p>}
                 {detailDoctors.map((doctor) => (
                   <article key={doctor.id}>
-                    <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
-                    <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
+                    {getDoctorImageUrl(doctor) && (
+                      <img
+                        className="facility-detail-doctor-image"
+                        src={getDoctorImageUrl(doctor)}
+                        alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
+                      />
+                    )}
+                    <div>
+                      <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
+                      <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -746,7 +743,7 @@ function NearbyClinicPage() {
               <div className="facility-detail-services">
                 {detailServices.length
                   ? detailServices.map((service) => <span key={service}>{service}</span>)
-                  : <p>Backend chưa cung cấp tiện ích hoặc dịch vụ nổi bật cho cơ sở này.</p>}
+                  : <p>Cơ sở này chưa có tiện ích hoặc dịch vụ nổi bật.</p>}
               </div>
             </section>
           </div>
@@ -869,8 +866,11 @@ const styles = `
 .facility-detail-tags span { border: 1px solid var(--line); border-radius: 999px; background: var(--paper-soft); padding: 6px 9px; color: #315d18; font-size: 12px; font-weight: 850; }
 .facility-detail-list, .facility-detail-services { display: grid; gap: 9px; }
 .facility-detail-list article { display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-soft); padding: 11px; }
+.facility-detail-doctor-list article { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.facility-detail-doctor-list article > div { min-width: 0; }
 .facility-detail-list strong { font-size: 13px; }
 .facility-detail-list span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.facility-detail-doctor-image { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 999px; object-fit: cover; background: #f4f7ee; }
 .facility-detail-services { display: flex; flex-wrap: wrap; gap: 8px; }
 .facility-detail-services span { border: 1px solid var(--line); border-radius: 999px; background: #e4f4f2; color: #075d66; padding: 8px 10px; font-size: 12px; font-weight: 850; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(170,237,99,.55); } 100% { box-shadow: 0 0 0 14px rgba(170,237,99,0); } }
@@ -930,42 +930,14 @@ const styles = `
 .locate-button { border-color: #fff; border-radius: 50%; background: var(--teal); color: #fff; box-shadow: 0 8px 24px rgba(17, 20, 18, .22); }
 
 @media (max-width: 760px) {
-  .clinic-page { display: grid; grid-template-rows: minmax(38svh, 320px) auto; }
-  .map-panel { order: 1; min-height: 38svh; margin: 10px; border-radius: 18px; }
-  .clinic-sidebar { order: 2; width: 100%; max-height: none; padding: 18px 14px 96px; }
+  .clinic-page { display: flex; flex-direction: column; }
+  .map-stage { order: 1; flex: 0 0 52%; min-height: 260px; }
+  .map-stage > .map-panel { inset: 10px; border-radius: 18px; }
+  .clinic-sidebar { order: 2; width: 100%; flex: 1 1 auto; min-height: 0; max-height: none; border-top: 1px solid rgba(16, 20, 17, 0.13); padding: 18px 14px 96px; }
   .map-sidebar-head h1 { font-size: 27px; }
 }
 
 /* Focused /map UX refinements: text alternative, keyboard markers, compact detail panel. */
-.map-results-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 14px 0 10px;
-}
-.map-results-summary div {
-  min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  padding: 10px;
-}
-.map-results-summary strong,
-.map-results-summary span {
-  display: block;
-  overflow-wrap: anywhere;
-}
-.map-results-summary strong {
-  color: var(--ink);
-  font-size: 21px;
-  line-height: 1;
-}
-.map-results-summary span {
-  margin-top: 5px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 850;
-}
 .result-summary {
   display: flex;
   align-items: flex-end;
@@ -1233,15 +1205,6 @@ const styles = `
   }
   .clinic-sidebar {
     width: 100%;
-  }
-  .map-results-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .map-results-summary div {
-    padding: 9px 8px;
-  }
-  .map-results-summary strong {
-    font-size: 18px;
   }
   .facility-detail-view {
     position: fixed;

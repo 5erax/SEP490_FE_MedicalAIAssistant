@@ -5,27 +5,6 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_PREVIEW_EDGE = 1600;
 
-const mockScanResult = {
-  medicineName: "Amoxicillin",
-  activeIngredient: "Amoxicillin trihydrate",
-  dosageForm: "Viên nang",
-  strength: "500mg",
-  manufacturer: "Pymepharco",
-  confidence: 94,
-  usage: "Điều trị một số nhiễm khuẩn đường hô hấp, tiết niệu và mô mềm theo chỉ định của bác sĩ.",
-  dosage: "Người lớn thường dùng 500mg x 3 lần/ngày, cách 8 giờ. Liều thực tế cần theo đơn.",
-  sideEffects: ["Buồn nôn", "Tiêu chảy", "Phát ban", "Dị ứng"],
-  requiresPrescription: true,
-};
-
-const mockInteraction = {
-  medicineA: "Amoxicillin",
-  medicineB: "Metformin",
-  severity: "Low",
-  description: "Kết hợp này thường an toàn với đa số người dùng, nhưng vẫn nên theo dõi phản ứng tiêu hoá.",
-  recommendation: "Không tự ý điều chỉnh liều. Hỏi bác sĩ nếu có bệnh thận hoặc triệu chứng bất thường.",
-};
-
 function delay(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -35,6 +14,7 @@ function MedicationScanPage() {
   const [fileError, setFileError] = useState("");
   const [scanStatus, setScanStatus] = useState("idle");
   const [scanStep, setScanStep] = useState("");
+  const [scanError, setScanError] = useState("");
   const [scanResult, setScanResult] = useState(null);
   const [drugList, setDrugList] = useState([]);
   const [drugInput, setDrugInput] = useState("");
@@ -85,6 +65,7 @@ function MedicationScanPage() {
     }
 
     setScanStatus("idle");
+    setScanError("");
     setScanResult(null);
     setInteractions([]);
   };
@@ -102,12 +83,11 @@ function MedicationScanPage() {
   const handleScan = async () => {
     if (!file) return;
     setScanStatus("scanning");
-    setScanStep("Đang trích xuất văn bản từ ảnh...");
-    await delay(1200);
-    setScanStep("Đang tra cứu cơ sở dữ liệu thuốc...");
-    await delay(1200);
-    setScanResult(mockScanResult);
-    setScanStatus("done");
+    setScanError("");
+    setScanStep("Đang kiểm tra trạng thái dịch vụ nhận diện thuốc...");
+    await delay(600);
+    setScanStatus("idle");
+    setScanError("Tính năng nhận diện thuốc đang được hoàn thiện. Ảnh của bạn chỉ được xem trước trên trình duyệt và không được phân tích hoặc lưu.");
   };
 
   const addDrug = () => {
@@ -119,15 +99,15 @@ function MedicationScanPage() {
 
   const checkInteraction = () => {
     if (!scanResult || drugList.length === 0) return;
-    setInteractions(drugList.map((drug) => ({ ...mockInteraction, medicineB: drug })));
+    setInteractions([]);
   };
 
   return (
     <main className="medication-page">
       <style>{styles}</style>
       <section className="scan-panel">
-        <div className="backend-support-note" role="status">
-          Backend hiện chưa có API nhận diện thuốc hoặc kiểm tra tương tác thuốc. Kết quả trên màn hình này chỉ là dữ liệu demo và không được lưu.
+        <div className="medication-support-note" role="status">
+          Tính năng nhận diện thuốc đang được hoàn thiện. Bạn vẫn có thể xem trước ảnh, nhưng hệ thống chưa phân tích hoặc lưu ảnh này.
         </div>
         <nav className="medication-quick-nav" aria-label="Dieu huong nhanh">
           <button type="button" onClick={() => goTo("/dashboard")}>← Trang chủ</button>
@@ -177,6 +157,7 @@ function MedicationScanPage() {
             <strong>{scanStep}</strong>
           </div>
         )}
+        {scanError && <p className="upload-error" role="alert">{scanError}</p>}
       </section>
 
       <section className="scan-result-panel">
@@ -254,7 +235,7 @@ function MedicationScanPage() {
 }
 
 const styles = `
-.backend-support-note { border: 1.5px solid #9f1239; border-radius: 10px; background: #fff1f2; color: #881337; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; font-weight: 800; line-height: 1.55; }
+.medication-support-note { border: 1.5px solid #9f1239; border-radius: 10px; background: #fff1f2; color: #881337; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; font-weight: 800; line-height: 1.55; }
 .medication-page { min-height: 100svh; display: grid; grid-template-columns: minmax(0, .9fr) minmax(360px, 1.1fr); gap: 18px; background: var(--bg); color: var(--ink); padding: 22px; }
 .scan-panel, .scan-result-panel > article, .empty-result, .med-disclaimer { border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
 .scan-panel { padding: clamp(20px, 3vw, 28px); align-self: start; }

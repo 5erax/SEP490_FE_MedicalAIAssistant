@@ -1,0 +1,370 @@
+.operator-workspace,
+.admin-operator .admin-page {
+  min-height: 100svh;
+  overflow-x: hidden;
+  background:
+    linear-gradient(135deg, rgba(196, 233, 149, 0.12), rgba(8, 127, 140, 0.06) 44%, transparent 76%),
+    #f6f8f3;
+  color: #101411;
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+}
+
+.admin-operator .admin-page {
+  background:
+    radial-gradient(circle at 7% 8%, rgba(205, 239, 132, 0.6), transparent 32%),
+    radial-gradient(circle at 95% 8%, rgba(8, 127, 140, 0.16), transparent 34%),
+    linear-gradient(135deg, rgba(196, 233, 149, 0.18), rgba(8, 127, 140, 0.08) 44%, rgba(255, 255, 255, 0.2) 76%),
+    #edf4e9;
+}
+
+.operator-page,
+.admin-operator .admin-page {
+  padding: 18px 0 56px;
+}
+
+.admin-operator .admin-page {
+  padding-top: 26px;
+}
+
+.operator-main,
+.admin-operator .admin-shell {
+  width: min(1220px, calc(100% - 32px));
+  margin-inline: auto;
+}
+
+.operator-workspace .app-topbar,
+.admin-operator .admin-topbar {
+  align-items: center;
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+  padding: clamp(16px, 2.2vw, 22px);
+  box-shadow: 0 18px 48px rgba(16, 20, 17, 0.055);
+  backdrop-filter: blur(14px);
+}
+
+.admin-operator .admin-topbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) auto;
+  justify-content: space-between;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.66);
+  padding: 14px clamp(16px, 2vw, 22px);
+  box-shadow: none;
+  backdrop-filter: blur(18px);
+}
+
+.operator-workspace .app-topbar h1,
+.admin-operator .admin-topbar h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(28px, 3.6vw, 44px);
+  font-weight: 760;
+  line-height: 1.16;
+  letter-spacing: 0;
+}
+
+.operator-workspace .muted-text,
+.admin-operator .admin-topbar p:not(.eyebrow),
+.admin-operator .muted-text {
+  color: rgba(16, 20, 17, 0.62);
+  line-height: 1.62;
+}
+
+.admin-operator .admin-topbar p:not(.eyebrow) {
+  max-width: 680px;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.operator-workspace .record-actions,
+.admin-operator .record-actions,
+.admin-operator .admin-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.admin-operator .btn {
+  border-color: rgba(16, 20, 17, 0.18);
+  border-radius: 12px;
+  box-shadow: none;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.admin-operator .btn:hover {
+  transform: translateY(-1px);
+}
+
+.admin-operator .btn-primary {
+  border-color: rgba(16, 20, 17, 0.18);
+  background: #0c5f5e;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(111, 171, 41, 0.18);
+}
+
+.admin-operator .btn-primary:hover {
+  box-shadow: 0 14px 28px rgba(111, 171, 41, 0.22);
+}
+
+.admin-operator .btn-ghost {
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.admin-operator .btn-dark {
+  background: #101411;
+  box-shadow: 0 10px 22px rgba(16, 20, 17, 0.14);
+}
+
+.operator-workspace .app-stats,
+.admin-operator .admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.operator-workspace .app-stats article,
+.admin-operator .admin-stats article,
+.operator-workspace .app-card,
+.admin-operator .admin-panel,
+.admin-operator .admin-sidebar {
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 18px 46px rgba(16, 20, 17, 0.06);
+}
+
+.operator-workspace .app-stats article,
+.admin-operator .admin-stats article {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-operator .admin-stats article:hover {
+  transform: translateY(-2px);
+  border-color: rgba(8, 127, 140, 0.18);
+  box-shadow: 0 22px 52px rgba(16, 20, 17, 0.08);
+}
+
+.admin-operator .admin-stats .admin-stat-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #eef9e6;
+  color: #0c5f5e;
+  letter-spacing: 0;
+}
+
+.admin-operator .admin-stats .admin-stat-icon svg {
+  color: #087f8c;
+}
+
+.operator-workspace .app-stats span,
+.admin-operator .admin-stats span {
+  color: rgba(16, 20, 17, 0.48);
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.operator-workspace .app-stats strong,
+.admin-operator .admin-stats strong {
+  display: block;
+  margin-top: 5px;
+  color: #101411;
+  font-size: 25px;
+  font-weight: 780;
+  line-height: 1.1;
+}
+
+.admin-operator .admin-stats small {
+  display: block;
+  margin-top: 5px;
+  color: rgba(16, 20, 17, 0.5);
+  line-height: 1.35;
+}
+
+.operator-workspace .app-work-grid,
+.admin-operator .admin-grid {
+  gap: 16px;
+}
+
+.admin-operator .facility-admin-grid {
+  grid-template-columns: minmax(480px, 1fr) minmax(340px, 420px);
+  align-items: start;
+}
+
+.admin-operator .facility-admin-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-operator .facility-admin-panel > .admin-panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-operator .facility-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.operator-workspace .app-card,
+.admin-operator .admin-panel {
+  padding: clamp(18px, 2.4vw, 24px);
+}
+
+.operator-workspace .panel-title-row,
+.admin-operator .panel-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.admin-operator .panel-title-row h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 740;
+  line-height: 1.2;
+}
+
+.operator-workspace .record-list,
+.admin-operator .admin-task-list,
+.admin-operator .admin-table-list {
+  display: grid;
+  gap: 10px;
+}
+
+.operator-workspace .record-card,
+.admin-operator .admin-task-list article,
+.admin-operator .admin-user-row {
+  min-width: 0;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 16px;
+  background: #fbfcf7;
+  padding: 15px;
+}
+
+.operator-workspace .record-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.operator-workspace .record-card strong,
+.admin-operator .admin-user-row strong,
+.admin-operator .admin-task-list strong {
+  color: #101411;
+  overflow-wrap: anywhere;
+}
+
+.operator-workspace .record-card p,
+.admin-operator .admin-user-row span,
+.admin-operator .admin-user-row small,
+.admin-operator .admin-task-list span {
+  color: rgba(16, 20, 17, 0.62);
+  line-height: 1.55;
+}
+
+.operator-workspace .clean-field,
+.admin-operator .clean-field,
+.clinical-question-modal .clean-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 12px;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.operator-workspace .clean-field > span,
+.admin-operator .clean-field > span,
+.clinical-question-modal .clean-field > span {
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+}
+
+.operator-workspace .clean-field input,
+.operator-workspace .clean-field textarea,
+.admin-operator .clean-field input,
+.admin-operator .clean-field textarea,
+.admin-operator .clean-field select,
+.clinical-question-modal .clean-field input,
+.clinical-question-modal .clean-field textarea,
+.clinical-question-modal .clean-field select,
+.admin-operator .admin-toolbar input,
+.admin-operator .admin-toolbar select {
+  width: 100%;
+  border: 1px solid rgba(16, 20, 17, 0.18);
+  border-radius: 12px;
+  background: #fff;
+  color: #101411;
+  min-height: 44px;
+  padding: 11px 13px;
+  font: 760 14px/1.35 "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.operator-workspace .clean-field textarea,
+.admin-operator .clean-field textarea,
+.clinical-question-modal .clean-field textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.operator-workspace .clean-field input::placeholder,
+.operator-workspace .clean-field textarea::placeholder,
+.admin-operator .clean-field input::placeholder,
+.admin-operator .clean-field textarea::placeholder,
+.clinical-question-modal .clean-field input::placeholder,
+.clinical-question-modal .clean-field textarea::placeholder,
+.admin-operator .admin-toolbar input::placeholder {
+  color: rgba(16, 20, 17, 0.4);
+  font-weight: 720;
+}
+
+.operator-workspace .clean-field input:focus,
+.operator-workspace .clean-field textarea:focus,
+.admin-operator .clean-field input:focus,
+.admin-operator .clean-field textarea:focus,
+.admin-operator .clean-field select:focus,
+.clinical-question-modal .clean-field input:focus,
+.clinical-question-modal .clean-field textarea:focus,
+.clinical-question-modal .clean-field select:focus,
+.admin-operator .admin-toolbar input:focus,
+.admin-operator .admin-toolbar select:focus {
+  border-color: rgba(16, 20, 17, 0.72);
+  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
+}
+
+.operator-workspace .clean-field input:disabled,
+.operator-workspace .clean-field textarea:disabled,
+.admin-operator .clean-field input:disabled,
+.admin-operator .clean-field textarea:disabled,
+.admin-operator .clean-field select:disabled {
+  border-color: rgba(16, 20, 17, 0.1);
+  background: rgba(238, 243, 235, 0.72);
+  color: rgba(16, 20, 17, 0.58);
+  cursor: not-allowed;
+}

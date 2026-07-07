@@ -1,6 +1,6 @@
 import { FileText, Filter, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Dialog } from "../ui";
+import { CustomSelect, Dialog, PAGE_SIZE_OPTIONS } from "../ui";
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -260,6 +260,13 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   const questionViField = config.fields.find((field) => field.name === "questionVi");
   const englishPrefixField = config.fields.find((field) => field.name === "englishPrefix");
   const answersField = config.fields.find((field) => field.type === "answers");
+  const chapterFilterOptions = [
+    { value: "", label: "Tất cả ICD" },
+    ...icdOptions.map((option) => ({
+      value: option.id,
+      label: `${option.code} - ${option.label}`,
+    })),
+  ];
 
   function renderFormControl(field) {
     if (!field) return null;
@@ -310,7 +317,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         <div>
           <p className="eyebrow">Dữ liệu lâm sàng</p>
           <h2>{config.title}</h2>
-          <p className="muted-text">Quản lý câu hỏi lâm sàng theo ICD Chapter, hỗ trợ tìm kiếm và phân trang từ backend.</p>
+          <p className="muted-text">Quản lý câu hỏi lâm sàng theo ICD Chapter để hỗ trợ luồng phân tích triệu chứng.</p>
         </div>
         <button className="btn btn-ghost btn-small" type="button" onClick={() => loadItems()}>Tải lại</button>
       </div>
@@ -341,25 +348,20 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
 
           <div className="ai-config-toolbar-row ai-config-toolbar-filters">
             <div className="ai-config-filter-grid">
-              <label className="clean-field">
-                <span>ICD Code</span>
-                <select value={filters.chapterId} onChange={(event) => updateFilter("chapterId", event.target.value)}>
-                  <option value="">Tất cả ICD</option>
-                  {icdOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.code} - {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="clean-field">
-                <span>Per page</span>
-                <select value={pageInfo.pageSize} onChange={(event) => changePageSize(Number(event.target.value))}>
-                  <option value="10">10 / trang</option>
-                  <option value="20">20 / trang</option>
-                  <option value="50">50 / trang</option>
-                </select>
-              </label>
+              <CustomSelect
+                className="clean-field"
+                label="ICD Code"
+                value={filters.chapterId}
+                options={chapterFilterOptions}
+                onChange={(nextValue) => updateFilter("chapterId", nextValue)}
+              />
+              <CustomSelect
+                className="clean-field"
+                label="Per page"
+                value={pageInfo.pageSize}
+                options={PAGE_SIZE_OPTIONS}
+                onChange={(nextPageSize) => changePageSize(Number(nextPageSize))}
+              />
             </div>
 
             <div className="ai-config-filter-actions">

@@ -22,11 +22,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { withReturnTo } from "../../router/returnIntent";
 import { getNavigationModel } from "../../router/routes";
-import { authApi, getStoredAuth, hasPremiumAccess } from "../../services/api";
+import { authApi, getStoredAuth, hasPremiumAccess, setStoredAuth } from "../../services/api";
 import { logoutUser } from "../../services/logoutService";
 import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 import { Dialog, useOverlayFocus } from "../ui";
+import PatientOnboardingAssistant from "./PatientOnboardingAssistant";
 
 const PATIENT_ICONS = {
   dashboard: LayoutDashboard,
@@ -39,13 +40,17 @@ const PATIENT_ICONS = {
 };
 
 const NAV_ITEMS = getNavigationModel("patient")
-  .filter((item) => item.id !== "patient.profile")
+  .filter((item) => !["patient.profile", "patient.medication"].includes(item.id))
   .map((item) => ({
     ...item,
     icon: PATIENT_ICONS[item.icon],
   }));
 
 const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
+const EMPTY_ACCOUNT_CACHE = { accessToken: "", user: null };
+
+let accountUserCache = EMPTY_ACCOUNT_CACHE;
+let accountUserRequest = { accessToken: "", promise: null };
 
 function getCurrentPath() {
   return window.location.pathname;
@@ -67,6 +72,10 @@ function getAccountName(user, auth) {
     || user?.fullName
     || user?.name
     || user?.email
+    || auth?.displayName
+    || auth?.fullName
+    || auth?.name
+    || auth?.email
     || auth?.username
     || "Người dùng";
 }
@@ -81,11 +90,54 @@ function getAccountAvatar(user) {
     || "";
 }
 
+function getCachedAccountUser(accessToken) {
+  return accountUserCache.accessToken === accessToken ? accountUserCache.user : null;
+}
+
+function setCachedAccountUser(accessToken, user) {
+  accountUserCache = { accessToken, user };
+  return user;
+}
+
+function rememberAccountUser(accessToken, user) {
+  if (!accessToken || !user) return user;
+
+  const auth = getStoredAuth();
+  if (auth?.accessToken === accessToken) {
+    setStoredAuth({ ...auth, ...user });
+  }
+
+  return setCachedAccountUser(accessToken, user);
+}
+
+function loadAccountUser(accessToken) {
+  if (accountUserRequest.accessToken === accessToken && accountUserRequest.promise) {
+    return accountUserRequest.promise;
+  }
+
+  const promise = authApi.me()
+    .then((response) => rememberAccountUser(accessToken, response.data ?? null))
+    .finally(() => {
+      if (accountUserRequest.accessToken === accessToken) {
+        accountUserRequest = { accessToken: "", promise: null };
+      }
+    });
+
+  accountUserRequest = { accessToken, promise };
+  return promise;
+}
+
 export default function UserWorkspaceShell({ children }) {
   const [notice, setNotice] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [accountUser, setAccountUser] = useState(null);
+  const [accountState, setAccountState] = useState(() => {
+    const initialAuth = getStoredAuth();
+    return {
+      accessToken: initialAuth?.accessToken ?? "",
+      user: initialAuth?.accessToken ? getCachedAccountUser(initialAuth.accessToken) : null,
+    };
+  });
   const [searchText, setSearchText] = useState("");
   const sidebarRef = useRef(null);
   const accountMenuRef = useRef(null);
@@ -104,7 +156,9 @@ export default function UserWorkspaceShell({ children }) {
   const activeItem = NAV_ITEMS.find((item) => path === item.path)
     ?? (path === "/profile" ? { label: "Hồ sơ", icon: UserRound } : NAV_ITEMS[0]);
   const ActiveIcon = activeItem.icon;
-  const visibleAccountUser = accessToken ? accountUser : null;
+  const accountUser = accountState.accessToken === accessToken ? accountState.user : null;
+  const cachedAccountUser = accessToken ? getCachedAccountUser(accessToken) : null;
+  const visibleAccountUser = accessToken ? (accountUser ?? cachedAccountUser ?? auth) : null;
   const displayName = getAccountName(visibleAccountUser, auth);
   const avatarUrl = getAccountAvatar(visibleAccountUser);
 
@@ -131,7 +185,7 @@ export default function UserWorkspaceShell({ children }) {
         returnTo: pathToOpen,
         text: auth
           ? "Tính năng này nằm trong gói nâng cao. Bạn có thể xem bảng giá hoặc quay lại tư vấn chuyên khoa."
-          : "Bạn vẫn có thể dùng tư vấn chuyên khoa và bản đồ. Những phần lưu hồ sơ, y bạ, thuốc và chat nâng cao cần đăng ký rồi nâng cấp MediMate+.",
+          : "Bạn vẫn có thể dùng tư vấn chuyên khoa và bản đồ. Những phần lưu hồ sơ, y bạ và chat nâng cao cần đăng ký rồi nâng cấp MediMate+.",
       });
       return;
     }
@@ -171,12 +225,14 @@ export default function UserWorkspaceShell({ children }) {
 
     let active = true;
 
-    authApi.me()
-      .then((response) => {
-        if (active) setAccountUser(response.data ?? null);
+    loadAccountUser(accessToken)
+      .then((user) => {
+        if (active) setAccountState({ accessToken, user });
       })
       .catch(() => {
-        if (active) setAccountUser(null);
+        if (active && !getCachedAccountUser(accessToken)) {
+          setAccountState({ accessToken, user: null });
+        }
       });
 
     return () => {
@@ -240,7 +296,7 @@ export default function UserWorkspaceShell({ children }) {
           <X size={19} />
         </button>
 
-        <nav className="user-shell-nav">
+        <nav className="user-shell-nav" data-onboarding="patient-nav">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = path === item.path;
@@ -262,6 +318,7 @@ export default function UserWorkspaceShell({ children }) {
                 className={isActive ? "active" : ""}
                 key={item.path}
                 type="button"
+                data-onboarding={`patient-nav-${item.id}`}
                 aria-label={`${item.label}, yêu cầu MediMate+`}
                 onClick={(event) => handleLockedNav(item.path, event.currentTarget)}
               >
@@ -272,6 +329,7 @@ export default function UserWorkspaceShell({ children }) {
                 className={isActive ? "active" : ""}
                 key={item.path}
                 href={item.path}
+                data-onboarding={`patient-nav-${item.id}`}
                 aria-current={isActive ? "page" : undefined}
               >
                 {content}
@@ -283,14 +341,14 @@ export default function UserWorkspaceShell({ children }) {
         <section className="user-shell-plan">
           <span>MediMate+</span>
           <strong>Chăm sóc sâu hơn</strong>
-          <p>Mở khoá theo dõi sức khoẻ, thuốc và tư vấn sau khám.</p>
+          <p>Mở khoá theo dõi sức khoẻ và tư vấn sau khám.</p>
           <button type="button" onClick={() => goTo("/pricing")}>Nâng cấp</button>
         </section>
       </aside>
 
       <main ref={mainRef} className="user-shell-main">
         <header className="user-shell-topbar">
-          <div className="user-shell-title">
+          <div className="user-shell-title" data-onboarding="patient-title">
             <button
               className="icon-btn mobile-menu-btn"
               type="button"
@@ -308,7 +366,7 @@ export default function UserWorkspaceShell({ children }) {
             </div>
           </div>
 
-          <form className="user-shell-search" role="search" onSubmit={handleSearch}>
+          <form className="user-shell-search" role="search" onSubmit={handleSearch} data-onboarding="patient-search">
             <Search size={17} />
             <label className="sr-only" htmlFor="workspace-search">Tìm cơ sở y tế</label>
             <input
@@ -333,6 +391,7 @@ export default function UserWorkspaceShell({ children }) {
                 ref={accountButtonRef}
                 className="user-chip account-menu-trigger"
                 type="button"
+                data-onboarding="patient-account"
                 aria-haspopup="true"
                 aria-expanded={accountMenuOpen}
                 aria-controls="workspace-account-menu"
@@ -450,6 +509,7 @@ export default function UserWorkspaceShell({ children }) {
             </div>
         </Dialog>
       )}
+      <PatientOnboardingAssistant auth={auth} />
     </div>
   );
 }

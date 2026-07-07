@@ -11,12 +11,6 @@ const ADMIN_ACCESS_TOKEN = [
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20ifQ",
   "",
 ].join(".");
-const STAFF_ACCESS_TOKEN = [
-  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
-  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJTdGFmZiIsImVtYWlsIjoic3RhZmZAZXhhbXBsZS5jb20ifQ",
-  "",
-].join(".");
-
 test.describe("global navigation UX", () => {
   test("internal links navigate without reloading the document", async ({ page }) => {
     await preparePage(page);
@@ -58,6 +52,14 @@ test.describe("global navigation UX", () => {
     await expect(skipLink).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.locator("#main-content")).toBeFocused();
+  });
+
+  test("hides Google login when the current origin is not authorized", async ({ page }) => {
+    await preparePage(page);
+    await openRoute(page, "/login");
+
+    await expect(page.getByText("Đăng nhập Google đang tắt cho domain này.")).toBeVisible();
+    await expect(page.locator(".google-login-wrap")).toHaveCount(0);
   });
 
   test("free users get a keyboard-safe premium explanation", async ({ page }) => {
@@ -149,9 +151,123 @@ test.describe("global navigation UX", () => {
     await expect(page.getByRole("heading", { name: "Thông tin cá nhân" })).toBeVisible();
 
     const storedAuth = await page.evaluate(() => JSON.parse(localStorage.getItem("medimate.auth")));
-    expect(storedAuth).not.toHaveProperty("email");
-    expect(storedAuth).not.toHaveProperty("displayName");
-    expect(storedAuth).not.toHaveProperty("avatarUrl");
+    expect(storedAuth).toMatchObject({
+      email: "patient@example.com",
+      displayName: "Nguyễn Minh",
+      avatarUrl: "https://example.com/avatar.png",
+    });
+  });
+
+  test("workspace route changes keep the account identity while user API is delayed", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        displayName: "Phước Hà",
+        email: "phuoc.ha@example.com",
+        roles: ["Patient"],
+      }));
+    }, ACCESS_TOKEN);
+
+    let meRequests = 0;
+    await page.route("**/api/users/me", async (route) => {
+      meRequests += 1;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: "55555555-5555-4555-8555-555555555555",
+            displayName: "Phước Hà",
+            email: "phuoc.ha@example.com",
+            roles: ["Patient"],
+          },
+        }),
+      });
+    });
+
+    await openRoute(page, "/dashboard");
+    const accountTrigger = page.locator(".account-menu-trigger");
+    await expect(accountTrigger).toContainText("Phước Hà");
+    await expect(accountTrigger).not.toContainText("Người dùng");
+
+    await page.locator('.user-shell-nav a[href="/recovery-plan"]').click();
+    await expect(page).toHaveURL(/\/recovery-plan$/);
+    await expect(accountTrigger).toContainText("Phước Hà");
+    await expect(accountTrigger).not.toContainText("Người dùng");
+    await expect.poll(() => meRequests).toBe(1);
+  });
+
+  test("patient onboarding tour auto opens once and can be restarted manually", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        displayName: "Phước Hà",
+        email: "phuoc.ha@example.com",
+        roles: ["Patient"],
+        patientOnboardingPending: true,
+      }));
+    }, ACCESS_TOKEN);
+    await page.route("**/api/users/me", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          id: "55555555-5555-4555-8555-555555555555",
+          displayName: "Phước Hà",
+          email: "phuoc.ha@example.com",
+          roles: ["Patient"],
+        },
+      }),
+    }));
+
+    await openRoute(page, "/dashboard");
+
+    const tour = page.getByRole("dialog", { name: "Bắt đầu với MediMate" });
+    await expect(tour).toBeVisible();
+    await expect(tour).toContainText("1 / 6");
+    await page.getByRole("button", { name: "Tiếp tục" }).click();
+    await expect(page.getByRole("dialog", { name: "Khu vực làm việc cá nhân" })).toBeVisible();
+    await page.getByRole("button", { name: "Quay lại" }).click();
+    await expect(tour).toBeVisible();
+    await page.getByRole("button", { name: "Bỏ qua" }).click();
+    await expect(tour).toBeHidden();
+
+    const storedAfterSkip = await page.evaluate(() => {
+      const auth = JSON.parse(localStorage.getItem("medimate.auth"));
+      const statusKey = Object.keys(localStorage).find((key) => key.startsWith("medimate.onboarding.patient.patient-v1."));
+      return {
+        auth,
+        status: statusKey ? JSON.parse(localStorage.getItem(statusKey)) : null,
+      };
+    });
+    expect(storedAfterSkip.auth.patientOnboardingPending).toBe(false);
+    expect(storedAfterSkip.status).toMatchObject({ status: "skipped", tourVersion: "patient-v1" });
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("dialog", { name: "Bắt đầu với MediMate" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Mở hướng dẫn sử dụng" }).click();
+    await expect(page.getByRole("region", { name: "Hướng dẫn sử dụng" })).toBeVisible();
+    await page.getByRole("button", { name: "Bắt đầu tour" }).click();
+    await expect(page.getByRole("dialog", { name: "Bắt đầu với MediMate" })).toBeVisible();
+
+    for (let index = 0; index < 5; index += 1) {
+      await page.getByRole("button", { name: "Tiếp tục" }).click();
+    }
+    await page.getByRole("button", { name: "Hoàn tất" }).click();
+
+    const storedAfterFinish = await page.evaluate(() => {
+      const statusKey = Object.keys(localStorage).find((key) => key.startsWith("medimate.onboarding.patient.patient-v1."));
+      return statusKey ? JSON.parse(localStorage.getItem(statusKey)) : null;
+    });
+    expect(storedAfterFinish).toMatchObject({ status: "completed", tourVersion: "patient-v1" });
   });
 
   test("patient sidebar keeps diagnosis in consultation and profile in account menu", async ({ page }) => {
@@ -169,6 +285,8 @@ test.describe("global navigation UX", () => {
     await expect(page.locator('.user-shell-nav a[href="/dashboard"]')).toBeVisible();
     await expect(page.locator('.user-shell-nav a[href="/profile"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-mobile-nav a[href="/profile"]')).toHaveCount(0);
+    await expect(page.locator('.user-shell-nav a[href="/medication"], .user-shell-nav button[data-onboarding="patient-nav-patient.medication"]')).toHaveCount(0);
+    await expect(page.locator('.user-shell-mobile-nav a[href="/medication"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(1);
     await expect(page.locator('.user-shell-mobile-nav a[href="/symptom"]')).toHaveCount(0);
     await page.locator(".account-menu-trigger").click();
@@ -283,9 +401,9 @@ test.describe("global navigation UX", () => {
       firstLogin: false,
       isFirstLogin: false,
       isProfileCompleted: true,
+      email: "patient@example.com",
+      displayName: "Patient Example",
     });
-    expect(storedAuth).not.toHaveProperty("email");
-    expect(storedAuth).not.toHaveProperty("displayName");
     expect(storedAuth).not.toHaveProperty("phoneNumber");
     expect(storedAuth).not.toHaveProperty("address");
     expect(storedAuth).not.toHaveProperty("refreshToken");
@@ -344,7 +462,7 @@ test.describe("global navigation UX", () => {
     });
   });
 
-  test("existing auth storage removes personal data when the session is read", async ({ page }) => {
+  test("existing auth storage keeps display identity but removes sensitive profile data", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -364,14 +482,14 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).toMatchObject({
       userId: "55555555-5555-4555-8555-555555555555",
       roles: ["Patient"],
+      email: "patient@example.com",
+      displayName: "Patient Example",
     });
-    expect(storedAuth).not.toHaveProperty("email");
-    expect(storedAuth).not.toHaveProperty("displayName");
     expect(storedAuth).not.toHaveProperty("phoneNumber");
     expect(storedAuth).not.toHaveProperty("address");
   });
 
-  test("doctor first login opens the staff workspace instead of patient onboarding", async ({ page }) => {
+  test("doctor first login skips patient onboarding", async ({ page }) => {
     await preparePage(page);
     await page.route("**/api/authentication/login", (route) => route.fulfill({
       status: 200,
@@ -402,7 +520,7 @@ test.describe("global navigation UX", () => {
     await page.getByLabel("Mật khẩu").fill("Example123!");
     await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-    await expect(page).toHaveURL(/\/app\/staff$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
   });
 
   test("rejects external return intent after login", async ({ page }) => {
@@ -525,6 +643,17 @@ test.describe("global navigation UX", () => {
     await expect(page.locator(".assessment-header h1")).toContainText("Phân tích lâm sàng");
   });
 
+  test("medical assistant keeps primary actions visible on mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await preparePage(page);
+
+    await openRoute(page, "/medical-assistant");
+    await expect(page.getByRole("button", { name: "Bắt đầu phân tích" })).toBeVisible();
+
+    await openRoute(page, "/medical-assistant/safety");
+    await expect(page.getByRole("button", { name: "Xem checklist an toàn" })).toBeVisible();
+  });
+
   test("safety gate red flag stops AI intake and points to urgent care", async ({ page }) => {
     await preparePage(page);
 
@@ -549,30 +678,7 @@ test.describe("global navigation UX", () => {
     await expect(page).toHaveURL(/\/dashboard$/);
 
     await page.evaluate(() => localStorage.clear());
-    await page.evaluate((accessToken) => {
-      localStorage.setItem("medimate.auth", JSON.stringify({
-        accessToken,
-        roles: ["Staff"],
-      }));
-    }, STAFF_ACCESS_TOKEN);
-    await page.goto("/app/admin");
-    await expect(page).toHaveURL(/\/app\/staff$/);
-
-    await page.evaluate(() => localStorage.clear());
     await page.goto("/app/admin");
     await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fadmin$/);
-  });
-
-  test("staff role does not grant patient premium entitlement", async ({ page }) => {
-    await preparePage(page);
-    await page.addInitScript((accessToken) => {
-      localStorage.setItem("medimate.auth", JSON.stringify({
-        accessToken,
-        roles: ["Staff"],
-      }));
-    }, STAFF_ACCESS_TOKEN);
-
-    await openRoute(page, "/chat");
-    await expect(page).toHaveURL(/\/pricing\?returnTo=%2Fchat$/);
   });
 });

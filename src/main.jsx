@@ -1,14 +1,33 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { FeedbackProvider } from './components/feedback/FeedbackProvider.jsx'
 import { installLinkNavigation } from './router/navigation.js'
+import { getGoogleClientId, isGoogleOAuthEnabledForCurrentOrigin } from './services/googleOAuthConfig.js'
 import SpaRoot from './SpaRoot.jsx'
-import './index.css'
+import './styles/index.css'
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+const STALE_ASSET_RELOAD_KEY = 'medimate.stale-asset-reload'
+const googleClientId = getGoogleClientId()
+
+function installStaleAssetRecovery() {
+  window.setTimeout(() => {
+    sessionStorage.removeItem(STALE_ASSET_RELOAD_KEY)
+  }, 10_000)
+
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault()
+
+    if (sessionStorage.getItem(STALE_ASSET_RELOAD_KEY) === '1') return
+
+    sessionStorage.setItem(STALE_ASSET_RELOAD_KEY, '1')
+    window.location.reload()
+  })
+}
 
 installLinkNavigation()
+installStaleAssetRecovery()
 
 const appContent = (
   <FeedbackProvider>
@@ -16,10 +35,11 @@ const appContent = (
     <div id="main-content" tabIndex="-1">
       <SpaRoot />
     </div>
+    <SpeedInsights />
   </FeedbackProvider>
 )
 
-const app = googleClientId.trim()
+const app = isGoogleOAuthEnabledForCurrentOrigin()
   ? (
     <GoogleOAuthProvider
       clientId={googleClientId}

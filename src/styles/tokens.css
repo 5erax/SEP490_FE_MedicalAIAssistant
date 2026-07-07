@@ -54,6 +54,10 @@
   --lime-dark: var(--color-primary-strong);
   --mint: var(--color-info-bg);
   --teal: var(--color-info);
+  --blue: #1d4ed8;
+  --amber: #d97706;
+  --coral: #ef6f61;
+  --shadow: 0 24px 70px rgba(17, 24, 39, 0.12);
   --display: var(--font-display);
   --radius: var(--radius-sm);
 

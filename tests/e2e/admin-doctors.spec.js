@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { Buffer } from "node:buffer";
 import { preparePage } from "./helpers";
 
 const ADMIN_TOKEN = [
@@ -17,9 +18,27 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
       email: "admin@example.com",
       roles: ["Admin"],
     }));
+    window.__MEDIMATE_CLOUDINARY_CONFIG__ = {
+      cloudName: "demo",
+      uploadPreset: "unsigned-test",
+      folder: "medical-facilities",
+    };
   }, ADMIN_TOKEN);
 
+  const uploadedImageUrl = "https://res.cloudinary.com/demo/image/upload/v1/medical-facilities/doctor.jpg";
   let createdDoctor = null;
+  let cloudinaryUploadRequested = false;
+
+  await page.route(/^https:\/\/api\.cloudinary\.com\/v1_1\/[^/]+\/image\/upload$/, async (route) => {
+    cloudinaryUploadRequested = true;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        secure_url: uploadedImageUrl,
+        public_id: "medical-facilities/doctor",
+      }),
+    });
+  });
 
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
@@ -89,14 +108,25 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
   await dialog.getByLabel("Học hàm/học vị").fill("ThS.BS");
   await dialog.getByLabel("Số năm kinh nghiệm").fill("8");
   await dialog.getByLabel("Vai trò trong khoa").selectOption("0");
+  await dialog.locator('input[type="file"]').setInputFiles({
+    name: "doctor.jpg",
+    mimeType: "image/jpeg",
+    buffer: Buffer.from("fake-image"),
+  });
+
+  await expect(page.getByText("Đã tải ảnh bác sĩ.", { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel("Đường dẫn ảnh bác sĩ")).toHaveValue(uploadedImageUrl);
+  await expect(dialog.locator(".doctor-image-preview")).toHaveAttribute("src", uploadedImageUrl);
   await dialog.getByRole("button", { name: "Thêm bác sĩ", exact: true }).click();
 
   await expect(page.getByText("Doctor created successfully.", { exact: true })).toBeVisible();
+  expect(cloudinaryUploadRequested).toBe(true);
   expect(createdDoctor).toEqual({
     facilityDepartmentId: FACILITY_DEPARTMENT_ID,
     fullName: "BS. Nguyễn Minh Anh",
     specialty: null,
     academicTitle: "ThS.BS",
+    imageUrl: uploadedImageUrl,
     departmentRole: 0,
     yearsOfExperience: 8,
     isActive: true,
