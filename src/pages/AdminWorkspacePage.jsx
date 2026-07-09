@@ -168,6 +168,11 @@ function ApiMessage({ message }) {
 
 const APPROVED_USER_STATUSES = new Set(["1", "active", "approved", "confirmed", "enabled", "verified"]);
 const PENDING_USER_STATUSES = new Set(["0", "pending", "pendingapproval", "pending_approval", "awaitingapproval", "unapproved", "unconfirmed"]);
+const USER_STATUS_FILTERS = {
+  all: "all",
+  pending: "pending",
+  confirmed: "confirmed",
+};
 
 function normalizeStatusText(value) {
   return String(value ?? "")
@@ -306,6 +311,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const activeSection = initialSection;
   const activeAdminItem = ADMIN_NAV_ITEMS.find((item) => item.id === `admin.${activeSection}`);
   const [search, setSearch] = useState("");
+  const [userStatusFilter, setUserStatusFilter] = useState(USER_STATUS_FILTERS.all);
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [appliedFacilityFilters, setAppliedFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [departmentFilters, setDepartmentFilters] = useState(EMPTY_DEPARTMENT_FILTERS);
@@ -369,14 +375,18 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    if (!keyword) return pendingApprovalUsers;
+    return users.filter((user) => {
+      const matchesStatus = userStatusFilter === USER_STATUS_FILTERS.all
+        || (userStatusFilter === USER_STATUS_FILTERS.pending && isPendingApprovalUser(user))
+        || (userStatusFilter === USER_STATUS_FILTERS.confirmed && isApprovedUser(user));
+      if (!matchesStatus) return false;
+      if (!keyword) return true;
 
-    return pendingApprovalUsers.filter((user) => {
-      return [user.email, user.displayName, user.identityId]
+      return [user.email, user.displayName, user.name, user.identityId, user.userId]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword));
     });
-  }, [search, pendingApprovalUsers]);
+  }, [search, userStatusFilter, users]);
 
   const pendingUsers = pendingApprovalUsers.length;
   const activeDoctors = doctors.filter((doctor) => doctor.isActive).length;
@@ -663,17 +673,17 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   if (!auth) return <EmptyAuth />;
   if (!loading && !isAdmin) return <AccessDenied auth={auth} roles={roles} />;
 
-  async function loadUsers(pageNumber = pageInfo.pageNumber) {
+  async function loadUsers(pageNumber = pageInfo.pageNumber, pageSize = pageInfo.pageSize) {
     setUsersLoading(true);
     setUsersMessage(null);
     setUsersLoadError("");
     try {
-      const response = await usersApi.list(pageNumber, pageInfo.pageSize);
+      const response = await usersApi.list(pageNumber, pageSize);
       const data = response.data ?? {};
       setUsers(data.items ?? []);
       setPageInfo({
         pageNumber: data.pageNumber ?? pageNumber,
-        pageSize: data.pageSize ?? pageInfo.pageSize,
+        pageSize: data.pageSize ?? pageSize,
         totalCount: data.totalCount ?? 0,
         totalPages: data.totalPages ?? 1,
       });
@@ -1757,12 +1767,16 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 message={usersMessage}
                 onDelete={handleDeleteUser}
                 onLoadPage={loadUsers}
-                onPageSizeChange={(pageSize) => setPageInfo((current) => ({ ...current, pageSize }))}
+                onPageSizeChange={(pageSize) => loadUsers(1, pageSize)}
                 onSearchChange={setSearch}
+                onStatusFilterChange={setUserStatusFilter}
                 pageInfo={pageInfo}
+                pendingCount={pendingUsers}
                 rows={filteredUsers}
                 search={search}
+                statusFilter={userStatusFilter}
                 statusLabel={statusLabel}
+                totalVisibleCount={users.length}
               />
             )}
 
