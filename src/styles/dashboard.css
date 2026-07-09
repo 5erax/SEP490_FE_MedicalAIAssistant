@@ -9,13 +9,13 @@
     radial-gradient(circle at 50% 12%, rgba(196, 233, 149, 0.3), transparent 32%),
     linear-gradient(180deg, #f8fbf4 0%, #edf4e7 100%);
   color: var(--color-ink);
-  padding: clamp(36px, 5vw, 64px) clamp(20px, 4vw, 48px) 80px;
+  padding: clamp(18px, 3vh, 32px) clamp(20px, 4vw, 48px) clamp(20px, 3vh, 34px);
 }
 
 .studio-center {
-  width: min(1160px, 100%);
+  width: min(1280px, 100%);
   display: grid;
-  gap: clamp(22px, 3vw, 34px);
+  gap: clamp(16px, 2.2vh, 24px);
   justify-items: center;
   position: relative;
   z-index: 1;
@@ -24,13 +24,13 @@
 .studio-heading {
   display: grid;
   justify-items: center;
-  gap: 14px;
+  gap: 10px;
   text-align: center;
 }
 
 .studio-mark {
-  width: 54px;
-  height: 54px;
+  width: 50px;
+  height: 50px;
   display: grid;
   place-items: center;
   border: 1.5px solid var(--color-ink);
@@ -44,16 +44,16 @@
   max-width: 760px;
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(32px, 4.5vw, 50px);
+  font-size: clamp(32px, 4.3vw, 48px);
   line-height: 1.06;
   text-wrap: balance;
 }
 
 .studio-heading p {
   max-width: 760px;
-  margin: 10px auto 0;
+  margin: 6px auto 0;
   color: var(--color-muted);
-  line-height: 1.65;
+  line-height: 1.55;
 }
 
 .studio-heading .studio-eyebrow {
@@ -66,14 +66,14 @@
 }
 
 .studio-chatbox {
-  width: min(980px, 100%);
+  width: min(1060px, 100%);
   display: grid;
-  gap: 20px;
+  gap: 16px;
   border: 1px solid var(--color-line-strong);
   border-radius: 24px;
   background: var(--color-surface);
   box-shadow: 0 22px 60px rgba(34, 63, 20, 0.1);
-  padding: clamp(22px, 3vw, 30px);
+  padding: clamp(20px, 2.4vw, 26px);
 }
 
 .studio-form-heading,
@@ -88,7 +88,7 @@
   justify-content: space-between;
   gap: 18px 28px;
   border-bottom: 1px solid var(--color-line);
-  padding-bottom: 18px;
+  padding-bottom: 14px;
 }
 
 .studio-form-heading > div:first-child > span {
@@ -135,9 +135,9 @@
 }
 
 .studio-chatbox .ui-field textarea {
-  min-height: 148px;
+  min-height: 132px;
   background: var(--color-surface-soft);
-  padding: 18px;
+  padding: 16px;
   font-size: 16px;
   font-weight: 600;
   line-height: 1.55;
@@ -149,7 +149,7 @@
   align-items: center;
   gap: 18px;
   border-top: 1px solid var(--color-line);
-  padding-top: 18px;
+  padding-top: 14px;
 }
 
 .studio-status {
@@ -764,7 +764,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
 /* Focused patient flow: calm surfaces and one clear action per step. */
 .studio-flow {
-  width: min(740px, 68%);
+  width: min(760px, 64%);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
@@ -777,7 +777,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   position: relative;
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--color-muted);
   font-size: 12px;
 }
@@ -794,8 +794,8 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
 .studio-flow span {
   z-index: 1;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border: 1px solid var(--color-line-strong);
@@ -807,14 +807,14 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
    Add this at the end of src/styles/dashboard.css */
 
 .studio-diagnosis-panel.specialty-question-flow {
-  width: min(900px, 100%);
+  width: min(1040px, 100%);
   display: grid;
-  gap: 18px;
+  gap: 16px;
   border: 1px solid var(--color-line-strong);
   border-radius: 24px;
   background: var(--color-surface);
   box-shadow: 0 22px 60px rgba(34, 63, 20, 0.1);
-  padding: clamp(18px, 3vw, 28px);
+  padding: clamp(18px, 2.5vw, 26px);
 }
 
 .specialty-question-topline {
