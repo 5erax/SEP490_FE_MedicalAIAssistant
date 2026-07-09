@@ -578,6 +578,15 @@ export default function DashboardPage() {
             <div className="studio-question-actions specialty-question-actions">
               <Button
                 type="button"
+                tone="ghost"
+                disabled={status === "submitting"}
+                onClick={() => resetDiagnosis()}
+              >
+                Quay lại biểu mẫu
+              </Button>
+
+              <Button
+                type="button"
                 tone="secondary"
                 disabled={currentQuestionIndex === 0 || status === "submitting"}
                 onClick={goToPreviousQuestion}

@@ -606,6 +606,15 @@ function QuestionsPage({ sessionId }) {
 
         <div className="assessment-actions">
           <Button
+            type="button"
+            tone="ghost"
+            onClick={() => navigate("/medical-assistant/intake")}
+          >
+            Quay lại biểu mẫu
+          </Button>
+
+          <Button
+            type="button"
             tone="secondary"
             disabled={currentIndex === 0}
             onClick={() => setCurrentIndex((index) => index - 1)}
