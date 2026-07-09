@@ -28,13 +28,13 @@
     radial-gradient(circle at 66% 38%, rgba(237, 248, 222, 0.68), transparent 35%),
     linear-gradient(180deg, var(--assessment-bg-start) 0%, var(--assessment-bg-end) 100%);
   color: var(--assessment-ink);
-  padding: clamp(28px, 4.5vw, 64px) clamp(14px, 4vw, 48px) 90px;
+  padding: clamp(24px, 4vw, 56px) clamp(14px, 4vw, 48px) clamp(36px, 6vw, 72px);
 }
 
 .assessment-shell {
   width: min(1120px, 100%);
   display: grid;
-  gap: 28px;
+  gap: clamp(18px, 2.4vh, 26px);
   margin-inline: auto;
 }
 
@@ -48,10 +48,10 @@
 }
 
 .clinical-hero {
-  width: min(780px, 100%);
+  width: min(860px, 100%);
   justify-items: center;
   text-align: center;
-  margin-top: 6px;
+  margin-top: 0;
 }
 
 .assessment-icon {
@@ -70,20 +70,21 @@
 }
 
 .assessment-header h1 {
-  max-width: 860px;
+  max-width: 900px;
   margin: 0;
   font-family: var(--assessment-font-display);
-  font-size: clamp(36px, 5vw, 58px);
-  line-height: 0.98;
-  letter-spacing: -0.035em;
+  font-size: clamp(38px, 4.4vw, 58px);
+  line-height: 1.02;
+  letter-spacing: -0.028em;
+  text-wrap: balance;
 }
 
 .assessment-header p:not(.eyebrow),
 .clinical-hero-description {
   max-width: 720px;
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--assessment-muted);
-  line-height: 1.7;
+  line-height: 1.62;
 }
 
 .eyebrow {
@@ -190,12 +191,12 @@
 }
 
 .clinical-card {
-  width: min(900px, 100%);
+  width: min(980px, 100%);
 }
 
 .clinical-intake-card {
   display: grid;
-  gap: 20px;
+  gap: clamp(16px, 2vh, 20px);
 }
 
 .clinical-card-head {
@@ -261,7 +262,7 @@
 .simple-symptom-input .ui-textarea,
 .assessment-form textarea {
   width: 100%;
-  min-height: 160px;
+  min-height: clamp(136px, 18vh, 168px);
   border: 1px solid var(--assessment-line-strong);
   border-radius: var(--assessment-radius-md);
   background: var(--assessment-surface-soft);
@@ -292,7 +293,7 @@
   justify-content: space-between;
   gap: 16px;
   border-top: 1px solid var(--assessment-line);
-  padding-top: 16px;
+  padding-top: 14px;
   color: var(--assessment-ink);
   font-weight: 900;
 }

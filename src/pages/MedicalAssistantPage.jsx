@@ -162,7 +162,7 @@ function EntryPage() {
   return (
     <AssessmentShell
       eyebrow="Tư vấn lâm sàng"
-      title="Phân tích lâm sàng qua triệu chứng"
+      title="Phân tích lâm sàng qua triệu chứng"
       description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
       activeStep={0}
     >
@@ -344,7 +344,7 @@ function IntakePage() {
   return (
     <AssessmentShell
       eyebrow="Tư vấn lâm sàng"
-      title="Phân tích lâm sàng qua triệu chứng"
+      title="Phân tích lâm sàng qua triệu chứng"
       description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
       activeStep={0}
     >

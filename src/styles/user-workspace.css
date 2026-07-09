@@ -710,12 +710,19 @@
 
 .user-shell .dash-page,
 .user-shell .symptom-page,
+.user-shell .assessment-page,
 .user-shell .medication-page,
 .user-shell .pricing-page {
   min-height: auto;
   background: transparent;
   padding: 0;
   font-family: inherit;
+}
+
+.user-shell .clinical-page {
+  min-height: calc(100svh - 128px);
+  display: grid;
+  align-items: center;
 }
 
 .user-shell .profile-page,
