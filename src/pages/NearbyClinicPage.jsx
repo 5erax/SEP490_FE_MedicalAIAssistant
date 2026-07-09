@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import FacilityReviews from "../components/nearbyClinic/FacilityReviews";
-import { ensureMockFacilityCoverage } from "../data/mockMedicalFacilities";
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import {
@@ -244,15 +243,12 @@ function NearbyClinicPage() {
             relationDepartmentIdsByFacility.get(facilityId) ?? [],
           );
         });
-        const data = ensureMockFacilityCoverage(serviceFacilities, departments).map((facility) => normalizeFacility(facility));
-        const usesMockData = data.some((facility) => facility.isMockFacility || facility.isMockAugmented);
+        const data = serviceFacilities;
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
         setSelectedFacility(null);
         if (facilityResult.status !== "fulfilled") {
-          setApiNotice("Không tải được danh sách cơ sở y tế. Đang hiển thị dữ liệu mẫu để bạn tiếp tục tra cứu.");
-        } else if (usesMockData) {
-          setApiNotice("");
+          setApiNotice("Không tải được danh sách cơ sở y tế.");
         } else {
           setApiNotice(data.length ? "" : "Chưa có cơ sở y tế đang hoạt động.");
         }
