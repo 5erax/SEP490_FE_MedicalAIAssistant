@@ -9,7 +9,7 @@
   --workspace-mint: var(--color-primary-soft);
   min-height: 100svh;
   display: grid;
-  grid-template-columns: 278px minmax(0, 1fr);
+  grid-template-columns: 292px minmax(0, 1fr);
   background:
     linear-gradient(135deg, rgba(196, 233, 149, 0.18), rgba(8, 127, 140, 0.08) 42%, transparent 70%),
     var(--workspace-bg);
@@ -30,27 +30,27 @@
   height: 100svh;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   border-right: 1px solid var(--workspace-line);
   background: rgba(255, 255, 255, 0.82);
   overflow-y: auto;
-  padding: 18px 16px 22px;
+  padding: 20px 18px 24px;
   backdrop-filter: blur(18px);
 }
 
 .user-shell-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 46px;
+  gap: 12px;
+  min-height: 50px;
   color: var(--workspace-ink);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 950;
 }
 
 .user-shell-brand span {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border: 1.5px solid var(--workspace-ink);
@@ -62,23 +62,23 @@
 
 .user-shell-nav {
   display: grid;
-  gap: 7px;
+  gap: 9px;
 }
 
 .user-shell-nav button,
 .user-shell-nav a {
   position: relative;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  min-height: 54px;
+  min-height: 58px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   background: transparent;
   color: var(--workspace-muted);
-  padding: 8px 10px;
+  padding: 9px 12px;
   text-align: left;
   transition: background 180ms ease, color 180ms ease, transform 180ms ease;
 }
@@ -107,14 +107,14 @@
 }
 
 .user-shell-nav strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 950;
 }
 
 .user-shell-nav small {
-  margin-top: 2px;
+  margin-top: 3px;
   color: currentColor;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   opacity: 0.72;
 }
@@ -204,13 +204,13 @@
 .user-shell-plan {
   flex-shrink: 0;
   display: grid;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 10px;
+  margin-top: 8px;
   border: 1.5px solid var(--workspace-ink);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--workspace-ink);
   color: #fff;
-  padding: 14px;
+  padding: 16px;
   box-shadow: 4px 4px 0 rgba(16, 20, 17, 0.18);
 }
 
@@ -219,25 +219,25 @@
   border-radius: 999px;
   background: var(--workspace-lime);
   color: var(--workspace-ink);
-  padding: 5px 9px;
-  font-size: 11px;
+  padding: 6px 10px;
+  font-size: 11.5px;
   font-weight: 950;
 }
 
 .user-shell-plan strong {
-  font-size: 18px;
+  font-size: 19px;
 }
 
 .user-shell-plan p {
   margin: 0;
   color: rgba(255, 255, 255, 0.68);
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.55;
 }
 
 .user-shell-plan button {
   width: 100%;
-  min-height: 38px;
+  min-height: 42px;
   border: 1.5px solid var(--workspace-lime);
   border-radius: 10px;
   background: var(--workspace-lime);
@@ -256,26 +256,26 @@
   top: 0;
   z-index: 12;
   display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(220px, 520px) auto;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(240px, 540px) auto;
   gap: 14px;
   align-items: center;
   border-bottom: 1px solid var(--workspace-line);
   background: rgba(244, 247, 239, 0.84);
-  padding: 16px 22px;
+  padding: 17px 24px;
   backdrop-filter: blur(20px);
 }
 
 .user-shell-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 
 .title-icon,
 .icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border: 1px solid var(--workspace-line);
@@ -304,7 +304,7 @@
 
 .user-shell-title h1 {
   font-family: var(--display);
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1.1;
 }
 
@@ -780,7 +780,7 @@
 
 @media (max-width: 1180px) {
   .user-shell {
-    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-columns: 244px minmax(0, 1fr);
   }
 
   .user-shell-topbar {
