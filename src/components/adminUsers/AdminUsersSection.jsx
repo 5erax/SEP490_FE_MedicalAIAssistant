@@ -10,6 +10,12 @@ import {
   PAGE_SIZE_OPTIONS,
 } from "../ui";
 
+const STATUS_OPTIONS = [
+  { value: "all", label: "Tất cả tài khoản" },
+  { value: "pending", label: "Chờ duyệt" },
+  { value: "confirmed", label: "Đã xác nhận" },
+];
+
 export default function AdminUsersSection({
   error,
   isApproved,
@@ -19,10 +25,14 @@ export default function AdminUsersSection({
   onLoadPage,
   onPageSizeChange,
   onSearchChange,
+  onStatusFilterChange,
   pageInfo,
+  pendingCount,
   rows,
   search,
+  statusFilter,
   statusLabel,
+  totalVisibleCount,
 }) {
   const columns = [
     {
@@ -30,8 +40,9 @@ export default function AdminUsersSection({
       header: "Người dùng",
       render: (item) => (
         <div className="table-primary-cell">
-          <strong>{item.displayName || item.email || "Người dùng"}</strong>
+          <strong>{item.displayName || item.name || item.email || "Người dùng"}</strong>
           <span>{item.email || "Chưa có email"}</span>
+          <small>{item.identityId || item.userId || item.id}</small>
         </div>
       ),
     },
@@ -50,7 +61,7 @@ export default function AdminUsersSection({
       header: "Thao tác",
       render: (item) => (
         <div className="record-actions">
-          <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(item.identityId)}>Xóa</button>
+          <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(item.identityId || item.userId || item.id)}>Xóa</button>
         </div>
       ),
     },
@@ -61,14 +72,22 @@ export default function AdminUsersSection({
       <div className="panel-title-row">
         <div>
           <p className="eyebrow">Tài khoản</p>
-          <h2>Tài khoản chờ duyệt</h2>
-          <p className="muted-text">Chỉ hiển thị các tài khoản chưa được duyệt để admin xử lý nhanh hơn.</p>
+          <h2>Quản lý người dùng</h2>
+          <p className="muted-text">Lọc tài khoản chờ duyệt, đã xác nhận và xóa từng người dùng khi cần.</p>
         </div>
         <button className="btn btn-ghost btn-small" type="button" onClick={() => onLoadPage()}>Tải lại</button>
       </div>
       {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
-      <div className="admin-toolbar">
-        <input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Tìm theo email hoặc tên..." />
+      <div className="admin-toolbar admin-users-toolbar">
+        <input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Tìm theo email, tên hoặc ID..." />
+        <CustomSelect
+          className="admin-user-status-filter"
+          label="Trạng thái"
+          hideLabel
+          value={statusFilter}
+          options={STATUS_OPTIONS}
+          onChange={onStatusFilterChange}
+        />
         <CustomSelect
           className="admin-toolbar-page-size"
           label="Per page"
@@ -93,18 +112,18 @@ export default function AdminUsersSection({
         />
       ) : (
         <DataTable
-          caption="Danh sách tài khoản đang chờ quản trị viên duyệt"
+          caption="Danh sách tài khoản người dùng"
           columns={columns}
           rows={rows}
-          getRowKey={(item) => item.identityId}
-          emptyState={<EmptyState title="Không có tài khoản chờ duyệt" description="Các tài khoản đã duyệt hoặc đang hoạt động đã được ẩn khỏi danh sách này." />}
+          getRowKey={(item) => item.identityId || item.userId || item.id}
+          emptyState={<EmptyState title="Không có tài khoản phù hợp" description="Thử đổi bộ lọc trạng thái hoặc từ khóa tìm kiếm." />}
         />
       )}
 
       {!error && (
         <div className="pagination-row">
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => onLoadPage(pageInfo.pageNumber - 1)}>Trước</button>
-          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {rows.length} tài khoản cần duyệt</span>
+          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {rows.length}/{totalVisibleCount} hiển thị · {pendingCount} chờ duyệt</span>
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => onLoadPage(pageInfo.pageNumber + 1)}>Sau</button>
         </div>
       )}

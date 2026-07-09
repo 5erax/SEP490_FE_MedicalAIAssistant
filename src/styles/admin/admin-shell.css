@@ -220,6 +220,11 @@
   margin: 14px 0;
 }
 
+.admin-operator .admin-users-toolbar {
+  grid-template-columns: minmax(260px, 1fr) minmax(170px, 210px) 150px;
+  align-items: center;
+}
+
 .admin-operator .admin-user-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
