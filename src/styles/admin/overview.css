@@ -1,24 +1,25 @@
 .admin-operator .admin-dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1.28fr) minmax(380px, 0.72fr);
+  gap: 18px;
 }
 
 .admin-operator .admin-performance-panel {
   grid-column: 1 / -1;
-  padding: clamp(20px, 2.6vw, 28px);
+  padding: clamp(24px, 2.8vw, 34px);
 }
 
 .admin-operator .admin-chart-panel,
 .admin-operator .admin-schedule-panel {
-  min-height: 380px;
+  min-height: 430px;
+  padding: clamp(22px, 2.4vw, 30px);
 }
 
 .admin-operator .admin-panel-date {
   display: block;
-  margin-top: 6px;
+  margin-top: 7px;
   color: rgba(16, 20, 17, 0.58);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -31,20 +32,20 @@
 
 .admin-operator .admin-panel-tools span,
 .admin-operator .admin-panel-tools button {
-  min-height: 34px;
+  min-height: 38px;
   border: 0;
   border-radius: 10px;
   background: rgba(16, 20, 17, 0.05);
   color: rgba(16, 20, 17, 0.66);
-  padding: 8px 11px;
-  font-size: 12px;
+  padding: 9px 13px;
+  font-size: 13px;
   font-weight: 820;
 }
 
 .admin-operator .admin-panel-tools button {
   display: grid;
   place-items: center;
-  width: 34px;
+  width: 38px;
   padding: 0;
 }
 
@@ -52,20 +53,20 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
-  margin-top: 24px;
+  margin-top: 26px;
   border-top: 1px solid rgba(16, 20, 17, 0.09);
 }
 
 .admin-operator .admin-overview-metrics article {
   display: grid;
-  gap: 8px;
+  gap: 9px;
   min-width: 0;
   border-right: 1px solid rgba(16, 20, 17, 0.09);
-  padding: 20px clamp(14px, 2vw, 24px) 2px 0;
+  padding: 24px clamp(18px, 2.2vw, 30px) 6px 0;
 }
 
 .admin-operator .admin-overview-metrics article + article {
-  padding-left: clamp(14px, 2vw, 24px);
+  padding-left: clamp(18px, 2.2vw, 30px);
 }
 
 .admin-operator .admin-overview-metrics article:last-child {
@@ -74,22 +75,22 @@
 
 .admin-operator .admin-overview-metrics span {
   color: rgba(16, 20, 17, 0.58);
-  font-size: 12px;
-  font-weight: 820;
+  font-size: 13px;
+  font-weight: 860;
 }
 
 .admin-operator .admin-overview-metrics strong {
   color: #101411;
-  font-size: clamp(28px, 3.2vw, 38px);
-  font-weight: 800;
+  font-size: clamp(34px, 3.4vw, 48px);
+  font-weight: 860;
   letter-spacing: -0.04em;
 }
 
 .admin-operator .admin-overview-metrics small {
   width: fit-content;
   border-radius: 999px;
-  padding: 5px 8px;
-  font-size: 11px;
+  padding: 6px 10px;
+  font-size: 12px;
   font-weight: 860;
 }
 
@@ -107,17 +108,17 @@
   display: grid;
   grid-template-columns: repeat(6, minmax(44px, 1fr));
   align-items: end;
-  gap: 10px;
-  min-height: 270px;
-  margin-top: 20px;
+  gap: 14px;
+  min-height: 300px;
+  margin-top: 24px;
   border-bottom: 1px solid rgba(16, 20, 17, 0.08);
 }
 
 .admin-operator .admin-bar {
   display: grid;
   align-items: end;
-  gap: 10px;
-  height: 260px;
+  gap: 12px;
+  height: 290px;
   text-align: center;
 }
 
@@ -126,7 +127,7 @@
   display: grid;
   align-items: start;
   min-height: 36px;
-  border-radius: 14px;
+  border-radius: 16px;
   background: rgba(16, 20, 17, 0.06);
   overflow: hidden;
 }
@@ -142,13 +143,14 @@
 .admin-operator .admin-bar strong {
   position: relative;
   z-index: 1;
-  padding-top: 10px;
+  padding-top: 12px;
   color: rgba(16, 20, 17, 0.66);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .admin-operator .admin-bar small {
   color: rgba(16, 20, 17, 0.56);
+  font-size: 13px;
   font-weight: 780;
 }
 
@@ -171,18 +173,18 @@
 .admin-operator .admin-week-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 7px;
-  margin-top: 18px;
+  gap: 8px;
+  margin-top: 22px;
 }
 
 .admin-operator .admin-week-strip button {
   display: grid;
-  gap: 6px;
+  gap: 7px;
   border: 0;
   border-radius: 14px;
   background: transparent;
   color: rgba(16, 20, 17, 0.58);
-  padding: 8px 4px;
+  padding: 10px 6px;
 }
 
 .admin-operator .admin-week-strip button.active {
@@ -191,30 +193,30 @@
 }
 
 .admin-operator .admin-week-strip span {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 760;
 }
 
 .admin-operator .admin-week-strip strong {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .admin-operator .admin-operation-list {
   display: grid;
-  gap: 12px;
-  margin-top: 22px;
+  gap: 14px;
+  margin-top: 24px;
 }
 
 .admin-operator .admin-operation {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
   border: 0;
   border-radius: 16px;
   color: #101411;
-  padding: 14px;
+  padding: 16px;
   text-align: left;
 }
 
@@ -233,9 +235,9 @@
 .admin-operator .admin-operation-icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
   background: rgba(255, 255, 255, 0.72);
 }
 
@@ -245,11 +247,11 @@
 }
 
 .admin-operator .admin-operation strong {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .admin-operator .admin-operation small {
   margin-top: 3px;
   color: rgba(16, 20, 17, 0.6);
-  font-size: 12px;
+  font-size: 13px;
 }
