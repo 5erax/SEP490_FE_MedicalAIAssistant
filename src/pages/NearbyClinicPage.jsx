@@ -146,6 +146,17 @@ function getDoctorSpecialty(doctor) {
   return doctor?.departmentName || doctor?.specialty || "Chưa cập nhật chuyên khoa";
 }
 
+function getDoctorRoleLabel(doctor) {
+  const role = doctor?.departmentRoleName || doctor?.departmentRole || "";
+  const normalizedRole = normalizeSearchText(role);
+  if (normalizedRole === "doctor") return "Bác sĩ";
+  if (normalizedRole === "deputyhead") return "Phó khoa";
+  if (normalizedRole === "head") return "Trưởng khoa";
+  if (normalizedRole === "leadingexpert") return "Chuyên gia đầu ngành";
+  if (normalizedRole === "consultant") return "Cố vấn chuyên môn";
+  return role;
+}
+
 function mergeFacilityDetail(existingFacility, apiFacility) {
   return {
     ...existingFacility,
@@ -886,7 +897,11 @@ function NearbyClinicPage() {
                       {detailDoctors.map((doctor) => (
                         <article key={doctor.id}>
                           <span className="facility-detail-doctor-image">{getDoctorImageUrl(doctor) ? <img src={getDoctorImageUrl(doctor)} alt={`Ảnh bác sĩ ${getDoctorName(doctor)}`} /> : <UserRound size={20} aria-hidden="true" />}</span>
-                          <div><strong>{getDoctorName(doctor)}</strong><span>{doctor.academicTitle || getDoctorSpecialty(doctor)}</span><small>{getDoctorSpecialty(doctor)}{doctor.yearsOfExperience ? ` · ${doctor.yearsOfExperience} năm kinh nghiệm` : ""}</small></div>
+                          <div className="doctor-card-copy">
+                            <strong>{getDoctorName(doctor)}</strong>
+                            {doctor.academicTitle && <span>{doctor.academicTitle}</span>}
+                            <small>{getDoctorSpecialty(doctor)}{doctor.yearsOfExperience ? ` · ${doctor.yearsOfExperience} năm kinh nghiệm` : ""}</small>
+                          </div>
                           <button type="button" onClick={() => openDoctorDetail(doctor)}>Xem chi tiết</button>
                         </article>
                       ))}
@@ -939,11 +954,11 @@ function NearbyClinicPage() {
                 <div><Building2 size={17} /><span>{detailFacility.facilityName}</span></div>
                 {selectedDoctor.yearsOfExperience && <div><Star size={17} /><span>{selectedDoctor.yearsOfExperience} năm kinh nghiệm</span></div>}
               </div>
-              <section className="facility-info-group">
+              <section className="facility-info-group doctor-info-panel">
                 <h3>Thông tin chuyên môn</h3>
                 <dl className="facility-plain-facts">
                   <div><dt>Chuyên khoa</dt><dd>{getDoctorSpecialty(selectedDoctor)}</dd></div>
-                  {selectedDoctor.departmentRoleName && <div><dt>Vai trò</dt><dd>{selectedDoctor.departmentRoleName}</dd></div>}
+                  {getDoctorRoleLabel(selectedDoctor) && <div><dt>Vai trò</dt><dd>{getDoctorRoleLabel(selectedDoctor)}</dd></div>}
                   {selectedDoctor.yearsOfExperience && <div><dt>Kinh nghiệm</dt><dd>{selectedDoctor.yearsOfExperience} năm</dd></div>}
                   <div><dt>Cơ sở công tác</dt><dd>{detailFacility.facilityName}</dd></div>
                 </dl>
@@ -1970,6 +1985,77 @@ const styles = `
   border-color: var(--line);
   background: #eef0e8;
   color: var(--muted);
+}
+.doctor-detail-view .doctor-detail-body {
+  background: linear-gradient(180deg, #fbfdf8 0%, #f3f8ef 100%);
+}
+.doctor-detail-view .doctor-profile-card {
+  margin: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(24, 54, 31, .07);
+  padding: 16px;
+}
+.doctor-detail-view .doctor-profile-card h2 {
+  font-size: 25px;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.doctor-detail-view .doctor-fact-grid {
+  padding: 0 16px 14px;
+}
+.doctor-detail-view .doctor-fact-grid div {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .86);
+  padding: 10px 12px;
+}
+.doctor-info-panel {
+  margin: 0 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(24, 54, 31, .06);
+  padding: 16px;
+}
+.doctor-info-panel .facility-plain-facts {
+  gap: 8px;
+}
+.doctor-info-panel .facility-plain-facts div {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper-soft);
+  padding: 10px 12px;
+}
+.facility-detail-doctor-list article {
+  gap: 12px;
+  border-radius: 16px;
+  background: #fff;
+  padding: 14px;
+}
+.doctor-card-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.doctor-card-copy strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.doctor-card-copy span {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+.doctor-detail-view .doctor-sticky-actions button {
+  border-color: var(--line);
+  border-radius: 14px;
+  box-shadow: none;
 }
 .facility-detail-view {
   display: none;
