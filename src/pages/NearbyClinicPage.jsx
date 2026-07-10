@@ -124,6 +124,34 @@ function getAverageRating(reviews = []) {
   return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
 }
 
+function getReviewMessageText(message, fallback = "Không thể xử lý đánh giá lúc này.") {
+  const source = String(message ?? "").trim();
+  if (!source) return fallback;
+
+  const normalized = normalizeSearchText(source);
+  if (normalized.includes("already reviewed")) {
+    return "Bạn đã đánh giá cơ sở y tế này rồi.";
+  }
+  if (normalized.includes("create feedback review failed")) {
+    return "Không thể gửi đánh giá. Vui lòng thử lại sau.";
+  }
+  if (normalized.includes("feedback review created")
+    || normalized.includes("review created")
+    || normalized.includes("create feedback review success")
+    || normalized.includes("created successfully")
+    || normalized === "ok") {
+    return "Đã gửi đánh giá của bạn.";
+  }
+  if (normalized.includes("unauthorized") || normalized.includes("forbidden")) {
+    return "Bạn cần đăng nhập để gửi đánh giá.";
+  }
+  if (normalized.includes("network") || normalized.includes("failed to fetch")) {
+    return "Không thể kết nối máy chủ. Vui lòng thử lại.";
+  }
+
+  return source;
+}
+
 function getArrayData(response) {
   if (Array.isArray(response?.data)) return response.data;
   if (Array.isArray(response?.data?.items)) return response.data.items;
@@ -361,7 +389,7 @@ function NearbyClinicPage() {
         }
       })
       .catch((error) => {
-        if (active) setReviewMessage(error.message);
+        if (active) setReviewMessage(getReviewMessageText(error.message, "Không thể tải đánh giá cho cơ sở này."));
       })
       .finally(() => {
         if (active) setReviewsLoading(false);
@@ -718,12 +746,12 @@ function NearbyClinicPage() {
         comment: reviewForm.comment.trim() || null,
       });
       setReviewForm({ rating: "5", comment: "" });
-      setReviewMessage(response.message || "Đã gửi đánh giá.");
+      setReviewMessage(getReviewMessageText(response.message, "Đã gửi đánh giá của bạn."));
       const refreshed = await feedbackReviewsApi.byFacility(selectedFacility.facilityId);
       setReviews(refreshed.data?.items ?? []);
       setReviewsTotalCount(refreshed.data?.totalCount ?? refreshed.data?.items?.length ?? 0);
     } catch (error) {
-      setReviewMessage(error.message);
+      setReviewMessage(getReviewMessageText(error.message, "Không thể gửi đánh giá. Vui lòng thử lại sau."));
     } finally {
       setSavingReview(false);
     }
