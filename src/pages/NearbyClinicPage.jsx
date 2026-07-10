@@ -125,11 +125,16 @@ function getAverageRating(reviews = []) {
 }
 
 function getReviewMessageText(message, fallback = "Không thể xử lý đánh giá lúc này.") {
-  const source = String(message ?? "").trim();
+  const source = [
+    typeof message === "string" ? message : "",
+    message?.message,
+    message?.payload?.message,
+    message?.payload?.errors ? JSON.stringify(message.payload.errors) : "",
+  ].filter(Boolean).join(" ").trim();
   if (!source) return fallback;
 
   const normalized = normalizeSearchText(source);
-  if (normalized.includes("already reviewed")) {
+  if (normalized.includes("already reviewed") || normalized.includes("reviewed this facility")) {
     return "Bạn đã đánh giá cơ sở y tế này rồi.";
   }
   if (normalized.includes("create feedback review failed")) {
@@ -389,7 +394,7 @@ function NearbyClinicPage() {
         }
       })
       .catch((error) => {
-        if (active) setReviewMessage(getReviewMessageText(error.message, "Không thể tải đánh giá cho cơ sở này."));
+        if (active) setReviewMessage(getReviewMessageText(error, "Không thể tải đánh giá cho cơ sở này."));
       })
       .finally(() => {
         if (active) setReviewsLoading(false);
@@ -751,7 +756,7 @@ function NearbyClinicPage() {
       setReviews(refreshed.data?.items ?? []);
       setReviewsTotalCount(refreshed.data?.totalCount ?? refreshed.data?.items?.length ?? 0);
     } catch (error) {
-      setReviewMessage(getReviewMessageText(error.message, "Không thể gửi đánh giá. Vui lòng thử lại sau."));
+      setReviewMessage(getReviewMessageText(error, "Không thể gửi đánh giá. Vui lòng thử lại sau."));
     } finally {
       setSavingReview(false);
     }
@@ -1620,6 +1625,7 @@ const styles = `
 }
 .map-sidebar-screen {
   height: 100%;
+  min-height: 0;
   overflow-y: auto;
   padding: 22px;
   background: rgba(252, 253, 250, .99);
@@ -1652,6 +1658,7 @@ const styles = `
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow: hidden;
   padding: 0;
 }
 .facility-detail-topbar {
@@ -1687,8 +1694,10 @@ const styles = `
 }
 .facility-detail-body,
 .doctor-detail-body {
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding-bottom: 18px;
 }
 .facility-detail-media {
@@ -1768,7 +1777,7 @@ const styles = `
 }
 .facility-detail-tabs {
   position: sticky;
-  top: 63px;
+  top: 0;
   z-index: 4;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2116,7 +2125,7 @@ const styles = `
     overflow-x: auto;
   }
   .facility-detail-tabs {
-    top: 63px;
+    top: 0;
   }
   .doctor-sticky-actions {
     grid-template-columns: 1fr;
