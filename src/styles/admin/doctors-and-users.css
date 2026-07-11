@@ -154,32 +154,32 @@
 
 .admin-operator .doctor-table-wrap .ui-table {
   width: 100%;
-  min-width: 0;
+  min-width: 1040px;
   table-layout: fixed;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(1) {
-  width: 24%;
-}
-
-.admin-operator .doctor-table-wrap th:nth-child(2) {
-  width: 17%;
-}
-
-.admin-operator .doctor-table-wrap th:nth-child(3) {
   width: 23%;
 }
 
+.admin-operator .doctor-table-wrap th:nth-child(2) {
+  width: 18%;
+}
+
+.admin-operator .doctor-table-wrap th:nth-child(3) {
+  width: 21%;
+}
+
 .admin-operator .doctor-table-wrap th:nth-child(4) {
-  width: 10%;
+  width: 11%;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(5) {
-  width: 12%;
+  width: 11%;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(6) {
-  width: 14%;
+  width: 16%;
 }
 
 .admin-operator .doctor-table-wrap .ui-table th {
@@ -215,6 +215,11 @@
   color: #101411;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.table-primary-cell {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .doctor-primary-cell div > span,
