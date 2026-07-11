@@ -304,11 +304,22 @@ test("profile page renders and updates backend user data instead of mock data", 
 
   await page.goto("/profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Nguyễn Minh Backend", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Thông tin cá nhân" }).first()).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "Chỉnh sửa" }).click();
   await page.getByLabel("Họ và tên").fill("Nguyễn Minh Đã Sửa");
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu thay đổi", exact: true }).click();
 
   await expect(page.getByText("Đã lưu thông tin!", { exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Thông tin cá nhân" }).first().press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Hồ sơ y tế" }).first()).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Dữ liệu sức khỏe nhạy cảm", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Chiều cao (cm)")).toBeDisabled();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileWidth = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(mobileWidth.scrollWidth).toBeLessThanOrEqual(mobileWidth.clientWidth);
   expect(updatePayload).toEqual({
     displayName: "Nguyễn Minh Đã Sửa",
     address: "Hà Nội",
