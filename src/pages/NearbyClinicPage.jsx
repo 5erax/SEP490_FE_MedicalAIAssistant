@@ -42,6 +42,15 @@ const DETAIL_TABS = [
   ["reviews", "Đánh giá"],
 ];
 
+const BUSY_HOURS = {
+  monday: { label: "Thứ Hai", values: [22, 38, 68, 88, 76, 46, 54, 72, 64, 38] },
+  tuesday: { label: "Thứ Ba", values: [18, 34, 62, 82, 70, 42, 50, 68, 60, 34] },
+  wednesday: { label: "Thứ Tư", values: [20, 36, 64, 84, 72, 44, 52, 70, 62, 36] },
+  thursday: { label: "Thứ Năm", values: [18, 32, 58, 78, 68, 40, 48, 66, 58, 32] },
+  friday: { label: "Thứ Sáu", values: [24, 42, 70, 90, 80, 50, 58, 76, 68, 40] },
+};
+const BUSY_HOUR_LABELS = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
+
 function getValidTab(value) {
   return DETAIL_TABS.some(([id]) => id === value) ? value : "overview";
 }
@@ -281,6 +290,8 @@ function NearbyClinicPage() {
   const [reviewForm, setReviewForm] = useState({ rating: "5", comment: "" });
   const [reviewMessage, setReviewMessage] = useState("");
   const [savingReview, setSavingReview] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
+  const [busyDay, setBusyDay] = useState("monday");
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
   const [mapStatus, setMapStatus] = useState("loading");
@@ -762,6 +773,31 @@ function NearbyClinicPage() {
     }
   };
 
+  const shareFacility = async (facility) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("facilityId", facility.facilityId);
+    url.searchParams.set("tab", activeHospitalTab);
+    const shareData = {
+      title: facility.facilityName,
+      text: `${facility.facilityName} - ${facility.address}`,
+      url: url.toString(),
+    };
+
+    setShareMessage("");
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareMessage("Đã mở tùy chọn chia sẻ.");
+        return;
+      }
+      await navigator.clipboard.writeText(shareData.url);
+      setShareMessage("Đã sao chép liên kết cơ sở y tế.");
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      setShareMessage("Không thể chia sẻ lúc này. Vui lòng thử lại.");
+    }
+  };
+
   const detailAverageRating = getAverageRating(reviews);
   const selectedFacilityDistance = detailFacility ? getDistanceKm(userLocation, detailFacility) : null;
   const selectedFacilityDistanceLabel = selectedFacilityDistance === null ? "" : formatDistance(selectedFacilityDistance);
@@ -883,9 +919,10 @@ function NearbyClinicPage() {
                 <button type="button" className="primary" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}><Route size={18} /><span>Chỉ đường</span></button>
                 <button type="button" disabled={!detailFacility.phone} title={detailFacility.phone ? undefined : "Cơ sở chưa có số điện thoại"} onClick={() => callFacility(detailFacility)}><Phone size={18} /><span>Gọi</span></button>
                 <button type="button" aria-label="Lưu cơ sở y tế"><Bookmark size={18} /><span>Lưu</span></button>
-                <button type="button" aria-label="Chia sẻ cơ sở y tế"><Share2 size={18} /><span>Chia sẻ</span></button>
+                <button type="button" onClick={() => shareFacility(detailFacility)}><Share2 size={18} /><span>Chia sẻ</span></button>
                 {detailFacility.website && <a href={detailFacility.website} target="_blank" rel="noreferrer"><Globe2 size={18} /><span>Website</span></a>}
               </div>
+              {shareMessage && <p className="facility-action-message" role="status">{shareMessage}</p>}
 
               <div className="facility-detail-tabs" role="tablist" aria-label="Thông tin cơ sở y tế">
                 {DETAIL_TABS.map(([tabId, label]) => (
@@ -912,6 +949,32 @@ function NearbyClinicPage() {
                   <section className="facility-info-group">
                     <h3>Chuyên khoa và dịch vụ</h3>
                     <div className="facility-detail-tags">{detailFacility.departments.map((department) => <span key={department}>{department}</span>)}</div>
+                  </section>
+                  <section className="facility-info-group busy-hours-section">
+                    <div className="busy-hours-heading">
+                      <div><h3>Giờ đông khách</h3><p>Mức độ đông khách tham khảo, không phải dữ liệu trực tiếp.</p></div>
+                      <label>Chọn ngày
+                        <select value={busyDay} onChange={(event) => setBusyDay(event.target.value)}>
+                          {Object.entries(BUSY_HOURS).map(([day, data]) => <option key={day} value={day}>{data.label}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                    <figure className="busy-hours-chart" aria-labelledby="busy-hours-caption">
+                      <div className="busy-hours-bars" role="img" aria-label={`Biểu đồ mức độ đông khách tham khảo ${BUSY_HOURS[busyDay].label}. Đông nhất khoảng 09:00.`}>
+                        {BUSY_HOURS[busyDay].values.map((value, index) => (
+                          <div className="busy-hour-column" key={BUSY_HOUR_LABELS[index]}>
+                            <span className="busy-hour-value">{value}%</span>
+                            <i style={{ height: `${value}%` }} />
+                            <small>{BUSY_HOUR_LABELS[index].replace(":00", "h")}</small>
+                          </div>
+                        ))}
+                      </div>
+                      <figcaption id="busy-hours-caption">Thường đông nhất vào khoảng 09:00. Nên gọi bệnh viện trước khi đến.</figcaption>
+                    </figure>
+                    <details className="busy-hours-data">
+                      <summary>Xem dữ liệu biểu đồ</summary>
+                      <p>{BUSY_HOURS[busyDay].values.map((value, index) => `${BUSY_HOUR_LABELS[index]}: ${value}%`).join("; ")}.</p>
+                    </details>
                   </section>
                   <section className="facility-info-group">
                     <h3>Tiện ích hiện có dữ liệu</h3>
@@ -947,13 +1010,13 @@ function NearbyClinicPage() {
                 <div className="facility-detail-tab-panel" role="tabpanel">
                   <section className="facility-info-group">
                     <h3>Đánh giá người dùng</h3>
-                    <div className="review-overview"><strong>{detailAverageRating ? detailAverageRating.toFixed(1) : "--"} / 5</strong><span>{reviewsTotalCount} đánh giá</span></div>
+                    <div className="review-overview"><strong>{detailAverageRating ? detailAverageRating.toFixed(1) : "--"}</strong><div className="review-summary-stars" aria-label={detailAverageRating ? `${detailAverageRating.toFixed(1)} trên 5 sao` : "Chưa có điểm đánh giá"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={detailAverageRating >= rating - 0.25 ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{reviewsTotalCount} đánh giá</span></div>
                     <div className="review-distribution" aria-label="Phân bố đánh giá">{reviewDistribution.map((row) => <div key={row.rating}><span>{row.rating} sao</span><i><b style={{ width: `${row.percent}%` }} /></i><em>{row.percent}%</em></div>)}</div>
                   </section>
                   <section className="facility-info-group">
                     <h3>Gửi đánh giá</h3>
                     <form className="facility-review-form" onSubmit={submitReview}>
-                      <label><span>Số sao</span><select value={reviewForm.rating} onChange={(event) => setReviewForm((current) => ({ ...current, rating: event.target.value }))}>{[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} sao</option>)}</select></label>
+                      <fieldset className="star-rating"><legend>Chọn số sao</legend><div>{[1, 2, 3, 4, 5].map((rating) => <label key={rating}><input type="radio" name="rating" value={rating} checked={reviewForm.rating === String(rating)} onChange={(event) => setReviewForm((current) => ({ ...current, rating: event.target.value }))} /><Star size={30} fill={Number(reviewForm.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" /><span className="sr-only">{rating} sao</span></label>)}</div><p>{reviewForm.rating} / 5 sao</p></fieldset>
                       <label><span>Nhận xét</span><textarea rows={3} value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Chia sẻ trải nghiệm của bạn" /></label>
                       <button type="submit" disabled={savingReview}>{auth ? (savingReview ? "Đang gửi..." : "Gửi đánh giá") : "Đăng nhập để đánh giá"}</button>
                     </form>
@@ -963,7 +1026,7 @@ function NearbyClinicPage() {
                     <h3>Nhận xét gần đây</h3>
                     {reviewsLoading && <p className="facility-detail-status">Đang tải đánh giá...</p>}
                     {!reviewsLoading && reviews.length === 0 && <p className="facility-empty-state">Chưa có đánh giá công khai cho cơ sở này.</p>}
-                    <div className="facility-detail-list">{reviews.map((review) => <article key={review.id}><strong>{review.rating}/5 sao</strong><span>{review.comment || "Không có nhận xét."}</span></article>)}</div>
+                    <div className="facility-detail-list">{reviews.map((review) => <article key={review.id}><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={15} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{review.comment || "Không có nhận xét."}</span></article>)}</div>
                   </section>
                 </div>
               )}
@@ -1771,6 +1834,97 @@ const styles = `
   background: #087f8c;
   color: #fff;
 }
+.facility-action-message {
+  margin: -4px 18px 10px;
+  color: #075d66;
+  font-size: 12px;
+  font-weight: 850;
+}
+.busy-hours-section {
+  gap: 14px;
+}
+.busy-hours-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+}
+.busy-hours-heading h3,
+.busy-hours-heading p {
+  margin: 0;
+}
+.busy-hours-heading p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.busy-hours-heading label {
+  display: grid;
+  flex: 0 0 116px;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+.busy-hours-heading select {
+  min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 9px;
+  font: inherit;
+}
+.busy-hours-chart {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+.busy-hours-bars {
+  height: 174px;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(24px, 1fr));
+  align-items: end;
+  gap: 5px;
+  border-bottom: 1px solid var(--line-strong);
+  padding-top: 24px;
+}
+.busy-hour-column {
+  height: 150px;
+  display: grid;
+  grid-template-rows: 20px minmax(0, 1fr) 24px;
+  align-items: end;
+  gap: 3px;
+  text-align: center;
+}
+.busy-hour-column i {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 6px 6px 2px 2px;
+  background: #087f8c;
+}
+.busy-hour-value,
+.busy-hour-column small {
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 850;
+}
+.busy-hours-chart figcaption,
+.busy-hours-data {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.busy-hours-data summary {
+  width: fit-content;
+  min-height: 32px;
+  cursor: pointer;
+  color: var(--teal);
+  font-weight: 900;
+}
+.busy-hours-data p { margin: 6px 0 0; }
 .facility-quick-actions button:disabled {
   background: #eef0e8;
   color: var(--muted);
@@ -1895,6 +2049,55 @@ const styles = `
   color: var(--muted);
   font-size: 12px;
   font-style: normal;
+  font-weight: 850;
+}
+.review-summary-stars,
+.review-item-stars {
+  display: flex;
+  gap: 2px;
+  color: #a96500;
+}
+.star-rating {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.star-rating legend {
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 900;
+}
+.star-rating > div {
+  display: flex;
+  width: fit-content;
+  gap: 2px;
+}
+.star-rating label {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: #a96500;
+  cursor: pointer;
+}
+.star-rating input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.star-rating label:has(input:focus-visible) {
+  border-radius: 8px;
+  outline: 3px solid #087f8c;
+  outline-offset: 1px;
+}
+.star-rating p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 850;
 }
 .review-distribution {
@@ -2124,6 +2327,12 @@ const styles = `
     grid-template-columns: repeat(4, minmax(68px, 1fr));
     overflow-x: auto;
   }
+  .busy-hours-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .busy-hours-heading label { flex-basis: auto; }
+  .busy-hours-bars { gap: 3px; overflow-x: auto; }
   .facility-detail-tabs {
     top: 0;
   }
