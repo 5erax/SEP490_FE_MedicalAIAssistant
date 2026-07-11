@@ -94,7 +94,19 @@ test("facility review submits the Swagger payload", async ({ page }) => {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          data: { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 0 },
+          data: {
+            items: [{
+              id: "public-review-id",
+              rating: 5,
+              comment: "Nhân viên hỗ trợ tận tình",
+              reviewerName: "Nguyễn Minh Anh",
+              createdAt: "2026-07-10T08:00:00Z",
+            }],
+            pageNumber: 1,
+            pageSize: 20,
+            totalCount: 1,
+            totalPages: 1,
+          },
         }),
       });
     }
@@ -116,11 +128,15 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Bệnh viện A", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Xem chi tiết" }).click();
-  await page.getByLabel("Số sao").selectOption("4");
+  await page.getByRole("tab", { name: "Đánh giá" }).click();
+  await expect(page.getByText("Nguyễn Minh Anh", { exact: true })).toBeVisible();
+  await page.getByRole("radio", { name: "4 sao" }).check();
   await page.getByLabel("Nhận xét").fill("Dịch vụ tốt");
   await page.getByRole("button", { name: "Gửi đánh giá" }).click();
 
   await expect(page.getByText("Đã gửi đánh giá.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bạn đã đánh giá cơ sở này", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi đánh giá" })).toHaveCount(0);
   expect(reviewPayload).toEqual({
     facilityId: FACILITY_ID,
     rating: 4,

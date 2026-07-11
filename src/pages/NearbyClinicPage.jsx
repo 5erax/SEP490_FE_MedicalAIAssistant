@@ -51,6 +51,12 @@ const BUSY_HOURS = {
 };
 const BUSY_HOUR_LABELS = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
 
+function getBusyLevel(value) {
+  if (value >= 75) return { label: "Đông", tone: "high" };
+  if (value >= 45) return { label: "Vừa", tone: "medium" };
+  return { label: "Ít", tone: "low" };
+}
+
 function getValidTab(value) {
   return DETAIL_TABS.some(([id]) => id === value) ? value : "overview";
 }
@@ -131,6 +137,43 @@ function getAverageRating(reviews = []) {
   const ratings = reviews.map((review) => Number(review.rating)).filter(Number.isFinite);
   if (!ratings.length) return null;
   return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+}
+
+function getReviewAuthorName(review) {
+  return review?.reviewerName
+    || review?.userFullName
+    || review?.fullName
+    || review?.userName
+    || review?.username
+    || review?.createdByName
+    || review?.patientName
+    || "Người dùng ẩn danh";
+}
+
+function getReviewAuthorInitial(name) {
+  if (name === "Người dùng ẩn danh") return "ND";
+  const words = String(name).trim().split(/\s+/).filter(Boolean);
+  return words.slice(-2).map((word) => word[0]).join("").toUpperCase() || "ND";
+}
+
+function getReviewDate(review) {
+  const value = review?.createdAt || review?.reviewedAt || review?.updatedAt;
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("vi-VN");
+}
+
+function isReviewByCurrentUser(review, auth) {
+  if (!review || !auth) return false;
+  const currentIds = [auth.userId, auth.identityId].filter(Boolean).map(String);
+  const reviewIds = [review.userId, review.reviewerId, review.identityId, review.createdBy]
+    .filter(Boolean)
+    .map(String);
+  if (currentIds.some((id) => reviewIds.includes(id))) return true;
+
+  const currentEmail = String(auth.email || "").trim().toLowerCase();
+  const reviewEmail = String(review.reviewerEmail || review.userEmail || "").trim().toLowerCase();
+  return Boolean(currentEmail && reviewEmail && currentEmail === reviewEmail);
 }
 
 function getReviewMessageText(message, fallback = "Không thể xử lý đánh giá lúc này.") {
@@ -290,6 +333,7 @@ function NearbyClinicPage() {
   const [reviewForm, setReviewForm] = useState({ rating: "5", comment: "" });
   const [reviewMessage, setReviewMessage] = useState("");
   const [savingReview, setSavingReview] = useState(false);
+  const [submittedReview, setSubmittedReview] = useState(null);
   const [shareMessage, setShareMessage] = useState("");
   const [busyDay, setBusyDay] = useState("monday");
   const [userLocation, setUserLocation] = useState(null);
@@ -478,6 +522,7 @@ function NearbyClinicPage() {
     setReviews([]);
     setReviewsTotalCount(0);
     setReviewsLoading(false);
+    setSubmittedReview(null);
   };
 
   const syncMapUrl = useCallback((nextState = {}, mode = "push") => {
@@ -500,6 +545,7 @@ function NearbyClinicPage() {
 
   const handleCardClick = useCallback((facility) => {
     setReviewMessage("");
+    setSubmittedReview(null);
     if (facility?.isMockFacility) {
       setReviews([]);
       setReviewsTotalCount(0);
@@ -520,7 +566,16 @@ function NearbyClinicPage() {
       block: "nearest",
       behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
-  }, [mapStatus, prefersReducedMotion]);
+  }, [
+    mapStatus,
+    prefersReducedMotion,
+    setReviewMessage,
+    setReviews,
+    setReviewsLoading,
+    setReviewsTotalCount,
+    setSelectedFacility,
+    setSubmittedReview,
+  ]);
 
   useEffect(() => {
     if (mapStatus !== "ready" || selectedFacility || mappableFacilities.length === 0) return;
@@ -653,6 +708,7 @@ function NearbyClinicPage() {
     setDetailDoctors([]);
     setSelectedDoctor(null);
     setSelectedFacility(null);
+    setSubmittedReview(null);
     syncMapUrl({});
     window.setTimeout(() => {
       cardRefs.current[facilityId]?.querySelector?.(".facility-select-button")?.focus();
@@ -756,10 +812,20 @@ function NearbyClinicPage() {
     setSavingReview(true);
     setReviewMessage("");
     try {
+      const submittedRating = Number(reviewForm.rating);
+      const submittedComment = reviewForm.comment.trim();
       const response = await feedbackReviewsApi.create({
         facilityId: selectedFacility.facilityId,
-        rating: Number(reviewForm.rating),
-        comment: reviewForm.comment.trim() || null,
+        rating: submittedRating,
+        comment: submittedComment || null,
+      });
+      setSubmittedReview({
+        ...(response.data || {}),
+        facilityId: selectedFacility.facilityId,
+        rating: submittedRating,
+        comment: submittedComment,
+        reviewerName: auth.displayName || auth.fullName || auth.name || auth.username || "Bạn",
+        isCurrentUser: true,
       });
       setReviewForm({ rating: "5", comment: "" });
       setReviewMessage(getReviewMessageText(response.message, "Đã gửi đánh giá của bạn."));
@@ -767,7 +833,11 @@ function NearbyClinicPage() {
       setReviews(refreshed.data?.items ?? []);
       setReviewsTotalCount(refreshed.data?.totalCount ?? refreshed.data?.items?.length ?? 0);
     } catch (error) {
-      setReviewMessage(getReviewMessageText(error, "Không thể gửi đánh giá. Vui lòng thử lại sau."));
+      const message = getReviewMessageText(error, "Không thể gửi đánh giá. Vui lòng thử lại sau.");
+      setReviewMessage(message);
+      if (normalizeSearchText(message).includes("da danh gia")) {
+        setSubmittedReview({ isCurrentUser: true, isKnownDuplicate: true });
+      }
     } finally {
       setSavingReview(false);
     }
@@ -799,6 +869,7 @@ function NearbyClinicPage() {
   };
 
   const detailAverageRating = getAverageRating(reviews);
+  const currentUserReview = reviews.find((review) => isReviewByCurrentUser(review, auth)) || submittedReview;
   const selectedFacilityDistance = detailFacility ? getDistanceKm(userLocation, detailFacility) : null;
   const selectedFacilityDistanceLabel = selectedFacilityDistance === null ? "" : formatDistance(selectedFacilityDistance);
   const activeTypeOptions = [
@@ -952,7 +1023,7 @@ function NearbyClinicPage() {
                   </section>
                   <section className="facility-info-group busy-hours-section">
                     <div className="busy-hours-heading">
-                      <div><h3>Giờ đông khách</h3><p>Mức độ đông khách tham khảo, không phải dữ liệu trực tiếp.</p></div>
+                      <div><h3>Xu hướng đông khách</h3><p>Ước tính theo khung giờ khám, chưa được bệnh viện xác nhận.</p></div>
                       <label>Chọn ngày
                         <select value={busyDay} onChange={(event) => setBusyDay(event.target.value)}>
                           {Object.entries(BUSY_HOURS).map(([day, data]) => <option key={day} value={day}>{data.label}</option>)}
@@ -960,20 +1031,25 @@ function NearbyClinicPage() {
                       </label>
                     </div>
                     <figure className="busy-hours-chart" aria-labelledby="busy-hours-caption">
-                      <div className="busy-hours-bars" role="img" aria-label={`Biểu đồ mức độ đông khách tham khảo ${BUSY_HOURS[busyDay].label}. Đông nhất khoảng 09:00.`}>
+                      <div className="busy-hours-bars" role="img" aria-label={`Biểu đồ xu hướng đông khách ước tính ${BUSY_HOURS[busyDay].label}. Khung 09:00 được ước tính ở mức đông.`}>
                         {BUSY_HOURS[busyDay].values.map((value, index) => (
                           <div className="busy-hour-column" key={BUSY_HOUR_LABELS[index]}>
-                            <span className="busy-hour-value">{value}%</span>
+                            <span className={`busy-hour-value ${getBusyLevel(value).tone}`}>{getBusyLevel(value).label}</span>
                             <i style={{ height: `${value}%` }} />
                             <small>{BUSY_HOUR_LABELS[index].replace(":00", "h")}</small>
                           </div>
                         ))}
                       </div>
-                      <figcaption id="busy-hours-caption">Thường đông nhất vào khoảng 09:00. Nên gọi bệnh viện trước khi đến.</figcaption>
+                      <figcaption id="busy-hours-caption"><strong>Không phải dữ liệu đo lường.</strong> Biểu đồ chỉ hỗ trợ chọn thời điểm tham khảo. Hãy gọi bệnh viện để xác nhận trước khi đến.</figcaption>
                     </figure>
                     <details className="busy-hours-data">
-                      <summary>Xem dữ liệu biểu đồ</summary>
-                      <p>{BUSY_HOURS[busyDay].values.map((value, index) => `${BUSY_HOUR_LABELS[index]}: ${value}%`).join("; ")}.</p>
+                      <summary>Xem chi tiết theo giờ</summary>
+                      <table>
+                        <caption>Xu hướng đông khách ước tính {BUSY_HOURS[busyDay].label}</caption>
+                        <thead><tr><th scope="col">Giờ</th><th scope="col">Mức ước tính</th></tr></thead>
+                        <tbody>{BUSY_HOURS[busyDay].values.map((value, index) => <tr key={BUSY_HOUR_LABELS[index]}><td>{BUSY_HOUR_LABELS[index]}</td><td><span className={`busy-level-badge ${getBusyLevel(value).tone}`}>{getBusyLevel(value).label}</span></td></tr>)}</tbody>
+                      </table>
+                      <p>Nguồn: mô hình hiển thị nội bộ dựa trên khung giờ khám; chưa có dữ liệu lượng khách từ bệnh viện.</p>
                     </details>
                   </section>
                   <section className="facility-info-group">
@@ -1014,19 +1090,28 @@ function NearbyClinicPage() {
                     <div className="review-distribution" aria-label="Phân bố đánh giá">{reviewDistribution.map((row) => <div key={row.rating}><span>{row.rating} sao</span><i><b style={{ width: `${row.percent}%` }} /></i><em>{row.percent}%</em></div>)}</div>
                   </section>
                   <section className="facility-info-group">
-                    <h3>Gửi đánh giá</h3>
-                    <form className="facility-review-form" onSubmit={submitReview}>
-                      <fieldset className="star-rating"><legend>Chọn số sao</legend><div>{[1, 2, 3, 4, 5].map((rating) => <label key={rating}><input type="radio" name="rating" value={rating} checked={reviewForm.rating === String(rating)} onChange={(event) => setReviewForm((current) => ({ ...current, rating: event.target.value }))} /><Star size={30} fill={Number(reviewForm.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" /><span className="sr-only">{rating} sao</span></label>)}</div><p>{reviewForm.rating} / 5 sao</p></fieldset>
-                      <label><span>Nhận xét</span><textarea rows={3} value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Chia sẻ trải nghiệm của bạn" /></label>
-                      <button type="submit" disabled={savingReview}>{auth ? (savingReview ? "Đang gửi..." : "Gửi đánh giá") : "Đăng nhập để đánh giá"}</button>
-                    </form>
+                    <h3>{currentUserReview ? "Đánh giá của bạn" : "Gửi đánh giá"}</h3>
+                    {currentUserReview ? (
+                      <div className="current-user-review">
+                        <div className="review-item-stars" aria-label={currentUserReview.rating ? `${currentUserReview.rating} trên 5 sao` : "Đánh giá đã được ghi nhận"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={Number(currentUserReview.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div>
+                        <strong>Bạn đã đánh giá cơ sở này</strong>
+                        <p>{currentUserReview.isKnownDuplicate ? "Đánh giá hiện tại chưa xuất hiện trong danh sách công khai." : (currentUserReview.comment || "Bạn không để lại nhận xét.")}</p>
+                        <small>Không thể gửi thêm một đánh giá cho cùng cơ sở.</small>
+                      </div>
+                    ) : (
+                      <form className="facility-review-form" onSubmit={submitReview}>
+                        <fieldset className="star-rating"><legend>Chọn số sao</legend><div>{[1, 2, 3, 4, 5].map((rating) => <label key={rating} title={`${rating} sao`}><input type="radio" name="rating" value={rating} checked={reviewForm.rating === String(rating)} onChange={(event) => setReviewForm((current) => ({ ...current, rating: event.target.value }))} /><Star size={30} fill={Number(reviewForm.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" /><span className="sr-only">{rating} sao</span></label>)}</div><p>{reviewForm.rating} / 5 sao</p></fieldset>
+                        <label><span>Nhận xét</span><textarea rows={3} value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Chia sẻ trải nghiệm của bạn" /></label>
+                        <button type="submit" disabled={savingReview}>{auth ? (savingReview ? "Đang gửi..." : "Gửi đánh giá") : "Đăng nhập để đánh giá"}</button>
+                      </form>
+                    )}
                     {reviewMessage && <p className="review-message" role="status">{reviewMessage}</p>}
                   </section>
                   <section className="facility-info-group">
                     <h3>Nhận xét gần đây</h3>
                     {reviewsLoading && <p className="facility-detail-status">Đang tải đánh giá...</p>}
                     {!reviewsLoading && reviews.length === 0 && <p className="facility-empty-state">Chưa có đánh giá công khai cho cơ sở này.</p>}
-                    <div className="facility-detail-list">{reviews.map((review) => <article key={review.id}><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={15} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{review.comment || "Không có nhận xét."}</span></article>)}</div>
+                    <div className="facility-detail-list review-list">{reviews.map((review) => { const authorName = isReviewByCurrentUser(review, auth) ? "Bạn" : getReviewAuthorName(review); const reviewDate = getReviewDate(review); return <article key={review.id}><header><span className="review-author-avatar" aria-hidden="true">{getReviewAuthorInitial(authorName)}</span><div><strong>{authorName}</strong>{reviewDate && <small>Đánh giá ngày {reviewDate}</small>}</div></header><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={15} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{review.comment || "Không có nhận xét."}</span></article>; })}</div>
                   </section>
                 </div>
               )}
@@ -1911,6 +1996,9 @@ const styles = `
   font-style: normal;
   font-weight: 850;
 }
+.busy-hour-value.high { color: #8f2d1f; }
+.busy-hour-value.medium { color: #725200; }
+.busy-hour-value.low { color: #12643a; }
 .busy-hours-chart figcaption,
 .busy-hours-data {
   color: var(--muted);
@@ -1925,6 +2013,36 @@ const styles = `
   font-weight: 900;
 }
 .busy-hours-data p { margin: 6px 0 0; }
+.busy-hours-data table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  color: var(--ink);
+  font-size: 12px;
+}
+.busy-hours-data caption {
+  padding-bottom: 7px;
+  font-weight: 900;
+  text-align: left;
+}
+.busy-hours-data th,
+.busy-hours-data td {
+  border-bottom: 1px solid var(--line);
+  padding: 7px 6px;
+  text-align: left;
+}
+.busy-hours-data th { color: var(--muted); }
+.busy-level-badge {
+  display: inline-flex;
+  min-width: 54px;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-weight: 900;
+}
+.busy-level-badge.high { background: #f8ddd8; color: #7c271c; }
+.busy-level-badge.medium { background: #f6ebc8; color: #604500; }
+.busy-level-badge.low { background: #dff3e7; color: #10582f; }
 .facility-quick-actions button:disabled {
   background: #eef0e8;
   color: var(--muted);
@@ -2083,6 +2201,16 @@ const styles = `
   color: #a96500;
   cursor: pointer;
 }
+.star-rating label svg {
+  pointer-events: none;
+  transition: color 140ms ease, fill 140ms ease, transform 140ms ease;
+}
+.star-rating > div:has(label:hover) label svg { fill: none; }
+.star-rating > div label:hover svg,
+.star-rating > div label:has(~ label:hover) svg {
+  fill: currentColor;
+  transform: scale(1.12);
+}
 .star-rating input {
   position: absolute;
   width: 1px;
@@ -2099,6 +2227,42 @@ const styles = `
   color: var(--muted);
   font-size: 11px;
   font-weight: 850;
+}
+.current-user-review {
+  display: grid;
+  gap: 7px;
+  border: 1px solid rgba(8, 127, 140, .26);
+  border-radius: 14px;
+  background: #edf8f6;
+  padding: 14px;
+}
+.current-user-review p,
+.current-user-review small { margin: 0; color: var(--muted); line-height: 1.5; }
+.current-user-review small { font-size: 11px; font-weight: 800; }
+.review-list article { gap: 8px; }
+.review-list article header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.review-list article header > div { min-width: 0; display: grid; gap: 2px; }
+.review-list article header strong { overflow-wrap: anywhere; }
+.review-list article header small { color: var(--muted); font-size: 10px; }
+.review-author-avatar {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(8, 127, 140, .2);
+  border-radius: 50%;
+  background: #e0f2ef;
+  color: #075d66;
+  font-size: 10px;
+  font-weight: 950;
+}
+@media (prefers-reduced-motion: reduce) {
+  .star-rating label svg { transition: none; }
 }
 .review-distribution {
   display: grid;
