@@ -193,6 +193,7 @@ const USER_STATUS_FILTERS = {
   all: "all",
   pending: "pending",
   confirmed: "confirmed",
+  deleted: "deleted",
 };
 
 function normalizeStatusText(value) {
@@ -421,7 +422,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     return users.filter((user) => {
       const matchesStatus = userStatusFilter === USER_STATUS_FILTERS.all
         || (userStatusFilter === USER_STATUS_FILTERS.pending && isPendingApprovalUser(user))
-        || (userStatusFilter === USER_STATUS_FILTERS.confirmed && isApprovedUser(user));
+        || (userStatusFilter === USER_STATUS_FILTERS.confirmed && !user.isDeleted && isApprovedUser(user))
+        || (userStatusFilter === USER_STATUS_FILTERS.deleted && user.isDeleted);
       if (!matchesStatus) return false;
       if (!keyword) return true;
 

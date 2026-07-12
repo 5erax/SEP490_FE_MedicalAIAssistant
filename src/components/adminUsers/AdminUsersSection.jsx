@@ -14,6 +14,7 @@ const STATUS_OPTIONS = [
   { value: "all", label: "Tất cả tài khoản" },
   { value: "pending", label: "Chờ duyệt" },
   { value: "confirmed", label: "Đã xác nhận" },
+  { value: "deleted", label: "Đã xóa" },
 ];
 
 export default function AdminUsersSection({
