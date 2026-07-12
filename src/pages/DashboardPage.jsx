@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ClipboardPlus, MapPin, Send, UserRound } from "lucide-react";
+import { ClipboardPlus, History, MapPin, Send, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -389,6 +389,17 @@ export default function DashboardPage() {
     <main className="specialty-page">
       <section className="studio-center" aria-labelledby="specialty-intake-title">
         <header className="studio-heading">
+          <div className="studio-heading-actions">
+            <Button
+              type="button"
+              tone="secondary"
+              size="sm"
+              onClick={() => navigate("/assessment/history?sessionType=department")}
+            >
+              <History size={16} />
+              Lịch sử phân tích
+            </Button>
+          </div>
           <span className="studio-mark" aria-hidden="true"><ClipboardPlus size={24} /></span>
           <div>
             <p className="studio-eyebrow">Tư vấn chuyên khoa</p>
