@@ -1,5 +1,5 @@
 import { authApi, patientProfilesApi } from "./api";
-import { normalizePersonalProfile } from "../utils/profileValidation";
+import { normalizeChronicDiseases, normalizePersonalProfile } from "../utils/profileValidation";
 
 function numberOrNull(value) {
   if (value === "" || value === null || value === undefined) return null;
@@ -19,7 +19,7 @@ export async function savePatientProfileSetup({ userId, existingProfileId, form 
     height: numberOrNull(form.height),
     weight: numberOrNull(form.weight),
     allergyNote: form.allergyNote.trim() || null,
-    chronicDiseaseNote: form.chronicDiseaseNote.trim() || null,
+    chronicDiseases: normalizeChronicDiseases(form.chronicDiseaseNote),
   };
 
   if (existingProfileId) {
