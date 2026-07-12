@@ -8,6 +8,7 @@ import {
   ClipboardList,
   CircleHelp,
   CreditCard,
+  FileHeart,
   LayoutDashboard,
   Search,
   SlidersHorizontal,
@@ -33,6 +34,7 @@ import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartm
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
+import AdminPatientProfilesSection from "../components/adminPatientProfiles/AdminPatientProfilesSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -112,6 +114,7 @@ const ADMIN_NAV_ICONS = {
   facility: Building2,
   icd: BookOpen,
   question: CircleHelp,
+  "patient-profile": FileHeart,
 };
 const QUESTION_CATALOG_CONFIG = {
   title: "Câu hỏi lâm sàng", formTitle: "Nội dung câu hỏi", singularLabel: "câu hỏi", pluralLabel: "câu hỏi lâm sàng",
@@ -1935,6 +1938,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 onToggleDepartment={toggleFacilityDepartment}
                 onToggleStatus={handleToggleFacilityStatus}
               />
+            )}
+
+            {activeSection === "patient-profiles" && (
+              <AdminPatientProfilesSection confirmAction={confirmAction} showToast={showToast} />
             )}
           </div>
         </div>

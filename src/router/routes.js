@@ -8,6 +8,7 @@ export const ADMIN_SECTIONS = [
   "icd-chapters",
   "clinical-questions",
   "facilities",
+  "patient-profiles",
 ];
 
 const ADMIN_SECTION_TITLES = {
@@ -20,6 +21,7 @@ const ADMIN_SECTION_TITLES = {
   "icd-chapters": "Quản lý chương ICD",
   "clinical-questions": "Quản lý câu hỏi lâm sàng",
   facilities: "Quản lý cơ sở y tế",
+  "patient-profiles": "Quản lý hồ sơ bệnh nhân",
 };
 
 const ADMIN_SECTION_NAVIGATION = {
@@ -32,6 +34,7 @@ const ADMIN_SECTION_NAVIGATION = {
   "icd-chapters": { label: "Chương ICD", icon: "icd" },
   "clinical-questions": { label: "Câu hỏi lâm sàng", icon: "question" },
   facilities: { label: "Cơ sở y tế", icon: "facility" },
+  "patient-profiles": { label: "Hồ sơ bệnh nhân", icon: "patient-profile" },
 };
 
 const BASE_ROUTES = [

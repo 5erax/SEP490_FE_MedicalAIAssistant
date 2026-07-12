@@ -28,6 +28,10 @@ export const patientProfilesApi = {
     return apiRequest(ENDPOINTS.PATIENT_PROFILES.BY_ID(id), { auth: true });
   },
 
+  getByUserId(userId) {
+    return apiRequest(ENDPOINTS.PATIENT_PROFILES.BY_USER(userId), { auth: true });
+  },
+
   create(payload) {
     return apiRequest(ENDPOINTS.PATIENT_PROFILES.BASE, {
       method: "POST",
