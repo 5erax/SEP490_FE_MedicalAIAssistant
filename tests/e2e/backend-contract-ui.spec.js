@@ -118,6 +118,9 @@ test("facility review submits the Swagger payload", async ({ page }) => {
               comment: "Nhân viên hỗ trợ tận tình",
               reviewerName: "Nguyễn Minh Anh",
               createdAt: "2026-07-10T08:00:00Z",
+              imageUrls: {
+                image1: "https://res.cloudinary.com/demo/image/upload/v1/reviews/existing-review.jpg",
+              },
             }],
             pageNumber: 1,
             pageSize: 20,
@@ -176,6 +179,7 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   expect(sidebarLayout.bodyOverflowY).toBe("visible");
   await page.getByRole("tab", { name: "Đánh giá" }).click();
   await expect(page.getByText("Nguyễn Minh Anh", { exact: true })).toBeVisible();
+  await expect(page.getByAltText("Ảnh 1 trong đánh giá của Nguyễn Minh Anh")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/v1/reviews/existing-review.jpg");
   await page.getByTitle("5 sao · Rất hài lòng").hover();
   await expect(page.locator(".star-rating svg[fill='currentColor']")).toHaveCount(5);
   await page.getByRole("radio", { name: "4 sao" }).check();
@@ -224,8 +228,10 @@ test("facility review submits the Swagger payload", async ({ page }) => {
     facilityId: FACILITY_ID,
     rating: 4,
     comment: "Dịch vụ tốt",
-    imageUrl: uploadedImageUrls[0],
-    imageUrls: uploadedImageUrls,
+    imageUrls: {
+      image1: uploadedImageUrls[0],
+      image2: uploadedImageUrls[1],
+    },
   });
   expect(cloudinaryUploadCount).toBe(2);
   await expect(page.getByAltText("Ảnh 1 trong đánh giá của Bạn")).toHaveAttribute("src", uploadedImageUrls[0]);
@@ -239,8 +245,10 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   expect(reviewUpdatePayload).toEqual({
     rating: 3,
     comment: "Dịch vụ đã được cải thiện",
-    imageUrl: uploadedImageUrls[0],
-    imageUrls: uploadedImageUrls,
+    imageUrls: {
+      image1: uploadedImageUrls[0],
+      image2: uploadedImageUrls[1],
+    },
   });
 });
 

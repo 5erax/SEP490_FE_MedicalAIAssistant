@@ -171,9 +171,15 @@ function getReviewImageUrls(review) {
   const collection = review?.imageUrls || review?.images || review?.reviewImages || [];
   const collectionUrls = Array.isArray(collection)
     ? collection.map((image) => typeof image === "string" ? image : image?.url || image?.imageUrl).filter(Boolean)
-    : [];
+    : Object.values(collection || {}).filter((url) => typeof url === "string" && url);
   const legacyUrl = review?.imageUrl || review?.reviewImageUrl || review?.photoUrl || "";
   return Array.from(new Set([...collectionUrls, legacyUrl].filter(Boolean)));
+}
+
+function toReviewImageUrlMap(imageUrls) {
+  return Object.fromEntries(
+    imageUrls.slice(0, 5).map((imageUrl, index) => [`image${index + 1}`, imageUrl]),
+  );
 }
 
 function isReviewByCurrentUser(review, auth) {
@@ -833,11 +839,11 @@ function NearbyClinicPage() {
     try {
       const submittedRating = Number(reviewForm.rating);
       const submittedComment = reviewForm.comment.trim();
+      const submittedImageUrls = toReviewImageUrlMap(reviewForm.imageUrls);
       const reviewValues = {
         rating: submittedRating,
         comment: submittedComment || null,
-        imageUrl: reviewForm.imageUrls[0] || null,
-        imageUrls: reviewForm.imageUrls,
+        imageUrls: Object.keys(submittedImageUrls).length ? submittedImageUrls : null,
       };
       const isUpdating = editingReview && currentUserReview?.id;
       const response = isUpdating
