@@ -1,6 +1,8 @@
-import { Component, useEffect, useRef } from "react";
+import { Component, useEffect, useMemo, useRef, useState } from "react";
+import { Bot, Clock3, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { consultationSessionsApi } from "../../services/api";
 
 const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
@@ -53,6 +55,54 @@ function getDiagnosisPAGivenB(diagnosis) {
   return Number(getDiagnosisField(diagnosis, "paGivenB", "PAGivenB", 0)) || 0;
 }
 
+function unwrapData(response) {
+  return response?.data ?? response?.Data ?? response;
+}
+
+function getPagedItems(response) {
+  const data = unwrapData(response);
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.Items)) return data.Items;
+  return [];
+}
+
+function getDepartmentId(department) {
+  return department?.id ?? department?.departmentId ?? department?.medicalDepartmentId ?? "";
+}
+
+function getDepartmentName(department) {
+  return department?.departmentName ?? department?.name ?? department?.title ?? "Chưa đặt tên";
+}
+
+function getSessionId(session) {
+  return session?.sessionId ?? session?.id ?? session?.consultationSessionId ?? "";
+}
+
+function getSessionTitle(session) {
+  return session?.symptoms ?? session?.userInput ?? session?.inputText ?? session?.title ?? "Phiên tư vấn";
+}
+
+function getQuestionsFromResponse(response) {
+  const data = unwrapData(response);
+  if (Array.isArray(data?.questions)) return data.questions;
+  if (Array.isArray(data?.Questions)) return data.Questions;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.Items)) return data.Items;
+  return [];
+}
+
+function getQuestionText(question, index = 0) {
+  if (typeof question === "string") return question;
+  return question?.questionVi
+    ?? question?.QuestionVi
+    ?? question?.question
+    ?? question?.Question
+    ?? question?.content
+    ?? question?.Content
+    ?? `Câu hỏi ${index + 1}`;
+}
+
 function AccessibleFacilityMarker({ facility, selected, onSelect }) {
   return (
     <Marker
@@ -72,8 +122,218 @@ function AccessibleFacilityMarker({ facility, selected, onSelect }) {
   );
 }
 
+function MapConsultationAssistant({ departments = [] }) {
+  const normalizedDepartments = useMemo(() => (
+    departments
+      .map((department) => ({
+        id: getDepartmentId(department),
+        name: getDepartmentName(department),
+      }))
+      .filter((department) => department.id && department.name)
+  ), [departments]);
+  const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("suggest");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
+  const [selectedDepartmentName, setSelectedDepartmentName] = useState("");
+  const [symptoms, setSymptoms] = useState("");
+  const [questions, setQuestions] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [historyStatus, setHistoryStatus] = useState("idle");
+  const [message, setMessage] = useState("");
+
+  const selectedDepartment = normalizedDepartments.find((department) => department.id === selectedDepartmentId);
+  const canSubmit = Boolean(selectedDepartmentId && symptoms.trim() && status !== "loading");
+
+  async function handleGenerate(event) {
+    event.preventDefault();
+    if (!canSubmit) return;
+
+    setStatus("loading");
+    setMessage("");
+    setQuestions([]);
+
+    try {
+      const response = await consultationSessionsApi.generateQuestions(selectedDepartmentId, symptoms.trim());
+      setQuestions(getQuestionsFromResponse(response));
+      setSelectedDepartmentName(selectedDepartment?.name || "");
+      setMessage("MediMate đã tạo gợi ý câu hỏi cho chuyên khoa đã chọn.");
+    } catch (error) {
+      setMessage(error.message || "Không thể tạo gợi ý câu hỏi lúc này.");
+    } finally {
+      setStatus("idle");
+    }
+  }
+
+  async function loadHistory() {
+    setHistoryStatus("loading");
+    setMessage("");
+
+    try {
+      const response = await consultationSessionsApi.listMySessions(1, 10);
+      setSessions(getPagedItems(response));
+    } catch (error) {
+      setMessage(error.message || "Không thể tải lịch sử gợi ý.");
+    } finally {
+      setHistoryStatus("idle");
+    }
+  }
+
+  async function handleTabChange(tab) {
+    setActiveTab(tab);
+    if (tab === "history" && sessions.length === 0 && historyStatus !== "loading") {
+      await loadHistory();
+    }
+  }
+
+  async function handleViewSession(session) {
+    const sessionId = getSessionId(session);
+    if (!sessionId) return;
+
+    setHistoryStatus("loading");
+    setSelectedSession(null);
+    setMessage("");
+
+    try {
+      const response = await consultationSessionsApi.get(sessionId);
+      setSelectedSession(unwrapData(response));
+    } catch (error) {
+      setMessage(error.message || "Không thể xem chi tiết phiên gợi ý.");
+    } finally {
+      setHistoryStatus("idle");
+    }
+  }
+
+  return (
+    <>
+      {open && (
+        <aside className="map-ai-panel" aria-label="AI hỗ trợ trước khám">
+          <header>
+            <div>
+              <span><Bot size={17} /></span>
+              <div>
+                <strong>AI hỗ trợ trước khám</strong>
+                <small>Chọn chuyên khoa và mô tả triệu chứng</small>
+              </div>
+            </div>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Đóng AI hỗ trợ"><X size={16} /></button>
+          </header>
+
+          <div className="map-ai-tabs" role="tablist" aria-label="Chế độ AI hỗ trợ">
+            <button
+              type="button"
+              className={activeTab === "suggest" ? "active" : ""}
+              onClick={() => handleTabChange("suggest")}
+            >
+              Gợi ý câu hỏi
+            </button>
+            <button
+              type="button"
+              className={activeTab === "history" ? "active" : ""}
+              onClick={() => handleTabChange("history")}
+            >
+              Lịch sử gợi ý
+            </button>
+          </div>
+
+          {activeTab === "suggest" ? (
+            <form className="map-ai-flow" onSubmit={handleGenerate}>
+              <label>
+                <span>Bạn chọn chuyên khoa nào?</span>
+                <select
+                  value={selectedDepartmentId}
+                  onChange={(event) => setSelectedDepartmentId(event.target.value)}
+                >
+                  <option value="">Chọn chuyên khoa</option>
+                  {normalizedDepartments.map((department) => (
+                    <option key={department.id} value={department.id}>{department.name}</option>
+                  ))}
+                </select>
+              </label>
+
+              {selectedDepartmentId && (
+                <label>
+                  <span>Bạn bị gì?</span>
+                  <textarea
+                    value={symptoms}
+                    onChange={(event) => setSymptoms(event.target.value)}
+                    placeholder="Ví dụ: Tôi ho nhiều, sốt nhẹ, đau họng..."
+                    rows={3}
+                  />
+                </label>
+              )}
+
+              <button type="submit" disabled={!canSubmit}>
+                <Send size={16} />
+                {status === "loading" ? "Đang tạo..." : "Tạo gợi ý"}
+              </button>
+
+              {questions.length > 0 && (
+                <div className="map-ai-results">
+                  <small>{selectedDepartmentName || selectedDepartment?.name}</small>
+                  <strong>Gợi ý câu hỏi nên hỏi trước khám</strong>
+                  <ul>
+                    {questions.slice(0, 5).map((question, index) => (
+                      <li key={`${getQuestionText(question, index)}-${index}`}>
+                        {getQuestionText(question, index)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </form>
+          ) : (
+            <div className="map-ai-history">
+              {historyStatus === "loading" && <p>Đang tải lịch sử...</p>}
+              {historyStatus !== "loading" && sessions.length === 0 && <p>Chưa có lịch sử gợi ý.</p>}
+              {sessions.map((session) => (
+                <article key={getSessionId(session) || getSessionTitle(session)}>
+                  <div>
+                    <Clock3 size={15} />
+                    <strong>{getSessionTitle(session)}</strong>
+                  </div>
+                  <button type="button" onClick={() => handleViewSession(session)}>Xem chi tiết</button>
+                </article>
+              ))}
+              {selectedSession && (
+                <div className="map-ai-session-detail">
+                  <strong>Chi tiết phiên gợi ý</strong>
+                  <p>{getSessionTitle(selectedSession)}</p>
+                  {getQuestionsFromResponse(selectedSession).length > 0 && (
+                    <ul>
+                      {getQuestionsFromResponse(selectedSession).slice(0, 5).map((question, index) => (
+                        <li key={`${getQuestionText(question, index)}-${index}`}>
+                          {getQuestionText(question, index)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {message && <p className="map-ai-message">{message}</p>}
+        </aside>
+      )}
+
+      {!open && <span className="map-ai-hint">AI hỗ trợ trước khám</span>}
+      <button
+        className="map-ai-launcher"
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-label="Mở AI hỗ trợ trước khám"
+      >
+        <Bot size={22} />
+      </button>
+    </>
+  );
+}
+
 export default function FacilityMap({
   chatContext,
+  departments = [],
   facilities,
   hidePopup = false,
   locationError,
@@ -246,6 +506,7 @@ export default function FacilityMap({
         </div>
       )}
       {mapStatus === "ready" && <button className="locate-button" type="button" onClick={onLocate} aria-label="Định vị tôi">⌖</button>}
+      <MapConsultationAssistant departments={departments} />
       {locationError && <div className="location-error">{locationError}</div>}
     </section>
   );

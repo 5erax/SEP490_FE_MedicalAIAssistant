@@ -30,3 +30,4 @@ export {
 export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
+export { consultationSessionsApi } from "./consultationSessionService";

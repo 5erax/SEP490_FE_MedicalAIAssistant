@@ -19,6 +19,7 @@ const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
 const PAYMENTS_BASE = "/api/payments";
 const AI_CONFIGS_BASE = "/api/ai-configs";
 const WEB_CHATBOT_BASE = "/api/web-chatbot";
+const CONSULTATION_SESSIONS_BASE = "/api/consultation-sessions";
 
 export const ENDPOINTS = {
   AUTH: {
@@ -117,5 +118,10 @@ export const ENDPOINTS = {
   },
   WEB_CHATBOT: {
     MESSAGE: `${WEB_CHATBOT_BASE}/message`,
+  },
+  CONSULTATION_SESSIONS: {
+    GENERATE_QUESTIONS: `${CONSULTATION_SESSIONS_BASE}/generate-questions-for-consultant-session`,
+    MY_SESSIONS: `${CONSULTATION_SESSIONS_BASE}/my-sessions`,
+    BY_ID: (sessionId) => byId(CONSULTATION_SESSIONS_BASE, sessionId),
   },
 };
