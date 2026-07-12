@@ -1904,10 +1904,11 @@ const styles = `
 }
 .facility-detail-sidebar,
 .doctor-detail-view {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: block;
   gap: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0;
 }
 .facility-detail-topbar {
@@ -1944,10 +1945,9 @@ const styles = `
 .facility-detail-body,
 .doctor-detail-body {
   width: 100%;
-  min-height: 0;
+  min-height: 100%;
   max-height: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
   padding-bottom: 18px;
 }
 .facility-detail-media {
