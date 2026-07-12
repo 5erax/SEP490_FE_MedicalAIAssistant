@@ -52,7 +52,7 @@
 .studio-heading-actions {
   position: fixed;
   top: 96px;
-  right: clamp(22px, 3.2vw, 54px);
+  right: clamp(18px, 2vw, 32px);
   z-index: 20;
   width: auto;
   display: flex;
