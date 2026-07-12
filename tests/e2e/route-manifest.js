@@ -38,6 +38,7 @@ export const APP_ROUTES = [
   { path: "/app/admin/icd-chapters", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/clinical-questions", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/facilities", expectedPath: "/login", surface: "role-gate" },
+  { path: "/app/admin/patient-profiles", expectedPath: "/login", surface: "role-gate" },
 ];
 
 export const STATIC_ROUTES = [

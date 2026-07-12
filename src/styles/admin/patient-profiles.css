@@ -1,0 +1,38 @@
+.patient-profile-admin-panel { display: grid; gap: 18px; }
+.patient-profile-heading { align-items: flex-start; }
+.patient-profile-heading .muted-text { max-width: 720px; }
+.patient-profile-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid rgba(16,20,17,.1); border-radius: 14px; background: #fbfcf7; padding: 10px 12px; }
+.patient-profile-toolbar label { min-width: min(420px, 100%); display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 8px; border: 1px solid rgba(16,20,17,.16); border-radius: 10px; background: #fff; padding: 0 10px; }
+.patient-profile-toolbar input { min-height: 40px; border: 0; background: transparent; color: #101411; outline: 0; }
+.patient-profile-toolbar label:focus-within { border-color: #087f8c; box-shadow: 0 0 0 3px rgba(8,127,140,.15); }
+.patient-profile-toolbar > span { color: rgba(16,20,17,.62); font-size: 12px; font-weight: 850; white-space: nowrap; }
+.patient-profile-table .ui-table { min-width: 980px; }
+.patient-profile-person,.patient-profile-metrics { display: grid; gap: 3px; min-width: 0; }
+.patient-profile-person strong,.patient-profile-person small { overflow-wrap: anywhere; }
+.patient-profile-person small,.patient-profile-metrics small { color: rgba(16,20,17,.58); font-size: 11px; }
+.patient-profile-status { display: inline-flex; width: fit-content; border-radius: 999px; padding: 6px 9px; font-size: 11px; font-weight: 900; }
+.patient-profile-status.complete { background: #d8f5e2; color: #12643a; }
+.patient-profile-status.incomplete { background: #fff0c7; color: #725200; }
+.patient-profile-pagination { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.patient-profile-pagination button { min-width: 72px; min-height: 40px; border: 1px solid rgba(16,20,17,.2); border-radius: 10px; background: #fff; color: #101411; font-weight: 850; }
+.patient-profile-pagination button:disabled { opacity: .46; }
+.patient-profile-dialog { width: min(860px, calc(100vw - 32px)); max-height: min(90vh, 900px); overflow-y: auto; }
+.patient-profile-dialog form { display: grid; gap: 18px; }
+.patient-profile-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid rgba(16,20,17,.1); padding-bottom: 14px; }
+.patient-profile-dialog-head h2,.patient-profile-dialog-head p { margin: 0; }
+.patient-profile-dialog-head > button { flex: 0 0 42px; width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid rgba(16,20,17,.16); border-radius: 10px; background: #fff; color: #101411; }
+.patient-profile-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.patient-profile-form-grid .wide { grid-column: 1/-1; }
+.patient-profile-dialog .clean-field [aria-invalid="true"] { border-color: #b42318; box-shadow: 0 0 0 2px rgba(180,35,24,.12); }
+.patient-profile-dialog .clean-field small { color: #b42318; }
+.patient-disease-section { display: grid; gap: 12px; border-top: 1px solid rgba(16,20,17,.1); padding-top: 16px; }
+.patient-disease-section > div { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.patient-disease-section h3,.patient-disease-section p { margin: 0; }
+.patient-disease-section p { margin-top: 3px; color: rgba(16,20,17,.62); font-size: 12px; }
+.patient-disease-section > div > button,.patient-disease-remove { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid rgba(16,20,17,.2); border-radius: 10px; background: #fff; color: #101411; padding: 0 12px; font-weight: 850; }
+.patient-disease-section article { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; border: 1px solid rgba(16,20,17,.12); border-radius: 14px; background: #fbfcf7; padding: 12px; }
+.patient-disease-section article .wide { grid-column: 1/-1; }
+.patient-disease-remove { width: fit-content; border-color: rgba(180,35,24,.3); color: #8f2d1f; }
+.patient-profile-dialog-actions { position: sticky; bottom: -1px; display: flex; justify-content: flex-end; gap: 9px; border-top: 1px solid rgba(16,20,17,.1); background: rgba(255,255,255,.96); padding-top: 14px; }
+@media(max-width:700px){.patient-profile-heading,.patient-profile-toolbar,.patient-disease-section>div{align-items:stretch;flex-direction:column}.patient-profile-heading .record-actions,.patient-profile-heading .btn,.patient-profile-toolbar label{width:100%}.patient-profile-form-grid,.patient-disease-section article{grid-template-columns:1fr}.patient-profile-form-grid .wide,.patient-disease-section article .wide{grid-column:auto}.patient-profile-dialog-actions{display:grid;grid-template-columns:1fr 1fr}.patient-profile-dialog-actions .btn{width:100%}}
+@media(forced-colors:active){.patient-profile-status{border:1px solid CanvasText}}

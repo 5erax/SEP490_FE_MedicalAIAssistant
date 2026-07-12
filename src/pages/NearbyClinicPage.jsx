@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Bookmark,
+  Building2,
+  Clock3,
+  Globe2,
+  ImagePlus,
+  MapPin,
+  Pencil,
+  Phone,
+  Route,
+  Share2,
+  Star,
+  Stethoscope,
+  UserRound,
+  X,
+} from "lucide-react";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
-import FacilityReviews from "../components/nearbyClinic/FacilityReviews";
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
+import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
 import {
   facilityDepartmentsApi,
   feedbackReviewsApi,
@@ -21,14 +38,42 @@ const TYPE_LABELS = {
 };
 
 const MAP_LOAD_TIMEOUT_MS = 12_000;
+const SIDEBAR_MAP_OFFSET = 190;
+const DETAIL_TABS = [
+  ["overview", "Tổng quan"],
+  ["doctors", "Bác sĩ"],
+  ["reviews", "Đánh giá"],
+];
+
+const BUSY_HOURS = {
+  monday: { label: "Thứ Hai", values: [22, 38, 68, 88, 76, 46, 54, 72, 64, 38] },
+  tuesday: { label: "Thứ Ba", values: [18, 34, 62, 82, 70, 42, 50, 68, 60, 34] },
+  wednesday: { label: "Thứ Tư", values: [20, 36, 64, 84, 72, 44, 52, 70, 62, 36] },
+  thursday: { label: "Thứ Năm", values: [18, 32, 58, 78, 68, 40, 48, 66, 58, 32] },
+  friday: { label: "Thứ Sáu", values: [24, 42, 70, 90, 80, 50, 58, 76, 68, 40] },
+};
+const BUSY_HOUR_LABELS = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
+const RATING_LABELS = ["", "Rất tệ", "Không hài lòng", "Bình thường", "Hài lòng", "Rất hài lòng"];
+
+function getBusyLevel(value) {
+  if (value >= 75) return { label: "Đông", tone: "high" };
+  if (value >= 45) return { label: "Vừa", tone: "medium" };
+  return { label: "Ít", tone: "low" };
+}
+
+function getValidTab(value) {
+  return DETAIL_TABS.some(([id]) => id === value) ? value : "overview";
+}
 
 function readMapQuery() {
   const params = new URLSearchParams(window.location.search);
   return {
     departmentId: params.get("departmentId") || "",
+    doctorId: params.get("doctorId") || "",
     facilityId: params.get("facilityId") || "",
     search: params.get("search") || "",
     source: params.get("source") || "",
+    tab: getValidTab(params.get("tab")),
   };
 }
 
@@ -73,6 +118,116 @@ function normalizePhone(value) {
   return phone || null;
 }
 
+function formatDistance(distanceKm) {
+  if (!Number.isFinite(distanceKm)) return "";
+  if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
+  return `${distanceKm.toFixed(distanceKm < 10 ? 1 : 0)} km`;
+}
+
+function getDistanceKm(fromLocation, facility) {
+  if (!fromLocation || !facility?.hasValidCoordinates) return null;
+  const toRadians = (degree) => degree * Math.PI / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(facility.latitude - fromLocation.lat);
+  const dLng = toRadians(facility.longitude - fromLocation.lng);
+  const lat1 = toRadians(fromLocation.lat);
+  const lat2 = toRadians(facility.latitude);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getAverageRating(reviews = []) {
+  const ratings = reviews.map((review) => Number(review.rating)).filter(Number.isFinite);
+  if (!ratings.length) return null;
+  return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+}
+
+function getReviewAuthorName(review) {
+  return review?.reviewerName
+    || review?.userFullName
+    || review?.fullName
+    || review?.userName
+    || review?.username
+    || review?.createdByName
+    || review?.patientName
+    || "Người dùng ẩn danh";
+}
+
+function getReviewAuthorInitial(name) {
+  if (name === "Người dùng ẩn danh") return "ND";
+  const words = String(name).trim().split(/\s+/).filter(Boolean);
+  return words.slice(-2).map((word) => word[0]).join("").toUpperCase() || "ND";
+}
+
+function getReviewDate(review) {
+  const value = review?.createdAt || review?.reviewedAt || review?.updatedAt;
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("vi-VN");
+}
+
+function getReviewImageUrls(review) {
+  const collection = review?.imageUrls || review?.images || review?.reviewImages || [];
+  const collectionUrls = Array.isArray(collection)
+    ? collection.map((image) => typeof image === "string" ? image : image?.url || image?.imageUrl).filter(Boolean)
+    : Object.values(collection || {}).filter((url) => typeof url === "string" && url);
+  const legacyUrl = review?.imageUrl || review?.reviewImageUrl || review?.photoUrl || "";
+  return Array.from(new Set([...collectionUrls, legacyUrl].filter(Boolean)));
+}
+
+function toReviewImageUrlMap(imageUrls) {
+  return Object.fromEntries(
+    imageUrls.slice(0, 5).map((imageUrl, index) => [`image${index + 1}`, imageUrl]),
+  );
+}
+
+function isReviewByCurrentUser(review, auth) {
+  if (!review || !auth) return false;
+  const currentIds = [auth.userId, auth.identityId].filter(Boolean).map(String);
+  const reviewIds = [review.userId, review.reviewerId, review.identityId, review.createdBy]
+    .filter(Boolean)
+    .map(String);
+  if (currentIds.some((id) => reviewIds.includes(id))) return true;
+
+  const currentEmail = String(auth.email || "").trim().toLowerCase();
+  const reviewEmail = String(review.reviewerEmail || review.userEmail || "").trim().toLowerCase();
+  return Boolean(currentEmail && reviewEmail && currentEmail === reviewEmail);
+}
+
+function getReviewMessageText(message, fallback = "Không thể xử lý đánh giá lúc này.") {
+  const source = [
+    typeof message === "string" ? message : "",
+    message?.message,
+    message?.payload?.message,
+    message?.payload?.errors ? JSON.stringify(message.payload.errors) : "",
+  ].filter(Boolean).join(" ").trim();
+  if (!source) return fallback;
+
+  const normalized = normalizeSearchText(source);
+  if (normalized.includes("already reviewed") || normalized.includes("reviewed this facility")) {
+    return "Bạn đã đánh giá cơ sở y tế này rồi.";
+  }
+  if (normalized.includes("create feedback review failed")) {
+    return "Không thể gửi đánh giá. Vui lòng thử lại sau.";
+  }
+  if (normalized.includes("feedback review created")
+    || normalized.includes("review created")
+    || normalized.includes("create feedback review success")
+    || normalized.includes("created successfully")
+    || normalized === "ok") {
+    return "Đã gửi đánh giá của bạn.";
+  }
+  if (normalized.includes("unauthorized") || normalized.includes("forbidden")) {
+    return "Bạn cần đăng nhập để gửi đánh giá.";
+  }
+  if (normalized.includes("network") || normalized.includes("failed to fetch")) {
+    return "Không thể kết nối máy chủ. Vui lòng thử lại.";
+  }
+
+  return source;
+}
+
 function getArrayData(response) {
   if (Array.isArray(response?.data)) return response.data;
   if (Array.isArray(response?.data?.items)) return response.data.items;
@@ -85,6 +240,25 @@ function getObjectData(response) {
 
 function getDoctorImageUrl(doctor) {
   return doctor?.imageUrl || doctor?.avatarUrl || doctor?.photoUrl || "";
+}
+
+function getDoctorName(doctor) {
+  return doctor?.fullName || "Bác sĩ chưa cập nhật tên";
+}
+
+function getDoctorSpecialty(doctor) {
+  return doctor?.departmentName || doctor?.specialty || "Chưa cập nhật chuyên khoa";
+}
+
+function getDoctorRoleLabel(doctor) {
+  const role = doctor?.departmentRoleName || doctor?.departmentRole || "";
+  const normalizedRole = normalizeSearchText(role);
+  if (normalizedRole === "doctor") return "Bác sĩ";
+  if (normalizedRole === "deputyhead") return "Phó khoa";
+  if (normalizedRole === "head") return "Trưởng khoa";
+  if (normalizedRole === "leadingexpert") return "Chuyên gia đầu ngành";
+  if (normalizedRole === "consultant") return "Cố vấn chuyên môn";
+  return role;
 }
 
 function mergeFacilityDetail(existingFacility, apiFacility) {
@@ -140,127 +314,6 @@ function normalizeFacility(facility, relationDepartments = [], relationDepartmen
   };
 }
 
-function FacilityDetailSidebarContent({
-  detailCloseButtonRef,
-  detailDoctors,
-  detailDoctorsLoading,
-  detailError,
-  detailFacility,
-  detailLoading,
-  detailServices,
-  reviews,
-  reviewsLoading,
-  onBack,
-  onCall,
-  onDirections,
-}) {
-  return (
-    <section
-      className="facility-detail-view sidebar-detail-view"
-      aria-labelledby="facility-detail-title"
-      tabIndex="-1"
-      onKeyDown={(event) => {
-        if (event.key === "Escape") onBack();
-      }}
-    >
-      <button
-        ref={detailCloseButtonRef}
-        className="facility-detail-back"
-        type="button"
-        onClick={onBack}
-      >
-        ← Quay lại danh sách
-      </button>
-
-      <div className="facility-detail-hero sidebar-detail-hero">
-        {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
-        <div>
-          <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
-          <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
-          <p>{detailFacility.address}</p>
-          <div className="facility-detail-hero-actions">
-            <button type="button" disabled={!detailFacility.phone} onClick={() => onCall(detailFacility)}>Gọi điện</button>
-            <button type="button" disabled={!detailFacility.hasValidCoordinates} onClick={() => onDirections(detailFacility)}>Chỉ đường</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="facility-detail-content sidebar-detail-content">
-        {detailLoading && <p className="facility-detail-status">Đang tải thông tin chi tiết...</p>}
-        {detailError && <p className="facility-detail-error">{detailError}</p>}
-
-        <section className="facility-detail-card wide">
-          <h3>Thông tin bệnh viện</h3>
-          <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
-          <dl className="facility-detail-facts">
-            <div>
-              <dt>Số điện thoại</dt>
-              <dd>{detailFacility.phoneLabel}</dd>
-            </div>
-            <div>
-              <dt>Giờ hoạt động</dt>
-              <dd>{detailFacility.openingHours}</dd>
-            </div>
-            <div>
-              <dt>Website</dt>
-              <dd>{detailFacility.website ? <a href={detailFacility.website} target="_blank" rel="noreferrer">{detailFacility.website}</a> : "Chưa cập nhật"}</dd>
-            </div>
-          </dl>
-          <div className="facility-detail-tags">
-            {detailFacility.departments.map((department) => <span key={department}>{department}</span>)}
-          </div>
-        </section>
-
-        <section className="facility-detail-card">
-          <h3>Danh sách bác sĩ</h3>
-          <div className="facility-detail-list facility-detail-doctor-list">
-            {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
-            {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này.</p>}
-            {detailDoctors.map((doctor) => (
-              <article key={doctor.id}>
-                {getDoctorImageUrl(doctor) && (
-                  <img
-                    className="facility-detail-doctor-image"
-                    src={getDoctorImageUrl(doctor)}
-                    alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
-                  />
-                )}
-                <div>
-                  <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
-                  <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="facility-detail-card">
-          <h3>Đánh giá người dùng</h3>
-          <div className="facility-detail-list">
-            {reviewsLoading && <p>Đang tải đánh giá...</p>}
-            {!reviewsLoading && reviews.length === 0 && <p>Chưa có đánh giá công khai cho cơ sở này.</p>}
-            {reviews.slice(0, 4).map((review) => (
-              <article key={review.id}>
-                <strong>{review.rating}/5 sao</strong>
-                <span>{review.comment || "Không có nhận xét."}</span>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="facility-detail-card wide">
-          <h3>Tiện ích và dịch vụ nổi bật</h3>
-          <div className="facility-detail-services">
-            {detailServices.length
-              ? detailServices.map((service) => <span key={service}>{service}</span>)
-              : <p>Cơ sở này chưa có tiện ích hoặc dịch vụ nổi bật.</p>}
-          </div>
-        </section>
-      </div>
-    </section>
-  );
-}
-
 function NearbyClinicPage() {
   const auth = getStoredAuth();
   const [mapQuery] = useState(readMapQuery);
@@ -282,7 +335,11 @@ function NearbyClinicPage() {
     () => mapQuery.search,
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
   const [selectedFacility, setSelectedFacility] = useState(null);
+  const [sidebarView, setSidebarView] = useState("hospital-list");
+  const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const [detailFacility, setDetailFacility] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -290,10 +347,17 @@ function NearbyClinicPage() {
   const [detailDoctors, setDetailDoctors] = useState([]);
   const [detailDoctorsLoading, setDetailDoctorsLoading] = useState(false);
   const [reviews, setReviews] = useState([]);
+  const [reviewsTotalCount, setReviewsTotalCount] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ rating: "5", comment: "" });
+  const [reviewForm, setReviewForm] = useState({ rating: "5", comment: "", imageUrls: [] });
+  const [hoveredReviewRating, setHoveredReviewRating] = useState(0);
   const [reviewMessage, setReviewMessage] = useState("");
   const [savingReview, setSavingReview] = useState(false);
+  const [submittedReview, setSubmittedReview] = useState(null);
+  const [editingReview, setEditingReview] = useState(false);
+  const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
+  const [busyDay, setBusyDay] = useState("monday");
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
   const [mapStatus, setMapStatus] = useState("loading");
@@ -301,8 +365,12 @@ function NearbyClinicPage() {
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
-  const detailCloseButtonRef = useRef(null);
+  const sidebarTitleRef = useRef(null);
+  const detailCloseButtonRef = sidebarTitleRef;
+  const detailBodyRef = useRef(null);
+  const savedDetailScrollRef = useRef(0);
   const requestedFacilityOpenedRef = useRef(false);
+  const requestedDoctorOpenedRef = useRef(false);
   const lastFittedBoundsRef = useRef("");
 
   useEffect(() => {
@@ -397,10 +465,13 @@ function NearbyClinicPage() {
     let active = true;
     feedbackReviewsApi.byFacility(selectedFacility.facilityId)
       .then((response) => {
-        if (active) setReviews(response.data?.items ?? []);
+        if (active) {
+          setReviews(response.data?.items ?? []);
+          setReviewsTotalCount(response.data?.totalCount ?? response.data?.items?.length ?? 0);
+        }
       })
       .catch((error) => {
-        if (active) setReviewMessage(error.message);
+        if (active) setReviewMessage(getReviewMessageText(error, "Không thể tải đánh giá cho cơ sở này."));
       })
       .finally(() => {
         if (active) setReviewsLoading(false);
@@ -432,9 +503,25 @@ function NearbyClinicPage() {
     });
   }, [debouncedSearch, facilities, requestedDepartmentId]);
 
+  const typedFacilities = useMemo(
+    () => filteredFacilities.filter((facility) => selectedType === "all" || facility.facilityTypeKey === selectedType),
+    [filteredFacilities, selectedType],
+  );
+
+  const visibleFacilities = useMemo(
+    () => typedFacilities.map((facility) => {
+      const distanceKm = getDistanceKm(userLocation, facility);
+      return {
+        ...facility,
+        distanceLabel: distanceKm === null ? "" : formatDistance(distanceKm),
+      };
+    }),
+    [typedFacilities, userLocation],
+  );
+
   const mappableFacilities = useMemo(
-    () => filteredFacilities.filter((facility) => facility.hasValidCoordinates),
-    [filteredFacilities],
+    () => visibleFacilities.filter((facility) => facility.hasValidCoordinates),
+    [visibleFacilities],
   );
   const mapBoundsKey = useMemo(
     () => mappableFacilities.map((facility) => `${facility.facilityId}:${facility.longitude}:${facility.latitude}`).join("|"),
@@ -450,16 +537,42 @@ function NearbyClinicPage() {
   const handleSearchChange = (event) => {
     setSearchText(event.target.value);
     setSelectedFacility(null);
+    setSidebarView("hospital-list");
     setDetailPanelOpen(false);
     setDetailFacility(null);
+    setSelectedDoctor(null);
     setReviews([]);
+    setReviewsTotalCount(0);
     setReviewsLoading(false);
+    setSubmittedReview(null);
+    setEditingReview(false);
   };
+
+  const syncMapUrl = useCallback((nextState = {}, mode = "push") => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (nextState.facilityId) params.set("facilityId", nextState.facilityId);
+    else params.delete("facilityId");
+
+    if (nextState.tab && nextState.facilityId) params.set("tab", nextState.tab);
+    else params.delete("tab");
+
+    if (nextState.doctorId && nextState.facilityId) params.set("doctorId", nextState.doctorId);
+    else params.delete("doctorId");
+
+    const search = params.toString();
+    const nextUrl = `${window.location.pathname}${search ? `?${search}` : ""}`;
+    if (nextUrl === `${window.location.pathname}${window.location.search}`) return;
+    window.history[mode === "replace" ? "replaceState" : "pushState"]({}, "", nextUrl);
+  }, []);
 
   const handleCardClick = useCallback((facility) => {
     setReviewMessage("");
+    setSubmittedReview(null);
+    setEditingReview(false);
     if (facility?.isMockFacility) {
       setReviews([]);
+      setReviewsTotalCount(0);
       setReviewsLoading(false);
     } else {
       setReviewsLoading(true);
@@ -469,14 +582,24 @@ function NearbyClinicPage() {
       mapRef.current?.flyTo?.({
         center: [facility.longitude, facility.latitude],
         zoom: 16,
-        duration: prefersReducedMotion() ? 0 : 1200,
+        offset: window.innerWidth > 760 ? [SIDEBAR_MAP_OFFSET, 0] : [0, -120],
+        duration: prefersReducedMotion() ? 0 : 900,
       });
     }
     cardRefs.current[facility.facilityId]?.scrollIntoView?.({
       block: "nearest",
       behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
-  }, [mapStatus, prefersReducedMotion]);
+  }, [
+    mapStatus,
+    prefersReducedMotion,
+    setReviewMessage,
+    setReviews,
+    setReviewsLoading,
+    setReviewsTotalCount,
+    setSelectedFacility,
+    setSubmittedReview,
+  ]);
 
   useEffect(() => {
     if (mapStatus !== "ready" || selectedFacility || mappableFacilities.length === 0) return;
@@ -509,15 +632,24 @@ function NearbyClinicPage() {
     );
   }, [mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
 
-  const openFacilityDetail = useCallback(async (facility) => {
+  const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
     handleCardClick(facility);
+    setSidebarView("hospital-detail");
+    setSelectedDoctor(null);
     setDetailPanelOpen(true);
     setDetailFacility(facility);
     setDetailLoading(true);
     setDetailDoctorsLoading(true);
     setDetailDoctors([]);
     setDetailError("");
+    if (options.tab) setActiveHospitalTab(getValidTab(options.tab));
+    if (options.syncUrl !== false) {
+      syncMapUrl({
+        facilityId: facility.facilityId,
+        tab: getValidTab(options.tab || activeHospitalTab),
+      });
+    }
 
     if (facility.isMockFacility) {
       setDetailFacility(facility);
@@ -547,7 +679,7 @@ function NearbyClinicPage() {
       setDetailLoading(false);
       setDetailDoctorsLoading(false);
     }
-  }, [handleCardClick]);
+  }, [activeHospitalTab, handleCardClick, syncMapUrl]);
 
   useEffect(() => {
     if (loadingFacilities || !requestedFacilityId || requestedFacilityOpenedRef.current) return;
@@ -558,14 +690,13 @@ function NearbyClinicPage() {
     if (!matchedFacility) return undefined;
 
     const timeoutId = window.setTimeout(() => {
-      if (mapQuery.source === "clinical") {
-        handleCardClick(matchedFacility);
-      } else {
-        openFacilityDetail(matchedFacility);
-      }
+      openFacilityDetail(matchedFacility, {
+        syncUrl: false,
+        tab: mapQuery.tab,
+      });
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [facilities, handleCardClick, loadingFacilities, mapQuery.source, openFacilityDetail, requestedFacilityId]);
+  }, [facilities, loadingFacilities, mapQuery.tab, openFacilityDetail, requestedFacilityId]);
 
   useEffect(() => {
     if (mapQuery.source !== "clinical" || requestedFacilityId || selectedFacility || mappableFacilities.length === 0) return;
@@ -575,18 +706,72 @@ function NearbyClinicPage() {
 
   useEffect(() => {
     if (!detailPanelOpen) return undefined;
-    const focusId = window.setTimeout(() => detailCloseButtonRef.current?.focus(), 0);
+    const focusId = window.setTimeout(() => sidebarTitleRef.current?.focus(), 0);
     return () => window.clearTimeout(focusId);
   }, [detailPanelOpen, detailFacility?.facilityId]);
 
+  useEffect(() => {
+    if (!detailPanelOpen || requestedDoctorOpenedRef.current || !mapQuery.doctorId) return;
+    const matchedDoctor = detailDoctors.find((doctor) => String(doctor.id) === String(mapQuery.doctorId));
+    if (!matchedDoctor) return;
+    requestedDoctorOpenedRef.current = true;
+    const timeoutId = window.setTimeout(() => {
+      setActiveHospitalTab("doctors");
+      setSelectedDoctor(matchedDoctor);
+      setSidebarView("doctor-detail");
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [detailDoctors, detailPanelOpen, mapQuery.doctorId]);
+
   const closeFacilityDetail = () => {
     const facilityId = detailFacility?.facilityId;
+    setSidebarView("hospital-list");
     setDetailPanelOpen(false);
     setDetailFacility(null);
     setDetailError("");
     setDetailDoctors([]);
+    setSelectedDoctor(null);
+    setSelectedFacility(null);
+    setSubmittedReview(null);
+    setEditingReview(false);
+    syncMapUrl({});
     window.setTimeout(() => {
       cardRefs.current[facilityId]?.querySelector?.(".facility-select-button")?.focus();
+    }, 0);
+  };
+
+  const backToHospitalList = () => closeFacilityDetail();
+
+  const changeHospitalTab = (tabId) => {
+    setActiveHospitalTab(tabId);
+    if (detailFacility?.facilityId) {
+      syncMapUrl({ facilityId: detailFacility.facilityId, tab: tabId }, "replace");
+    }
+  };
+
+  const openDoctorDetail = (doctor) => {
+    savedDetailScrollRef.current = detailBodyRef.current?.scrollTop ?? 0;
+    setSelectedDoctor(doctor);
+    setSidebarView("doctor-detail");
+    if (detailFacility?.facilityId) {
+      syncMapUrl({
+        facilityId: detailFacility.facilityId,
+        tab: "doctors",
+        doctorId: doctor.id,
+      });
+    }
+    window.setTimeout(() => sidebarTitleRef.current?.focus(), 0);
+  };
+
+  const backToHospitalDetail = () => {
+    setSidebarView("hospital-detail");
+    setSelectedDoctor(null);
+    if (detailFacility?.facilityId) {
+      syncMapUrl({ facilityId: detailFacility.facilityId, tab: activeHospitalTab }, "replace");
+    }
+    window.setTimeout(() => {
+      if (detailBodyRef.current) detailBodyRef.current.scrollTop = savedDetailScrollRef.current;
+      sidebarTitleRef.current?.focus();
     }, 0);
   };
 
@@ -652,45 +837,153 @@ function NearbyClinicPage() {
     setSavingReview(true);
     setReviewMessage("");
     try {
-      const response = await feedbackReviewsApi.create({
+      const submittedRating = Number(reviewForm.rating);
+      const submittedComment = reviewForm.comment.trim();
+      const submittedImageUrls = toReviewImageUrlMap(reviewForm.imageUrls);
+      const reviewValues = {
+        rating: submittedRating,
+        comment: submittedComment || null,
+        imageUrls: Object.keys(submittedImageUrls).length ? submittedImageUrls : null,
+      };
+      const isUpdating = editingReview && currentUserReview?.id;
+      const response = isUpdating
+        ? await feedbackReviewsApi.update(currentUserReview.id, reviewValues)
+        : await feedbackReviewsApi.create({ facilityId: selectedFacility.facilityId, ...reviewValues });
+      const savedReview = {
+        ...(currentUserReview || {}),
+        ...(response.data || {}),
         facilityId: selectedFacility.facilityId,
-        rating: Number(reviewForm.rating),
-        comment: reviewForm.comment.trim() || null,
-      });
-      setReviewForm({ rating: "5", comment: "" });
-      setReviewMessage(response.message || "Đã gửi đánh giá.");
+        rating: submittedRating,
+        comment: submittedComment,
+        imageUrl: reviewForm.imageUrls[0] || "",
+        imageUrls: reviewForm.imageUrls,
+        reviewerName: auth.displayName || auth.fullName || auth.name || auth.username || "Bạn",
+        isCurrentUser: true,
+      };
+      setSubmittedReview(savedReview);
+      setEditingReview(false);
+      setHoveredReviewRating(0);
+      setReviewForm({ rating: "5", comment: "", imageUrls: [] });
+      setReviewMessage(isUpdating
+        ? "Đã cập nhật đánh giá của bạn."
+        : getReviewMessageText(response.message, "Đã gửi đánh giá của bạn."));
       const refreshed = await feedbackReviewsApi.byFacility(selectedFacility.facilityId);
-      setReviews(refreshed.data?.items ?? []);
+      const refreshedItems = refreshed.data?.items ?? [];
+      const savedIndex = refreshedItems.findIndex((review) => String(review.id) === String(savedReview.id));
+      const nextReviews = savedIndex >= 0
+        ? refreshedItems.map((review, index) => index === savedIndex ? { ...savedReview, ...review } : review)
+        : [savedReview, ...refreshedItems];
+      setReviews(nextReviews);
+      setReviewsTotalCount(Math.max(refreshed.data?.totalCount ?? 0, nextReviews.length));
     } catch (error) {
-      setReviewMessage(error.message);
+      const message = getReviewMessageText(error, "Không thể gửi đánh giá. Vui lòng thử lại sau.");
+      setReviewMessage(message);
+      if (normalizeSearchText(message).includes("da danh gia")) {
+        setSubmittedReview({ isCurrentUser: true, isKnownDuplicate: true });
+      }
     } finally {
       setSavingReview(false);
     }
   };
+
+  const startEditingReview = () => {
+    if (!currentUserReview?.id) return;
+    setReviewForm({
+      rating: String(currentUserReview.rating || 5),
+      comment: currentUserReview.comment || "",
+      imageUrls: getReviewImageUrls(currentUserReview),
+    });
+    setReviewMessage("");
+    setEditingReview(true);
+  };
+
+  const cancelEditingReview = () => {
+    setHoveredReviewRating(0);
+    setReviewForm({ rating: "5", comment: "", imageUrls: [] });
+    setReviewMessage("");
+    setEditingReview(false);
+  };
+
+  const uploadReviewImage = async (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+
+    const remainingSlots = 5 - reviewForm.imageUrls.length;
+    if (remainingSlots <= 0) {
+      setReviewMessage("Mỗi đánh giá được tải tối đa 5 ảnh.");
+      return;
+    }
+    if (files.length > remainingSlots) {
+      setReviewMessage(`Bạn chỉ có thể tải thêm ${remainingSlots} ảnh.`);
+      return;
+    }
+
+    setUploadingReviewImage(true);
+    setReviewMessage("");
+    try {
+      const uploads = await Promise.all(files.map((file) => uploadImageToCloudinary(file)));
+      const uploadedUrls = uploads.map(({ secureUrl }) => secureUrl);
+      setReviewForm((current) => ({ ...current, imageUrls: [...current.imageUrls, ...uploadedUrls] }));
+      setReviewMessage(`Đã tải ${uploadedUrls.length} ảnh. Ảnh sẽ được lưu cùng đánh giá.`);
+    } catch (error) {
+      setReviewMessage(error.message || "Không thể tải ảnh lên. Vui lòng thử lại.");
+    } finally {
+      setUploadingReviewImage(false);
+    }
+  };
+
+  const shareFacility = async (facility) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("facilityId", facility.facilityId);
+    url.searchParams.set("tab", activeHospitalTab);
+    const shareData = {
+      title: facility.facilityName,
+      text: `${facility.facilityName} - ${facility.address}`,
+      url: url.toString(),
+    };
+
+    setShareMessage("");
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareMessage("Đã mở tùy chọn chia sẻ.");
+        return;
+      }
+      await navigator.clipboard.writeText(shareData.url);
+      setShareMessage("Đã sao chép liên kết cơ sở y tế.");
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      setShareMessage("Không thể chia sẻ lúc này. Vui lòng thử lại.");
+    }
+  };
+
+  const detailAverageRating = getAverageRating(reviews);
+  const currentUserReview = reviews.find((review) => isReviewByCurrentUser(review, auth)) || submittedReview;
+  const selectedFacilityDistance = detailFacility ? getDistanceKm(userLocation, detailFacility) : null;
+  const selectedFacilityDistanceLabel = selectedFacilityDistance === null ? "" : formatDistance(selectedFacilityDistance);
+  const activeTypeOptions = [
+    ["all", "Tất cả"],
+    ...Object.entries(TYPE_LABELS).filter(([type]) => facilities.some((facility) => facility.facilityTypeKey === type)),
+  ];
+  const reviewDistribution = [5, 4, 3, 2, 1].map((rating) => {
+    const count = reviews.filter((review) => Number(review.rating) === rating).length;
+    return {
+      rating,
+      count,
+      percent: reviews.length ? Math.round((count / reviews.length) * 100) : 0,
+    };
+  });
+  const showLegacyMapDetail = Boolean(0);
 
   return (
     <main className="clinic-page">
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list">Bỏ qua bản đồ, đến danh sách cơ sở</a>
-      <aside className={`clinic-sidebar ${detailPanelOpen && detailFacility ? "is-detail-mode" : ""}`}>
-        {detailPanelOpen && detailFacility ? (
-          <FacilityDetailSidebarContent
-            detailCloseButtonRef={detailCloseButtonRef}
-            detailDoctors={detailDoctors}
-            detailDoctorsLoading={detailDoctorsLoading}
-            detailError={detailError}
-            detailFacility={detailFacility}
-            detailLoading={detailLoading}
-            detailServices={detailServices}
-            reviews={reviews}
-            reviewsLoading={reviewsLoading}
-            onBack={closeFacilityDetail}
-            onCall={callFacility}
-            onDirections={openDirections}
-          />
-        ) : (
-          <>
+      <aside className={`clinic-sidebar sidebar-view-${sidebarView}`} aria-live="polite">
+        {sidebarView === "hospital-list" && (
+        <div className="map-sidebar-screen sidebar-screen-active">
         <header className="map-sidebar-head">
           <p>Cơ sở y tế</p>
           <h1>Tìm nơi khám phù hợp</h1>
@@ -717,6 +1010,20 @@ function NearbyClinicPage() {
           )}
         </div>
 
+        <div className="facility-type-filter" role="group" aria-label="Lọc loại cơ sở y tế">
+          {activeTypeOptions.map(([type, label]) => (
+            <button
+              key={type}
+              type="button"
+              className={selectedType === type ? "active" : ""}
+              aria-pressed={selectedType === type}
+              onClick={() => setSelectedType(type)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
@@ -726,7 +1033,7 @@ function NearbyClinicPage() {
 
         <FacilityList
           cardRefs={cardRefs}
-          facilities={filteredFacilities}
+          facilities={visibleFacilities}
           loading={loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
           onCall={callFacility}
@@ -734,20 +1041,212 @@ function NearbyClinicPage() {
           onViewDetail={openFacilityDetail}
         />
 
-        <FacilityReviews
-          authenticated={Boolean(auth)}
-          facility={selectedFacility}
-          form={reviewForm}
-          loading={reviewsLoading}
-          message={reviewMessage}
-          reviews={reviews}
-          saving={savingReview}
-          onFormChange={(key, value) => setReviewForm((current) => ({ ...current, [key]: value }))}
-          onSubmit={submitReview}
-        />
+        </div>
+        )}
 
-        <div className="sidebar-note">ℹ Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</div>
-          </>
+        {sidebarView === "hospital-list" && <div className="sidebar-note">ℹ Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</div>}
+        {sidebarView === "hospital-detail" && detailFacility && (
+          <section
+            className="map-sidebar-screen facility-detail-sidebar sidebar-screen-active"
+            aria-labelledby="facility-detail-title"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") backToHospitalList();
+            }}
+          >
+            <div className="facility-detail-topbar">
+              <button type="button" onClick={backToHospitalList}><ArrowLeft size={17} /> Quay lại danh sách</button>
+              <button type="button" aria-label="Đóng chi tiết" onClick={closeFacilityDetail}><X size={18} /></button>
+            </div>
+
+            <div className="facility-detail-body" ref={detailBodyRef}>
+              <div className="facility-detail-media">
+                {detailFacility.imageUrl ? (
+                  <img src={detailFacility.imageUrl} alt={`Ảnh ${detailFacility.facilityName}`} />
+                ) : (
+                  <span aria-hidden="true"><Building2 size={46} /></span>
+                )}
+              </div>
+
+              <section className="facility-detail-summary">
+                <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
+                <h2 id="facility-detail-title" ref={sidebarTitleRef} tabIndex="-1">{detailFacility.facilityName}</h2>
+                <p><MapPin size={16} /> {detailFacility.address}</p>
+                <p><Clock3 size={16} /> {detailFacility.openingHours || "Chưa có giờ hoạt động"}</p>
+                <p><Star size={16} fill={detailAverageRating ? "currentColor" : "none"} /> {detailAverageRating ? `${detailAverageRating.toFixed(1)} · ${reviewsTotalCount} đánh giá` : "Chưa có đánh giá"}</p>
+                {selectedFacilityDistanceLabel && <p><Route size={16} /> Cách bạn khoảng {selectedFacilityDistanceLabel}</p>}
+              </section>
+
+              <div className="facility-quick-actions" aria-label={`Thao tác nhanh với ${detailFacility.facilityName}`}>
+                <button type="button" className="primary" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}><Route size={18} /><span>Chỉ đường</span></button>
+                <button type="button" disabled={!detailFacility.phone} title={detailFacility.phone ? undefined : "Cơ sở chưa có số điện thoại"} onClick={() => callFacility(detailFacility)}><Phone size={18} /><span>Gọi</span></button>
+                <button type="button" aria-label="Lưu cơ sở y tế"><Bookmark size={18} /><span>Lưu</span></button>
+                <button type="button" onClick={() => shareFacility(detailFacility)}><Share2 size={18} /><span>Chia sẻ</span></button>
+                {detailFacility.website && <a href={detailFacility.website} target="_blank" rel="noreferrer"><Globe2 size={18} /><span>Website</span></a>}
+              </div>
+              {shareMessage && <p className="facility-action-message" role="status">{shareMessage}</p>}
+
+              <div className="facility-detail-tabs" role="tablist" aria-label="Thông tin cơ sở y tế">
+                {DETAIL_TABS.map(([tabId, label]) => (
+                  <button key={tabId} type="button" role="tab" aria-selected={activeHospitalTab === tabId} className={activeHospitalTab === tabId ? "active" : ""} onClick={() => changeHospitalTab(tabId)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {detailLoading && <p className="facility-detail-status">Đang tải thông tin chi tiết...</p>}
+              {detailError && <p className="facility-detail-error">{detailError}</p>}
+
+              {activeHospitalTab === "overview" && (
+                <div className="facility-detail-tab-panel" role="tabpanel">
+                  <section className="facility-info-group">
+                    <h3>Thông tin tổng quan</h3>
+                    <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
+                    <dl className="facility-plain-facts">
+                      {detailFacility.phone && <div><dt>Số điện thoại</dt><dd>{detailFacility.phone}</dd></div>}
+                      {detailFacility.website && <div><dt>Website</dt><dd><a href={detailFacility.website} target="_blank" rel="noreferrer">{detailFacility.website}</a></dd></div>}
+                      <div><dt>Địa chỉ</dt><dd>{detailFacility.address}</dd></div>
+                    </dl>
+                  </section>
+                  <section className="facility-info-group">
+                    <h3>Chuyên khoa và dịch vụ</h3>
+                    <div className="facility-detail-tags">{detailFacility.departments.map((department) => <span key={department}>{department}</span>)}</div>
+                  </section>
+                  <section className="facility-info-group busy-hours-section">
+                    <div className="busy-hours-heading">
+                      <div><h3>Xu hướng đông khách</h3><p>Ước tính theo khung giờ khám, chưa được bệnh viện xác nhận.</p></div>
+                      <label>Chọn ngày
+                        <select value={busyDay} onChange={(event) => setBusyDay(event.target.value)}>
+                          {Object.entries(BUSY_HOURS).map(([day, data]) => <option key={day} value={day}>{data.label}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                    <figure className="busy-hours-chart" aria-labelledby="busy-hours-caption">
+                      <div className="busy-hours-bars" role="img" aria-label={`Biểu đồ xu hướng đông khách ước tính ${BUSY_HOURS[busyDay].label}. Khung 09:00 được ước tính ở mức đông.`}>
+                        {BUSY_HOURS[busyDay].values.map((value, index) => (
+                          <div className="busy-hour-column" key={BUSY_HOUR_LABELS[index]}>
+                            <span className={`busy-hour-value ${getBusyLevel(value).tone}`}>{getBusyLevel(value).label}</span>
+                            <i style={{ height: `${value}%` }} />
+                            <small>{BUSY_HOUR_LABELS[index].replace(":00", "h")}</small>
+                          </div>
+                        ))}
+                      </div>
+                      <figcaption id="busy-hours-caption"><strong>Không phải dữ liệu đo lường.</strong> Biểu đồ chỉ hỗ trợ chọn thời điểm tham khảo. Hãy gọi bệnh viện để xác nhận trước khi đến.</figcaption>
+                    </figure>
+                    <details className="busy-hours-data">
+                      <summary>Xem chi tiết theo giờ</summary>
+                      <table>
+                        <caption>Xu hướng đông khách ước tính {BUSY_HOURS[busyDay].label}</caption>
+                        <thead><tr><th scope="col">Giờ</th><th scope="col">Mức ước tính</th></tr></thead>
+                        <tbody>{BUSY_HOURS[busyDay].values.map((value, index) => <tr key={BUSY_HOUR_LABELS[index]}><td>{BUSY_HOUR_LABELS[index]}</td><td><span className={`busy-level-badge ${getBusyLevel(value).tone}`}>{getBusyLevel(value).label}</span></td></tr>)}</tbody>
+                      </table>
+                      <p>Nguồn: mô hình hiển thị nội bộ dựa trên khung giờ khám; chưa có dữ liệu lượng khách từ bệnh viện.</p>
+                    </details>
+                  </section>
+                  <section className="facility-info-group">
+                    <h3>Tiện ích hiện có dữ liệu</h3>
+                    <div className="facility-detail-services">{detailServices.length ? detailServices.map((service) => <span key={service}>{service}</span>) : <p>Backend chưa cung cấp tiện ích hoặc dịch vụ nổi bật cho cơ sở này.</p>}</div>
+                  </section>
+                </div>
+              )}
+
+              {activeHospitalTab === "doctors" && (
+                <div className="facility-detail-tab-panel" role="tabpanel">
+                  <section className="facility-info-group">
+                    <h3>Danh sách bác sĩ</h3>
+                    {detailDoctorsLoading && <p className="facility-detail-status">Đang tải danh sách bác sĩ...</p>}
+                    {!detailDoctorsLoading && detailDoctors.length === 0 && <p className="facility-empty-state">Hiện chưa có bác sĩ nào được công khai cho cơ sở này.</p>}
+                    <div className="facility-detail-list facility-detail-doctor-list">
+                      {detailDoctors.map((doctor) => (
+                        <article key={doctor.id}>
+                          <span className="facility-detail-doctor-image">{getDoctorImageUrl(doctor) ? <img src={getDoctorImageUrl(doctor)} alt={`Ảnh bác sĩ ${getDoctorName(doctor)}`} /> : <UserRound size={20} aria-hidden="true" />}</span>
+                          <div className="doctor-card-copy">
+                            <strong>{getDoctorName(doctor)}</strong>
+                            {doctor.academicTitle && <span>{doctor.academicTitle}</span>}
+                            <small>{getDoctorSpecialty(doctor)}{doctor.yearsOfExperience ? ` · ${doctor.yearsOfExperience} năm kinh nghiệm` : ""}</small>
+                          </div>
+                          <button type="button" onClick={() => openDoctorDetail(doctor)}>Xem chi tiết</button>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {activeHospitalTab === "reviews" && (
+                <div className="facility-detail-tab-panel" role="tabpanel">
+                  <section className="facility-info-group">
+                    <h3>Đánh giá người dùng</h3>
+                    <div className="review-overview"><strong>{detailAverageRating ? detailAverageRating.toFixed(1) : "--"}</strong><div className="review-summary-stars" aria-label={detailAverageRating ? `${detailAverageRating.toFixed(1)} trên 5 sao` : "Chưa có điểm đánh giá"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={detailAverageRating >= rating - 0.25 ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{reviewsTotalCount} đánh giá</span></div>
+                    <div className="review-distribution" aria-label="Phân bố đánh giá">{reviewDistribution.map((row) => <div key={row.rating}><span>{row.rating} sao</span><i><b style={{ width: `${row.percent}%` }} /></i><em>{row.percent}%</em></div>)}</div>
+                  </section>
+                  <section className="facility-info-group">
+                    <h3>{editingReview ? "Chỉnh sửa đánh giá" : currentUserReview ? "Đánh giá của bạn" : "Gửi đánh giá"}</h3>
+                    {currentUserReview && !editingReview ? (
+                      <div className="current-user-review">
+                        <div className="review-item-stars" aria-label={currentUserReview.rating ? `${currentUserReview.rating} trên 5 sao` : "Đánh giá đã được ghi nhận"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={Number(currentUserReview.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div>
+                        <strong>Bạn đã đánh giá cơ sở này</strong>
+                        <p>{currentUserReview.isKnownDuplicate ? "Đánh giá hiện tại chưa xuất hiện trong danh sách công khai." : (currentUserReview.comment || "Bạn không để lại nhận xét.")}</p>
+                        {getReviewImageUrls(currentUserReview).length > 0 && <div className="review-photo-grid">{getReviewImageUrls(currentUserReview).map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh minh họa ${index + 1} trong đánh giá của bạn`} />)}</div>}
+                        {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa vì API chưa trả mã đánh giá.</small>}
+                      </div>
+                    ) : (
+                      <form className="facility-review-form" onSubmit={submitReview}>
+                        <fieldset className="star-rating"><legend>Chọn số sao</legend><div onMouseLeave={() => setHoveredReviewRating(0)}>{[1, 2, 3, 4, 5].map((rating) => <label key={rating} title={`${rating} sao · ${RATING_LABELS[rating]}`} onMouseEnter={() => setHoveredReviewRating(rating)}><input type="radio" name="rating" value={rating} checked={reviewForm.rating === String(rating)} onChange={(event) => { setReviewForm((current) => ({ ...current, rating: event.target.value })); setHoveredReviewRating(0); }} /><Star size={32} fill={(hoveredReviewRating || Number(reviewForm.rating)) >= rating ? "currentColor" : "none"} aria-hidden="true" /><span className="sr-only">{rating} sao · {RATING_LABELS[rating]}</span></label>)}</div><p>{hoveredReviewRating || reviewForm.rating}/5 · {RATING_LABELS[hoveredReviewRating || Number(reviewForm.rating)]}</p></fieldset>
+                        <label><span>Chia sẻ trải nghiệm</span><textarea rows={4} maxLength={1000} value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Điều gì khiến bạn hài lòng hoặc chưa hài lòng?" /><small>{reviewForm.comment.length}/1000 ký tự</small></label>
+                        <div className="review-image-upload">
+                          <div><strong>Ảnh minh họa</strong><small>Tối đa 5 MB · JPG, PNG, WebP hoặc định dạng ảnh được hỗ trợ.</small></div>
+                          {reviewForm.imageUrls.length > 0 && <div className="review-image-preview-grid">{reviewForm.imageUrls.map((imageUrl, index) => <div className="review-image-preview" key={imageUrl}><img className="review-image" src={imageUrl} alt={`Ảnh minh họa ${index + 1} sẽ đính kèm đánh giá`} /><button type="button" aria-label={`Xóa ảnh ${index + 1}`} onClick={() => setReviewForm((current) => ({ ...current, imageUrls: current.imageUrls.filter((url) => url !== imageUrl) }))}>×</button></div>)}</div>}
+                          {reviewForm.imageUrls.length < 5 && <label className="review-upload-button"><ImagePlus size={17} aria-hidden="true" /><span>{uploadingReviewImage ? "Đang tải ảnh..." : `Thêm ảnh (${reviewForm.imageUrls.length}/5)`}</span><input type="file" accept="image/*" multiple onChange={uploadReviewImage} disabled={uploadingReviewImage || savingReview} /></label>}
+                          <p>Không tải ảnh chứa hồ sơ bệnh án, giấy tờ tùy thân hoặc thông tin sức khỏe riêng tư.</p>
+                        </div>
+                        <div className="review-form-actions"><button type="submit" disabled={savingReview || uploadingReviewImage}>{auth ? (savingReview ? (editingReview ? "Đang cập nhật..." : "Đang gửi...") : (editingReview ? "Lưu chỉnh sửa" : "Gửi đánh giá")) : "Đăng nhập để đánh giá"}</button>{editingReview && <button type="button" className="secondary" onClick={cancelEditingReview} disabled={savingReview || uploadingReviewImage}>Hủy chỉnh sửa</button>}</div>
+                      </form>
+                    )}
+                    {reviewMessage && <p className="review-message" role="status">{reviewMessage}</p>}
+                  </section>
+                  <section className="facility-info-group">
+                    <h3>Nhận xét gần đây</h3>
+                    {reviewsLoading && <p className="facility-detail-status">Đang tải đánh giá...</p>}
+                    {!reviewsLoading && reviews.length === 0 && <p className="facility-empty-state">Chưa có đánh giá công khai cho cơ sở này.</p>}
+                    <div className="facility-detail-list review-list">{reviews.map((review) => { const authorName = isReviewByCurrentUser(review, auth) ? "Bạn" : getReviewAuthorName(review); const reviewDate = getReviewDate(review); const reviewImageUrls = getReviewImageUrls(review); return <article key={review.id}><header><span className="review-author-avatar" aria-hidden="true">{getReviewAuthorInitial(authorName)}</span><div><strong>{authorName}</strong><small>{reviewDate ? `${reviewDate} · ` : ""}{review.rating} sao</small></div></header><div className="review-rating-line"><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={16} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{RATING_LABELS[Number(review.rating)]}</span></div><p className="review-comment">{review.comment || "Không có nhận xét."}</p>{reviewImageUrls.length > 0 && <div className="review-photo-grid">{reviewImageUrls.map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh ${index + 1} trong đánh giá của ${authorName}`} />)}</div>}</article>; })}</div>
+                  </section>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {sidebarView === "doctor-detail" && selectedDoctor && detailFacility && (
+          <section className="map-sidebar-screen doctor-detail-view sidebar-screen-active" aria-labelledby="doctor-detail-title">
+            <div className="facility-detail-topbar">
+              <button type="button" onClick={backToHospitalDetail}><ArrowLeft size={17} /> Quay lại bệnh viện</button>
+              <button type="button" aria-label="Đóng chi tiết bác sĩ" onClick={closeFacilityDetail}><X size={18} /></button>
+            </div>
+            <div className="doctor-detail-body">
+              <section className="doctor-profile-card">
+                <span className="doctor-profile-image">{getDoctorImageUrl(selectedDoctor) ? <img src={getDoctorImageUrl(selectedDoctor)} alt={`Ảnh bác sĩ ${getDoctorName(selectedDoctor)}`} /> : <UserRound size={34} aria-hidden="true" />}</span>
+                <div><p>Thông tin bác sĩ</p><h2 id="doctor-detail-title" ref={sidebarTitleRef} tabIndex="-1">{getDoctorName(selectedDoctor)}</h2><span>{selectedDoctor.academicTitle || "Chưa cập nhật học hàm/học vị"}</span></div>
+              </section>
+              <div className="doctor-fact-grid">
+                <div><Stethoscope size={17} /><span>{getDoctorSpecialty(selectedDoctor)}</span></div>
+                <div><Building2 size={17} /><span>{detailFacility.facilityName}</span></div>
+                {selectedDoctor.yearsOfExperience && <div><Star size={17} /><span>{selectedDoctor.yearsOfExperience} năm kinh nghiệm</span></div>}
+              </div>
+              <section className="facility-info-group doctor-info-panel">
+                <h3>Thông tin chuyên môn</h3>
+                <dl className="facility-plain-facts">
+                  <div><dt>Chuyên khoa</dt><dd>{getDoctorSpecialty(selectedDoctor)}</dd></div>
+                  {getDoctorRoleLabel(selectedDoctor) && <div><dt>Vai trò</dt><dd>{getDoctorRoleLabel(selectedDoctor)}</dd></div>}
+                  {selectedDoctor.yearsOfExperience && <div><dt>Kinh nghiệm</dt><dd>{selectedDoctor.yearsOfExperience} năm</dd></div>}
+                  <div><dt>Cơ sở công tác</dt><dd>{detailFacility.facilityName}</dd></div>
+                </dl>
+              </section>
+              <div className="doctor-sticky-actions">
+                <button type="button" disabled={!detailFacility.phone} onClick={() => callFacility(detailFacility)}><Phone size={17} /> Gọi bệnh viện</button>
+                <button type="button" disabled><Clock3 size={17} /> Chưa hỗ trợ đặt lịch</button>
+              </div>
+            </div>
+          </section>
         )}
       </aside>
 
@@ -763,14 +1262,120 @@ function NearbyClinicPage() {
           recommendationContext={recommendationContext}
           userLocation={userLocation}
           viewState={viewState}
+          hidePopup={detailPanelOpen}
           onError={handleMapError}
           onLocate={handleLocateMe}
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}
-          onSelect={(facility) => facility ? handleCardClick(facility) : setSelectedFacility(null)}
+          onSelect={(facility) => facility ? openFacilityDetail(facility) : setSelectedFacility(null)}
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}
         />
+        {showLegacyMapDetail && detailPanelOpen && detailFacility && (
+          <section
+            className="facility-detail-view"
+            aria-labelledby="facility-detail-title"
+            tabIndex="-1"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") closeFacilityDetail();
+            }}
+          >
+            <button
+              ref={detailCloseButtonRef}
+              className="facility-detail-close"
+              type="button"
+              onClick={closeFacilityDetail}
+              aria-label="Đóng xem chi tiết"
+            >
+              ×
+            </button>
+            <div className="facility-detail-hero">
+              {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
+              <div>
+                <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
+                <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
+                <p>{detailFacility.address}</p>
+                <div className="facility-detail-hero-actions">
+                  <button type="button" disabled={!detailFacility.phone} onClick={() => callFacility(detailFacility)}>Gọi điện</button>
+                  <button type="button" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}>Chỉ đường</button>
+                </div>
+              </div>
+            </div>
+
+          <div className="facility-detail-content">
+            {detailLoading && <p className="facility-detail-status">Đang tải thông tin chi tiết...</p>}
+            {detailError && <p className="facility-detail-error">{detailError}</p>}
+
+            <section className="facility-detail-card wide">
+              <h3>Thông tin bệnh viện</h3>
+              <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
+              <dl className="facility-detail-facts">
+                <div>
+                  <dt>Số điện thoại</dt>
+                  <dd>{detailFacility.phoneLabel}</dd>
+                </div>
+                <div>
+                  <dt>Giờ hoạt động</dt>
+                  <dd>{detailFacility.openingHours}</dd>
+                </div>
+                <div>
+                  <dt>Website</dt>
+                  <dd>{detailFacility.website ? <a href={detailFacility.website} target="_blank" rel="noreferrer">{detailFacility.website}</a> : "Chưa cập nhật"}</dd>
+                </div>
+              </dl>
+              <div className="facility-detail-tags">
+                {detailFacility.departments.map((department) => <span key={department}>{department}</span>)}
+              </div>
+            </section>
+
+            <section className="facility-detail-card">
+              <h3>Danh sách bác sĩ</h3>
+              <div className="facility-detail-list facility-detail-doctor-list">
+                {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
+                {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này.</p>}
+                {detailDoctors.map((doctor) => (
+                  <article key={doctor.id}>
+                    {getDoctorImageUrl(doctor) && (
+                      <img
+                        className="facility-detail-doctor-image"
+                        src={getDoctorImageUrl(doctor)}
+                        alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
+                      />
+                    )}
+                    <div>
+                      <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
+                      <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="facility-detail-card">
+              <h3>Đánh giá người dùng</h3>
+              <div className="facility-detail-list">
+                {reviewsLoading && <p>Đang tải đánh giá...</p>}
+                {!reviewsLoading && reviews.length === 0 && <p>Chưa có đánh giá công khai cho cơ sở này.</p>}
+                {reviews.slice(0, 4).map((review) => (
+                  <article key={review.id}>
+                    <strong>{review.rating}/5 sao</strong>
+                    <span>{review.comment || "Không có nhận xét."}</span>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="facility-detail-card wide">
+              <h3>Tiện ích và dịch vụ nổi bật</h3>
+              <div className="facility-detail-services">
+                {detailServices.length
+                  ? detailServices.map((service) => <span key={service}>{service}</span>)
+                  : <p>Cơ sở này chưa có tiện ích hoặc dịch vụ nổi bật.</p>}
+              </div>
+            </section>
+          </div>
+        </section>
+        )}
       </section>
     </main>
   );
@@ -1195,113 +1800,6 @@ const styles = `
   border-radius: 14px;
   box-shadow: 0 10px 28px rgba(24, 54, 31, .07);
 }
-.clinic-sidebar.is-detail-mode {
-  display: block;
-  width: clamp(420px, 30vw, 540px);
-  flex: 0 0 clamp(420px, 30vw, 540px);
-  padding: 0;
-  background: #f7faf5;
-}
-.sidebar-detail-view {
-  position: static;
-  inset: auto;
-  z-index: auto;
-  min-height: 100%;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: #f7faf5;
-  animation: facilitySidebarDetailReveal 260ms ease both;
-}
-.facility-detail-back {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  width: 100%;
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: rgba(255,255,255,.94);
-  color: var(--ink);
-  padding: 0 18px;
-  font-weight: 950;
-  text-align: left;
-  backdrop-filter: blur(14px);
-}
-.facility-detail-back:hover,
-.facility-detail-back:focus-visible {
-  background: #eef8e6;
-  outline: none;
-}
-.sidebar-detail-hero {
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  border-bottom: 1px solid var(--line);
-  background: #fff;
-}
-.sidebar-detail-hero > img,
-.sidebar-detail-hero > span {
-  width: 100%;
-  min-height: 170px;
-  max-height: 210px;
-  object-fit: cover;
-}
-.sidebar-detail-hero > span {
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, rgba(8,127,140,.14), rgba(184,239,121,.34)), #edf6e8;
-  color: var(--ink);
-  font-size: 42px;
-  font-weight: 950;
-}
-.sidebar-detail-hero > div {
-  display: grid;
-  gap: 10px;
-  padding: 18px;
-}
-.sidebar-detail-hero h2 {
-  margin: 0;
-  font-size: clamp(25px, 2.4vw, 34px);
-  line-height: 1.08;
-  overflow-wrap: anywhere;
-}
-.sidebar-detail-hero p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.45;
-  font-weight: 760;
-}
-.sidebar-detail-content {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  padding: 14px;
-}
-.sidebar-detail-content .facility-detail-card,
-.sidebar-detail-content .facility-detail-card.wide {
-  grid-column: auto;
-  border-radius: 16px;
-  background: rgba(255,255,255,.92);
-  padding: 15px;
-}
-.sidebar-detail-content .facility-detail-card h3 {
-  font-size: 18px;
-}
-.sidebar-detail-content .facility-detail-facts div {
-  background: #fbfdf9;
-}
-.sidebar-detail-content .facility-detail-doctor-list article {
-  grid-template-columns: auto minmax(0, 1fr);
-}
-@keyframes facilitySidebarDetailReveal {
-  from { opacity: 0; transform: translateX(12px); }
-  to { opacity: 1; transform: translateX(0); }
-}
 
 @media (max-width: 1080px) {
   .clinic-sidebar {
@@ -1357,6 +1855,878 @@ const styles = `
   .facility-actions button,
   .map-page-actions button {
     width: 100%;
+  }
+}
+
+/* Google Maps style sidebar detail flow. */
+.clinic-sidebar {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  align-self: stretch;
+  width: min(420px, 38vw);
+  flex: 0 0 min(420px, 38vw);
+  padding: 0;
+  overflow: hidden;
+  border-right: 1px solid rgba(17, 20, 18, .1);
+  box-shadow: 10px 0 30px rgba(17, 20, 18, .07);
+}
+.clinic-sidebar.sidebar-view-hospital-detail > .facility-detail-sidebar,
+.clinic-sidebar.sidebar-view-doctor-detail > .doctor-detail-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: auto;
+}
+.map-sidebar-screen {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 22px;
+  background: rgba(252, 253, 250, .99);
+  animation: sidebarSlideIn 280ms cubic-bezier(.22, 1, .36, 1);
+}
+.facility-type-filter {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 12px 0 4px;
+}
+.facility-type-filter button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+}
+.facility-type-filter button.active {
+  border-color: var(--teal);
+  background: #e4f4f2;
+  color: #075d66;
+}
+.facility-detail-sidebar,
+.doctor-detail-view {
+  display: block;
+  gap: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+}
+.facility-detail-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(252, 253, 250, .96);
+  padding: 12px 14px;
+  backdrop-filter: blur(12px);
+}
+.facility-detail-topbar button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 12px;
+  font-weight: 900;
+}
+.facility-detail-topbar button:last-child {
+  width: 38px;
+  padding: 0;
+  color: #b42318;
+}
+.facility-detail-body,
+.doctor-detail-body {
+  width: 100%;
+  min-height: 100%;
+  max-height: none;
+  overflow: visible;
+  padding-bottom: 18px;
+}
+.facility-detail-media {
+  height: 198px;
+  background: linear-gradient(135deg, rgba(8, 127, 140, .14), rgba(184, 239, 121, .34)), #eef7ea;
+}
+.facility-detail-media img,
+.facility-detail-media span {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+  color: #315d18;
+}
+.facility-detail-summary {
+  display: grid;
+  gap: 8px;
+  padding: 18px 18px 14px;
+}
+.facility-detail-summary h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(25px, 3vw, 34px);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+.facility-detail-summary h2:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, .42);
+  outline-offset: 4px;
+}
+.facility-detail-summary p {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.facility-detail-summary svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--teal);
+}
+.facility-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 18px 16px;
+}
+.facility-quick-actions button,
+.facility-quick-actions a {
+  min-width: 0;
+  min-height: 64px;
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  padding: 8px 5px;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
+.facility-quick-actions .primary {
+  border-color: #087f8c;
+  background: #087f8c;
+  color: #fff;
+}
+.facility-action-message {
+  margin: -4px 18px 10px;
+  color: #075d66;
+  font-size: 12px;
+  font-weight: 850;
+}
+.busy-hours-section {
+  gap: 14px;
+}
+.busy-hours-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+}
+.busy-hours-heading h3,
+.busy-hours-heading p {
+  margin: 0;
+}
+.busy-hours-heading p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.busy-hours-heading label {
+  display: grid;
+  flex: 0 0 116px;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+.busy-hours-heading select {
+  min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  padding: 0 9px;
+  font: inherit;
+}
+.busy-hours-chart {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+.busy-hours-bars {
+  height: 174px;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(24px, 1fr));
+  align-items: end;
+  gap: 5px;
+  border-bottom: 1px solid var(--line-strong);
+  padding-top: 24px;
+}
+.busy-hour-column {
+  height: 150px;
+  display: grid;
+  grid-template-rows: 20px minmax(0, 1fr) 24px;
+  align-items: end;
+  gap: 3px;
+  text-align: center;
+}
+.busy-hour-column i {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 6px 6px 2px 2px;
+  background: #087f8c;
+}
+.busy-hour-value,
+.busy-hour-column small {
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 850;
+}
+.busy-hour-value.high { color: #8f2d1f; }
+.busy-hour-value.medium { color: #725200; }
+.busy-hour-value.low { color: #12643a; }
+.busy-hours-chart figcaption,
+.busy-hours-data {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.busy-hours-data summary {
+  width: fit-content;
+  min-height: 32px;
+  cursor: pointer;
+  color: var(--teal);
+  font-weight: 900;
+}
+.busy-hours-data p { margin: 6px 0 0; }
+.busy-hours-data table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  color: var(--ink);
+  font-size: 12px;
+}
+.busy-hours-data caption {
+  padding-bottom: 7px;
+  font-weight: 900;
+  text-align: left;
+}
+.busy-hours-data th,
+.busy-hours-data td {
+  border-bottom: 1px solid var(--line);
+  padding: 7px 6px;
+  text-align: left;
+}
+.busy-hours-data th { color: var(--muted); }
+.busy-level-badge {
+  display: inline-flex;
+  min-width: 54px;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-weight: 900;
+}
+.busy-level-badge.high { background: #f8ddd8; color: #7c271c; }
+.busy-level-badge.medium { background: #f6ebc8; color: #604500; }
+.busy-level-badge.low { background: #dff3e7; color: #10582f; }
+.facility-quick-actions button:disabled {
+  background: #eef0e8;
+  color: var(--muted);
+}
+.facility-detail-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: rgba(252, 253, 250, .96);
+  backdrop-filter: blur(12px);
+}
+.facility-detail-tabs button {
+  min-height: 46px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 950;
+}
+.facility-detail-tabs button.active {
+  border-bottom-color: var(--teal);
+  color: var(--teal);
+}
+.facility-detail-tab-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+}
+.facility-info-group {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+}
+.facility-info-group:last-child {
+  border-bottom: 0;
+}
+.facility-info-group h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.facility-info-group p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.facility-plain-facts {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.facility-plain-facts div {
+  display: grid;
+  gap: 3px;
+}
+.facility-plain-facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+.facility-plain-facts dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+.facility-empty-state {
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  background: var(--paper-soft);
+  padding: 13px;
+}
+.facility-detail-doctor-list article {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+.facility-detail-doctor-image {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.facility-detail-doctor-image img,
+.doctor-profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.facility-detail-doctor-list small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.facility-detail-doctor-list button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 10px;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 950;
+}
+.review-overview {
+  display: grid;
+  gap: 2px;
+}
+.review-overview strong {
+  font-size: 30px;
+  line-height: 1;
+}
+.review-overview span,
+.review-distribution em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+}
+.review-summary-stars,
+.review-item-stars {
+  display: flex;
+  gap: 2px;
+  color: #a96500;
+}
+.star-rating {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+.star-rating legend {
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 900;
+}
+.star-rating > div {
+  display: flex;
+  width: fit-content;
+  gap: 2px;
+}
+.star-rating label {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: #a96500;
+  cursor: pointer;
+}
+.star-rating label svg {
+  pointer-events: none;
+  transition: color 140ms ease, fill 140ms ease, transform 140ms ease;
+}
+.star-rating label:hover svg { transform: scale(1.12); }
+.star-rating input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.star-rating label:has(input:focus-visible) {
+  border-radius: 8px;
+  outline: 3px solid #087f8c;
+  outline-offset: 1px;
+}
+.star-rating p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+.current-user-review {
+  display: grid;
+  gap: 7px;
+  border: 1px solid rgba(8, 127, 140, .26);
+  border-radius: 14px;
+  background: #edf8f6;
+  padding: 14px;
+}
+.current-user-review p,
+.current-user-review small { margin: 0; color: var(--muted); line-height: 1.5; }
+.current-user-review small { font-size: 11px; font-weight: 800; }
+.review-edit-button {
+  width: fit-content;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--paper, #fff);
+  color: var(--ink);
+  padding: 0 12px;
+  font-weight: 900;
+}
+.review-image-upload {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  background: var(--paper-soft);
+  padding: 12px;
+}
+.review-image-upload > div:first-child { display: grid; gap: 2px; }
+.review-image-upload small,
+.review-image-upload p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.review-upload-button {
+  width: fit-content;
+  min-height: 42px;
+  display: inline-flex !important;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--paper, #fff);
+  color: var(--ink);
+  padding: 0 12px;
+  cursor: pointer;
+}
+.review-upload-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.review-upload-button:has(input:focus-visible) { outline: 3px solid var(--teal); outline-offset: 2px; }
+.review-image-preview-grid,
+.review-photo-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 6px;
+}
+.review-image-preview {
+  position: relative;
+  min-width: 0;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper, #fff);
+  contain: layout paint;
+}
+.review-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  object-fit: cover;
+}
+.review-image-preview .review-image {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border: 0;
+  border-radius: inherit;
+}
+.review-image-preview button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 50%;
+  background: rgba(16,20,17,.78);
+  color: #fff;
+  padding: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+.review-image-preview button:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
+}
+.review-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-form-actions button { flex: 1 1 150px; }
+.review-form-actions .secondary { background: var(--paper, #fff); box-shadow: none; }
+.review-list { gap: 0; }
+.review-list article {
+  gap: 9px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: 16px 0;
+}
+.review-list article:last-child { border-bottom: 0; }
+.review-list article header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.review-list article header > div { min-width: 0; display: grid; gap: 2px; }
+.review-list article header strong { overflow-wrap: anywhere; }
+.review-list article header small { color: var(--muted); font-size: 11px; }
+.review-rating-line { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.review-rating-line > span { color: var(--muted); font-size: 11px; font-weight: 800; }
+.review-comment { color: var(--ink) !important; font-size: 13px !important; line-height: 1.55 !important; }
+.review-author-avatar {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(8, 127, 140, .2);
+  border-radius: 50%;
+  background: #e0f2ef;
+  color: #075d66;
+  font-size: 10px;
+  font-weight: 950;
+}
+@media (prefers-reduced-motion: reduce) {
+  .star-rating label svg { transition: none; }
+}
+@media (max-width: 420px) {
+  .review-photo-grid,
+  .review-image-preview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.review-distribution {
+  display: grid;
+  gap: 7px;
+}
+.review-distribution div {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 8px;
+}
+.review-distribution span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+.review-distribution i {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+.review-distribution b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teal);
+}
+.facility-review-form {
+  display: grid;
+  gap: 10px;
+}
+.facility-review-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 900;
+}
+.facility-review-form select,
+.facility-review-form textarea {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+  color: var(--ink);
+}
+.facility-review-form button,
+.doctor-sticky-actions button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--ink);
+  border-radius: 10px;
+  background: var(--lime);
+  color: var(--ink);
+  font-weight: 950;
+}
+.doctor-profile-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 20px 18px 14px;
+}
+.doctor-profile-image {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper-soft);
+  color: var(--teal);
+}
+.doctor-profile-card p,
+.doctor-profile-card h2 {
+  margin: 0;
+}
+.doctor-profile-card p {
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.doctor-profile-card h2 {
+  font-size: 24px;
+  line-height: 1.12;
+}
+.doctor-profile-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+.doctor-fact-grid {
+  display: grid;
+  gap: 8px;
+  padding: 0 18px 16px;
+}
+.doctor-fact-grid div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+.doctor-sticky-actions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  background: rgba(252, 253, 250, .96);
+  padding: 12px 18px;
+  backdrop-filter: blur(12px);
+}
+.doctor-sticky-actions button:disabled {
+  border-color: var(--line);
+  background: #eef0e8;
+  color: var(--muted);
+}
+.doctor-detail-view .doctor-detail-body {
+  background: linear-gradient(180deg, #fbfdf8 0%, #f3f8ef 100%);
+}
+.doctor-detail-view .doctor-profile-card {
+  margin: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(24, 54, 31, .07);
+  padding: 16px;
+}
+.doctor-detail-view .doctor-profile-card h2 {
+  font-size: 25px;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+.doctor-detail-view .doctor-fact-grid {
+  padding: 0 16px 14px;
+}
+.doctor-detail-view .doctor-fact-grid div {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .86);
+  padding: 10px 12px;
+}
+.doctor-info-panel {
+  margin: 0 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(24, 54, 31, .06);
+  padding: 16px;
+}
+.doctor-info-panel .facility-plain-facts {
+  gap: 8px;
+}
+.doctor-info-panel .facility-plain-facts div {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper-soft);
+  padding: 10px 12px;
+}
+.facility-detail-doctor-list article {
+  gap: 12px;
+  border-radius: 16px;
+  background: #fff;
+  padding: 14px;
+}
+.doctor-card-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.doctor-card-copy strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.doctor-card-copy span {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+.doctor-detail-view .doctor-sticky-actions button {
+  border-color: var(--line);
+  border-radius: 14px;
+  box-shadow: none;
+}
+.facility-detail-view {
+  display: none;
+}
+@keyframes sidebarSlideIn {
+  from { opacity: .5; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@media (max-width: 760px) {
+  .clinic-sidebar {
+    width: 100%;
+    flex: 1 1 auto;
+    max-height: 64svh;
+    border-right: 0;
+    border-top: 1px solid rgba(16, 20, 17, .13);
+    border-radius: 18px 18px 0 0;
+  }
+  .map-sidebar-screen {
+    padding: 16px 14px 92px;
+  }
+  .facility-detail-sidebar,
+  .doctor-detail-view {
+    padding: 0;
+  }
+  .facility-detail-media {
+    height: 152px;
+  }
+  .facility-quick-actions {
+    grid-template-columns: repeat(4, minmax(68px, 1fr));
+    overflow-x: auto;
+  }
+  .busy-hours-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .busy-hours-heading label { flex-basis: auto; }
+  .busy-hours-bars { gap: 3px; overflow-x: auto; }
+  .facility-detail-tabs {
+    top: 0;
+  }
+  .doctor-sticky-actions {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-sidebar-screen {
+    animation: none;
   }
 }
 `;

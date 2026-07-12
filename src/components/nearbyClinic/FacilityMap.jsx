@@ -75,6 +75,7 @@ function AccessibleFacilityMarker({ facility, selected, onSelect }) {
 export default function FacilityMap({
   chatContext,
   facilities,
+  hidePopup = false,
   locationError,
   mapRef,
   mapRenderKey,
@@ -158,7 +159,7 @@ export default function FacilityMap({
                 onSelect={onSelect}
               />
             ))}
-            {selectedFacility?.hasValidCoordinates && (
+            {selectedFacility?.hasValidCoordinates && !hidePopup && (
               <Popup
                 longitude={selectedFacility.longitude}
                 latitude={selectedFacility.latitude}

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { Buffer } from "node:buffer";
 import { preparePage } from "./helpers";
 
 const TOKEN = [
@@ -61,9 +62,25 @@ test.skip("symptom analysis renders the legacy analyze response", async ({ page 
 });
 
 test("facility review submits the Swagger payload", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 808 });
   await preparePage(page);
   await authenticate(page);
   let reviewPayload = null;
+  let reviewUpdatePayload = null;
+  let cloudinaryUploadCount = 0;
+  const uploadedImageUrls = [
+    "https://res.cloudinary.com/demo/image/upload/v1/reviews/hospital-review-1.jpg",
+    "https://res.cloudinary.com/demo/image/upload/v1/reviews/hospital-review-2.jpg",
+  ];
+
+  await page.route("https://api.cloudinary.com/**", async (route) => {
+    const uploadedImageUrl = uploadedImageUrls[cloudinaryUploadCount] || uploadedImageUrls[0];
+    cloudinaryUploadCount += 1;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ secure_url: uploadedImageUrl, public_id: `reviews/hospital-review-${cloudinaryUploadCount}` }),
+    });
+  });
 
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
@@ -94,7 +111,22 @@ test("facility review submits the Swagger payload", async ({ page }) => {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          data: { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 0 },
+          data: {
+            items: [{
+              id: "public-review-id",
+              rating: 5,
+              comment: "Nhân viên hỗ trợ tận tình",
+              reviewerName: "Nguyễn Minh Anh",
+              createdAt: "2026-07-10T08:00:00Z",
+              imageUrls: {
+                image1: "https://res.cloudinary.com/demo/image/upload/v1/reviews/existing-review.jpg",
+              },
+            }],
+            pageNumber: 1,
+            pageSize: 20,
+            totalCount: 1,
+            totalPages: 1,
+          },
         }),
       });
     }
@@ -107,6 +139,14 @@ test("facility review submits the Swagger payload", async ({ page }) => {
       });
     }
 
+    if (url.pathname === "/api/feedback-reviews/review-id" && method === "PUT") {
+      reviewUpdatePayload = route.request().postDataJSON();
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, message: "Đã cập nhật đánh giá.", data: { id: "review-id" } }),
+      });
+    }
+
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ success: true, data: [] }),
@@ -116,15 +156,99 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Bệnh viện A", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Xem chi tiết" }).click();
-  await page.getByLabel("Số sao").selectOption("4");
-  await page.getByLabel("Nhận xét").fill("Dịch vụ tốt");
+  const sidebarLayout = await page.locator(".clinic-sidebar").evaluate((sidebar) => {
+    const sidebarBox = sidebar.getBoundingClientRect();
+    const detailBox = sidebar.querySelector(".facility-detail-sidebar").getBoundingClientRect();
+    const bodyBox = sidebar.querySelector(".facility-detail-body").getBoundingClientRect();
+    const detailStyles = getComputedStyle(sidebar.querySelector(".facility-detail-sidebar"));
+    const bodyStyles = getComputedStyle(sidebar.querySelector(".facility-detail-body"));
+    return {
+      sidebarHeight: sidebarBox.height,
+      detailHeight: detailBox.height,
+      bodyHeight: bodyBox.height,
+      sidebarBottom: sidebarBox.bottom,
+      detailBottom: detailBox.bottom,
+      detailOverflowY: detailStyles.overflowY,
+      bodyOverflowY: bodyStyles.overflowY,
+    };
+  });
+  expect(sidebarLayout.sidebarHeight).toBeGreaterThan(500);
+  expect(Math.abs(sidebarLayout.detailHeight - sidebarLayout.sidebarHeight)).toBeLessThan(1);
+  expect(Math.abs(sidebarLayout.detailBottom - sidebarLayout.sidebarBottom)).toBeLessThan(1);
+  expect(sidebarLayout.detailOverflowY).toBe("auto");
+  expect(sidebarLayout.bodyOverflowY).toBe("visible");
+  await page.getByRole("tab", { name: "Đánh giá" }).click();
+  await expect(page.getByText("Nguyễn Minh Anh", { exact: true })).toBeVisible();
+  await expect(page.getByAltText("Ảnh 1 trong đánh giá của Nguyễn Minh Anh")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/v1/reviews/existing-review.jpg");
+  await page.getByTitle("5 sao · Rất hài lòng").hover();
+  await expect(page.locator(".star-rating svg[fill='currentColor']")).toHaveCount(5);
+  await page.getByRole("radio", { name: "4 sao" }).check();
+  await page.getByLabel("Chia sẻ trải nghiệm").fill("Dịch vụ tốt");
+  await page.getByLabel("Thêm ảnh (0/5)").setInputFiles({
+    name: "not-an-image.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("not-an-image"),
+  });
+  await expect(page.getByText("Cloudinary chỉ nhận file ảnh ở trường này.", { exact: true })).toBeVisible();
+  await page.getByLabel("Thêm ảnh (0/5)").setInputFiles([
+    { name: "hospital-review-1.png", mimeType: "image/png", buffer: Buffer.from("mock-review-image-1") },
+    { name: "hospital-review-2.png", mimeType: "image/png", buffer: Buffer.from("mock-review-image-2") },
+  ]);
+  await expect(page.getByAltText("Ảnh minh họa 1 sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrls[0]);
+  await expect(page.getByAltText("Ảnh minh họa 2 sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrls[1]);
+  const detailHeightAfterUpload = await page.locator(".facility-detail-sidebar").evaluate((detail) => detail.getBoundingClientRect().height);
+  expect(Math.abs(detailHeightAfterUpload - sidebarLayout.detailHeight)).toBeLessThan(1);
+  const previewLayout = await page.locator(".review-image-preview").evaluateAll((previews) => previews.map((preview) => {
+    const previewBox = preview.getBoundingClientRect();
+    const imageBox = preview.querySelector("img").getBoundingClientRect();
+    return {
+      previewWidth: previewBox.width,
+      previewHeight: previewBox.height,
+      previewContentWidth: preview.clientWidth,
+      previewContentHeight: preview.clientHeight,
+      imageWidth: imageBox.width,
+      imageHeight: imageBox.height,
+      sidebarWidth: preview.closest(".facility-detail-body").getBoundingClientRect().width,
+    };
+  }));
+  for (const box of previewLayout) {
+    expect(box.previewWidth).toBeLessThan(box.sidebarWidth);
+    expect(box.previewHeight).toBeLessThan(180);
+    expect(Math.abs(box.imageWidth - box.previewContentWidth)).toBeLessThan(1);
+    expect(Math.abs(box.imageHeight - box.previewContentHeight)).toBeLessThan(1);
+  }
+  await page.getByRole("button", { name: "Gửi đánh giá" }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole("button", { name: "Gửi đánh giá" })).toBeVisible();
   await page.getByRole("button", { name: "Gửi đánh giá" }).click();
 
   await expect(page.getByText("Đã gửi đánh giá.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bạn đã đánh giá cơ sở này", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi đánh giá" })).toHaveCount(0);
   expect(reviewPayload).toEqual({
     facilityId: FACILITY_ID,
     rating: 4,
     comment: "Dịch vụ tốt",
+    imageUrls: {
+      image1: uploadedImageUrls[0],
+      image2: uploadedImageUrls[1],
+    },
+  });
+  expect(cloudinaryUploadCount).toBe(2);
+  await expect(page.getByAltText("Ảnh 1 trong đánh giá của Bạn")).toHaveAttribute("src", uploadedImageUrls[0]);
+  await expect(page.getByAltText("Ảnh 2 trong đánh giá của Bạn")).toHaveAttribute("src", uploadedImageUrls[1]);
+
+  await page.getByRole("button", { name: "Chỉnh sửa đánh giá" }).click();
+  await page.getByRole("radio", { name: "3 sao" }).check();
+  await page.getByLabel("Chia sẻ trải nghiệm").fill("Dịch vụ đã được cải thiện");
+  await page.getByRole("button", { name: "Lưu chỉnh sửa" }).click();
+  await expect(page.getByText("Đã cập nhật đánh giá của bạn.", { exact: true })).toBeVisible();
+  expect(reviewUpdatePayload).toEqual({
+    rating: 3,
+    comment: "Dịch vụ đã được cải thiện",
+    imageUrls: {
+      image1: uploadedImageUrls[0],
+      image2: uploadedImageUrls[1],
+    },
   });
 });
 
@@ -288,11 +412,22 @@ test("profile page renders and updates backend user data instead of mock data", 
 
   await page.goto("/profile", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Nguyễn Minh Backend", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Thông tin cá nhân" }).first()).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "Chỉnh sửa" }).click();
   await page.getByLabel("Họ và tên").fill("Nguyễn Minh Đã Sửa");
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu thay đổi", exact: true }).click();
 
   await expect(page.getByText("Đã lưu thông tin!", { exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Thông tin cá nhân" }).first().press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Hồ sơ y tế" }).first()).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Dữ liệu sức khỏe nhạy cảm", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Chiều cao (cm)")).toBeDisabled();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileWidth = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(mobileWidth.scrollWidth).toBeLessThanOrEqual(mobileWidth.clientWidth);
   expect(updatePayload).toEqual({
     displayName: "Nguyễn Minh Đã Sửa",
     address: "Hà Nội",

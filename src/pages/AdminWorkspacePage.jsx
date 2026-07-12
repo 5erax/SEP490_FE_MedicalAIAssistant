@@ -8,6 +8,7 @@ import {
   ClipboardList,
   CircleHelp,
   CreditCard,
+  FileHeart,
   LayoutDashboard,
   Search,
   SlidersHorizontal,
@@ -133,6 +134,7 @@ const ADMIN_NAV_ICONS = {
   facility: Building2,
   icd: BookOpen,
   question: CircleHelp,
+  "patient-profile": FileHeart,
 };
 const QUESTION_CATALOG_CONFIG = {
   title: "Câu hỏi lâm sàng", formTitle: "Nội dung câu hỏi", singularLabel: "câu hỏi", pluralLabel: "câu hỏi lâm sàng",
@@ -2200,6 +2202,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 onToggleStatus={handleToggleFacilityStatus}
               />
             )}
+
           </div>
         </div>
       </section>

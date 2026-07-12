@@ -37,6 +37,7 @@ export default function FacilityList({
           </div>
           <p className="facility-card-address">{facility.address}</p>
           <div className="facility-card-meta">
+            {facility.distanceLabel && <span>{facility.distanceLabel}</span>}
             <span>{facility.openingHours}</span>
             <span>{facility.hasValidCoordinates ? "Có vị trí bản đồ" : "Thiếu tọa độ"}</span>
           </div>
