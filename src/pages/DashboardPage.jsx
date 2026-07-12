@@ -394,6 +394,7 @@ export default function DashboardPage() {
               type="button"
               tone="secondary"
               size="sm"
+              className="analysis-history-button"
               onClick={() => navigate("/assessment/history?sessionType=department")}
             >
               <History size={16} />
