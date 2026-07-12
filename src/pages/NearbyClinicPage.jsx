@@ -140,6 +140,127 @@ function normalizeFacility(facility, relationDepartments = [], relationDepartmen
   };
 }
 
+function FacilityDetailSidebarContent({
+  detailCloseButtonRef,
+  detailDoctors,
+  detailDoctorsLoading,
+  detailError,
+  detailFacility,
+  detailLoading,
+  detailServices,
+  reviews,
+  reviewsLoading,
+  onBack,
+  onCall,
+  onDirections,
+}) {
+  return (
+    <section
+      className="facility-detail-view sidebar-detail-view"
+      aria-labelledby="facility-detail-title"
+      tabIndex="-1"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onBack();
+      }}
+    >
+      <button
+        ref={detailCloseButtonRef}
+        className="facility-detail-back"
+        type="button"
+        onClick={onBack}
+      >
+        ← Quay lại danh sách
+      </button>
+
+      <div className="facility-detail-hero sidebar-detail-hero">
+        {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
+        <div>
+          <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
+          <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
+          <p>{detailFacility.address}</p>
+          <div className="facility-detail-hero-actions">
+            <button type="button" disabled={!detailFacility.phone} onClick={() => onCall(detailFacility)}>Gọi điện</button>
+            <button type="button" disabled={!detailFacility.hasValidCoordinates} onClick={() => onDirections(detailFacility)}>Chỉ đường</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="facility-detail-content sidebar-detail-content">
+        {detailLoading && <p className="facility-detail-status">Đang tải thông tin chi tiết...</p>}
+        {detailError && <p className="facility-detail-error">{detailError}</p>}
+
+        <section className="facility-detail-card wide">
+          <h3>Thông tin bệnh viện</h3>
+          <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
+          <dl className="facility-detail-facts">
+            <div>
+              <dt>Số điện thoại</dt>
+              <dd>{detailFacility.phoneLabel}</dd>
+            </div>
+            <div>
+              <dt>Giờ hoạt động</dt>
+              <dd>{detailFacility.openingHours}</dd>
+            </div>
+            <div>
+              <dt>Website</dt>
+              <dd>{detailFacility.website ? <a href={detailFacility.website} target="_blank" rel="noreferrer">{detailFacility.website}</a> : "Chưa cập nhật"}</dd>
+            </div>
+          </dl>
+          <div className="facility-detail-tags">
+            {detailFacility.departments.map((department) => <span key={department}>{department}</span>)}
+          </div>
+        </section>
+
+        <section className="facility-detail-card">
+          <h3>Danh sách bác sĩ</h3>
+          <div className="facility-detail-list facility-detail-doctor-list">
+            {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
+            {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này.</p>}
+            {detailDoctors.map((doctor) => (
+              <article key={doctor.id}>
+                {getDoctorImageUrl(doctor) && (
+                  <img
+                    className="facility-detail-doctor-image"
+                    src={getDoctorImageUrl(doctor)}
+                    alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
+                  />
+                )}
+                <div>
+                  <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
+                  <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="facility-detail-card">
+          <h3>Đánh giá người dùng</h3>
+          <div className="facility-detail-list">
+            {reviewsLoading && <p>Đang tải đánh giá...</p>}
+            {!reviewsLoading && reviews.length === 0 && <p>Chưa có đánh giá công khai cho cơ sở này.</p>}
+            {reviews.slice(0, 4).map((review) => (
+              <article key={review.id}>
+                <strong>{review.rating}/5 sao</strong>
+                <span>{review.comment || "Không có nhận xét."}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="facility-detail-card wide">
+          <h3>Tiện ích và dịch vụ nổi bật</h3>
+          <div className="facility-detail-services">
+            {detailServices.length
+              ? detailServices.map((service) => <span key={service}>{service}</span>)
+              : <p>Cơ sở này chưa có tiện ích hoặc dịch vụ nổi bật.</p>}
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+}
+
 function NearbyClinicPage() {
   const auth = getStoredAuth();
   const [mapQuery] = useState(readMapQuery);
@@ -458,15 +579,6 @@ function NearbyClinicPage() {
     return () => window.clearTimeout(focusId);
   }, [detailPanelOpen, detailFacility?.facilityId]);
 
-  useEffect(() => {
-    if (!detailPanelOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [detailPanelOpen]);
-
   const closeFacilityDetail = () => {
     const facilityId = detailFacility?.facilityId;
     setDetailPanelOpen(false);
@@ -561,7 +673,24 @@ function NearbyClinicPage() {
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list">Bỏ qua bản đồ, đến danh sách cơ sở</a>
-      <aside className="clinic-sidebar">
+      <aside className={`clinic-sidebar ${detailPanelOpen && detailFacility ? "is-detail-mode" : ""}`}>
+        {detailPanelOpen && detailFacility ? (
+          <FacilityDetailSidebarContent
+            detailCloseButtonRef={detailCloseButtonRef}
+            detailDoctors={detailDoctors}
+            detailDoctorsLoading={detailDoctorsLoading}
+            detailError={detailError}
+            detailFacility={detailFacility}
+            detailLoading={detailLoading}
+            detailServices={detailServices}
+            reviews={reviews}
+            reviewsLoading={reviewsLoading}
+            onBack={closeFacilityDetail}
+            onCall={callFacility}
+            onDirections={openDirections}
+          />
+        ) : (
+          <>
         <header className="map-sidebar-head">
           <p>Cơ sở y tế</p>
           <h1>Tìm nơi khám phù hợp</h1>
@@ -618,6 +747,8 @@ function NearbyClinicPage() {
         />
 
         <div className="sidebar-note">ℹ Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</div>
+          </>
+        )}
       </aside>
 
       <section className="map-stage">
@@ -640,111 +771,6 @@ function NearbyClinicPage() {
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}
         />
-        {detailPanelOpen && detailFacility && (
-          <section
-            className="facility-detail-view"
-            aria-labelledby="facility-detail-title"
-            tabIndex="-1"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") closeFacilityDetail();
-            }}
-          >
-            <button
-              ref={detailCloseButtonRef}
-              className="facility-detail-close"
-              type="button"
-              onClick={closeFacilityDetail}
-              aria-label="Đóng xem chi tiết"
-            >
-              ×
-            </button>
-            <div className="facility-detail-hero">
-              {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
-              <div>
-                <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
-                <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
-                <p>{detailFacility.address}</p>
-                <div className="facility-detail-hero-actions">
-                  <button type="button" disabled={!detailFacility.phone} onClick={() => callFacility(detailFacility)}>Gọi điện</button>
-                  <button type="button" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}>Chỉ đường</button>
-                </div>
-              </div>
-            </div>
-
-          <div className="facility-detail-content">
-            {detailLoading && <p className="facility-detail-status">Đang tải thông tin chi tiết...</p>}
-            {detailError && <p className="facility-detail-error">{detailError}</p>}
-
-            <section className="facility-detail-card wide">
-              <h3>Thông tin bệnh viện</h3>
-              <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
-              <dl className="facility-detail-facts">
-                <div>
-                  <dt>Số điện thoại</dt>
-                  <dd>{detailFacility.phoneLabel}</dd>
-                </div>
-                <div>
-                  <dt>Giờ hoạt động</dt>
-                  <dd>{detailFacility.openingHours}</dd>
-                </div>
-                <div>
-                  <dt>Website</dt>
-                  <dd>{detailFacility.website ? <a href={detailFacility.website} target="_blank" rel="noreferrer">{detailFacility.website}</a> : "Chưa cập nhật"}</dd>
-                </div>
-              </dl>
-              <div className="facility-detail-tags">
-                {detailFacility.departments.map((department) => <span key={department}>{department}</span>)}
-              </div>
-            </section>
-
-            <section className="facility-detail-card">
-              <h3>Danh sách bác sĩ</h3>
-              <div className="facility-detail-list facility-detail-doctor-list">
-                {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
-                {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này.</p>}
-                {detailDoctors.map((doctor) => (
-                  <article key={doctor.id}>
-                    {getDoctorImageUrl(doctor) && (
-                      <img
-                        className="facility-detail-doctor-image"
-                        src={getDoctorImageUrl(doctor)}
-                        alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
-                      />
-                    )}
-                    <div>
-                      <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
-                      <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="facility-detail-card">
-              <h3>Đánh giá người dùng</h3>
-              <div className="facility-detail-list">
-                {reviewsLoading && <p>Đang tải đánh giá...</p>}
-                {!reviewsLoading && reviews.length === 0 && <p>Chưa có đánh giá công khai cho cơ sở này.</p>}
-                {reviews.slice(0, 4).map((review) => (
-                  <article key={review.id}>
-                    <strong>{review.rating}/5 sao</strong>
-                    <span>{review.comment || "Không có nhận xét."}</span>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="facility-detail-card wide">
-              <h3>Tiện ích và dịch vụ nổi bật</h3>
-              <div className="facility-detail-services">
-                {detailServices.length
-                  ? detailServices.map((service) => <span key={service}>{service}</span>)
-                  : <p>Cơ sở này chưa có tiện ích hoặc dịch vụ nổi bật.</p>}
-              </div>
-            </section>
-          </div>
-        </section>
-        )}
       </section>
     </main>
   );
@@ -1168,6 +1194,111 @@ const styles = `
 .facility-detail-card {
   border-radius: 14px;
   box-shadow: 0 10px 28px rgba(24, 54, 31, .07);
+}
+.clinic-sidebar.is-detail-mode {
+  display: block;
+  padding: 0;
+  background: #f7faf5;
+}
+.sidebar-detail-view {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  min-height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #f7faf5;
+  animation: facilitySidebarDetailReveal 260ms ease both;
+}
+.facility-detail-back {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255,255,255,.94);
+  color: var(--ink);
+  padding: 0 18px;
+  font-weight: 950;
+  text-align: left;
+  backdrop-filter: blur(14px);
+}
+.facility-detail-back:hover,
+.facility-detail-back:focus-visible {
+  background: #eef8e6;
+  outline: none;
+}
+.sidebar-detail-hero {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.sidebar-detail-hero > img,
+.sidebar-detail-hero > span {
+  width: 100%;
+  min-height: 170px;
+  max-height: 210px;
+  object-fit: cover;
+}
+.sidebar-detail-hero > span {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(8,127,140,.14), rgba(184,239,121,.34)), #edf6e8;
+  color: var(--ink);
+  font-size: 42px;
+  font-weight: 950;
+}
+.sidebar-detail-hero > div {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+}
+.sidebar-detail-hero h2 {
+  margin: 0;
+  font-size: clamp(25px, 2.4vw, 34px);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+.sidebar-detail-hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 760;
+}
+.sidebar-detail-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 14px;
+}
+.sidebar-detail-content .facility-detail-card,
+.sidebar-detail-content .facility-detail-card.wide {
+  grid-column: auto;
+  border-radius: 16px;
+  background: rgba(255,255,255,.92);
+  padding: 15px;
+}
+.sidebar-detail-content .facility-detail-card h3 {
+  font-size: 18px;
+}
+.sidebar-detail-content .facility-detail-facts div {
+  background: #fbfdf9;
+}
+.sidebar-detail-content .facility-detail-doctor-list article {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+@keyframes facilitySidebarDetailReveal {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @media (max-width: 1080px) {
