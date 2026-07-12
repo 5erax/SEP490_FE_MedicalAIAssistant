@@ -160,6 +160,7 @@ test("facility review submits the Swagger payload", async ({ page }) => {
     return {
       sidebarHeight: sidebarBox.height,
       detailHeight: detailBox.height,
+      bodyHeight: bodyBox.height,
       sidebarBottom: sidebarBox.bottom,
       detailBottom: detailBox.bottom,
       bodyBottom: bodyBox.bottom,
@@ -167,6 +168,7 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   });
   expect(sidebarLayout.sidebarHeight).toBeGreaterThan(500);
   expect(Math.abs(sidebarLayout.detailHeight - sidebarLayout.sidebarHeight)).toBeLessThan(1);
+  expect(sidebarLayout.bodyHeight).toBeGreaterThan(sidebarLayout.sidebarHeight * 0.7);
   expect(Math.abs(sidebarLayout.detailBottom - sidebarLayout.sidebarBottom)).toBeLessThan(1);
   expect(Math.abs(sidebarLayout.bodyBottom - sidebarLayout.sidebarBottom)).toBeLessThan(1);
   await page.getByRole("tab", { name: "Đánh giá" }).click();
@@ -187,6 +189,8 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   ]);
   await expect(page.getByAltText("Ảnh minh họa 1 sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrls[0]);
   await expect(page.getByAltText("Ảnh minh họa 2 sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrls[1]);
+  const bodyHeightAfterUpload = await page.locator(".facility-detail-body").evaluate((body) => body.getBoundingClientRect().height);
+  expect(Math.abs(bodyHeightAfterUpload - sidebarLayout.bodyHeight)).toBeLessThan(1);
   const previewLayout = await page.locator(".review-image-preview").evaluateAll((previews) => previews.map((preview) => {
     const previewBox = preview.getBoundingClientRect();
     const imageBox = preview.querySelector("img").getBoundingClientRect();

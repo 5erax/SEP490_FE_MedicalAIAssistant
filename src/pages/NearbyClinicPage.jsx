@@ -1904,8 +1904,8 @@ const styles = `
 }
 .facility-detail-sidebar,
 .doctor-detail-view {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0;
   overflow: hidden;
   padding: 0;
@@ -1943,8 +1943,9 @@ const styles = `
 }
 .facility-detail-body,
 .doctor-detail-body {
-  flex: 1 1 auto;
+  width: 100%;
   min-height: 0;
+  max-height: none;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-bottom: 18px;
