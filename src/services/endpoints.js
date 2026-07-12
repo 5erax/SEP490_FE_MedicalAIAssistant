@@ -101,6 +101,7 @@ export const ENDPOINTS = {
   },
   PAYMENTS: {
     BY_ID: (id) => byId(PAYMENTS_BASE, id),
+    BY_USER: (userId) => `${PAYMENTS_BASE}/user/${encodeURIComponent(userId)}`,
     PAYOS_RETURN: `${PAYMENTS_BASE}/payos-return`,
     PAYOS_CANCEL: `${PAYMENTS_BASE}/payos-cancel`,
     PAYOS_WEBHOOK: `${PAYMENTS_BASE}/payos-webhook`,
