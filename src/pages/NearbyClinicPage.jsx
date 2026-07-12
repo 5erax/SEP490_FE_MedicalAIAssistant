@@ -1197,6 +1197,8 @@ const styles = `
 }
 .clinic-sidebar.is-detail-mode {
   display: block;
+  width: clamp(420px, 30vw, 540px);
+  flex: 0 0 clamp(420px, 30vw, 540px);
   padding: 0;
   background: #f7faf5;
 }
