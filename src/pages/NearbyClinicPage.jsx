@@ -1855,12 +1855,22 @@ const styles = `
 /* Google Maps style sidebar detail flow. */
 .clinic-sidebar {
   position: relative;
+  height: 100%;
+  min-height: 0;
+  align-self: stretch;
   width: min(420px, 38vw);
   flex: 0 0 min(420px, 38vw);
   padding: 0;
   overflow: hidden;
   border-right: 1px solid rgba(17, 20, 18, .1);
   box-shadow: 10px 0 30px rgba(17, 20, 18, .07);
+}
+.clinic-sidebar.sidebar-view-hospital-detail > .facility-detail-sidebar,
+.clinic-sidebar.sidebar-view-doctor-detail > .doctor-detail-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: auto;
 }
 .map-sidebar-screen {
   height: 100%;

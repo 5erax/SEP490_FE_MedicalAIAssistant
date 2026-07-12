@@ -153,6 +153,22 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Bệnh viện A", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Xem chi tiết" }).click();
+  const sidebarLayout = await page.locator(".clinic-sidebar").evaluate((sidebar) => {
+    const sidebarBox = sidebar.getBoundingClientRect();
+    const detailBox = sidebar.querySelector(".facility-detail-sidebar").getBoundingClientRect();
+    const bodyBox = sidebar.querySelector(".facility-detail-body").getBoundingClientRect();
+    return {
+      sidebarHeight: sidebarBox.height,
+      detailHeight: detailBox.height,
+      sidebarBottom: sidebarBox.bottom,
+      detailBottom: detailBox.bottom,
+      bodyBottom: bodyBox.bottom,
+    };
+  });
+  expect(sidebarLayout.sidebarHeight).toBeGreaterThan(500);
+  expect(Math.abs(sidebarLayout.detailHeight - sidebarLayout.sidebarHeight)).toBeLessThan(1);
+  expect(Math.abs(sidebarLayout.detailBottom - sidebarLayout.sidebarBottom)).toBeLessThan(1);
+  expect(Math.abs(sidebarLayout.bodyBottom - sidebarLayout.sidebarBottom)).toBeLessThan(1);
   await page.getByRole("tab", { name: "Đánh giá" }).click();
   await expect(page.getByText("Nguyễn Minh Anh", { exact: true })).toBeVisible();
   await page.getByTitle("5 sao · Rất hài lòng").hover();
