@@ -143,6 +143,7 @@ function AssessmentShell({ eyebrow, title, description, activeStep, children }) 
           <Button
             tone="secondary"
             size="sm"
+            className="analysis-history-button"
             onClick={() => navigate("/assessment/history?sessionType=diagnoses")}
           >
             <History size={16} />
