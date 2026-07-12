@@ -482,13 +482,15 @@ export const symptomAnalysisApi = {
     });
   },
 
-  listMySessions(pageNumber = 1, pageSize = 10) {
+  listMySessions(pageNumber = 1, pageSize = 10, sessionType = "") {
     const search = new URLSearchParams({
       PageNumber: String(pageNumber),
       PageSize: String(pageSize),
-    }).toString();
+    });
 
-    return apiRequest(`${ENDPOINTS.SYMPTOM_ANALYSIS.MY_SESSIONS}?${search}`, {
+    if (sessionType) search.set("sessionType", sessionType);
+
+    return apiRequest(`${ENDPOINTS.SYMPTOM_ANALYSIS.MY_SESSIONS}?${search.toString()}`, {
       auth: true,
     });
   },

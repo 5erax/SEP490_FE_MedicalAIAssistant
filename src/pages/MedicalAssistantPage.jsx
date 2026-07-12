@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ClipboardList, MapPin, Send, Stethoscope } from "lucide-react";
+import { AlertTriangle, ClipboardList, History, MapPin, Send, Stethoscope } from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -115,10 +115,40 @@ function getPrimaryDiagnosis(result) {
     || null;
 }
 
+function getHistorySessionType() {
+  if (typeof window === "undefined") return "diagnoses";
+  const value = new URLSearchParams(window.location.search).get("sessionType");
+  return value === "department" ? "department" : "diagnoses";
+}
+
+function sessionTypeCopy(sessionType) {
+  return sessionType === "department"
+    ? {
+      title: "Lịch sử gợi ý chuyên khoa",
+      description: "Các phiên gợi ý chuyên khoa và khoa khám gần đây.",
+      empty: "Chưa có phiên gợi ý chuyên khoa nào",
+    }
+    : {
+      title: "Lịch sử chuẩn đoán lâm sàng",
+      description: "Các phiên chuẩn đoán lâm sàng gần đây của tài khoản này.",
+      empty: "Chưa có phiên chuẩn đoán lâm sàng nào",
+    };
+}
+
 function AssessmentShell({ eyebrow, title, description, activeStep, children }) {
   return (
     <main className="assessment-page clinical-page">
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
+        <div className="assessment-history-action">
+          <Button
+            tone="secondary"
+            size="sm"
+            onClick={() => navigate("/assessment/history?sessionType=diagnoses")}
+          >
+            <History size={16} />
+            Lịch sử phân tích
+          </Button>
+        </div>
         <header className="assessment-header clinical-hero">
           <span className="assessment-icon clinical-hero-icon" aria-hidden="true">
             <Stethoscope size={25} />
@@ -790,6 +820,8 @@ function ResultPage({ sessionId }) {
 }
 
 function HistoryPage() {
+  const sessionType = getHistorySessionType();
+  const copy = sessionTypeCopy(sessionType);
   const [sessions, setSessions] = useState([]);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
@@ -797,7 +829,7 @@ function HistoryPage() {
   useEffect(() => {
     let active = true;
 
-    symptomAnalysisApi.listMySessions(1, 10)
+    symptomAnalysisApi.listMySessions(1, 10, sessionType)
       .then((response) => {
         if (active) setSessions(getPagedItems(response));
       })
@@ -811,13 +843,13 @@ function HistoryPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [sessionType]);
 
   return (
     <AssessmentShell
       eyebrow="Lịch sử"
-      title="Lịch sử phiên đánh giá triệu chứng"
-      description="Các phiên đánh giá gần đây của tài khoản này."
+      title={copy.title}
+      description={copy.description}
       activeStep={2}
     >
       {status === "loading" && (
@@ -834,7 +866,7 @@ function HistoryPage() {
 
       {status !== "loading" && !error && sessions.length === 0 && (
         <EmptyState
-          title="Chưa có phiên đánh giá nào"
+          title={copy.empty}
           description="Bắt đầu phiên mới để MediMate tạo câu hỏi lâm sàng và lưu lịch sử."
           action={<Button onClick={() => navigate("/medical-assistant/intake")}>Đánh giá mới</Button>}
         />
@@ -853,7 +885,9 @@ function HistoryPage() {
                 </span>
               </div>
 
-              <small>{session.status || "Đang cập nhật"}</small>
+              <small>
+                {session.sessionType || sessionType} · {session.status || "Đang cập nhật"}
+              </small>
 
               <Button
                 tone="secondary"

@@ -39,7 +39,15 @@
 }
 
 .clinical-shell {
+  position: relative;
   justify-items: center;
+}
+
+.assessment-history-action {
+  width: min(1120px, 100%);
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -8px;
 }
 
 .assessment-header {
@@ -778,6 +786,15 @@
 
   .assessment-shell {
     gap: 16px;
+  }
+
+  .assessment-history-action {
+    justify-content: center;
+    margin-bottom: 0;
+  }
+
+  .assessment-history-action .ui-button {
+    width: 100%;
   }
 
   .clinical-hero {

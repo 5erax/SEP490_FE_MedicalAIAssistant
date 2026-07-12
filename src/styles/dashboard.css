@@ -41,10 +41,19 @@
 }
 
 .studio-heading {
+  width: min(1060px, 100%);
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 10px;
   text-align: center;
+}
+
+.studio-heading-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -2px;
 }
 
 .studio-mark {
@@ -690,6 +699,10 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
   .studio-heading {
     gap: 12px;
+  }
+
+  .studio-heading-actions {
+    justify-content: center;
   }
 
   .studio-mark {
