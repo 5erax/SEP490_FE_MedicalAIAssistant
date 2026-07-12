@@ -5,7 +5,9 @@ import {
   Building2,
   Clock3,
   Globe2,
+  ImagePlus,
   MapPin,
+  Pencil,
   Phone,
   Route,
   Share2,
@@ -18,6 +20,7 @@ import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
+import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
 import {
   facilityDepartmentsApi,
   feedbackReviewsApi,
@@ -161,6 +164,10 @@ function getReviewDate(review) {
   if (!value) return "";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("vi-VN");
+}
+
+function getReviewImageUrl(review) {
+  return review?.imageUrl || review?.reviewImageUrl || review?.photoUrl || "";
 }
 
 function isReviewByCurrentUser(review, auth) {
@@ -330,10 +337,12 @@ function NearbyClinicPage() {
   const [reviews, setReviews] = useState([]);
   const [reviewsTotalCount, setReviewsTotalCount] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ rating: "5", comment: "" });
+  const [reviewForm, setReviewForm] = useState({ rating: "5", comment: "", imageUrl: "" });
   const [reviewMessage, setReviewMessage] = useState("");
   const [savingReview, setSavingReview] = useState(false);
   const [submittedReview, setSubmittedReview] = useState(null);
+  const [editingReview, setEditingReview] = useState(false);
+  const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
   const [busyDay, setBusyDay] = useState("monday");
   const [userLocation, setUserLocation] = useState(null);
@@ -523,6 +532,7 @@ function NearbyClinicPage() {
     setReviewsTotalCount(0);
     setReviewsLoading(false);
     setSubmittedReview(null);
+    setEditingReview(false);
   };
 
   const syncMapUrl = useCallback((nextState = {}, mode = "push") => {
@@ -546,6 +556,7 @@ function NearbyClinicPage() {
   const handleCardClick = useCallback((facility) => {
     setReviewMessage("");
     setSubmittedReview(null);
+    setEditingReview(false);
     if (facility?.isMockFacility) {
       setReviews([]);
       setReviewsTotalCount(0);
@@ -709,6 +720,7 @@ function NearbyClinicPage() {
     setSelectedDoctor(null);
     setSelectedFacility(null);
     setSubmittedReview(null);
+    setEditingReview(false);
     syncMapUrl({});
     window.setTimeout(() => {
       cardRefs.current[facilityId]?.querySelector?.(".facility-select-button")?.focus();
@@ -814,21 +826,34 @@ function NearbyClinicPage() {
     try {
       const submittedRating = Number(reviewForm.rating);
       const submittedComment = reviewForm.comment.trim();
-      const response = await feedbackReviewsApi.create({
-        facilityId: selectedFacility.facilityId,
+      const reviewValues = {
         rating: submittedRating,
         comment: submittedComment || null,
-      });
-      setSubmittedReview({
+        imageUrl: reviewForm.imageUrl || null,
+      };
+      const isUpdating = editingReview && currentUserReview?.id;
+      const response = isUpdating
+        ? await feedbackReviewsApi.update(currentUserReview.id, reviewValues)
+        : await feedbackReviewsApi.create({ facilityId: selectedFacility.facilityId, ...reviewValues });
+      const savedReview = {
+        ...(currentUserReview || {}),
         ...(response.data || {}),
         facilityId: selectedFacility.facilityId,
         rating: submittedRating,
         comment: submittedComment,
+        imageUrl: reviewForm.imageUrl,
         reviewerName: auth.displayName || auth.fullName || auth.name || auth.username || "Bạn",
         isCurrentUser: true,
-      });
-      setReviewForm({ rating: "5", comment: "" });
-      setReviewMessage(getReviewMessageText(response.message, "Đã gửi đánh giá của bạn."));
+      };
+      setSubmittedReview(savedReview);
+      setReviews((current) => isUpdating
+        ? current.map((review) => review.id === currentUserReview.id ? savedReview : review)
+        : current);
+      setEditingReview(false);
+      setReviewForm({ rating: "5", comment: "", imageUrl: "" });
+      setReviewMessage(isUpdating
+        ? "Đã cập nhật đánh giá của bạn."
+        : getReviewMessageText(response.message, "Đã gửi đánh giá của bạn."));
       const refreshed = await feedbackReviewsApi.byFacility(selectedFacility.facilityId);
       setReviews(refreshed.data?.items ?? []);
       setReviewsTotalCount(refreshed.data?.totalCount ?? refreshed.data?.items?.length ?? 0);
@@ -840,6 +865,41 @@ function NearbyClinicPage() {
       }
     } finally {
       setSavingReview(false);
+    }
+  };
+
+  const startEditingReview = () => {
+    if (!currentUserReview?.id) return;
+    setReviewForm({
+      rating: String(currentUserReview.rating || 5),
+      comment: currentUserReview.comment || "",
+      imageUrl: getReviewImageUrl(currentUserReview),
+    });
+    setReviewMessage("");
+    setEditingReview(true);
+  };
+
+  const cancelEditingReview = () => {
+    setReviewForm({ rating: "5", comment: "", imageUrl: "" });
+    setReviewMessage("");
+    setEditingReview(false);
+  };
+
+  const uploadReviewImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadingReviewImage(true);
+    setReviewMessage("");
+    try {
+      const { secureUrl } = await uploadImageToCloudinary(file);
+      setReviewForm((current) => ({ ...current, imageUrl: secureUrl }));
+      setReviewMessage("Đã tải ảnh lên. Ảnh sẽ được lưu cùng đánh giá.");
+    } catch (error) {
+      setReviewMessage(error.message || "Không thể tải ảnh lên. Vui lòng thử lại.");
+    } finally {
+      setUploadingReviewImage(false);
     }
   };
 
@@ -1090,19 +1150,29 @@ function NearbyClinicPage() {
                     <div className="review-distribution" aria-label="Phân bố đánh giá">{reviewDistribution.map((row) => <div key={row.rating}><span>{row.rating} sao</span><i><b style={{ width: `${row.percent}%` }} /></i><em>{row.percent}%</em></div>)}</div>
                   </section>
                   <section className="facility-info-group">
-                    <h3>{currentUserReview ? "Đánh giá của bạn" : "Gửi đánh giá"}</h3>
-                    {currentUserReview ? (
+                    <h3>{editingReview ? "Chỉnh sửa đánh giá" : currentUserReview ? "Đánh giá của bạn" : "Gửi đánh giá"}</h3>
+                    {currentUserReview && !editingReview ? (
                       <div className="current-user-review">
                         <div className="review-item-stars" aria-label={currentUserReview.rating ? `${currentUserReview.rating} trên 5 sao` : "Đánh giá đã được ghi nhận"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={Number(currentUserReview.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div>
                         <strong>Bạn đã đánh giá cơ sở này</strong>
                         <p>{currentUserReview.isKnownDuplicate ? "Đánh giá hiện tại chưa xuất hiện trong danh sách công khai." : (currentUserReview.comment || "Bạn không để lại nhận xét.")}</p>
-                        <small>Không thể gửi thêm một đánh giá cho cùng cơ sở.</small>
+                        {getReviewImageUrl(currentUserReview) && <img className="review-image" src={getReviewImageUrl(currentUserReview)} alt="Ảnh minh họa trong đánh giá của bạn" />}
+                        {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa vì API chưa trả mã đánh giá.</small>}
                       </div>
                     ) : (
                       <form className="facility-review-form" onSubmit={submitReview}>
                         <fieldset className="star-rating"><legend>Chọn số sao</legend><div>{[1, 2, 3, 4, 5].map((rating) => <label key={rating} title={`${rating} sao`}><input type="radio" name="rating" value={rating} checked={reviewForm.rating === String(rating)} onChange={(event) => setReviewForm((current) => ({ ...current, rating: event.target.value }))} /><Star size={30} fill={Number(reviewForm.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" /><span className="sr-only">{rating} sao</span></label>)}</div><p>{reviewForm.rating} / 5 sao</p></fieldset>
                         <label><span>Nhận xét</span><textarea rows={3} value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Chia sẻ trải nghiệm của bạn" /></label>
-                        <button type="submit" disabled={savingReview}>{auth ? (savingReview ? "Đang gửi..." : "Gửi đánh giá") : "Đăng nhập để đánh giá"}</button>
+                        <div className="review-image-upload">
+                          <div><strong>Ảnh minh họa</strong><small>Tối đa 5 MB · JPG, PNG, WebP hoặc định dạng ảnh được hỗ trợ.</small></div>
+                          {reviewForm.imageUrl ? (
+                            <div className="review-image-preview"><img className="review-image" src={reviewForm.imageUrl} alt="Ảnh minh họa sẽ đính kèm đánh giá" /><button type="button" onClick={() => setReviewForm((current) => ({ ...current, imageUrl: "" }))}>Xóa ảnh</button></div>
+                          ) : (
+                            <label className="review-upload-button"><ImagePlus size={17} aria-hidden="true" /><span>{uploadingReviewImage ? "Đang tải ảnh..." : "Chọn ảnh"}</span><input type="file" accept="image/*" onChange={uploadReviewImage} disabled={uploadingReviewImage || savingReview} /></label>
+                          )}
+                          <p>Không tải ảnh chứa hồ sơ bệnh án, giấy tờ tùy thân hoặc thông tin sức khỏe riêng tư.</p>
+                        </div>
+                        <div className="review-form-actions"><button type="submit" disabled={savingReview || uploadingReviewImage}>{auth ? (savingReview ? (editingReview ? "Đang cập nhật..." : "Đang gửi...") : (editingReview ? "Lưu chỉnh sửa" : "Gửi đánh giá")) : "Đăng nhập để đánh giá"}</button>{editingReview && <button type="button" className="secondary" onClick={cancelEditingReview} disabled={savingReview || uploadingReviewImage}>Hủy chỉnh sửa</button>}</div>
                       </form>
                     )}
                     {reviewMessage && <p className="review-message" role="status">{reviewMessage}</p>}
@@ -1111,7 +1181,7 @@ function NearbyClinicPage() {
                     <h3>Nhận xét gần đây</h3>
                     {reviewsLoading && <p className="facility-detail-status">Đang tải đánh giá...</p>}
                     {!reviewsLoading && reviews.length === 0 && <p className="facility-empty-state">Chưa có đánh giá công khai cho cơ sở này.</p>}
-                    <div className="facility-detail-list review-list">{reviews.map((review) => { const authorName = isReviewByCurrentUser(review, auth) ? "Bạn" : getReviewAuthorName(review); const reviewDate = getReviewDate(review); return <article key={review.id}><header><span className="review-author-avatar" aria-hidden="true">{getReviewAuthorInitial(authorName)}</span><div><strong>{authorName}</strong>{reviewDate && <small>Đánh giá ngày {reviewDate}</small>}</div></header><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={15} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{review.comment || "Không có nhận xét."}</span></article>; })}</div>
+                    <div className="facility-detail-list review-list">{reviews.map((review) => { const authorName = isReviewByCurrentUser(review, auth) ? "Bạn" : getReviewAuthorName(review); const reviewDate = getReviewDate(review); const reviewImageUrl = getReviewImageUrl(review); return <article key={review.id}><header><span className="review-author-avatar" aria-hidden="true">{getReviewAuthorInitial(authorName)}</span><div><strong>{authorName}</strong>{reviewDate && <small>Đánh giá ngày {reviewDate}</small>}</div></header><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={15} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{review.comment || "Không có nhận xét."}</span>{reviewImageUrl && <img className="review-image" src={reviewImageUrl} alt={`Ảnh minh họa trong đánh giá của ${authorName}`} />}</article>; })}</div>
                   </section>
                 </div>
               )}
@@ -2239,6 +2309,74 @@ const styles = `
 .current-user-review p,
 .current-user-review small { margin: 0; color: var(--muted); line-height: 1.5; }
 .current-user-review small { font-size: 11px; font-weight: 800; }
+.review-edit-button {
+  width: fit-content;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--paper, #fff);
+  color: var(--ink);
+  padding: 0 12px;
+  font-weight: 900;
+}
+.review-image-upload {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  background: var(--paper-soft);
+  padding: 12px;
+}
+.review-image-upload > div:first-child { display: grid; gap: 2px; }
+.review-image-upload small,
+.review-image-upload p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.review-upload-button {
+  width: fit-content;
+  min-height: 42px;
+  display: inline-flex !important;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--paper, #fff);
+  color: var(--ink);
+  padding: 0 12px;
+  cursor: pointer;
+}
+.review-upload-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.review-upload-button:has(input:focus-visible) { outline: 3px solid var(--teal); outline-offset: 2px; }
+.review-image-preview { display: grid; gap: 8px; }
+.review-image {
+  width: min(100%, 360px);
+  max-height: 240px;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  object-fit: cover;
+}
+.review-image-preview button {
+  width: fit-content;
+  min-height: 36px;
+  border: 1px solid #a33a2b;
+  border-radius: 9px;
+  background: #fff4f2;
+  color: #8f2d1f;
+  padding: 0 11px;
+  font-weight: 900;
+}
+.review-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-form-actions button { flex: 1 1 150px; }
+.review-form-actions .secondary { background: var(--paper, #fff); box-shadow: none; }
 .review-list article { gap: 8px; }
 .review-list article header {
   display: flex;

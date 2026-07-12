@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { Buffer } from "node:buffer";
 import { preparePage } from "./helpers";
 
 const TOKEN = [
@@ -64,6 +65,17 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await preparePage(page);
   await authenticate(page);
   let reviewPayload = null;
+  let reviewUpdatePayload = null;
+  let cloudinaryUploadRequested = false;
+  const uploadedImageUrl = "https://res.cloudinary.com/demo/image/upload/v1/reviews/hospital-review.jpg";
+
+  await page.route("https://api.cloudinary.com/**", async (route) => {
+    cloudinaryUploadRequested = true;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ secure_url: uploadedImageUrl, public_id: "reviews/hospital-review" }),
+    });
+  });
 
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
@@ -119,6 +131,14 @@ test("facility review submits the Swagger payload", async ({ page }) => {
       });
     }
 
+    if (url.pathname === "/api/feedback-reviews/review-id" && method === "PUT") {
+      reviewUpdatePayload = route.request().postDataJSON();
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, message: "Đã cập nhật đánh giá.", data: { id: "review-id" } }),
+      });
+    }
+
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ success: true, data: [] }),
@@ -132,6 +152,18 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await expect(page.getByText("Nguyễn Minh Anh", { exact: true })).toBeVisible();
   await page.getByRole("radio", { name: "4 sao" }).check();
   await page.getByLabel("Nhận xét").fill("Dịch vụ tốt");
+  await page.getByLabel("Chọn ảnh").setInputFiles({
+    name: "not-an-image.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("not-an-image"),
+  });
+  await expect(page.getByText("Cloudinary chỉ nhận file ảnh ở trường này.", { exact: true })).toBeVisible();
+  await page.getByLabel("Chọn ảnh").setInputFiles({
+    name: "hospital-review.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("mock-review-image"),
+  });
+  await expect(page.getByAltText("Ảnh minh họa sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrl);
   await page.getByRole("button", { name: "Gửi đánh giá" }).click();
 
   await expect(page.getByText("Đã gửi đánh giá.", { exact: true })).toBeVisible();
@@ -141,6 +173,19 @@ test("facility review submits the Swagger payload", async ({ page }) => {
     facilityId: FACILITY_ID,
     rating: 4,
     comment: "Dịch vụ tốt",
+    imageUrl: uploadedImageUrl,
+  });
+  expect(cloudinaryUploadRequested).toBe(true);
+
+  await page.getByRole("button", { name: "Chỉnh sửa đánh giá" }).click();
+  await page.getByRole("radio", { name: "3 sao" }).check();
+  await page.getByLabel("Nhận xét").fill("Dịch vụ đã được cải thiện");
+  await page.getByRole("button", { name: "Lưu chỉnh sửa" }).click();
+  await expect(page.getByText("Đã cập nhật đánh giá của bạn.", { exact: true })).toBeVisible();
+  expect(reviewUpdatePayload).toEqual({
+    rating: 3,
+    comment: "Dịch vụ đã được cải thiện",
+    imageUrl: uploadedImageUrl,
   });
 });
 
