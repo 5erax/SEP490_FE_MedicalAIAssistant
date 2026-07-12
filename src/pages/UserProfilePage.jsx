@@ -1,5 +1,5 @@
 import { Children, cloneElement, useEffect, useId, useState } from "react";
-import { CreditCard, FileHeart, ShieldCheck, User } from "lucide-react";
+import { CreditCard, FileHeart, ReceiptText, ShieldCheck, User } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 import { navigate as go } from "../router/navigation";
@@ -7,6 +7,7 @@ import {
   authApi,
   getStoredAuth,
   patientProfilesApi,
+  paymentsApi,
   usersApi,
   userSubscriptionsApi,
 } from "../services/api";
@@ -20,18 +21,48 @@ const EMPTY_USER = { displayName: "", email: "", phoneNumber: "", address: "", g
 const tabs = [
   ["info", User, "Thông tin cá nhân"],
   ["medical", FileHeart, "Hồ sơ y tế"],
+  ["package", CreditCard, "Gói dịch vụ"],
+  ["transactions", ReceiptText, "Giao dịch"],
   ["security", ShieldCheck, "Bảo mật"],
-  ["subscription", CreditCard, "Giao dịch"],
 ];
 const TAB_IDS = new Set(tabs.map(([id]) => id));
 
 function getInitialTab() {
   const requestedTab = new URLSearchParams(window.location.search).get("tab");
+  if (requestedTab === "subscription") return "transactions";
   return TAB_IDS.has(requestedTab) ? requestedTab : "info";
 }
 
 function initials(name) {
   return name.split(" ").filter(Boolean).slice(-2).map((part) => part[0]).join("").toUpperCase() || "MM";
+}
+
+function getArrayData(response) {
+  const data = response?.data ?? [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.items)) return data.items;
+  return [];
+}
+
+function formatMoney(value) {
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(amount)) return "--";
+  return amount.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
+}
+
+function formatDate(value) {
+  if (!value) return "Chưa cập nhật";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+  return date.toLocaleDateString("vi-VN");
+}
+
+function getPaymentStatus(payment) {
+  return payment.statusName ?? payment.paymentStatusName ?? payment.status ?? payment.paymentStatus ?? "Đang xử lý";
+}
+
+function getPaymentAmount(payment) {
+  return payment.amount ?? payment.totalAmount ?? payment.price ?? payment.orderAmount ?? payment.paidAmount;
 }
 
 export default function UserProfilePage() {
@@ -60,6 +91,9 @@ export default function UserProfilePage() {
   const [userId, setUserId] = useState("");
   const [patientProfileId, setPatientProfileId] = useState("");
   const [subscription, setSubscription] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsError, setPaymentsError] = useState("");
   const [loading, setLoading] = useState(true);
   const [profileDirty, setProfileDirty] = useState(false);
   const [medicalDirty, setMedicalDirty] = useState(false);
@@ -109,6 +143,24 @@ export default function UserProfilePage() {
         : [];
       setSubscription(subscriptions.find((item) => String(item.statusName).toLowerCase() === "active") ?? subscriptions[0] ?? null);
       setLoading(false);
+
+      if (resolvedUserId) {
+        setPaymentsLoading(true);
+        paymentsApi.byUser(resolvedUserId)
+          .then((paymentResult) => {
+            if (!active) return;
+            setPayments(getArrayData(paymentResult));
+            setPaymentsError("");
+          })
+          .catch((error) => {
+            if (!active) return;
+            setPayments([]);
+            setPaymentsError(error.message);
+          })
+          .finally(() => {
+            if (active) setPaymentsLoading(false);
+          });
+      }
     });
 
     return () => {
@@ -196,21 +248,6 @@ export default function UserProfilePage() {
     }
   }
 
-  const personalCompletion = [
-    profileForm.displayName,
-    profileForm.email,
-    profileForm.phoneNumber,
-    profileForm.address,
-    profileForm.dateOfBirth,
-  ].filter(Boolean).length;
-  const medicalCompletion = [
-    medicalForm.bloodType,
-    medicalForm.height,
-    medicalForm.weight,
-    medicalForm.allergyNote,
-    medicalForm.chronicDiseaseNote,
-  ].filter(Boolean).length;
-
   return (
     <main className="profile-page">
       <style>{styles}</style>
@@ -236,33 +273,6 @@ export default function UserProfilePage() {
           <button type="button" onClick={() => go("/records")}>Hồ sơ y tế</button>
           <button type="button" onClick={() => go("/map")}>Bản đồ</button>
         </nav>
-        <section className="profile-overview" aria-label="Tổng quan hồ sơ cá nhân">
-          <div className="profile-overview-person">
-            <span>{initials(profileForm.displayName)}</span>
-            <div>
-              <p>Không gian cá nhân</p>
-              <h1>{profileForm.displayName || (loading ? "Đang tải hồ sơ..." : "Cập nhật hồ sơ của bạn")}</h1>
-              <small>{profileForm.email || "Chưa có email"}</small>
-            </div>
-          </div>
-          <div className="profile-summary-grid">
-            <article>
-              <span>Thông tin</span>
-              <strong>{personalCompletion}/5</strong>
-              <small>Mục cơ bản đã cập nhật</small>
-            </article>
-            <article>
-              <span>Y tế</span>
-              <strong>{medicalCompletion}/5</strong>
-              <small>Dữ liệu nền cho tư vấn</small>
-            </article>
-            <article>
-              <span>Gói dịch vụ</span>
-              <strong>{subscription?.planName || "Free"}</strong>
-              <small>{subscription?.statusName || "Tiêu chuẩn"}</small>
-            </article>
-          </div>
-        </section>
         <div className="mobile-tabs">
           {tabs.map(([id, Icon, label]) => (
             <button className={activeTab === id ? "active" : ""} key={id} type="button" onClick={() => selectTab(id)}>
@@ -314,9 +324,11 @@ export default function UserProfilePage() {
           </section>
         )}
 
-        {activeTab === "subscription" && (
+        {activeTab === "package" && (
           <section className="profile-card">
-            <h1>Lịch sử giao dịch</h1>
+            <div className="profile-head">
+              <div><h1>Gói dịch vụ</h1><span>MediMate+</span></div>
+            </div>
             <div className="plan-box">
               <span>Gói hiện tại</span>
               <strong>{subscription?.planName || (loading ? "Đang tải..." : "Free")}</strong>
@@ -327,6 +339,41 @@ export default function UserProfilePage() {
               </p>
             </div>
             <button className="lime" type="button" onClick={() => go("/pricing")}>Nâng cấp MediMate+</button>
+          </section>
+        )}
+
+        {activeTab === "transactions" && (
+          <section className="profile-card">
+            <div className="profile-head">
+              <div><h1>Lịch sử giao dịch</h1><span>{payments.length} giao dịch</span></div>
+            </div>
+            {paymentsLoading ? (
+              <div className="transaction-empty">Đang tải giao dịch...</div>
+            ) : paymentsError ? (
+              <div className="danger"><p>{paymentsError}</p></div>
+            ) : payments.length === 0 ? (
+              <div className="transaction-empty">Bạn chưa có giao dịch nào.</div>
+            ) : (
+              <div className="transaction-list">
+                {payments.map((payment, index) => {
+                  const paymentId = payment.id ?? payment.paymentId ?? payment.orderCode ?? index;
+                  const title = payment.planName ?? payment.subscriptionPlanName ?? payment.description ?? "Giao dịch MediMate+";
+                  const paidAt = payment.paidAt ?? payment.createdAt ?? payment.updatedAt;
+
+                  return (
+                    <article className="transaction-row" key={paymentId}>
+                      <div>
+                        <strong>{title}</strong>
+                        <small>{paymentId}</small>
+                      </div>
+                      <span>{formatMoney(getPaymentAmount(payment))}</span>
+                      <span>{getPaymentStatus(payment)}</span>
+                      <time dateTime={paidAt || undefined}>{formatDate(paidAt)}</time>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </section>
         )}
       </section>
@@ -355,5 +402,6 @@ function Field({ label, error, wide, children }) {
 const styles = `
 .profile-page{min-height:100vh;display:flex;background:#f7f8f3;color:#111412;font-family:"Be Vietnam Pro",system-ui,sans-serif}.profile-sidebar{width:220px;padding:24px 18px;border-right:1.5px solid #111412;background:#fff;position:sticky;top:0;height:100vh}.profile-identity{text-align:center;border-bottom:1px solid #dde4d5;padding-bottom:18px;margin-bottom:18px}.profile-identity span{display:grid;place-items:center;width:76px;height:76px;margin:0 auto 12px;border-radius:999px;background:#111412;color:#c4e995;font-size:24px;font-weight:900}.profile-identity strong,.profile-identity small{display:block}.profile-identity small{color:rgba(17,20,18,.56);margin-top:4px}.profile-sidebar nav{display:grid;gap:6px}.profile-sidebar button,.mobile-tabs button{border:0;background:transparent;color:#111412;font-weight:800;text-align:left;padding:12px;border-radius:8px}.profile-sidebar button{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:center;gap:8px;line-height:1.25}.profile-sidebar button.active{background:#eef7e8;border-right:3px solid #c4e995}.profile-sidebar button span{display:grid;place-items:center;margin-right:0}.profile-content{flex:1;padding:24px;min-width:0}.profile-quick-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.profile-quick-nav button{min-height:38px;border:1.5px solid #111412;border-radius:999px;background:#fff;color:#111412;padding:0 13px;font-weight:900}.profile-quick-nav button:first-child{background:#c4e995}.profile-overview{display:grid;gap:16px;border:1.5px solid #111412;border-radius:14px;background:#fff;box-shadow:4px 4px 0 #111412;padding:20px;margin-bottom:14px}.profile-overview-person{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center}.profile-overview-person>span{display:grid;place-items:center;width:66px;height:66px;border-radius:18px;background:#111412;color:#c4e995;font-size:22px;font-weight:950}.profile-overview-person p,.profile-overview-person h1,.profile-overview-person small{margin:0}.profile-overview-person p,.profile-summary-grid span{color:#3f6428;font-size:11px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.profile-overview-person h1{margin-top:4px;font-size:clamp(26px,3vw,38px);line-height:1.1}.profile-overview-person small,.profile-summary-grid small{color:rgba(17,20,18,.58);font-weight:760}.profile-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.profile-summary-grid article{display:grid;gap:4px;border:1px solid #dde4d5;border-radius:10px;background:#fbfcf7;padding:12px}.profile-summary-grid strong{font-size:24px;line-height:1.1;overflow-wrap:anywhere}.mobile-tabs{display:none}.toast{border:1px solid #111412;border-radius:8px;background:#c4e995;padding:10px 12px;margin-bottom:14px;font-weight:900}.profile-card{border:1.5px solid #111412;border-radius:12px;background:#fff;box-shadow:4px 4px 0 #111412;padding:24px;display:grid;gap:14px}.profile-card h1{margin:0;font-size:30px}.profile-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.profile-head span,.plan-box span{display:inline-flex;border-radius:999px;background:#e6f4ee;color:#087f8c;padding:6px 10px;font-size:12px;font-weight:900}.profile-head button,.lime,.danger button{border:1.5px solid #111412;border-radius:8px;background:#fff;min-height:40px;padding:0 14px;font-weight:900}.lime{background:#c4e995;box-shadow:3px 3px 0 #111412}.full{width:100%}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-grid.three{grid-template-columns:repeat(3,1fr)}.field{display:grid;gap:6px;font-size:13px;font-weight:900;color:rgba(17,20,18,.72);position:relative}.field.wide{grid-column:1/-1}.field input,.field select,.field textarea{width:100%;border:1px solid #b9c5ad;border-radius:8px;background:#fff;padding:12px;font:inherit}.field textarea{height:80px;resize:vertical}.field input:disabled,.field select:disabled{background:#f7f8f3;color:rgba(17,20,18,.7)}.field small{color:#dc2626;font-size:11px}.field em{position:absolute;right:8px;top:32px;border-radius:999px;background:#eef7e8;padding:4px 8px;font-size:11px;font-style:normal;color:#6a9540}.danger{border:1.5px solid #ef4444;border-radius:10px;background:#fff5f5;padding:14px;margin-top:14px}.danger p{color:#7f1d1d}.plan-box{border:1px solid #dde4d5;border-radius:10px;background:#fbfcf7;padding:18px}.plan-box strong{display:block;font-size:34px;margin:10px 0}.plan-box p{color:rgba(17,20,18,.62)}
 .profile-form-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}.profile-form-actions button{border:1.5px solid #111412;border-radius:8px;background:#fff;min-height:40px;padding:0 14px;font-weight:900}
-@media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.profile-overview,.profile-card{padding:18px}.profile-overview-person,.profile-summary-grid{grid-template-columns:1fr}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px}.mobile-tabs button{min-width:112px;border:1px solid #dde4d5;background:#fff;text-align:center}.mobile-tabs button.active{background:#eef7e8;border-color:#111412}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head{flex-direction:column}.form-grid,.form-grid.three,.profile-form-actions{grid-template-columns:1fr}.profile-form-actions button{width:100%}}
+.transaction-list{display:grid;gap:10px}.transaction-row{display:grid;grid-template-columns:minmax(0,1.45fr) auto auto auto;gap:14px;align-items:center;border:1px solid #dde4d5;border-radius:12px;background:#fbfcf7;padding:14px}.transaction-row strong,.transaction-row small{display:block}.transaction-row strong{font-size:15px}.transaction-row small{margin-top:4px;color:rgba(17,20,18,.56);overflow-wrap:anywhere}.transaction-row span,.transaction-row time{font-weight:900;color:#111412;white-space:nowrap}.transaction-row span:nth-of-type(2){border-radius:999px;background:#eef7e8;color:#3f6428;padding:6px 10px;font-size:12px}.transaction-empty{border:1px dashed #b9c5ad;border-radius:12px;background:#fbfcf7;padding:20px;color:rgba(17,20,18,.62);font-weight:850}
+@media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.profile-overview,.profile-card{padding:18px}.profile-overview-person,.profile-summary-grid{grid-template-columns:1fr}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px}.mobile-tabs button{min-width:112px;border:1px solid #dde4d5;background:#fff;text-align:center}.mobile-tabs button.active{background:#eef7e8;border-color:#111412}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head{flex-direction:column}.form-grid,.form-grid.three,.profile-form-actions,.transaction-row{grid-template-columns:1fr}.profile-form-actions button{width:100%}.transaction-row span,.transaction-row time{white-space:normal}}
 `;
