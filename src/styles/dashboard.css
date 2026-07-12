@@ -50,10 +50,14 @@
 }
 
 .studio-heading-actions {
-  width: 100%;
+  position: fixed;
+  top: 96px;
+  right: clamp(22px, 3.2vw, 54px);
+  z-index: 20;
+  width: auto;
   display: flex;
   justify-content: flex-end;
-  margin-bottom: -2px;
+  margin-bottom: 0;
 }
 
 .analysis-history-button {
@@ -750,6 +754,8 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   }
 
   .studio-heading-actions {
+    position: static;
+    width: 100%;
     justify-content: center;
   }
 

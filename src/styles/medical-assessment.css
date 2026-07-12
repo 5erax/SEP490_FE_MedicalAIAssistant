@@ -44,10 +44,14 @@
 }
 
 .assessment-history-action {
-  width: min(1120px, 100%);
+  position: fixed;
+  top: 96px;
+  right: clamp(22px, 3.2vw, 54px);
+  z-index: 20;
+  width: auto;
   display: flex;
   justify-content: flex-end;
-  margin-bottom: -8px;
+  margin-bottom: 0;
 }
 
 .analysis-history-button {
@@ -837,6 +841,8 @@
   }
 
   .assessment-history-action {
+    position: static;
+    width: 100%;
     justify-content: center;
     margin-bottom: 0;
   }
