@@ -135,7 +135,17 @@ function sessionTypeCopy(sessionType) {
     };
 }
 
-function AssessmentShell({ eyebrow, title, description, activeStep, children }) {
+function AssessmentShell({
+  eyebrow,
+  title,
+  description,
+  activeStep,
+  historyAction = {
+    label: "Lịch sử phân tích",
+    to: "/assessment/history?sessionType=diagnoses",
+  },
+  children,
+}) {
   return (
     <main className="assessment-page clinical-page">
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
@@ -144,10 +154,10 @@ function AssessmentShell({ eyebrow, title, description, activeStep, children }) 
             tone="secondary"
             size="sm"
             className="analysis-history-button"
-            onClick={() => navigate("/assessment/history?sessionType=diagnoses")}
+            onClick={() => navigate(historyAction.to)}
           >
             <History size={16} />
-            Lịch sử phân tích
+            {historyAction.label}
           </Button>
         </div>
         <header className="assessment-header clinical-hero">
@@ -852,6 +862,11 @@ function HistoryPage() {
       title={copy.title}
       description={copy.description}
       activeStep={2}
+      historyAction={
+        sessionType === "department"
+          ? { label: "Tiếp tục tư vấn", to: "/dashboard" }
+          : { label: "Tiếp tục chuẩn đoán", to: "/medical-assistant/intake" }
+      }
     >
       {status === "loading" && (
         <LoadingState label="Đang tải lịch sử đánh giá..." />

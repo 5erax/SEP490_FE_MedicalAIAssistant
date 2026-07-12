@@ -46,7 +46,7 @@
 .assessment-history-action {
   position: fixed;
   top: 96px;
-  right: clamp(18px, 2vw, 32px);
+  right: clamp(12px, 1.4vw, 22px);
   z-index: 20;
   width: auto;
   display: flex;
