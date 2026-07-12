@@ -1,250 +1,365 @@
+import { Filter, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileHeart, Pencil, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
-import { DataTable, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
-import { patientProfilesApi, usersApi } from "../../services/api";
+import { Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
-const PAGE_SIZE = 10;
-const EMPTY_FORM = { userId: "", bloodType: "", height: "", weight: "", allergyNote: "", chronicDiseases: [] };
-const EMPTY_DISEASE = { id: "", diseaseName: "", from: "", to: "", note: "" };
-const BLOOD_TYPES = ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const BLOOD_TYPE_OPTIONS = [
+  { value: "", label: "Chưa xác định" },
+  { value: "A+", label: "A+" },
+  { value: "A-", label: "A-" },
+  { value: "B+", label: "B+" },
+  { value: "B-", label: "B-" },
+  { value: "AB+", label: "AB+" },
+  { value: "AB-", label: "AB-" },
+  { value: "O+", label: "O+" },
+  { value: "O-", label: "O-" },
+];
 
-function getItems(response) {
-  return response?.data?.items ?? [];
+function Field({ label, children, help, className = "" }) {
+  return (
+    <label className={`clean-field ${className}`.trim()}>
+      <span>{label}</span>
+      {children}
+      {help && <small>{help}</small>}
+    </label>
+  );
 }
 
-function getUserLabel(user) {
-  return user?.displayName || user?.name || user?.email || user?.userId || user?.id || "Người dùng chưa có tên";
+function formatDateTime(value) {
+  if (!value) return "Chưa cập nhật";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+  return date.toLocaleDateString("vi-VN");
 }
 
-function toForm(profile) {
-  return {
-    userId: profile?.userId || "",
-    bloodType: profile?.bloodType || "",
-    height: profile?.height ?? "",
-    weight: profile?.weight ?? "",
-    allergyNote: profile?.allergyNote || "",
-    chronicDiseases: (profile?.chronicDiseases || []).map((item) => ({
-      id: item.id || "",
-      diseaseName: item.diseaseName || "",
-      from: item.from ? String(item.from).slice(0, 10) : "",
-      to: item.to ? String(item.to).slice(0, 10) : "",
-      note: item.note || "",
-    })),
-  };
+function getProfileStatus(profile) {
+  if (profile.isDeleted) return { label: "Đã xóa", tone: "danger" };
+  if (profile.isProfileCompleted) return { label: "Hoàn tất", tone: "success" };
+  return { label: "Chưa hoàn tất", tone: "warning" };
 }
 
-function validate(form, editing) {
-  const errors = {};
-  if (!editing && !form.userId) errors.userId = "Chọn người dùng cần tạo hồ sơ.";
-  const height = form.height === "" ? null : Number(form.height);
-  const weight = form.weight === "" ? null : Number(form.weight);
-  if (height !== null && (!Number.isFinite(height) || height < 40 || height > 250)) errors.height = "Chiều cao phải từ 40 đến 250 cm.";
-  if (weight !== null && (!Number.isFinite(weight) || weight < 2 || weight > 500)) errors.weight = "Cân nặng phải từ 2 đến 500 kg.";
-  form.chronicDiseases.forEach((item, index) => {
-    if (!item.diseaseName.trim()) errors[`disease-${index}`] = "Nhập tên bệnh hoặc xóa dòng này.";
-    if (item.from && item.to && item.from > item.to) errors[`disease-date-${index}`] = "Ngày kết thúc phải sau ngày bắt đầu.";
-  });
-  return errors;
-}
-
-function serialize(form, editing) {
-  const values = {
-    bloodType: form.bloodType || null,
-    height: form.height === "" ? null : Number(form.height),
-    weight: form.weight === "" ? null : Number(form.weight),
-    allergyNote: form.allergyNote.trim() || null,
-    chronicDiseases: form.chronicDiseases.map((item) => ({
-      ...(editing && item.id ? { id: item.id } : {}),
-      diseaseName: item.diseaseName.trim() || null,
-      from: item.from || null,
-      to: item.to || null,
-      note: item.note.trim() || null,
-    })),
-  };
-  return editing ? values : { userId: form.userId, ...values };
-}
-
-export default function AdminPatientProfilesSection({ confirmAction, showToast }) {
-  const [profiles, setProfiles] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: PAGE_SIZE, totalCount: 0, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [dialog, setDialog] = useState({ open: false, profile: null });
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [errors, setErrors] = useState({});
-  const [saving, setSaving] = useState(false);
-  const createButtonRef = useRef(null);
-  const firstFieldRef = useRef(null);
-
-  const userById = useMemo(() => new Map(users.map((user) => [String(user.userId || user.id), user])), [users]);
-  const existingUserIds = useMemo(() => new Set(profiles.map((profile) => String(profile.userId))), [profiles]);
-  const availableUsers = users.filter((user) => !existingUserIds.has(String(user.userId || user.id)));
-  const visibleProfiles = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    if (!keyword) return profiles;
-    return profiles.filter((profile) => {
-      const user = userById.get(String(profile.userId));
-      return [profile.id, profile.userId, profile.bloodType, getUserLabel(user), user?.email]
-        .filter(Boolean).some((value) => String(value).toLowerCase().includes(keyword));
-    });
-  }, [profiles, search, userById]);
-
-  async function load(pageNumber = pageInfo.pageNumber) {
-    setLoading(true);
-    setError("");
-    try {
-      const [profileResponse, userResponse] = await Promise.all([
-        patientProfilesApi.list(pageNumber, PAGE_SIZE),
-        usersApi.list(1, 100),
-      ]);
-      const data = profileResponse.data ?? {};
-      setProfiles(data.items ?? []);
-      setUsers(getItems(userResponse));
-      setPageInfo({
-        pageNumber: data.pageNumber ?? pageNumber,
-        pageSize: data.pageSize ?? PAGE_SIZE,
-        totalCount: data.totalCount ?? data.items?.length ?? 0,
-        totalPages: Math.max(1, data.totalPages ?? 1),
-      });
-    } catch {
-      setError("Không thể tải hồ sơ bệnh nhân. Kiểm tra kết nối và thử lại.");
-    } finally {
-      setLoading(false);
-    }
-  }
+export default function AdminPatientProfilesSection({
+  editingProfileId,
+  error,
+  form,
+  loading,
+  message,
+  pageInfo,
+  profiles,
+  saving,
+  search,
+  onAddDisease,
+  onCreate,
+  onDelete,
+  onEdit,
+  onFieldChange,
+  onLoadPage,
+  onPageSizeChange,
+  onReload,
+  onRemoveDisease,
+  onReset,
+  onSearchChange,
+  onSubmit,
+  onUpdateDisease,
+}) {
+  const [formOpen, setFormOpen] = useState(false);
+  const wasSavingRef = useRef(false);
 
   useEffect(() => {
-    let active = true;
-    Promise.all([patientProfilesApi.list(1, PAGE_SIZE), usersApi.list(1, 100)])
-      .then(([profileResponse, userResponse]) => {
-        if (!active) return;
-        const data = profileResponse.data ?? {};
-        setProfiles(data.items ?? []);
-        setUsers(getItems(userResponse));
-        setPageInfo({
-          pageNumber: data.pageNumber ?? 1,
-          pageSize: data.pageSize ?? PAGE_SIZE,
-          totalCount: data.totalCount ?? data.items?.length ?? 0,
-          totalPages: Math.max(1, data.totalPages ?? 1),
-        });
-      })
-      .catch(() => {
-        if (active) setError("Không thể tải hồ sơ bệnh nhân. Kiểm tra kết nối và thử lại.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => { active = false; };
-  }, []);
+    if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
+      setFormOpen(false);
+    }
+    wasSavingRef.current = saving;
+  }, [formOpen, message, saving]);
 
-  function openCreate() {
-    setForm(EMPTY_FORM);
-    setErrors({});
-    setDialog({ open: true, profile: null });
+  function openCreateForm() {
+    onCreate();
+    setFormOpen(true);
   }
 
-  function openEdit(profile) {
-    setForm(toForm(profile));
-    setErrors({});
-    setDialog({ open: true, profile });
+  function openEditForm(profile) {
+    onEdit(profile);
+    setFormOpen(true);
   }
 
-  function closeDialog() {
+  function closeForm() {
     if (saving) return;
-    setDialog({ open: false, profile: null });
+    setFormOpen(false);
+    onReset();
   }
 
-  function updateField(key, value) {
-    setForm((current) => ({ ...current, [key]: value }));
-    setErrors((current) => ({ ...current, [key]: "" }));
-  }
-
-  function updateDisease(index, key, value) {
-    setForm((current) => ({
-      ...current,
-      chronicDiseases: current.chronicDiseases.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item),
-    }));
-    setErrors((current) => ({ ...current, [`disease-${index}`]: "", [`disease-date-${index}`]: "" }));
-  }
-
-  async function save(event) {
-    event.preventDefault();
-    const editing = Boolean(dialog.profile?.id);
-    const nextErrors = validate(form, editing);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) {
-      window.requestAnimationFrame(() => document.querySelector('.patient-profile-dialog [aria-invalid="true"]')?.focus());
-      return;
-    }
-    setSaving(true);
-    try {
-      const payload = serialize(form, editing);
-      const response = editing
-        ? await patientProfilesApi.update(dialog.profile.id, payload)
-        : await patientProfilesApi.create(payload);
-      showToast({ type: "success", title: editing ? "Đã cập nhật hồ sơ" : "Đã tạo hồ sơ", message: response.message || "Dữ liệu hồ sơ bệnh nhân đã được đồng bộ." });
-      setDialog({ open: false, profile: null });
-      await load(editing ? pageInfo.pageNumber : 1);
-    } catch (saveError) {
-      showToast({ type: "error", title: "Không thể lưu hồ sơ", message: saveError.message });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function remove(profile) {
-    const accepted = await confirmAction({
-      title: "Xóa hồ sơ bệnh nhân?",
-      message: "Hành động này xóa hồ sơ sức khỏe khỏi danh sách quản trị. Dữ liệu tài khoản người dùng không bị xóa.",
-      confirmLabel: "Xóa hồ sơ",
-      tone: "danger",
-    });
-    if (!accepted) return;
-    try {
-      await patientProfilesApi.remove(profile.id);
-      showToast({ type: "success", title: "Đã xóa hồ sơ", message: "Danh sách hồ sơ bệnh nhân đã được cập nhật." });
-      await load(pageInfo.pageNumber);
-    } catch (removeError) {
-      showToast({ type: "error", title: "Không thể xóa hồ sơ", message: removeError.message });
-    }
-  }
-
-  const columns = [
-    { key: "patient", header: "Bệnh nhân", render: (profile) => { const user = userById.get(String(profile.userId)); return <div className="patient-profile-person"><strong>{getUserLabel(user)}</strong><small>{user?.email || profile.userId}</small></div>; } },
-    { key: "metrics", header: "Chỉ số", render: (profile) => <div className="patient-profile-metrics"><span>{profile.bloodType || "Chưa rõ nhóm máu"}</span><small>{profile.height ? `${profile.height} cm` : "-- cm"} · {profile.weight ? `${profile.weight} kg` : "-- kg"}</small></div> },
-    { key: "conditions", header: "Bệnh nền", render: (profile) => <span>{profile.chronicDiseases?.length || 0} mục</span> },
-    { key: "status", header: "Trạng thái", render: (profile) => <span className={`patient-profile-status ${profile.isProfileCompleted ? "complete" : "incomplete"}`}>{profile.isProfileCompleted ? "Đã hoàn thiện" : "Chưa hoàn thiện"}</span> },
-    { key: "updated", header: "Cập nhật", render: (profile) => <span>{new Date(profile.updatedAt || profile.createdAt).toLocaleDateString("vi-VN")}</span> },
-    { key: "actions", header: "Thao tác", render: (profile) => <div className="record-actions"><button className="btn btn-ghost btn-small" type="button" onClick={() => openEdit(profile)}><Pencil size={14} /> Sửa</button><button className="btn btn-dark btn-small" type="button" onClick={() => remove(profile)}><Trash2 size={14} /> Xóa</button></div> },
-  ];
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleProfiles = useMemo(() => {
+    if (!normalizedSearch) return profiles;
+    return profiles.filter((profile) => [
+      profile.id,
+      profile.userId,
+      profile.bloodType,
+      profile.allergyNote,
+      ...(profile.chronicDiseases ?? []).map((disease) => disease.diseaseName),
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedSearch)));
+  }, [normalizedSearch, profiles]);
 
   return (
-    <section className="admin-panel patient-profile-admin-panel">
-      <div className="panel-title-row patient-profile-heading">
-        <div><p className="eyebrow">Dữ liệu sức khỏe nhạy cảm</p><h2>Hồ sơ bệnh nhân</h2><p className="muted-text">Quản lý thông tin sức khỏe nền theo đúng dữ liệu PatientProfile từ backend.</p></div>
-        <div className="record-actions"><button className="btn btn-ghost btn-small" type="button" onClick={() => load(pageInfo.pageNumber)}><RefreshCw size={15} /> Đồng bộ</button><button ref={createButtonRef} className="btn btn-primary btn-small" type="button" onClick={openCreate}><Plus size={15} /> Tạo hồ sơ</button></div>
+    <section className="admin-panel ai-config-admin-panel patient-profile-admin-panel">
+      <div className="panel-title-row ai-config-section-heading">
+        <div>
+          <p className="eyebrow">Patient Profile</p>
+          <h2>Hồ sơ bệnh nhân</h2>
+          <p className="muted-text">Quản lý hồ sơ sức khỏe, chỉ số cơ bản và bệnh nền của người dùng trong hệ thống.</p>
+        </div>
+        <div className="facility-panel-actions">
+          <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>Tải lại</button>
+          <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>
+            <Plus size={15} /> Tạo hồ sơ
+          </button>
+        </div>
       </div>
 
-      <div className="patient-profile-toolbar"><label><Search size={16} aria-hidden="true" /><span className="sr-only">Tìm hồ sơ bệnh nhân</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm theo tên, email, mã người dùng..." /></label><span>{pageInfo.totalCount} hồ sơ</span></div>
+      {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
 
-      {loading ? <LoadingState label="Đang tải hồ sơ bệnh nhân..." /> : error ? <ErrorState title="Không thể tải hồ sơ bệnh nhân" description={error} action={<button className="btn btn-primary" type="button" onClick={() => load(pageInfo.pageNumber)}>Thử lại</button>} /> : visibleProfiles.length ? <><DataTable caption="Danh sách hồ sơ bệnh nhân" className="patient-profile-table" columns={columns} rows={visibleProfiles} rowHeaderKey="patient" getRowKey={(profile) => profile.id} /><div className="patient-profile-pagination"><button type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => load(pageInfo.pageNumber - 1)}>Trước</button><span>Trang {pageInfo.pageNumber}/{pageInfo.totalPages}</span><button type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => load(pageInfo.pageNumber + 1)}>Sau</button></div></> : <EmptyState icon={<FileHeart size={24} />} title="Chưa có hồ sơ bệnh nhân" description={search ? "Không có hồ sơ phù hợp từ khóa." : "Tạo hồ sơ đầu tiên cho một tài khoản bệnh nhân."} action={!search && <button className="btn btn-primary" type="button" onClick={openCreate}>Tạo hồ sơ</button>} />}
-
-      {dialog.open && <Dialog backdropClassName="modal-backdrop" className="modal-card patient-profile-dialog" labelledBy="patient-profile-dialog-title" describedBy="patient-profile-dialog-description" onClose={closeDialog} initialFocusRef={firstFieldRef} restoreFocusRef={createButtonRef}>
-        <form onSubmit={save} noValidate>
-          <header className="patient-profile-dialog-head"><div><p className="eyebrow">{dialog.profile ? "Chỉnh sửa" : "Tạo mới"}</p><h2 id="patient-profile-dialog-title">{dialog.profile ? "Cập nhật hồ sơ bệnh nhân" : "Tạo hồ sơ bệnh nhân"}</h2><p id="patient-profile-dialog-description">Chỉ nhập dữ liệu sức khỏe đã được xác minh.</p></div><button type="button" aria-label="Đóng hộp thoại" onClick={closeDialog}><X size={19} /></button></header>
-          <div className="patient-profile-form-grid">
-            <label className="clean-field wide"><span>Người dùng</span><select ref={firstFieldRef} value={form.userId} disabled={Boolean(dialog.profile)} aria-invalid={Boolean(errors.userId)} onChange={(event) => updateField("userId", event.target.value)}><option value="">Chọn tài khoản</option>{(dialog.profile ? users : availableUsers).map((user) => { const id = user.userId || user.id; return <option key={id} value={id}>{getUserLabel(user)}{user.email ? ` · ${user.email}` : ""}</option>; })}</select>{errors.userId && <small role="alert">{errors.userId}</small>}</label>
-            <label className="clean-field"><span>Nhóm máu</span><select value={form.bloodType} onChange={(event) => updateField("bloodType", event.target.value)}>{BLOOD_TYPES.map((type) => <option key={type || "unknown"} value={type}>{type || "Chưa rõ"}</option>)}</select></label>
-            <label className="clean-field"><span>Chiều cao (cm)</span><input type="number" min="40" max="250" step="0.1" value={form.height} aria-invalid={Boolean(errors.height)} onChange={(event) => updateField("height", event.target.value)} />{errors.height && <small role="alert">{errors.height}</small>}</label>
-            <label className="clean-field"><span>Cân nặng (kg)</span><input type="number" min="2" max="500" step="0.1" value={form.weight} aria-invalid={Boolean(errors.weight)} onChange={(event) => updateField("weight", event.target.value)} />{errors.weight && <small role="alert">{errors.weight}</small>}</label>
-            <label className="clean-field wide"><span>Ghi chú dị ứng</span><textarea rows={3} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Thuốc, thực phẩm hoặc tác nhân gây dị ứng..." /></label>
+      <section className="ai-config-filter-card">
+        <div className="ai-config-filter-card-header">
+          <div>
+            <strong>Bộ lọc hồ sơ bệnh nhân</strong>
+            <p>Tìm theo ID hồ sơ, ID người dùng, nhóm máu, dị ứng hoặc bệnh nền trên trang hiện tại.</p>
           </div>
-          <section className="patient-disease-section"><div><div><h3>Bệnh nền</h3><p>Thêm thời gian và ghi chú khi có dữ liệu.</p></div><button type="button" onClick={() => setForm((current) => ({ ...current, chronicDiseases: [...current.chronicDiseases, { ...EMPTY_DISEASE }] }))}><Plus size={15} /> Thêm bệnh</button></div>{form.chronicDiseases.map((item, index) => <article key={item.id || index}><label className="clean-field wide"><span>Tên bệnh</span><input value={item.diseaseName} aria-invalid={Boolean(errors[`disease-${index}`])} onChange={(event) => updateDisease(index, "diseaseName", event.target.value)} />{errors[`disease-${index}`] && <small role="alert">{errors[`disease-${index}`]}</small>}</label><label className="clean-field"><span>Từ ngày</span><input type="date" value={item.from} aria-invalid={Boolean(errors[`disease-date-${index}`])} onChange={(event) => updateDisease(index, "from", event.target.value)} /></label><label className="clean-field"><span>Đến ngày</span><input type="date" value={item.to} aria-invalid={Boolean(errors[`disease-date-${index}`])} onChange={(event) => updateDisease(index, "to", event.target.value)} />{errors[`disease-date-${index}`] && <small role="alert">{errors[`disease-date-${index}`]}</small>}</label><label className="clean-field wide"><span>Ghi chú</span><textarea rows={2} value={item.note} onChange={(event) => updateDisease(index, "note", event.target.value)} /></label><button type="button" className="patient-disease-remove" aria-label={`Xóa bệnh nền ${index + 1}`} onClick={() => setForm((current) => ({ ...current, chronicDiseases: current.chronicDiseases.filter((_, itemIndex) => itemIndex !== index) }))}><Trash2 size={15} /> Xóa mục</button></article>)}</section>
-          <footer className="patient-profile-dialog-actions"><button type="button" className="btn btn-ghost" onClick={closeDialog} disabled={saving}>Hủy</button><button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Đang lưu..." : dialog.profile ? "Lưu thay đổi" : "Tạo hồ sơ"}</button></footer>
-        </form>
-      </Dialog>}
+        </div>
+
+        <div className="ai-config-toolbar">
+          <div className="ai-config-toolbar-row ai-config-toolbar-primary">
+            <div className="ai-config-search-field">
+              <Search size={16} />
+              <input
+                value={search}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="Tìm ID người dùng, nhóm máu, dị ứng hoặc bệnh nền..."
+              />
+            </div>
+          </div>
+
+          <div className="ai-config-toolbar-row ai-config-toolbar-filters">
+            <div className="ai-config-filter-grid department-filter-grid">
+              <CustomSelect
+                className="clean-field"
+                label="Per page"
+                value={pageInfo.pageSize}
+                options={PAGE_SIZE_OPTIONS}
+                onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
+              />
+            </div>
+
+            <div className="ai-config-filter-actions">
+              <button className="btn btn-primary btn-small" type="button" onClick={() => onLoadPage(1)} disabled={loading}>
+                <Filter size={14} /> Apply
+              </button>
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => onSearchChange("")} disabled={loading}>
+                <RotateCcw size={14} /> Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="admin-panel">
+        {loading ? (
+          <LoadingState label="Đang tải hồ sơ bệnh nhân..." />
+        ) : error ? (
+          <ErrorState
+            title="Không thể tải hồ sơ bệnh nhân"
+            description={error}
+            action={<Button onClick={onReload}>Thử tải lại</Button>}
+          />
+        ) : visibleProfiles.length === 0 ? (
+          <EmptyState title="Không có hồ sơ phù hợp" description="Thử đổi từ khóa tìm kiếm hoặc tạo hồ sơ mới." />
+        ) : (
+          <div className="admin-table-list patient-profile-list">
+            {visibleProfiles.map((profile) => {
+              const status = getProfileStatus(profile);
+              return (
+                <article className="admin-user-row patient-profile-row" key={profile.id}>
+                  <div className="patient-profile-row-main">
+                    <strong>{profile.userDisplayName || profile.fullName || `User ${String(profile.userId).slice(0, 8)}`}</strong>
+                    <span>{profile.allergyNote || "Chưa ghi nhận dị ứng."}</span>
+                    <small>{profile.id}</small>
+                    <div className="admin-badge-stack">
+                      <span className={`status-pill ${status.tone}`}>{status.label}</span>
+                      <span className="status-pill neutral">Nhóm máu {profile.bloodType || "N/A"}</span>
+                      <span className="status-pill neutral">{profile.chronicDiseases?.length ?? 0} bệnh nền</span>
+                    </div>
+                  </div>
+                  <div className="patient-profile-metrics">
+                    <span><strong>{profile.height ?? "--"}</strong><small>cm</small></span>
+                    <span><strong>{profile.weight ?? "--"}</strong><small>kg</small></span>
+                    <span><strong>{formatDateTime(profile.updatedAt ?? profile.createdAt)}</strong><small>Cập nhật</small></span>
+                  </div>
+                  <div className="record-actions">
+                    <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(profile)}>Sửa</button>
+                    <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(profile)}>Xóa</button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {!error && (
+        <div className="pagination-row">
+          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => onLoadPage(Math.max(1, pageInfo.pageNumber - 1))}>
+            Trước
+          </button>
+          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {visibleProfiles.length}/{pageInfo.totalCount} hồ sơ</span>
+          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => onLoadPage(Math.min(pageInfo.totalPages || 1, pageInfo.pageNumber + 1))}>
+            Sau
+          </button>
+        </div>
+      )}
+
+      {formOpen && (
+        <Dialog
+          backdropClassName="doctor-modal-backdrop"
+          className="doctor-modal facility-form-modal patient-profile-form-modal"
+          labelledBy="patient-profile-modal-title"
+          onClose={closeForm}
+          closeOnBackdrop={!saving}
+          closeOnEscape={!saving}
+        >
+          <header className="doctor-modal-header">
+            <div>
+              <p className="eyebrow">{editingProfileId ? "Update" : "Create"}</p>
+              <h2 id="patient-profile-modal-title">{editingProfileId ? "Cập nhật hồ sơ bệnh nhân" : "Tạo hồ sơ bệnh nhân"}</h2>
+              <p>Quản lý thông tin sức khỏe cơ bản và bệnh nền dùng cho luồng chăm sóc cá nhân.</p>
+            </div>
+            <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={saving}>×</button>
+          </header>
+
+          <form className="clean-form doctor-form facility-form patient-profile-form" onSubmit={onSubmit}>
+            <div className="facility-form-body">
+              <section className="facility-form-card">
+                <div className="facility-form-card-head">
+                  <h3>Thông tin cơ bản</h3>
+                  <p>User ID chỉ cần nhập khi tạo hồ sơ mới.</p>
+                </div>
+                <div className="facility-form-grid">
+                  {!editingProfileId && (
+                    <Field label="User ID" className="facility-form-span-2" help="GUID người dùng sở hữu hồ sơ.">
+                      <input
+                        value={form.userId}
+                        onChange={(event) => onFieldChange("userId", event.target.value)}
+                        placeholder="Ví dụ: 3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                        required
+                      />
+                    </Field>
+                  )}
+                  <CustomSelect
+                    className="clean-field"
+                    label="Nhóm máu"
+                    value={form.bloodType}
+                    options={BLOOD_TYPE_OPTIONS}
+                    onChange={(value) => onFieldChange("bloodType", value)}
+                  />
+                  <Field label="Chiều cao (cm)">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={form.height}
+                      onChange={(event) => onFieldChange("height", event.target.value)}
+                      placeholder="Ví dụ: 170"
+                    />
+                  </Field>
+                  <Field label="Cân nặng (kg)">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={form.weight}
+                      onChange={(event) => onFieldChange("weight", event.target.value)}
+                      placeholder="Ví dụ: 60"
+                    />
+                  </Field>
+                  <Field label="Ghi chú dị ứng" className="facility-form-span-2">
+                    <textarea
+                      rows={4}
+                      value={form.allergyNote}
+                      onChange={(event) => onFieldChange("allergyNote", event.target.value)}
+                      placeholder="Ví dụ: Dị ứng penicillin, hải sản..."
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="facility-form-card">
+                <div className="facility-form-card-head patient-profile-disease-head">
+                  <div>
+                    <h3>Bệnh nền</h3>
+                    <p>Thêm các bệnh mạn tính hoặc tình trạng sức khỏe cần theo dõi.</p>
+                  </div>
+                  <button className="btn btn-primary btn-small" type="button" onClick={onAddDisease}>
+                    <Plus size={14} /> Thêm bệnh nền
+                  </button>
+                </div>
+
+                <div className="patient-profile-disease-list">
+                  {form.chronicDiseases.length === 0 && (
+                    <p className="muted-text">Chưa có bệnh nền nào được ghi nhận.</p>
+                  )}
+                  {form.chronicDiseases.map((disease, index) => (
+                    <article className="patient-profile-disease-card" key={disease.localId ?? disease.id ?? index}>
+                      <div className="patient-profile-disease-card-head">
+                        <strong>Bệnh nền #{index + 1}</strong>
+                        <button className="btn btn-ghost btn-small" type="button" onClick={() => onRemoveDisease(index)} aria-label="Xóa bệnh nền">
+                          <Trash2 size={14} /> Xóa
+                        </button>
+                      </div>
+                      <div className="facility-form-grid">
+                        <Field label="Tên bệnh" className="facility-form-span-2">
+                          <input
+                            value={disease.diseaseName}
+                            onChange={(event) => onUpdateDisease(index, "diseaseName", event.target.value)}
+                            placeholder="Ví dụ: Tăng huyết áp"
+                          />
+                        </Field>
+                        <Field label="Từ ngày">
+                          <input
+                            type="date"
+                            value={disease.from ?? ""}
+                            onChange={(event) => onUpdateDisease(index, "from", event.target.value)}
+                          />
+                        </Field>
+                        <Field label="Đến ngày">
+                          <input
+                            type="date"
+                            value={disease.to ?? ""}
+                            onChange={(event) => onUpdateDisease(index, "to", event.target.value)}
+                          />
+                        </Field>
+                        <Field label="Ghi chú" className="facility-form-span-2">
+                          <textarea
+                            rows={3}
+                            value={disease.note ?? ""}
+                            onChange={(event) => onUpdateDisease(index, "note", event.target.value)}
+                            placeholder="Ghi chú điều trị, mức độ hoặc lưu ý theo dõi..."
+                          />
+                        </Field>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <div className="doctor-modal-actions facility-form-actions">
+              <button className="btn btn-ghost" type="button" onClick={closeForm} disabled={saving}>Hủy</button>
+              <button className="btn btn-primary" type="submit" disabled={saving}>
+                {saving ? "Đang lưu..." : editingProfileId ? "Lưu cập nhật" : "Tạo hồ sơ"}
+              </button>
+            </div>
+          </form>
+        </Dialog>
+      )}
     </section>
   );
 }

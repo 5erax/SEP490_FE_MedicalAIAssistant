@@ -150,28 +150,29 @@
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  overflow-x: auto;
 }
 
 .admin-operator .doctor-table-wrap .ui-table {
   width: 100%;
-  min-width: 1040px;
+  min-width: 980px;
   table-layout: fixed;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(1) {
-  width: 23%;
+  width: 25%;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(2) {
-  width: 18%;
-}
-
-.admin-operator .doctor-table-wrap th:nth-child(3) {
   width: 21%;
 }
 
+.admin-operator .doctor-table-wrap th:nth-child(3) {
+  width: 20%;
+}
+
 .admin-operator .doctor-table-wrap th:nth-child(4) {
-  width: 11%;
+  width: 9%;
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(5) {
@@ -179,7 +180,7 @@
 }
 
 .admin-operator .doctor-table-wrap th:nth-child(6) {
-  width: 16%;
+  width: 14%;
 }
 
 .admin-operator .doctor-table-wrap .ui-table th {
@@ -194,8 +195,9 @@
 .admin-operator .doctor-table-wrap .ui-table th,
 .admin-operator .doctor-table-wrap .ui-table td {
   border-bottom: 1px solid rgba(16, 20, 17, 0.07);
-  padding: 14px 12px;
+  padding: 16px 12px;
   vertical-align: top;
+  min-width: 0;
 }
 
 .admin-operator .doctor-table-wrap tbody tr:last-child td {
@@ -213,13 +215,9 @@
 .doctor-primary-cell strong,
 .table-primary-cell strong {
   color: #101411;
-  line-height: 1.35;
+  line-height: 1.3;
   overflow-wrap: anywhere;
-}
-
-.table-primary-cell {
-  min-width: 0;
-  max-width: 100%;
+  word-break: normal;
 }
 
 .doctor-primary-cell div > span,
@@ -229,6 +227,28 @@
   color: rgba(16, 20, 17, 0.58);
   line-height: 1.45;
   overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.admin-operator .doctor-table-wrap td:nth-child(2) .table-primary-cell,
+.admin-operator .doctor-table-wrap td:nth-child(3) .table-primary-cell {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.admin-operator .doctor-table-wrap td:nth-child(2) .table-primary-cell strong,
+.admin-operator .doctor-table-wrap td:nth-child(3) .table-primary-cell strong {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.admin-operator .doctor-table-wrap td:nth-child(2) .table-primary-cell small,
+.admin-operator .doctor-table-wrap td:nth-child(3) .table-primary-cell small {
+  display: block;
+  max-width: 100%;
 }
 
 .doctor-primary-cell .doctor-avatar {
@@ -280,6 +300,9 @@
 .admin-operator .doctor-table-wrap .record-actions .btn {
   justify-content: center;
   width: 100%;
+  min-height: 38px;
+  padding-inline: 10px;
+  white-space: nowrap;
 }
 
 .admin-operator .doctor-table-wrap .ui-table tbody tr {

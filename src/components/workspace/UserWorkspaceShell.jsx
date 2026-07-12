@@ -433,7 +433,7 @@ export default function UserWorkspaceShell({ children }) {
                         <Settings2 size={17} aria-hidden="true" />
                         <DisplayPreferences compact />
                       </div>
-                      <button type="button" onClick={() => navigateFromAccount("/profile?tab=subscription")}>
+                      <button type="button" onClick={() => navigateFromAccount("/profile?tab=transactions")}>
                         <CreditCard size={17} aria-hidden="true" />
                         Lịch sử giao dịch
                       </button>

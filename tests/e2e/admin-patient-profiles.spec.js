@@ -74,16 +74,16 @@ test("admin creates, updates and deletes patient profiles from Swagger contract"
 
   await page.goto("/app/admin/patient-profiles", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Hồ sơ bệnh nhân", level: 2 })).toBeVisible();
-  await expect(page.getByText("Bệnh nhân hiện tại", { exact: true })).toBeVisible();
+  await expect(page.getByText("User 11111111", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Tạo hồ sơ" }).click();
   const dialog = page.getByRole("dialog", { name: "Tạo hồ sơ bệnh nhân" });
-  await dialog.getByLabel("Người dùng").selectOption(USER_2);
+  await dialog.getByLabel("User ID").fill(USER_2);
   await dialog.getByLabel("Nhóm máu").selectOption("O+");
   await dialog.getByLabel("Chiều cao (cm)").fill("172");
   await dialog.getByLabel("Cân nặng (kg)").fill("68");
   await dialog.getByLabel("Ghi chú dị ứng").fill("Không ghi nhận");
-  await dialog.getByRole("button", { name: "Thêm bệnh" }).click();
+  await dialog.getByRole("button", { name: "Thêm bệnh nền" }).click();
   await dialog.getByLabel("Tên bệnh").fill("Tăng huyết áp");
   await dialog.getByLabel("Từ ngày").fill("2024-01-01");
   await dialog.getByRole("button", { name: "Tạo hồ sơ" }).click();
@@ -96,13 +96,13 @@ test("admin creates, updates and deletes patient profiles from Swagger contract"
     allergyNote: "Không ghi nhận",
     chronicDiseases: [{ diseaseName: "Tăng huyết áp", from: "2024-01-01", to: null, note: null }],
   });
-  await expect(page.getByText("Bệnh nhân mới", { exact: true })).toBeVisible();
+  await expect(page.getByText("User 22222222", { exact: true })).toBeVisible();
 
-  const createdRow = page.getByRole("row").filter({ hasText: "Bệnh nhân mới" });
+  const createdRow = page.locator(".patient-profile-row").filter({ hasText: "User 22222222" });
   await createdRow.getByRole("button", { name: "Sửa" }).click();
   const editDialog = page.getByRole("dialog", { name: "Cập nhật hồ sơ bệnh nhân" });
   await editDialog.getByLabel("Cân nặng (kg)").fill("70");
-  await editDialog.getByRole("button", { name: "Lưu thay đổi" }).click();
+  await editDialog.getByRole("button", { name: "Lưu cập nhật" }).click();
   expect(updatePayload).toEqual({
     bloodType: "O+",
     height: 172,
@@ -112,8 +112,8 @@ test("admin creates, updates and deletes patient profiles from Swagger contract"
   });
   expect(updatePayload.userId).toBeUndefined();
 
-  await page.getByRole("row").filter({ hasText: "Bệnh nhân mới" }).getByRole("button", { name: "Xóa" }).click();
+  await page.locator(".patient-profile-row").filter({ hasText: "User 22222222" }).getByRole("button", { name: "Xóa" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xóa hồ sơ" }).click();
-  await expect(page.getByText("Bệnh nhân mới", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("User 22222222", { exact: true })).toHaveCount(0);
   expect(deletedProfileId).toBe(PROFILE_2);
 });

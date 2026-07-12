@@ -1,5 +1,5 @@
 import { Children, cloneElement, useEffect, useId, useRef, useState } from "react";
-import { AlertTriangle, CreditCard, FileHeart, ShieldCheck, User } from "lucide-react";
+import { AlertTriangle, CreditCard, FileHeart, ReceiptText, ShieldCheck, User } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 import { navigate as go } from "../router/navigation";
@@ -7,6 +7,7 @@ import {
   authApi,
   getStoredAuth,
   patientProfilesApi,
+  paymentsApi,
   usersApi,
   userSubscriptionsApi,
 } from "../services/api";
@@ -20,18 +21,47 @@ const EMPTY_USER = { displayName: "", email: "", phoneNumber: "", address: "", g
 const tabs = [
   ["info", User, "Thông tin cá nhân"],
   ["medical", FileHeart, "Hồ sơ y tế"],
+  ["package", CreditCard, "Gói dịch vụ"],
+  ["transactions", ReceiptText, "Giao dịch"],
   ["security", ShieldCheck, "Bảo mật"],
-  ["subscription", CreditCard, "Giao dịch"],
 ];
 const TAB_IDS = new Set(tabs.map(([id]) => id));
 
 function getInitialTab() {
   const requestedTab = new URLSearchParams(window.location.search).get("tab");
+  if (requestedTab === "subscription") return "transactions";
   return TAB_IDS.has(requestedTab) ? requestedTab : "info";
 }
 
 function initials(name) {
   return name.split(" ").filter(Boolean).slice(-2).map((part) => part[0]).join("").toUpperCase() || "MM";
+}
+
+function getArrayData(response) {
+  const data = response?.data ?? [];
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+function formatMoney(value) {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount)
+    ? amount.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 })
+    : "--";
+}
+
+function formatDate(value) {
+  if (!value) return "Chưa cập nhật";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Chưa cập nhật" : date.toLocaleDateString("vi-VN");
+}
+
+function getPaymentStatus(payment) {
+  return payment.statusName ?? payment.paymentStatusName ?? payment.status ?? payment.paymentStatus ?? "Đang xử lý";
+}
+
+function getPaymentAmount(payment) {
+  return payment.amount ?? payment.totalAmount ?? payment.price ?? payment.orderAmount ?? payment.paidAmount;
 }
 
 export default function UserProfilePage() {
@@ -60,6 +90,9 @@ export default function UserProfilePage() {
   const [userId, setUserId] = useState("");
   const [patientProfileId, setPatientProfileId] = useState("");
   const [subscription, setSubscription] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsError, setPaymentsError] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadWarning, setLoadWarning] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
@@ -123,6 +156,24 @@ export default function UserProfilePage() {
         : [];
       setSubscription(subscriptions.find((item) => String(item.statusName).toLowerCase() === "active") ?? subscriptions[0] ?? null);
       setLoading(false);
+
+      if (resolvedUserId) {
+        setPaymentsLoading(true);
+        paymentsApi.byUser(resolvedUserId)
+          .then((paymentResult) => {
+            if (!active) return;
+            setPayments(getArrayData(paymentResult));
+            setPaymentsError("");
+          })
+          .catch((error) => {
+            if (!active) return;
+            setPayments([]);
+            setPaymentsError(error.message);
+          })
+          .finally(() => {
+            if (active) setPaymentsLoading(false);
+          });
+      }
     });
 
     return () => {
@@ -379,9 +430,9 @@ export default function UserProfilePage() {
           </section>
         )}
 
-        {activeTab === "subscription" && (
-          <section id="profile-panel-subscription" role="tabpanel" aria-labelledby="profile-tab-subscription" className="profile-card">
-            <h1>Lịch sử giao dịch</h1>
+        {activeTab === "package" && (
+          <section id="profile-panel-package" role="tabpanel" aria-labelledby="profile-tab-package" className="profile-card">
+            <h1>Gói dịch vụ</h1>
             <div className="plan-box">
               <span>Gói hiện tại</span>
               <strong>{subscription?.planName || (loading ? "Đang tải..." : "Free")}</strong>
@@ -392,6 +443,13 @@ export default function UserProfilePage() {
               </p>
             </div>
             <button className="lime" type="button" onClick={() => go("/pricing")}>Nâng cấp MediMate+</button>
+          </section>
+        )}
+
+        {activeTab === "transactions" && (
+          <section id="profile-panel-transactions" role="tabpanel" aria-labelledby="profile-tab-transactions" className="profile-card">
+            <div className="profile-head"><div><h1>Lịch sử giao dịch</h1><span>{payments.length} giao dịch</span></div></div>
+            {paymentsLoading ? <div className="transaction-empty">Đang tải giao dịch...</div> : paymentsError ? <div className="danger"><p>{paymentsError}</p></div> : payments.length === 0 ? <div className="transaction-empty">Bạn chưa có giao dịch nào.</div> : <div className="transaction-list">{payments.map((payment, index) => { const paymentId = payment.id ?? payment.paymentId ?? payment.orderCode ?? index; const title = payment.planName ?? payment.subscriptionPlanName ?? payment.description ?? "Giao dịch MediMate+"; const paidAt = payment.paidAt ?? payment.createdAt ?? payment.updatedAt; return <article className="transaction-row" key={paymentId}><div><strong>{title}</strong><small>{paymentId}</small></div><span>{formatMoney(getPaymentAmount(payment))}</span><span>{getPaymentStatus(payment)}</span><time dateTime={paidAt || undefined}>{formatDate(paidAt)}</time></article>; })}</div>}
           </section>
         )}
       </section>
@@ -454,7 +512,8 @@ const styles = `
 .medical-privacy-note strong,.medical-privacy-note p{margin:0}.medical-privacy-note p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.5}
 .toast{border-color:var(--line-strong,#111412);background:var(--lime,#c4e995);color:var(--ink,#111412)}
 .plan-box{border-color:var(--line,#dde4d5);background:var(--paper-soft,#fbfcf7)}
+.transaction-list{display:grid;gap:10px}.transaction-row{display:grid;grid-template-columns:minmax(0,1.45fr) auto auto auto;gap:14px;align-items:center;border:1px solid var(--line,#dde4d5);border-radius:12px;background:var(--paper-soft,#fbfcf7);padding:14px}.transaction-row strong,.transaction-row small{display:block}.transaction-row strong{font-size:15px}.transaction-row small{margin-top:4px;color:var(--muted,rgba(17,20,18,.56));overflow-wrap:anywhere}.transaction-row span,.transaction-row time{font-weight:900;color:var(--ink,#111412);white-space:nowrap}.transaction-row span:nth-of-type(2){border-radius:999px;background:var(--color-primary-soft,#eef7e8);color:#315d18;padding:6px 10px;font-size:12px}.transaction-empty{border:1px dashed var(--line-strong,#b9c5ad);border-radius:12px;background:var(--paper-soft,#fbfcf7);padding:20px;color:var(--muted,rgba(17,20,18,.62));font-weight:850}
 @media(prefers-reduced-motion:reduce){.profile-summary-card{transition:none}.profile-summary-card:hover{transform:none}}
 @media(forced-colors:active){.profile-summary-card i b{background:Highlight}.profile-summary-card,.profile-card,.profile-overview{box-shadow:none}}
-@media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.profile-overview,.profile-card{padding:18px}.profile-overview-person,.profile-summary-grid{grid-template-columns:1fr}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px;scrollbar-width:thin}.mobile-tabs button{min-width:112px;border:1px solid var(--line,#dde4d5);background:var(--paper,#fff);color:var(--ink,#111412);text-align:center}.mobile-tabs button.active{background:var(--color-primary-soft,#eef7e8);border-color:var(--line-strong,#111412)}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head{flex-direction:column}.profile-load-warning{grid-template-columns:auto minmax(0,1fr)}.profile-load-warning button{grid-column:1/-1;width:100%}.form-grid,.form-grid.three,.profile-form-actions{grid-template-columns:1fr}.profile-form-actions button,.profile-head>div:last-child,.profile-head>div:last-child button{width:100%}}
+@media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.profile-overview,.profile-card{padding:18px}.profile-overview-person,.profile-summary-grid{grid-template-columns:1fr}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px;scrollbar-width:thin}.mobile-tabs button{min-width:112px;border:1px solid var(--line,#dde4d5);background:var(--paper,#fff);color:var(--ink,#111412);text-align:center}.mobile-tabs button.active{background:var(--color-primary-soft,#eef7e8);border-color:var(--line-strong,#111412)}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head{flex-direction:column}.profile-load-warning{grid-template-columns:auto minmax(0,1fr)}.profile-load-warning button{grid-column:1/-1;width:100%}.form-grid,.form-grid.three,.profile-form-actions,.transaction-row{grid-template-columns:1fr}.profile-form-actions button,.profile-head>div:last-child,.profile-head>div:last-child button{width:100%}.transaction-row span,.transaction-row time{white-space:normal}}
 `;

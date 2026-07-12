@@ -87,6 +87,10 @@ export const paymentsApi = {
     return apiRequest(ENDPOINTS.PAYMENTS.BY_ID(id), { auth: true });
   },
 
+  byUser(userId) {
+    return apiRequest(ENDPOINTS.PAYMENTS.BY_USER(userId), { auth: true });
+  },
+
   payOsReturn(params = {}) {
     return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_RETURN, params));
   },
