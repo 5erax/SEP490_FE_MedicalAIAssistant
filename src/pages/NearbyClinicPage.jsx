@@ -2340,6 +2340,7 @@ const styles = `
   font-weight: 900;
 }
 .review-image-upload {
+  min-width: 0;
   display: grid;
   gap: 8px;
   border: 1px dashed var(--line-strong);
@@ -2373,11 +2374,22 @@ const styles = `
 .review-upload-button:has(input:focus-visible) { outline: 3px solid var(--teal); outline-offset: 2px; }
 .review-image-preview-grid,
 .review-photo-grid {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: 6px;
 }
-.review-image-preview { position: relative; min-width: 0; }
+.review-image-preview {
+  position: relative;
+  min-width: 0;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper, #fff);
+  contain: layout paint;
+}
 .review-image {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -2385,6 +2397,13 @@ const styles = `
   border: 1px solid var(--line);
   border-radius: 10px;
   object-fit: cover;
+}
+.review-image-preview .review-image {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border: 0;
+  border-radius: inherit;
 }
 .review-image-preview button {
   position: absolute;
@@ -2399,6 +2418,10 @@ const styles = `
   padding: 0;
   font-size: 20px;
   font-weight: 900;
+}
+.review-image-preview button:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
 }
 .review-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .review-form-actions button { flex: 1 1 150px; }

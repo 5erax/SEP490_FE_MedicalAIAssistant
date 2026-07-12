@@ -62,6 +62,7 @@ test.skip("symptom analysis renders the legacy analyze response", async ({ page 
 });
 
 test("facility review submits the Swagger payload", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 808 });
   await preparePage(page);
   await authenticate(page);
   let reviewPayload = null;
@@ -170,6 +171,27 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   ]);
   await expect(page.getByAltText("Ảnh minh họa 1 sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrls[0]);
   await expect(page.getByAltText("Ảnh minh họa 2 sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrls[1]);
+  const previewLayout = await page.locator(".review-image-preview").evaluateAll((previews) => previews.map((preview) => {
+    const previewBox = preview.getBoundingClientRect();
+    const imageBox = preview.querySelector("img").getBoundingClientRect();
+    return {
+      previewWidth: previewBox.width,
+      previewHeight: previewBox.height,
+      previewContentWidth: preview.clientWidth,
+      previewContentHeight: preview.clientHeight,
+      imageWidth: imageBox.width,
+      imageHeight: imageBox.height,
+      sidebarWidth: preview.closest(".facility-detail-body").getBoundingClientRect().width,
+    };
+  }));
+  for (const box of previewLayout) {
+    expect(box.previewWidth).toBeLessThan(box.sidebarWidth);
+    expect(box.previewHeight).toBeLessThan(180);
+    expect(Math.abs(box.imageWidth - box.previewContentWidth)).toBeLessThan(1);
+    expect(Math.abs(box.imageHeight - box.previewContentHeight)).toBeLessThan(1);
+  }
+  await page.getByRole("button", { name: "Gửi đánh giá" }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole("button", { name: "Gửi đánh giá" })).toBeVisible();
   await page.getByRole("button", { name: "Gửi đánh giá" }).click();
 
   await expect(page.getByText("Đã gửi đánh giá.", { exact: true })).toBeVisible();
