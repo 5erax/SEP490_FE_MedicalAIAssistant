@@ -32,6 +32,7 @@ import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
+import AdminPatientProfilesSection from "../components/adminPatientProfiles/AdminPatientProfilesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
 import {
   authApi,
@@ -42,6 +43,7 @@ import {
   medicalDepartmentsApi,
   clinicalQuestionsApi,
   icdChaptersApi,
+  patientProfilesApi,
   subscriptionPlansApi,
   usersApi,
 } from "../services/api";
@@ -67,6 +69,14 @@ const EMPTY_FACILITY = {
   isActive: true,
   departmentIds: [],
 };
+const EMPTY_PATIENT_PROFILE = {
+  userId: "",
+  bloodType: "",
+  height: "",
+  weight: "",
+  allergyNote: "",
+  chronicDiseases: [],
+};
 const EMPTY_FACILITY_FILTERS = {
   search: "",
   isActive: "",
@@ -89,11 +99,22 @@ const DEFAULT_DOCTOR_PAGE_SIZE = 10;
 const DEFAULT_DEPARTMENT_PAGE_SIZE = 10;
 const DEFAULT_FACILITY_PAGE_SIZE = 10;
 const DEFAULT_ICD_CHAPTER_PAGE_SIZE = 10;
+function createEmptyDisease() {
+  return {
+    localId: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+    id: "",
+    diseaseName: "",
+    from: "",
+    to: "",
+    note: "",
+  };
+}
 const USER_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách tài khoản.";
 const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.";
 const SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.";
 const FACILITY_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cơ sở y tế.";
+const PATIENT_PROFILE_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách hồ sơ bệnh nhân.";
 const EMPTY_AI_CONFIG_FILTERS = {
   search: "",
   status: "",
@@ -239,6 +260,19 @@ function getDepartmentItems(response) {
   return [];
 }
 
+function getPagedPayload(response) {
+  const data = response?.data ?? {};
+  const items = Array.isArray(data) ? data : data.items ?? [];
+
+  return {
+    items,
+    pageNumber: data.pageNumber ?? 1,
+    pageSize: data.pageSize ?? items.length,
+    totalCount: data.totalCount ?? items.length,
+    totalPages: data.totalPages ?? 1,
+  };
+}
+
 function formatRoles(roles) {
   return roles.length ? roles.join(", ") : "admin";
 }
@@ -293,6 +327,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [departmentCatalog, setDepartmentCatalog] = useState([]);
   const [icdChapters, setIcdChapters] = useState([]);
   const [facilities, setFacilities] = useState([]);
+  const [patientProfiles, setPatientProfiles] = useState([]);
   const [facilityDepartments, setFacilityDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [aiConfigs, setAIConfigs] = useState([]);
@@ -308,6 +343,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [icdChapterPageInfo, setIcdChapterPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_ICD_CHAPTER_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [aiConfigPageInfo, setAIConfigPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_AI_CONFIG_PAGE_SIZE, totalCount: 0, totalPages: 1 });
   const [facilityPageInfo, setFacilityPageInfo] = useState({ pageNumber: 1, pageSize: DEFAULT_FACILITY_PAGE_SIZE, totalCount: 0, totalPages: 1 });
+  const [patientProfilePageInfo, setPatientProfilePageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const activeSection = initialSection;
   const activeAdminItem = ADMIN_NAV_ITEMS.find((item) => item.id === `admin.${activeSection}`);
   const [search, setSearch] = useState("");
@@ -320,12 +356,15 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [appliedIcdChapterFilters, setAppliedIcdChapterFilters] = useState(EMPTY_ICD_CHAPTER_FILTERS);
   const [doctorFilters, setDoctorFilters] = useState(initialDoctorView.filters);
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
+  const [patientProfileSearch, setPatientProfileSearch] = useState("");
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
   const [icdChapterForm, setIcdChapterForm] = useState(EMPTY_ICD_CHAPTER);
   const [facilityForm, setFacilityForm] = useState(EMPTY_FACILITY);
+  const [patientProfileForm, setPatientProfileForm] = useState(EMPTY_PATIENT_PROFILE);
   const [editingDepartmentId, setEditingDepartmentId] = useState("");
   const [editingIcdChapterId, setEditingIcdChapterId] = useState("");
   const [editingFacilityId, setEditingFacilityId] = useState("");
+  const [editingPatientProfileId, setEditingPatientProfileId] = useState("");
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
   const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
   const [lastInvitation, setLastInvitation] = useState(null);
@@ -342,9 +381,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [aiConfigsLoading, setAIConfigsLoading] = useState(true);
   const [subscriptionPlansLoading, setSubscriptionPlansLoading] = useState(true);
   const [facilitiesLoading, setFacilitiesLoading] = useState(true);
+  const [patientProfilesLoading, setPatientProfilesLoading] = useState(true);
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingIcdChapter, setSavingIcdChapter] = useState(false);
   const [savingFacility, setSavingFacility] = useState(false);
+  const [savingPatientProfile, setSavingPatientProfile] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
   const [savingInvitation, setSavingInvitation] = useState(false);
   const [savingAIConfig, setSavingAIConfig] = useState(false);
@@ -356,6 +397,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [icdChapterMessage, setIcdChapterMessage] = useState(null);
   const [facilityMessage, setFacilityMessage] = useState(null);
   const [facilityLoadError, setFacilityLoadError] = useState("");
+  const [patientProfileMessage, setPatientProfileMessage] = useState(null);
+  const [patientProfileLoadError, setPatientProfileLoadError] = useState("");
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [doctorLoadError, setDoctorLoadError] = useState("");
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
@@ -467,6 +510,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       }),
       aiConfigManagementApi.list(1, DEFAULT_AI_CONFIG_PAGE_SIZE),
       medicalFacilitiesApi.list(1, DEFAULT_FACILITY_PAGE_SIZE, EMPTY_FACILITY_FILTERS),
+      patientProfilesApi.list(1, patientProfilePageInfo.pageSize),
       facilityDepartmentsApi.active(),
       subscriptionPlansApi.list(),
     ])
@@ -479,6 +523,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         doctorResult,
         aiConfigResult,
         facilityResult,
+        patientProfileResult,
         facilityDepartmentResult,
         subscriptionPlanResult,
       ]) => {
@@ -585,6 +630,20 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           });
         }
 
+        if (patientProfileResult.status === "fulfilled") {
+          const data = getPagedPayload(patientProfileResult.value);
+          setPatientProfileLoadError("");
+          setPatientProfiles(data.items);
+          setPatientProfilePageInfo({
+            pageNumber: data.pageNumber,
+            pageSize: data.pageSize || patientProfilePageInfo.pageSize,
+            totalCount: data.totalCount,
+            totalPages: data.totalPages,
+          });
+        } else {
+          setPatientProfileLoadError(PATIENT_PROFILE_LOAD_ERROR_MESSAGE);
+        }
+
         if (facilityDepartmentResult.status === "fulfilled") {
           const data = facilityDepartmentResult.value.data;
           setFacilityDepartments(Array.isArray(data) ? data : data?.items ?? []);
@@ -616,13 +675,14 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         setDoctorsLoading(false);
         setAIConfigsLoading(false);
         setFacilitiesLoading(false);
+        setPatientProfilesLoading(false);
         setSubscriptionPlansLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, [auth, initialDoctorView, pageInfo.pageSize]);
+  }, [auth, initialDoctorView, pageInfo.pageSize, patientProfilePageInfo.pageSize]);
 
   useEffect(() => {
     if (!auth || activeSection !== "doctors" || lastDoctorViewSearchRef.current === currentDoctorSearch) return undefined;
@@ -826,6 +886,181 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   function changeIcdChapterPageSize(pageSize) {
     setIcdChapterPageInfo((current) => ({ ...current, pageSize, pageNumber: 1 }));
     loadIcdChapters(1, pageSize, appliedIcdChapterFilters);
+  }
+
+  async function loadPatientProfiles(
+    pageNumber = patientProfilePageInfo.pageNumber,
+    pageSize = patientProfilePageInfo.pageSize,
+  ) {
+    setPatientProfilesLoading(true);
+    setPatientProfileMessage(null);
+    setPatientProfileLoadError("");
+    try {
+      const response = await patientProfilesApi.list(pageNumber, pageSize);
+      const data = getPagedPayload(response);
+      setPatientProfiles(data.items);
+      setPatientProfilePageInfo({
+        pageNumber: data.pageNumber || pageNumber,
+        pageSize: data.pageSize || pageSize,
+        totalCount: data.totalCount,
+        totalPages: data.totalPages,
+      });
+    } catch (error) {
+      setPatientProfileLoadError(PATIENT_PROFILE_LOAD_ERROR_MESSAGE);
+      setPatientProfileMessage({ type: "error", text: error.message });
+    } finally {
+      setPatientProfilesLoading(false);
+    }
+  }
+
+  function changePatientProfilePageSize(pageSize) {
+    setPatientProfilePageInfo((current) => ({ ...current, pageNumber: 1, pageSize }));
+    loadPatientProfiles(1, pageSize);
+  }
+
+  function resetPatientProfileForm() {
+    setEditingPatientProfileId("");
+    setPatientProfileForm(EMPTY_PATIENT_PROFILE);
+  }
+
+  function startCreatePatientProfile() {
+    setPatientProfileMessage(null);
+    resetPatientProfileForm();
+  }
+
+  function normalizeDiseaseForForm(disease) {
+    return {
+      localId: disease.id || crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+      id: disease.id ?? "",
+      diseaseName: disease.diseaseName ?? "",
+      from: disease.from ?? "",
+      to: disease.to ?? "",
+      note: disease.note ?? "",
+    };
+  }
+
+  function startEditPatientProfile(profile) {
+    setEditingPatientProfileId(profile.id);
+    setPatientProfileMessage(null);
+    setPatientProfileForm({
+      userId: profile.userId ?? "",
+      bloodType: profile.bloodType ?? "",
+      height: profile.height ?? "",
+      weight: profile.weight ?? "",
+      allergyNote: profile.allergyNote ?? "",
+      chronicDiseases: (profile.chronicDiseases ?? []).map(normalizeDiseaseForForm),
+    });
+    openSection("patient-profiles");
+  }
+
+  function updatePatientProfileDisease(index, key, value) {
+    setPatientProfileForm((current) => ({
+      ...current,
+      chronicDiseases: current.chronicDiseases.map((disease, diseaseIndex) => (
+        diseaseIndex === index ? { ...disease, [key]: value } : disease
+      )),
+    }));
+  }
+
+  function addPatientProfileDisease() {
+    setPatientProfileForm((current) => ({
+      ...current,
+      chronicDiseases: [...current.chronicDiseases, createEmptyDisease()],
+    }));
+  }
+
+  function removePatientProfileDisease(index) {
+    setPatientProfileForm((current) => ({
+      ...current,
+      chronicDiseases: current.chronicDiseases.filter((_, diseaseIndex) => diseaseIndex !== index),
+    }));
+  }
+
+  function nullableNumber(value, label) {
+    const trimmed = String(value ?? "").trim();
+    if (!trimmed) return null;
+    const numberValue = Number(trimmed);
+    if (!Number.isFinite(numberValue) || numberValue < 0) {
+      throw new Error(`${label} không hợp lệ.`);
+    }
+    return numberValue;
+  }
+
+  function buildPatientProfilePayload() {
+    const chronicDiseases = patientProfileForm.chronicDiseases
+      .map((disease) => ({
+        id: disease.id || undefined,
+        diseaseName: disease.diseaseName.trim(),
+        from: disease.from || null,
+        to: disease.to || null,
+        note: disease.note.trim() || null,
+      }))
+      .filter((disease) => disease.diseaseName);
+
+    const payload = {
+      bloodType: patientProfileForm.bloodType || null,
+      height: nullableNumber(patientProfileForm.height, "Chiều cao"),
+      weight: nullableNumber(patientProfileForm.weight, "Cân nặng"),
+      allergyNote: patientProfileForm.allergyNote.trim() || null,
+      chronicDiseases,
+    };
+
+    if (!editingPatientProfileId) {
+      payload.userId = patientProfileForm.userId.trim();
+    }
+
+    return payload;
+  }
+
+  async function handleSavePatientProfile(event) {
+    event.preventDefault();
+    setPatientProfileMessage(null);
+    setSavingPatientProfile(true);
+
+    try {
+      const payload = buildPatientProfilePayload();
+      const response = editingPatientProfileId
+        ? await patientProfilesApi.update(editingPatientProfileId, payload)
+        : await patientProfilesApi.create(payload);
+
+      showToast({
+        type: "success",
+        title: editingPatientProfileId ? "Đã cập nhật hồ sơ bệnh nhân" : "Đã tạo hồ sơ bệnh nhân",
+        message: response.message || "Dữ liệu hồ sơ bệnh nhân đã được cập nhật.",
+      });
+      resetPatientProfileForm();
+      await loadPatientProfiles(editingPatientProfileId ? patientProfilePageInfo.pageNumber : 1, patientProfilePageInfo.pageSize);
+      setPatientProfileMessage({
+        type: "success",
+        text: response.message || (editingPatientProfileId ? "Đã cập nhật hồ sơ bệnh nhân." : "Đã tạo hồ sơ bệnh nhân."),
+      });
+    } catch (error) {
+      setPatientProfileMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không lưu được hồ sơ bệnh nhân", message: error.message });
+    } finally {
+      setSavingPatientProfile(false);
+    }
+  }
+
+  async function handleDeletePatientProfile(profile) {
+    const confirmed = await confirmAction({
+      title: "Xóa hồ sơ bệnh nhân?",
+      message: `Hồ sơ của user ${profile.userId} sẽ bị xóa mềm khỏi danh sách quản trị.`,
+      confirmLabel: "Xóa hồ sơ",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    setPatientProfileMessage(null);
+    try {
+      const response = await patientProfilesApi.remove(profile.id);
+      showToast({ type: "success", title: "Đã xóa hồ sơ bệnh nhân", message: response.message || "Danh sách hồ sơ đã được cập nhật." });
+      if (editingPatientProfileId === profile.id) resetPatientProfileForm();
+      await loadPatientProfiles(patientProfilePageInfo.pageNumber, patientProfilePageInfo.pageSize);
+    } catch (error) {
+      setPatientProfileMessage({ type: "error", text: error.message });
+      showToast({ type: "error", title: "Không xóa được hồ sơ bệnh nhân", message: error.message });
+    }
   }
 
   async function loadFacilities(
@@ -1906,6 +2141,33 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
             {activeSection === "clinical-questions" && (
               <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} icdChapters={icdChapters} service={clinicalQuestionsApi} />
+            )}
+
+            {activeSection === "patient-profiles" && (
+              <AdminPatientProfilesSection
+                editingProfileId={editingPatientProfileId}
+                error={patientProfileLoadError}
+                form={patientProfileForm}
+                loading={patientProfilesLoading}
+                message={patientProfileMessage}
+                pageInfo={patientProfilePageInfo}
+                profiles={patientProfiles}
+                saving={savingPatientProfile}
+                search={patientProfileSearch}
+                onAddDisease={addPatientProfileDisease}
+                onCreate={startCreatePatientProfile}
+                onDelete={handleDeletePatientProfile}
+                onEdit={startEditPatientProfile}
+                onFieldChange={(key, value) => setPatientProfileForm((current) => ({ ...current, [key]: value }))}
+                onLoadPage={(pageNumber) => loadPatientProfiles(pageNumber, patientProfilePageInfo.pageSize)}
+                onPageSizeChange={changePatientProfilePageSize}
+                onReload={() => loadPatientProfiles(patientProfilePageInfo.pageNumber, patientProfilePageInfo.pageSize)}
+                onRemoveDisease={removePatientProfileDisease}
+                onReset={resetPatientProfileForm}
+                onSearchChange={setPatientProfileSearch}
+                onSubmit={handleSavePatientProfile}
+                onUpdateDisease={updatePatientProfileDisease}
+              />
             )}
 
             {activeSection === "facilities" && (
