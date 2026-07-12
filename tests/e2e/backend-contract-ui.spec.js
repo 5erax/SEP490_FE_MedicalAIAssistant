@@ -66,14 +66,18 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await authenticate(page);
   let reviewPayload = null;
   let reviewUpdatePayload = null;
-  let cloudinaryUploadRequested = false;
-  const uploadedImageUrl = "https://res.cloudinary.com/demo/image/upload/v1/reviews/hospital-review.jpg";
+  let cloudinaryUploadCount = 0;
+  const uploadedImageUrls = [
+    "https://res.cloudinary.com/demo/image/upload/v1/reviews/hospital-review-1.jpg",
+    "https://res.cloudinary.com/demo/image/upload/v1/reviews/hospital-review-2.jpg",
+  ];
 
   await page.route("https://api.cloudinary.com/**", async (route) => {
-    cloudinaryUploadRequested = true;
+    const uploadedImageUrl = uploadedImageUrls[cloudinaryUploadCount] || uploadedImageUrls[0];
+    cloudinaryUploadCount += 1;
     return route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ secure_url: uploadedImageUrl, public_id: "reviews/hospital-review" }),
+      body: JSON.stringify({ secure_url: uploadedImageUrl, public_id: `reviews/hospital-review-${cloudinaryUploadCount}` }),
     });
   });
 
@@ -150,20 +154,22 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await page.getByRole("button", { name: "Xem chi tiết" }).click();
   await page.getByRole("tab", { name: "Đánh giá" }).click();
   await expect(page.getByText("Nguyễn Minh Anh", { exact: true })).toBeVisible();
+  await page.getByTitle("5 sao · Rất hài lòng").hover();
+  await expect(page.locator(".star-rating svg[fill='currentColor']")).toHaveCount(5);
   await page.getByRole("radio", { name: "4 sao" }).check();
-  await page.getByLabel("Nhận xét").fill("Dịch vụ tốt");
-  await page.getByLabel("Chọn ảnh").setInputFiles({
+  await page.getByLabel("Chia sẻ trải nghiệm").fill("Dịch vụ tốt");
+  await page.getByLabel("Thêm ảnh (0/5)").setInputFiles({
     name: "not-an-image.txt",
     mimeType: "text/plain",
     buffer: Buffer.from("not-an-image"),
   });
   await expect(page.getByText("Cloudinary chỉ nhận file ảnh ở trường này.", { exact: true })).toBeVisible();
-  await page.getByLabel("Chọn ảnh").setInputFiles({
-    name: "hospital-review.png",
-    mimeType: "image/png",
-    buffer: Buffer.from("mock-review-image"),
-  });
-  await expect(page.getByAltText("Ảnh minh họa sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrl);
+  await page.getByLabel("Thêm ảnh (0/5)").setInputFiles([
+    { name: "hospital-review-1.png", mimeType: "image/png", buffer: Buffer.from("mock-review-image-1") },
+    { name: "hospital-review-2.png", mimeType: "image/png", buffer: Buffer.from("mock-review-image-2") },
+  ]);
+  await expect(page.getByAltText("Ảnh minh họa 1 sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrls[0]);
+  await expect(page.getByAltText("Ảnh minh họa 2 sẽ đính kèm đánh giá")).toHaveAttribute("src", uploadedImageUrls[1]);
   await page.getByRole("button", { name: "Gửi đánh giá" }).click();
 
   await expect(page.getByText("Đã gửi đánh giá.", { exact: true })).toBeVisible();
@@ -173,19 +179,23 @@ test("facility review submits the Swagger payload", async ({ page }) => {
     facilityId: FACILITY_ID,
     rating: 4,
     comment: "Dịch vụ tốt",
-    imageUrl: uploadedImageUrl,
+    imageUrl: uploadedImageUrls[0],
+    imageUrls: uploadedImageUrls,
   });
-  expect(cloudinaryUploadRequested).toBe(true);
+  expect(cloudinaryUploadCount).toBe(2);
+  await expect(page.getByAltText("Ảnh 1 trong đánh giá của Bạn")).toHaveAttribute("src", uploadedImageUrls[0]);
+  await expect(page.getByAltText("Ảnh 2 trong đánh giá của Bạn")).toHaveAttribute("src", uploadedImageUrls[1]);
 
   await page.getByRole("button", { name: "Chỉnh sửa đánh giá" }).click();
   await page.getByRole("radio", { name: "3 sao" }).check();
-  await page.getByLabel("Nhận xét").fill("Dịch vụ đã được cải thiện");
+  await page.getByLabel("Chia sẻ trải nghiệm").fill("Dịch vụ đã được cải thiện");
   await page.getByRole("button", { name: "Lưu chỉnh sửa" }).click();
   await expect(page.getByText("Đã cập nhật đánh giá của bạn.", { exact: true })).toBeVisible();
   expect(reviewUpdatePayload).toEqual({
     rating: 3,
     comment: "Dịch vụ đã được cải thiện",
-    imageUrl: uploadedImageUrl,
+    imageUrl: uploadedImageUrls[0],
+    imageUrls: uploadedImageUrls,
   });
 });
 
