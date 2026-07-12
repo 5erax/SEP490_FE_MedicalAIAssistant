@@ -1,6 +1,30 @@
 const PHONE_PATTERN = /^(?:0\d{8,10}|\+[1-9]\d{8,14})$/;
 const MAX_NOTE_LENGTH = 1000;
 
+export function getChronicDiseaseText(profile) {
+  if (Array.isArray(profile?.chronicDiseases) && profile.chronicDiseases.length > 0) {
+    return profile.chronicDiseases
+      .map((disease) => disease?.diseaseName)
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return profile?.chronicDiseaseNote ?? "";
+}
+
+export function normalizeChronicDiseases(value) {
+  return String(value ?? "")
+    .split(/\r?\n|,/)
+    .map((diseaseName) => diseaseName.trim())
+    .filter(Boolean)
+    .map((diseaseName) => ({
+      diseaseName,
+      from: null,
+      to: null,
+      note: null,
+    }));
+}
+
 export function normalizePhoneNumber(value) {
   return String(value ?? "").trim().replace(/[\s.-]/g, "");
 }

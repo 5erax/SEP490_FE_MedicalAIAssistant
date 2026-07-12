@@ -12,6 +12,8 @@ import {
   userSubscriptionsApi,
 } from "../services/api";
 import {
+  getChronicDiseaseText,
+  normalizeChronicDiseases,
   normalizePersonalProfile,
   validateMedicalProfile,
   validatePersonalProfile,
@@ -145,7 +147,7 @@ export default function UserProfilePage() {
         height: patientProfile?.height ?? "",
         weight: patientProfile?.weight ?? "",
         allergyNote: patientProfile?.allergyNote ?? "",
-        chronicDiseaseNote: patientProfile?.chronicDiseaseNote ?? "",
+        chronicDiseaseNote: getChronicDiseaseText(patientProfile),
       };
       setMedicalForm(nextMedical);
       setMedicalSnapshot(nextMedical);
@@ -278,7 +280,7 @@ export default function UserProfilePage() {
       height: medicalForm.height === "" ? null : Number(medicalForm.height),
       weight: medicalForm.weight === "" ? null : Number(medicalForm.weight),
       allergyNote: medicalForm.allergyNote.trim() || null,
-      chronicDiseaseNote: medicalForm.chronicDiseaseNote.trim() || null,
+      chronicDiseases: normalizeChronicDiseases(medicalForm.chronicDiseaseNote),
     };
     setSavingMedical(true);
     try {
