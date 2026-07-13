@@ -216,8 +216,9 @@
 }
 
 .ui-badge-danger {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
+  border: 1px solid rgba(190, 18, 60, 0.18);
+  background: #ffe4e9;
+  color: #be123c;
 }
 
 .ui-table-wrap {
