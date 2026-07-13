@@ -282,6 +282,12 @@
   font-weight: 950;
 }
 
+.admin-operator .admin-badge-stack .ui-badge-danger {
+  border: 1px solid rgba(190, 18, 60, 0.18);
+  background: #ffe4e9;
+  color: #be123c;
+}
+
 .admin-operator .profile-list {
   display: grid;
   gap: 10px;
