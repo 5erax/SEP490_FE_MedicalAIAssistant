@@ -325,7 +325,7 @@ function MapConsultationAssistant({ departments = [] }) {
         onClick={() => setOpen((current) => !current)}
         aria-label="Mở AI hỗ trợ trước khám"
       >
-        <Bot size={22} />
+        <span className="map-ai-bot-icon">AI</span>
       </button>
     </>
   );
