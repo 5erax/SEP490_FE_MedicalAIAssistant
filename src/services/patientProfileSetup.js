@@ -14,12 +14,24 @@ export async function findPatientProfileByUserId(userId, pageNumber = 1, pageSiz
 export async function savePatientProfileSetup({ userId, existingProfileId, form }) {
   await authApi.updateUser(userId, normalizePersonalProfile(form));
 
+  const chronicDiseases = Array.isArray(form.chronicDiseases)
+    ? form.chronicDiseases
+      .map((disease) => ({
+        id: disease.id || undefined,
+        diseaseName: String(disease.diseaseName ?? "").trim(),
+        from: disease.from || null,
+        to: disease.to || null,
+        note: String(disease.note ?? "").trim() || null,
+      }))
+      .filter((disease) => disease.diseaseName)
+    : normalizeChronicDiseases(form.chronicDiseaseNote);
+
   const patientPayload = {
     bloodType: form.bloodType || null,
     height: numberOrNull(form.height),
     weight: numberOrNull(form.weight),
     allergyNote: form.allergyNote.trim() || null,
-    chronicDiseases: normalizeChronicDiseases(form.chronicDiseaseNote),
+    chronicDiseases,
   };
 
   if (existingProfileId) {
