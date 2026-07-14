@@ -78,7 +78,7 @@ function getDepartmentName(department) {
 function getFacilityConsultationDepartments(facility, departments) {
   if (!facility) return [];
 
-  const departmentNamesById = new Map(
+  const departmentNamesById = new globalThis.Map(
     departments
       .map((department) => [String(getDepartmentId(department)), getDepartmentName(department)])
       .filter(([id]) => id),
