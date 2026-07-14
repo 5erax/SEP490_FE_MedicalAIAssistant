@@ -10,6 +10,7 @@ import {
   isClinicalQuestionAnswered,
 } from "../services/api";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
+import { hasAuthRole, shouldSetupPatientProfile } from "../utils/roles";
 import "../styles/dashboard.css";
 
 /* The service owns clinical question selection and diagnosis generation. */
@@ -237,6 +238,7 @@ function isPlainObject(value) {
 
 export default function DashboardPage() {
   const auth = getStoredAuth();
+  const isAdminSession = hasAuthRole(auth, "admin");
   const routedResultRef = useRef("");
   const {
     answeredCount,
@@ -263,7 +265,7 @@ export default function DashboardPage() {
   });
 
   const [profilePromptVisible, setProfilePromptVisible] = useState(
-    auth?.isProfileCompleted === false && !readProfilePromptDismissed(),
+    shouldSetupPatientProfile(auth) && !readProfilePromptDismissed(),
   );
   const [userLocation, setUserLocation] = useState(null);
   const [locationStatus, setLocationStatus] = useState("idle");
@@ -302,6 +304,12 @@ export default function DashboardPage() {
     : 0;
   const showIntakeForm = ["idle", "loading-questions", "no-questions"].includes(status);
   const showQuestionFlow = ["questions", "submitting"].includes(status) && currentQuestion;
+
+  useEffect(() => {
+    if (isAdminSession) {
+      navigate("/app/admin");
+    }
+  }, [isAdminSession]);
 
   function dismissProfilePrompt() {
     if (typeof sessionStorage !== "undefined") {
@@ -388,6 +396,20 @@ export default function DashboardPage() {
   return (
     <main className="specialty-page">
       <section className="studio-center" aria-labelledby="specialty-intake-title">
+        {showIntakeForm && profilePromptVisible && (
+          <section className="profile-nudge" aria-labelledby="profile-nudge-title">
+            <span aria-hidden="true"><UserRound size={18} /></span>
+            <div>
+              <h2 id="profile-nudge-title">Hoàn thiện hồ sơ khi bạn sẵn sàng</h2>
+              <p>Hồ sơ giúp gợi ý theo bối cảnh sức khỏe tốt hơn, nhưng bạn vẫn có thể dùng tư vấn chuyên khoa ngay.</p>
+            </div>
+            <div className="profile-nudge-actions">
+              <Button type="button" tone="secondary" onClick={dismissProfilePrompt}>Để sau</Button>
+              <Button type="button" onClick={() => navigate("/profile")}>Cập nhật hồ sơ</Button>
+            </div>
+          </section>
+        )}
+
         <header className="studio-heading">
           <div className="studio-heading-actions">
             <Button
@@ -421,20 +443,6 @@ export default function DashboardPage() {
             </li>
           ))}
         </ol>
-
-        {showIntakeForm && profilePromptVisible && (
-          <section className="profile-nudge" aria-labelledby="profile-nudge-title">
-            <span aria-hidden="true"><UserRound size={20} /></span>
-            <div>
-              <h2 id="profile-nudge-title">Hoàn thiện hồ sơ khi bạn sẵn sàng</h2>
-              <p>Hồ sơ giúp gợi ý theo bối cảnh sức khỏe tốt hơn, nhưng bạn vẫn có thể dùng tư vấn chuyên khoa ngay.</p>
-            </div>
-            <div className="profile-nudge-actions">
-              <Button type="button" tone="secondary" onClick={dismissProfilePrompt}>Để sau</Button>
-              <Button type="button" onClick={() => navigate("/profile")}>Cập nhật hồ sơ</Button>
-            </div>
-          </section>
-        )}
 
         {showIntakeForm && (
           <form className="studio-chatbox" onSubmit={(event) => {

@@ -300,26 +300,29 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 }
 
 .profile-nudge {
-  width: 100%;
+  width: min(1120px, 100%);
+  margin: 0 auto 4px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
-  border: 1.5px solid var(--color-ink);
-  border-radius: var(--radius-lg);
-  background: #fff;
-  box-shadow: var(--shadow-hard);
-  padding: 14px;
+  border: 1px solid rgba(49, 93, 24, 0.16);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 16px 42px rgba(24, 54, 31, 0.09);
+  padding: 12px 14px;
+  backdrop-filter: blur(16px);
 }
 
 .profile-nudge > span {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-soft);
-  color: var(--color-ink);
+  border: 1px solid rgba(49, 93, 24, 0.12);
+  border-radius: 14px;
+  background: #eef8e8;
+  color: #315d18;
 }
 
 .profile-nudge h2,
@@ -328,14 +331,20 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 }
 
 .profile-nudge h2 {
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.25;
 }
 
 .profile-nudge p {
   margin-top: 4px;
   color: var(--color-muted);
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.55;
+}
+
+.profile-nudge .ui-button {
+  min-height: 38px;
+  padding-inline: 16px;
 }
 
 .profile-nudge-actions,

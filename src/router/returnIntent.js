@@ -42,6 +42,11 @@ export function withReturnTo(path, returnTo) {
 export function getPostAuthDestination(authOrUser, search = window.location.search) {
   const returnTo = getReturnToFromSearch(search);
   const postLoginPath = getPostLoginPath(authOrUser);
+
+  if (postLoginPath === "/app/admin") {
+    return returnTo.startsWith("/app/admin") ? returnTo : postLoginPath;
+  }
+
   if (postLoginPath === "/patient/profile/setup") {
     return withReturnTo(postLoginPath, returnTo);
   }
