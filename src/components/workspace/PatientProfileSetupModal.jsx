@@ -1,5 +1,5 @@
 import { cloneElement, useEffect, useId, useMemo, useRef, useState } from "react";
-import { HeartPulse } from "lucide-react";
+import { HeartPulse, Plus, Trash2 } from "lucide-react";
 import { authApi, setStoredAuth } from "../../services/api";
 import { findPatientProfileByUserId, savePatientProfileSetup } from "../../services/patientProfileSetup";
 import { validateMedicalProfile, validatePersonalProfile } from "../../utils/profileValidation";
@@ -18,7 +18,18 @@ const INITIAL_FORM = {
   chronicDiseaseNote: "",
   height: "",
   weight: "",
+  chronicDiseases: [],
 };
+
+function createEmptyDisease() {
+  return {
+    localId: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+    diseaseName: "",
+    from: "",
+    to: "",
+    note: "",
+  };
+}
 
 function getUserId(user, auth) {
   return user?.userId ?? user?.identityId ?? user?.id ?? auth?.userId ?? auth?.identityId ?? "";
@@ -141,6 +152,29 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
     setErrors((current) => ({ ...current, [key]: "" }));
   }
 
+  function addDisease() {
+    setForm((current) => ({
+      ...current,
+      chronicDiseases: [...current.chronicDiseases, createEmptyDisease()],
+    }));
+  }
+
+  function updateDisease(index, key, value) {
+    setForm((current) => ({
+      ...current,
+      chronicDiseases: current.chronicDiseases.map((disease, diseaseIndex) => (
+        diseaseIndex === index ? { ...disease, [key]: value } : disease
+      )),
+    }));
+  }
+
+  function removeDisease(index) {
+    setForm((current) => ({
+      ...current,
+      chronicDiseases: current.chronicDiseases.filter((_, diseaseIndex) => diseaseIndex !== index),
+    }));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     const nextErrors = {
@@ -254,15 +288,53 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
               <input type="number" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
             </SetupField>
           </div>
-          <div className="patient-setup-modal-grid two">
-            <SetupField label="Dị ứng" error={errors.allergyNote}>
-              <textarea rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
-            </SetupField>
-            <SetupField label="Bệnh nền" error={errors.chronicDiseaseNote}>
-              <textarea rows={4} maxLength={1000} value={form.chronicDiseaseNote} onChange={(event) => updateField("chronicDiseaseNote", event.target.value)} placeholder="Ví dụ: hen suyễn, tăng huyết áp..." disabled={loading || submitting} />
-            </SetupField>
+          <SetupField label="Dị ứng" error={errors.allergyNote}>
+            <textarea rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
+          </SetupField>
+        </section>
+
+        <section className="patient-setup-modal-section">
+          <div className="patient-setup-modal-section-title">
+            <div>
+              <strong>Bệnh nền</strong>
+              <p>Thêm bệnh mạn tính hoặc tình trạng sức khỏe cần theo dõi.</p>
+            </div>
+            <button className="patient-setup-add-disease" type="button" onClick={addDisease} disabled={loading || submitting}>
+              <Plus size={15} /> Thêm bệnh nền
+            </button>
+          </div>
+
+          <div className="patient-setup-disease-list">
+            {form.chronicDiseases.length === 0 && (
+              <p className="patient-setup-empty-disease">Chưa có bệnh nền nào được ghi nhận. Bạn có thể bỏ qua nếu không có.</p>
+            )}
+            {form.chronicDiseases.map((disease, index) => (
+              <article className="patient-setup-disease-card" key={disease.localId ?? index}>
+                <div className="patient-setup-disease-head">
+                  <strong>Bệnh nền #{index + 1}</strong>
+                  <button type="button" onClick={() => removeDisease(index)} disabled={loading || submitting} aria-label="Xóa bệnh nền">
+                    <Trash2 size={15} /> Xóa
+                  </button>
+                </div>
+                <div className="patient-setup-modal-grid two">
+                  <SetupField label="Tên bệnh">
+                    <input value={disease.diseaseName} onChange={(event) => updateDisease(index, "diseaseName", event.target.value)} placeholder="Ví dụ: Tăng huyết áp" disabled={loading || submitting} />
+                  </SetupField>
+                  <SetupField label="Ghi chú">
+                    <input value={disease.note} onChange={(event) => updateDisease(index, "note", event.target.value)} placeholder="Ví dụ: đang theo dõi, dùng thuốc hằng ngày..." disabled={loading || submitting} />
+                  </SetupField>
+                  <SetupField label="Từ ngày">
+                    <input type="date" value={disease.from} onChange={(event) => updateDisease(index, "from", event.target.value)} disabled={loading || submitting} />
+                  </SetupField>
+                  <SetupField label="Đến ngày">
+                    <input type="date" value={disease.to} onChange={(event) => updateDisease(index, "to", event.target.value)} disabled={loading || submitting} />
+                  </SetupField>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
+
 
         <footer className="patient-setup-modal-actions">
           <p>Thông tin này có thể chỉnh lại trong Hồ sơ cá nhân sau khi hoàn tất.</p>

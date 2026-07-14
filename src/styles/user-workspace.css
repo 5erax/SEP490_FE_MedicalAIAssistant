@@ -326,6 +326,13 @@
   font-size: 18px;
 }
 
+.patient-setup-modal-section-title p {
+  margin: 4px 0 0;
+  color: var(--workspace-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .patient-setup-modal-section-title span {
   border-radius: 999px;
   background: var(--workspace-mint);
@@ -401,6 +408,77 @@
 .patient-setup-modal-field small {
   color: var(--coral);
   font-size: 12px;
+}
+
+.patient-setup-add-disease,
+.patient-setup-disease-head button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1.5px solid var(--workspace-ink);
+  border-radius: 12px;
+  background: var(--workspace-lime);
+  color: var(--workspace-ink);
+  padding: 0 13px;
+  font-weight: 950;
+  box-shadow: 3px 3px 0 var(--workspace-ink);
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.patient-setup-add-disease:hover:not(:disabled),
+.patient-setup-disease-head button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0 var(--workspace-ink);
+}
+
+.patient-setup-add-disease:disabled,
+.patient-setup-disease-head button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.patient-setup-disease-list {
+  display: grid;
+  gap: 16px;
+}
+
+.patient-setup-empty-disease {
+  margin: 0;
+  border: 1px dashed var(--workspace-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+  color: var(--workspace-muted);
+  padding: 16px;
+  line-height: 1.55;
+}
+
+.patient-setup-disease-card {
+  display: grid;
+  gap: 15px;
+  border: 1px solid var(--workspace-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 18px;
+  box-shadow: 0 12px 28px rgba(16, 20, 17, 0.06);
+}
+
+.patient-setup-disease-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.patient-setup-disease-head strong {
+  font-size: 16px;
+}
+
+.patient-setup-disease-head button {
+  min-height: 36px;
+  background: #fff;
+  box-shadow: none;
 }
 
 .patient-setup-modal-actions {
