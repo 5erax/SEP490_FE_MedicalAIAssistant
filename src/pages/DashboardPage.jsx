@@ -9,6 +9,7 @@ import {
   getStoredAuth,
   isClinicalQuestionAnswered,
 } from "../services/api";
+import AnalysisHistoryPanel from "../components/analysis/AnalysisHistoryPanel";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
 import { hasAuthRole, shouldSetupPatientProfile } from "../utils/roles";
 import "../styles/dashboard.css";
@@ -269,6 +270,7 @@ export default function DashboardPage() {
   );
   const [userLocation, setUserLocation] = useState(null);
   const [locationStatus, setLocationStatus] = useState("idle");
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
 
   const primaryDiagnosis = result?.primaryDiagnosis;
   const diagnoses = result?.diagnoses ?? [];
@@ -417,7 +419,7 @@ export default function DashboardPage() {
               tone="secondary"
               size="sm"
               className="analysis-history-button"
-              onClick={() => navigate("/assessment/history?sessionType=department")}
+              onClick={() => setHistoryPanelOpen(true)}
             >
               <History size={16} />
               Lịch sử phân tích
@@ -733,6 +735,13 @@ export default function DashboardPage() {
           </div>
         )}
       </section>
+
+      <AnalysisHistoryPanel
+        open={historyPanelOpen}
+        onClose={() => setHistoryPanelOpen(false)}
+        sessionType="department"
+        onContinue={() => setHistoryPanelOpen(false)}
+      />
     </main>
   );
 }
