@@ -1472,7 +1472,7 @@ const styles = `
 .map-ai-bot-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 999px; background: rgba(255,255,255,.56); color: var(--ink); font-size: 14px; font-weight: 950; letter-spacing: -.01em; }
 .map-ai-hint { position: absolute; right: 86px; bottom: 29px; z-index: 6; border: 1px solid rgba(12,124,123,.2); border-radius: 999px; background: rgba(255,255,255,.96); color: #0c6766; padding: 9px 12px; font-size: 12px; font-weight: 950; box-shadow: 0 14px 34px rgba(17,20,18,.12); pointer-events: none; }
 .map-ai-hint::after { content: ""; position: absolute; right: -6px; top: 50%; width: 10px; height: 10px; background: rgba(255,255,255,.96); border-right: 1px solid rgba(12,124,123,.2); border-top: 1px solid rgba(12,124,123,.2); transform: translateY(-50%) rotate(45deg); }
-.map-ai-panel { position: absolute; right: 18px; bottom: 88px; z-index: 8; width: min(430px, calc(100% - 36px)); display: grid; gap: 12px; border: 1px solid rgba(12,124,123,.24); border-radius: 22px; background: rgba(255,255,255,.97); box-shadow: 0 26px 70px rgba(17,20,18,.18); padding: 16px; backdrop-filter: blur(16px); animation: mapAiPanelReveal .24s ease both; }
+.map-ai-panel { position: absolute; top: 18px; right: 18px; bottom: 18px; z-index: 8; width: min(420px, 34vw); min-width: 360px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; border: 1px solid rgba(12,124,123,.22); border-radius: 24px; background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,252,246,.98)); box-shadow: -18px 0 54px rgba(17,20,18,.12), 0 26px 70px rgba(17,20,18,.16); padding: 18px; backdrop-filter: blur(16px); animation: mapAiPanelReveal .28s cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes mapAiPanelReveal { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .map-ai-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .map-ai-panel header > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -1548,6 +1548,16 @@ const styles = `
   .clinic-sidebar { width: 100%; flex: 0 0 45vh; border-right: 0; border-top: 1.5px solid var(--ink); }
   .map-stage { flex: 0 0 55vh; }
   .map-stage > .map-panel { inset: 10px; }
+  .map-ai-panel {
+    top: auto;
+    right: 10px;
+    bottom: 82px;
+    left: 10px;
+    width: auto;
+    min-width: 0;
+    max-height: min(430px, calc(100% - 104px));
+    border-radius: 20px;
+  }
   .map-skip-link { left: 12px; }
   .facility-detail-view { inset: 18px; }
 }
