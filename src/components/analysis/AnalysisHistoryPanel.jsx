@@ -196,7 +196,7 @@ export default function AnalysisHistoryPanel({
         </div>
 
         <footer className="analysis-history-panel-footer">
-          <Button type="button" onClick={onContinue}>
+          <Button type="button" className="analysis-history-continue" onClick={onContinue}>
             {copy.continueLabel}
             <ArrowRight size={16} />
           </Button>
