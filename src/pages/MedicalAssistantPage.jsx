@@ -144,7 +144,7 @@ function AssessmentShell({
   historyAction = {
     label: "Lịch sử phân tích",
     sessionType: "diagnoses",
-    continueLabel: "Tiáº¿p tá»¥c chuáº©n Ä‘oÃ¡n",
+    continueLabel: "Tiếp tục chuẩn đoán",
     continueTo: "/medical-assistant/intake",
   },
   children,
