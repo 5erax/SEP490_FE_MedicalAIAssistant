@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ClipboardList, History, MapPin, Send, Stethoscope } from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
+import AnalysisHistoryPanel from "../components/analysis/AnalysisHistoryPanel";
 import {
   buildClinicalQuestionAnswerItems,
   getClinicalQuestionAnswerMode,
@@ -142,10 +143,15 @@ function AssessmentShell({
   activeStep,
   historyAction = {
     label: "Lịch sử phân tích",
-    to: "/assessment/history?sessionType=diagnoses",
+    sessionType: "diagnoses",
+    continueLabel: "Tiáº¿p tá»¥c chuáº©n Ä‘oÃ¡n",
+    continueTo: "/medical-assistant/intake",
   },
   children,
 }) {
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const opensHistoryPanel = !historyAction.to;
+
   return (
     <main className="assessment-page clinical-page">
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
@@ -154,7 +160,13 @@ function AssessmentShell({
             tone="secondary"
             size="sm"
             className="analysis-history-button"
-            onClick={() => navigate(historyAction.to)}
+            onClick={() => {
+              if (opensHistoryPanel) {
+                setHistoryPanelOpen(true);
+                return;
+              }
+              navigate(historyAction.to);
+            }}
           >
             <History size={16} />
             {historyAction.label}
@@ -172,6 +184,19 @@ function AssessmentShell({
         <Stepper active={activeStep} />
         {children}
       </section>
+
+      {opensHistoryPanel && (
+        <AnalysisHistoryPanel
+          open={historyPanelOpen}
+          onClose={() => setHistoryPanelOpen(false)}
+          sessionType={historyAction.sessionType || "diagnoses"}
+          continueLabel={historyAction.continueLabel}
+          onContinue={() => {
+            setHistoryPanelOpen(false);
+            navigate(historyAction.continueTo || "/medical-assistant/intake");
+          }}
+        />
+      )}
     </main>
   );
 }
