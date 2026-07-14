@@ -1,4 +1,4 @@
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Search, Trash2 } from "lucide-react";
 import {
   Badge,
   Button,
@@ -62,7 +62,9 @@ export default function AdminUsersSection({
       header: "Thao tác",
       render: (item) => (
         <div className="record-actions">
-          <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(item.identityId || item.userId || item.id)}>Xóa</button>
+          <button className="btn btn-dark btn-small admin-user-delete-btn" type="button" onClick={() => onDelete(item.identityId || item.userId || item.id)}>
+            <Trash2 size={14} aria-hidden="true" /> Xóa
+          </button>
         </div>
       ),
     },
@@ -76,11 +78,16 @@ export default function AdminUsersSection({
           <h2>Quản lý người dùng</h2>
           <p className="muted-text">Lọc tài khoản chờ duyệt, đã xác nhận và xóa từng người dùng khi cần.</p>
         </div>
-        <button className="btn btn-ghost btn-small" type="button" onClick={() => onLoadPage()}>Tải lại</button>
+        <button className="btn btn-ghost btn-small admin-users-reload" type="button" onClick={() => onLoadPage()}>
+          <RefreshCw size={15} aria-hidden="true" /> Tải lại
+        </button>
       </div>
       {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
       <div className="admin-toolbar admin-users-toolbar">
-        <input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Tìm theo email, tên hoặc ID..." />
+        <label className="admin-users-search-field">
+          <Search size={17} aria-hidden="true" />
+          <input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Tìm theo email, tên hoặc ID..." />
+        </label>
         <CustomSelect
           className="admin-user-status-filter"
           label="Trạng thái"
@@ -114,6 +121,7 @@ export default function AdminUsersSection({
       ) : (
         <DataTable
           caption="Danh sách tài khoản người dùng"
+          className="admin-users-table"
           columns={columns}
           rows={rows}
           getRowKey={(item) => item.identityId || item.userId || item.id}
