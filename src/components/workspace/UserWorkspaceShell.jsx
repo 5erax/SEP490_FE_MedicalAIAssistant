@@ -18,7 +18,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { navigate as goTo } from "../../router/navigation";
 import { withReturnTo } from "../../router/returnIntent";
 import { getNavigationModel } from "../../router/routes";
@@ -28,6 +28,8 @@ import "../../styles/user-workspace.css";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 import { Dialog, useOverlayFocus } from "../ui";
 import PatientOnboardingAssistant from "./PatientOnboardingAssistant";
+import PatientProfileSetupModal from "./PatientProfileSetupModal";
+import { shouldSetupPatientProfile } from "../../utils/roles";
 
 const PATIENT_ICONS = {
   dashboard: LayoutDashboard,
@@ -139,6 +141,7 @@ export default function UserWorkspaceShell({ children }) {
     };
   });
   const [searchText, setSearchText] = useState("");
+  const [setupCompletedAuth, setSetupCompletedAuth] = useState(null);
   const sidebarRef = useRef(null);
   const accountMenuRef = useRef(null);
   const accountButtonRef = useRef(null);
@@ -161,6 +164,8 @@ export default function UserWorkspaceShell({ children }) {
   const visibleAccountUser = accessToken ? (accountUser ?? cachedAccountUser ?? auth) : null;
   const displayName = getAccountName(visibleAccountUser, auth);
   const avatarUrl = getAccountAvatar(visibleAccountUser);
+  const setupAuth = setupCompletedAuth?.accessToken === auth?.accessToken ? setupCompletedAuth : auth;
+  const shouldShowPatientSetup = shouldSetupPatientProfile(setupAuth);
 
   async function logout() {
     setAccountMenuOpen(false);
@@ -208,6 +213,14 @@ export default function UserWorkspaceShell({ children }) {
     const query = searchText.trim();
     goTo(query ? `/map?search=${encodeURIComponent(query)}` : "/map");
   }
+
+  const handlePatientSetupComplete = useCallback((nextAuth) => {
+    setSetupCompletedAuth(nextAuth);
+    setAccountState({
+      accessToken: nextAuth?.accessToken ?? "",
+      user: nextAuth ?? null,
+    });
+  }, []);
 
   useOverlayFocus({
     active: mobileMenuOpen,
@@ -508,6 +521,12 @@ export default function UserWorkspaceShell({ children }) {
               <button type="button" onClick={openPricingFromNotice}>Xem bảng giá</button>
             </div>
         </Dialog>
+      )}
+      {shouldShowPatientSetup && (
+        <PatientProfileSetupModal
+          auth={setupAuth}
+          onComplete={handlePatientSetupComplete}
+        />
       )}
       <PatientOnboardingAssistant auth={auth} />
     </div>
