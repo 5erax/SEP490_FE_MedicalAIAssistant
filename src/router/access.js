@@ -2,7 +2,6 @@ import { hasPremiumAccess } from "../services/api";
 import {
   getWorkspacePath,
   hasAuthRole,
-  shouldSetupPatientProfile,
 } from "../utils/roles";
 import { withReturnTo } from "./returnIntent";
 
@@ -19,10 +18,6 @@ export function resolveRouteAccess(route, auth, requestedPath) {
 
   if (route.access === "role" && !hasAllowedRole(auth, route.roles ?? [])) {
     return getWorkspacePath(auth);
-  }
-
-  if (auth && shouldSetupPatientProfile(auth) && route.id !== "patient.profile-setup") {
-    return withReturnTo("/patient/profile/setup", requestedPath);
   }
 
   if (route.access === "premium" && !hasPremiumAccess(auth)) {
