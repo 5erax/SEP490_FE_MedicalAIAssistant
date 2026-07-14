@@ -3,7 +3,6 @@ import {
   Badge,
   Button,
   CustomSelect,
-  DataTable,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -35,41 +34,6 @@ export default function AdminUsersSection({
   statusLabel,
   totalVisibleCount,
 }) {
-  const columns = [
-    {
-      key: "user",
-      header: "Người dùng",
-      render: (item) => (
-        <div className="table-primary-cell">
-          <strong>{item.displayName || item.name || item.email || "Người dùng"}</strong>
-          <span>{item.email || "Chưa có email"}</span>
-          <small>{item.identityId || item.userId || item.id}</small>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Trạng thái",
-      render: (item) => (
-        <div className="admin-badge-stack">
-          <Badge tone={isApproved(item) ? "success" : "warning"}>{statusLabel(item)}</Badge>
-          <Badge tone={item.isDeleted ? "danger" : "info"}>{item.isDeleted ? "Đã xóa" : "Hoạt động"}</Badge>
-        </div>
-      ),
-    },
-    {
-      key: "actions",
-      header: "Thao tác",
-      render: (item) => (
-        <div className="record-actions">
-          <button className="btn btn-dark btn-small admin-user-delete-btn" type="button" onClick={() => onDelete(item.identityId || item.userId || item.id)}>
-            <Trash2 size={14} aria-hidden="true" /> Xóa
-          </button>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <section className="admin-panel admin-users-panel">
       <div className="panel-title-row">
@@ -82,7 +46,9 @@ export default function AdminUsersSection({
           <RefreshCw size={15} aria-hidden="true" /> Tải lại
         </button>
       </div>
+
       {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
+
       <div className="admin-toolbar admin-users-toolbar">
         <label className="admin-users-search-field">
           <Search size={17} aria-hidden="true" />
@@ -118,15 +84,41 @@ export default function AdminUsersSection({
             </Button>
           )}
         />
+      ) : rows.length ? (
+        <div className="admin-users-card-list" role="list" aria-label="Danh sách tài khoản người dùng">
+          {rows.map((item) => {
+            const userId = item.identityId || item.userId || item.id;
+            const displayName = item.displayName || item.name || item.email || "Người dùng";
+
+            return (
+              <article className="admin-user-card" key={userId} role="listitem">
+                <div className="admin-user-card-main">
+                  <div className="admin-user-avatar" aria-hidden="true">
+                    {displayName.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="table-primary-cell">
+                    <strong>{displayName}</strong>
+                    <span>{item.email || "Chưa có email"}</span>
+                    <small>{userId}</small>
+                  </div>
+                </div>
+
+                <div className="admin-user-card-status">
+                  <Badge tone={isApproved(item) ? "success" : "warning"}>{statusLabel(item)}</Badge>
+                  <Badge tone={item.isDeleted ? "danger" : "info"}>{item.isDeleted ? "Đã xóa" : "Hoạt động"}</Badge>
+                </div>
+
+                <div className="record-actions">
+                  <button className="btn btn-dark btn-small admin-user-delete-btn" type="button" onClick={() => onDelete(userId)}>
+                    <Trash2 size={14} aria-hidden="true" /> Xóa
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       ) : (
-        <DataTable
-          caption="Danh sách tài khoản người dùng"
-          className="admin-users-table"
-          columns={columns}
-          rows={rows}
-          getRowKey={(item) => item.identityId || item.userId || item.id}
-          emptyState={<EmptyState title="Không có tài khoản phù hợp" description="Thử đổi bộ lọc trạng thái hoặc từ khóa tìm kiếm." />}
-        />
+        <EmptyState title="Không có tài khoản phù hợp" description="Thử đổi bộ lọc trạng thái hoặc từ khóa tìm kiếm." />
       )}
 
       {!error && (
