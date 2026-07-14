@@ -75,6 +75,29 @@ function getDepartmentName(department) {
   return department?.departmentName ?? department?.name ?? department?.title ?? "Chưa đặt tên";
 }
 
+function getFacilityConsultationDepartments(facility, departments) {
+  if (!facility) return [];
+
+  const departmentNamesById = new Map(
+    departments
+      .map((department) => [String(getDepartmentId(department)), getDepartmentName(department)])
+      .filter(([id]) => id),
+  );
+  const facilityDepartmentIds = Array.isArray(facility.departmentIds) ? facility.departmentIds : [];
+  const facilityDepartmentNames = Array.isArray(facility.departments) ? facility.departments : [];
+
+  return facilityDepartmentIds
+    .map((departmentId, index) => {
+      const id = String(departmentId ?? "").trim();
+      if (!id) return null;
+      return {
+        id,
+        name: departmentNamesById.get(id) || facilityDepartmentNames[index] || `Chuyen khoa ${index + 1}`,
+      };
+    })
+    .filter(Boolean);
+}
+
 function getSessionId(session) {
   return session?.sessionId ?? session?.id ?? session?.consultationSessionId ?? "";
 }
@@ -122,18 +145,14 @@ function AccessibleFacilityMarker({ facility, selected, onSelect }) {
   );
 }
 
-function MapConsultationAssistant({ departments = [] }) {
+function MapConsultationAssistant({ consultationFacility = null, departments = [] }) {
   const normalizedDepartments = useMemo(() => (
-    departments
-      .map((department) => ({
-        id: getDepartmentId(department),
-        name: getDepartmentName(department),
-      }))
-      .filter((department) => department.id && department.name)
-  ), [departments]);
+    getFacilityConsultationDepartments(consultationFacility, departments)
+  ), [consultationFacility, departments]);
+  const initialDepartmentId = normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "";
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("suggest");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
   const [selectedDepartmentName, setSelectedDepartmentName] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [questions, setQuestions] = useState([]);
@@ -205,6 +224,8 @@ function MapConsultationAssistant({ departments = [] }) {
     }
   }
 
+  if (!consultationFacility) return null;
+
   return (
     <>
       {open && (
@@ -244,8 +265,11 @@ function MapConsultationAssistant({ departments = [] }) {
                 <select
                   value={selectedDepartmentId}
                   onChange={(event) => setSelectedDepartmentId(event.target.value)}
+                  disabled={normalizedDepartments.length === 0}
                 >
-                  <option value="">Chọn chuyên khoa</option>
+                  <option value="">
+                    {normalizedDepartments.length ? "Chọn chuyên khoa" : "Cơ sở chưa có chuyên khoa"}
+                  </option>
                   {normalizedDepartments.map((department) => (
                     <option key={department.id} value={department.id}>{department.name}</option>
                   ))}
@@ -333,6 +357,7 @@ function MapConsultationAssistant({ departments = [] }) {
 
 export default function FacilityMap({
   chatContext,
+  consultationFacility = null,
   departments = [],
   facilities,
   hidePopup = false,
@@ -506,7 +531,11 @@ export default function FacilityMap({
         </div>
       )}
       {mapStatus === "ready" && <button className="locate-button" type="button" onClick={onLocate} aria-label="Định vị tôi">⌖</button>}
-      <MapConsultationAssistant departments={departments} />
+      <MapConsultationAssistant
+        key={consultationFacility?.facilityId || "map-consultation"}
+        consultationFacility={consultationFacility}
+        departments={departments}
+      />
       {locationError && <div className="location-error">{locationError}</div>}
     </section>
   );
