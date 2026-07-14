@@ -1255,6 +1255,7 @@ function NearbyClinicPage() {
       <section className="map-stage">
         <FacilityMap
           chatContext={chatContext}
+          consultationFacility={detailPanelOpen ? detailFacility : null}
           departments={departments}
           facilities={mappableFacilities}
           locationError={locationError}
