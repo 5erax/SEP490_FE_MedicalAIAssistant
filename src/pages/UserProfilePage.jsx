@@ -1,5 +1,5 @@
 import { Children, cloneElement, useEffect, useId, useRef, useState } from "react";
-import { AlertTriangle, CreditCard, FileHeart, ReceiptText, ShieldCheck, User } from "lucide-react";
+import { AlertTriangle, CreditCard, FileHeart, Plus, ReceiptText, ShieldCheck, Trash2, User } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 import { navigate as go } from "../router/navigation";
@@ -20,6 +20,7 @@ import {
 } from "../utils/profileValidation";
 
 const EMPTY_USER = { displayName: "", email: "", phoneNumber: "", address: "", gender: "1", dateOfBirth: "" };
+const EMPTY_DISEASE = { diseaseName: "", from: "", to: "", note: "" };
 const tabs = [
   ["info", User, "Thông tin cá nhân"],
   ["medical", FileHeart, "Hồ sơ y tế"],
@@ -66,6 +67,32 @@ function getPaymentAmount(payment) {
   return payment.amount ?? payment.totalAmount ?? payment.price ?? payment.orderAmount ?? payment.paidAmount;
 }
 
+function createEmptyDisease() {
+  return {
+    localId: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+    ...EMPTY_DISEASE,
+  };
+}
+
+function normalizeDiseaseForForm(disease) {
+  return {
+    localId: disease?.id ?? crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+    diseaseName: disease?.diseaseName ?? "",
+    from: disease?.from ? String(disease.from).slice(0, 10) : "",
+    to: disease?.to ? String(disease.to).slice(0, 10) : "",
+    note: disease?.note ?? "",
+  };
+}
+
+function hasChronicDisease(disease) {
+  return Boolean(
+    String(disease?.diseaseName ?? "").trim()
+    || String(disease?.from ?? "").trim()
+    || String(disease?.to ?? "").trim()
+    || String(disease?.note ?? "").trim(),
+  );
+}
+
 export default function UserProfilePage() {
   const { showToast } = useFeedback();
   const auth = getStoredAuth();
@@ -80,14 +107,14 @@ export default function UserProfilePage() {
     height: "",
     weight: "",
     allergyNote: "",
-    chronicDiseaseNote: "",
+    chronicDiseases: [],
   });
   const [medicalSnapshot, setMedicalSnapshot] = useState({
     bloodType: "",
     height: "",
     weight: "",
     allergyNote: "",
-    chronicDiseaseNote: "",
+    chronicDiseases: [],
   });
   const [userId, setUserId] = useState("");
   const [patientProfileId, setPatientProfileId] = useState("");
@@ -147,7 +174,9 @@ export default function UserProfilePage() {
         height: patientProfile?.height ?? "",
         weight: patientProfile?.weight ?? "",
         allergyNote: patientProfile?.allergyNote ?? "",
-        chronicDiseaseNote: getChronicDiseaseText(patientProfile),
+        chronicDiseases: Array.isArray(patientProfile?.chronicDiseases) && patientProfile.chronicDiseases.length > 0
+          ? patientProfile.chronicDiseases.map(normalizeDiseaseForForm)
+          : normalizeChronicDiseases(getChronicDiseaseText(patientProfile)).map(normalizeDiseaseForForm),
       };
       setMedicalForm(nextMedical);
       setMedicalSnapshot(nextMedical);
@@ -220,6 +249,33 @@ export default function UserProfilePage() {
     setErrors((current) => ({ ...current, [key]: "" }));
   }
 
+  function addMedicalDisease() {
+    setMedicalForm((current) => ({
+      ...current,
+      chronicDiseases: [...current.chronicDiseases, createEmptyDisease()],
+    }));
+    setMedicalDirty(true);
+  }
+
+  function updateMedicalDisease(index, key, value) {
+    setMedicalForm((current) => ({
+      ...current,
+      chronicDiseases: current.chronicDiseases.map((disease, diseaseIndex) => (
+        diseaseIndex === index ? { ...disease, [key]: value } : disease
+      )),
+    }));
+    setMedicalDirty(true);
+    setErrors((current) => ({ ...current, [`chronicDiseases.${index}.${key}`]: "" }));
+  }
+
+  function removeMedicalDisease(index) {
+    setMedicalForm((current) => ({
+      ...current,
+      chronicDiseases: current.chronicDiseases.filter((_, diseaseIndex) => diseaseIndex !== index),
+    }));
+    setMedicalDirty(true);
+  }
+
   function cancelProfileEdit() {
     setProfileForm(profileSnapshot);
     setErrors({});
@@ -280,7 +336,14 @@ export default function UserProfilePage() {
       height: medicalForm.height === "" ? null : Number(medicalForm.height),
       weight: medicalForm.weight === "" ? null : Number(medicalForm.weight),
       allergyNote: medicalForm.allergyNote.trim() || null,
-      chronicDiseases: normalizeChronicDiseases(medicalForm.chronicDiseaseNote),
+      chronicDiseases: medicalForm.chronicDiseases
+        .filter(hasChronicDisease)
+        .map((disease) => ({
+          diseaseName: disease.diseaseName.trim(),
+          from: disease.from || null,
+          to: disease.to || null,
+          note: disease.note.trim() || null,
+        })),
     };
     setSavingMedical(true);
     try {
@@ -312,7 +375,7 @@ export default function UserProfilePage() {
     medicalForm.height,
     medicalForm.weight,
     medicalForm.allergyNote,
-    medicalForm.chronicDiseaseNote,
+    medicalForm.chronicDiseases.some(hasChronicDisease),
   ].filter(Boolean).length;
   const personalMissing = [
     [profileForm.displayName, "họ tên"],
@@ -326,7 +389,7 @@ export default function UserProfilePage() {
     [medicalForm.height, "chiều cao"],
     [medicalForm.weight, "cân nặng"],
     [medicalForm.allergyNote, "dị ứng"],
-    [medicalForm.chronicDiseaseNote, "bệnh nền"],
+    [medicalForm.chronicDiseases.some(hasChronicDisease), "bệnh nền"],
   ].filter(([value]) => !value).map(([, label]) => label);
 
   return (
@@ -420,7 +483,80 @@ export default function UserProfilePage() {
               <Field label="Cân nặng (kg)" error={errors.weight}><input type="number" min="2" max="500" step="0.1" value={medicalForm.weight} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("weight", e.target.value)} /></Field>
             </div>
             <Field label="Dị ứng" error={errors.allergyNote}><textarea rows={4} maxLength={1000} placeholder="Ví dụ: thuốc, thực phẩm, phấn hoa..." value={medicalForm.allergyNote} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("allergyNote", e.target.value)} /></Field>
-            <Field label="Bệnh nền" error={errors.chronicDiseaseNote}><textarea rows={4} maxLength={1000} placeholder="Ví dụ: hen suyễn, tăng huyết áp..." value={medicalForm.chronicDiseaseNote} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("chronicDiseaseNote", e.target.value)} /></Field>
+            <section className="profile-disease-section" aria-label="Bệnh nền">
+              <div className="profile-disease-head">
+                <div>
+                  <h2>Bệnh nền</h2>
+                  <p>Mỗi bệnh nền gồm tên bệnh, thời gian theo dõi và ghi chú ngắn.</p>
+                </div>
+                <button type="button" onClick={addMedicalDisease} disabled={!isMedicalEditing || savingMedical}>
+                  <Plus size={17} aria-hidden="true" />
+                  Thêm bệnh nền
+                </button>
+              </div>
+              {medicalForm.chronicDiseases.length === 0 ? (
+                <div className="profile-disease-empty">
+                  Chưa có bệnh nền nào. Bấm “Thêm bệnh nền” nếu bạn cần ghi nhận bệnh đang theo dõi.
+                </div>
+              ) : (
+                <div className="profile-disease-list">
+                  {medicalForm.chronicDiseases.map((disease, index) => (
+                    <article className="profile-disease-card" key={disease.localId ?? index}>
+                      <div className="profile-disease-card-head">
+                        <strong>Bệnh nền #{index + 1}</strong>
+                        <button type="button" onClick={() => removeMedicalDisease(index)} disabled={!isMedicalEditing || savingMedical}>
+                          <Trash2 size={16} aria-hidden="true" />
+                          Xóa
+                        </button>
+                      </div>
+                      <div className="profile-disease-grid">
+                        <label className="field wide">
+                          <span>Tên bệnh</span>
+                          <input
+                            value={disease.diseaseName}
+                            placeholder="Ví dụ: hen suyễn, tăng huyết áp..."
+                            disabled={!isMedicalEditing || savingMedical}
+                            onChange={(event) => updateMedicalDisease(index, "diseaseName", event.target.value)}
+                            aria-invalid={Boolean(errors[`chronicDiseases.${index}.diseaseName`])}
+                          />
+                          {errors[`chronicDiseases.${index}.diseaseName`] && <small>{errors[`chronicDiseases.${index}.diseaseName`]}</small>}
+                        </label>
+                        <label className="field">
+                          <span>Từ ngày</span>
+                          <input
+                            type="date"
+                            value={disease.from}
+                            disabled={!isMedicalEditing || savingMedical}
+                            onChange={(event) => updateMedicalDisease(index, "from", event.target.value)}
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Đến ngày</span>
+                          <input
+                            type="date"
+                            value={disease.to}
+                            disabled={!isMedicalEditing || savingMedical}
+                            onChange={(event) => updateMedicalDisease(index, "to", event.target.value)}
+                          />
+                        </label>
+                        <label className="field wide">
+                          <span>Ghi chú</span>
+                          <textarea
+                            rows={3}
+                            value={disease.note}
+                            placeholder="Ví dụ: đang dùng thuốc, tái khám định kỳ..."
+                            disabled={!isMedicalEditing || savingMedical}
+                            onChange={(event) => updateMedicalDisease(index, "note", event.target.value)}
+                            aria-invalid={Boolean(errors[`chronicDiseases.${index}.note`])}
+                          />
+                          {errors[`chronicDiseases.${index}.note`] && <small>{errors[`chronicDiseases.${index}.note`]}</small>}
+                        </label>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
           </form>
         )}
 
@@ -512,10 +648,26 @@ const styles = `
 .field small{color:var(--color-danger,#b42318)}
 .medical-privacy-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;border:1px solid rgba(8,127,140,.28);border-radius:12px;background:var(--mint,#e6f4ee);color:var(--ink,#111412);padding:12px}
 .medical-privacy-note strong,.medical-privacy-note p{margin:0}.medical-privacy-note p{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.5}
+.profile-disease-section{display:grid;gap:14px;border:1px solid var(--line,#dde4d5);border-radius:14px;background:#fbfcf7;padding:16px}
+.profile-disease-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.profile-disease-head h2,.profile-disease-head p{margin:0}
+.profile-disease-head h2{font-size:20px;line-height:1.2}
+.profile-disease-head p{margin-top:4px;color:var(--muted,rgba(17,20,18,.62));font-size:13px;line-height:1.5}
+.profile-disease-head button,.profile-disease-card-head button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid var(--line-strong,#111412);border-radius:10px;background:#fff;color:var(--ink,#111412);padding:0 13px;font-weight:900}
+.profile-disease-head button{background:var(--lime,#c4e995);box-shadow:3px 3px 0 var(--line-strong,#111412)}
+.profile-disease-head button:disabled,.profile-disease-card-head button:disabled{cursor:not-allowed;opacity:.55;box-shadow:none}
+.profile-disease-empty{border:1px dashed var(--line,#dde4d5);border-radius:12px;background:#fff;color:var(--muted,rgba(17,20,18,.62));padding:16px;font-weight:800;line-height:1.55}
+.profile-disease-list{display:grid;gap:14px}
+.profile-disease-card{display:grid;gap:14px;border:1px solid rgba(17,20,18,.12);border-radius:14px;background:#fff;padding:16px;box-shadow:0 12px 28px rgba(17,20,18,.06)}
+.profile-disease-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.profile-disease-card-head strong{font-size:15px}
+.profile-disease-card-head button{border-color:rgba(180,35,24,.28);color:#8f2d1f;box-shadow:none}
+.profile-disease-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.profile-disease-grid .wide{grid-column:1/-1}
 .toast{border-color:var(--line-strong,#111412);background:var(--lime,#c4e995);color:var(--ink,#111412)}
 .plan-box{border-color:var(--line,#dde4d5);background:var(--paper-soft,#fbfcf7)}
 .transaction-list{display:grid;gap:10px}.transaction-row{display:grid;grid-template-columns:minmax(0,1.45fr) auto auto auto;gap:14px;align-items:center;border:1px solid var(--line,#dde4d5);border-radius:12px;background:var(--paper-soft,#fbfcf7);padding:14px}.transaction-row strong,.transaction-row small{display:block}.transaction-row strong{font-size:15px}.transaction-row small{margin-top:4px;color:var(--muted,rgba(17,20,18,.56));overflow-wrap:anywhere}.transaction-row span,.transaction-row time{font-weight:900;color:var(--ink,#111412);white-space:nowrap}.transaction-row span:nth-of-type(2){border-radius:999px;background:var(--color-primary-soft,#eef7e8);color:#315d18;padding:6px 10px;font-size:12px}.transaction-empty{border:1px dashed var(--line-strong,#b9c5ad);border-radius:12px;background:var(--paper-soft,#fbfcf7);padding:20px;color:var(--muted,rgba(17,20,18,.62));font-weight:850}
 @media(prefers-reduced-motion:reduce){.profile-summary-card{transition:none}.profile-summary-card:hover{transform:none}}
 @media(forced-colors:active){.profile-summary-card i b{background:Highlight}.profile-summary-card,.profile-card,.profile-overview{box-shadow:none}}
-@media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.profile-overview,.profile-card{padding:18px}.profile-overview-person,.profile-summary-grid{grid-template-columns:1fr}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px;scrollbar-width:thin}.mobile-tabs button{min-width:112px;border:1px solid var(--line,#dde4d5);background:var(--paper,#fff);color:var(--ink,#111412);text-align:center}.mobile-tabs button.active{background:var(--color-primary-soft,#eef7e8);border-color:var(--line-strong,#111412)}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head{flex-direction:column}.profile-load-warning{grid-template-columns:auto minmax(0,1fr)}.profile-load-warning button{grid-column:1/-1;width:100%}.form-grid,.form-grid.three,.profile-form-actions,.transaction-row{grid-template-columns:1fr}.profile-form-actions button,.profile-head>div:last-child,.profile-head>div:last-child button{width:100%}.transaction-row span,.transaction-row time{white-space:normal}}
+@media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.profile-overview,.profile-card{padding:18px}.profile-overview-person,.profile-summary-grid{grid-template-columns:1fr}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px;scrollbar-width:thin}.mobile-tabs button{min-width:112px;border:1px solid var(--line,#dde4d5);background:var(--paper,#fff);color:var(--ink,#111412);text-align:center}.mobile-tabs button.active{background:var(--color-primary-soft,#eef7e8);border-color:var(--line-strong,#111412)}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head,.profile-disease-head{flex-direction:column}.profile-load-warning{grid-template-columns:auto minmax(0,1fr)}.profile-load-warning button{grid-column:1/-1;width:100%}.form-grid,.form-grid.three,.profile-form-actions,.transaction-row,.profile-disease-grid{grid-template-columns:1fr}.profile-form-actions button,.profile-head>div:last-child,.profile-head>div:last-child button,.profile-disease-head button{width:100%}.transaction-row span,.transaction-row time{white-space:normal}}
 `;
