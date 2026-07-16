@@ -1,8 +1,8 @@
-import { Badge, Button, DataTable, EmptyState } from "../ui";
+import { Badge, Button, EmptyState } from "../ui";
 import { CreditCard, Pencil, Power, Trash2 } from "lucide-react";
 
 function formatPrice(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")} ₫`;
+  return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
 }
 
 function formatDate(value) {
@@ -43,82 +43,71 @@ function summarizeLimits(value) {
 }
 
 export default function SubscriptionPlanTable({ plans, onEdit, onToggleStatus, onDelete, onCreate }) {
-  const columns = [
-    {
-      key: "plan",
-      header: "Gói dịch vụ",
-      render: (plan) => (
-        <div className="subscription-plan-primary">
-          <span className="subscription-plan-icon"><CreditCard size={18} /></span>
-          <div>
-            <strong>{plan.planName || "Gói chưa đặt tên"}</strong>
-            <span>{formatPrice(plan.price)}</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "duration",
-      header: "Thời hạn",
-      render: (plan) => <strong>{plan.durationInDays} ngày</strong>,
-    },
-    {
-      key: "limits",
-      header: "Giới hạn tính năng",
-      render: (plan) => <span className="subscription-limit-summary">{summarizeLimits(plan.featureLimitJson)}</span>,
-    },
-    {
-      key: "status",
-      header: "Trạng thái",
-      render: (plan) => (
-        <Badge tone={plan.isActive ? "success" : "warning"}>
-          {plan.isActive ? "Đang bán" : "Tạm ẩn"}
-        </Badge>
-      ),
-    },
-    {
-      key: "updatedAt",
-      header: "Cập nhật",
-      render: (plan) => <span>{formatDate(plan.updatedAt || plan.createdAt)}</span>,
-    },
-    {
-      key: "actions",
-      header: "Thao tác",
-      render: (plan) => (
-        <div className="record-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(plan)}>
-            <Pencil size={14} /> Sửa
-          </button>
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(plan)}>
-            <Power size={14} /> {plan.isActive ? "Tạm ẩn" : "Mở bán"}
-          </button>
-          <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(plan)}>
-            <Trash2 size={14} /> Xóa
-          </button>
-        </div>
-      ),
-    },
-  ];
+  if (!plans.length) {
+    return (
+      <EmptyState
+        className="subscription-plan-empty"
+        icon={<CreditCard size={26} />}
+        title="Chưa có gói dịch vụ"
+        description="Tạo gói đầu tiên để người dùng có thể đăng ký và thanh toán trên trang bảng giá."
+        action={(
+          <Button onClick={onCreate}>
+            <CreditCard size={15} aria-hidden="true" /> Tạo gói dịch vụ
+          </Button>
+        )}
+      />
+    );
+  }
 
   return (
-    <DataTable
-      caption="Danh sách gói dịch vụ"
-      columns={columns}
-      rows={plans}
-      getRowKey={(plan) => plan.id}
-      emptyState={(
-        <EmptyState
-          className="subscription-plan-empty"
-          icon={<CreditCard size={26} />}
-          title="Chưa có gói dịch vụ"
-          description="Tạo gói đầu tiên để người dùng có thể đăng ký và thanh toán trên trang bảng giá."
-          action={(
-            <Button onClick={onCreate}>
-              <CreditCard size={15} aria-hidden="true" /> Tạo gói dịch vụ
-            </Button>
-          )}
-        />
-      )}
-    />
+    <div className="subscription-plan-card-list" role="list" aria-label="Danh sách gói dịch vụ">
+      {plans.map((plan) => (
+        <article className="subscription-plan-card" key={plan.id} role="listitem">
+          <div className="subscription-plan-card-main">
+            <div className="subscription-plan-primary">
+              <span className="subscription-plan-icon"><CreditCard size={18} /></span>
+              <div>
+                <strong>{plan.planName || "Gói chưa đặt tên"}</strong>
+                <span>{formatPrice(plan.price)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="subscription-plan-card-meta">
+            <span>
+              <small>Thời hạn</small>
+              <strong>{plan.durationInDays} ngày</strong>
+            </span>
+            <span>
+              <small>Cập nhật</small>
+              <strong>{formatDate(plan.updatedAt || plan.createdAt)}</strong>
+            </span>
+          </div>
+
+          <div className="subscription-plan-card-limits">
+            <small>Giới hạn tính năng</small>
+            <span className="subscription-limit-summary">{summarizeLimits(plan.featureLimitJson)}</span>
+          </div>
+
+          <div className="subscription-plan-card-status">
+            <Badge tone={plan.isActive ? "success" : "warning"}>
+              {plan.isActive ? "Đang bán" : "Tạm ẩn"}
+            </Badge>
+          </div>
+
+          <div className="record-actions">
+            <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(plan)}>
+              <Pencil size={14} /> Sửa
+            </button>
+            <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(plan)}>
+              <Power size={14} /> {plan.isActive ? "Tạm ẩn" : "Mở bán"}
+            </button>
+            <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(plan)}>
+              <Trash2 size={14} /> Xóa
+            </button>
+          </div>
+        </article>
+      ))}
+    </div>
   );
 }
