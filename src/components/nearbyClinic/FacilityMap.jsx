@@ -230,85 +230,116 @@ function MapConsultationAssistant({ consultationFacility = null, departments = [
     <>
       {open && (
         <aside className="map-ai-panel" aria-label="AI hỗ trợ trước khám">
-          <header>
+          <header className="map-ai-header">
             <div>
               <span><Bot size={17} /></span>
               <div>
-                <strong>AI hỗ trợ trước khám</strong>
-                <small>Chọn chuyên khoa và mô tả triệu chứng</small>
+                <strong>MediMate AI</strong>
+                <small>Hỗ trợ trước khi khám</small>
               </div>
             </div>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Đóng AI hỗ trợ"><X size={16} /></button>
+            <div className="map-ai-header-actions">
+              <button
+                type="button"
+                className={activeTab === "history" ? "active" : ""}
+                onClick={() => handleTabChange(activeTab === "history" ? "suggest" : "history")}
+                aria-label="Xem lịch sử gợi ý"
+              >
+                <Clock3 size={16} />
+              </button>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Đóng AI hỗ trợ"><X size={16} /></button>
+            </div>
           </header>
 
-          <div className="map-ai-tabs" role="tablist" aria-label="Chế độ AI hỗ trợ">
-            <button
-              type="button"
-              className={activeTab === "suggest" ? "active" : ""}
-              onClick={() => handleTabChange("suggest")}
-            >
-              Gợi ý câu hỏi
-            </button>
-            <button
-              type="button"
-              className={activeTab === "history" ? "active" : ""}
-              onClick={() => handleTabChange("history")}
-            >
-              Lịch sử gợi ý
-            </button>
-          </div>
-
           {activeTab === "suggest" ? (
-            <form className="map-ai-flow" onSubmit={handleGenerate}>
-              <label>
-                <span>Bạn chọn chuyên khoa nào?</span>
-                <select
-                  value={selectedDepartmentId}
-                  onChange={(event) => setSelectedDepartmentId(event.target.value)}
-                  disabled={normalizedDepartments.length === 0}
-                >
-                  <option value="">
-                    {normalizedDepartments.length ? "Chọn chuyên khoa" : "Cơ sở chưa có chuyên khoa"}
-                  </option>
-                  {normalizedDepartments.map((department) => (
-                    <option key={department.id} value={department.id}>{department.name}</option>
-                  ))}
-                </select>
-              </label>
+            <form className="map-ai-chat" onSubmit={handleGenerate}>
+              <div className="map-ai-thread" aria-live="polite">
+                <article className="map-ai-message-bubble bot">
+                  <span><Bot size={15} /></span>
+                  <p>Xin chào. Mình sẽ giúp bạn chuẩn bị trước khi khám.</p>
+                </article>
+
+                <article className="map-ai-message-bubble bot has-control">
+                  <span><Bot size={15} /></span>
+                  <div>
+                    <p>Bạn muốn khám chuyên khoa nào?</p>
+                    <label className="map-ai-select-control">
+                      <span className="sr-only">Chọn chuyên khoa</span>
+                      <select
+                        value={selectedDepartmentId}
+                        onChange={(event) => setSelectedDepartmentId(event.target.value)}
+                        disabled={normalizedDepartments.length === 0}
+                      >
+                        <option value="">
+                          {normalizedDepartments.length ? "Chọn chuyên khoa" : "Cơ sở chưa có chuyên khoa"}
+                        </option>
+                        {normalizedDepartments.map((department) => (
+                          <option key={department.id} value={department.id}>{department.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </article>
+
+                {selectedDepartmentId && (
+                  <>
+                    <article className="map-ai-message-bubble user">
+                      <p>{selectedDepartment?.name}</p>
+                    </article>
+                    <article className="map-ai-message-bubble bot">
+                      <span><Bot size={15} /></span>
+                      <p>Bạn đang gặp triệu chứng gì?</p>
+                    </article>
+                  </>
+                )}
+
+                {questions.length > 0 && (
+                  <>
+                    <article className="map-ai-message-bubble bot">
+                      <span><Bot size={15} /></span>
+                      <p>Dưới đây là những câu hỏi bạn nên trao đổi với bác sĩ.</p>
+                    </article>
+
+                    <small className="map-ai-context-pill">{selectedDepartmentName || selectedDepartment?.name}</small>
+                    <div className="map-ai-question-stack">
+                      {questions.slice(0, 5).map((question, index) => (
+                        <article
+                          className="map-ai-question-card"
+                          key={`${getQuestionText(question, index)}-${index}`}
+                          style={{ "--question-index": index }}
+                        >
+                          <span>?</span>
+                          <p>{getQuestionText(question, index)}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
 
               {selectedDepartmentId && (
-                <label>
-                  <span>Bạn bị gì?</span>
-                  <textarea
+                <div className="map-ai-composer">
+                  <input
                     value={symptoms}
                     onChange={(event) => setSymptoms(event.target.value)}
-                    placeholder="Ví dụ: Tôi ho nhiều, sốt nhẹ, đau họng..."
-                    rows={3}
+                    placeholder="Nhập triệu chứng của bạn..."
+                    aria-label="Triệu chứng của bạn"
                   />
-                </label>
-              )}
-
-              <button type="submit" disabled={!canSubmit}>
-                <Send size={16} />
-                {status === "loading" ? "Đang tạo..." : "Tạo gợi ý"}
-              </button>
-
-              {questions.length > 0 && (
-                <div className="map-ai-results">
-                  <small>{selectedDepartmentName || selectedDepartment?.name}</small>
-                  <strong>Gợi ý câu hỏi nên hỏi trước khám</strong>
-                  <ul>
-                    {questions.slice(0, 5).map((question, index) => (
-                      <li key={`${getQuestionText(question, index)}-${index}`}>
-                        {getQuestionText(question, index)}
-                      </li>
-                    ))}
-                  </ul>
+                  <button type="submit" disabled={!canSubmit} aria-label="Tạo gợi ý câu hỏi">
+                    <Send size={16} />
+                  </button>
                 </div>
               )}
             </form>
           ) : (
-            <div className="map-ai-history">
+            <div className="map-ai-history" aria-live="polite">
+              <div className="map-ai-history-title">
+                <Clock3 size={16} />
+                <div>
+                  <strong>Lịch sử gợi ý</strong>
+                  <small>Các phiên hỗ trợ trước khám gần đây</small>
+                </div>
+              </div>
               {historyStatus === "loading" && <p>Đang tải lịch sử...</p>}
               {historyStatus !== "loading" && sessions.length === 0 && <p>Chưa có lịch sử gợi ý.</p>}
               {sessions.map((session) => (
