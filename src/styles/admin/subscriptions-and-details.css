@@ -161,7 +161,9 @@
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
+  align-content: center;
   gap: 12px;
+  height: 100%;
   min-width: 0;
   width: 100%;
 }
@@ -187,6 +189,7 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
+  align-self: center;
   width: 48px;
   height: 48px;
   border-radius: 15px;
@@ -197,7 +200,7 @@
 .subscription-limit-summary {
   display: grid;
   gap: 5px;
-  max-width: 320px;
+  max-width: none;
   color: rgba(16, 20, 17, 0.66);
   font-size: 14px;
   line-height: 1.35;
@@ -229,10 +232,10 @@
 .subscription-plan-list-header {
   display: grid;
   grid-template-columns:
-    minmax(260px, 1.15fr)
+    minmax(260px, 1.05fr)
     minmax(240px, 1fr)
-    minmax(220px, 0.95fr)
-    minmax(92px, 0.35fr)
+    minmax(260px, 0.95fr)
+    minmax(100px, 0.35fr)
     118px;
   align-items: center;
   gap: 18px;
@@ -254,10 +257,10 @@
 .subscription-plan-card {
   display: grid;
   grid-template-columns:
-    minmax(260px, 1.15fr)
+    minmax(260px, 1.05fr)
     minmax(240px, 1fr)
-    minmax(220px, 0.95fr)
-    minmax(92px, 0.35fr)
+    minmax(260px, 0.95fr)
+    minmax(100px, 0.35fr)
     118px;
   align-items: center;
   gap: 18px;
@@ -286,6 +289,12 @@
   min-width: 0;
 }
 
+.subscription-plan-card-main {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
 .subscription-plan-card-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -298,7 +307,14 @@
   border: 1px solid rgba(16, 20, 17, 0.08);
   border-radius: 14px;
   background: rgba(251, 252, 247, 0.88);
-  padding: 10px 12px;
+  padding: 11px 12px;
+}
+
+.subscription-plan-card-limits {
+  border: 1px solid rgba(16, 20, 17, 0.08);
+  border-radius: 14px;
+  background: rgba(251, 252, 247, 0.88);
+  padding: 11px 12px;
 }
 
 .subscription-plan-card-meta small,
