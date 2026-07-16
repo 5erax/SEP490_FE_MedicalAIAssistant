@@ -153,30 +153,41 @@ function MapConsultationAssistant({ consultationFacility = null, departments = [
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("suggest");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
-  const [selectedDepartmentName, setSelectedDepartmentName] = useState("");
   const [symptoms, setSymptoms] = useState("");
+  const [symptomMessages, setSymptomMessages] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [status, setStatus] = useState("idle");
   const [historyStatus, setHistoryStatus] = useState("idle");
   const [message, setMessage] = useState("");
+  const threadRef = useRef(null);
 
-  const selectedDepartment = normalizedDepartments.find((department) => department.id === selectedDepartmentId);
   const canSubmit = Boolean(selectedDepartmentId && symptoms.trim() && status !== "loading");
+
+  useEffect(() => {
+    if (!open || activeTab !== "suggest" || !threadRef.current) return;
+
+    threadRef.current.scrollTo({
+      top: threadRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [activeTab, message, open, questions.length, selectedDepartmentId, status, symptomMessages]);
 
   async function handleGenerate(event) {
     event.preventDefault();
     if (!canSubmit) return;
 
+    const symptomText = symptoms.trim();
     setStatus("loading");
     setMessage("");
     setQuestions([]);
+    setSymptomMessages((current) => [...current, symptomText]);
+    setSymptoms("");
 
     try {
-      const response = await consultationSessionsApi.generateQuestions(selectedDepartmentId, symptoms.trim());
+      const response = await consultationSessionsApi.generateQuestions(selectedDepartmentId, symptomText);
       setQuestions(getQuestionsFromResponse(response));
-      setSelectedDepartmentName(selectedDepartment?.name || "");
       setMessage("MediMate đã tạo gợi ý câu hỏi cho chuyên khoa đã chọn.");
     } catch (error) {
       setMessage(error.message || "Không thể tạo gợi ý câu hỏi lúc này.");
@@ -253,7 +264,7 @@ function MapConsultationAssistant({ consultationFacility = null, departments = [
 
           {activeTab === "suggest" ? (
             <form className="map-ai-chat" onSubmit={handleGenerate}>
-              <div className="map-ai-thread" aria-live="polite">
+              <div className="map-ai-thread" ref={threadRef} aria-live="polite">
                 <article className="map-ai-message-bubble bot">
                   <span><Bot size={15} /></span>
                   <p>Xin chào. Mình sẽ giúp bạn chuẩn bị trước khi khám.</p>
@@ -283,13 +294,15 @@ function MapConsultationAssistant({ consultationFacility = null, departments = [
 
                 {selectedDepartmentId && (
                   <>
-                    <article className="map-ai-message-bubble user">
-                      <p>{selectedDepartment?.name}</p>
-                    </article>
                     <article className="map-ai-message-bubble bot">
                       <span><Bot size={15} /></span>
                       <p>Bạn đang gặp triệu chứng gì?</p>
                     </article>
+                    {symptomMessages.map((symptomMessage, index) => (
+                      <article className="map-ai-message-bubble user symptom" key={`${symptomMessage}-${index}`}>
+                        <p>{symptomMessage}</p>
+                      </article>
+                    ))}
                   </>
                 )}
 
@@ -300,7 +313,6 @@ function MapConsultationAssistant({ consultationFacility = null, departments = [
                       <p>Dưới đây là những câu hỏi bạn nên trao đổi với bác sĩ.</p>
                     </article>
 
-                    <small className="map-ai-context-pill">{selectedDepartmentName || selectedDepartment?.name}</small>
                     <div className="map-ai-question-stack">
                       {questions.slice(0, 5).map((question, index) => (
                         <article
