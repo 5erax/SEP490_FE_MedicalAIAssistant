@@ -61,6 +61,13 @@ export default function SubscriptionPlanTable({ plans, onEdit, onToggleStatus, o
 
   return (
     <div className="subscription-plan-card-list" role="list" aria-label="Danh sách gói dịch vụ">
+      <div className="subscription-plan-list-header" aria-hidden="true">
+        <span>Gói dịch vụ</span>
+        <span>Thời hạn / Cập nhật</span>
+        <span>Giới hạn tính năng</span>
+        <span>Trạng thái</span>
+        <span>Thao tác</span>
+      </div>
       {plans.map((plan) => (
         <article className="subscription-plan-card" key={plan.id} role="listitem">
           <div className="subscription-plan-card-main">
@@ -95,7 +102,7 @@ export default function SubscriptionPlanTable({ plans, onEdit, onToggleStatus, o
             </Badge>
           </div>
 
-          <div className="record-actions">
+          <div className="record-actions subscription-plan-actions">
             <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(plan)}>
               <Pencil size={14} /> Sửa
             </button>
