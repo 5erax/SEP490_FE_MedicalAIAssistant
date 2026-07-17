@@ -1517,11 +1517,11 @@ const styles = `
 .map-ai-message-bubble.bot { align-self: flex-start; background: #fff; box-shadow: 0 10px 26px rgba(17,20,18,.06); }
 .map-ai-message-bubble.bot.loading { border-color: rgba(12,124,123,.18); background: linear-gradient(135deg, #fff 0%, #f3fbf8 100%); color: #0c6766; }
 .map-ai-message-bubble.bot.loading p { display: inline-flex; align-items: center; gap: 7px; color: #0c6766; }
-.map-ai-message-bubble.bot.loading i { position: relative; width: 5px; height: 5px; border-radius: 999px; background: currentColor; opacity: .35; animation: mapAiTypingDot 1.2s ease-in-out infinite; }
-.map-ai-message-bubble.bot.loading i::before,
-.map-ai-message-bubble.bot.loading i::after { content: ""; position: absolute; top: 0; width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
-.map-ai-message-bubble.bot.loading i::before { left: 8px; opacity: .55; animation: mapAiTypingDot 1.2s ease-in-out .16s infinite; }
-.map-ai-message-bubble.bot.loading i::after { left: 16px; opacity: .75; animation: mapAiTypingDot 1.2s ease-in-out .32s infinite; }
+.map-ai-message-bubble.bot.loading i { flex: 0 0 21px; width: 21px; height: 5px; background:
+  radial-gradient(circle at 2.5px 2.5px, currentColor 0 2.5px, transparent 2.6px),
+  radial-gradient(circle at 10.5px 2.5px, currentColor 0 2.5px, transparent 2.6px),
+  radial-gradient(circle at 18.5px 2.5px, currentColor 0 2.5px, transparent 2.6px);
+  opacity: .6; animation: mapAiTypingDot 1.2s ease-in-out infinite; }
 .map-ai-message-bubble.user { align-self: flex-end; border-color: rgba(12,124,123,.18); background: #e4f4f2; color: #064f55; }
 .map-ai-message-bubble.user p { font-weight: 950; }
 .map-ai-message-bubble.user.symptom { max-width: 86%; background: #dcf3ee; border-color: rgba(12,124,123,.24); }
