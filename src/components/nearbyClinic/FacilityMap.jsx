@@ -303,6 +303,15 @@ function MapConsultationAssistant({ consultationFacility = null, departments = [
                         <p>{symptomMessage}</p>
                       </article>
                     ))}
+                    {status === "loading" && (
+                      <article className="map-ai-message-bubble bot loading" role="status" aria-live="polite">
+                        <span><Bot size={15} /></span>
+                        <p>
+                          Đang phân tích triệu chứng
+                          <i aria-hidden="true" />
+                        </p>
+                      </article>
+                    )}
                   </>
                 )}
 

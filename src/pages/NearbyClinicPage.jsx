@@ -1515,6 +1515,13 @@ const styles = `
 .map-ai-message-bubble > span { flex: 0 0 28px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; background: #e8f6f7; color: #0c7c7b; }
 .map-ai-message-bubble p { min-width: 0; margin: 0; font-size: 13px; font-weight: 850; white-space: normal; }
 .map-ai-message-bubble.bot { align-self: flex-start; background: #fff; box-shadow: 0 10px 26px rgba(17,20,18,.06); }
+.map-ai-message-bubble.bot.loading { border-color: rgba(12,124,123,.18); background: linear-gradient(135deg, #fff 0%, #f3fbf8 100%); color: #0c6766; }
+.map-ai-message-bubble.bot.loading p { display: inline-flex; align-items: center; gap: 7px; color: #0c6766; }
+.map-ai-message-bubble.bot.loading i { position: relative; width: 5px; height: 5px; border-radius: 999px; background: currentColor; opacity: .35; animation: mapAiTypingDot 1.2s ease-in-out infinite; }
+.map-ai-message-bubble.bot.loading i::before,
+.map-ai-message-bubble.bot.loading i::after { content: ""; position: absolute; top: 0; width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
+.map-ai-message-bubble.bot.loading i::before { left: 8px; opacity: .55; animation: mapAiTypingDot 1.2s ease-in-out .16s infinite; }
+.map-ai-message-bubble.bot.loading i::after { left: 16px; opacity: .75; animation: mapAiTypingDot 1.2s ease-in-out .32s infinite; }
 .map-ai-message-bubble.user { align-self: flex-end; border-color: rgba(12,124,123,.18); background: #e4f4f2; color: #064f55; }
 .map-ai-message-bubble.user p { font-weight: 950; }
 .map-ai-message-bubble.user.symptom { max-width: 86%; background: #dcf3ee; border-color: rgba(12,124,123,.24); }
@@ -1543,6 +1550,7 @@ const styles = `
 .map-ai-history-title small { margin-top: 2px; color: var(--muted); font-size: 11px; font-weight: 850; }
 @keyframes mapAiMessageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes mapAiQuestionIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes mapAiTypingDot { 0%, 80%, 100% { transform: translateY(0); opacity: .35; } 40% { transform: translateY(-3px); opacity: .95; } }
 .location-error { position: absolute; right: 18px; bottom: 78px; z-index: 2; border: 1px solid rgba(239,111,97,.35); border-radius: 9px; background: #fff4f2; color: #b42318; padding: 9px 11px; font-size: 12px; font-weight: 800; }
 .facility-detail-view { position: absolute; inset: 42px; z-index: 8; overflow-y: auto; display: block; border: 1px solid var(--line-strong); border-radius: 24px; background: linear-gradient(180deg, #f8fbf4, #eef5e9); box-shadow: 0 24px 70px rgba(17,20,18,.22); transform-origin: center bottom; animation: facilityDetailReveal 520ms cubic-bezier(.16, 1, .3, 1) both; }
 .facility-detail-close { position: absolute; top: 18px; right: 18px; z-index: 12; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid rgba(180, 35, 24, .24); border-radius: 50%; background: #fff4f2; color: #b42318; box-shadow: 0 12px 28px rgba(180, 35, 24, .18); font-size: 28px; line-height: 1; font-weight: 900; cursor: pointer; transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease; }
