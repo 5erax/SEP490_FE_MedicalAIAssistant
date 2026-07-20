@@ -61,19 +61,24 @@ Copy-Item .env.example .env.local
 Cập nhật các biến trong `.env.local`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_BASE_URL=http://52.77.210.243
+API_BASE_URL=http://52.77.210.243
 VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
 VITE_GOOGLE_AUTHORIZED_ORIGINS=http://localhost:3000
 ```
 
 | Biến | Bắt buộc | Mô tả |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | Có | Địa chỉ backend. Vite chuyển tiếp các request `/api/*` đến địa chỉ này. |
+| `VITE_API_BASE_URL` | Có | Backend origin cho Vite dev proxy. Giá trị hiện tại là `http://52.77.210.243`; không thêm `/index.html` hoặc `/api` vào cuối. |
 | `VITE_GOOGLE_CLIENT_ID` | Khi dùng Google OAuth | Client ID được cấu hình cho domain chạy frontend. |
 | `VITE_GOOGLE_AUTHORIZED_ORIGINS` | Khi dùng Google OAuth | Danh sách origin được phép render Google login, phân tách bằng dấu phẩy. Origin hiện tại phải khớp Google Cloud Console để tránh lỗi `origin_mismatch`. |
-| `API_BASE_URL` | Khi deploy Vercel | Backend origin cho serverless proxy `api/proxy.js`; cấu hình trong Vercel Environment Variables, không hard-code vào `vercel.json`. |
+| `API_BASE_URL` | Khi deploy Vercel | Backend origin `http://52.77.210.243` cho serverless proxy `api/proxy.js`; cấu hình cùng giá trị trong Vercel Environment Variables. |
 
 Không commit khóa API, token, mật khẩu hoặc thông tin xác thực thật vào repository.
+
+Swagger UI của backend hiện tại: [http://52.77.210.243/index.html](http://52.77.210.243/index.html).
+OpenAPI document: [http://52.77.210.243/swagger/v1/swagger.json](http://52.77.210.243/swagger/v1/swagger.json).
+Các service frontend tiếp tục dùng path `/api/*`; Vite hoặc serverless proxy sẽ ghép path này với backend origin.
 
 ## Chạy dự án
 
