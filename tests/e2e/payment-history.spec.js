@@ -154,6 +154,7 @@ test("patient views paged payment history and owned payment detail", async ({ pa
   await page.goto("/profile?tab=transactions", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("heading", { name: "Lịch sử thanh toán" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Danh sách giao dịch thanh toán của tài khoản hiện tại" })).toBeVisible();
   await expect(page.getByText("MediMate+ Tháng", { exact: true })).toBeVisible();
   await expect(page.getByText("payOS", { exact: true })).toBeVisible();
   await expect(page.getByText("PAYOS_TXN_123456", { exact: true })).toBeVisible();

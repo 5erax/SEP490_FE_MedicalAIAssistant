@@ -310,55 +310,62 @@ export default function PaymentHistoryPanel() {
           <p>Các giao dịch thanh toán sẽ xuất hiện tại đây sau khi bạn đăng ký gói dịch vụ.</p>
         </div>
       ) : (
-        <div className="payment-history-list">
+        <div
+          className="payment-history-table-region"
+          role="region"
+          aria-labelledby="payment-history-table-caption"
+          tabIndex="0"
+        >
+          <table className="payment-history-table">
+            <caption id="payment-history-table-caption" className="sr-only">
+              Danh sách giao dịch thanh toán của tài khoản hiện tại
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Gói dịch vụ</th>
+                <th scope="col">Trạng thái</th>
+                <th scope="col">Số tiền</th>
+                <th scope="col">Thanh toán</th>
+                <th scope="col">Ngày tạo</th>
+                <th scope="col"><span className="sr-only">Thao tác</span></th>
+              </tr>
+            </thead>
+            <tbody>
           {paymentPage.items.map((payment, index) => {
             const paymentId = String(payment.id ?? "");
             const itemKey = paymentId || payment.transactionReference || `${pageNumber}-${index}`;
             return (
-              <article className="payment-history-item" key={itemKey}>
-                <header>
-                  <div>
+              <tr key={itemKey}>
+                <th scope="row" data-label="Gói dịch vụ">
                     <strong>{payment.planName || "Giao dịch MediMate+"}</strong>
-                    <small>{paymentId || "Chưa có mã thanh toán"}</small>
-                  </div>
-                  <PaymentStatusBadge payment={payment} />
-                </header>
-                <dl className="payment-history-summary">
-                  <div>
-                    <dt>Số tiền</dt>
-                    <dd>{formatMoney(payment.amount, payment.currency)}</dd>
-                  </div>
-                  <div>
-                    <dt>Cổng thanh toán</dt>
-                    <dd>{payment.provider || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Mã giao dịch</dt>
-                    <dd>{payment.transactionReference || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Ngày tạo</dt>
-                    <dd><time dateTime={payment.createdAt || undefined}>{formatDateTime(payment.createdAt)}</time></dd>
-                  </div>
-                  <div>
-                    <dt>Ngày thanh toán</dt>
-                    <dd><time dateTime={payment.paidAt || undefined}>{formatDateTime(payment.paidAt)}</time></dd>
-                  </div>
-                </dl>
-                <button
-                  type="button"
-                  className="payment-history-detail-button"
-                  disabled={!paymentId}
-                  onClick={(event) => {
-                    detailTriggerRef.current = event.currentTarget;
-                    setSelectedPayment(payment);
-                  }}
-                >
-                  Xem chi tiết
-                </button>
-              </article>
+                </th>
+                <td data-label="Trạng thái"><PaymentStatusBadge payment={payment} /></td>
+                <td data-label="Số tiền">{formatMoney(payment.amount, payment.currency)}</td>
+                <td data-label="Thanh toán">
+                  <strong>{payment.provider || "—"}</strong>
+                  <small>{payment.transactionReference || "Chưa có mã giao dịch"}</small>
+                </td>
+                <td data-label="Ngày tạo">
+                  <time dateTime={payment.createdAt || undefined}>{formatDateTime(payment.createdAt)}</time>
+                </td>
+                <td className="payment-history-table-action" data-label="Thao tác">
+                  <button
+                    type="button"
+                    className="payment-history-detail-button"
+                    disabled={!paymentId}
+                    onClick={(event) => {
+                      detailTriggerRef.current = event.currentTarget;
+                      setSelectedPayment(payment);
+                    }}
+                  >
+                    Xem chi tiết
+                  </button>
+                </td>
+              </tr>
             );
           })}
+            </tbody>
+          </table>
         </div>
       )}
 
