@@ -59,14 +59,6 @@ function unwrapData(response) {
   return response?.data ?? response?.Data ?? response;
 }
 
-function getPagedItems(response) {
-  const data = unwrapData(response);
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.Items)) return data.Items;
-  return [];
-}
-
 function getFacilityConsultationDepartments(facility) {
   if (!facility) return [];
 
@@ -100,6 +92,17 @@ function getSessionId(session) {
 
 function getSessionTitle(session) {
   return session?.symptoms ?? session?.userInput ?? session?.inputText ?? session?.title ?? "Phiên tư vấn";
+}
+
+function getSessionDate(session) {
+  const value = session?.createdAt ?? session?.startedAt ?? session?.updatedAt;
+  if (!value) return "Chưa cập nhật thời gian";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật thời gian";
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function getQuestionsFromResponse(response) {
@@ -197,8 +200,8 @@ function MapConsultationAssistant({ consultationFacility = null }) {
     setMessage("");
 
     try {
-      const response = await consultationSessionsApi.listMySessions(1, 10);
-      setSessions(getPagedItems(response));
+      const historyItems = await consultationSessionsApi.listAllMySessions();
+      setSessions(historyItems);
     } catch (error) {
       setMessage(error.message || "Không thể tải lịch sử gợi ý.");
     } finally {
@@ -271,8 +274,9 @@ function MapConsultationAssistant({ consultationFacility = null }) {
                   <div>
                     <p>Bạn muốn khám chuyên khoa nào?</p>
                     <label className="map-ai-select-control">
-                      <span className="sr-only">Chọn chuyên khoa</span>
+                      <span>Chuyên khoa tại {consultationFacility.facilityName}</span>
                       <select
+                        aria-label="Chọn chuyên khoa"
                         value={selectedDepartmentId}
                         onChange={(event) => setSelectedDepartmentId(event.target.value)}
                         disabled={normalizedDepartments.length === 0}
@@ -336,12 +340,15 @@ function MapConsultationAssistant({ consultationFacility = null }) {
 
               {selectedDepartmentId && (
                 <div className="map-ai-composer">
-                  <input
-                    value={symptoms}
-                    onChange={(event) => setSymptoms(event.target.value)}
-                    placeholder="Nhập triệu chứng của bạn..."
-                    aria-label="Triệu chứng của bạn"
-                  />
+                  <label className="map-ai-composer-field">
+                    <span>Triệu chứng</span>
+                    <input
+                      aria-label="Triệu chứng của bạn"
+                      value={symptoms}
+                      onChange={(event) => setSymptoms(event.target.value)}
+                      placeholder="Nhập triệu chứng của bạn..."
+                    />
+                  </label>
                   <button type="submit" disabled={!canSubmit} aria-label="Tạo gợi ý câu hỏi">
                     <Send size={16} />
                   </button>
@@ -354,20 +361,30 @@ function MapConsultationAssistant({ consultationFacility = null }) {
                 <Clock3 size={16} />
                 <div>
                   <strong>Lịch sử gợi ý</strong>
-                  <small>Các phiên hỗ trợ trước khám gần đây</small>
+                  <small>Tất cả phiên hỗ trợ trước khám của bạn</small>
                 </div>
+                <span>{sessions.length}</span>
               </div>
               {historyStatus === "loading" && <p>Đang tải lịch sử...</p>}
               {historyStatus !== "loading" && sessions.length === 0 && <p>Chưa có lịch sử gợi ý.</p>}
-              {sessions.map((session) => (
-                <article key={getSessionId(session) || getSessionTitle(session)}>
-                  <div>
-                    <Clock3 size={15} />
-                    <strong>{getSessionTitle(session)}</strong>
-                  </div>
-                  <button type="button" onClick={() => handleViewSession(session)}>Xem chi tiết</button>
-                </article>
-              ))}
+              <div className="map-ai-history-list">
+                {sessions.map((session) => {
+                  const sessionId = getSessionId(session);
+                  const isSelected = sessionId && sessionId === getSessionId(selectedSession);
+                  return (
+                    <article className={isSelected ? "active" : ""} key={sessionId || getSessionTitle(session)}>
+                      <div>
+                        <Clock3 size={15} />
+                        <span>
+                          <strong>{getSessionTitle(session)}</strong>
+                          <small>{getSessionDate(session)}</small>
+                        </span>
+                      </div>
+                      <button type="button" onClick={() => handleViewSession(session)}>Xem</button>
+                    </article>
+                  );
+                })}
+              </div>
               {selectedSession && (
                 <div className="map-ai-session-detail">
                   <strong>Chi tiết phiên gợi ý</strong>
@@ -530,10 +547,11 @@ export default function FacilityMap({
                             ))}
                           </div>
                           <table className="popup-diagnosis-table">
+                            <caption className="sr-only">Xác suất các chẩn đoán lâm sàng</caption>
                             <thead>
                               <tr>
-                                <th>Bệnh</th>
-                                <th>PAGivenB</th>
+                                <th scope="col">Bệnh</th>
+                                <th scope="col">PAGivenB</th>
                               </tr>
                             </thead>
                             <tbody>
