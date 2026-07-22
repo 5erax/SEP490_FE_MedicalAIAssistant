@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { preparePage } from "./helpers.js";
 
@@ -136,4 +137,106 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
     sessionId: SESSION_ID,
     answers: [{ questionId: QUESTION_ID, answers: { "Do you have chest pain during exertion?": true } }],
   });
+});
+
+test("opens all clinical history and session detail in a sidebar without navigating", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      roles: ["Patient"],
+      isPremium: true,
+    }));
+  }, ACCESS_TOKEN);
+
+  const firstSessionId = "44444444-4444-4444-8444-444444444444";
+  const requestedPages = [];
+  const historySessions = [
+    {
+      sessionId: firstSessionId,
+      inputText: "Đau ngực khi gắng sức",
+      sessionType: "diagnoses",
+      status: "completed",
+      createdAt: "2026-07-22T02:00:00Z",
+    },
+    {
+      sessionId: "55555555-5555-4555-8555-555555555555",
+      inputText: "Sốt nhẹ kéo dài",
+      sessionType: "diagnoses",
+      status: "completed",
+      createdAt: "2026-07-21T02:00:00Z",
+    },
+  ];
+
+  await page.route("**/api/symptom-analysis/my-sessions**", async (route) => {
+    const url = new URL(route.request().url());
+    const pageNumber = Number(url.searchParams.get("PageNumber"));
+    requestedPages.push({
+      pageNumber,
+      sessionType: url.searchParams.get("sessionType"),
+    });
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          pageNumber,
+          pageSize: 50,
+          totalCount: historySessions.length,
+          totalPages: 2,
+          items: [historySessions[pageNumber - 1]],
+        },
+      }),
+    });
+  });
+
+  await page.route(`**/api/symptom-analysis/${firstSessionId}`, async (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        ...historySessions[0],
+        diagnoses: [{ diseaseName: "Đau thắt ngực" }],
+      },
+    }),
+  }));
+
+  await page.goto("/symptom", { waitUntil: "domcontentloaded" });
+  const initialUrl = page.url();
+  const historyTrigger = page.getByRole("button", { name: "Lịch sử phân tích" });
+
+  await historyTrigger.click();
+
+  const drawer = page.getByRole("dialog", { name: "Lịch sử phân tích lâm sàng" });
+  await expect(page).toHaveURL(initialUrl);
+  await expect(historyTrigger).toHaveAttribute("aria-expanded", "true");
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByText("Đau ngực khi gắng sức", { exact: true })).toBeVisible();
+  await expect(drawer.getByText("Sốt nhẹ kéo dài", { exact: true })).toBeVisible();
+  expect(requestedPages).toEqual([
+    { pageNumber: 1, sessionType: "diagnoses" },
+    { pageNumber: 2, sessionType: "diagnoses" },
+  ]);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".analysis-history-panel")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const seriousViolations = accessibility.violations.filter(
+    (violation) => ["critical", "serious"].includes(violation.impact),
+  );
+  expect(seriousViolations).toEqual([]);
+
+  await drawer.locator("article", { hasText: "Đau ngực khi gắng sức" })
+    .getByRole("button", { name: "Chi tiết" })
+    .click();
+  await expect(drawer.getByRole("heading", { name: "Chi tiết phiên" })).toBeVisible();
+  await expect(drawer.getByText("Đau thắt ngực", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(initialUrl);
+
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(historyTrigger).toHaveAttribute("aria-expanded", "false");
+  await expect(historyTrigger).toBeFocused();
+  await expect(page).toHaveURL(initialUrl);
 });

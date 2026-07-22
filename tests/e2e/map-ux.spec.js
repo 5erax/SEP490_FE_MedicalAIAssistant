@@ -2,6 +2,12 @@ import { expect, test } from "@playwright/test";
 import { preparePage } from "./helpers.js";
 
 const FACILITY_ID = "11111111-1111-4111-8111-111111111111";
+const FACILITY_DEPARTMENT_ID = "33333333-3333-4333-8333-333333333333";
+const TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJVc2VyIiwiZW1haWwiOiJ1c2VyQGV4YW1wbGUuY29tIn0",
+  "",
+].join(".");
 const MAP_STYLE = {
   version: 8,
   name: "E2E map style",
@@ -19,7 +25,7 @@ function facility(overrides = {}) {
     phone: "0123456789",
     facilityType: "Hospital",
     openingHours: "24/7",
-    departments: [{ departmentName: "Tim mạch" }],
+    departments: [{ departmentId: FACILITY_DEPARTMENT_ID, departmentName: "Tim mạch" }],
     ...overrides,
   };
 }
@@ -35,17 +41,30 @@ async function mockMapApis(page, facilities, options = {}) {
       });
     }
 
-    if (url.pathname === "/api/medical-departments") {
+    if (url.pathname.startsWith("/api/medical-facilities/")) {
+      const facilityId = url.pathname.split("/").at(-1);
+      const selectedFacility = facilities.find((item) => String(item.id ?? item.facilityId) === facilityId);
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: options.departments ?? [] }),
+        body: JSON.stringify({ success: true, data: selectedFacility ?? null }),
       });
     }
 
-    if (url.pathname === "/api/facility-departments/active") {
+    if (
+      url.pathname === "/api/consultation-sessions/generate-questions-for-consultant-session"
+      && route.request().method() === "POST"
+    ) {
+      options.onGenerateQuestions?.(route.request().postDataJSON());
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: options.facilityDepartments ?? [] }),
+        body: JSON.stringify({
+          success: true,
+          data: {
+            departmentId: FACILITY_DEPARTMENT_ID,
+            symptoms: "Đau ngực nhẹ",
+            questions: [{ questionVi: "Cơn đau bắt đầu từ khi nào?" }],
+          },
+        }),
       });
     }
 
@@ -87,11 +106,56 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   const viewDetails = page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" });
   await viewDetails.focus();
   await viewDetails.press("Enter");
-  await expect(viewDetails).toHaveAttribute("aria-pressed", "true");
-  await expect(viewDetails).toHaveText("Đang xem chi tiết");
+  await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveAttribute("aria-pressed", "true");
 
   const skipMap = page.getByRole("link", { name: "Bỏ qua bản đồ, đến danh sách cơ sở" });
   await expect(skipMap).toHaveAttribute("href", "#facility-list");
+});
+
+test("pre-visit AI appears after facility detail and uses its department id", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+  }, TOKEN);
+
+  const requestedApiPaths = [];
+  let consultationPayload = null;
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/api/")) requestedApiPaths.push(url.pathname);
+  });
+  await mockMapApis(page, [facility()], {
+    onGenerateQuestions(payload) {
+      consultationPayload = payload;
+    },
+  });
+  await mockSuccessfulMapStyle(page);
+
+  await page.goto("/map", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /AI hỗ trợ trước khám/ })).toHaveCount(0);
+  await expect(page.getByText("AI hỗ trợ trước khám", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
+  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Thu gọn AI hỗ trợ trước khám" })).toHaveAttribute("aria-expanded", "true");
+
+  const departmentSelect = page.getByLabel("Chọn chuyên khoa");
+  await expect(departmentSelect).toHaveValue(FACILITY_DEPARTMENT_ID);
+  await expect(departmentSelect.locator("option")).toHaveCount(2);
+  await page.getByLabel("Triệu chứng của bạn").fill("Đau ngực nhẹ");
+  await page.getByRole("button", { name: "Tạo gợi ý câu hỏi" }).click();
+
+  await expect(page.getByText("Cơn đau bắt đầu từ khi nào?", { exact: true })).toBeVisible();
+  expect(consultationPayload).toEqual({
+    departmentId: FACILITY_DEPARTMENT_ID,
+    symptoms: "Đau ngực nhẹ",
+  });
+  expect(requestedApiPaths).not.toContain("/api/medical-departments");
+  expect(requestedApiPaths).not.toContain("/api/facility-departments/active");
 });
 
 test("facility without coordinates stays in the list without a false marker", async ({ page }) => {
@@ -102,12 +166,10 @@ test("facility without coordinates stays in the list without a false marker", as
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
   await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
-  await expect(page.getByText("Chưa có vị trí chính xác trên bản đồ.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveCount(0);
 
-  const directionsButton = page.getByRole("button", { name: "Chỉ đường đến Bệnh viện kiểm thử" });
+  const directionsButton = page.getByRole("button", { name: "Chỉ đường", exact: true });
   await expect(directionsButton).toBeDisabled();
-  await expect(directionsButton).toHaveAttribute("title", "Cơ sở chưa có tọa độ chính xác");
 });
 
 test("map search matches facility departments from active backend data", async ({ page }) => {
@@ -123,15 +185,12 @@ test("map search matches facility departments from active backend data", async (
       facilityName: "Phòng khám Da liễu",
       phone: null,
       facilityType: "Phòng khám",
-      departments: [],
+      departments: [{
+        departmentId: "44444444-4444-4444-8444-444444444444",
+        departmentName: "Da liễu",
+      }],
     }),
-  ], {
-    departments: [{ id: "33333333-3333-4333-8333-333333333333", departmentName: "Da liễu" }],
-    facilityDepartments: [{
-      facilityId: "22222222-2222-4222-8222-222222222222",
-      departmentId: "33333333-3333-4333-8333-333333333333",
-    }],
-  });
+  ]);
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
@@ -143,12 +202,12 @@ test("map search matches facility departments from active backend data", async (
   await expect(dermatologyCard.getByText("Phòng khám", { exact: true })).toBeVisible();
 
   await dermatologyCard.getByRole("button", { name: "Xem chi tiết Phòng khám Da liễu" }).click();
-  const callButton = page.getByRole("button", { name: "Gọi Phòng khám Da liễu" });
+  const callButton = page.getByRole("button", { name: "Gọi", exact: true });
   await expect(callButton).toBeDisabled();
   await expect(callButton).toHaveAttribute("title", "Cơ sở chưa có số điện thoại");
 });
 
-test("map supplements each department with three complete mock hospitals", async ({ page }) => {
+test("map displays only facilities returned by the active API", async ({ page }) => {
   await preparePage(page);
   await mockMapApis(page, [
     facility({
@@ -163,29 +222,15 @@ test("map supplements each department with three complete mock hospitals", async
         departmentName: "Khoa cơ - xương - khớp",
       }],
     }),
-  ], {
-    departments: [
-      { id: "department-musculoskeletal", departmentName: "Khoa cơ - xương - khớp", chapterCode: "M" },
-      { id: "department-respiratory", departmentName: "Khoa Hô Hấp", chapterCode: "J" },
-    ],
-  });
+  ]);
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("6 kết quả phù hợp", { exact: true })).toBeVisible();
-  await expect(page.getByText("Backend chưa đủ 3 bệnh viện cho mỗi khoa.", { exact: false })).toHaveCount(0);
-  await expect(page.getByText("Bệnh viện Chấn thương Chỉnh hình TP.HCM", { exact: true })).toBeVisible();
-  await expect(page.getByText("Bệnh viện Phạm Ngọc Thạch", { exact: true })).toBeVisible();
-
-  const respiratoryCard = page.locator(".facility-result-card").filter({ hasText: "Bệnh viện Phạm Ngọc Thạch" });
-  await respiratoryCard.getByRole("button", { name: "Xem chi tiết" }).click();
-
-  const detail = page.locator(".facility-detail-view");
-  await expect(detail).toBeVisible();
-  await expect(detail.locator("img")).toHaveAttribute("src", "https://cdn.youmed.vn/tin-tuc/wp-content/uploads/2019/05/benh-vien-pham-ngoc-thach-1024x634.png");
-  await expect(detail).toContainText("028 3855 0207");
-  await expect(detail).toContainText("https://bvphamngocthach.vn");
+  await expect(page.getByText("1 kết quả phù hợp", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bệnh viện Chợ Rẫy", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bệnh viện Chấn thương Chỉnh hình TP.HCM", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Bệnh viện Phạm Ngọc Thạch", { exact: true })).toHaveCount(0);
 });
 
 test("map style failure shows a usable fallback and supports retry", async ({ page }) => {

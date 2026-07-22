@@ -57,8 +57,8 @@
 }
 
 .analysis-history-close {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -172,8 +172,8 @@
   line-height: 1.55;
 }
 
-.analysis-history-detail-error {
-  color: #b42318 !important;
+.analysis-history-detail .analysis-history-detail-error {
+  color: #b42318;
 }
 
 .analysis-history-empty,
@@ -198,22 +198,22 @@
   width: 100%;
 }
 
-.analysis-history-panel-footer .analysis-history-continue {
+.analysis-history-panel-footer .ui-button.analysis-history-continue {
   min-height: 48px;
-  border-radius: 16px !important;
-  box-shadow: 0 7px 0 #08120b, 0 18px 34px rgba(71, 117, 30, 0.18) !important;
-  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease !important;
+  border-radius: 16px;
+  box-shadow: 0 7px 0 #08120b, 0 18px 34px rgba(71, 117, 30, 0.18);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
 
-.analysis-history-panel-footer .analysis-history-continue:hover {
+.analysis-history-panel-footer .ui-button.analysis-history-continue:hover {
   filter: saturate(1.03);
   transform: translateY(-1px);
-  box-shadow: 0 8px 0 #08120b, 0 22px 40px rgba(71, 117, 30, 0.22) !important;
+  box-shadow: 0 8px 0 #08120b, 0 22px 40px rgba(71, 117, 30, 0.22);
 }
 
-.analysis-history-panel-footer .analysis-history-continue:active {
+.analysis-history-panel-footer .ui-button.analysis-history-continue:active {
   transform: translateY(3px);
-  box-shadow: 0 3px 0 #08120b, 0 12px 24px rgba(71, 117, 30, 0.16) !important;
+  box-shadow: 0 3px 0 #08120b, 0 12px 24px rgba(71, 117, 30, 0.16);
 }
 
 .analysis-history-panel-footer .analysis-history-continue > span {
@@ -260,5 +260,19 @@
     width: auto;
     max-height: min(78vh, 720px);
     border-radius: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analysis-history-panel,
+  .analysis-history-spin {
+    animation: none;
+  }
+
+  .analysis-history-close,
+  .analysis-history-list article,
+  .analysis-history-panel-footer .ui-button.analysis-history-continue,
+  .analysis-history-panel-footer .analysis-history-continue svg {
+    transition: none;
   }
 }

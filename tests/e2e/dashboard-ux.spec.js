@@ -163,7 +163,7 @@ test.describe("patient specialty intake", () => {
     await openRoute(page, "/dashboard");
 
     const symptoms = page.getByLabel("Triệu chứng bạn đang gặp");
-    const submit = page.getByRole("button", { name: "Gợi ý chuyên khoa" });
+    const submit = page.getByRole("button", { name: "Gợi ý chuyên khoa", exact: true });
     const currentStep = page.locator('[aria-current="step"]');
 
     await expect(page.getByRole("heading", { level: 2, name: "Gợi ý chuyên khoa qua triệu chứng" })).toBeVisible();
@@ -234,7 +234,7 @@ test.describe("patient specialty intake", () => {
 
     await openRoute(page, "/dashboard");
     await page.getByLabel("Triệu chứng bạn đang gặp").fill("Ho và đau họng");
-    await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
+    await page.getByRole("button", { name: "Gợi ý chuyên khoa", exact: true }).click();
 
     await expect(page.getByText("Bạn có ho kéo dài trên 3 ngày không?")).toBeVisible();
     await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeHidden();
@@ -254,7 +254,7 @@ test.describe("patient specialty intake", () => {
 
     await openRoute(page, "/dashboard");
     await page.getByLabel("Triệu chứng bạn đang gặp").fill("Đau không rõ vị trí");
-    await page.getByRole("button", { name: "Gợi ý chuyên khoa" }).click();
+    await page.getByRole("button", { name: "Gợi ý chuyên khoa", exact: true }).click();
 
     await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeVisible();
     await expect(page.getByRole("button", { name: "Quay lại biểu mẫu" })).toBeVisible();
@@ -293,5 +293,70 @@ test.describe("patient specialty intake", () => {
     await page.getByRole("button", { name: "Để sau" }).click();
     await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ khi bạn sẵn sàng" })).toBeHidden();
     await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toBeVisible();
+  });
+
+  test("opens every specialty history page in a sidebar without navigating", async ({ page }) => {
+    const requestedPages = [];
+    const historySessions = [
+      {
+        sessionId: "44444444-4444-4444-8444-444444444444",
+        inputText: "Đau họng và sốt nhẹ",
+        sessionType: "department",
+        status: "completed",
+        createdAt: "2026-07-22T02:00:00Z",
+      },
+      {
+        sessionId: "55555555-5555-4555-8555-555555555555",
+        inputText: "Đau đầu kéo dài",
+        sessionType: "department",
+        status: "completed",
+        createdAt: "2026-07-21T02:00:00Z",
+      },
+    ];
+
+    await page.route("**/api/symptom-analysis/my-sessions**", async (route) => {
+      const url = new URL(route.request().url());
+      const pageNumber = Number(url.searchParams.get("PageNumber"));
+      requestedPages.push({
+        pageNumber,
+        sessionType: url.searchParams.get("sessionType"),
+      });
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            pageNumber,
+            pageSize: 50,
+            totalCount: historySessions.length,
+            totalPages: 2,
+            items: [historySessions[pageNumber - 1]],
+          },
+        }),
+      });
+    });
+
+    await openRoute(page, "/dashboard");
+    const initialUrl = page.url();
+    const historyTrigger = page.getByRole("button", { name: "Lịch sử gợi ý chuyên khoa" });
+
+    await historyTrigger.click();
+
+    const drawer = page.getByRole("dialog", { name: "Lịch sử gợi ý chuyên khoa" });
+    await expect(page).toHaveURL(initialUrl);
+    await expect(historyTrigger).toHaveAttribute("aria-expanded", "true");
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByText("Đau họng và sốt nhẹ", { exact: true })).toBeVisible();
+    await expect(drawer.getByText("Đau đầu kéo dài", { exact: true })).toBeVisible();
+    expect(requestedPages).toEqual([
+      { pageNumber: 1, sessionType: "department" },
+      { pageNumber: 2, sessionType: "department" },
+    ]);
+
+    await page.keyboard.press("Escape");
+    await expect(drawer).toBeHidden();
+    await expect(historyTrigger).toHaveAttribute("aria-expanded", "false");
+    await expect(historyTrigger).toBeFocused();
+    await expect(page).toHaveURL(initialUrl);
   });
 });

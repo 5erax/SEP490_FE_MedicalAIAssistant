@@ -22,10 +22,8 @@ import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
 import {
-  facilityDepartmentsApi,
   feedbackReviewsApi,
   getStoredAuth,
-  medicalDepartmentsApi,
   medicalFacilitiesApi,
 } from "../services/api";
 
@@ -277,18 +275,30 @@ function normalizeFacility(facility, relationDepartments = [], relationDepartmen
   const id = facility.facilityId ?? facility.id;
   const latitude = coordinateOrNull(facility.latitude, -90, 90);
   const longitude = coordinateOrNull(facility.longitude, -180, 180);
-  const embeddedDepartments = Array.isArray(facility.departments)
-    ? facility.departments.map((item) => item.departmentName ?? item.name ?? item).filter(Boolean)
-    : [];
-  const embeddedDepartmentIds = Array.isArray(facility.departments)
-    ? facility.departments.map((item) => item.departmentId ?? item.id).filter(Boolean)
-    : [];
+  const embeddedDepartmentItems = Array.isArray(facility.departments) ? facility.departments : [];
+  const embeddedDepartments = embeddedDepartmentItems
+    .map((item) => item.departmentName ?? item.name ?? item)
+    .filter(Boolean);
+  const consultationDepartmentsById = new globalThis.Map();
+  embeddedDepartmentItems.forEach((item, index) => {
+    const departmentId = String(item?.departmentId ?? item?.id ?? "").trim();
+    if (!departmentId) return;
+    consultationDepartmentsById.set(departmentId, {
+      id: departmentId,
+      name: item?.departmentName ?? item?.name ?? embeddedDepartments[index] ?? `Chuyên khoa ${index + 1}`,
+    });
+  });
+  relationDepartmentIds.forEach((value, index) => {
+    const departmentId = String(value ?? "").trim();
+    if (!departmentId || consultationDepartmentsById.has(departmentId)) return;
+    consultationDepartmentsById.set(departmentId, {
+      id: departmentId,
+      name: relationDepartments[index] ?? `Chuyên khoa ${index + 1}`,
+    });
+  });
+  const consultationDepartments = Array.from(consultationDepartmentsById.values());
   const departments = Array.from(new Set([...embeddedDepartments, ...relationDepartments].filter(Boolean)));
-  const departmentIds = Array.from(new Set(
-    [...embeddedDepartmentIds, ...relationDepartmentIds]
-      .map((value) => String(value ?? "").trim())
-      .filter(Boolean),
-  ));
+  const departmentIds = consultationDepartments.map((department) => department.id);
   const typeKey = normalizeFacilityType(facility.facilityType);
   const phone = normalizePhone(facility.phone);
 
@@ -311,6 +321,7 @@ function normalizeFacility(facility, relationDepartments = [], relationDepartmen
     openingHours: facility.openingHours || "Đang cập nhật",
     departments: departments.length ? departments : ["Đa khoa"],
     departmentIds,
+    consultationDepartments,
   };
 }
 
@@ -328,7 +339,6 @@ function NearbyClinicPage() {
     }
   });
   const [recommendationContext] = useState(readMapRecommendationContext);
-  const [departments, setDepartments] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
   const [apiNotice, setApiNotice] = useState("");
@@ -390,59 +400,15 @@ function NearbyClinicPage() {
   useEffect(() => {
     let active = true;
 
-    Promise.allSettled([
-      medicalFacilitiesApi.active(),
-      medicalDepartmentsApi.list(1, 100),
-      facilityDepartmentsApi.active(),
-    ])
-      .then(([facilityResult, departmentResult, relationResult]) => {
+    medicalFacilitiesApi.active()
+      .then((response) => {
         if (!active) return;
 
-        const rawFacilities = facilityResult.status === "fulfilled" ? getArrayData(facilityResult.value) : [];
-        const departments = departmentResult.status === "fulfilled" ? getArrayData(departmentResult.value) : [];
-        setDepartments(departments);
-        const departmentNamesById = new globalThis.Map(
-          departments
-            .map((department) => [department.id, department.departmentName || department.name])
-            .filter(([id, name]) => id && name),
-        );
-        const relations = relationResult.status === "fulfilled" ? getArrayData(relationResult.value) : [];
-        const relationDepartmentsByFacility = new globalThis.Map();
-        const relationDepartmentIdsByFacility = new globalThis.Map();
-        relations.forEach((relation) => {
-          const facilityId = relation.facilityId;
-          if (!facilityId) return;
-
-          const departmentName = relation.departmentName || departmentNamesById.get(relation.departmentId);
-          if (departmentName) {
-            const names = relationDepartmentsByFacility.get(facilityId) ?? [];
-            names.push(departmentName);
-            relationDepartmentsByFacility.set(facilityId, names);
-          }
-
-          if (relation.departmentId) {
-            const ids = relationDepartmentIdsByFacility.get(facilityId) ?? [];
-            ids.push(relation.departmentId);
-            relationDepartmentIdsByFacility.set(facilityId, ids);
-          }
-        });
-        const serviceFacilities = rawFacilities.map((facility) => {
-          const facilityId = facility.facilityId ?? facility.id;
-          return normalizeFacility(
-            facility,
-            relationDepartmentsByFacility.get(facilityId) ?? [],
-            relationDepartmentIdsByFacility.get(facilityId) ?? [],
-          );
-        });
-        const data = serviceFacilities;
+        const data = getArrayData(response).map((facility) => normalizeFacility(facility));
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
         setSelectedFacility(null);
-        if (facilityResult.status !== "fulfilled") {
-          setApiNotice("Không tải được danh sách cơ sở y tế.");
-        } else {
-          setApiNotice(data.length ? "" : "Chưa có cơ sở y tế đang hoạt động.");
-        }
+        setApiNotice(data.length ? "" : "Chưa có cơ sở y tế đang hoạt động.");
       })
       .catch((error) => {
         if (active) {
@@ -1255,8 +1221,7 @@ function NearbyClinicPage() {
       <section className="map-stage">
         <FacilityMap
           chatContext={chatContext}
-          consultationFacility={detailPanelOpen ? detailFacility : null}
-          departments={departments}
+          consultationFacility={detailPanelOpen && !detailLoading ? detailFacility : null}
           facilities={mappableFacilities}
           locationError={locationError}
           mapRef={mapRef}

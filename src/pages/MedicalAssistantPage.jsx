@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ClipboardList, History, MapPin, Send, Stethoscope } from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
-import AnalysisHistoryPanel from "../components/analysis/AnalysisHistoryPanel";
+import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
 import {
   buildClinicalQuestionAnswerItems,
   getClinicalQuestionAnswerMode,
@@ -144,8 +144,7 @@ function AssessmentShell({
   historyAction = {
     label: "Lịch sử phân tích",
     sessionType: "diagnoses",
-    continueLabel: "Tiếp tục chuẩn đoán",
-    continueTo: "/medical-assistant/intake",
+    continueLabel: "Tiếp tục phân tích",
   },
   children,
 }) {
@@ -160,6 +159,9 @@ function AssessmentShell({
             tone="secondary"
             size="sm"
             className="analysis-history-button"
+            aria-haspopup={opensHistoryPanel ? "dialog" : undefined}
+            aria-controls={opensHistoryPanel ? ANALYSIS_HISTORY_PANEL_ID : undefined}
+            aria-expanded={opensHistoryPanel ? historyPanelOpen : undefined}
             onClick={() => {
               if (opensHistoryPanel) {
                 setHistoryPanelOpen(true);
@@ -193,7 +195,6 @@ function AssessmentShell({
           continueLabel={historyAction.continueLabel}
           onContinue={() => {
             setHistoryPanelOpen(false);
-            navigate(historyAction.continueTo || "/medical-assistant/intake");
           }}
         />
       )}
@@ -791,7 +792,7 @@ function ResultPage({ sessionId }) {
         <ErrorState
           title="Phiên đánh giá không tồn tại"
           description={remoteError || "Hãy bắt đầu phiên đánh giá mới hoặc mở lại từ lịch sử nếu phiên đã được lưu."}
-          action={<Button onClick={() => navigate("/assessment/history")}>Xem lịch sử</Button>}
+          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Bắt đầu đánh giá mới</Button>}
         />
       </AssessmentShell>
     );
