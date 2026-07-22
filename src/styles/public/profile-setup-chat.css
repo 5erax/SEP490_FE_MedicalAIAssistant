@@ -172,6 +172,143 @@
   color: var(--coral);
 }
 
+.profile-setup-error-summary {
+  border: 1px solid rgba(180, 35, 24, 0.34);
+  border-radius: 14px;
+  background: rgba(239, 68, 68, 0.08);
+  color: #8f241d;
+  padding: 16px 18px;
+}
+
+.profile-setup-error-summary:focus {
+  outline: 3px solid rgba(180, 35, 24, 0.24);
+  outline-offset: 3px;
+}
+
+.profile-setup-error-summary ul {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.profile-setup-error-summary a {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.profile-setup-disease-section {
+  background: #f8faf5;
+}
+
+.profile-setup-disease-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-setup-disease-heading h3,
+.profile-setup-disease-heading p {
+  margin: 0;
+}
+
+.profile-setup-disease-heading h3 {
+  font-size: 21px;
+}
+
+.profile-setup-disease-heading p {
+  max-width: 620px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.profile-setup-add-disease,
+.profile-setup-remove-disease {
+  min-height: 40px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  background: var(--lime);
+  color: var(--ink);
+  padding: 0 13px;
+  font-weight: 900;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.profile-setup-add-disease:disabled,
+.profile-setup-remove-disease:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  box-shadow: none;
+}
+
+.profile-setup-disease-list {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-setup-disease-card {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(17, 20, 18, 0.14);
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+  box-shadow: 0 12px 28px rgba(17, 20, 18, 0.06);
+}
+
+.profile-setup-disease-card legend {
+  max-width: calc(100% - 96px);
+  color: var(--ink);
+  padding: 0 6px;
+  font-weight: 900;
+}
+
+.profile-setup-remove-disease {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  min-height: 36px;
+  border-color: rgba(180, 35, 24, 0.3);
+  background: #fff;
+  color: #8f2d1f;
+  padding-inline: 10px;
+  box-shadow: none;
+}
+
+.profile-setup-disease-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-setup-disease-grid .profile-setup-field:first-child,
+.profile-setup-disease-grid .profile-setup-field:last-child {
+  grid-column: 1 / -1;
+}
+
+.profile-setup-disease-empty {
+  margin: 0;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--muted);
+  padding: 16px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
 .profile-setup-actions {
   flex-wrap: wrap;
   align-items: center;

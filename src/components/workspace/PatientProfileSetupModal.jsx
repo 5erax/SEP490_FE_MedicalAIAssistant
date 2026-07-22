@@ -166,6 +166,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
         diseaseIndex === index ? { ...disease, [key]: value } : disease
       )),
     }));
+    setErrors((current) => ({ ...current, [`chronicDiseases.${index}.${key}`]: "" }));
   }
 
   function removeDisease(index) {
@@ -173,6 +174,9 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
       ...current,
       chronicDiseases: current.chronicDiseases.filter((_, diseaseIndex) => diseaseIndex !== index),
     }));
+    setErrors((current) => Object.fromEntries(
+      Object.entries(current).filter(([key]) => !key.startsWith("chronicDiseases.")),
+    ));
   }
 
   async function handleSubmit(event) {
@@ -317,16 +321,16 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
                   </button>
                 </div>
                 <div className="patient-setup-modal-grid two">
-                  <SetupField label="Tên bệnh">
-                    <input value={disease.diseaseName} onChange={(event) => updateDisease(index, "diseaseName", event.target.value)} placeholder="Ví dụ: Tăng huyết áp" disabled={loading || submitting} />
+                  <SetupField label="Tên bệnh" error={errors[`chronicDiseases.${index}.diseaseName`]}>
+                    <input maxLength={160} value={disease.diseaseName} onChange={(event) => updateDisease(index, "diseaseName", event.target.value)} placeholder="Ví dụ: Tăng huyết áp" disabled={loading || submitting} />
                   </SetupField>
-                  <SetupField label="Ghi chú">
-                    <input value={disease.note} onChange={(event) => updateDisease(index, "note", event.target.value)} placeholder="Ví dụ: đang theo dõi, dùng thuốc hằng ngày..." disabled={loading || submitting} />
+                  <SetupField label="Ghi chú" error={errors[`chronicDiseases.${index}.note`]}>
+                    <input maxLength={1000} value={disease.note} onChange={(event) => updateDisease(index, "note", event.target.value)} placeholder="Ví dụ: đang theo dõi, dùng thuốc hằng ngày..." disabled={loading || submitting} />
                   </SetupField>
-                  <SetupField label="Từ ngày">
+                  <SetupField label="Từ ngày" error={errors[`chronicDiseases.${index}.from`]}>
                     <input type="date" value={disease.from} onChange={(event) => updateDisease(index, "from", event.target.value)} disabled={loading || submitting} />
                   </SetupField>
-                  <SetupField label="Đến ngày">
+                  <SetupField label="Đến ngày" error={errors[`chronicDiseases.${index}.to`]}>
                     <input type="date" value={disease.to} onChange={(event) => updateDisease(index, "to", event.target.value)} disabled={loading || submitting} />
                   </SetupField>
                 </div>
