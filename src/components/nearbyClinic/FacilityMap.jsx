@@ -67,22 +67,18 @@ function getPagedItems(response) {
   return [];
 }
 
-function getDepartmentId(department) {
-  return department?.id ?? department?.departmentId ?? department?.medicalDepartmentId ?? "";
-}
-
-function getDepartmentName(department) {
-  return department?.departmentName ?? department?.name ?? department?.title ?? "Chưa đặt tên";
-}
-
-function getFacilityConsultationDepartments(facility, departments) {
+function getFacilityConsultationDepartments(facility) {
   if (!facility) return [];
 
-  const departmentNamesById = new globalThis.Map(
-    departments
-      .map((department) => [String(getDepartmentId(department)), getDepartmentName(department)])
-      .filter(([id]) => id),
-  );
+  if (Array.isArray(facility.consultationDepartments)) {
+    return facility.consultationDepartments
+      .map((department, index) => ({
+        id: String(department?.id ?? department?.departmentId ?? "").trim(),
+        name: department?.name ?? department?.departmentName ?? `Chuyên khoa ${index + 1}`,
+      }))
+      .filter((department) => department.id);
+  }
+
   const facilityDepartmentIds = Array.isArray(facility.departmentIds) ? facility.departmentIds : [];
   const facilityDepartmentNames = Array.isArray(facility.departments) ? facility.departments : [];
 
@@ -92,7 +88,7 @@ function getFacilityConsultationDepartments(facility, departments) {
       if (!id) return null;
       return {
         id,
-        name: departmentNamesById.get(id) || facilityDepartmentNames[index] || `Chuyen khoa ${index + 1}`,
+        name: facilityDepartmentNames[index] || `Chuyên khoa ${index + 1}`,
       };
     })
     .filter(Boolean);
@@ -145,12 +141,12 @@ function AccessibleFacilityMarker({ facility, selected, onSelect }) {
   );
 }
 
-function MapConsultationAssistant({ consultationFacility = null, departments = [] }) {
+function MapConsultationAssistant({ consultationFacility = null }) {
   const normalizedDepartments = useMemo(() => (
-    getFacilityConsultationDepartments(consultationFacility, departments)
-  ), [consultationFacility, departments]);
+    getFacilityConsultationDepartments(consultationFacility)
+  ), [consultationFacility]);
   const initialDepartmentId = normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "";
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("suggest");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
   const [symptoms, setSymptoms] = useState("");
@@ -399,7 +395,8 @@ function MapConsultationAssistant({ consultationFacility = null, departments = [
         className="map-ai-launcher"
         type="button"
         onClick={() => setOpen((current) => !current)}
-        aria-label="Mở AI hỗ trợ trước khám"
+        aria-label={open ? "Thu gọn AI hỗ trợ trước khám" : "Mở AI hỗ trợ trước khám"}
+        aria-expanded={open}
       >
         <span className="map-ai-bot-icon">AI</span>
       </button>
@@ -410,7 +407,6 @@ function MapConsultationAssistant({ consultationFacility = null, departments = [
 export default function FacilityMap({
   chatContext,
   consultationFacility = null,
-  departments = [],
   facilities,
   hidePopup = false,
   locationError,
@@ -586,7 +582,6 @@ export default function FacilityMap({
       <MapConsultationAssistant
         key={consultationFacility?.facilityId || "map-consultation"}
         consultationFacility={consultationFacility}
-        departments={departments}
       />
       {locationError && <div className="location-error">{locationError}</div>}
     </section>
