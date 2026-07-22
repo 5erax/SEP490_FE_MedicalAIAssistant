@@ -370,7 +370,7 @@
 
 .admin-operator .admin-users-panel .panel-title-row {
   align-items: flex-start;
-  border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+  border-bottom: 1px solid var(--color-line);
   padding-bottom: 18px;
 }
 
@@ -386,45 +386,111 @@
   gap: 8px;
 }
 
+.admin-operator .admin-users-filter-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-soft);
+  padding: 16px;
+}
+
+.admin-operator .admin-users-filter-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.admin-operator .admin-users-filter-heading > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.admin-operator .admin-users-filter-heading h3,
+.admin-operator .admin-users-filter-heading p {
+  margin: 0;
+}
+
+.admin-operator .admin-users-filter-heading h3 {
+  color: var(--color-ink);
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.admin-operator .admin-users-filter-heading p {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .admin-operator .admin-users-toolbar {
   grid-template-columns: minmax(280px, 1fr) minmax(190px, 220px) minmax(140px, 170px);
-  align-items: center;
-  border: 1px solid rgba(16, 20, 17, 0.1);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(252, 253, 250, 0.96), rgba(248, 251, 245, 0.9));
-  padding: 14px;
+  align-items: end;
+  margin: 0;
 }
 
 .admin-operator .admin-users-search-field {
   min-width: 0;
+}
+
+.admin-operator .admin-users-search-control {
   min-height: 48px;
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid rgba(16, 20, 17, 0.14);
-  border-radius: 14px;
-  background: #fff;
+  border: 1px solid var(--color-control-border);
+  border-radius: 12px;
+  background: var(--color-surface);
   padding: 0 14px;
-  color: rgba(16, 20, 17, 0.44);
+  color: var(--color-info-strong);
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.admin-operator .admin-users-search-field:focus-within {
-  border-color: rgba(8, 127, 140, 0.45);
+.admin-operator .admin-users-search-control:focus-within {
+  border-color: var(--color-info);
   box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.1);
   transform: translateY(-1px);
 }
 
-.admin-operator .admin-users-search-field input {
+.admin-operator .admin-users-search-control input {
   min-height: 46px;
   border: 0;
   background: transparent;
+  color: var(--color-ink);
   padding: 0;
+  box-shadow: none;
+  font-family: var(--font-body);
+  font-weight: 650;
+}
+
+.admin-operator .admin-users-search-control input::placeholder {
+  color: rgba(17, 20, 18, 0.58);
+  font-weight: 600;
+}
+
+.admin-operator .admin-users-search-control input:focus {
   box-shadow: none;
 }
 
-.admin-operator .admin-users-search-field input:focus {
-  box-shadow: none;
+.admin-operator .admin-users-toolbar .custom-select-trigger {
+  min-height: 48px;
+  border-color: var(--color-control-border);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+.admin-operator .admin-users-toolbar .custom-select-trigger:focus-visible,
+.admin-operator .admin-users-toolbar .custom-select.is-open .custom-select-trigger {
+  border-color: var(--color-info);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.1);
 }
 
 .admin-operator .admin-users-table {
@@ -496,7 +562,7 @@
 }
 
 .admin-operator .admin-users-panel .table-primary-cell small {
-  color: rgba(16, 20, 17, 0.46);
+  color: var(--color-muted);
   font-size: 12px;
 }
 
@@ -525,18 +591,16 @@
   grid-template-columns: minmax(0, 1fr) minmax(150px, auto) auto;
   align-items: center;
   gap: 18px;
-  border: 1px solid rgba(16, 20, 17, 0.1);
+  border: 1px solid var(--color-line);
   border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(252, 253, 250, 0.92)),
-    #fff;
+  background: var(--color-surface);
   box-shadow: 0 12px 34px rgba(24, 54, 31, 0.07);
   padding: 16px;
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .admin-operator .admin-user-card:hover {
-  border-color: rgba(8, 127, 140, 0.28);
+  border-color: var(--color-info);
   box-shadow: 0 18px 44px rgba(24, 54, 31, 0.11);
   transform: translateY(-1px);
 }
@@ -555,8 +619,8 @@
   display: grid;
   place-items: center;
   border-radius: 15px;
-  background: linear-gradient(135deg, #e6f8d8, #dff4ef);
-  color: #0c6b69;
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-info-bg));
+  color: var(--color-info-strong);
   font-size: 18px;
   font-weight: 950;
   box-shadow: inset 0 0 0 1px rgba(8, 127, 140, 0.12);
@@ -567,6 +631,10 @@
   flex-wrap: wrap;
   justify-content: flex-start;
   gap: 8px;
+}
+
+.admin-operator .admin-user-card-status .ui-badge-info {
+  color: var(--color-info-strong);
 }
 
 .admin-operator .admin-user-card .record-actions {
@@ -598,6 +666,15 @@
   .admin-operator .admin-user-card-status,
   .admin-operator .admin-user-card .record-actions {
     justify-content: flex-start;
+  }
+}
+
+@media (forced-colors: active) {
+  .admin-operator .admin-users-filter-card,
+  .admin-operator .admin-users-search-control,
+  .admin-operator .admin-user-card,
+  .admin-operator .admin-user-avatar {
+    border: 1px solid CanvasText;
   }
 }
 

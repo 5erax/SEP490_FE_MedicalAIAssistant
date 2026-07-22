@@ -1,4 +1,4 @@
-import { RefreshCw, Search, Trash2 } from "lucide-react";
+import { ListFilter, RefreshCw, Search, Trash2 } from "lucide-react";
 import {
   Badge,
   Button,
@@ -49,28 +49,45 @@ export default function AdminUsersSection({
 
       {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
 
-      <div className="admin-toolbar admin-users-toolbar">
-        <label className="admin-users-search-field">
-          <Search size={17} aria-hidden="true" />
-          <input value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Tìm theo email, tên hoặc ID..." />
-        </label>
-        <CustomSelect
-          className="admin-user-status-filter"
-          label="Trạng thái"
-          hideLabel
-          value={statusFilter}
-          options={STATUS_OPTIONS}
-          onChange={onStatusFilterChange}
-        />
-        <CustomSelect
-          className="admin-toolbar-page-size"
-          label="Per page"
-          hideLabel
-          value={pageInfo.pageSize}
-          options={PAGE_SIZE_OPTIONS}
-          onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
-        />
-      </div>
+      <section className="admin-users-filter-card" aria-labelledby="admin-users-filter-title">
+        <div className="admin-users-filter-heading">
+          <span aria-hidden="true"><ListFilter size={18} /></span>
+          <div>
+            <h3 id="admin-users-filter-title">Bộ lọc tài khoản</h3>
+            <p>Tìm và thu hẹp danh sách theo trạng thái. Kết quả được cập nhật ngay khi thay đổi.</p>
+          </div>
+        </div>
+
+        <div className="admin-toolbar admin-users-toolbar">
+          <label className="clean-field admin-users-search-field">
+            <span>Tìm tài khoản</span>
+            <span className="admin-users-search-control">
+              <Search size={17} aria-hidden="true" />
+              <input
+                type="search"
+                autoComplete="off"
+                value={search}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="Email, tên hoặc mã người dùng"
+              />
+            </span>
+          </label>
+          <CustomSelect
+            className="clean-field admin-user-status-filter"
+            label="Trạng thái"
+            value={statusFilter}
+            options={STATUS_OPTIONS}
+            onChange={onStatusFilterChange}
+          />
+          <CustomSelect
+            className="clean-field admin-toolbar-page-size"
+            label="Hiển thị"
+            value={pageInfo.pageSize}
+            options={PAGE_SIZE_OPTIONS}
+            onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
+          />
+        </div>
+      </section>
 
       {loading ? (
         <LoadingState label="Đang tải danh sách người dùng..." />

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { preparePage } from "./helpers";
 
@@ -76,13 +77,13 @@ test("admin retries a failed user list and receives an empty state", async ({ pa
   await retryButton.focus();
   await page.keyboard.press("Enter");
 
-  await expect(page.getByText("Không có tài khoản chờ duyệt", { exact: true })).toBeVisible();
-  await expect(page.getByText("Trang 1 / 1 · 0 tài khoản cần duyệt", { exact: true })).toBeVisible();
+  await expect(page.getByText("Không có tài khoản phù hợp", { exact: true })).toBeVisible();
+  await expect(page.getByText("Trang 1 / 1 · 0/0 hiển thị · 0 chờ duyệt", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   expect(userRequestCount).toBe(3);
 });
 
-test("admin pending queue hides accounts already approved by backend", async ({ page }) => {
+test("admin user filters use consistent labelled controls and status styling", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -158,7 +159,25 @@ test("admin pending queue hides accounts already approved by backend", async ({ 
 
   await page.goto("/app/admin/users", { waitUntil: "domcontentloaded" });
 
+  const userSearch = page.getByLabel("Tìm tài khoản");
+  await expect(userSearch).toBeVisible();
+  await expect(userSearch).toHaveCSS("font-family", /Be Vietnam Pro/);
+  await expect(page.getByText("approved-string@example.com", { exact: true })).toBeVisible();
+  await expect(page.getByText("approved-number@example.com", { exact: true })).toBeVisible();
   await expect(page.getByText("pending-doctor@example.com", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Mở danh sách: Tất cả tài khoản" }).click();
+  await page.getByRole("listbox", { name: "Trạng thái" })
+    .getByRole("option", { name: "Chờ duyệt" })
+    .click();
+
   await expect(page.getByText("approved-string@example.com", { exact: true })).toHaveCount(0);
   await expect(page.getByText("approved-number@example.com", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("pending-doctor@example.com", { exact: true })).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".admin-users-panel")
+    .withRules(["color-contrast"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
 });
