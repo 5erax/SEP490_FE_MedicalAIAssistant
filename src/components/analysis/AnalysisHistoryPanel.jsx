@@ -1,15 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Clock3, FileText, LoaderCircle, X } from "lucide-react";
-import { Button } from "../ui";
+import { Button, useOverlayFocus } from "../ui";
 import { symptomAnalysisApi, unwrapApiData } from "../../services/symptomAnalysisService";
 import "../../styles/analysis-history-panel.css";
 
-function getPagedItems(response) {
-  const data = unwrapApiData(response);
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data)) return data;
-  return [];
-}
+export const ANALYSIS_HISTORY_PANEL_ID = "analysis-history-panel";
 
 function getSessionId(session) {
   return session?.sessionId || session?.id || "";
@@ -58,20 +53,32 @@ export default function AnalysisHistoryPanel({
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [detailStatus, setDetailStatus] = useState("idle");
+  const [announcement, setAnnouncement] = useState("");
+  const panelRef = useRef(null);
+  const closeButtonRef = useRef(null);
 
   const copy = sessionType === "department"
     ? {
-      title: title || "Lịch sử tư vấn chuyên khoa",
-      empty: emptyText || "Chưa có phiên tư vấn chuyên khoa nào.",
-      fallback: "Phiên tư vấn chuyên khoa",
+      title: title || "Lịch sử gợi ý chuyên khoa",
+      empty: emptyText || "Chưa có phiên gợi ý chuyên khoa nào.",
+      fallback: "Phiên gợi ý chuyên khoa",
       continueLabel: continueLabel || "Tiếp tục tư vấn",
+      sessionLabel: "phiên gợi ý chuyên khoa",
     }
     : {
-      title: title || "Lịch sử chuẩn đoán lâm sàng",
-      empty: emptyText || "Chưa có phiên chuẩn đoán lâm sàng nào.",
-      fallback: "Phiên chuẩn đoán lâm sàng",
-      continueLabel: continueLabel || "Tiếp tục chuẩn đoán",
+      title: title || "Lịch sử phân tích lâm sàng",
+      empty: emptyText || "Chưa có phiên phân tích lâm sàng nào.",
+      fallback: "Phiên phân tích lâm sàng",
+      continueLabel: continueLabel || "Tiếp tục phân tích",
+      sessionLabel: "phiên phân tích lâm sàng",
     };
+
+  useOverlayFocus({
+    active: open,
+    containerRef: panelRef,
+    initialFocusRef: closeButtonRef,
+    onClose,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -81,16 +88,24 @@ export default function AnalysisHistoryPanel({
       if (!active) return;
       setStatus("loading");
       setError("");
+      setSessions([]);
       setSelectedDetail(null);
       setSelectedSessionId("");
+      setDetailStatus("idle");
+      setAnnouncement(`Đang tải ${copy.sessionLabel}.`);
     });
 
-    symptomAnalysisApi.listMySessions(1, 50, sessionType)
-      .then((response) => {
-        if (active) setSessions(getPagedItems(response));
+    symptomAnalysisApi.listAllMySessions(sessionType)
+      .then((items) => {
+        if (!active) return;
+        setSessions(items);
+        setAnnouncement(`Đã tải ${items.length} ${copy.sessionLabel}.`);
       })
       .catch((requestError) => {
-        if (active) setError(requestError.message || "Không thể tải lịch sử phân tích.");
+        if (!active) return;
+        const message = requestError.message || "Không thể tải lịch sử phân tích.";
+        setError(message);
+        setAnnouncement(message);
       })
       .finally(() => {
         if (active) setStatus("idle");
@@ -99,7 +114,7 @@ export default function AnalysisHistoryPanel({
     return () => {
       active = false;
     };
-  }, [open, sessionType]);
+  }, [copy.sessionLabel, open, sessionType]);
 
   async function viewDetail(session) {
     const sessionId = getSessionId(session);
@@ -108,100 +123,116 @@ export default function AnalysisHistoryPanel({
     setSelectedSessionId(sessionId);
     setDetailStatus("loading");
     setSelectedDetail(null);
+    setAnnouncement("Đang tải chi tiết phiên.");
 
     try {
       const response = await symptomAnalysisApi.get(sessionId);
       setSelectedDetail(unwrapApiData(response) || response);
+      setAnnouncement("Đã tải chi tiết phiên.");
     } catch (requestError) {
-      setSelectedDetail({ error: requestError.message || "Không thể tải chi tiết phiên." });
+      const message = requestError.message || "Không thể tải chi tiết phiên.";
+      setSelectedDetail({ error: message });
+      setAnnouncement(message);
     } finally {
       setDetailStatus("idle");
     }
   }
 
-  if (!open) return null;
-
   return (
-    <div className="analysis-history-drawer" role="dialog" aria-modal="false" aria-label={copy.title}>
-      <div className="analysis-history-backdrop" onClick={onClose} aria-hidden="true" />
-      <aside className="analysis-history-panel">
-        <header className="analysis-history-panel-header">
-          <div>
-            <span><Clock3 size={15} /> Lịch sử</span>
-            <h2>{copy.title}</h2>
-          </div>
-          <button type="button" className="analysis-history-close" onClick={onClose} aria-label="Đóng lịch sử">
-            <X size={18} />
-          </button>
-        </header>
+    <>
+      <p className="sr-only" role="status" aria-atomic="true">{announcement}</p>
+      {open && (
+        <div className="analysis-history-drawer">
+          <div className="analysis-history-backdrop" onClick={onClose} aria-hidden="true" />
+          <aside
+            className="analysis-history-panel"
+            id={ANALYSIS_HISTORY_PANEL_ID}
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`${ANALYSIS_HISTORY_PANEL_ID}-title`}
+            aria-busy={status === "loading" || detailStatus === "loading"}
+            tabIndex={-1}
+          >
+            <header className="analysis-history-panel-header">
+              <div>
+                <span><Clock3 size={15} /> Lịch sử</span>
+                <h2 id={`${ANALYSIS_HISTORY_PANEL_ID}-title`}>{copy.title}</h2>
+              </div>
+              <button ref={closeButtonRef} type="button" className="analysis-history-close" onClick={onClose} aria-label="Đóng lịch sử">
+                <X size={18} />
+              </button>
+            </header>
 
-        <div className="analysis-history-panel-body">
-          {status === "loading" && (
-            <div className="analysis-history-state">
-              <LoaderCircle className="analysis-history-spin" size={22} />
-              <p>Đang tải lịch sử...</p>
+            <div className="analysis-history-panel-body">
+              {status === "loading" && (
+                <div className="analysis-history-state">
+                  <LoaderCircle className="analysis-history-spin" size={22} />
+                  <p>Đang tải lịch sử...</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="analysis-history-state error">
+                  <p>{error}</p>
+                </div>
+              )}
+
+              {status !== "loading" && !error && sessions.length === 0 && (
+                <div className="analysis-history-empty">
+                  <FileText size={24} />
+                  <strong>{copy.empty}</strong>
+                  <p>Bắt đầu phiên mới để MediMate lưu lại lịch sử tại đây.</p>
+                </div>
+              )}
+
+              {sessions.length > 0 && (
+                <div className="analysis-history-list">
+                  {sessions.map((session, index) => {
+                    const sessionId = getSessionId(session);
+                    const isActive = sessionId && sessionId === selectedSessionId;
+                    return (
+                      <article className={isActive ? "active" : ""} key={sessionId || index}>
+                        <div>
+                          <strong>{getSessionTitle(session, copy.fallback)}</strong>
+                          <span>{formatDate(session.createdAt || session.createdDate)}</span>
+                          <small>{session.sessionType || sessionType} · {session.status || "Đang cập nhật"}</small>
+                        </div>
+                        <Button type="button" tone="secondary" size="sm" onClick={() => viewDetail(session)}>
+                          Chi tiết
+                        </Button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selectedSessionId && (
+                <section className="analysis-history-detail">
+                  <h3>Chi tiết phiên</h3>
+                  {detailStatus === "loading" ? (
+                    <p>Đang tải chi tiết...</p>
+                  ) : selectedDetail?.error ? (
+                    <p className="analysis-history-detail-error">{selectedDetail.error}</p>
+                  ) : selectedDetail ? (
+                    <>
+                      <strong>{getSessionTitle(selectedDetail, copy.fallback)}</strong>
+                      <p>{getDetailSummary(selectedDetail)}</p>
+                    </>
+                  ) : null}
+                </section>
+              )}
             </div>
-          )}
 
-          {error && (
-            <div className="analysis-history-state error">
-              <p>{error}</p>
-            </div>
-          )}
-
-          {status !== "loading" && !error && sessions.length === 0 && (
-            <div className="analysis-history-empty">
-              <FileText size={24} />
-              <strong>{copy.empty}</strong>
-              <p>Bắt đầu phiên mới để MediMate lưu lại lịch sử tại đây.</p>
-            </div>
-          )}
-
-          {sessions.length > 0 && (
-            <div className="analysis-history-list">
-              {sessions.map((session, index) => {
-                const sessionId = getSessionId(session);
-                const isActive = sessionId && sessionId === selectedSessionId;
-                return (
-                  <article className={isActive ? "active" : ""} key={sessionId || index}>
-                    <div>
-                      <strong>{getSessionTitle(session, copy.fallback)}</strong>
-                      <span>{formatDate(session.createdAt || session.createdDate)}</span>
-                      <small>{session.sessionType || sessionType} · {session.status || "Đang cập nhật"}</small>
-                    </div>
-                    <Button type="button" tone="secondary" size="sm" onClick={() => viewDetail(session)}>
-                      Chi tiết
-                    </Button>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-
-          {selectedSessionId && (
-            <section className="analysis-history-detail" aria-live="polite">
-              <h3>Chi tiết phiên</h3>
-              {detailStatus === "loading" ? (
-                <p>Đang tải chi tiết...</p>
-              ) : selectedDetail?.error ? (
-                <p className="analysis-history-detail-error">{selectedDetail.error}</p>
-              ) : selectedDetail ? (
-                <>
-                  <strong>{getSessionTitle(selectedDetail, copy.fallback)}</strong>
-                  <p>{getDetailSummary(selectedDetail)}</p>
-                </>
-              ) : null}
-            </section>
-          )}
+            <footer className="analysis-history-panel-footer">
+              <Button type="button" className="analysis-history-continue" onClick={onContinue}>
+                {copy.continueLabel}
+                <ArrowRight size={16} />
+              </Button>
+            </footer>
+          </aside>
         </div>
-
-        <footer className="analysis-history-panel-footer">
-          <Button type="button" className="analysis-history-continue" onClick={onContinue}>
-            {copy.continueLabel}
-            <ArrowRight size={16} />
-          </Button>
-        </footer>
-      </aside>
-    </div>
+      )}
+    </>
   );
 }

@@ -9,7 +9,7 @@ import {
   getStoredAuth,
   isClinicalQuestionAnswered,
 } from "../services/api";
-import AnalysisHistoryPanel from "../components/analysis/AnalysisHistoryPanel";
+import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
 import { hasAuthRole, shouldSetupPatientProfile } from "../utils/roles";
 import "../styles/dashboard.css";
@@ -419,10 +419,13 @@ export default function DashboardPage() {
               tone="secondary"
               size="sm"
               className="analysis-history-button"
+              aria-haspopup="dialog"
+              aria-controls={ANALYSIS_HISTORY_PANEL_ID}
+              aria-expanded={historyPanelOpen}
               onClick={() => setHistoryPanelOpen(true)}
             >
               <History size={16} />
-              Lịch sử phân tích
+              Lịch sử gợi ý chuyên khoa
             </Button>
           </div>
           <span className="studio-mark" aria-hidden="true"><ClipboardPlus size={24} /></span>

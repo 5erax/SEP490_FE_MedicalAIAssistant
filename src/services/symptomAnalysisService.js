@@ -495,6 +495,52 @@ export const symptomAnalysisApi = {
     });
   },
 
+  async listAllMySessions(sessionType = "", pageSize = 50) {
+    const firstResponse = await this.listMySessions(1, pageSize, sessionType);
+    const firstPage = unwrapApiData(firstResponse) || {};
+    const firstItems = Array.isArray(firstPage.items)
+      ? firstPage.items
+      : Array.isArray(firstPage.Items)
+        ? firstPage.Items
+        : Array.isArray(firstPage)
+          ? firstPage
+          : [];
+    const totalPages = Math.max(
+      1,
+      Number(firstPage.totalPages ?? firstPage.TotalPages) || 1,
+    );
+
+    if (totalPages === 1) return firstItems;
+
+    const remainingResponses = await Promise.all(
+      Array.from(
+        { length: totalPages - 1 },
+        (_, index) => this.listMySessions(index + 2, pageSize, sessionType),
+      ),
+    );
+    const allItems = remainingResponses.reduce((items, response) => {
+      const page = unwrapApiData(response) || {};
+      const pageItems = Array.isArray(page.items)
+        ? page.items
+        : Array.isArray(page.Items)
+          ? page.Items
+          : Array.isArray(page)
+            ? page
+            : [];
+      return items.concat(pageItems);
+    }, firstItems);
+    const seenSessionIds = new Set();
+
+    return allItems.filter((session) => {
+      const sessionId = session?.sessionId || session?.id;
+      if (!sessionId || !seenSessionIds.has(sessionId)) {
+        if (sessionId) seenSessionIds.add(sessionId);
+        return true;
+      }
+      return false;
+    });
+  },
+
   get(sessionId) {
     return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.BY_SESSION(sessionId), {
       auth: true,
