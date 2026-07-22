@@ -101,8 +101,16 @@ export default function UserProfilePage() {
   const [isMedicalEditing, setIsMedicalEditing] = useState(false);
   const profileFormRef = useRef(null);
   const medicalFormRef = useRef(null);
+  const pendingDiseaseFocusRef = useRef(false);
 
   useUnsavedChangesWarning(profileDirty || medicalDirty);
+
+  useEffect(() => {
+    if (!pendingDiseaseFocusRef.current) return;
+    pendingDiseaseFocusRef.current = false;
+    const diseaseInputs = medicalFormRef.current?.querySelectorAll("[data-disease-name]");
+    diseaseInputs?.[diseaseInputs.length - 1]?.focus();
+  }, [medicalForm.chronicDiseases.length]);
 
   useEffect(() => {
     let active = true;
@@ -202,6 +210,8 @@ export default function UserProfilePage() {
   }
 
   function addMedicalDisease() {
+    pendingDiseaseFocusRef.current = true;
+    setIsMedicalEditing(true);
     setMedicalForm((current) => ({
       ...current,
       chronicDiseases: [...current.chronicDiseases, createEmptyDisease()],
@@ -441,7 +451,7 @@ export default function UserProfilePage() {
                   <h2>Bệnh nền</h2>
                   <p>Mỗi bệnh nền gồm tên bệnh, thời gian theo dõi và ghi chú ngắn.</p>
                 </div>
-                <button type="button" onClick={addMedicalDisease} disabled={!isMedicalEditing || savingMedical}>
+                <button type="button" onClick={addMedicalDisease} disabled={loading || savingMedical}>
                   <Plus size={17} aria-hidden="true" />
                   Thêm bệnh nền
                 </button>
@@ -453,7 +463,7 @@ export default function UserProfilePage() {
               ) : (
                 <div className="profile-disease-list">
                   {medicalForm.chronicDiseases.map((disease, index) => (
-                    <article className="profile-disease-card" key={disease.localId ?? index}>
+                    <article className="profile-disease-card" key={disease.localId ?? index} role="group" aria-label={`Bệnh nền #${index + 1}`}>
                       <div className="profile-disease-card-head">
                         <strong>Bệnh nền #{index + 1}</strong>
                         <button type="button" onClick={() => removeMedicalDisease(index)} disabled={!isMedicalEditing || savingMedical}>
@@ -465,6 +475,7 @@ export default function UserProfilePage() {
                         <label className="field wide">
                           <span>Tên bệnh</span>
                           <input
+                            data-disease-name
                             value={disease.diseaseName}
                             placeholder="Ví dụ: hen suyễn, tăng huyết áp..."
                             disabled={!isMedicalEditing || savingMedical}
@@ -489,7 +500,9 @@ export default function UserProfilePage() {
                             value={disease.to}
                             disabled={!isMedicalEditing || savingMedical}
                             onChange={(event) => updateMedicalDisease(index, "to", event.target.value)}
+                            aria-invalid={Boolean(errors[`chronicDiseases.${index}.to`])}
                           />
+                          {errors[`chronicDiseases.${index}.to`] && <small>{errors[`chronicDiseases.${index}.to`]}</small>}
                         </label>
                         <label className="field wide">
                           <span>Ghi chú</span>
