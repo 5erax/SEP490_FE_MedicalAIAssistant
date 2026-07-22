@@ -171,7 +171,7 @@ function PricingPage() {
     const check = async () => {
       attempts += 1;
       try {
-        const response = await paymentsApi.get(paymentId);
+        const response = await paymentsApi.getMyPayment(paymentId);
         const payment = response.data;
 
         if (isSuccessfulPayment(payment)) {
@@ -208,11 +208,15 @@ function PricingPage() {
           });
           return true;
         }
-      } catch (error) {
+      } catch {
         if (attempts >= 5) {
           window.clearInterval(pollingRef.current);
           pollingRef.current = null;
-          setCheckoutState({ status: "error", paymentId, message: error.message });
+          setCheckoutState({
+            status: "error",
+            paymentId,
+            message: "Chưa thể xác minh giao dịch lúc này. Bạn có thể kiểm tra lại lịch sử thanh toán sau.",
+          });
           return true;
         }
       }

@@ -83,6 +83,17 @@ export const userSubscriptionsApi = {
 };
 
 export const paymentsApi = {
+  getMyPayments(pageNumber = 1, pageSize = 10) {
+    return apiRequest(withQuery(ENDPOINTS.PAYMENTS.ME, {
+      PageNumber: pageNumber,
+      PageSize: pageSize,
+    }), { auth: true });
+  },
+
+  getMyPayment(id) {
+    return apiRequest(ENDPOINTS.PAYMENTS.MY_PAYMENT(id), { auth: true });
+  },
+
   get(id) {
     return apiRequest(ENDPOINTS.PAYMENTS.BY_ID(id), { auth: true });
   },
