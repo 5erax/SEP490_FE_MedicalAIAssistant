@@ -74,7 +74,7 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
     });
   });
 
-  await page.route("**/api/payments/33333333-3333-3333-3333-333333333333", (route) => route.fulfill({
+  await page.route("**/api/payments/me/33333333-3333-3333-3333-333333333333", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
