@@ -102,9 +102,18 @@ export function validateMedicalProfile(form) {
   if (Array.isArray(form.chronicDiseases)) {
     form.chronicDiseases.forEach((disease, index) => {
       const diseaseName = String(disease?.diseaseName ?? "").trim();
+      const from = String(disease?.from ?? "").trim();
+      const to = String(disease?.to ?? "").trim();
       const note = String(disease?.note ?? "").trim();
-      if (diseaseName.length > 160) {
+      const hasDiseaseDetails = Boolean(diseaseName || from || to || note);
+
+      if (hasDiseaseDetails && !diseaseName) {
+        errors[`chronicDiseases.${index}.diseaseName`] = "Vui lòng nhập tên bệnh nền.";
+      } else if (diseaseName.length > 160) {
         errors[`chronicDiseases.${index}.diseaseName`] = "Tên bệnh không được vượt quá 160 ký tự.";
+      }
+      if (from && to && to < from) {
+        errors[`chronicDiseases.${index}.to`] = "Đến ngày không được trước từ ngày.";
       }
       if (note.length > MAX_NOTE_LENGTH) {
         errors[`chronicDiseases.${index}.note`] = `Ghi chú bệnh nền không được vượt quá ${MAX_NOTE_LENGTH} ký tự.`;

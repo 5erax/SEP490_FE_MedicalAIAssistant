@@ -1,4 +1,5 @@
-import { cloneElement, useEffect, useId, useMemo, useState } from "react";
+import { cloneElement, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
@@ -14,18 +15,41 @@ import { getWorkspacePath } from "../utils/roles";
 
 const BLOOD_TYPES = ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-const INITIAL_FORM = {
-  displayName: "",
-  dateOfBirth: "",
-  gender: "1",
-  phoneNumber: "",
-  address: "",
-  bloodType: "",
-  allergyNote: "",
-  chronicDiseaseNote: "",
-  height: "",
-  weight: "",
+const ERROR_FIELD_LABELS = {
+  displayName: "Họ và tên",
+  dateOfBirth: "Ngày sinh",
+  gender: "Giới tính",
+  phoneNumber: "Số điện thoại",
+  address: "Địa chỉ",
+  height: "Chiều cao",
+  weight: "Cân nặng",
+  allergyNote: "Dị ứng",
 };
+
+function createEmptyDisease() {
+  return {
+    localId: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+    diseaseName: "",
+    from: "",
+    to: "",
+    note: "",
+  };
+}
+
+function createInitialForm() {
+  return {
+    displayName: "",
+    dateOfBirth: "",
+    gender: "1",
+    phoneNumber: "",
+    address: "",
+    bloodType: "",
+    allergyNote: "",
+    height: "",
+    weight: "",
+    chronicDiseases: [createEmptyDisease()],
+  };
+}
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -40,19 +64,70 @@ function ApiMessage({ message }) {
   );
 }
 
-function Field({ label, error, children }) {
-  const id = useId();
+function Field({ id: providedId, label, error, required = false, children }) {
+  const generatedId = useId();
+  const id = providedId ?? generatedId;
   const errorId = `${id}-error`;
+  const describedBy = [children.props["aria-describedby"], error ? errorId : ""].filter(Boolean).join(" ") || undefined;
   return (
     <label className={`clean-field profile-setup-field ${error ? "has-error" : ""}`} htmlFor={id}>
-      <span>{label}</span>
+      <span>{label}{required ? " (bắt buộc)" : ""}</span>
       {cloneElement(children, {
         id,
-        "aria-invalid": Boolean(error),
-        "aria-describedby": error ? errorId : undefined,
+        required: required || children.props.required,
+        "aria-invalid": error ? true : undefined,
+        "aria-describedby": describedBy,
       })}
       {error && <small id={errorId}>{error}</small>}
     </label>
+  );
+}
+
+function getErrorFieldId(errorKey) {
+  const diseaseMatch = errorKey.match(/^chronicDiseases\.(\d+)\.(diseaseName|from|to|note)$/);
+  if (diseaseMatch) return `patient-profile-disease-${diseaseMatch[1]}-${diseaseMatch[2]}`;
+  return `patient-profile-${errorKey}`;
+}
+
+function getErrorFieldLabel(errorKey) {
+  const diseaseMatch = errorKey.match(/^chronicDiseases\.(\d+)\.(diseaseName|from|to|note)$/);
+  if (!diseaseMatch) return ERROR_FIELD_LABELS[errorKey] ?? errorKey;
+
+  const labels = {
+    diseaseName: "Tên bệnh",
+    from: "Từ ngày",
+    to: "Đến ngày",
+    note: "Ghi chú",
+  };
+  return `Bệnh nền #${Number(diseaseMatch[1]) + 1} – ${labels[diseaseMatch[2]]}`;
+}
+
+function ErrorSummary({ errors, summaryRef }) {
+  const entries = Object.entries(errors).filter(([, error]) => Boolean(error));
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="profile-setup-error-summary" role="alert" aria-labelledby="profile-setup-error-title" tabIndex="-1" ref={summaryRef}>
+      <strong id="profile-setup-error-title">Có {entries.length} thông tin cần kiểm tra</strong>
+      <ul>
+        {entries.map(([key, error]) => {
+          const fieldId = getErrorFieldId(key);
+          return (
+            <li key={key}>
+              <a
+                href={`#${fieldId}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  document.getElementById(fieldId)?.focus();
+                }}
+              >
+                {getErrorFieldLabel(key)}: {error}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -86,12 +161,13 @@ function EmptyAuth() {
 export default function PersonalPatientProfilePage() {
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [user, setUser] = useState(null);
-  const [form, setForm] = useState(INITIAL_FORM);
+  const [form, setForm] = useState(createInitialForm);
   const [loading, setLoading] = useState(Boolean(auth));
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
   const [errors, setErrors] = useState({});
   const [dirty, setDirty] = useState(false);
+  const errorSummaryRef = useRef(null);
 
   useUnsavedChangesWarning(dirty && !submitting);
 
@@ -176,6 +252,40 @@ export default function PersonalPatientProfilePage() {
     setErrors((current) => ({ ...current, [key]: "" }));
   }
 
+  function addDisease() {
+    const nextIndex = form.chronicDiseases.length;
+    setForm((current) => ({
+      ...current,
+      chronicDiseases: [...current.chronicDiseases, createEmptyDisease()],
+    }));
+    setDirty(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`patient-profile-disease-${nextIndex}-diseaseName`)?.focus();
+    });
+  }
+
+  function updateDisease(index, key, value) {
+    setForm((current) => ({
+      ...current,
+      chronicDiseases: current.chronicDiseases.map((disease, diseaseIndex) => (
+        diseaseIndex === index ? { ...disease, [key]: value } : disease
+      )),
+    }));
+    setDirty(true);
+    setErrors((current) => ({ ...current, [`chronicDiseases.${index}.${key}`]: "" }));
+  }
+
+  function removeDisease(index) {
+    setForm((current) => ({
+      ...current,
+      chronicDiseases: current.chronicDiseases.filter((_, diseaseIndex) => diseaseIndex !== index),
+    }));
+    setDirty(true);
+    setErrors((current) => Object.fromEntries(
+      Object.entries(current).filter(([key]) => !key.startsWith("chronicDiseases.")),
+    ));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     const nextErrors = {
@@ -186,6 +296,7 @@ export default function PersonalPatientProfilePage() {
 
     if (Object.keys(nextErrors).length > 0) {
       setMessage({ type: "error", text: "Vui lòng kiểm tra lại các thông tin bắt buộc." });
+      window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
       return;
     }
 
@@ -262,6 +373,7 @@ export default function PersonalPatientProfilePage() {
             </div>
 
             <ApiMessage message={message} />
+            <ErrorSummary errors={errors} summaryRef={errorSummaryRef} />
 
             <section className="profile-form-section">
               <div className="profile-section-title">
@@ -269,24 +381,24 @@ export default function PersonalPatientProfilePage() {
                 <strong>Bắt buộc</strong>
               </div>
               <div className="form-two-cols">
-                <Field label="Họ và tên" error={errors.displayName}>
+                <Field id="patient-profile-displayName" label="Họ và tên" error={errors.displayName} required>
                   <input value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
                 </Field>
-                <Field label="Ngày sinh" error={errors.dateOfBirth}>
+                <Field id="patient-profile-dateOfBirth" label="Ngày sinh" error={errors.dateOfBirth} required>
                   <input type="date" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
                 </Field>
-                <Field label="Giới tính" error={errors.gender}>
+                <Field id="patient-profile-gender" label="Giới tính" error={errors.gender} required>
                   <select value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>
                     <option value="1">Nam</option>
                     <option value="2">Nữ</option>
                   </select>
                 </Field>
-                <Field label="Số điện thoại" error={errors.phoneNumber}>
+                <Field id="patient-profile-phoneNumber" label="Số điện thoại" error={errors.phoneNumber} required>
                   <input type="tel" inputMode="tel" autoComplete="tel" value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} disabled={loading || submitting} />
                 </Field>
               </div>
-              <Field label="Địa chỉ" error={errors.address}>
-                <input value={form.address} onChange={(event) => updateField("address", event.target.value)} disabled={loading || submitting} />
+              <Field id="patient-profile-address" label="Địa chỉ" error={errors.address} required>
+                <input autoComplete="street-address" value={form.address} onChange={(event) => updateField("address", event.target.value)} disabled={loading || submitting} />
               </Field>
             </section>
 
@@ -296,28 +408,101 @@ export default function PersonalPatientProfilePage() {
                 <strong>Nền tảng tư vấn</strong>
               </div>
               <div className="form-three-cols">
-                <Field label="Nhóm máu">
+                <Field id="patient-profile-bloodType" label="Nhóm máu">
                   <select value={form.bloodType} onChange={(event) => updateField("bloodType", event.target.value)} disabled={loading || submitting}>
                     {BLOOD_TYPES.map((type) => (
                       <option key={type || "empty"} value={type}>{type || "Chưa rõ"}</option>
                     ))}
                   </select>
                 </Field>
-                <Field label="Chiều cao (cm)" error={errors.height}>
+                <Field id="patient-profile-height" label="Chiều cao (cm)" error={errors.height}>
                   <input type="number" min="40" max="250" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
                 </Field>
-                <Field label="Cân nặng (kg)" error={errors.weight}>
+                <Field id="patient-profile-weight" label="Cân nặng (kg)" error={errors.weight}>
                   <input type="number" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
                 </Field>
               </div>
-              <div className="form-two-cols">
-                <Field label="Dị ứng" error={errors.allergyNote}>
-                  <textarea rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
-                </Field>
-                <Field label="Bệnh nền" error={errors.chronicDiseaseNote}>
-                  <textarea rows={4} maxLength={1000} value={form.chronicDiseaseNote} onChange={(event) => updateField("chronicDiseaseNote", event.target.value)} placeholder="Ví dụ: hen suyễn, tăng huyết áp..." disabled={loading || submitting} />
-                </Field>
+              <Field id="patient-profile-allergyNote" label="Dị ứng" error={errors.allergyNote}>
+                <textarea rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
+              </Field>
+            </section>
+
+            <section className="profile-form-section profile-setup-disease-section" aria-labelledby="profile-setup-disease-title">
+              <div className="profile-setup-disease-heading">
+                <div>
+                  <h3 id="profile-setup-disease-title">Bệnh nền</h3>
+                  <p>Mỗi bệnh gồm tên bệnh, khoảng thời gian theo dõi và ghi chú riêng. Bạn có thể bỏ qua nếu không có.</p>
+                </div>
+                <button className="profile-setup-add-disease" type="button" onClick={addDisease} disabled={loading || submitting}>
+                  <Plus size={17} aria-hidden="true" />
+                  Thêm bệnh nền
+                </button>
               </div>
+
+              {form.chronicDiseases.length === 0 ? (
+                <p className="profile-setup-disease-empty" role="status">Chưa ghi nhận bệnh nền.</p>
+              ) : (
+                <div className="profile-setup-disease-list">
+                  {form.chronicDiseases.map((disease, index) => (
+                    <fieldset className="profile-setup-disease-card" key={disease.localId ?? index}>
+                      <legend>Bệnh nền #{index + 1}</legend>
+                      <button
+                        className="profile-setup-remove-disease"
+                        type="button"
+                        onClick={() => removeDisease(index)}
+                        disabled={loading || submitting}
+                        aria-label={`Xóa bệnh nền #${index + 1}`}
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                        Xóa
+                      </button>
+                      <div className="profile-setup-disease-grid">
+                        <Field
+                          id={`patient-profile-disease-${index}-diseaseName`}
+                          label="Tên bệnh"
+                          error={errors[`chronicDiseases.${index}.diseaseName`]}
+                        >
+                          <input
+                            maxLength={160}
+                            value={disease.diseaseName}
+                            onChange={(event) => updateDisease(index, "diseaseName", event.target.value)}
+                            placeholder="Ví dụ: tăng huyết áp"
+                            disabled={loading || submitting}
+                          />
+                        </Field>
+                        <Field
+                          id={`patient-profile-disease-${index}-from`}
+                          label="Từ ngày"
+                          error={errors[`chronicDiseases.${index}.from`]}
+                        >
+                          <input type="date" value={disease.from} onChange={(event) => updateDisease(index, "from", event.target.value)} disabled={loading || submitting} />
+                        </Field>
+                        <Field
+                          id={`patient-profile-disease-${index}-to`}
+                          label="Đến ngày"
+                          error={errors[`chronicDiseases.${index}.to`]}
+                        >
+                          <input type="date" value={disease.to} onChange={(event) => updateDisease(index, "to", event.target.value)} disabled={loading || submitting} />
+                        </Field>
+                        <Field
+                          id={`patient-profile-disease-${index}-note`}
+                          label="Ghi chú"
+                          error={errors[`chronicDiseases.${index}.note`]}
+                        >
+                          <textarea
+                            rows={3}
+                            maxLength={1000}
+                            value={disease.note}
+                            onChange={(event) => updateDisease(index, "note", event.target.value)}
+                            placeholder="Ví dụ: đang dùng thuốc hằng ngày..."
+                            disabled={loading || submitting}
+                          />
+                        </Field>
+                      </div>
+                    </fieldset>
+                  ))}
+                </div>
+              )}
             </section>
 
             <div className="profile-setup-actions">

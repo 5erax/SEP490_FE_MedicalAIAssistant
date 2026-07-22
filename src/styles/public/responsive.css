@@ -159,6 +159,7 @@
   .actor-switcher,
   .form-two-cols,
   .form-three-cols,
+  .profile-setup-disease-grid,
   .record-card,
   .user-row,
   .app-topbar,
@@ -179,6 +180,7 @@
   .app-topbar,
   .admin-topbar,
   .profile-setup-heading,
+  .profile-setup-disease-heading,
   .profile-section-title,
   .profile-setup-actions {
     flex-direction: column;
@@ -284,6 +286,15 @@
 
   .profile-setup-actions .btn {
     width: 100%;
+  }
+
+  .profile-setup-add-disease {
+    width: 100%;
+  }
+
+  .profile-setup-disease-grid .profile-setup-field:first-child,
+  .profile-setup-disease-grid .profile-setup-field:last-child {
+    grid-column: auto;
   }
 
   .landing-chat-launcher {
