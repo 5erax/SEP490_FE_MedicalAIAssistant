@@ -215,6 +215,171 @@
   white-space: nowrap;
 }
 
+.admin-operator .ai-config-table-region {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.admin-operator .ai-config-table-region:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.28);
+  outline-offset: 2px;
+}
+
+.admin-operator .ai-config-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  color: #101411;
+  table-layout: fixed;
+}
+
+.admin-operator .ai-config-table th,
+.admin-operator .ai-config-table td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(16, 20, 17, 0.09);
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.admin-operator .ai-config-table thead th {
+  background: #fbfcf7;
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-operator .ai-config-table thead th:nth-child(1) { width: 18%; }
+.admin-operator .ai-config-table thead th:nth-child(2) { width: 22%; }
+.admin-operator .ai-config-table thead th:nth-child(3) { width: 18%; }
+.admin-operator .ai-config-table thead th:nth-child(4) { width: 10%; }
+.admin-operator .ai-config-table thead th:nth-child(5) { width: 12%; }
+.admin-operator .ai-config-table thead th:nth-child(6) { width: 20%; }
+
+.admin-operator .ai-config-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.admin-operator .ai-config-table tbody tr:hover > * {
+  background: rgba(238, 249, 230, 0.5);
+}
+
+.admin-operator .ai-config-table-name {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-operator .ai-config-table-name > span:last-child,
+.admin-operator .ai-config-table-name strong,
+.admin-operator .ai-config-table-name small,
+.admin-operator .ai-config-model-summary,
+.admin-operator .ai-config-model-summary > * {
+  display: block;
+  min-width: 0;
+}
+
+.admin-operator .ai-config-table-name strong,
+.admin-operator .ai-config-model-summary strong {
+  line-height: 1.35;
+}
+
+.admin-operator .ai-config-table-name small,
+.admin-operator .ai-config-model-summary small {
+  margin-top: 5px;
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.admin-operator .ai-config-prompt-preview {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: rgba(16, 20, 17, 0.7);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.admin-operator .ai-config-table-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.admin-operator .ai-config-table-actions .btn {
+  min-width: 0;
+  min-height: 40px;
+  justify-content: center;
+  padding-inline: 8px;
+}
+
+@media (max-width: 760px) {
+  .admin-operator .ai-config-table-region {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .admin-operator .ai-config-table,
+  .admin-operator .ai-config-table tbody,
+  .admin-operator .ai-config-table tr,
+  .admin-operator .ai-config-table th,
+  .admin-operator .ai-config-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-operator .ai-config-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .admin-operator .ai-config-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-operator .ai-config-table tr {
+    overflow: hidden;
+    border: 1px solid rgba(16, 20, 17, 0.1);
+    border-radius: 16px;
+    background: #fff;
+  }
+
+  .admin-operator .ai-config-table th,
+  .admin-operator .ai-config-table td {
+    display: grid;
+    grid-template-columns: minmax(96px, 0.7fr) minmax(0, 1.3fr);
+    gap: 10px;
+    padding: 11px 12px;
+  }
+
+  .admin-operator .ai-config-table th::before,
+  .admin-operator .ai-config-table td::before {
+    content: attr(data-label);
+    color: rgba(16, 20, 17, 0.52);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
 .clinical-question-modal .clinical-answer-editor {
   display: grid;
   gap: 22px;
