@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity,
-  Bell,
   BookOpen,
   Building2,
-  CalendarDays,
-  ClipboardList,
   CircleHelp,
   CreditCard,
   FileHeart,
   LayoutDashboard,
-  Search,
   SlidersHorizontal,
   Stethoscope,
   Users,
@@ -227,6 +222,25 @@ function isPendingApprovalUser(user) {
   return !user?.isDeleted && !isApprovedUser(user);
 }
 
+function isProtectedAdminUser(user) {
+  const userRoles = normalizeRoles(
+    user?.roles
+    ?? user?.role
+    ?? user?.userRoles
+    ?? user?.Role
+    ?? [],
+  );
+  const identityText = normalizeStatusText([
+    user?.displayName,
+    user?.name,
+    user?.email,
+  ].filter(Boolean).join(" "));
+  return hasRole(userRoles, "admin")
+    || userRoles.some((role) => ["systemadmin", "system-admin", "system admin"].includes(role))
+    || identityText.includes("systemadmin")
+    || identityText.includes("admin@medmate.local");
+}
+
 function statusLabel(user) {
   return isApprovedUser(user) ? "Đã duyệt" : "Chờ duyệt";
 }
@@ -417,11 +431,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     navigate(getAdminSectionPath(section));
   }
 
-  const pendingApprovalUsers = useMemo(() => users.filter(isPendingApprovalUser), [users]);
+  const manageableUsers = useMemo(() => users.filter((user) => !isProtectedAdminUser(user)), [users]);
+  const pendingApprovalUsers = useMemo(() => manageableUsers.filter(isPendingApprovalUser), [manageableUsers]);
 
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    return users.filter((user) => {
+    return manageableUsers.filter((user) => {
       const matchesStatus = userStatusFilter === USER_STATUS_FILTERS.all
         || (userStatusFilter === USER_STATUS_FILTERS.pending && isPendingApprovalUser(user))
         || (userStatusFilter === USER_STATUS_FILTERS.confirmed && !user.isDeleted && isApprovedUser(user))
@@ -433,15 +448,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword));
     });
-  }, [search, userStatusFilter, users]);
+  }, [manageableUsers, search, userStatusFilter]);
 
   const pendingUsers = pendingApprovalUsers.length;
-  const activeDoctors = doctors.filter((doctor) => doctor.isActive).length;
   const activeAIConfigs = aiConfigs.filter((config) => config.isActive).length;
   const activeSubscriptionPlans = subscriptionPlans.filter((plan) => plan.isActive).length;
   const disabledAIConfigs = aiConfigs.filter((config) => !config.isActive).length;
   const runningAIFeatures = new Set(aiConfigs.filter((config) => config.isActive).map((config) => config.taskType).filter(Boolean)).size;
-  const aiHealthScore = aiConfigPageInfo.totalCount ? Math.round((activeAIConfigs / aiConfigPageInfo.totalCount) * 100) : 0;
   const facilityDepartmentOptions = useMemo(() => {
     const activeOptions = facilityDepartments
       .map((item) => ({
@@ -1488,6 +1501,14 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   }
 
   async function handleDeleteUser(userId) {
+    const targetUser = users.find((user) => String(user.identityId || user.userId || user.id) === String(userId));
+    if (targetUser && isProtectedAdminUser(targetUser)) {
+      const protectedMessage = "Tài khoản quản trị hệ thống được bảo vệ và không thể xóa tại màn hình này.";
+      setUsersMessage({ type: "error", text: protectedMessage });
+      showToast({ type: "error", title: "Không thể xóa tài khoản quản trị", message: protectedMessage });
+      return;
+    }
+
     const confirmed = await confirmAction({
       title: "Xóa người dùng?",
       message: "Tài khoản này sẽ bị xóa khỏi danh sách quản trị. Hãy chắc chắn trước khi tiếp tục.",
@@ -1914,17 +1935,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           <div className="admin-main">
             <h1 className="sr-only">{activeAdminItem?.label ?? "Quản trị hệ thống"}</h1>
             <header className="admin-topbar">
-              <label className="admin-search" aria-label="Tìm kiếm nhanh trong admin">
-                <Search size={17} />
-                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm người dùng hoặc email..." />
-              </label>
+              <div className="admin-topbar-context">
+                <span>Không gian quản trị</span>
+                <strong>{activeAdminItem?.label ?? "Quản trị hệ thống"}</strong>
+              </div>
               <div className="admin-top-profile">
-                <button className="admin-icon-button" type="button" aria-label="Lịch vận hành">
-                  <CalendarDays size={17} />
-                </button>
-                <button className="admin-icon-button" type="button" aria-label="Thông báo">
-                  <Bell size={17} />
-                </button>
                 <div className="admin-profile-chip">
                   <span>{displayName.slice(0, 1).toUpperCase()}</span>
                   <div>
@@ -1938,62 +1953,15 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             <ApiMessage message={globalMessage} />
 
             {activeSection === "overview" && (
-              <section className="admin-stats">
-                <article>
-                  <span className="admin-stat-icon"><Users size={17} /></span>
-                  <div>
-                    <span>Người dùng</span>
-                    <strong>{usersLoading ? "..." : pageInfo.totalCount}</strong>
-                    <small>Tổng tài khoản</small>
-                  </div>
-                </article>
-                <article>
-                  <span className="admin-stat-icon"><ClipboardList size={17} /></span>
-                  <div>
-                    <span>Chờ duyệt</span>
-                    <strong>{usersLoading ? "..." : pendingUsers}</strong>
-                    <small>Đang cần xử lý</small>
-                  </div>
-                </article>
-                <article>
-                  <span className="admin-stat-icon"><Stethoscope size={17} /></span>
-                  <div>
-                    <span>Bác sĩ</span>
-                    <strong>{doctorsLoading ? "..." : doctorPageInfo.totalCount}</strong>
-                    <small>{activeDoctors} đang hoạt động</small>
-                  </div>
-                </article>
-                <article>
-                  <span className="admin-stat-icon"><ClipboardList size={17} /></span>
-                  <div>
-                    <span>AI config</span>
-                    <strong>{aiConfigsLoading ? "..." : aiConfigPageInfo.totalCount}</strong>
-                    <small>{activeAIConfigs} bật · {disabledAIConfigs} tắt</small>
-                  </div>
-                </article>
-                <article>
-                  <span className="admin-stat-icon"><Activity size={17} /></span>
-                  <div>
-                    <span>Điểm AI</span>
-                    <strong>{aiConfigsLoading ? "..." : `${aiHealthScore}%`}</strong>
-                    <small>Tỷ lệ đang bật</small>
-                  </div>
-                </article>
-              </section>
-            )}
-
-            {activeSection === "overview" && (
               <AdminOverviewSection
-                activeAIConfigs={activeAIConfigs}
-                activeDoctors={activeDoctors}
+                aiConfigsLoading={aiConfigsLoading}
                 aiConfigTotalCount={aiConfigPageInfo.totalCount}
-                departmentsCount={departments.length}
-                disabledAIConfigs={disabledAIConfigs}
+                doctorsLoading={doctorsLoading}
                 doctorTotalCount={doctorPageInfo.totalCount}
-                pageTotalCount={pageInfo.totalCount}
-                pendingUsers={pendingUsers}
-                rolesLabel={formatRoles(roles)}
-                runningAIFeatures={runningAIFeatures}
+                facilitiesLoading={facilitiesLoading}
+                facilityTotalCount={facilityPageInfo.totalCount}
+                usersLoading={usersLoading}
+                userTotalCount={pageInfo.totalCount}
                 onOpenSection={openSection}
               />
             )}
@@ -2015,7 +1983,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 search={search}
                 statusFilter={userStatusFilter}
                 statusLabel={statusLabel}
-                totalVisibleCount={users.length}
+                totalVisibleCount={manageableUsers.length}
               />
             )}
 

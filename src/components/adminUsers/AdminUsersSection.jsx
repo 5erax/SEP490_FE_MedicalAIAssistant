@@ -40,7 +40,7 @@ export default function AdminUsersSection({
         <div>
           <p className="eyebrow">Tài khoản</p>
           <h2>Quản lý người dùng</h2>
-          <p className="muted-text">Lọc tài khoản chờ duyệt, đã xác nhận và xóa từng người dùng khi cần.</p>
+          <p className="muted-text">Lọc tài khoản chờ duyệt, đã xác nhận và xóa người dùng khi cần. Tài khoản quản trị hệ thống được bảo vệ và không xuất hiện trong danh sách.</p>
         </div>
         <button className="btn btn-ghost btn-small admin-users-reload" type="button" onClick={() => onLoadPage()}>
           <RefreshCw size={15} aria-hidden="true" /> Tải lại

@@ -60,6 +60,29 @@
   outline: none;
 }
 
+.admin-operator .admin-topbar-context {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-operator .admin-topbar-context span {
+  color: rgba(16, 20, 17, 0.5);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-operator .admin-topbar-context strong {
+  overflow: hidden;
+  color: #101411;
+  font-size: 19px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .admin-operator .admin-top-profile {
   display: flex;
   align-items: center;

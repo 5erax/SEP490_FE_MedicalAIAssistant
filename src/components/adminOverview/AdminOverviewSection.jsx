@@ -1,161 +1,101 @@
 import {
+  ArrowRight,
   BrainCircuit,
-  MoreVertical,
+  Building2,
+  Database,
   Stethoscope,
   Users,
 } from "lucide-react";
 
-const WEEK_DAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-
 export default function AdminOverviewSection({
-  activeAIConfigs,
-  activeDoctors,
+  aiConfigsLoading,
   aiConfigTotalCount,
-  departmentsCount,
-  disabledAIConfigs,
+  doctorsLoading,
   doctorTotalCount,
-  pageTotalCount,
-  pendingUsers,
-  rolesLabel,
-  runningAIFeatures,
+  facilitiesLoading,
+  facilityTotalCount,
+  usersLoading,
+  userTotalCount,
   onOpenSection,
 }) {
-  const approvalRate = pageTotalCount
-    ? Math.round(((pageTotalCount - pendingUsers) / pageTotalCount) * 100)
-    : 100;
-  const doctorActivationRate = doctorTotalCount
-    ? Math.round((activeDoctors / doctorTotalCount) * 100)
-    : 0;
-  const aiHealthScore = aiConfigTotalCount
-    ? Math.round((activeAIConfigs / aiConfigTotalCount) * 100)
-    : 0;
-  const inactiveDoctors = Math.max(0, doctorTotalCount - activeDoctors);
-  const managementLoad = pendingUsers + disabledAIConfigs + inactiveDoctors;
-  const performanceBars = [
-    { label: "User", value: approvalRate, accent: "mint" },
-    { label: "Bác sĩ", value: doctorActivationRate, accent: "teal" },
-    { label: "AI", value: aiHealthScore, accent: "coral" },
-    { label: "Khoa", value: Math.min(100, departmentsCount * 8), accent: "sand" },
-    { label: "Feature", value: Math.min(100, runningAIFeatures * 18), accent: "mint" },
-    { label: "Tải", value: Math.max(12, Math.min(100, 100 - managementLoad * 8)), accent: "teal" },
-  ];
-  const operations = [
+  const metrics = [
     {
-      title: `${pendingUsers} tài khoản cần duyệt`,
-      time: "Ưu tiên hôm nay",
-      tone: "warning",
+      label: "Tài khoản",
+      description: "Tổng số tài khoản do API người dùng trả về.",
+      value: userTotalCount,
+      loading: usersLoading,
       section: "users",
-      icon: <Users size={16} />,
+      icon: Users,
     },
     {
-      title: `${disabledAIConfigs} AI config đang tắt`,
-      time: "Kiểm tra prompt/model",
-      tone: "info",
-      section: "ai-configs",
-      icon: <BrainCircuit size={16} />,
-    },
-    {
-      title: `${inactiveDoctors} bác sĩ chưa active`,
-      time: "Cập nhật hồ sơ nhân sự",
-      tone: "success",
+      label: "Bác sĩ",
+      description: "Tổng số hồ sơ bác sĩ trong hệ thống.",
+      value: doctorTotalCount,
+      loading: doctorsLoading,
       section: "doctors",
-      icon: <Stethoscope size={16} />,
+      icon: Stethoscope,
+    },
+    {
+      label: "Cấu hình AI",
+      description: "Tổng số cấu hình prompt và mô hình AI.",
+      value: aiConfigTotalCount,
+      loading: aiConfigsLoading,
+      section: "ai-configs",
+      icon: BrainCircuit,
+    },
+    {
+      label: "Cơ sở y tế",
+      description: "Tổng số cơ sở y tế đã được quản lý.",
+      value: facilityTotalCount,
+      loading: facilitiesLoading,
+      section: "facilities",
+      icon: Building2,
     },
   ];
 
   return (
-    <section className="admin-dashboard-grid">
-      <div className="admin-panel admin-performance-panel">
-        <div className="panel-title-row">
-          <div>
-            <p className="eyebrow">Theo dõi vận hành</p>
-            <h2>Hiệu suất vận hành</h2>
-            <span className="admin-panel-date">Cập nhật theo dữ liệu trang hiện tại</span>
-          </div>
-          <div className="admin-panel-tools">
-            <span>Trực tiếp</span>
-            <button type="button" aria-label="Tùy chọn"><MoreVertical size={16} /></button>
-          </div>
+    <section className="admin-overview" aria-labelledby="admin-overview-title">
+      <header className="admin-overview-heading">
+        <div>
+          <p className="eyebrow">Tổng quan quản trị</p>
+          <h2 id="admin-overview-title">Dữ liệu hệ thống đã xác nhận</h2>
+          <p>
+            Các tổng số dưới đây lấy trực tiếp từ API phân trang. Trạng thái chi tiết được hiển thị tại từng trang quản lý.
+          </p>
         </div>
-        <div className="admin-overview-metrics">
-          <article>
-            <span>Tỷ lệ duyệt</span>
-            <strong>{approvalRate}%</strong>
-            <small className="trend-up">+{Math.max(0, approvalRate - 80)}%</small>
-          </article>
-          <article>
-            <span>Bác sĩ hoạt động</span>
-            <strong>{activeDoctors}/{doctorTotalCount}</strong>
-            <small className="trend-up">{doctorActivationRate}%</small>
-          </article>
-          <article>
-            <span>AI đang bật</span>
-            <strong>{activeAIConfigs}</strong>
-            <small className={disabledAIConfigs ? "trend-down" : "trend-up"}>{disabledAIConfigs} tắt</small>
-          </article>
-          <article>
-            <span>Chuyên khoa</span>
-            <strong>{departmentsCount}</strong>
-            <small className="trend-up">Catalog</small>
-          </article>
-        </div>
-      </div>
+        <span><Database size={18} aria-hidden="true" /> Nguồn dữ liệu API</span>
+      </header>
 
-      <div className="admin-panel admin-chart-panel">
-        <div className="panel-title-row">
-          <div>
-            <p className="eyebrow">Chỉ số quản trị</p>
-            <h2>Chỉ số quản trị</h2>
-            <span className="admin-panel-date">{managementLoad} mục cần xử lý</span>
-          </div>
-          <span className="soft-badge">Live</span>
-        </div>
-        <div className="admin-bar-chart" aria-label="Biểu đồ hiệu suất quản trị">
-          {performanceBars.map((bar) => (
-            <div className={`admin-bar admin-bar-${bar.accent}`} key={bar.label}>
-              <span style={{ height: `${Math.max(14, bar.value)}%` }}>
-                <strong>{bar.value}%</strong>
-              </span>
-              <small>{bar.label}</small>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="admin-panel admin-schedule-panel">
-        <div className="panel-title-row">
-          <div>
-            <p className="eyebrow">Việc cần xử lý</p>
-            <h2>Lịch vận hành</h2>
-          </div>
-          <span className="soft-badge">{rolesLabel}</span>
-        </div>
-        <div className="admin-week-strip">
-          {WEEK_DAYS.map((day, index) => (
-            <button className={index === 4 ? "active" : ""} type="button" key={day}>
-              <span>{day}</span>
-              <strong>{15 + index}</strong>
-            </button>
-          ))}
-        </div>
-        <div className="admin-operation-list">
-          {operations.map((item) => (
+      <div className="admin-overview-grid">
+        {metrics.map((metric) => {
+          const Icon = metric.icon;
+          return (
             <button
-              className={`admin-operation admin-operation-${item.tone}`}
+              className="admin-overview-card"
               type="button"
-              key={item.title}
-              onClick={() => onOpenSection(item.section)}
+              key={metric.section}
+              onClick={() => onOpenSection(metric.section)}
+              aria-label={`Mở trang ${metric.label}`}
             >
-              <span className="admin-operation-icon">{item.icon}</span>
-              <div>
-                <strong>{item.title}</strong>
-                <small>{item.time}</small>
-              </div>
-              <MoreVertical size={16} />
+              <span className="admin-overview-card-icon"><Icon size={20} aria-hidden="true" /></span>
+              <span className="admin-overview-card-copy">
+                <small>{metric.label}</small>
+                <strong>{metric.loading ? "Đang tải" : metric.value}</strong>
+                <span>{metric.description}</span>
+              </span>
+              <ArrowRight size={18} aria-hidden="true" />
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
+
+      <aside className="admin-overview-scope" aria-label="Phạm vi số liệu">
+        <strong>Phạm vi số liệu</strong>
+        <p>
+          Tổng quan không tạo điểm số, xu hướng, lịch vận hành hoặc cảnh báo từ dữ liệu của riêng trang hiện tại.
+          Hãy mở từng khu vực để xem trạng thái và thao tác có sẵn từ backend.
+        </p>
+      </aside>
     </section>
   );
 }
