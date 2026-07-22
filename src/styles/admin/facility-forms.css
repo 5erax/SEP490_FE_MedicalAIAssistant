@@ -1,3 +1,177 @@
+.admin-operator .facility-admin-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-operator .facility-admin-card {
+  overflow: hidden;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(16, 20, 17, 0.045);
+}
+
+.admin-operator .facility-admin-card-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+}
+
+.admin-operator .facility-admin-thumbnail {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #e8f6f2;
+  color: #087f8c;
+}
+
+.admin-operator .facility-admin-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-operator .facility-admin-card-header > div:nth-child(2) {
+  min-width: 0;
+}
+
+.admin-operator .facility-admin-card-header strong,
+.admin-operator .facility-admin-card-header span {
+  display: block;
+}
+
+.admin-operator .facility-admin-card-header strong {
+  overflow: hidden;
+  color: #101411;
+  font-size: 16px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-operator .facility-admin-card-header > div:nth-child(2) > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  color: rgba(16, 20, 17, 0.6);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.admin-operator .facility-admin-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.admin-operator .facility-admin-meta {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(180px, 0.8fr) minmax(260px, 1.5fr);
+  gap: 10px;
+  margin: 0;
+  padding: 14px 18px;
+  background: #fbfcf7;
+}
+
+.admin-operator .facility-admin-meta > div {
+  min-width: 0;
+  border-right: 1px solid rgba(16, 20, 17, 0.08);
+  padding-right: 10px;
+}
+
+.admin-operator .facility-admin-meta > div:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+
+.admin-operator .facility-admin-meta dt {
+  color: rgba(16, 20, 17, 0.5);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-operator .facility-admin-meta dd {
+  margin: 6px 0 0;
+  color: #101411;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.admin-operator .facility-admin-departments dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-operator .facility-admin-departments dd span {
+  border-radius: 999px;
+  background: #e8f6f2;
+  color: #0c6766;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.admin-operator .facility-admin-departments em {
+  color: rgba(16, 20, 17, 0.54);
+  font-style: normal;
+}
+
+.admin-operator .facility-admin-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid rgba(16, 20, 17, 0.08);
+}
+
+.admin-operator .facility-admin-actions .btn {
+  min-height: 44px;
+}
+
+@media (max-width: 760px) {
+  .admin-operator .facility-admin-card-header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .admin-operator .facility-admin-badges {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .admin-operator .facility-admin-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .facility-admin-meta > div {
+    border-right: 0;
+    border-bottom: 1px solid rgba(16, 20, 17, 0.08);
+    padding: 0 0 10px;
+  }
+
+  .admin-operator .facility-admin-meta > div:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .admin-operator .facility-admin-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .facility-form-modal {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);

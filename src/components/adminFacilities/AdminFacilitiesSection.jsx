@@ -1,4 +1,4 @@
-import { Filter, Plus, RefreshCw, RotateCcw, Search } from "lucide-react";
+import { Building2, Filter, MapPin, Pencil, Plus, Power, RefreshCw, RotateCcw, Search, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services/cloudinaryUploadService";
 import { Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
@@ -201,21 +201,24 @@ export default function AdminFacilitiesSection({
       <section className="ai-config-filter-card">
         <div className="ai-config-filter-card-header">
           <div>
-            <strong>Medical facility filters</strong>
+            <strong>Bộ lọc cơ sở y tế</strong>
             <p>Lọc theo tên cơ sở, địa chỉ, chuyên khoa và trạng thái hiển thị.</p>
           </div>
         </div>
 
         <form className="ai-config-toolbar" onSubmit={onApplyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
-            <div className="ai-config-search-field">
+            <label className="ai-config-search-field">
               <Search size={16} />
+              <span className="sr-only">Tìm cơ sở y tế</span>
               <input
+                type="search"
+                autoComplete="off"
                 value={filters.search}
                 onChange={(event) => onFilterChange("search", event.target.value)}
                 placeholder="Tìm tên bệnh viện, địa chỉ hoặc chuyên khoa..."
               />
-            </div>
+            </label>
           </div>
 
           <div className="ai-config-toolbar-row ai-config-toolbar-filters">
@@ -236,7 +239,7 @@ export default function AdminFacilitiesSection({
               />
               <CustomSelect
                 className="clean-field"
-                label="Per page"
+                label="Hiển thị"
                 value={pageInfo.pageSize}
                 options={PAGE_SIZE_OPTIONS}
                 onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
@@ -245,10 +248,10 @@ export default function AdminFacilitiesSection({
 
             <div className="ai-config-filter-actions">
               <button className="btn btn-primary btn-small" type="submit" disabled={loading}>
-                <Filter size={14} /> Apply
+                <Filter size={14} /> Áp dụng
               </button>
               <button className="btn btn-ghost btn-small" type="button" onClick={onClearFilters} disabled={loading}>
-                <RotateCcw size={14} /> Clear
+                <RotateCcw size={14} /> Xóa lọc
               </button>
             </div>
           </div>
@@ -272,7 +275,7 @@ export default function AdminFacilitiesSection({
             )}
           />
         ) : (
-          <div className="admin-table-list">
+          <div className="facility-admin-list" role="list" aria-label="Danh sách cơ sở y tế">
             {facilities.length === 0 && (
               <EmptyState
                 title="Chưa có cơ sở y tế"
@@ -280,35 +283,56 @@ export default function AdminFacilitiesSection({
               />
             )}
             {facilities.map((facility) => {
-              const linkedDepartments = facilityDepartments
-                .filter((item) => item.facilityId === facility.id)
-                .map((item) => item.departmentName)
-                .filter(Boolean);
+              const linkedDepartments = Array.from(new Set([
+                ...facilityDepartments
+                  .filter((item) => String(item.facilityId) === String(facility.id))
+                  .map((item) => item.departmentName),
+                ...(Array.isArray(facility.departments)
+                  ? facility.departments.map((item) => item?.departmentName ?? item?.name)
+                  : []),
+              ].filter(Boolean)));
               return (
-                <article className="admin-user-row facility-admin-row" key={facility.id}>
-                  <div className="facility-admin-info">
-                    <strong>{facility.facilityName || "Chưa đặt tên"}</strong>
-                    <span>{facility.address || "Chưa có địa chỉ."}</span>
-                    <small>{formatCoordinatePair(facility)}</small>
-                    <small>
-                      {linkedDepartments.length
-                        ? `Chuyên khoa: ${linkedDepartments.join(", ")}`
-                        : "Chưa liên kết chuyên khoa."}
-                    </small>
-                  </div>
-                  <div className="record-actions">
-                    <Badge tone={isFacilityActive(facility) ? "success" : "warning"}>
-                      {isFacilityActive(facility) ? "Đang hoạt động" : "Đang tắt"}
-                    </Badge>
-                    <Badge tone={hasValidCoordinatePair(facility) ? "success" : "warning"}>
-                      {hasValidCoordinatePair(facility) ? "Đủ dữ liệu bản đồ" : "Thiếu tọa độ"}
-                    </Badge>
-                    <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(facility)}>Sửa</button>
+                <article className="facility-admin-card" key={facility.id} role="listitem">
+                  <header className="facility-admin-card-header">
+                    <span className="facility-admin-thumbnail" aria-hidden="true">
+                      {getSafeCurrentImageUrl(facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl)
+                        ? <img src={getSafeCurrentImageUrl(facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl)} alt="" />
+                        : <Building2 size={22} />}
+                    </span>
+                    <div>
+                      <strong>{facility.facilityName || "Chưa đặt tên"}</strong>
+                      <span><MapPin size={14} aria-hidden="true" /> {facility.address || "Chưa có địa chỉ."}</span>
+                    </div>
+                    <div className="facility-admin-badges">
+                      <Badge tone={isFacilityActive(facility) ? "success" : "warning"}>
+                        {isFacilityActive(facility) ? "Đang hoạt động" : "Đang tắt"}
+                      </Badge>
+                      <Badge tone={hasValidCoordinatePair(facility) ? "success" : "warning"}>
+                        {hasValidCoordinatePair(facility) ? "Có tọa độ bản đồ" : "Thiếu tọa độ"}
+                      </Badge>
+                    </div>
+                  </header>
+
+                  <dl className="facility-admin-meta">
+                    <div><dt>Loại cơ sở</dt><dd>{facility.facilityType || "Chưa cập nhật"}</dd></div>
+                    <div><dt>Tọa độ</dt><dd>{formatCoordinatePair(facility)}</dd></div>
+                    <div className="facility-admin-departments">
+                      <dt>Chuyên khoa liên kết</dt>
+                      <dd>
+                        {linkedDepartments.length
+                          ? linkedDepartments.map((department) => <span key={department}>{department}</span>)
+                          : <em>Chưa liên kết chuyên khoa</em>}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <footer className="facility-admin-actions">
+                    <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(facility)}><Pencil size={15} aria-hidden="true" /> Sửa</button>
                     <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(facility)}>
-                      {isFacilityActive(facility) ? "Tắt" : "Bật"}
+                      <Power size={15} aria-hidden="true" /> {isFacilityActive(facility) ? "Tắt" : "Bật"}
                     </button>
-                    <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(facility)}>Xóa</button>
-                  </div>
+                    <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(facility)}><Trash2 size={15} aria-hidden="true" /> Xóa</button>
+                  </footer>
                 </article>
               );
             })}

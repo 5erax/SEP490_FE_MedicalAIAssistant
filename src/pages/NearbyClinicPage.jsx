@@ -22,6 +22,7 @@ import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
 import {
+  facilityDepartmentsApi,
   feedbackReviewsApi,
   getStoredAuth,
   medicalFacilitiesApi,
@@ -400,15 +401,60 @@ function NearbyClinicPage() {
   useEffect(() => {
     let active = true;
 
-    medicalFacilitiesApi.active()
-      .then((response) => {
+    Promise.allSettled([
+      medicalFacilitiesApi.active(),
+      facilityDepartmentsApi.active(),
+    ])
+      .then(([facilityResult, relationResult]) => {
         if (!active) return;
 
-        const data = getArrayData(response).map((facility) => normalizeFacility(facility));
+        if (facilityResult.status !== "fulfilled") throw facilityResult.reason;
+
+        const relationsByFacility = new globalThis.Map();
+        if (relationResult.status === "fulfilled") {
+          getArrayData(relationResult.value).forEach((relation) => {
+            const facilityId = String(
+              relation?.facilityId
+              ?? relation?.medicalFacilityId
+              ?? relation?.facility?.id
+              ?? "",
+            ).trim();
+            const departmentId = String(
+              relation?.departmentId
+              ?? relation?.medicalDepartmentId
+              ?? relation?.department?.id
+              ?? "",
+            ).trim();
+            if (!facilityId || !departmentId) return;
+            const current = relationsByFacility.get(facilityId) ?? [];
+            current.push({
+              id: departmentId,
+              name: relation?.departmentName
+                ?? relation?.medicalDepartmentName
+                ?? relation?.department?.name
+                ?? "Chuyên khoa chưa cập nhật tên",
+            });
+            relationsByFacility.set(facilityId, current);
+          });
+        }
+
+        const data = getArrayData(facilityResult.value).map((facility) => {
+          const facilityId = String(facility?.facilityId ?? facility?.id ?? "");
+          const relations = relationsByFacility.get(facilityId) ?? [];
+          return normalizeFacility(
+            facility,
+            relations.map((relation) => relation.name),
+            relations.map((relation) => relation.id),
+          );
+        });
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
         setSelectedFacility(null);
-        setApiNotice(data.length ? "" : "Chưa có cơ sở y tế đang hoạt động.");
+        setApiNotice(data.length
+          ? relationResult.status === "rejected"
+            ? "Danh sách khoa liên kết đang tạm thời chưa đầy đủ."
+            : ""
+          : "Chưa có cơ sở y tế đang hoạt động.");
       })
       .catch((error) => {
         if (active) {
@@ -1445,7 +1491,7 @@ const styles = `
 .map-ai-panel header strong, .map-ai-panel header small { display: block; }
 .map-ai-panel header strong { font-size: 15px; }
 .map-ai-panel header small { margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 800; }
-.map-ai-panel header button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); cursor: pointer; }
+.map-ai-panel header button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); cursor: pointer; }
 .map-ai-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; border-radius: 14px; background: #f2f7ee; padding: 5px; }
 .map-ai-tabs button { border: 0; border-radius: 11px; background: transparent; color: var(--muted); padding: 10px 8px; font-weight: 950; cursor: pointer; }
 .map-ai-tabs button.active { background: #fff; color: var(--ink); box-shadow: 0 8px 18px rgba(17,20,18,.08); }
@@ -1460,9 +1506,13 @@ const styles = `
 .map-ai-results small { width: fit-content; border-radius: 999px; background: #dff7ea; color: #0b6b42; padding: 5px 8px; font-size: 11px; font-weight: 950; }
 .map-ai-results strong { font-size: 14px; }
 .map-ai-results ul, .map-ai-session-detail ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 850; line-height: 1.45; }
-.map-ai-history article { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--line); border-radius: 14px; background: #fff; padding: 10px; }
+.map-ai-history-list { display: grid; gap: 9px; }
+.map-ai-history article { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--line); border-radius: 14px; background: #fff; padding: 10px; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+.map-ai-history article.active { border-color: rgba(12,124,123,.36); background: #f2fbf8; box-shadow: 0 10px 24px rgba(12,124,123,.08); }
 .map-ai-history article div { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.map-ai-history article div > span { min-width: 0; }
 .map-ai-history article strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.map-ai-history article small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 800; }
 .map-ai-history article button { flex: 0 0 auto; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; padding: 8px 10px; font-size: 12px; font-weight: 950; cursor: pointer; }
 .map-ai-session-detail { display: grid; gap: 7px; border: 1px dashed rgba(12,124,123,.26); border-radius: 14px; background: #f8fbf4; padding: 11px; }
 .map-ai-session-detail p, .map-ai-message, .map-ai-history > p { margin: 0; color: var(--muted); font-size: 13px; font-weight: 850; line-height: 1.45; }
@@ -1493,6 +1543,7 @@ const styles = `
 .map-ai-message-bubble.has-control { width: 100%; max-width: 100%; }
 .map-ai-message-bubble.has-control > div { min-width: 0; flex: 1; display: grid; gap: 10px; }
 .map-ai-select-control { display: block; }
+.map-ai-select-control > span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 11px; font-weight: 900; }
 .map-ai-select-control select { width: 100%; min-height: 42px; border: 1px solid var(--line-strong); border-radius: 14px; background: #fff; color: var(--ink); padding: 0 12px; font: inherit; font-size: 13px; font-weight: 900; outline: none; transition: border-color .18s ease, box-shadow .18s ease; }
 .map-ai-select-control select:focus { border-color: #0c7c7b; box-shadow: 0 0 0 4px rgba(12,124,123,.12); }
 .map-ai-context-pill { align-self: center; width: fit-content; max-width: 100%; border-radius: 999px; background: #e8f6f7; color: #0c6766; padding: 6px 10px; font-size: 11px; font-weight: 950; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1501,15 +1552,19 @@ const styles = `
 .map-ai-question-card:hover { border-color: rgba(12,124,123,.28); box-shadow: 0 14px 30px rgba(17,20,18,.08); transform: translateY(-1px); }
 .map-ai-question-card span { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 999px; background: #f2f7ee; color: #0c7c7b; font-weight: 950; }
 .map-ai-question-card p { min-width: 0; margin: 0; color: var(--ink); font-size: 13px; line-height: 1.45; font-weight: 900; overflow-wrap: anywhere; }
-.map-ai-composer { flex: 0 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 10px; align-items: center; padding: 14px; border-top: 1px solid rgba(220,228,217,.9); background: rgba(255,255,255,.94); }
+.map-ai-composer { flex: 0 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 10px; align-items: end; padding: 12px 14px 14px; border-top: 1px solid rgba(220,228,217,.9); background: rgba(255,255,255,.94); }
+.map-ai-composer-field { min-width: 0; display: grid; gap: 5px; }
+.map-ai-composer-field > span { color: var(--muted); font-size: 11px; font-weight: 900; }
 .map-ai-composer input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 15px; font: inherit; font-size: 13px; font-weight: 850; outline: none; transition: border-color .18s ease, box-shadow .18s ease; }
 .map-ai-composer input:focus { border-color: #0c7c7b; box-shadow: 0 0 0 4px rgba(12,124,123,.12); }
 .map-ai-composer button { width: 42px; height: 42px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--lime); color: var(--ink); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease; }
 .map-ai-composer button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 4px 4px 0 var(--ink); }
 .map-ai-composer button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
-.map-ai-history { min-height: 0; flex: 1; overflow-y: auto; padding: 18px; background: linear-gradient(180deg, #fbfdf8 0%, #f7fbf4 100%); }
+.map-ai-history { min-height: 0; flex: 1; align-content: start; grid-auto-rows: max-content; overflow-y: auto; padding: 18px; background: linear-gradient(180deg, #fbfdf8 0%, #f7fbf4 100%); }
 .map-ai-history-title { display: flex; align-items: center; gap: 10px; border: 1px solid rgba(220,228,217,.9); border-radius: 16px; background: #fff; padding: 12px; box-shadow: 0 10px 24px rgba(17,20,18,.055); }
 .map-ai-history-title > svg { color: #0c7c7b; }
+.map-ai-history-title > div { min-width: 0; flex: 1; }
+.map-ai-history-title > span { min-width: 28px; min-height: 28px; display: grid; place-items: center; border-radius: 999px; background: #e8f6f7; color: #0c6766; font-size: 11px; font-weight: 950; }
 .map-ai-history-title strong, .map-ai-history-title small { display: block; }
 .map-ai-history-title strong { font-size: 14px; }
 .map-ai-history-title small { margin-top: 2px; color: var(--muted); font-size: 11px; font-weight: 850; }

@@ -112,6 +112,15 @@ test("admin user filters use consistent labelled controls and status styling", a
           data: {
             items: [
               {
+                identityId: "system-admin",
+                displayName: "System Admin",
+                email: "admin@medimate.local",
+                roles: ["Admin"],
+                status: "approved",
+                isActive: true,
+                isDeleted: false,
+              },
+              {
                 identityId: "approved-1",
                 displayName: "Approved String",
                 email: "approved-string@example.com",
@@ -139,7 +148,7 @@ test("admin user filters use consistent labelled controls and status styling", a
             ],
             pageNumber: 1,
             pageSize: 10,
-            totalCount: 3,
+            totalCount: 4,
             totalPages: 1,
           },
         }),
@@ -165,6 +174,9 @@ test("admin user filters use consistent labelled controls and status styling", a
   await expect(page.getByText("approved-string@example.com", { exact: true })).toBeVisible();
   await expect(page.getByText("approved-number@example.com", { exact: true })).toBeVisible();
   await expect(page.getByText("pending-doctor@example.com", { exact: true })).toBeVisible();
+  await expect(page.getByText("System Admin", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("admin@medimate.local", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Xóa" })).toHaveCount(3);
 
   await page.getByRole("button", { name: "Mở danh sách: Tất cả tài khoản" }).click();
   await page.getByRole("listbox", { name: "Trạng thái" })

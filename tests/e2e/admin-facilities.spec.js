@@ -305,7 +305,7 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
 
   await page.goto("/app/admin/facilities", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("Đủ dữ liệu bản đồ", { exact: true })).toBeVisible();
+  await expect(page.getByText("Có tọa độ bản đồ", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Sửa" }).click();
   const facilityDialog = page.getByRole("dialog");
   await expect(facilityDialog.locator(".facility-image-preview")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/facility-a.jpg");
@@ -341,7 +341,7 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
   await expect(page.getByText("Đang tắt", { exact: true })).toBeVisible();
   expect(statusPayload).toEqual({ isActive: false });
 
-  await page.getByRole("button", { name: "Xóa" }).click();
+  await page.getByRole("button", { name: "Xóa", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xóa cơ sở" }).click();
   await expect(page.getByText("Chưa có cơ sở y tế", { exact: true })).toBeVisible();
   expect(deleteRequested).toBe(true);

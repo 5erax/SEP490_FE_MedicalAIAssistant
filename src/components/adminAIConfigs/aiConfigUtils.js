@@ -1,5 +1,5 @@
 export function getConfigName(config) {
-  return config.taskType || "AI configuration";
+  return config.taskType || "Cấu hình AI";
 }
 
 export function getEnvironment(config) {
@@ -12,10 +12,10 @@ export function getEnvironment(config) {
 
 export function formatEnvironment(environment) {
   const labels = {
-    production: "Production",
-    staging: "Staging",
-    development: "Development",
-    default: "Default",
+    production: "Sản xuất",
+    staging: "Tiền sản xuất",
+    development: "Phát triển",
+    default: "Mặc định",
   };
   return labels[environment] || environment;
 }
@@ -36,7 +36,7 @@ export function formatDateTime(value) {
 }
 
 export function truncatePrompt(prompt = "", maxLength = 130) {
-  if (!prompt) return "Chưa có system prompt.";
+  if (!prompt) return "Chưa có prompt hệ thống.";
   if (prompt.length <= maxLength) return prompt;
   return `${prompt.slice(0, maxLength).trim()}...`;
 }

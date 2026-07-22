@@ -178,3 +178,50 @@ test("patient profile setup submits all chronic disease fields from the Swagger 
     }],
   });
 });
+
+test("patient adds a chronic disease with one click from the read-only profile", async ({ page }) => {
+  await preparePage(page);
+  const userId = "55555555-5555-4555-8555-555555555555";
+  await page.addInitScript(({ accessToken, storedUserId }) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      userId: storedUserId,
+      roles: ["Patient"],
+    }));
+  }, { accessToken: ACCESS_TOKEN, storedUserId: userId });
+
+  await page.route("**/api/**", (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: { id: userId, displayName: "Nguyễn Minh", email: "patient@example.com" },
+        }),
+      });
+    }
+    if (url.pathname === "/api/patient-profiles") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: { items: [], pageNumber: 1, pageSize: 100, totalCount: 0, totalPages: 0 },
+        }),
+      });
+    }
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [] }),
+    });
+  });
+
+  await page.goto("/profile?tab=medical", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("button", { name: "Thêm bệnh nền" })).toBeEnabled();
+  await page.getByRole("button", { name: "Thêm bệnh nền" }).click();
+
+  await expect(page.getByRole("button", { name: "Lưu hồ sơ" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Bệnh nền #1" })).toBeVisible();
+  await expect(page.getByLabel("Tên bệnh")).toBeEnabled();
+  await expect(page.getByLabel("Tên bệnh")).toBeFocused();
+});

@@ -3,6 +3,7 @@ import { preparePage } from "./helpers.js";
 
 const FACILITY_ID = "11111111-1111-4111-8111-111111111111";
 const FACILITY_DEPARTMENT_ID = "33333333-3333-4333-8333-333333333333";
+const SECOND_FACILITY_DEPARTMENT_ID = "44444444-4444-4444-8444-444444444444";
 const TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJVc2VyIiwiZW1haWwiOiJ1c2VyQGV4YW1wbGUuY29tIn0",
@@ -38,6 +39,13 @@ async function mockMapApis(page, facilities, options = {}) {
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ success: true, data: facilities }),
+      });
+    }
+
+    if (url.pathname === "/api/facility-departments/active") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: options.facilityDepartments ?? [] }),
       });
     }
 
@@ -126,6 +134,18 @@ test("pre-visit AI appears after facility detail and uses its department id", as
     if (url.pathname.startsWith("/api/")) requestedApiPaths.push(url.pathname);
   });
   await mockMapApis(page, [facility()], {
+    facilityDepartments: [
+      {
+        facilityId: FACILITY_ID,
+        departmentId: FACILITY_DEPARTMENT_ID,
+        departmentName: "Tim mạch",
+      },
+      {
+        facilityId: FACILITY_ID,
+        departmentId: SECOND_FACILITY_DEPARTMENT_ID,
+        departmentName: "Hô hấp",
+      },
+    ],
     onGenerateQuestions(payload) {
       consultationPayload = payload;
     },
@@ -144,18 +164,19 @@ test("pre-visit AI appears after facility detail and uses its department id", as
   await expect(page.getByRole("button", { name: "Thu gọn AI hỗ trợ trước khám" })).toHaveAttribute("aria-expanded", "true");
 
   const departmentSelect = page.getByLabel("Chọn chuyên khoa");
-  await expect(departmentSelect).toHaveValue(FACILITY_DEPARTMENT_ID);
-  await expect(departmentSelect.locator("option")).toHaveCount(2);
+  await expect(departmentSelect).toHaveValue("");
+  await expect(departmentSelect.locator("option")).toHaveCount(3);
+  await departmentSelect.selectOption(SECOND_FACILITY_DEPARTMENT_ID);
   await page.getByLabel("Triệu chứng của bạn").fill("Đau ngực nhẹ");
   await page.getByRole("button", { name: "Tạo gợi ý câu hỏi" }).click();
 
   await expect(page.getByText("Cơn đau bắt đầu từ khi nào?", { exact: true })).toBeVisible();
   expect(consultationPayload).toEqual({
-    departmentId: FACILITY_DEPARTMENT_ID,
+    departmentId: SECOND_FACILITY_DEPARTMENT_ID,
     symptoms: "Đau ngực nhẹ",
   });
   expect(requestedApiPaths).not.toContain("/api/medical-departments");
-  expect(requestedApiPaths).not.toContain("/api/facility-departments/active");
+  expect(requestedApiPaths).toContain("/api/facility-departments/active");
 });
 
 test("facility without coordinates stays in the list without a false marker", async ({ page }) => {

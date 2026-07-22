@@ -37,12 +37,12 @@ export default function AdminAIConfigsSection({
     <section className="admin-panel ai-config-admin-panel">
       <div className="panel-title-row ai-config-section-heading">
         <div>
-          <p className="eyebrow">AI Platform Console</p>
-          <h2>AI Configuration Management</h2>
+          <p className="eyebrow">Nền tảng AI</p>
+          <h2>Quản lý cấu hình AI</h2>
           <p className="muted-text">Quản lý prompt, model và hành vi AI trong hệ thống MediMate AI.</p>
         </div>
         <button className="btn btn-ghost btn-small" type="button" onClick={() => onLoadPage()}>
-          <RefreshCw size={15} /> Sync AI Settings
+          <RefreshCw size={15} /> Đồng bộ cấu hình
         </button>
       </div>
 
@@ -50,28 +50,28 @@ export default function AdminAIConfigsSection({
         <article>
           <span><BrainCircuit size={16} /></span>
           <div>
-            <small>Total AI Configs</small>
+            <small>Tổng cấu hình</small>
             <strong>{pageInfo.totalCount}</strong>
           </div>
         </article>
         <article>
           <span><Cpu size={16} /></span>
           <div>
-            <small>Active Models</small>
+            <small>Đang bật trên trang</small>
             <strong>{activeCount}</strong>
           </div>
         </article>
         <article>
           <span><Activity size={16} /></span>
           <div>
-            <small>Disabled Configs</small>
+            <small>Đang tắt trên trang</small>
             <strong>{disabledCount}</strong>
           </div>
         </article>
         <article>
           <span><ClipboardList size={16} /></span>
           <div>
-            <small>AI Features Running</small>
+            <small>Tính năng trên trang</small>
             <strong>{featureCount}</strong>
           </div>
         </article>
@@ -95,13 +95,13 @@ export default function AdminAIConfigsSection({
       {loading ? (
         <LoadingState
           className="ai-config-empty-state"
-          label="Đang tải danh sách AI config..."
-          description="Các cấu hình model và prompt đang được đồng bộ."
+          label="Đang tải danh sách cấu hình AI..."
+          description="Các cấu hình mô hình và prompt đang được đồng bộ."
         />
       ) : error ? (
         <ErrorState
           className="ai-config-empty-state"
-          title="Không thể tải danh sách AI config"
+          title="Không thể tải danh sách cấu hình AI"
           description={error}
           action={(
             <Button onClick={() => onLoadPage()}>
@@ -125,7 +125,7 @@ export default function AdminAIConfigsSection({
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => onLoadPage(pageInfo.pageNumber - 1)}>
             Trước
           </button>
-          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {configs.length} / {pageInfo.totalCount} configs</span>
+          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {configs.length} / {pageInfo.totalCount} cấu hình</span>
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => onLoadPage(pageInfo.pageNumber + 1)}>
             Sau
           </button>
