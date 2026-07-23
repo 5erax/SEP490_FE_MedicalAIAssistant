@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
+import { FileClock, LockKeyhole, ShieldCheck, UserRoundCheck } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
@@ -110,12 +111,17 @@ function rejectDoctorInvitationLogin(setMessage) {
 
 const authCopy = {
   login: {
-    eyebrow: "MediMate AI",
-    title: "Đăng nhập để tiếp tục chăm sóc sức khỏe của bạn.",
-    copy: "Mở hồ sơ cá nhân, xem lại thông tin đã lưu và tiếp tục các bước theo dõi phù hợp.",
-    sideTitle: "Một nơi gọn gàng cho hành trình đi khám",
-    sideCopy: "Nhập triệu chứng, lưu hồ sơ, xem chuyên khoa phù hợp và chuẩn bị tốt hơn trước khi đến cơ sở y tế.",
-    points: ["Hồ sơ cá nhân", "Gợi ý chuyên khoa", "Theo dõi sau khám"],
+    eyebrow: "Tài khoản MediMate",
+    title: "Chào mừng bạn quay lại.",
+    copy: "Đăng nhập để tiếp tục với hồ sơ, lịch sử phiên và các công cụ được cấp cho tài khoản của bạn.",
+    sideEyebrow: "Không gian cá nhân",
+    sideTitle: "Thông tin của bạn, ở đúng nơi bạn cần.",
+    sideCopy: "Một điểm truy cập thống nhất để bạn tiếp tục những nội dung đã lưu trên MediMate.",
+    points: [
+      { label: "Hồ sơ sức khỏe được bảo vệ", icon: ShieldCheck },
+      { label: "Lịch sử phiên trong một tài khoản", icon: FileClock },
+      { label: "Quyền truy cập theo đúng vai trò", icon: UserRoundCheck },
+    ],
   },
   signup: {
     eyebrow: "Tài khoản mới",
@@ -137,30 +143,43 @@ const authCopy = {
 
 function AuthShell({ mode = "login", children }) {
   const content = authCopy[mode] ?? authCopy.login;
+  const isLogin = mode === "login";
 
   return (
-    <main className="landing-page auth-shell-page">
-      <Navbar />
+    <main className={`landing-page auth-shell-page auth-mode-${mode}`}>
+      <Navbar variant={isLogin ? "landing" : "default"} />
       <section className="auth-page">
         <div className="container auth-layout auth-layout-clean">
           <aside className="auth-side-panel">
             <a className="brand auth-brand" href="/">
-              <span className="brand-mark">+</span>
+              <span className="brand-mark" aria-hidden="true">
+                {isLogin ? <img src="/logo.svg" alt="" width="36" height="36" /> : "+"}
+              </span>
               <span>MediMate AI</span>
             </a>
             <div>
-              <p className="eyebrow">{content.eyebrow}</p>
+              <p className="eyebrow">{content.sideEyebrow ?? content.eyebrow}</p>
               <h1>{content.sideTitle}</h1>
               <p>{content.sideCopy}</p>
             </div>
             <div className="auth-step-list">
               {content.points.map((point, index) => (
-                <div key={point}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{point}</strong>
+                <div key={typeof point === "string" ? point : point.label}>
+                  <span>
+                    {typeof point === "string"
+                      ? String(index + 1).padStart(2, "0")
+                      : <point.icon size={19} strokeWidth={1.8} aria-hidden="true" />}
+                  </span>
+                  <strong>{typeof point === "string" ? point : point.label}</strong>
                 </div>
               ))}
             </div>
+            {isLogin && (
+              <p className="auth-privacy-note">
+                <LockKeyhole size={17} aria-hidden="true" />
+                Thông tin đăng nhập được truyền qua kết nối bảo mật.
+              </p>
+            )}
           </aside>
 
           <div className="auth-card auth-card-clean">
