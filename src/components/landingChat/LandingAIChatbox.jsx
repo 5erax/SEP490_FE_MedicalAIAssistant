@@ -7,7 +7,7 @@ import FloatingChatButton from "./FloatingChatButton";
 
 const WELCOME_MESSAGE = {
   from: "assistant",
-  text: "Xin chào. MediMate AI có thể hỗ trợ tư vấn triệu chứng, tìm cơ sở y tế, hướng dẫn khám bệnh và giải đáp nhanh các vấn đề sức khỏe.",
+  text: "Xin chào. Tôi có thể giúp bạn tìm hiểu thông tin sức khỏe ở mức tham khảo. Nếu đang có triệu chứng, hãy chọn “Mô tả triệu chứng” để được hỏi thêm từng bước. Không sử dụng trợ lý này trong tình huống khẩn cấp.",
 };
 
 function TypingDots() {
@@ -40,7 +40,7 @@ export default function LandingAIChatbox() {
     try {
       const response = await sendLandingChatMessage(nextText);
       const loginHint = response.answer.length > 0 && !hasUserMessage
-        ? "\n\nBạn có thể đăng nhập để lưu hồ sơ và mở trợ lý triệu chứng nâng cao."
+        ? "\n\nBạn có thể đăng nhập để lưu hồ sơ và xem lại các phiên phân tích."
         : "";
 
       setMessages((current) => [...current, { from: "assistant", text: `${response.answer}${loginHint}` }]);
@@ -68,7 +68,7 @@ export default function LandingAIChatbox() {
               <span className="brand-mark">+</span>
               <span>MediMate</span>
             </a>
-            <small>AI Assistant • Sẵn sàng hỗ trợ</small>
+            <small>Thông tin tham khảo • Không thay thế bác sĩ</small>
           </div>
           <button type="button" onClick={() => setOpen(false)} aria-label="Đóng trợ lý AI">×</button>
         </header>
@@ -87,7 +87,7 @@ export default function LandingAIChatbox() {
           <ChatInput value={draft} loading={loading} onChange={setDraft} onSubmit={handleSubmit} />
           <div className="landing-chat-links">
             <a href="/login">Đăng nhập</a>
-            <a href="/medical-assistant">Trợ lý nâng cao</a>
+            <a href="/medical-assistant">Mô tả triệu chứng</a>
           </div>
         </footer>
       </div>}

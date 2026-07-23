@@ -112,6 +112,9 @@ const BASE_ROUTES = [
     navigation: { shell: "patient", label: "Kiểm tra thuốc", hint: "Nhận diện nhãn thuốc", icon: "medication", order: 70 },
   },
   { id: "public.pricing", path: "/pricing", title: "Bảng giá | MediMate AI", access: "public" },
+  { id: "public.support", path: "/support", title: "Hỗ trợ | MediMate AI", access: "public" },
+  { id: "public.privacy", path: "/privacy", title: "Quyền riêng tư | MediMate AI", access: "public" },
+  { id: "public.medical-disclaimer", path: "/medical-disclaimer", title: "Tuyên bố miễn trừ y tế | MediMate AI", access: "public" },
   { id: "payment.return", path: "/payment/return", title: "Thanh toán thành công | MediMate AI", access: "public", returnable: false },
   { id: "payment.cancel", path: "/payment/cancel", title: "Thanh toán đã hủy | MediMate AI", access: "public", returnable: false },
   { id: "workspace.redirect", path: "/app", title: "Không gian làm việc | MediMate AI", access: "public", returnable: false },
@@ -121,12 +124,6 @@ const BASE_ROUTES = [
     title: "Trợ lý y tế | MediMate AI",
     access: "public",
     aliases: ["/symptom-chat"],
-  },
-  {
-    id: "assistant.safety",
-    path: "/medical-assistant/safety",
-    title: "Kiểm tra an toàn | MediMate AI",
-    access: "public",
   },
   {
     id: "assessment.session",

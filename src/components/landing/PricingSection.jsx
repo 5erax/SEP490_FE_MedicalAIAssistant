@@ -1,122 +1,227 @@
-const PLANS = [
-  {
-    badge: "Miễn phí",
-    name: "Cơ bản",
-    price: "0đ",
-    period: "mãi mãi",
-    desc: "Cho người mới bắt đầu theo dõi sức khỏe cá nhân.",
-    cta: "Bắt đầu ngay",
-    href: "/signup",
-    features: [
-      "Phân tích triệu chứng cơ bản",
-      "Gợi ý chuyên khoa phù hợp",
-      "Lưu 3 hồ sơ sức khỏe",
-      "Nhắc lịch uống thuốc",
-    ],
-  },
-  {
-    badge: "Phổ biến",
-    name: "MediMate+",
-    price: "149.000đ",
-    period: "mỗi tháng",
-    desc: "Cho người cần theo dõi sức khỏe nghiêm túc hơn.",
-    cta: "Dùng thử 14 ngày",
-    href: "/pricing",
-    highlight: true,
-    features: [
-      "Phân tích nâng cao và hỏi thêm ngữ cảnh",
-      "Giải thích xét nghiệm chi tiết",
-      "Hồ sơ sức khỏe không giới hạn",
-      "Cảnh báo tương tác thuốc",
-      "Tóm tắt để chia sẻ với bác sĩ",
-    ],
-  },
-];
-
-const FAQS = [
-  {
-    q: "MediMate AI có thay thế bác sĩ không?",
-    a: "Không. Ứng dụng hỗ trợ sàng lọc thông tin, chuẩn bị câu hỏi và theo dõi sức khỏe, nhưng quyết định chẩn đoán và điều trị vẫn thuộc về chuyên gia y tế.",
-  },
-  {
-    q: "Dữ liệu sức khỏe có được bảo mật không?",
-    a: "Có. Landing page đang mô tả định hướng sản phẩm với các lớp bảo mật, phân quyền truy cập và nguyên tắc tối thiểu hóa dữ liệu cá nhân.",
-  },
-  {
-    q: "Có dùng được cho người lớn tuổi không?",
-    a: "Có. Nội dung được viết bằng tiếng Việt dễ hiểu, giao diện ưu tiên chữ rõ, thao tác ít bước và nhắc nhở theo lịch.",
-  },
-];
+import { ArrowRight, CalendarDays, Check, CircleDollarSign, Info, LoaderCircle, MapPinned, ShieldCheck, Sparkles, Stethoscope } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { subscriptionPlansApi } from "../../services/api";
+import { getPlanBenefits, getPlanDisplayName, PUBLIC_ACCESS_BENEFITS } from "../../utils/subscriptionPlanPresentation";
 
 const FOOTER_COLUMNS = [
   {
-    title: "Sản phẩm",
-    href: "/product",
+    title: "Bắt đầu",
     links: [
-      ["Tính năng", "/features"],
-      ["Bảng giá", "/pricing"],
-      ["Lộ trình", "/roadmap"],
-      ["API", "/api"],
+      ["Mô tả triệu chứng", "/medical-assistant"],
+      ["Tìm cơ sở y tế", "/map"],
+      ["Xem gói dịch vụ", "/pricing"],
     ],
   },
   {
-    title: "Hỗ trợ",
-    href: "/support",
+    title: "Tài khoản",
     links: [
-      ["Trung tâm trợ giúp", "/help"],
-      ["Liên hệ", "/contact"],
-      ["Trạng thái hệ thống", "/status"],
-      ["Cộng đồng", "/community"],
+      ["Đăng nhập", "/login"],
+      ["Tạo tài khoản", "/signup"],
+      ["Đăng ký bác sĩ bằng lời mời", "/register-doctor"],
     ],
   },
   {
-    title: "Pháp lý",
-    href: "/legal",
+    title: "Thông tin",
     links: [
-      ["Điều khoản", "/terms"],
-      ["Bảo mật", "/privacy"],
-      ["Cookie", "/cookies"],
-      ["Disclaimer y tế", "/medical-disclaimer"],
+      ["Hỗ trợ", "/support"],
+      ["Quyền riêng tư", "/privacy"],
+      ["Tuyên bố miễn trừ y tế", "/medical-disclaimer"],
     ],
   },
 ];
 
-export function PricingSection() {
-  return (
-    <section id="pricing" className="section">
-      <div className="container">
-        <p className="eyebrow">Bảng giá</p>
-        <h2 className="section-title">
-          Minh bạch, dễ bắt đầu và có thể <em>nâng cấp khi cần</em>.
-        </h2>
+function getArrayData(response) {
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.data?.items)) return response.data.items;
+  return [];
+}
 
-        <div className="pricing-grid">
-          {PLANS.map((plan) => (
-            <article
-              className={`price-card ${plan.highlight ? "highlight" : ""}`}
-              key={plan.name}
-            >
-              <span className="price-badge">{plan.badge}</span>
-              <h3>{plan.name}</h3>
-              <p>{plan.desc}</p>
-              <div className="price">
-                <strong>{plan.price}</strong>
-                <span>{plan.period}</span>
-              </div>
-              <ul className="plan-list">
-                {plan.features.map((feature) => (
-                  <li key={feature}>✓ {feature}</li>
+function formatPrice(value) {
+  const price = Number(value);
+  if (!Number.isFinite(price)) return "Chưa cập nhật giá";
+  return `${price.toLocaleString("vi-VN")}đ`;
+}
+
+function formatDuration(value) {
+  const days = Number(value);
+  if (!Number.isInteger(days) || days <= 0) return "Chưa cập nhật thời hạn";
+  if (days % 365 === 0) return `${days / 365} năm`;
+  if (days % 30 === 0) return `${days / 30} tháng`;
+  return `${days} ngày`;
+}
+
+function formatBillingPeriod(value) {
+  const days = Number(value);
+  if (!Number.isInteger(days) || days <= 0) return "chưa cập nhật";
+  if (days === 365) return "năm";
+  if (days % 365 === 0) return `${days / 365} năm`;
+  if (days === 30) return "tháng";
+  if (days % 30 === 0) return `${days / 30} tháng`;
+  return `${days} ngày`;
+}
+
+export function PricingPreviewSection() {
+  const [plans, setPlans] = useState([]);
+  const [status, setStatus] = useState("loading");
+
+  useEffect(() => {
+    let active = true;
+
+    subscriptionPlansApi.active()
+      .then((response) => {
+        if (!active) return;
+        setPlans(getArrayData(response));
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (!active) return;
+        setPlans([]);
+        setStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const previewPlans = useMemo(() => [...plans]
+    .filter((plan) => plan && (plan.id || plan.planName))
+    .sort((left, right) => Number(left.price ?? Number.MAX_SAFE_INTEGER) - Number(right.price ?? Number.MAX_SAFE_INTEGER))
+    .slice(0, 2), [plans]);
+
+  return (
+    <section id="pricing-preview" className="care-section care-pricing-section" aria-labelledby="pricing-preview-title">
+      <div className="container">
+        <div className="care-pricing-heading">
+          <div>
+            <p className="care-eyebrow">Bảng giá</p>
+            <h2 id="pricing-preview-title">Bắt đầu miễn phí. Nâng cấp khi cần.</h2>
+          </div>
+          <div>
+            <p>
+              So sánh những gì bạn có thể dùng ngay trên các trang công khai với quyền lợi có hạn mức của gói đăng ký.
+              Giá và hạn mức gói trả phí được lấy trực tiếp từ hệ thống.
+            </p>
+          </div>
+        </div>
+
+        <div className="care-pricing-grid" id="pricing-plans">
+          <article className="care-price-card care-price-card-free">
+            <div className="care-price-card-head">
+              <span className="care-price-icon"><Sparkles size={21} aria-hidden="true" /></span>
+            </div>
+            <p className="care-price-kicker">Truy cập công khai</p>
+            <h3>Miễn phí</h3>
+            <div className="care-price-line">
+              <p className="care-price-value">0đ</p>
+              <span>cho các tính năng công khai</span>
+            </div>
+            <p className="care-price-duration">
+              <ShieldCheck size={16} aria-hidden="true" />
+              Phù hợp để làm quen và tìm thông tin trước khi đi khám
+            </p>
+            <div className="care-price-benefits">
+              <strong>Bạn có thể dùng</strong>
+              <ul>
+                {PUBLIC_ACCESS_BENEFITS.map((benefit) => (
+                  <li key={benefit}>
+                    <Check size={16} aria-hidden="true" />
+                    <span>{benefit}</span>
+                  </li>
                 ))}
               </ul>
-              <a
-                className={`btn ${plan.highlight ? "btn-primary" : "btn-ghost"}`}
-                href={plan.href}
-              >
-                {plan.cta}
-              </a>
-            </article>
-          ))}
+            </div>
+            <a className="care-price-cta" href="/medical-assistant">
+              Bắt đầu miễn phí
+              <ArrowRight size={16} aria-hidden="true" />
+            </a>
+          </article>
+
+          {status === "loading" && (
+            <div className="care-pricing-state care-price-slot" role="status">
+              <LoaderCircle className="care-spin" size={24} aria-hidden="true" />
+              <div>
+                <strong>Đang tải gói đăng ký…</strong>
+                <span>Giá và hạn mức sẽ xuất hiện ngay khi hệ thống phản hồi.</span>
+              </div>
+            </div>
+          )}
+
+          {status === "error" && (
+            <div className="care-pricing-state care-price-slot" role="status">
+              <CircleDollarSign size={24} aria-hidden="true" />
+              <div>
+                <strong>Chưa thể tải gói đăng ký.</strong>
+                <span>Phần miễn phí vẫn dùng được. Bạn có thể mở bảng giá để thử lại.</span>
+              </div>
+              <a href="/pricing">Mở bảng giá</a>
+            </div>
+          )}
+
+          {status === "ready" && previewPlans.length === 0 && (
+            <div className="care-pricing-state care-price-slot" role="status">
+              <CircleDollarSign size={24} aria-hidden="true" />
+              <div>
+                <strong>Chưa có gói đăng ký đang hoạt động.</strong>
+                <span>Hệ thống hiện chỉ hiển thị các tính năng công khai.</span>
+              </div>
+            </div>
+          )}
+
+          {previewPlans.length > 0 && (
+            <>
+              {previewPlans.map((plan) => {
+                const benefits = getPlanBenefits(plan.featureLimitJson);
+                const planName = getPlanDisplayName(plan.planName);
+
+                return (
+                  <article className="care-price-card care-price-card-paid" key={plan.id || plan.planName}>
+                    <div className="care-price-card-head">
+                      <span className="care-price-icon"><CircleDollarSign size={21} aria-hidden="true" /></span>
+                    </div>
+                    <p className="care-price-kicker">Quyền lợi có hạn mức</p>
+                    <h3>{planName}</h3>
+                    <div className="care-price-line">
+                      <p className="care-price-value">{formatPrice(plan.price)}</p>
+                      <span>/ {formatBillingPeriod(plan.durationInDays)}</span>
+                    </div>
+                    <p className="care-price-duration">
+                      <CalendarDays size={16} aria-hidden="true" />
+                      Có hiệu lực trong {formatDuration(plan.durationInDays)} sau khi kích hoạt
+                    </p>
+                    <div className="care-price-benefits">
+                      <strong>Quyền lợi trong gói</strong>
+                      {benefits.length > 0 ? (
+                        <ul>
+                          {benefits.map((benefit) => (
+                            <li key={benefit}>
+                              <Check size={16} aria-hidden="true" />
+                              <span>{benefit}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>Chưa có giới hạn quyền lợi riêng được công bố.</p>
+                      )}
+                    </div>
+                    <a className="care-price-cta care-price-cta-primary" href="/pricing">
+                      Đăng ký {planName}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </a>
+                  </article>
+                );
+              })}
+            </>
+          )}
         </div>
+
+        <p className="care-pricing-note">
+          <Info size={16} aria-hidden="true" />
+          <span>
+            Các tính năng miễn phí vẫn có giới hạn và không thay thế chẩn đoán y khoa.
+            Thanh toán chỉ bắt đầu trên trang bảng giá sau khi bạn chọn gói và đăng nhập.
+          </span>
+        </p>
       </div>
     </section>
   );
@@ -124,34 +229,23 @@ export function PricingSection() {
 
 export function CtaSection() {
   return (
-    <section id="contact" className="section">
-      <div className="container">
-        <div className="cta-band">
-          <div>
-            <h2>Bắt đầu xây thói quen chăm sóc sức khỏe chủ động hơn.</h2>
-            <p>Miễn phí để thử, không cần thẻ tín dụng, thiết lập trong vài phút.</p>
-          </div>
+    <section className="care-section care-cta-section" aria-labelledby="landing-cta-title">
+      <div className="container care-cta-card">
+        <div>
+          <span className="care-cta-icon"><ShieldCheck size={22} aria-hidden="true" /></span>
+          <p className="care-eyebrow">Bắt đầu theo cách phù hợp với bạn</p>
+          <h2 id="landing-cta-title">Bạn có thể bắt đầu bằng điều mình đang cảm nhận.</h2>
+          <p>Không cần dùng thuật ngữ y khoa. Hãy mô tả ngắn gọn và bổ sung thông tin khi được hỏi.</p>
         </div>
-      </div>
-    </section>
-  );
-}
-
-export function FaqSection() {
-  return (
-    <section className="section section-alt">
-      <div className="container">
-        <p className="eyebrow">Câu hỏi thường gặp</p>
-        <h2 className="section-title">
-          Rõ ràng từ đầu để người dùng <em>an tâm trước khi thử</em>.
-        </h2>
-        <div className="faq-grid">
-          {FAQS.map((item) => (
-            <article className="faq-card" key={item.q}>
-              <h3>{item.q}</h3>
-              <p>{item.a}</p>
-            </article>
-          ))}
+        <div className="care-cta-actions">
+          <a className="care-button care-button-light" href="/medical-assistant">
+            <Stethoscope size={19} aria-hidden="true" />
+            Mô tả triệu chứng
+          </a>
+          <a className="care-button care-button-outline-light" href="/map">
+            <MapPinned size={19} aria-hidden="true" />
+            Tìm cơ sở y tế
+          </a>
         </div>
       </div>
     </section>
@@ -160,39 +254,34 @@ export function FaqSection() {
 
 export function Footer() {
   return (
-    <footer className="footer">
+    <footer className="footer care-footer">
       <div className="container">
-        <div className="footer-grid">
-          <div>
-            <a className="brand" href="/">
-              <span className="brand-mark">+</span>
+        <div className="care-footer-grid">
+          <div className="care-footer-brand">
+            <a className="brand" href="/" aria-label="MediMate AI - Trang chủ">
+              <span className="brand-mark" aria-hidden="true">
+                <img src="/logo.svg" alt="" width="36" height="36" />
+              </span>
               <span>MediMate AI</span>
             </a>
-            <p className="section-copy">
-              Trợ lý y khoa AI giúp người Việt hiểu triệu chứng, theo dõi điều trị
-              và chuẩn bị tốt hơn cho mỗi lần gặp bác sĩ.
-            </p>
+            <p>Trợ lý định hướng trước khi đi khám, dựa trên thông tin bạn cung cấp và dữ liệu hiện có.</p>
           </div>
 
           {FOOTER_COLUMNS.map((column) => (
-            <div key={column.title}>
-              <h4>
-                <a href={column.href}>{column.title}</a>
-              </h4>
+            <nav key={column.title} aria-label={column.title}>
+              <h2>{column.title}</h2>
               <div className="footer-links">
                 {column.links.map(([label, href]) => (
-                  <a href={href} key={href}>
-                    {label}
-                  </a>
+                  <a href={href} key={href}>{label}</a>
                 ))}
               </div>
-            </div>
+            </nav>
           ))}
         </div>
 
         <div className="footer-bottom">
-          <span>© 2026 MediMate AI. Bảo lưu mọi quyền.</span>
-          <span>Kết quả AI chỉ mang tính tham khảo y khoa.</span>
+          <span>© 2026 MediMate AI.</span>
+          <span>Kết quả AI chỉ mang tính tham khảo, không thay thế bác sĩ.</span>
         </div>
       </div>
     </footer>

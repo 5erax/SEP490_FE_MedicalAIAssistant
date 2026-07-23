@@ -1,95 +1,58 @@
-const STEPS = [
+import { AlertTriangle, FileCheck2, ShieldCheck, Stethoscope } from "lucide-react";
+
+const SAFETY_PRINCIPLES = [
   {
-    number: "01",
-    title: "Nhập triệu chứng",
-    body: "Mô tả điều bạn đang gặp bằng ngôn ngữ tự nhiên, có thể thêm thời gian, mức độ đau và bệnh nền.",
+    icon: FileCheck2,
+    title: "Kết quả để tham khảo",
+    body: "Gợi ý giúp bạn chuẩn bị thông tin và cân nhắc bước tiếp theo, không phải kết luận y khoa.",
   },
   {
-    number: "02",
-    title: "AI phân tích ngữ cảnh",
-    body: "Hệ thống đối chiếu thông tin với nguồn y khoa và hỏi thêm khi dữ liệu còn thiếu.",
+    icon: Stethoscope,
+    title: "Không chẩn đoán hay kê đơn",
+    body: "Chẩn đoán và điều trị cần được thực hiện bởi bác sĩ hoặc chuyên gia y tế phù hợp.",
   },
   {
-    number: "03",
-    title: "Nhận gợi ý hành động",
-    body: "Xem chuyên khoa phù hợp, mức độ ưu tiên và danh sách câu hỏi nên chuẩn bị trước buổi khám.",
-  },
-  {
-    number: "04",
-    title: "Theo dõi sau khám",
-    body: "Lưu hồ sơ, nhắc thuốc, nhắc tái khám và theo dõi xu hướng phục hồi qua từng ngày.",
+    icon: ShieldCheck,
+    title: "Ưu tiên an toàn",
+    body: "Luồng kiểm tra an toàn hướng bạn dừng tự đánh giá khi xuất hiện dấu hiệu đáng lo ngại.",
   },
 ];
 
-const REVIEWS = [
-  {
-    name: "Nguyễn Thị Lan",
-    role: "Kế toán, Hà Nội",
-    initials: "NL",
-    text: "Tôi hiểu kết quả xét nghiệm nhanh hơn và biết nên hỏi bác sĩ điều gì. Cảm giác bớt hoang mang hơn rất nhiều.",
-  },
-  {
-    name: "Trần Minh Khoa",
-    role: "Kỹ sư phần mềm, TP.HCM",
-    initials: "TK",
-    text: "Phần nhắc thuốc và theo dõi triệu chứng giúp tôi duy trì lịch điều trị đều hơn, nhất là những ngày bận.",
-  },
-  {
-    name: "Lê Phương Anh",
-    role: "Giáo viên, Đà Nẵng",
-    initials: "LA",
-    text: "Dùng cho cả bố mẹ rất tiện. Giao diện rõ, chữ dễ hiểu và không tạo cảm giác như đọc tài liệu y khoa khô cứng.",
-  },
-];
-
-export function HowItWorksSection() {
+export function ProductScopeSection() {
   return (
-    <section id="process" className="section">
-      <div className="container">
-        <p className="eyebrow">Quy trình</p>
-        <h2 className="section-title">
-          Bốn bước đơn giản để chuyển lo lắng thành <em>hành động rõ ràng</em>.
-        </h2>
+    <section id="safety" className="care-section care-safety-section" aria-labelledby="safety-title">
+      <div className="container care-safety-layout">
+        <div className="care-safety-intro">
+          <p className="care-eyebrow">Sử dụng an toàn</p>
+          <h2 id="safety-title">Biết rõ giới hạn để sử dụng an toàn.</h2>
+          <p>
+            MediMate được dùng để chuẩn bị trước khi đi khám. Khi cần đánh giá chính xác,
+            bạn vẫn nên trao đổi trực tiếp với chuyên gia y tế.
+          </p>
+          <a href="/medical-disclaimer">Đọc tuyên bố miễn trừ y tế</a>
+        </div>
 
-        <div className="steps-grid">
-          {STEPS.map((step) => (
-            <article className="step-card" key={step.number}>
-              <span className="step-number">Bước {step.number}</span>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
+        <div className="care-safety-principles">
+          {SAFETY_PRINCIPLES.map(({ icon: Icon, title, body }) => (
+            <article key={title}>
+              <span><Icon size={22} aria-hidden="true" /></span>
+              <div>
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </div>
             </article>
           ))}
         </div>
       </div>
-    </section>
-  );
-}
 
-export function SocialProofSection() {
-  return (
-    <section className="section section-alt">
-      <div className="container">
-        <p className="eyebrow">Người dùng nói gì</p>
-        <h2 className="section-title">
-          Một trải nghiệm y tế số <em>dễ hiểu, bình tĩnh và đáng tin</em>.
-        </h2>
-
-        <div className="reviews-grid">
-          {REVIEWS.map((review) => (
-            <article className="review-card" key={review.name}>
-              <div className="stars" aria-label="5 sao">
-                ★★★★★
-              </div>
-              <p>"{review.text}"</p>
-              <div className="person">
-                <div className="avatar">{review.initials}</div>
-                <div>
-                  <strong>{review.name}</strong>
-                  <span>{review.role}</span>
-                </div>
-              </div>
-            </article>
-          ))}
+      <div className="container care-emergency-banner">
+        <AlertTriangle size={24} aria-hidden="true" />
+        <div>
+          <strong>Không dùng MediMate trong tình huống khẩn cấp</strong>
+          <p>
+            Nếu có khó thở nặng, đau ngực dữ dội, mất ý thức, dấu hiệu đột quỵ hoặc
+            chảy máu nhiều, hãy tìm trợ giúp y tế khẩn cấp ngay.
+          </p>
         </div>
       </div>
     </section>

@@ -1,123 +1,78 @@
-const TICKER_ITEMS = [
-  "Phân tích triệu chứng",
-  "Nhắc lịch uống thuốc",
-  "Giải thích xét nghiệm",
-  "Theo dõi phục hồi",
-  "Chuẩn bị câu hỏi đi khám",
-  "Hồ sơ sức khỏe gia đình",
-];
+import {
+  ArrowRight,
+  ClipboardCheck,
+  FolderHeart,
+  MapPinned,
+  MessagesSquare,
+} from "lucide-react";
 
-const FEATURES = [
+const SUPPORT_AREAS = [
   {
-    icon: "AI",
-    title: "Phân tích triệu chứng thông minh",
-    body: "Hiểu mô tả bằng tiếng Việt tự nhiên, gợi ý chuyên khoa phù hợp và chỉ ra dấu hiệu cần chú ý.",
+    icon: MessagesSquare,
+    number: "01",
+    title: "Trình bày triệu chứng dễ hơn",
+    body: "Mô tả bằng lời của bạn. MediMate hỏi thêm về thời điểm, mức độ và dấu hiệu đi kèm.",
+    action: "Mô tả triệu chứng",
+    href: "/medical-assistant",
   },
   {
-    icon: "Rx",
-    title: "Nhắc thuốc đúng lịch",
-    body: "Theo dõi đơn thuốc, liều dùng, giờ uống và lịch tái khám cho từng thành viên trong gia đình.",
-    dark: true,
+    icon: ClipboardCheck,
+    number: "02",
+    title: "Có định hướng để chọn chuyên khoa",
+    body: "Nhận gợi ý chuyên khoa để tham khảo trước khi lựa chọn nơi khám.",
+    action: "Nhận định hướng chuyên khoa",
+    href: "/medical-assistant",
   },
   {
-    icon: "Lab",
-    title: "Giải thích kết quả xét nghiệm",
-    body: "Chuyển các chỉ số khó đọc thành phần giải thích dễ hiểu, có ngữ cảnh và câu hỏi gợi ý để trao đổi với bác sĩ.",
-    wide: true,
-  },
-  {
-    icon: "MD",
-    title: "Chia sẻ hồ sơ với bác sĩ",
-    body: "Tạo bản tóm tắt sức khỏe gọn gàng để buổi khám tập trung vào điều quan trọng nhất.",
-  },
-];
-
-const SOLUTIONS = [
-  {
-    title: "Cho cá nhân bận rộn",
-    body: "Một nơi duy nhất để ghi triệu chứng, nhận nhắc nhở và theo dõi thay đổi sức khỏe theo thời gian.",
-    tone: "#087f8c",
-  },
-  {
-    title: "Cho gia đình",
-    body: "Quản lý hồ sơ nhiều người, nhắc thuốc cho người thân và lưu lại lịch sử khám theo từng thành viên.",
-    tone: "#1d4ed8",
-  },
-  {
-    title: "Cho phòng khám",
-    body: "Nhận bản tóm tắt trước buổi khám, giảm thời gian hỏi lại thông tin nền và tăng chất lượng tư vấn.",
-    tone: "#ef6f61",
+    icon: MapPinned,
+    number: "03",
+    title: "Tìm cơ sở y tế để tiếp tục",
+    body: "Xem cơ sở đang có, khoa liên quan và thông tin liên hệ khi đã được cập nhật.",
+    action: "Xem cơ sở y tế",
+    href: "/map",
   },
 ];
-
-export function TickerBar() {
-  return (
-    <div className="ticker" aria-label="Các năng lực chính">
-      <div className="ticker-track">
-        {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, index) => (
-          <span key={`${item}-${index}`}>+ {item}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function FeaturesSection() {
   return (
-    <>
-      <section id="features" className="section">
-        <div className="container">
-          <p className="eyebrow">Tính năng nổi bật</p>
-          <h2 className="section-title">
-            Mọi thứ cần thiết để <em>hiểu và theo dõi</em> sức khỏe hằng ngày.
-          </h2>
-          <p className="section-copy">
-            Landing page không chỉ cần đẹp. Nó cần làm người dùng hiểu ngay sản
-            phẩm giải quyết điều gì, tin tưởng ở đâu và bắt đầu như thế nào.
-          </p>
-
-          <div className="features-grid">
-            {FEATURES.map((feature) => (
-              <article
-                className={[
-                  "feature-card",
-                  feature.dark ? "feature-dark" : "",
-                  feature.wide ? "feature-wide" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                key={feature.title}
-              >
-                <div className="feature-icon">{feature.icon}</div>
-                <h3>{feature.title}</h3>
-                <p>{feature.body}</p>
-              </article>
-            ))}
+    <section id="support" className="care-section care-support-section" aria-labelledby="support-title">
+      <div className="container">
+        <div className="care-section-heading">
+          <div>
+            <p className="care-eyebrow">MediMate giúp bạn</p>
+            <h2 id="support-title">Ba việc bạn có thể làm trước khi đi khám.</h2>
           </div>
         </div>
-      </section>
 
-      <section id="solutions" className="section section-alt">
-        <div className="container">
-          <p className="eyebrow">Giải pháp</p>
-          <h2 className="section-title">
-            Linh hoạt cho cá nhân, gia đình và <em>đội ngũ chăm sóc</em>.
-          </h2>
-
-          <div className="solutions-grid">
-            {SOLUTIONS.map((solution) => (
-              <article
-                className="solution-card"
-                key={solution.title}
-                style={{ "--tone": solution.tone }}
-              >
-                <h3>{solution.title}</h3>
-                <p>{solution.body}</p>
-              </article>
-            ))}
-          </div>
+        <div className="care-support-grid">
+          {SUPPORT_AREAS.map(({ icon: Icon, number, title, body, action, href }) => (
+            <article className="care-support-card" key={title}>
+              <div className="care-support-card-top">
+                <span className="care-support-icon"><Icon size={24} aria-hidden="true" /></span>
+                <span className="care-support-number" aria-hidden="true">{number}</span>
+              </div>
+              <h3>{title}</h3>
+              <p>{body}</p>
+              <a href={href}>
+                {action}
+                <ArrowRight size={16} aria-hidden="true" />
+              </a>
+            </article>
+          ))}
         </div>
-      </section>
-    </>
+
+        <div className="care-account-note">
+          <span className="care-account-icon"><FolderHeart size={22} aria-hidden="true" /></span>
+          <div>
+            <strong>Thông tin của bạn, khi bạn cần xem lại</strong>
+            <p>Đăng nhập để lưu hồ sơ sức khỏe và xem lại các phiên đã thực hiện.</p>
+          </div>
+          <a href="/login">
+            Đăng nhập
+            <ArrowRight size={17} aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+    </section>
   );
 }

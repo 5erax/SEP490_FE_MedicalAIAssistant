@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ClipboardList, History, MapPin, Send, Stethoscope } from "lucide-react";
+import { ClipboardList, History, MapPin, Send, Stethoscope } from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
@@ -19,17 +19,6 @@ import "../styles/medical-assessment.css";
 const SESSION_KEY_PREFIX = "medimate.assessment.session.";
 const assessmentSessionCache = new Map();
 let assessmentDraftCache = "";
-
-const RED_FLAGS = [
-  "Đau ngực dữ dội",
-  "Khó thở nặng",
-  "Ngất, co giật hoặc mất ý thức",
-  "Yếu hoặc liệt một bên cơ thể",
-  "Méo miệng, nói khó",
-  "Chảy máu nhiều",
-  "Đau đầu dữ dội đột ngột",
-  "Sưng mặt/môi kèm khó thở hoặc nghi phản vệ",
-];
 
 function getPagedItems(response) {
   const data = unwrapApiData(response);
@@ -267,90 +256,6 @@ function EntryPage() {
           Tìm cơ sở y tế
         </Button>
       </div>
-    </AssessmentShell>
-  );
-}
-
-function SafetyPage() {
-  const [checked, setChecked] = useState([]);
-  const hasRedFlag = checked.length > 0;
-
-  function toggle(flag) {
-    setChecked((current) => (
-      current.includes(flag)
-        ? current.filter((item) => item !== flag)
-        : [...current, flag]
-    ));
-  }
-
-  return (
-    <AssessmentShell
-      eyebrow="Kiểm tra an toàn"
-      title="Trước khi bắt đầu"
-      description="Nếu có dấu hiệu nguy hiểm, không nên tiếp tục tự đánh giá bằng AI. Hãy ưu tiên chăm sóc y tế khẩn cấp."
-      activeStep={0}
-    >
-      <MobileHeroAction>
-        <Button tone="secondary" onClick={() => document.getElementById("safety-checklist")?.scrollIntoView({ block: "start", behavior: "smooth" })}>
-          Xem checklist an toàn
-        </Button>
-      </MobileHeroAction>
-
-      <section className="clinical-card">
-        <div className="clinical-card-head">
-          <div>
-            <p className="clinical-step-label">Sàng lọc an toàn</p>
-            <h2>Bạn có đang gặp một trong các dấu hiệu sau không?</h2>
-          </div>
-          <span>Không thay thế cấp cứu</span>
-        </div>
-
-        <fieldset className="safety-checklist" id="safety-checklist">
-          <legend className="sr-only">Dấu hiệu khẩn cấp</legend>
-          {RED_FLAGS.map((flag) => (
-            <label key={flag}>
-              <input
-                type="checkbox"
-                checked={checked.includes(flag)}
-                onChange={() => toggle(flag)}
-              />
-              <span>{flag}</span>
-            </label>
-          ))}
-        </fieldset>
-
-        {hasRedFlag && (
-          <section className="emergency-panel" role="alert">
-            <AlertTriangle size={28} aria-hidden="true" />
-            <div>
-              <h2>Đây có thể là tình huống cần chăm sóc khẩn cấp</h2>
-              <p>
-                Vui lòng gọi cấp cứu địa phương hoặc đến cơ sở y tế gần nhất.
-                Không tiếp tục tự đánh giá bằng AI trong tình huống này.
-              </p>
-              <div className="assessment-actions">
-                <Button onClick={() => navigate("/map?search=cap%20cuu")}>
-                  Tìm cơ sở y tế gần nhất
-                </Button>
-                <Button tone="secondary" onClick={() => navigate("/")}>
-                  Về trang chủ
-                </Button>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {!hasRedFlag && (
-          <div className="assessment-actions clinical-card-actions">
-            <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
-              Không, tiếp tục đánh giá
-            </Button>
-            <Button tone="secondary" onClick={() => navigate("/medical-assistant")}>
-              Quay lại
-            </Button>
-          </div>
-        )}
-      </section>
     </AssessmentShell>
   );
 }
@@ -948,7 +853,6 @@ function HistoryPage() {
 export default function MedicalAssistantPage({ mode = "entry", sessionId = "" }) {
   const activeMode = useMemo(() => mode, [mode]);
 
-  if (activeMode === "safety") return <SafetyPage />;
   if (activeMode === "intake") return <IntakePage />;
   if (activeMode === "questions") return <QuestionsPage sessionId={sessionId} />;
   if (activeMode === "result") return <ResultPage sessionId={sessionId} />;

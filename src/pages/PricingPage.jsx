@@ -12,20 +12,12 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch, rememberReturnTo, withReturnTo } from "../router/returnIntent";
 import { trackUxEvent } from "../utils/analytics";
-
-const FEATURES = [
-  "Phân tích triệu chứng cơ bản",
-  "Gợi ý chuyên khoa",
-  "Tìm kiếm cơ sở y tế",
-  "Tư vấn AI 24/7 sau khám",
-  "Cảnh báo tương tác thuốc",
-  "Theo dõi xu hướng sức khoẻ",
-];
+import { getPlanBenefits, PUBLIC_ACCESS_BENEFITS } from "../utils/subscriptionPlanPresentation";
 
 const FAQS = [
-  ["Tôi có thể huỷ bất cứ lúc nào không?", "Có. Bạn có thể huỷ gia hạn bất cứ lúc nào trong phần gói đăng ký."],
-  ["Dữ liệu của tôi có được bảo mật không?", "Dữ liệu sức khoẻ được thiết kế để chỉ phục vụ trải nghiệm chăm sóc cá nhân của bạn và cần được bảo vệ theo quyền truy cập tài khoản."],
-  ["Gói miễn phí có giới hạn số lần dùng không?", "Gói miễn phí phù hợp để trải nghiệm các chức năng cốt lõi. Một số tính năng chuyên sâu sẽ thuộc MediMate+."],
+  ["Tôi có thể hủy gia hạn không?", "Có. Khi gói đang bật gia hạn tự động, bạn có thể hủy gia hạn trong phần gói hiện tại. Quyền lợi vẫn được hiển thị đến ngày kết thúc mà hệ thống trả về."],
+  ["Phần miễn phí bao gồm gì?", "Bạn có thể mở các trang công khai để xem hướng dẫn triệu chứng, bản đồ cơ sở y tế và hỏi trợ lý trên trang chủ ở mức tham khảo."],
+  ["Quyền lợi gói đăng ký được xác định thế nào?", "Tên gói, giá, thời hạn và các hạn mức bên dưới được lấy từ gói đang hoạt động trên hệ thống MediMate."],
 ];
 
 function formatPrice(value) {
@@ -78,6 +70,10 @@ function PricingPage() {
   const availableCycles = useMemo(
     () => new Set(paidPlans.map(getPlanCycle)),
     [paidPlans],
+  );
+  const paidBenefits = useMemo(
+    () => getPlanBenefits(paidPlan?.featureLimitJson),
+    [paidPlan],
   );
   const currentPrice = Number(paidPlan?.price) || 0;
   const returnTo = getReturnToFromSearch();
@@ -161,7 +157,7 @@ function PricingPage() {
   }, []);
 
   function startFreePlan() {
-    navigate("/dashboard");
+    navigate("/medical-assistant");
   }
 
   async function pollPayment(paymentId) {
@@ -329,7 +325,7 @@ function PricingPage() {
       </nav>
       <section className="pricing-hero">
         <p className="mini-label">Bảng giá</p>
-        <h1>Minh bạch. Không phí ẩn. Huỷ bất cứ lúc nào.</h1>
+        <h1>So sánh phần miễn phí và gói đăng ký.</h1>
         <div className="billing-toggle" role="group" aria-label="Chu kỳ thanh toán">
           <button
             className={billingCycle === "monthly" ? "active" : ""}
@@ -361,29 +357,33 @@ function PricingPage() {
       <section className="plans-grid">
         <article className="plan-card-basic">
           <code>MIỄN PHÍ</code>
-          <h2>{freePlan?.planName || "Cơ bản"}</h2>
-          <div className="price-line"><strong>0 ₫</strong><span>/ mãi mãi</span></div>
-          <p>Phù hợp để bắt đầu kiểm tra triệu chứng và tìm chuyên khoa phù hợp.</p>
+          <h2>{freePlan?.planName || "Truy cập công khai"}</h2>
+          <div className="price-line"><strong>0 ₫</strong><span>cho các tính năng công khai</span></div>
+          <p>Phù hợp để làm quen với MediMate và chuẩn bị thông tin trước khi đi khám.</p>
           <ul>
-            {FEATURES.map((feature, index) => (
-              <li className={index > 2 ? "disabled" : ""} key={feature}>{index > 2 ? "×" : "✓"} {feature}</li>
+            {PUBLIC_ACCESS_BENEFITS.map((feature) => (
+              <li key={feature}>✓ {feature}</li>
             ))}
           </ul>
-          <button type="button" onClick={startFreePlan}>Bắt đầu ngay</button>
+          <button type="button" onClick={startFreePlan}>Mở phần miễn phí</button>
         </article>
 
         <article className="plan-card-premium">
           <div className="premium-stripe" />
-          <span className="popular">✦ PHỔ BIẾN</span>
+          <span className="popular">GÓI ĐANG CUNG CẤP</span>
           <code>PREMIUM</code>
           <h2>{paidPlan?.planName || "MediMate+"}</h2>
           <div className="price-line">
             <strong>{plansLoading ? "Đang tải..." : currentPrice ? formatPrice(currentPrice) : "Chưa cấu hình"}</strong>
             {paidPlan && <span>/ {paidPlan.durationInDays} ngày</span>}
           </div>
-          <p>Mở khoá tư vấn sau khám, kiểm tra thuốc và theo dõi hành trình chăm sóc sức khoẻ.</p>
+          <p>Quyền lợi và hạn mức được lấy trực tiếp từ cấu hình gói đang hoạt động.</p>
           <ul>
-            {FEATURES.map((feature) => <li key={feature}>✓ {feature}</li>)}
+            {paidBenefits.length > 0 ? paidBenefits.map((feature) => (
+              <li key={feature}>✓ {feature}</li>
+            )) : (
+              <li className="disabled">Chưa có hạn mức quyền lợi được công bố.</li>
+            )}
           </ul>
           {auth && !isPremium && !activeSubscription && (
             <label className="auto-renew-option">
@@ -413,7 +413,7 @@ function PricingPage() {
       </section>
 
       <section className="payment-methods">
-        Thanh toán an toàn qua <strong>PayOS</strong>.
+        Thanh toán được xử lý qua <strong>PayOS</strong>.
       </section>
 
       {checkoutState.status !== "idle" && (
@@ -480,7 +480,7 @@ function PricingPage() {
 
       <section className="pricing-cta">
         <div>
-          <h2>Bắt đầu hành trình chăm sóc sức khoẻ thông minh ngay hôm nay.</h2>
+          <h2>Chỉ nâng cấp khi hạn mức của gói phù hợp với nhu cầu của bạn.</h2>
         </div>
       </section>
 

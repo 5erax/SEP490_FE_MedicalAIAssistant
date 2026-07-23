@@ -1,181 +1,109 @@
-import { useEffect, useState } from "react";
-
-const PROMPTS = [
-  "Đau đầu, sốt nhẹ kéo dài 3 ngày, mệt mỏi toàn thân...",
-  "Khó thở khi leo cầu thang, tim đập nhanh vào buổi tối...",
-  "Đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ...",
-  "Mất ngủ, hồi hộp và khó tập trung không rõ nguyên nhân...",
-];
-
-function useTypewriter() {
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [cursor, setCursor] = useState(0);
-  const [deleting, setDeleting] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (!query) return undefined;
-
-    function updateMotionPreference() {
-      setReducedMotion(query.matches);
-    }
-
-    updateMotionPreference();
-    query.addEventListener?.("change", updateMotionPreference);
-    return () => query.removeEventListener?.("change", updateMotionPreference);
-  }, []);
-
-  useEffect(() => {
-    if (reducedMotion) return undefined;
-
-    const phrase = PROMPTS[phraseIndex];
-    const doneTyping = !deleting && cursor === phrase.length;
-    const doneDeleting = deleting && cursor === 0;
-
-    const timer = setTimeout(
-      () => {
-        if (doneTyping) {
-          setDeleting(true);
-          return;
-        }
-
-        if (doneDeleting) {
-          setDeleting(false);
-          setPhraseIndex((index) => (index + 1) % PROMPTS.length);
-          return;
-        }
-
-        setCursor((value) => value + (deleting ? -1 : 1));
-      },
-      doneTyping ? 1200 : deleting ? 28 : 52,
-    );
-
-    return () => clearTimeout(timer);
-  }, [cursor, deleting, phraseIndex, reducedMotion]);
-
-  return reducedMotion ? PROMPTS[0] : PROMPTS[phraseIndex].slice(0, cursor);
-}
+import {
+  ArrowRight,
+  CheckCircle2,
+  Database,
+  LockKeyhole,
+  MapPinned,
+  ShieldAlert,
+  ShieldCheck,
+  Stethoscope,
+} from "lucide-react";
 
 export function HeroSection() {
-  const typed = useTypewriter();
-
   return (
-    <section id="top" className="hero">
-      <div className="container hero-grid">
-        <div>
-          <p className="eyebrow">Trợ lý y khoa AI cho người Việt</p>
-          <h1>
-            Chăm sóc sức khỏe <em>rõ ràng hơn</em> mỗi ngày.
+    <section id="top" className="care-hero" aria-labelledby="landing-title">
+      <div className="container care-hero-grid">
+        <div className="care-hero-copy">
+          <p className="care-kicker">
+            <CheckCircle2 size={16} aria-hidden="true" />
+            Trợ lý định hướng trước khi đi khám
+          </p>
+          <h1 id="landing-title">
+            Chuẩn bị rõ ràng hơn <span>trước khi đi khám.</span>
           </h1>
-          <p className="hero-copy">
-            MediMate AI giúp phân tích triệu chứng, giải thích kết quả xét nghiệm,
-            nhắc lịch dùng thuốc và chuẩn bị câu hỏi trước khi gặp bác sĩ.
+          <p className="care-hero-lead">
+            Mô tả điều bạn đang gặp, nhận gợi ý chuyên khoa để tham khảo và tìm cơ sở
+            y tế đang có trên hệ thống.
           </p>
 
-          <div className="hero-actions">
-            <a className="btn btn-primary" href="/dashboard">
-              Trải nghiệm ngay
+          <div className="care-hero-actions">
+            <a className="care-button care-button-primary" href="/medical-assistant">
+              <Stethoscope size={19} aria-hidden="true" />
+              Mô tả triệu chứng
             </a>
-            <a className="btn btn-ghost" href="/map">
+            <a className="care-button care-button-secondary" href="/map">
+              <MapPinned size={19} aria-hidden="true" />
               Tìm cơ sở y tế
             </a>
           </div>
 
-          <ul className="hero-outcomes" aria-label="Kết quả chính">
-            <li>
-              <strong>Sàng lọc có cấu trúc</strong>
-              <span>Ghi triệu chứng và trả lời câu hỏi làm rõ.</span>
-            </li>
-            <li>
-              <strong>Chuyên khoa phù hợp</strong>
-              <span>Hiểu nơi nên bắt đầu khi chuẩn bị đi khám.</span>
-            </li>
-            <li>
-              <strong>Cơ sở y tế liên quan</strong>
-              <span>Mở bản đồ theo dữ liệu hệ thống cung cấp.</span>
-            </li>
-          </ul>
-
-          <div className="trust-row" aria-label="Điểm tin cậy">
-            <span className="trust-pill">Nguồn y khoa có kiểm chứng</span>
-            <span className="trust-pill">Tiếng Việt tự nhiên</span>
-            <span className="trust-pill">Bảo mật dữ liệu cá nhân</span>
-          </div>
+          <p className="care-hero-disclaimer">
+            <ShieldAlert size={18} aria-hidden="true" />
+            Kết quả AI chỉ mang tính tham khảo, không phải chẩn đoán và không thay thế bác sĩ.
+          </p>
         </div>
 
-        <div className="hero-panel" aria-label="Bản xem trước ứng dụng MediMate AI">
-          <div className="app-window">
-            <div className="window-bar">
-              <span className="window-title">MediMate AI Console</span>
-              <span className="status-dot">Đang phân tích</span>
+        <aside className="care-start-card" aria-labelledby="care-start-title">
+          <div className="care-start-card-header">
+            <span className="care-start-icon" aria-hidden="true">
+              <img src="/logo.svg" alt="" width="38" height="38" />
+            </span>
+            <div>
+              <span>Bắt đầu tại đây</span>
+              <strong id="care-start-title">Hôm nay bạn cần hỗ trợ điều gì?</strong>
             </div>
+          </div>
 
-            <div className="symptom-box">
-              <label>Triệu chứng của bạn</label>
-              <div className="typed-text">{typed}</div>
-            </div>
+          <div className="care-start-options">
+            <a href="/medical-assistant">
+              <span className="care-option-icon"><Stethoscope size={21} aria-hidden="true" /></span>
+              <span>
+                <strong>Chưa biết nên khám khoa nào</strong>
+                <small>Mô tả triệu chứng bằng lời của bạn</small>
+              </span>
+              <ArrowRight size={19} aria-hidden="true" />
+            </a>
+            <a href="/map">
+              <span className="care-option-icon"><MapPinned size={21} aria-hidden="true" /></span>
+              <span>
+                <strong>Muốn tìm một cơ sở y tế</strong>
+                <small>Xem thông tin cơ sở và các khoa hiện có</small>
+              </span>
+              <ArrowRight size={19} aria-hidden="true" />
+            </a>
+          </div>
 
-            <div className="analysis-stack">
-              <div className="analysis-card">
-                <small>Chuyên khoa gợi ý</small>
-                <div className="analysis-top">
-                  <span>Nội khoa tổng quát</span>
-                  <span className="confidence">91%</span>
-                </div>
-                <div className="bar">
-                  <span style={{ width: "91%" }} />
-                </div>
-              </div>
-
-              <div className="analysis-card">
-                <small>Mức độ ưu tiên</small>
-                <div className="analysis-top">
-                  <span>Nên đặt lịch trong 48-72 giờ</span>
-                  <span className="confidence">74%</span>
-                </div>
-                <div className="bar">
-                  <span style={{ width: "74%" }} />
-                </div>
-              </div>
-
-              <div className="analysis-card">
-                <small>Chuẩn bị khi đi khám</small>
-                <div className="analysis-top">
-                  <span>5 câu hỏi cần trao đổi với bác sĩ</span>
-                  <span className="confidence">Sẵn sàng</span>
-                </div>
-                <div className="bar">
-                  <span style={{ width: "86%" }} />
-                </div>
-              </div>
-            </div>
-
-            <p className="hero-note">
-              Kết quả AI chỉ mang tính tham khảo, không thay thế chẩn đoán hoặc
-              điều trị từ chuyên gia y tế.
+          <div className="care-urgent-note">
+            <ShieldAlert size={20} aria-hidden="true" />
+            <p>
+              Nếu bạn có dấu hiệu nghiêm trọng, hãy ưu tiên trợ giúp y tế khẩn cấp.
             </p>
           </div>
-        </div>
+        </aside>
       </div>
 
-      <div className="container metric-strip">
-        <div className="metric">
-          <strong>2.5s</strong>
-          <span>phản hồi trung bình</span>
-        </div>
-        <div className="metric">
-          <strong>24/7</strong>
-          <span>hỗ trợ theo dõi</span>
-        </div>
-        <div className="metric">
-          <strong>50K+</strong>
-          <span>hồ sơ sức khỏe</span>
-        </div>
-        <div className="metric">
-          <strong>98%</strong>
-          <span>người dùng hài lòng</span>
-        </div>
+      <div className="container care-trust-strip" aria-label="Thông tin quan trọng về MediMate">
+        <article>
+          <ShieldCheck size={21} aria-hidden="true" />
+          <div>
+            <strong>Giới hạn được nói rõ</strong>
+            <span>Không chẩn đoán, không kê đơn và không thay thế bác sĩ.</span>
+          </div>
+        </article>
+        <article>
+          <Database size={21} aria-hidden="true" />
+          <div>
+            <strong>Thông tin theo dữ liệu hiện có</strong>
+            <span>Cơ sở y tế và gói dịch vụ hiển thị theo dữ liệu từ hệ thống.</span>
+          </div>
+        </article>
+        <article>
+          <LockKeyhole size={21} aria-hidden="true" />
+          <div>
+            <strong>Bạn chủ động thông tin cung cấp</strong>
+            <span>Chỉ nhập thông tin cần thiết cho tính năng bạn chọn.</span>
+          </div>
+        </article>
       </div>
     </section>
   );

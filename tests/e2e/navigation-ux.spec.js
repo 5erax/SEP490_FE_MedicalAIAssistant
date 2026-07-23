@@ -626,43 +626,19 @@ test.describe("global navigation UX", () => {
     await expect(page.locator(".assessment-header h1")).toContainText("Phân tích lâm sàng");
   });
 
-  test("safety gate confirmation opens assessment intake", async ({ page }) => {
-    await preparePage(page);
-    await page.addInitScript((accessToken) => {
-      localStorage.setItem("medimate.auth", JSON.stringify({
-        accessToken,
-        roles: ["Patient"],
-        isFirstLogin: false,
-        isProfileCompleted: true,
-      }));
-    }, ACCESS_TOKEN);
-
-    await openRoute(page, "/medical-assistant/safety");
-    await page.getByRole("button", { name: "Không, tiếp tục đánh giá" }).click();
-    await expect(page).toHaveURL(/\/symptom$/);
-    await expect(page.locator(".assessment-header h1")).toContainText("Phân tích lâm sàng");
-  });
-
   test("medical assistant keeps primary actions visible on mobile", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await preparePage(page);
 
     await openRoute(page, "/medical-assistant");
     await expect(page.getByRole("button", { name: "Bắt đầu phân tích" })).toBeVisible();
-
-    await openRoute(page, "/medical-assistant/safety");
-    await expect(page.getByRole("button", { name: "Xem checklist an toàn" })).toBeVisible();
   });
 
-  test("safety gate red flag stops AI intake and points to urgent care", async ({ page }) => {
+  test("removed safety guide resolves to the not-found page", async ({ page }) => {
     await preparePage(page);
 
     await openRoute(page, "/medical-assistant/safety");
-    await page.getByLabel("Đau ngực dữ dội").check();
-    await expect(page.getByRole("alert")).toContainText("chăm sóc khẩn cấp");
-    await expect(page.getByRole("button", { name: "Không, tiếp tục đánh giá" })).toHaveCount(0);
-    await page.getByRole("button", { name: "Tìm cơ sở y tế gần nhất" }).click();
-    await expect(page).toHaveURL(/\/map\?search=cap%20cuu$/);
+    await expect(page.getByRole("heading", { name: "Trang này chưa tồn tại." })).toBeVisible();
   });
 
   test("permission matrix routes each role to an allowed workspace", async ({ page }) => {

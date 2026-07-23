@@ -28,6 +28,7 @@ const PaymentResultPage = lazy(() => import("./pages/PaymentResultPage"));
 const PersonalPatientProfilePage = lazy(() => import("./pages/PersonalPatientProfilePage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const RecoveryPlanPage = lazy(() => import("./pages/RecoveryPlanPage"));
+const TrustInfoPage = lazy(() => import("./pages/TrustInfoPage"));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
 
 if (window.location.pathname.startsWith("/app/admin")) {
@@ -108,6 +109,12 @@ function App() {
       return userWorkspace(lazyPage(<MedicationScanPage />));
     case "public.pricing":
       return lazyPage(<PricingPage />);
+    case "public.support":
+      return lazyPage(<TrustInfoPage page="support" />);
+    case "public.privacy":
+      return lazyPage(<TrustInfoPage page="privacy" />);
+    case "public.medical-disclaimer":
+      return lazyPage(<TrustInfoPage page="medical-disclaimer" />);
     case "payment.return":
       return lazyPage(<PaymentResultPage expectedResult="return" />);
     case "payment.cancel":
@@ -116,8 +123,6 @@ function App() {
       return <WorkspaceRedirect />;
     case "assistant.main":
       return lazyPage(<MedicalAssistantPage mode="entry" />);
-    case "assistant.safety":
-      return lazyPage(<MedicalAssistantPage mode="safety" />);
     case "assessment.session":
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="questions" sessionId={route.params?.sessionId} />));
     case "assessment.result":

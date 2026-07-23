@@ -1,19 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="medimate-favicon-title medimate-favicon-desc" viewBox="0 0 48 48">
   <title id="medimate-favicon-title">MediMate AI</title>
-  <desc id="medimate-favicon-desc">Biểu trưng MediMate AI gồm chữ thập y tế và nhịp tim.</desc>
+  <desc id="medimate-favicon-desc">Biểu trưng lá chắn y tế với dấu thập chăm sóc sức khỏe.</desc>
   <defs>
-    <linearGradient id="medimate-favicon-bg" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#151A16" />
-      <stop offset="1" stop-color="#070C09" />
-    </linearGradient>
-    <linearGradient id="medimate-favicon-cross" x1="14" y1="9" x2="33" y2="39" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#D8FF9D" />
-      <stop offset="1" stop-color="#9FEA63" />
+    <linearGradient id="medimate-favicon-shield" x1="14" y1="8" x2="36" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#168C84" />
+      <stop offset="1" stop-color="#0C4F57" />
     </linearGradient>
   </defs>
-  <rect width="48" height="48" rx="14" fill="url(#medimate-favicon-bg)" />
-  <path fill="#1F2A22" d="M8 38c9.5-13.4 19.3-22.8 32-30v30H8Z" opacity=".5" />
-  <path fill="url(#medimate-favicon-cross)" d="M20 9h8a2 2 0 0 1 2 2v8h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-8v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8h-8a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h8v-8a2 2 0 0 1 2-2Z" />
-  <path fill="none" stroke="#062019" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="M10 25h7l3-6 6 13 4-7h8" opacity=".32" />
-  <path fill="none" stroke="#72F0DF" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 25h7l3-6 6 13 4-7h8" />
+  <rect x="1" y="1" width="46" height="46" rx="14" fill="#E8F5F1" stroke="#B8DCD4" stroke-width="2" />
+  <path fill="url(#medimate-favicon-shield)" d="M24 6.5 37 11v10.2c0 8.9-5.3 15.9-13 20.3-7.7-4.4-13-11.4-13-20.3V11l13-4.5Z" />
+  <path fill="#F7FCFA" d="M21.1 13.8h5.8v5.3h5.3v5.8h-5.3v5.3h-5.8v-5.3h-5.3v-5.8h5.3v-5.3Z" />
+  <path fill="none" stroke="#8ED7CD" stroke-linecap="round" stroke-width="1.8" d="M17 34.4c2.2 1.7 4.6 3.2 7 4.6 2.4-1.4 4.8-2.9 7-4.6" />
 </svg>

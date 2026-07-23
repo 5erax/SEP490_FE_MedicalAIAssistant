@@ -4,9 +4,9 @@ import { getStoredAuth } from "../../services/api";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 
 const NAV_LINKS = [
-  { name: "Tính năng", href: "/features" },
-  { name: "Quy trình", href: "/#process" },
-  { name: "Bảng giá", href: "/pricing" },
+  { name: "MediMate giúp gì", href: "/#support" },
+  { name: "Bản đồ", href: "/#map" },
+  { name: "Bảng giá", href: "/#pricing-preview" },
 ];
 
 function Logo() {
@@ -20,7 +20,7 @@ function Logo() {
   );
 }
 
-export function Navbar() {
+export function Navbar({ variant = "default" }) {
   const [open, setOpen] = useState(false);
   const [auth] = useState(() => getStoredAuth());
   const menuButtonRef = useRef(null);
@@ -46,7 +46,7 @@ export function Navbar() {
   }, [open]);
 
   return (
-    <header className="nav">
+    <header className={`nav ${variant === "landing" ? "nav-care" : ""}`}>
       <div className="container nav-inner">
         <Logo />
 
@@ -62,7 +62,7 @@ export function Navbar() {
           <DisplayPreferences compact />
           {auth ? (
             <a href="/app" className="btn btn-dark">
-              Vào app
+              Vào ứng dụng
             </a>
           ) : (
             <a href="/login" className="btn btn-dark">
@@ -104,7 +104,7 @@ export function Navbar() {
               href={auth ? "/app" : "/login"}
               onClick={() => setOpen(false)}
             >
-              {auth ? "Vào app" : "Đăng nhập"}
+              {auth ? "Vào ứng dụng" : "Đăng nhập"}
             </a>
           </nav>
         </>
