@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { medicalFacilitiesApi } from "../../services/api";
 
 const LandingFacilityMap = lazy(() => import("./LandingFacilityMap"));
-const MAX_PREVIEW_FACILITIES = 4;
+const MAX_PREVIEW_FACILITIES = 3;
 
 function getArrayData(response) {
   if (Array.isArray(response?.data)) return response.data;
@@ -62,18 +62,22 @@ export function MapSection() {
 
   return (
     <section id="map" className="care-section care-facility-section" aria-labelledby="facility-title">
-      <div className="container care-facility-shell">
-        <div className="care-facility-copy">
-          <p className="care-eyebrow">Bản đồ cơ sở y tế</p>
-          <h2 id="facility-title">Xem nơi bạn có thể tiếp tục thăm khám.</h2>
-          <p>
-            Bản đồ trực tiếp hiển thị các cơ sở đang hoạt động có thông tin tọa độ. Bạn có thể phóng to, thu nhỏ
-            hoặc chọn một điểm để xem tên và địa chỉ.
-          </p>
-          <a className="care-button care-button-primary" href="/map">
-            <MapPinned size={19} aria-hidden="true" />
-            Mở bản đồ đầy đủ
-          </a>
+      <div className="container">
+        <div className="care-section-heading care-section-header">
+          <div>
+            <p className="care-eyebrow">Bản đồ cơ sở y tế</p>
+            <h2 id="facility-title">Tìm cơ sở và chuẩn bị cho buổi khám.</h2>
+          </div>
+          <div className="care-section-summary">
+            <p>
+              Bản đồ trực tiếp hiển thị các cơ sở đang hoạt động có thông tin tọa độ. Chọn một cơ sở để xem
+              thông tin, các khoa đã cập nhật và dùng trợ lý trước khám khi tính năng khả dụng.
+            </p>
+            <a className="care-button care-button-primary" href="/map">
+              <MapPinned size={19} aria-hidden="true" />
+              Khám phá bản đồ cơ sở y tế
+            </a>
+          </div>
         </div>
 
         <div className="care-map-preview" aria-live="polite">

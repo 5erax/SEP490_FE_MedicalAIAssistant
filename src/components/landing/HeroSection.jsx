@@ -2,8 +2,10 @@ import {
   ArrowRight,
   CheckCircle2,
   Database,
+  FileCheck2,
   LockKeyhole,
   MapPinned,
+  MessageSquareText,
   ShieldAlert,
   ShieldCheck,
   Stethoscope,
@@ -16,20 +18,21 @@ export function HeroSection() {
         <div className="care-hero-copy">
           <p className="care-kicker">
             <CheckCircle2 size={16} aria-hidden="true" />
-            Trợ lý định hướng trước khi đi khám
+            Trợ lý sức khỏe số trước khi đi khám
           </p>
           <h1 id="landing-title">
-            Chuẩn bị rõ ràng hơn <span>trước khi đi khám.</span>
+            <span className="care-hero-title-main">Điều hướng y tế.</span>
+            <span className="care-hero-title-highlight">Sẵn sàng trước khi khám.</span>
           </h1>
           <p className="care-hero-lead">
-            Mô tả điều bạn đang gặp, nhận gợi ý chuyên khoa để tham khảo và tìm cơ sở
-            y tế đang có trên hệ thống.
+            Phân tích triệu chứng qua câu hỏi lâm sàng, xem kết quả tham khảo, chuẩn bị câu hỏi
+            cho bác sĩ và tìm cơ sở y tế phù hợp.
           </p>
 
           <div className="care-hero-actions">
             <a className="care-button care-button-primary" href="/medical-assistant">
               <Stethoscope size={19} aria-hidden="true" />
-              Mô tả triệu chứng
+              Phân tích triệu chứng
             </a>
             <a className="care-button care-button-secondary" href="/map">
               <MapPinned size={19} aria-hidden="true" />
@@ -43,40 +46,48 @@ export function HeroSection() {
           </p>
         </div>
 
-        <aside className="care-start-card" aria-labelledby="care-start-title">
-          <div className="care-start-card-header">
+        <aside className="care-dossier" aria-labelledby="care-dossier-title">
+          <div className="care-dossier-header">
             <span className="care-start-icon" aria-hidden="true">
               <img src="/logo.svg" alt="" width="38" height="38" />
             </span>
             <div>
-              <span>Bắt đầu tại đây</span>
-              <strong id="care-start-title">Hôm nay bạn cần hỗ trợ điều gì?</strong>
+              <span>Hồ sơ chuẩn bị trước khám</span>
+              <strong id="care-dossier-title">Bắt đầu từ điều bạn đang cảm nhận</strong>
             </div>
           </div>
 
-          <div className="care-start-options">
-            <a href="/medical-assistant">
-              <span className="care-option-icon"><Stethoscope size={21} aria-hidden="true" /></span>
-              <span>
-                <strong>Chưa biết nên khám khoa nào</strong>
-                <small>Mô tả triệu chứng bằng lời của bạn</small>
-              </span>
-              <ArrowRight size={19} aria-hidden="true" />
-            </a>
-            <a href="/map">
-              <span className="care-option-icon"><MapPinned size={21} aria-hidden="true" /></span>
-              <span>
-                <strong>Muốn tìm một cơ sở y tế</strong>
-                <small>Xem thông tin cơ sở và các khoa hiện có</small>
-              </span>
-              <ArrowRight size={19} aria-hidden="true" />
-            </a>
+          <a className="care-dossier-start" href="/medical-assistant">
+            <span className="care-option-icon"><Stethoscope size={21} aria-hidden="true" /></span>
+            <span>
+              <small>Bắt đầu một phiên mới</small>
+              <strong>Mô tả triệu chứng bằng lời của bạn</strong>
+            </span>
+            <ArrowRight size={19} aria-hidden="true" />
+          </a>
+
+          <div className="care-dossier-output">
+            <p>Sau phiên phân tích, bạn có thể xem</p>
+            <ul>
+              <li>
+                <FileCheck2 size={18} aria-hidden="true" />
+                <span>Tóm tắt triệu chứng và câu trả lời</span>
+              </li>
+              <li>
+                <MapPinned size={18} aria-hidden="true" />
+                <span>Chuyên khoa có thể liên quan</span>
+              </li>
+              <li>
+                <MessageSquareText size={18} aria-hidden="true" />
+                <span>Câu hỏi để chuẩn bị trao đổi với bác sĩ</span>
+              </li>
+            </ul>
           </div>
 
           <div className="care-urgent-note">
             <ShieldAlert size={20} aria-hidden="true" />
             <p>
-              Nếu bạn có dấu hiệu nghiêm trọng, hãy ưu tiên trợ giúp y tế khẩn cấp.
+              Nếu có dấu hiệu nghiêm trọng, hãy liên hệ dịch vụ cấp cứu hoặc đến cơ sở y tế gần nhất.
             </p>
           </div>
         </aside>
@@ -100,8 +111,8 @@ export function HeroSection() {
         <article>
           <LockKeyhole size={21} aria-hidden="true" />
           <div>
-            <strong>Bạn chủ động thông tin cung cấp</strong>
-            <span>Chỉ nhập thông tin cần thiết cho tính năng bạn chọn.</span>
+            <strong>Bạn kiểm soát thông tin được chia sẻ</strong>
+            <span>Chỉ nhập những thông tin cần thiết cho tính năng bạn sử dụng.</span>
           </div>
         </article>
       </div>

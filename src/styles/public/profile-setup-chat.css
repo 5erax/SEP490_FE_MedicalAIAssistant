@@ -325,41 +325,54 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.landing-chat-launcher.suppressed {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
 }
 
 .landing-chat-launcher button {
   position: relative;
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 64px;
-  border: 1.5px solid var(--ink);
+  width: 60px;
+  height: 60px;
+  border: 1px solid rgba(10, 111, 107, 0.24);
   border-radius: 999px;
-  background: var(--lime);
-  color: var(--ink);
-  box-shadow: 5px 5px 0 var(--ink), 0 18px 42px rgba(17, 20, 18, 0.18);
+  background: #e2f3ed;
+  color: #0b625e;
+  box-shadow: 0 12px 32px rgba(9, 57, 64, 0.18);
   transition: transform 180ms ease, box-shadow 180ms ease;
-  animation: landingChatPulse 2.8s ease-in-out infinite;
+  animation: none;
 }
 
 .landing-chat-launcher.open button {
   animation: none;
-  background: var(--ink);
-  color: var(--lime);
+  border-color: #0f625e;
+  background: #0f625e;
+  color: #fff;
 }
 
 .landing-chat-launcher button:hover {
-  transform: translateY(-3px);
-  box-shadow: 6px 6px 0 var(--ink), 0 22px 48px rgba(17, 20, 18, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(9, 57, 64, 0.22);
+}
+
+.landing-chat-launcher button:focus-visible {
+  outline: 3px solid #f2b84b;
+  outline-offset: 3px;
 }
 
 .landing-chat-bot-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.72);
   font-weight: 900;
 }
 

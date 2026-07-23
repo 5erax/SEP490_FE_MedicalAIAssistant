@@ -84,6 +84,7 @@ export default function DisplayPreferences({ compact = false }) {
         type="button"
         aria-expanded={open}
         aria-controls={`${idPrefix}-panel`}
+        aria-label={compact ? "Mở tùy chọn hiển thị" : undefined}
         ref={triggerRef}
         onClick={() => setOpen((current) => !current)}
       >

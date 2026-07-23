@@ -1,5 +1,5 @@
 export const PUBLIC_ACCESS_BENEFITS = [
-  "Xem hướng dẫn mô tả triệu chứng",
+  "Phân tích triệu chứng qua câu hỏi lâm sàng tham khảo",
   "Tìm cơ sở y tế trên bản đồ công khai",
   "Hỏi trợ lý AI trên trang chủ để tham khảo thông tin",
 ];

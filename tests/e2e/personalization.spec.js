@@ -5,7 +5,7 @@ test("display preferences apply immediately and persist across reloads", async (
   await preparePage(page);
   await openRoute(page, "/");
 
-  await page.getByRole("button", { name: "Hiển thị", exact: true }).click();
+  await page.getByRole("button", { name: "Mở tùy chọn hiển thị", exact: true }).click();
   await page.locator('select[id$="-theme"]').selectOption("dark");
   await page.locator('select[id$="-motion"]').selectOption("reduce");
 

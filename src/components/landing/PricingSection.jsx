@@ -7,7 +7,7 @@ const FOOTER_COLUMNS = [
   {
     title: "Bắt đầu",
     links: [
-      ["Mô tả triệu chứng", "/medical-assistant"],
+      ["Phân tích triệu chứng", "/medical-assistant"],
       ["Tìm cơ sở y tế", "/map"],
       ["Xem gói dịch vụ", "/pricing"],
     ],
@@ -21,11 +21,19 @@ const FOOTER_COLUMNS = [
     ],
   },
   {
-    title: "Thông tin",
+    title: "Pháp lý và an toàn",
     links: [
-      ["Hỗ trợ", "/support"],
       ["Quyền riêng tư", "/privacy"],
+      ["Điều khoản sử dụng", "/terms"],
       ["Tuyên bố miễn trừ y tế", "/medical-disclaimer"],
+    ],
+  },
+  {
+    title: "Hỗ trợ",
+    links: [
+      ["Trung tâm hỗ trợ", "/support"],
+      ["Cách dữ liệu được xử lý", "/privacy"],
+      ["Báo lỗi dữ liệu cơ sở y tế", "/support"],
     ],
   },
 ];
@@ -92,16 +100,10 @@ export function PricingPreviewSection() {
   return (
     <section id="pricing-preview" className="care-section care-pricing-section" aria-labelledby="pricing-preview-title">
       <div className="container">
-        <div className="care-pricing-heading">
+        <div className="care-section-heading care-section-header care-section-heading-single">
           <div>
             <p className="care-eyebrow">Bảng giá</p>
             <h2 id="pricing-preview-title">Bắt đầu miễn phí. Nâng cấp khi cần.</h2>
-          </div>
-          <div>
-            <p>
-              So sánh những gì bạn có thể dùng ngay trên các trang công khai với quyền lợi có hạn mức của gói đăng ký.
-              Giá và hạn mức gói trả phí được lấy trực tiếp từ hệ thống.
-            </p>
           </div>
         </div>
 
@@ -114,7 +116,7 @@ export function PricingPreviewSection() {
             <h3>Miễn phí</h3>
             <div className="care-price-line">
               <p className="care-price-value">0đ</p>
-              <span>cho các tính năng công khai</span>
+              <span>/ tháng</span>
             </div>
             <p className="care-price-duration">
               <ShieldCheck size={16} aria-hidden="true" />
@@ -178,6 +180,7 @@ export function PricingPreviewSection() {
                   <article className="care-price-card care-price-card-paid" key={plan.id || plan.planName}>
                     <div className="care-price-card-head">
                       <span className="care-price-icon"><CircleDollarSign size={21} aria-hidden="true" /></span>
+                      <span className="care-plan-badge">Dành cho nhu cầu thường xuyên</span>
                     </div>
                     <p className="care-price-kicker">Quyền lợi có hạn mức</p>
                     <h3>{planName}</h3>
@@ -234,13 +237,13 @@ export function CtaSection() {
         <div>
           <span className="care-cta-icon"><ShieldCheck size={22} aria-hidden="true" /></span>
           <p className="care-eyebrow">Bắt đầu theo cách phù hợp với bạn</p>
-          <h2 id="landing-cta-title">Bạn có thể bắt đầu bằng điều mình đang cảm nhận.</h2>
-          <p>Không cần dùng thuật ngữ y khoa. Hãy mô tả ngắn gọn và bổ sung thông tin khi được hỏi.</p>
+          <h2 id="landing-cta-title">Bạn muốn bắt đầu từ đâu?</h2>
+          <p>Phân tích triệu chứng, hỏi trợ lý AI hoặc tìm cơ sở y tế để chuẩn bị cho buổi khám.</p>
         </div>
         <div className="care-cta-actions">
           <a className="care-button care-button-light" href="/medical-assistant">
             <Stethoscope size={19} aria-hidden="true" />
-            Mô tả triệu chứng
+            Phân tích triệu chứng
           </a>
           <a className="care-button care-button-outline-light" href="/map">
             <MapPinned size={19} aria-hidden="true" />
@@ -264,7 +267,7 @@ export function Footer() {
               </span>
               <span>MediMate AI</span>
             </a>
-            <p>Trợ lý định hướng trước khi đi khám, dựa trên thông tin bạn cung cấp và dữ liệu hiện có.</p>
+            <p>Trợ lý sức khỏe hỗ trợ phân tích triệu chứng, chuẩn bị câu hỏi, lưu lịch sử và tìm cơ sở y tế.</p>
           </div>
 
           {FOOTER_COLUMNS.map((column) => (
@@ -272,7 +275,7 @@ export function Footer() {
               <h2>{column.title}</h2>
               <div className="footer-links">
                 {column.links.map(([label, href]) => (
-                  <a href={href} key={href}>{label}</a>
+                  <a href={href} key={`${label}-${href}`}>{label}</a>
                 ))}
               </div>
             </nav>

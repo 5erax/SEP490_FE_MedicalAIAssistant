@@ -55,7 +55,7 @@
 
 .care-map-preview-head small {
   color: var(--care-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -64,7 +64,7 @@
 .care-map-preview-head strong {
   overflow: hidden;
   color: var(--care-navy);
-  font-size: 14px;
+  font-size: 15px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -76,7 +76,7 @@
   background: #f0f8f5;
   padding: 6px 10px;
   color: #0b625e;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -103,8 +103,8 @@
 .care-map-library,
 .care-map-library-state,
 .care-map-state {
-  height: 330px;
-  min-height: 330px;
+  height: 420px;
+  min-height: 420px;
 }
 
 .care-map-library {
@@ -168,7 +168,7 @@
   z-index: 4;
   inset: 0;
   background: rgba(237, 247, 244, 0.88);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -181,7 +181,7 @@
 .care-map-state span {
   max-width: 340px;
   color: var(--care-muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -294,12 +294,12 @@
 
 .care-map-facilities strong {
   color: var(--care-navy);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .care-map-facilities small {
   color: var(--care-muted);
-  font-size: 9.5px;
+  font-size: 12px;
 }
 
 .care-map-preview-foot {
@@ -308,7 +308,7 @@
   background: #f8fbfa;
   padding: 13px 20px;
   color: var(--care-muted);
-  font-size: 10.5px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -380,7 +380,7 @@
   position: relative;
   overflow: hidden;
   display: flex;
-  min-height: 410px;
+  min-height: 470px;
   flex-direction: column;
   border: 1px solid var(--care-line);
   border-radius: 22px;
@@ -397,7 +397,7 @@
 }
 
 .care-price-card-paid {
-  border-color: #17877d;
+  border: 2px solid #17877d;
   background:
     linear-gradient(145deg, rgba(221, 246, 239, 0.82), transparent 52%),
     #fff;
@@ -414,8 +414,23 @@
 }
 
 .care-price-card-head {
+  display: flex;
+  align-items: center;
   justify-content: flex-start;
   gap: 16px;
+}
+
+.care-plan-badge {
+  margin-left: auto;
+  border: 1px solid #acd4cb;
+  border-radius: 999px;
+  background: #f2faf7;
+  padding: 7px 10px;
+  color: var(--care-teal-dark);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .care-price-card h3 {
@@ -428,7 +443,7 @@
 .care-price-kicker {
   margin: 22px 0 0;
   color: var(--care-teal-dark);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -443,7 +458,7 @@
 .care-price-value {
   margin: 0;
   color: var(--care-navy-deep);
-  font-size: clamp(29px, 3vw, 38px);
+  font-size: clamp(38px, 3.5vw, 48px);
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.2;
@@ -462,7 +477,7 @@
   gap: 7px;
   margin: 11px 0 0;
   color: var(--care-muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -478,11 +493,12 @@
   margin: 22px 0 24px;
   border-top: 1px solid var(--care-line);
   padding-top: 18px;
+  flex: 1;
 }
 
 .care-price-benefits > strong {
   color: var(--care-navy);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .care-price-benefits ul {
@@ -498,28 +514,28 @@
   align-items: flex-start;
   gap: 8px;
   color: var(--care-text);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
 .care-price-benefits > p {
   margin: 0;
   color: var(--care-muted);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
 .care-price-card > a {
   justify-content: space-between;
   gap: 10px;
-  min-height: 44px;
+  min-height: 48px;
   margin-top: auto;
   border: 1px solid #b9d9d1;
   border-radius: 11px;
   background: #fff;
   padding: 0 16px;
   color: var(--care-teal-dark);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -566,7 +582,7 @@
 }
 
 .care-price-slot {
-  min-height: 410px;
+  min-height: 470px;
 }
 
 .care-pricing-state > div {
@@ -601,7 +617,7 @@
   gap: 8px;
   margin: 20px 0 0;
   color: var(--care-muted);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
   text-align: left;
 }
@@ -692,8 +708,8 @@ html[data-contrast="more"] .care-pricing-state {
   .care-map-library,
   .care-map-library-state,
   .care-map-state {
-    height: 285px;
-    min-height: 285px;
+    height: 360px;
+    min-height: 360px;
   }
 
   .care-map-facilities {

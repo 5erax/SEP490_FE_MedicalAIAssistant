@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { sendLandingChatMessage } from "../../services/landingChat";
 import { useChatAutoScroll } from "../../utils/useChatAutoScroll";
 import ChatInput from "./ChatInput";
@@ -25,9 +25,35 @@ export default function LandingAIChatbox() {
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [loading, setLoading] = useState(false);
+  const [suppressLauncher, setSuppressLauncher] = useState(false);
   const { containerRef, endRef, handleScroll } = useChatAutoScroll(`${messages.length}-${loading}-${open}`);
 
   const hasUserMessage = useMemo(() => messages.some((message) => message.from === "user"), [messages]);
+
+  useEffect(() => {
+    const hero = document.querySelector(".care-hero");
+    const mobileQuery = window.matchMedia("(max-width: 760px)");
+    if (!hero || !("IntersectionObserver" in window)) return undefined;
+
+    let heroVisible = false;
+
+    function syncSuppression() {
+      setSuppressLauncher(mobileQuery.matches && heroVisible);
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      heroVisible = entry.isIntersecting;
+      syncSuppression();
+    }, { threshold: 0.04 });
+
+    observer.observe(hero);
+    mobileQuery.addEventListener("change", syncSuppression);
+
+    return () => {
+      observer.disconnect();
+      mobileQuery.removeEventListener("change", syncSuppression);
+    };
+  }, []);
 
   async function sendMessage(text) {
     const nextText = text.trim();
@@ -92,7 +118,11 @@ export default function LandingAIChatbox() {
         </footer>
       </div>}
 
-      <FloatingChatButton open={open} onClick={() => setOpen((current) => !current)} />
+      <FloatingChatButton
+        open={open}
+        suppressed={suppressLauncher && !open}
+        onClick={() => setOpen((current) => !current)}
+      />
     </>
   );
 }

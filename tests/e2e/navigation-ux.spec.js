@@ -142,7 +142,7 @@ test.describe("global navigation UX", () => {
     await expect(page.getByRole("region", { name: "Menu tài khoản" })).toBeVisible();
     await expect(page.locator(".account-menu-summary")).toContainText("Nguyễn Minh");
     await expect(page.locator(".account-menu-summary img")).toHaveAttribute("src", "https://example.com/avatar.png");
-    await expect(page.getByRole("button", { name: "Hiển thị", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mở tùy chọn hiển thị", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Lịch sử giao dịch" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Đăng xuất" })).toBeVisible();
     await page.getByRole("button", { name: "Hồ sơ" }).click();

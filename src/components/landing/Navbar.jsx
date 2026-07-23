@@ -4,9 +4,9 @@ import { getStoredAuth } from "../../services/api";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 
 const NAV_LINKS = [
-  { name: "MediMate giúp gì", href: "/#support" },
-  { name: "Bản đồ", href: "/#map" },
-  { name: "Bảng giá", href: "/#pricing-preview" },
+  { name: "Tính năng", href: "/#support", sectionId: "support" },
+  { name: "Bản đồ", href: "/#map", sectionId: "map" },
+  { name: "Bảng giá", href: "/#pricing-preview", sectionId: "pricing-preview" },
 ];
 
 function Logo() {
@@ -22,14 +22,19 @@ function Logo() {
 
 export function Navbar({ variant = "default" }) {
   const [open, setOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState(() => (
+    typeof window === "undefined" ? "" : window.location.hash.slice(1)
+  ));
   const [auth] = useState(() => getStoredAuth());
   const menuButtonRef = useRef(null);
+  const mobileNavRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    mobileNavRef.current?.querySelector("button, a")?.focus();
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
@@ -45,6 +50,62 @@ export function Navbar({ variant = "default" }) {
     };
   }, [open]);
 
+  useEffect(() => {
+    const navSectionIds = new Set(NAV_LINKS.map(({ sectionId }) => sectionId));
+    const sections = [...document.querySelectorAll(".landing-page > section")];
+    let animationFrame = 0;
+
+    function updateActiveSection() {
+      animationFrame = 0;
+      const navHeight = document.querySelector(".nav")?.getBoundingClientRect().height ?? 0;
+      const viewportTop = navHeight;
+      const viewportBottom = window.innerHeight;
+      let currentSection = null;
+      let largestVisibleArea = 0;
+
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        const visibleArea = Math.max(
+          0,
+          Math.min(rect.bottom, viewportBottom) - Math.max(rect.top, viewportTop),
+        );
+
+        if (visibleArea > largestVisibleArea) {
+          largestVisibleArea = visibleArea;
+          currentSection = section;
+        }
+      });
+
+      const nextSection = currentSection && navSectionIds.has(currentSection.id)
+        ? currentSection.id
+        : "";
+      setActiveSection((current) => current === nextSection ? current : nextSection);
+    }
+
+    function scheduleUpdate() {
+      if (animationFrame) return;
+      animationFrame = window.requestAnimationFrame(updateActiveSection);
+    }
+
+    function syncHash() {
+      const hashSection = window.location.hash.slice(1);
+      if (navSectionIds.has(hashSection)) setActiveSection(hashSection);
+      scheduleUpdate();
+    }
+
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("hashchange", syncHash);
+    scheduleUpdate();
+
+    return () => {
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("hashchange", syncHash);
+    };
+  }, []);
+
   return (
     <header className={`nav ${variant === "landing" ? "nav-care" : ""}`}>
       <div className="container nav-inner">
@@ -52,7 +113,12 @@ export function Navbar({ variant = "default" }) {
 
         <nav className="nav-links" aria-label="Điều hướng chính">
           {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href}>
+            <a
+              key={link.href}
+              href={link.href}
+              aria-current={activeSection === link.sectionId ? "location" : undefined}
+              onClick={() => setActiveSection(link.sectionId)}
+            >
               {link.name}
             </a>
           ))}
@@ -65,9 +131,7 @@ export function Navbar({ variant = "default" }) {
               Vào ứng dụng
             </a>
           ) : (
-            <a href="/login" className="btn btn-dark">
-              Đăng nhập
-            </a>
+            <a href="/login" className="btn btn-dark">Đăng nhập</a>
           )}
         </div>
 
@@ -92,20 +156,36 @@ export function Navbar({ variant = "default" }) {
             aria-label="Đóng menu điều hướng"
             onClick={() => setOpen(false)}
           />
-          <nav id="mobile-navigation" className="container mobile-menu" aria-label="Điều hướng di động">
+          <nav
+            ref={mobileNavRef}
+            id="mobile-navigation"
+            className="container mobile-menu"
+            aria-label="Điều hướng di động"
+          >
             <DisplayPreferences />
             {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
+              <a
+                key={link.href}
+                href={link.href}
+                aria-current={activeSection === link.sectionId ? "location" : undefined}
+                onClick={() => {
+                  setActiveSection(link.sectionId);
+                  setOpen(false);
+                }}
+              >
                 {link.name}
               </a>
             ))}
-            <a
-              className="btn btn-primary"
-              href={auth ? "/app" : "/login"}
-              onClick={() => setOpen(false)}
-            >
-              {auth ? "Vào ứng dụng" : "Đăng nhập"}
-            </a>
+            {!auth && (
+              <a className="btn care-nav-login" href="/login" onClick={() => setOpen(false)}>
+                Đăng nhập
+              </a>
+            )}
+            {auth && (
+              <a className="btn btn-primary" href="/app" onClick={() => setOpen(false)}>
+                Vào ứng dụng
+              </a>
+            )}
           </nav>
         </>
       )}

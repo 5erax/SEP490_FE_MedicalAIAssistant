@@ -21,15 +21,19 @@ const SAFETY_PRINCIPLES = [
 export function ProductScopeSection() {
   return (
     <section id="safety" className="care-section care-safety-section" aria-labelledby="safety-title">
-      <div className="container care-safety-layout">
-        <div className="care-safety-intro">
-          <p className="care-eyebrow">Sử dụng an toàn</p>
-          <h2 id="safety-title">Biết rõ giới hạn để sử dụng an toàn.</h2>
-          <p>
-            MediMate được dùng để chuẩn bị trước khi đi khám. Khi cần đánh giá chính xác,
-            bạn vẫn nên trao đổi trực tiếp với chuyên gia y tế.
-          </p>
-          <a href="/medical-disclaimer">Đọc tuyên bố miễn trừ y tế</a>
+      <div className="container">
+        <div className="care-section-heading care-section-header">
+          <div>
+            <p className="care-eyebrow">Sử dụng an toàn</p>
+            <h2 id="safety-title">Biết rõ giới hạn để sử dụng an toàn.</h2>
+          </div>
+          <div className="care-section-summary">
+            <p>
+              MediMate được dùng để chuẩn bị trước khi đi khám. Khi cần đánh giá chính xác,
+              bạn vẫn nên trao đổi trực tiếp với chuyên gia y tế.
+            </p>
+            <a className="care-text-link" href="/medical-disclaimer">Đọc tuyên bố miễn trừ y tế</a>
+          </div>
         </div>
 
         <div className="care-safety-principles">
@@ -43,16 +47,16 @@ export function ProductScopeSection() {
             </article>
           ))}
         </div>
-      </div>
 
-      <div className="container care-emergency-banner">
-        <AlertTriangle size={24} aria-hidden="true" />
-        <div>
-          <strong>Không dùng MediMate trong tình huống khẩn cấp</strong>
-          <p>
-            Nếu có khó thở nặng, đau ngực dữ dội, mất ý thức, dấu hiệu đột quỵ hoặc
-            chảy máu nhiều, hãy tìm trợ giúp y tế khẩn cấp ngay.
-          </p>
+        <div className="care-emergency-banner">
+          <AlertTriangle size={24} aria-hidden="true" />
+          <div>
+            <strong>Không dùng MediMate trong tình huống khẩn cấp</strong>
+            <p>
+              Nếu có khó thở nặng, đau ngực dữ dội, mất ý thức, dấu hiệu đột quỵ hoặc
+              chảy máu nhiều, hãy tìm trợ giúp y tế khẩn cấp ngay.
+            </p>
+          </div>
         </div>
       </div>
     </section>
