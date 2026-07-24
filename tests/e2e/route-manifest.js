@@ -86,6 +86,7 @@ export const VISUAL_ROUTES = [
   { name: "landing", path: "/" },
   { name: "login", path: "/login" },
   { name: "signup", path: "/signup" },
+  { name: "forgot-password", path: "/forgot-password" },
   { name: "patient-dashboard", path: "/dashboard" },
   { name: "nearby-clinic", path: "/map" },
   { name: "admin-gate", path: "/app/admin" },

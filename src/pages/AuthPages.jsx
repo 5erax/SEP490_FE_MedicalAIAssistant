@@ -3,7 +3,9 @@ import { GoogleLogin } from "@react-oauth/google";
 import {
   ClipboardCheck,
   FileClock,
+  KeyRound,
   LockKeyhole,
+  Mail,
   ShieldCheck,
   UserRoundCheck,
   UserRoundPlus,
@@ -143,6 +145,20 @@ const authCopy = {
       { label: "Xem lại phiên trên cùng tài khoản", icon: FileClock },
     ],
   },
+  forgot: {
+    eyebrow: "Bảo mật tài khoản",
+    title: "Khôi phục quyền truy cập.",
+    copy: "Nhập email gắn với tài khoản. Nếu thông tin hợp lệ, hệ thống sẽ gửi hướng dẫn khôi phục cho bạn.",
+    sideEyebrow: "Khôi phục tài khoản",
+    sideTitle: "Lấy lại tài khoản theo cách an toàn.",
+    sideCopy: "Thực hiện từng bước để xác minh tài khoản mà không làm lộ thông tin đăng nhập.",
+    privacyNote: "Thông báo gửi đi không xác nhận một email có tồn tại trên hệ thống hay không.",
+    points: [
+      { label: "Nhập email của tài khoản", icon: Mail },
+      { label: "Nhận mã hoặc hướng dẫn xác thực", icon: KeyRound },
+      { label: "Đặt lại mật khẩu ở bước tiếp theo", icon: LockKeyhole },
+    ],
+  },
   recovery: {
     eyebrow: "Khôi phục",
     title: "Lấy lại quyền truy cập tài khoản.",
@@ -156,7 +172,7 @@ const authCopy = {
 function AuthShell({ mode = "login", children }) {
   const content = authCopy[mode] ?? authCopy.login;
   const isLogin = mode === "login";
-  const usesClinicalAuth = mode === "login" || mode === "signup";
+  const usesClinicalAuth = mode === "login" || mode === "signup" || mode === "forgot";
 
   return (
     <main className={`landing-page auth-shell-page auth-mode-${mode}${usesClinicalAuth ? " auth-mode-clinical" : ""}`}>
@@ -194,7 +210,7 @@ function AuthShell({ mode = "login", children }) {
                   : <ShieldCheck size={17} aria-hidden="true" />}
                 {isLogin
                   ? "Thông tin đăng nhập được truyền qua kết nối bảo mật."
-                  : "Chỉ cung cấp thông tin cần thiết để tạo và bảo vệ tài khoản."}
+                  : content.privacyNote ?? "Chỉ cung cấp thông tin cần thiết để tạo và bảo vệ tài khoản."}
               </p>
             )}
           </aside>
@@ -471,10 +487,24 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell mode="recovery">
+    <AuthShell mode="forgot">
       <form className="clean-form auth-form-clean" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
-        <Field label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required />
+        <Field
+          label="Email"
+          name="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@example.com"
+          autoComplete="email"
+          spellCheck={false}
+          required
+        />
+        <div className="auth-recovery-note">
+          <KeyRound size={18} aria-hidden="true" />
+          <p>Sau khi nhận hướng dẫn, dùng mã xác thực ở bước đặt lại mật khẩu.</p>
+        </div>
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
           {submitting ? "Đang gửi..." : "Gửi hướng dẫn"}
         </button>
