@@ -92,6 +92,7 @@ export const VISUAL_ROUTES = [
   { name: "doctor-register", path: "/register-doctor?token=visual-doctor-token" },
   { name: "profile-setup", path: "/patient/profile/setup" },
   { name: "patient-dashboard", path: "/dashboard" },
+  { name: "symptom-analysis", path: "/symptom" },
   { name: "nearby-clinic", path: "/map" },
   { name: "admin-gate", path: "/app/admin" },
   { name: "not-found", path: "/route-that-does-not-exist" },

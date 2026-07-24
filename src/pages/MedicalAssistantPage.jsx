@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, History, MapPin, Send, Stethoscope } from "lucide-react";
+import { ClipboardList, History, MapPin, Send, ShieldCheck, Stethoscope } from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
@@ -15,6 +15,7 @@ import {
   unwrapApiData,
 } from "../services/symptomAnalysisService";
 import "../styles/medical-assessment.css";
+import "../styles/medical-assessment-clinical.css";
 
 const SESSION_KEY_PREFIX = "medimate.assessment.session.";
 const assessmentSessionCache = new Map();
@@ -141,35 +142,44 @@ function AssessmentShell({
   const opensHistoryPanel = !historyAction.to;
 
   return (
-    <main className="assessment-page clinical-page">
+    <main className="assessment-page clinical-page assessment-clinical-refresh">
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
-        <div className="assessment-history-action">
-          <Button
-            tone="secondary"
-            size="sm"
-            className="analysis-history-button"
-            aria-haspopup={opensHistoryPanel ? "dialog" : undefined}
-            aria-controls={opensHistoryPanel ? ANALYSIS_HISTORY_PANEL_ID : undefined}
-            aria-expanded={opensHistoryPanel ? historyPanelOpen : undefined}
-            onClick={() => {
-              if (opensHistoryPanel) {
-                setHistoryPanelOpen(true);
-                return;
-              }
-              navigate(historyAction.to);
-            }}
-          >
-            <History size={16} />
-            {historyAction.label}
-          </Button>
-        </div>
         <header className="assessment-header clinical-hero">
-          <span className="assessment-icon clinical-hero-icon" aria-hidden="true">
-            <Stethoscope size={25} />
-          </span>
-          <p className="eyebrow clinical-eyebrow">{eyebrow}</p>
-          <h1 id="assessment-title">{title}</h1>
-          {description && <p className="clinical-hero-description">{description}</p>}
+          <div className="assessment-heading-main">
+            <span className="assessment-icon clinical-hero-icon" aria-hidden="true">
+              <Stethoscope size={25} />
+            </span>
+            <div>
+              <p className="eyebrow clinical-eyebrow">{eyebrow}</p>
+              <h1 id="assessment-title">{title}</h1>
+              {description && <p className="clinical-hero-description">{description}</p>}
+            </div>
+          </div>
+
+          <div className="assessment-history-action assessment-heading-aside">
+            <Button
+              tone="secondary"
+              size="sm"
+              className="analysis-history-button"
+              aria-haspopup={opensHistoryPanel ? "dialog" : undefined}
+              aria-controls={opensHistoryPanel ? ANALYSIS_HISTORY_PANEL_ID : undefined}
+              aria-expanded={opensHistoryPanel ? historyPanelOpen : undefined}
+              onClick={() => {
+                if (opensHistoryPanel) {
+                  setHistoryPanelOpen(true);
+                  return;
+                }
+                navigate(historyAction.to);
+              }}
+            >
+              <History size={16} />
+              {historyAction.label}
+            </Button>
+            <div className="assessment-scope-note">
+              <ShieldCheck size={19} aria-hidden="true" />
+              <p><strong>Kết quả để tham khảo</strong><span>Không thay thế chẩn đoán, kê đơn hoặc điều trị của bác sĩ.</span></p>
+            </div>
+          </div>
         </header>
 
         <Stepper active={activeStep} />
@@ -219,7 +229,7 @@ function EntryPage() {
     <AssessmentShell
       eyebrow="Tư vấn lâm sàng"
       title="Phân tích lâm sàng qua triệu chứng"
-      description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
+      description="Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi tổng hợp kết quả tham khảo."
       activeStep={0}
     >
       <MobileHeroAction>
@@ -317,7 +327,7 @@ function IntakePage() {
     <AssessmentShell
       eyebrow="Tư vấn lâm sàng"
       title="Phân tích lâm sàng qua triệu chứng"
-      description="Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo."
+      description="Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi tổng hợp kết quả tham khảo."
       activeStep={0}
     >
       <form className="clinical-card clinical-intake-card" onSubmit={submit} noValidate>
@@ -337,6 +347,7 @@ function IntakePage() {
           <span>Triệu chứng bạn đang gặp <strong aria-hidden="true">*</strong></span>
           <Textarea
             id="clinical-user-input"
+            name="symptoms"
             value={userInput}
             onChange={(event) => updateUserInput(event.target.value)}
             disabled={isSubmitting}
@@ -350,7 +361,7 @@ function IntakePage() {
         {error && <Alert tone="danger" live>{error}</Alert>}
 
         <div className="clinical-submit-row">
-          <span>Sẵn sàng. Trả lời Yes/No ở bước tiếp theo.</span>
+          <span><strong>Sẵn sàng.</strong> MediMate sẽ hỏi thêm một số câu ngắn ở bước tiếp theo.</span>
           <Button
             type="submit"
             size="lg"
@@ -360,6 +371,7 @@ function IntakePage() {
             aria-label="Tiếp tục phân tích lâm sàng"
           >
             <Send size={18} />
+            <span>Tiếp tục phân tích</span>
           </Button>
         </div>
       </form>
@@ -506,7 +518,14 @@ function QuestionsPage({ sessionId }) {
       activeStep={1}
     >
       <form className="clinical-card question-panel" onSubmit={submit}>
-        <div className="question-progress">
+        <div
+          className="question-progress"
+          role="progressbar"
+          aria-label={`Đã trả lời ${answeredCount} trên ${questions.length} câu hỏi`}
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={progressPercent}
+        >
           <span>Câu {currentIndex + 1}/{questions.length}</span>
           <strong>{progressPercent}%</strong>
         </div>

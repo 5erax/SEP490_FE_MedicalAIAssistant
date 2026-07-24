@@ -19,12 +19,13 @@ test.describe("visual baseline", () => {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
-        if (["profile-setup", "patient-dashboard"].includes(route.name)) {
+        if (["profile-setup", "patient-dashboard", "symptom-analysis"].includes(route.name)) {
           await page.addInitScript(({ accessToken, isProfileSetup }) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
               userId: "55555555-5555-4555-8555-555555555555",
               roles: ["Patient"],
+              isPremium: true,
               firstLogin: isProfileSetup,
               isProfileCompleted: !isProfileSetup,
             }));
@@ -137,6 +138,10 @@ test.describe("visual baseline", () => {
         if (route.name === "profile-setup") {
           await expect(page.locator("#patient-profile-displayName")).toHaveValue("Nguyễn Minh");
           await expect(page.getByRole("button", { name: "Hoàn tất hồ sơ" })).toBeEnabled();
+        }
+        if (route.name === "symptom-analysis") {
+          await expect(page.locator("#clinical-user-input")).toBeVisible();
+          await expect(page.getByRole("button", { name: "Tiếp tục phân tích lâm sàng" })).toBeDisabled();
         }
         const routeLoading = page.locator("[data-route-loading]");
         if (await routeLoading.count()) {

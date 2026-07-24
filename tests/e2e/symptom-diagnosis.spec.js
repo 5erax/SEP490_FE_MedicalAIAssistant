@@ -13,6 +13,39 @@ const QUESTION_ID = "77777777-7777-4777-8777-777777777777";
 const FACILITY_ID = "11111111-1111-4111-8111-111111111111";
 const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
 
+test("clinical symptom intake remains accessible at narrow widths", async ({ page }) => {
+  await preparePage(page);
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      roles: ["Patient"],
+      isPremium: true,
+    }));
+  }, ACCESS_TOKEN);
+
+  await page.goto("/symptom", { waitUntil: "domcontentloaded" });
+  const symptoms = page.locator("#clinical-user-input");
+  await expect(symptoms).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const seriousViolations = accessibility.violations
+    .filter((violation) => ["critical", "serious"].includes(violation.impact))
+    .map((violation) => violation.id);
+
+  expect(seriousViolations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await symptoms.focus();
+  await expect(symptoms).toBeFocused();
+  await expect(symptoms).toHaveCSS("outline-width", "3px");
+
+  await page.emulateMedia({ forcedColors: "active" });
+  await expect(symptoms).toHaveCSS("outline-width", "3px");
+});
+
 test("diagnosis flow asks clinical questions and renders recommendations", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
