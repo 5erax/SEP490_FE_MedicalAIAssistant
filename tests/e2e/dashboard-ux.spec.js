@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { openRoute, preparePage } from "./helpers.js";
 
@@ -26,6 +27,32 @@ test.describe("patient specialty intake", () => {
         roles: ["Patient"],
       }));
     }, ACCESS_TOKEN);
+  });
+
+  test("keeps the clinical intake accessible at narrow widths", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await openRoute(page, "/dashboard");
+
+    const symptoms = page.locator("#specialty-symptoms");
+    await expect(symptoms).toBeVisible();
+    await expect(page.getByText("Khi nào cần cấp cứu?")).toBeVisible();
+
+    const accessibility = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    const seriousViolations = accessibility.violations
+      .filter((violation) => ["critical", "serious"].includes(violation.impact))
+      .map((violation) => violation.id);
+
+    expect(seriousViolations).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    await symptoms.focus();
+    await expect(symptoms).toBeFocused();
+    await expect(symptoms).toHaveCSS("outline-width", "3px");
+
+    await page.emulateMedia({ forcedColors: "active" });
+    await expect(symptoms).toHaveCSS("outline-width", "3px");
   });
 
   test("asks follow-up questions and recommends a matching hospital in place", async ({ page }) => {

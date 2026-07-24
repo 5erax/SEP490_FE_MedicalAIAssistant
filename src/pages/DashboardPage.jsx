@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ClipboardPlus, History, MapPin, Send, UserRound } from "lucide-react";
+import { CircleAlert, ClipboardPlus, History, MapPin, Send, ShieldCheck, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -13,6 +13,7 @@ import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/a
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
 import { hasAuthRole, shouldSetupPatientProfile } from "../utils/roles";
 import "../styles/dashboard.css";
+import "../styles/dashboard-clinical.css";
 
 /* The service owns clinical question selection and diagnosis generation. */
 function confidencePercent(value) {
@@ -396,7 +397,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="specialty-page">
+    <main className="specialty-page specialty-clinical-page">
       <section className="studio-center" aria-labelledby="specialty-intake-title">
         {showIntakeForm && profilePromptVisible && (
           <section className="profile-nudge" aria-labelledby="profile-nudge-title">
@@ -412,8 +413,16 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <header className="studio-heading">
-          <div className="studio-heading-actions">
+        <header className="studio-heading specialty-clinical-heading">
+          <div className="specialty-heading-main">
+            <span className="studio-mark" aria-hidden="true"><ClipboardPlus size={24} /></span>
+            <div>
+              <p className="studio-eyebrow">Tư vấn chuyên khoa</p>
+              <h2 id="specialty-intake-title">Gợi ý chuyên khoa qua triệu chứng</h2>
+              <p>Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi đưa ra kết quả tham khảo và gợi ý nơi thăm khám.</p>
+            </div>
+          </div>
+          <div className="studio-heading-actions specialty-heading-aside">
             <Button
               type="button"
               tone="secondary"
@@ -427,12 +436,10 @@ export default function DashboardPage() {
               <History size={16} />
               Lịch sử gợi ý chuyên khoa
             </Button>
-          </div>
-          <span className="studio-mark" aria-hidden="true"><ClipboardPlus size={24} /></span>
-          <div>
-            <p className="studio-eyebrow">Tư vấn chuyên khoa</p>
-            <h2 id="specialty-intake-title">Gợi ý chuyên khoa qua triệu chứng</h2>
-            <p>Ghi lại triệu chứng như khi trao đổi ở quầy tiếp nhận. MediMate sẽ hỏi thêm yes/no trước khi đưa ra nhận định tham khảo và cơ sở phù hợp.</p>
+            <div className="specialty-scope-note">
+              <ShieldCheck size={19} aria-hidden="true" />
+              <p><strong>Phạm vi được nói rõ</strong><span>Kết quả không thay thế chẩn đoán hoặc điều trị của bác sĩ.</span></p>
+            </div>
           </div>
         </header>
 
@@ -472,6 +479,7 @@ export default function DashboardPage() {
               required
             >
               <Textarea
+                name="symptoms"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ..."
@@ -484,7 +492,7 @@ export default function DashboardPage() {
               <span className="studio-status" aria-live="polite">
                 {status === "loading-questions"
                   ? "AI đang chọn câu hỏi cần hỏi thêm..."
-                  : <><strong>Sẵn sàng.</strong> Trả lời Yes/No</>}
+                  : <><strong>Sẵn sàng.</strong> MediMate sẽ hỏi thêm một số câu ngắn.</>}
               </span>
               <Button
                 className="studio-submit-icon"
@@ -495,10 +503,20 @@ export default function DashboardPage() {
                 type="submit"
               >
                 <Send size={18} />
-                <span className="sr-only">Gợi ý chuyên khoa</span>
+                <span>Gợi ý chuyên khoa</span>
               </Button>
             </div>
           </form>
+        )}
+
+        {showIntakeForm && (
+          <section className="specialty-emergency-note" aria-labelledby="specialty-emergency-title">
+            <CircleAlert size={20} aria-hidden="true" />
+            <div>
+              <h3 id="specialty-emergency-title">Khi nào cần cấp cứu?</h3>
+              <p>Nếu có dấu hiệu nghiêm trọng hoặc tình trạng chuyển nặng nhanh, hãy liên hệ dịch vụ cấp cứu tại nơi bạn sống hoặc đến cơ sở y tế gần nhất.</p>
+            </div>
+          </section>
         )}
 
         {error && (
@@ -538,7 +556,14 @@ export default function DashboardPage() {
               <strong>{questionProgressPercent}%</strong>
             </div>
 
-            <div className="studio-answer-progress specialty-question-progress" aria-label={`Đã trả lời ${answeredCount} trên ${questions.length} câu hỏi`}>
+            <div
+              className="studio-answer-progress specialty-question-progress"
+              role="progressbar"
+              aria-label={`Đã trả lời ${answeredCount} trên ${questions.length} câu hỏi`}
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={questionProgressPercent}
+            >
               <span className="studio-answer-track">
                 <i style={{ width: `${questionProgressPercent}%` }} />
               </span>

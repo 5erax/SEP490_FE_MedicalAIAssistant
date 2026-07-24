@@ -1,0 +1,563 @@
+.specialty-clinical-page {
+  --clinical-ink: #0b2d35;
+  --clinical-teal: #0e8a83;
+  --clinical-teal-dark: #076861;
+  --clinical-mint: #e8f5f1;
+  --clinical-mint-soft: #f4faf8;
+  --clinical-line: #c8ddd7;
+  --clinical-muted: #526a70;
+  --clinical-warning: #a94724;
+  --clinical-warning-bg: #fff4ee;
+  min-height: calc(100svh - 76px);
+  overflow: visible;
+  background:
+    radial-gradient(circle at 84% 8%, rgba(155, 215, 195, 0.18), transparent 27%),
+    linear-gradient(180deg, #f7fbfa 0%, #eef7f4 100%);
+  color: var(--clinical-ink);
+  padding: clamp(28px, 4vw, 54px) clamp(20px, 4vw, 52px) clamp(48px, 6vw, 76px);
+}
+
+.specialty-clinical-page .studio-center {
+  width: min(1120px, 100%);
+  justify-items: stretch;
+  gap: 20px;
+}
+
+.specialty-clinical-page .specialty-clinical-heading {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 310px);
+  align-items: end;
+  justify-items: stretch;
+  gap: clamp(28px, 5vw, 72px);
+  border-bottom: 1px solid var(--clinical-line);
+  padding: 0 0 clamp(24px, 3.2vw, 36px);
+  text-align: left;
+}
+
+.specialty-clinical-page .specialty-heading-main {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.specialty-clinical-page .studio-mark {
+  width: 52px;
+  height: 52px;
+  border: 1px solid #a9d6cd;
+  border-radius: 14px;
+  background: var(--clinical-mint);
+  color: var(--clinical-teal-dark);
+  box-shadow: none;
+}
+
+.specialty-clinical-page .studio-heading .studio-eyebrow {
+  margin: 1px 0 10px;
+  color: var(--clinical-teal-dark);
+  font-size: 11px;
+  letter-spacing: 0.11em;
+}
+
+.specialty-clinical-page .studio-heading h2 {
+  max-width: 720px;
+  color: var(--clinical-ink);
+  font-size: clamp(34px, 4.1vw, 52px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.specialty-clinical-page .studio-heading p {
+  max-width: 700px;
+  margin: 15px 0 0;
+  color: var(--clinical-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.specialty-clinical-page .studio-heading-actions {
+  position: static;
+  width: 100%;
+  display: grid;
+  gap: 12px;
+  align-content: end;
+  justify-content: stretch;
+  margin: 0;
+}
+
+.specialty-clinical-page .analysis-history-button {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  border-color: var(--clinical-line);
+  background: #fff;
+  color: var(--clinical-ink);
+}
+
+.specialty-clinical-page .specialty-scope-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px;
+  border-left: 3px solid var(--clinical-teal);
+  background: rgba(232, 245, 241, 0.72);
+  color: var(--clinical-teal-dark);
+  padding: 13px 14px;
+}
+
+.specialty-clinical-page .specialty-scope-note svg {
+  margin-top: 2px;
+}
+
+.specialty-clinical-page .specialty-scope-note p {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.specialty-clinical-page .specialty-scope-note strong {
+  color: var(--clinical-ink);
+  font-size: 12px;
+}
+
+.specialty-clinical-page .specialty-scope-note span {
+  color: var(--clinical-muted);
+}
+
+.specialty-clinical-page .profile-nudge {
+  width: 100%;
+  border: 1px solid var(--clinical-line);
+  border-left: 4px solid var(--clinical-teal);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(11, 45, 53, 0.06);
+}
+
+.specialty-clinical-page .profile-nudge > span {
+  background: var(--clinical-mint);
+  color: var(--clinical-teal-dark);
+}
+
+.specialty-clinical-page .studio-flow {
+  width: 100%;
+  margin: 0;
+  border: 1px solid var(--clinical-line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 13px 18px;
+}
+
+.specialty-clinical-page .studio-flow li {
+  color: var(--clinical-muted);
+}
+
+.specialty-clinical-page .studio-flow li:not(:last-child)::after {
+  background: var(--clinical-line);
+}
+
+.specialty-clinical-page .studio-flow span {
+  width: 30px;
+  height: 30px;
+  border-color: var(--clinical-line);
+  background: #fff;
+  color: var(--clinical-muted);
+}
+
+.specialty-clinical-page .studio-flow li.active {
+  color: var(--clinical-ink);
+}
+
+.specialty-clinical-page .studio-flow li.active span {
+  border-color: var(--clinical-teal);
+  background: var(--clinical-mint);
+  color: var(--clinical-teal-dark);
+}
+
+.specialty-clinical-page .studio-flow li.complete span {
+  border-color: var(--clinical-ink);
+  background: var(--clinical-ink);
+  color: #fff;
+}
+
+.specialty-clinical-page .studio-flow li.complete:not(:last-child)::after {
+  background: var(--clinical-teal);
+}
+
+.specialty-clinical-page .studio-chatbox,
+.specialty-clinical-page .studio-diagnosis-panel.specialty-question-flow {
+  width: 100%;
+  gap: 20px;
+  border: 1px solid var(--clinical-line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(11, 45, 53, 0.08);
+  padding: clamp(22px, 3vw, 32px);
+}
+
+.specialty-clinical-page .studio-chatbox {
+  border-top: 4px solid var(--clinical-teal);
+}
+
+.specialty-clinical-page .studio-form-heading {
+  align-items: center;
+  border-color: var(--clinical-line);
+  padding-bottom: 18px;
+}
+
+.specialty-clinical-page .studio-form-heading > div:first-child > span {
+  color: var(--clinical-teal-dark);
+}
+
+.specialty-clinical-page .studio-form-heading h3 {
+  color: var(--clinical-ink);
+  font-size: clamp(22px, 2.8vw, 30px);
+}
+
+.specialty-clinical-page .clinical-strip span {
+  min-height: 30px;
+  background: var(--clinical-mint);
+  color: var(--clinical-teal-dark);
+  font-size: 11px;
+}
+
+.specialty-clinical-page .studio-chatbox .ui-field > label {
+  color: var(--clinical-ink);
+}
+
+.specialty-clinical-page .studio-chatbox .ui-field textarea {
+  min-height: 150px;
+  border-color: #abc9c2;
+  border-radius: 12px;
+  background: #fbfdfc;
+  color: var(--clinical-ink);
+  font-weight: 500;
+  resize: vertical;
+}
+
+.specialty-clinical-page .studio-chatbox .ui-field textarea:hover {
+  border-color: var(--clinical-teal);
+}
+
+.specialty-clinical-page .studio-chatbox .ui-field textarea:focus {
+  border-color: var(--clinical-teal);
+  box-shadow: 0 0 0 3px rgba(14, 138, 131, 0.14);
+}
+
+.specialty-clinical-page .studio-chat-actions {
+  border-color: var(--clinical-line);
+  padding-top: 18px;
+}
+
+.specialty-clinical-page .studio-status {
+  max-width: 650px;
+  color: var(--clinical-muted);
+  font-weight: 600;
+}
+
+.specialty-clinical-page .studio-status strong {
+  color: var(--clinical-ink);
+}
+
+.specialty-clinical-page .studio-chat-actions .studio-submit-icon {
+  width: auto;
+  min-width: 190px;
+  height: 48px;
+  gap: 9px;
+  border-color: var(--clinical-ink);
+  border-radius: 10px;
+  background: var(--clinical-ink);
+  color: #fff;
+  padding: 0 20px;
+  box-shadow: 0 9px 20px rgba(11, 45, 53, 0.16);
+}
+
+.specialty-clinical-page .studio-chat-actions .studio-submit-icon:hover:not(:disabled) {
+  border-color: var(--clinical-teal-dark);
+  background: var(--clinical-teal-dark);
+}
+
+.specialty-clinical-page .studio-chat-actions .studio-submit-icon:disabled {
+  border-color: #c7d6d2;
+  background: #e6efec;
+  color: #6f8380;
+  box-shadow: none;
+}
+
+.specialty-clinical-page .specialty-emergency-note {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 13px;
+  border: 1px solid #efc7b7;
+  border-radius: 14px;
+  background: var(--clinical-warning-bg);
+  color: var(--clinical-warning);
+  padding: 16px 18px;
+}
+
+.specialty-clinical-page .specialty-emergency-note svg {
+  margin-top: 2px;
+}
+
+.specialty-clinical-page .specialty-emergency-note h3 {
+  margin: 0 0 4px;
+  color: #743019;
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.specialty-clinical-page .specialty-emergency-note p {
+  margin: 0;
+  color: #87452e;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.specialty-clinical-page .specialty-question-topline {
+  border-color: var(--clinical-line);
+  color: var(--clinical-muted);
+}
+
+.specialty-clinical-page .specialty-question-topline strong {
+  background: var(--clinical-mint);
+  color: var(--clinical-teal-dark);
+}
+
+.specialty-clinical-page .specialty-question-progress .studio-answer-track {
+  background: #dcebe7;
+}
+
+.specialty-clinical-page .specialty-question-progress .studio-answer-track i {
+  background: var(--clinical-teal);
+}
+
+.specialty-clinical-page .specialty-question-card {
+  border-color: var(--clinical-line);
+  border-radius: 14px;
+  background: var(--clinical-mint-soft);
+}
+
+.specialty-clinical-page .specialty-question-card legend {
+  color: var(--clinical-ink);
+  font-size: clamp(24px, 3.2vw, 36px);
+}
+
+.specialty-clinical-page .specialty-answer-row {
+  border-color: var(--clinical-line);
+  background: #fff;
+}
+
+.specialty-clinical-page .specialty-answer-grid button {
+  border-color: #abc9c2;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--clinical-ink);
+}
+
+.specialty-clinical-page .specialty-answer-grid button:hover {
+  border-color: var(--clinical-teal);
+  background: var(--clinical-mint);
+}
+
+.specialty-clinical-page .specialty-answer-grid button.selected.yes,
+.specialty-clinical-page .specialty-answer-grid button.selected.no {
+  border-color: var(--clinical-teal-dark);
+  background: var(--clinical-teal-dark);
+  color: #fff;
+  box-shadow: none;
+}
+
+.specialty-clinical-page .studio-question-actions.specialty-question-actions {
+  border-color: var(--clinical-line);
+}
+
+.specialty-clinical-page .studio-result-panel {
+  width: 100%;
+}
+
+.specialty-clinical-page .studio-result-card {
+  border-color: var(--clinical-line);
+  border-radius: 16px;
+  box-shadow: 0 14px 38px rgba(11, 45, 53, 0.07);
+}
+
+.specialty-clinical-page .studio-result-card.primary {
+  border-top: 4px solid var(--clinical-teal);
+  background: linear-gradient(140deg, #fff 0%, var(--clinical-mint-soft) 100%);
+}
+
+.specialty-clinical-page :is(button, textarea, input, select, a):focus-visible {
+  outline: 3px solid #d88222;
+  outline-offset: 3px;
+}
+
+@media (max-width: 820px) {
+  .specialty-clinical-page {
+    min-height: calc(100svh - 72px);
+    padding: 24px 16px 104px;
+  }
+
+  .specialty-clinical-page .specialty-clinical-heading {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 22px;
+  }
+
+  .specialty-clinical-page .specialty-heading-main {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .specialty-clinical-page .studio-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .specialty-clinical-page .studio-heading h2 {
+    font-size: clamp(31px, 9vw, 42px);
+  }
+
+  .specialty-clinical-page .studio-heading p {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+
+  .specialty-clinical-page .studio-heading-actions {
+    justify-content: stretch;
+  }
+
+  .specialty-clinical-page .studio-flow {
+    padding: 12px 8px;
+  }
+
+  .specialty-clinical-page .studio-flow li:not(:last-child)::after {
+    top: 15px;
+    left: calc(50% + 18px);
+    width: calc(100% - 36px);
+  }
+
+  .specialty-clinical-page .studio-chatbox,
+  .specialty-clinical-page .studio-diagnosis-panel.specialty-question-flow {
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .specialty-clinical-page .studio-form-heading {
+    display: grid;
+  }
+
+  .specialty-clinical-page .clinical-strip {
+    justify-content: flex-start;
+  }
+
+  .specialty-clinical-page .studio-chat-actions {
+    align-items: stretch;
+  }
+
+  .specialty-clinical-page .studio-chat-actions .studio-submit-icon {
+    width: 100%;
+    min-width: 0;
+    align-self: stretch;
+  }
+
+  .specialty-clinical-page .specialty-emergency-note {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .specialty-clinical-page {
+    padding-inline: 12px;
+  }
+
+  .specialty-clinical-page .specialty-heading-main {
+    grid-template-columns: 1fr;
+  }
+
+  .specialty-clinical-page .studio-mark {
+    display: none;
+  }
+
+  .specialty-clinical-page .clinical-strip span {
+    white-space: normal;
+  }
+
+  .specialty-clinical-page .studio-flow strong {
+    font-size: 10px;
+  }
+
+  .specialty-clinical-page .studio-chatbox .ui-field textarea {
+    min-height: 138px;
+  }
+}
+
+html[data-theme="dark"] .specialty-clinical-page {
+  --clinical-ink: #e5f5f1;
+  --clinical-teal: #63c9bc;
+  --clinical-teal-dark: #8bd8cf;
+  --clinical-mint: #173e3c;
+  --clinical-mint-soft: #102d2e;
+  --clinical-line: #315452;
+  --clinical-muted: #b2c8c5;
+  --clinical-warning: #ffc2a8;
+  --clinical-warning-bg: #3a241f;
+  background: #0c2226;
+}
+
+html[data-theme="dark"] .specialty-clinical-page :is(
+  .analysis-history-button,
+  .studio-flow,
+  .studio-flow span,
+  .studio-chatbox,
+  .studio-diagnosis-panel.specialty-question-flow,
+  .specialty-answer-row,
+  .specialty-answer-grid button
+) {
+  background: #102a2d;
+}
+
+html[data-theme="dark"] .specialty-clinical-page .studio-chatbox .ui-field textarea {
+  background: #0d2528;
+  color: var(--clinical-ink);
+}
+
+html[data-theme="dark"] .specialty-clinical-page .specialty-emergency-note h3,
+html[data-theme="dark"] .specialty-clinical-page .specialty-emergency-note p {
+  color: #ffd2bf;
+}
+
+@media (forced-colors: active) {
+  .specialty-clinical-page .specialty-scope-note,
+  .specialty-clinical-page .specialty-emergency-note,
+  .specialty-clinical-page .studio-chatbox {
+    border: 2px solid CanvasText;
+  }
+
+  .specialty-clinical-page :is(button, textarea, input, select, a):focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
+
+  .specialty-clinical-page .studio-chat-actions .studio-submit-icon,
+  .specialty-clinical-page .specialty-answer-grid button.selected.yes,
+  .specialty-clinical-page .specialty-answer-grid button.selected.no {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specialty-clinical-page *,
+  .specialty-clinical-page *::before,
+  .specialty-clinical-page *::after {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}

@@ -7,7 +7,7 @@ import { openRoute, preparePage } from "./helpers.js";
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const visualStyles = path.join(currentDirectory, "visual-stabilize.css");
 const LANDING_MAP_STYLE = { version: 8, name: "Landing visual map", sources: {}, layers: [] };
-const PROFILE_SETUP_TOKEN = [
+const PATIENT_TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
   "",
@@ -19,16 +19,19 @@ test.describe("visual baseline", () => {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
-        if (route.name === "profile-setup") {
-          await page.addInitScript((accessToken) => {
+        if (["profile-setup", "patient-dashboard"].includes(route.name)) {
+          await page.addInitScript(({ accessToken, isProfileSetup }) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
               userId: "55555555-5555-4555-8555-555555555555",
               roles: ["Patient"],
-              firstLogin: true,
-              isProfileCompleted: false,
+              firstLogin: isProfileSetup,
+              isProfileCompleted: !isProfileSetup,
             }));
-          }, PROFILE_SETUP_TOKEN);
+          }, {
+            accessToken: PATIENT_TOKEN,
+            isProfileSetup: route.name === "profile-setup",
+          });
           await page.route("**/api/users/me", (request) => request.fulfill({
             contentType: "application/json",
             body: JSON.stringify({
@@ -39,8 +42,8 @@ test.describe("visual baseline", () => {
                 address: "",
                 gender: 1,
                 dateOfBirth: null,
-                isFirstLogin: true,
-                isProfileCompleted: false,
+                isFirstLogin: route.name === "profile-setup",
+                isProfileCompleted: route.name !== "profile-setup",
               },
             }),
           }));
