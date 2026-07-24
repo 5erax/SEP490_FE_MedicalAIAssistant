@@ -1,339 +1,501 @@
-import { CalendarCheck, ClipboardCheck, HeartPulse, MapPin, Stethoscope, TimerReset } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarCheck,
+  ClipboardCheck,
+  FileText,
+  HeartPulse,
+  MapPin,
+  ShieldCheck,
+  Stethoscope,
+} from "lucide-react";
 import { Button } from "../components/ui";
 import { navigate } from "../router/navigation";
 
-const recoverySteps = [
+const preparationItems = [
   {
-    icon: Stethoscope,
-    title: "Hoàn tất phân tích lâm sàng",
-    text: "Cung cấp triệu chứng chính, bối cảnh và câu trả lời lâm sàng để xác định chuyên khoa cần ưu tiên.",
+    icon: FileText,
+    title: "Mang theo hướng dẫn sau khám",
+    text: "Giữ lại đơn thuốc, giấy hẹn và các chỉ dẫn được cơ sở y tế cung cấp.",
   },
   {
-    icon: MapPin,
-    title: "Chọn cơ sở phù hợp",
-    text: "Ưu tiên cơ sở có chuyên khoa liên quan, địa chỉ rõ ràng và thông tin liên hệ sẵn sàng.",
+    icon: HeartPulse,
+    title: "Ghi nhận thay đổi đáng chú ý",
+    text: "Theo dõi thời điểm xuất hiện, mức độ và diễn biến để trao đổi rõ hơn khi tái khám.",
   },
   {
     icon: CalendarCheck,
-    title: "Theo dõi sau khám",
-    text: "Ghi lại lịch tái khám, thuốc đang dùng và thay đổi triệu chứng trong quá trình phục hồi.",
+    title: "Chuẩn bị cho lần tái khám",
+    text: "Ghi lại mốc tái khám và những câu hỏi bạn muốn trao đổi trực tiếp với nhân viên y tế.",
   },
-];
-
-const careItems = [
-  "Hướng dẫn sau khám và mốc tái khám.",
-  "Triệu chứng thay đổi theo từng ngày.",
-  "Thuốc đang dùng, dị ứng và phản ứng bất thường.",
-  "Câu hỏi cần chuẩn bị cho lần gặp tiếp theo.",
 ];
 
 export default function RecoveryPlanPage() {
   return (
-    <main className="recovery-plan-page">
+    <div className="recovery-plan-page">
       <style>{styles}</style>
 
-      <section className="recovery-hero" aria-labelledby="recovery-plan-title">
-        <div className="recovery-hero-copy">
-          <span className="recovery-mark" aria-hidden="true"><ClipboardCheck size={26} /></span>
-          <p className="recovery-eyebrow">Theo dõi sau phân tích</p>
-          <h1 id="recovery-plan-title">Kế hoạch phục hồi</h1>
-          <p>
-            Gom các việc cần chuẩn bị trước và sau khi đi khám. Bắt đầu bằng phân tích lâm sàng để MediMate có đủ dữ liệu tạo lộ trình theo dõi phù hợp.
+      <section className="recovery-availability" aria-labelledby="recovery-plan-title">
+        <div className="recovery-availability-copy">
+          <div className="recovery-status">
+            <ShieldCheck size={16} aria-hidden="true" />
+            Chưa khả dụng trên MediMate
+          </div>
+          <p className="recovery-eyebrow">Theo dõi sau khám</p>
+          <h1 id="recovery-plan-title">Kế hoạch phục hồi chưa được mở</h1>
+          <p className="recovery-lead">
+            MediMate hiện chưa tạo, lưu hoặc theo dõi kế hoạch phục hồi cá nhân.
+            Kế hoạch chăm sóc cần dựa trên hướng dẫn trực tiếp từ bác sĩ hoặc cơ sở y tế của bạn.
           </p>
 
-          <div className="recovery-actions">
+          <div className="recovery-actions" aria-label="Hành động hiện có">
             <Button type="button" onClick={() => navigate("/symptom")}>
-              <Stethoscope size={18} /> Mở phân tích lâm sàng
+              <Stethoscope size={18} aria-hidden="true" />
+              Phân tích triệu chứng
             </Button>
             <Button type="button" tone="secondary" onClick={() => navigate("/map")}>
-              <MapPin size={18} /> Tìm cơ sở y tế
+              <MapPin size={18} aria-hidden="true" />
+              Tìm cơ sở y tế
             </Button>
           </div>
+
+          <p className="recovery-boundary">
+            Trang này không yêu cầu và không lưu thông tin sức khỏe của bạn.
+          </p>
         </div>
 
-        <aside className="recovery-summary" aria-label="Trạng thái kế hoạch phục hồi">
-          <span><HeartPulse size={22} /></span>
+        <aside className="recovery-now" aria-labelledby="recovery-now-title">
+          <span className="recovery-now-icon" aria-hidden="true">
+            <ClipboardCheck size={24} />
+          </span>
           <div>
-            <small>Trạng thái</small>
-            <strong>Chưa có kế hoạch cá nhân hóa</strong>
-            <p>Hoàn thành phân tích lâm sàng hoặc lưu kết quả khám để bắt đầu theo dõi.</p>
+            <p className="recovery-eyebrow">Bạn có thể làm ngay</p>
+            <h2 id="recovery-now-title">Chuẩn bị bước tiếp theo</h2>
           </div>
-          <dl className="recovery-metrics">
-            <div><dt>Dữ liệu</dt><dd>Đang chờ</dd></div>
-            <div><dt>Theo dõi</dt><dd>3 bước</dd></div>
-          </dl>
+          <ul>
+            <li>
+              <span>01</span>
+              <p>Làm rõ triệu chứng trước khi chọn chuyên khoa.</p>
+            </li>
+            <li>
+              <span>02</span>
+              <p>Tìm cơ sở y tế đang có trên hệ thống.</p>
+            </li>
+            <li>
+              <span>03</span>
+              <p>Làm theo kế hoạch được nhân viên y tế hướng dẫn sau khi khám.</p>
+            </li>
+          </ul>
         </aside>
       </section>
 
-      <section className="recovery-timeline" aria-label="Lộ trình phục hồi">
-        {recoverySteps.map((step, index) => {
-          const Icon = step.icon;
-          return (
-            <article key={step.title} className="recovery-step">
-              <span aria-hidden="true"><Icon size={20} /></span>
-              <div>
-                <small>Bước {index + 1}</small>
-                <h2>{step.title}</h2>
-                <p>{step.text}</p>
-              </div>
-            </article>
-          );
-        })}
+      <section className="recovery-preparation" aria-labelledby="recovery-preparation-title">
+        <header>
+          <p className="recovery-eyebrow">Trước lần tái khám</p>
+          <h2 id="recovery-preparation-title">Những thông tin nên chuẩn bị</h2>
+          <p>
+            Đây là gợi ý chuẩn bị chung, không phải kế hoạch điều trị và không thay thế
+            hướng dẫn từ người có chuyên môn.
+          </p>
+        </header>
+
+        <div className="recovery-preparation-list">
+          {preparationItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <article key={item.title}>
+                <span aria-hidden="true"><Icon size={20} /></span>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
 
-      <section className="recovery-followup" aria-label="Theo dõi cần chuẩn bị">
+      <section className="recovery-care-note" aria-labelledby="recovery-care-note-title">
+        <span aria-hidden="true"><HeartPulse size={22} /></span>
         <div>
-          <p className="recovery-eyebrow">Checklist</p>
-          <h2>Thông tin nên ghi lại</h2>
-          <p>Những mục này giúp lần tái khám và theo dõi sau khám rõ ràng hơn.</p>
+          <p className="recovery-eyebrow">Khi cần hỗ trợ</p>
+          <h2 id="recovery-care-note-title">Ưu tiên hướng dẫn từ cơ sở y tế</h2>
+          <p>
+            Nếu tình trạng thay đổi hoặc bạn lo lắng về dấu hiệu đang gặp, hãy liên hệ
+            cơ sở y tế phù hợp. Trong tình huống khẩn cấp, hãy tìm trợ giúp y tế ngay.
+          </p>
         </div>
-        <ul>
-          {careItems.map((item) => (
-            <li key={item}>
-              <ClipboardCheck size={18} aria-hidden="true" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="recovery-note">
-          <TimerReset size={20} aria-hidden="true" />
-          <p>Khi có dữ liệu từ phân tích lâm sàng hoặc kết quả khám, phần này có thể chuyển thành kế hoạch theo ngày.</p>
-        </div>
+        <button type="button" onClick={() => navigate("/map")}>
+          Xem cơ sở y tế
+          <ArrowRight size={17} aria-hidden="true" />
+        </button>
       </section>
-    </main>
+    </div>
   );
 }
 
 const styles = `
 .recovery-plan-page {
-  min-height: calc(100svh - 112px);
+  --recovery-navy: #0c2d35;
+  --recovery-teal: #087f78;
+  --recovery-teal-dark: #05665f;
+  --recovery-mint: #eaf6f1;
+  --recovery-mint-strong: #d7eee5;
+  --recovery-paper: #ffffff;
+  --recovery-soft: #f6faf8;
+  --recovery-line: #d5e3dd;
+  --recovery-muted: #5f706a;
   display: grid;
-  align-content: start;
-  gap: 16px;
-  padding: clamp(16px, 3vw, 30px);
-  background: linear-gradient(180deg, #f8fbf4, #eef5e9);
-}
-
-.recovery-hero,
-.recovery-followup,
-.recovery-step {
-  border: 1px solid rgba(16, 20, 17, .14);
-  background: rgba(255, 255, 255, .88);
-  box-shadow: 0 18px 42px rgba(16, 20, 17, .07);
-}
-
-.recovery-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: clamp(18px, 4vw, 34px);
-  border-radius: 22px;
-  padding: clamp(22px, 4vw, 38px);
-}
-
-.recovery-hero-copy,
-.recovery-summary,
-.recovery-step,
-.recovery-followup {
-  min-width: 0;
-}
-
-.recovery-hero-copy {
-  display: grid;
-  align-content: center;
-  gap: 14px;
-}
-
-.recovery-mark,
-.recovery-step > span,
-.recovery-summary > span {
-  display: grid;
-  place-items: center;
-  border: 1.5px solid #111412;
-  background: #c4e995;
-  color: #111412;
-}
-
-.recovery-mark {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  box-shadow: 4px 4px 0 #111412;
-}
-
-.recovery-eyebrow {
-  margin: 0;
-  color: #315d18;
-  font-size: 12px;
-  font-weight: 950;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  gap: 18px;
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  color: var(--recovery-navy);
 }
 
 .recovery-plan-page h1,
 .recovery-plan-page h2,
-.recovery-plan-page p,
-.recovery-plan-page dl {
+.recovery-plan-page h3,
+.recovery-plan-page p {
   margin: 0;
 }
 
-.recovery-plan-page h1 {
-  max-width: 680px;
-  font-size: clamp(34px, 5vw, 56px);
-  line-height: 1.03;
-  letter-spacing: 0;
+.recovery-availability,
+.recovery-preparation,
+.recovery-care-note {
+  border: 1px solid var(--recovery-line);
+  background: var(--recovery-paper);
 }
 
-.recovery-hero-copy > p:not(.recovery-eyebrow),
-.recovery-followup > div > p:not(.recovery-eyebrow),
-.recovery-summary p,
-.recovery-step p,
-.recovery-note p {
-  color: rgba(17, 20, 18, .64);
-  line-height: 1.62;
+.recovery-availability {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, .7fr);
+  overflow: hidden;
+  border-radius: 24px;
+  box-shadow: 0 22px 60px rgba(12, 45, 53, .08);
+}
+
+.recovery-availability-copy {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 15px;
+  min-height: 470px;
+  padding: clamp(28px, 5vw, 58px);
+  background:
+    radial-gradient(circle at 0 0, rgba(8, 127, 120, .1), transparent 31%),
+    linear-gradient(145deg, #fff 0%, #f3faf7 100%);
+}
+
+.recovery-availability-copy::after {
+  position: absolute;
+  right: -92px;
+  bottom: -118px;
+  width: 260px;
+  height: 260px;
+  border: 34px solid rgba(8, 127, 120, .045);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.recovery-status {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 7px;
+  border: 1px solid #b8d8cc;
+  border-radius: 999px;
+  background: #f8fcfa;
+  color: var(--recovery-teal-dark);
+  padding: 7px 11px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .035em;
+}
+
+.recovery-eyebrow {
+  color: var(--recovery-teal-dark);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.recovery-availability h1 {
+  position: relative;
+  z-index: 1;
+  max-width: 650px;
+  font-size: clamp(38px, 5vw, 62px);
+  line-height: 1.01;
+  letter-spacing: -.045em;
+}
+
+.recovery-lead {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  color: var(--recovery-muted);
+  font-size: 16px;
+  line-height: 1.7;
 }
 
 .recovery-actions {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  padding-top: 8px;
+  padding-top: 5px;
 }
 
-.recovery-summary {
-  display: grid;
-  align-content: space-between;
-  gap: 16px;
-  border: 1px solid rgba(16, 20, 17, .14);
-  border-radius: 18px;
-  background: #f4faed;
-  padding: 20px;
-}
-
-.recovery-summary > span {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-}
-
-.recovery-summary strong {
-  display: block;
-  margin-top: 6px;
-  font-size: 22px;
-  line-height: 1.2;
-}
-
-.recovery-summary small,
-.recovery-step small,
-.recovery-metrics dt {
-  color: rgba(17, 20, 18, .54);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.recovery-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.recovery-metrics div {
-  border: 1px solid rgba(16, 20, 17, .12);
-  border-radius: 12px;
-  background: #fff;
-  padding: 12px;
-}
-
-.recovery-metrics dd {
-  margin: 4px 0 0;
-  color: #111412;
-  font-weight: 950;
-}
-
-.recovery-timeline {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.recovery-step {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 14px;
-  border-radius: 18px;
-  padding: 18px;
-}
-
-.recovery-step > span {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  background: #e4f4f2;
-  border-color: rgba(8, 127, 140, .28);
-  color: #075d66;
-}
-
-.recovery-step h2,
-.recovery-followup h2 {
-  margin-top: 4px;
-  font-size: 20px;
-  line-height: 1.25;
-}
-
-.recovery-followup {
-  display: grid;
-  grid-template-columns: minmax(230px, .75fr) minmax(0, 1fr) minmax(220px, .75fr);
-  gap: 18px;
+.recovery-boundary {
+  position: relative;
+  z-index: 1;
+  display: flex;
   align-items: center;
-  border-radius: 20px;
-  padding: clamp(18px, 3vw, 26px);
+  gap: 7px;
+  color: #64736e;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.recovery-followup ul {
+.recovery-boundary::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--recovery-teal);
+  content: "";
+}
+
+.recovery-now {
   display: grid;
-  gap: 10px;
+  align-content: center;
+  gap: 18px;
+  border-left: 1px solid var(--recovery-line);
+  background: #fbfdfc;
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.recovery-now-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid #b9dbce;
+  border-radius: 16px;
+  background: var(--recovery-mint);
+  color: var(--recovery-teal-dark);
+}
+
+.recovery-now h2 {
+  margin-top: 5px;
+  font-size: 25px;
+  letter-spacing: -.025em;
+}
+
+.recovery-now ul {
+  display: grid;
+  gap: 0;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.recovery-followup li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: rgba(17, 20, 18, .78);
-  font-weight: 760;
-}
-
-.recovery-followup li svg {
-  flex: 0 0 auto;
-  color: #315d18;
-}
-
-.recovery-note {
-  display: flex;
+.recovery-now li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
   gap: 12px;
-  align-items: flex-start;
-  border-radius: 16px;
-  background: #f4faed;
-  padding: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--recovery-line);
 }
 
-.recovery-note svg {
-  flex: 0 0 auto;
-  color: #075d66;
+.recovery-now li span {
+  color: var(--recovery-teal-dark);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .08em;
 }
 
-@media (max-width: 980px) {
-  .recovery-hero,
-  .recovery-followup,
-  .recovery-timeline {
+.recovery-now li p {
+  color: #40534d;
+  font-size: 13px;
+  font-weight: 720;
+  line-height: 1.55;
+}
+
+.recovery-preparation {
+  display: grid;
+  grid-template-columns: minmax(240px, .75fr) minmax(0, 1.5fr);
+  gap: clamp(24px, 4vw, 44px);
+  border-radius: 22px;
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.recovery-preparation > header {
+  align-self: start;
+}
+
+.recovery-preparation h2,
+.recovery-care-note h2 {
+  margin-top: 7px;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.12;
+  letter-spacing: -.03em;
+}
+
+.recovery-preparation > header > p:last-child,
+.recovery-preparation article p,
+.recovery-care-note > div > p:last-child {
+  color: var(--recovery-muted);
+  line-height: 1.65;
+}
+
+.recovery-preparation > header > p:last-child {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.recovery-preparation-list {
+  display: grid;
+  gap: 0;
+}
+
+.recovery-preparation article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 15px;
+  padding: 17px 0;
+  border-top: 1px solid var(--recovery-line);
+}
+
+.recovery-preparation article:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.recovery-preparation article:last-child {
+  padding-bottom: 0;
+}
+
+.recovery-preparation article > span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--recovery-mint);
+  color: var(--recovery-teal-dark);
+}
+
+.recovery-preparation h3 {
+  margin-bottom: 5px;
+  font-size: 15px;
+}
+
+.recovery-preparation article p {
+  font-size: 13px;
+}
+
+.recovery-care-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 17px;
+  border-radius: 20px;
+  background: var(--recovery-navy);
+  color: #fff;
+  padding: clamp(20px, 3vw, 28px);
+}
+
+.recovery-care-note > span {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .08);
+  color: #a9ddd2;
+}
+
+.recovery-care-note .recovery-eyebrow {
+  color: #a9ddd2;
+}
+
+.recovery-care-note h2 {
+  color: #fff;
+  font-size: 22px;
+}
+
+.recovery-care-note > div > p:last-child {
+  max-width: 720px;
+  margin-top: 7px;
+  color: rgba(255, 255, 255, .72);
+  font-size: 13px;
+}
+
+.recovery-care-note button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: 11px;
+  background: transparent;
+  color: #fff;
+  padding: 0 15px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.recovery-care-note button:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
+
+.recovery-plan-page button:focus-visible {
+  outline: 3px solid #53b9af;
+  outline-offset: 3px;
+}
+
+@media (max-width: 920px) {
+  .recovery-availability,
+  .recovery-preparation {
     grid-template-columns: 1fr;
+  }
+
+  .recovery-availability-copy {
+    min-height: auto;
+  }
+
+  .recovery-now {
+    border-top: 1px solid var(--recovery-line);
+    border-left: 0;
   }
 }
 
 @media (max-width: 640px) {
   .recovery-plan-page {
-    padding: 14px;
+    gap: 12px;
+  }
+
+  .recovery-availability,
+  .recovery-preparation,
+  .recovery-care-note {
+    border-radius: 18px;
+  }
+
+  .recovery-availability-copy,
+  .recovery-now,
+  .recovery-preparation {
+    padding: 21px;
+  }
+
+  .recovery-availability h1 {
+    font-size: clamp(34px, 12vw, 46px);
   }
 
   .recovery-actions,
@@ -341,10 +503,58 @@ const styles = `
     width: 100%;
   }
 
-  .recovery-hero,
-  .recovery-followup,
-  .recovery-step {
-    border-radius: 16px;
+  .recovery-care-note {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .recovery-care-note button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .recovery-availability-copy,
+  .recovery-now,
+  .recovery-preparation {
+    padding: 18px;
+  }
+
+  .recovery-care-note {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recovery-plan-page *,
+  .recovery-plan-page *::before,
+  .recovery-plan-page *::after {
+    scroll-behavior: auto;
+  }
+}
+
+@media (forced-colors: active) {
+  .recovery-availability,
+  .recovery-preparation,
+  .recovery-care-note,
+  .recovery-now,
+  .recovery-availability-copy,
+  .recovery-status,
+  .recovery-now-icon,
+  .recovery-preparation article > span {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .recovery-care-note h2,
+  .recovery-care-note .recovery-eyebrow,
+  .recovery-care-note > div > p:last-child {
+    color: CanvasText;
+  }
+
+  .recovery-availability-copy::after {
+    display: none;
   }
 }
 `;
