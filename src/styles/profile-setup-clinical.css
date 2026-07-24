@@ -1,0 +1,388 @@
+.profile-setup-clinical {
+  --profile-navy: #12343b;
+  --profile-navy-deep: #0c2830;
+  --profile-teal: #147d78;
+  --profile-teal-dark: #0f625e;
+  --profile-mint: #e8f5f1;
+  --profile-canvas: #f6faf8;
+  --profile-paper: #ffffff;
+  --profile-text: #173238;
+  --profile-muted: #607278;
+  --profile-line: #d8e5e0;
+  background:
+    radial-gradient(circle at 8% 16%, rgba(20, 125, 120, 0.08), transparent 26%),
+    radial-gradient(circle at 92% 86%, rgba(213, 236, 229, 0.68), transparent 25%),
+    var(--profile-canvas);
+  color: var(--profile-text);
+}
+
+.profile-setup-clinical .profile-setup-page {
+  background: transparent;
+  padding: clamp(28px, 5vw, 64px) 0;
+}
+
+.profile-setup-clinical .profile-setup-shell {
+  width: min(1180px, calc(100% - 40px));
+  grid-template-columns: minmax(330px, 0.78fr) minmax(560px, 1.22fr);
+  gap: 24px;
+}
+
+.profile-setup-clinical .profile-setup-intro,
+.profile-setup-clinical .profile-setup-form {
+  border: 1px solid var(--profile-line);
+  border-radius: 22px;
+  background: var(--profile-paper);
+  box-shadow: 0 24px 68px rgba(18, 52, 59, 0.09);
+}
+
+.profile-setup-clinical .profile-setup-intro {
+  top: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 95% 5%, rgba(255, 255, 255, 0.9), transparent 34%),
+    linear-gradient(155deg, #edf8f5 0%, var(--profile-mint) 100%);
+  padding: clamp(30px, 4vw, 42px);
+}
+
+.profile-setup-clinical .profile-setup-intro::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--profile-teal);
+  content: "";
+}
+
+.profile-setup-clinical .profile-setup-intro .brand {
+  color: var(--profile-navy);
+}
+
+.profile-setup-clinical .profile-setup-intro .brand-mark {
+  overflow: hidden;
+  border: 1px solid #a9cfc7;
+  background: #fff;
+  box-shadow: none;
+}
+
+.profile-setup-clinical .profile-setup-intro .brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.profile-setup-clinical .eyebrow {
+  color: var(--profile-teal-dark);
+}
+
+.profile-setup-clinical .eyebrow::before {
+  background: var(--profile-teal);
+}
+
+.profile-setup-clinical .profile-setup-intro h1 {
+  color: var(--profile-navy-deep);
+  font-family: var(--font-display, var(--display));
+  font-size: clamp(40px, 4.5vw, 54px);
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.profile-setup-clinical .profile-setup-intro p:not(.eyebrow) {
+  color: var(--profile-muted);
+  font-size: 15px;
+}
+
+.profile-setup-clinical .profile-setup-privacy-note {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border-block: 1px solid #c9ddd7;
+  padding: 16px 0;
+}
+
+.profile-setup-clinical .profile-setup-privacy-note > svg {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--profile-teal);
+  padding: 10px;
+}
+
+.profile-setup-clinical .profile-setup-privacy-note div {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-setup-clinical .profile-setup-privacy-note strong {
+  color: var(--profile-navy);
+  font-size: 13px;
+}
+
+.profile-setup-clinical .profile-setup-privacy-note span {
+  color: var(--profile-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.profile-setup-clinical .profile-setup-progress {
+  border-color: #c7ddd7;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.profile-setup-clinical .profile-setup-progress strong {
+  color: var(--profile-teal-dark);
+}
+
+.profile-setup-clinical .profile-progress-bar {
+  background: #dfeae6;
+}
+
+.profile-setup-clinical .profile-progress-bar span {
+  background: var(--profile-teal);
+}
+
+.profile-setup-clinical .profile-setup-form {
+  gap: 16px;
+  padding: clamp(28px, 3.5vw, 42px);
+}
+
+.profile-setup-clinical .profile-setup-heading {
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.profile-setup-clinical .profile-setup-heading h2 {
+  color: var(--profile-navy-deep);
+  font-family: var(--font-display, var(--display));
+  font-size: clamp(34px, 3.6vw, 44px);
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+.profile-setup-clinical .profile-setup-heading > div > p:not(.eyebrow) {
+  max-width: 520px;
+  margin: 10px 0 0;
+  color: var(--profile-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.profile-setup-clinical .soft-badge {
+  background: var(--profile-mint);
+  color: var(--profile-teal-dark);
+}
+
+.profile-setup-clinical .profile-form-section {
+  min-width: 0;
+  gap: 14px;
+  margin: 0;
+  border-color: var(--profile-line);
+  border-radius: 15px;
+  background: #fbfdfc;
+  padding: 18px;
+}
+
+.profile-setup-clinical .profile-section-title {
+  width: calc(100% - 8px);
+  align-items: center;
+  padding: 0 8px;
+}
+
+.profile-setup-clinical .profile-section-title span {
+  color: var(--profile-navy);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.profile-setup-clinical .profile-section-title strong {
+  background: var(--profile-mint);
+  color: var(--profile-teal-dark);
+}
+
+.profile-setup-clinical .profile-setup-field {
+  color: var(--profile-navy);
+}
+
+.profile-setup-clinical .profile-setup-field :is(input, select, textarea) {
+  border-color: #bdcec9;
+  border-radius: 11px;
+  background: #fff;
+  color: var(--profile-text);
+}
+
+.profile-setup-clinical .profile-setup-field :is(input, select, textarea):focus {
+  border-color: var(--profile-teal);
+  box-shadow: 0 0 0 4px rgba(20, 125, 120, 0.14);
+}
+
+.profile-setup-clinical .profile-setup-disease-section {
+  background: #f7fbf9;
+}
+
+.profile-setup-clinical .profile-setup-disease-card {
+  border-color: var(--profile-line);
+  background: #fff;
+  box-shadow: none;
+}
+
+.profile-setup-clinical .profile-setup-add-disease {
+  border: 1px solid #9bc9bf;
+  background: var(--profile-mint);
+  color: var(--profile-teal-dark);
+  box-shadow: none;
+}
+
+.profile-setup-clinical .profile-setup-remove-disease {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.profile-setup-clinical .profile-setup-actions {
+  border-color: var(--profile-line);
+  padding-top: 16px;
+}
+
+.profile-setup-clinical .profile-setup-actions .btn-primary {
+  min-height: 52px;
+  border: 1px solid var(--profile-navy-deep);
+  border-radius: 11px;
+  background: var(--profile-navy-deep);
+  color: #fff;
+  box-shadow: none;
+}
+
+.profile-setup-clinical :is(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid #d99b28;
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] .profile-setup-clinical {
+  --profile-navy: #e5f4f0;
+  --profile-navy-deep: #f3faf8;
+  --profile-teal: #79d5ca;
+  --profile-teal-dark: #a4e5dc;
+  --profile-mint: #142b2b;
+  --profile-canvas: #0e181b;
+  --profile-paper: #16272b;
+  --profile-text: #ecf6f3;
+  --profile-muted: #b9cbc7;
+  --profile-line: #3d5652;
+}
+
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-intro {
+  background:
+    radial-gradient(circle at 95% 5%, rgba(121, 213, 202, 0.07), transparent 34%),
+    #142b2b;
+}
+
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-intro .brand-mark,
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-privacy-note > svg,
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-progress {
+  border-color: var(--profile-line);
+  background: #1c3738;
+}
+
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-privacy-note {
+  border-color: var(--profile-line);
+}
+
+html[data-theme="dark"] .profile-setup-clinical .profile-progress-bar {
+  background: #284441;
+}
+
+html[data-theme="dark"] .profile-setup-clinical .profile-form-section,
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-disease-section,
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-disease-card,
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-field :is(input, select, textarea) {
+  border-color: var(--profile-line);
+  background: var(--profile-paper);
+  color: var(--profile-text);
+}
+
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-add-disease {
+  border-color: var(--profile-line);
+  background: #1a3033;
+  color: var(--profile-teal-dark);
+}
+
+html[data-theme="dark"] .profile-setup-clinical .profile-setup-actions .btn-primary {
+  border-color: #79d5ca;
+  background: #79d5ca;
+  color: #0e181b;
+}
+
+@media (max-width: 920px) {
+  .profile-setup-clinical .profile-setup-shell {
+    width: min(720px, calc(100% - 32px));
+    grid-template-columns: 1fr;
+  }
+
+  .profile-setup-clinical .profile-setup-intro {
+    position: relative;
+    top: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-setup-clinical .profile-setup-page {
+    padding: 16px 0 36px;
+  }
+
+  .profile-setup-clinical .profile-setup-shell {
+    width: calc(100% - 24px);
+  }
+
+  .profile-setup-clinical .profile-setup-intro {
+    display: none;
+  }
+
+  .profile-setup-clinical .profile-setup-form {
+    border-radius: 17px;
+    padding: 24px 18px;
+  }
+
+  .profile-setup-clinical .profile-form-section {
+    padding: 16px 14px;
+  }
+
+  .profile-setup-clinical .profile-section-title {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-setup-clinical .profile-progress-bar span {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .profile-setup-clinical .profile-setup-intro,
+  .profile-setup-clinical .profile-setup-form,
+  .profile-setup-clinical .profile-form-section,
+  .profile-setup-clinical .profile-setup-privacy-note,
+  .profile-setup-clinical .profile-setup-progress,
+  .profile-setup-clinical .profile-setup-disease-card,
+  .profile-setup-clinical .profile-setup-add-disease,
+  .profile-setup-clinical .profile-setup-actions .btn-primary {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+
+  .profile-setup-clinical .profile-progress-bar {
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+
+  .profile-setup-clinical .profile-progress-bar span {
+    background: Highlight;
+  }
+}

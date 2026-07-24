@@ -1,5 +1,5 @@
 import { cloneElement, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
@@ -12,6 +12,7 @@ import {
   validatePersonalProfile,
 } from "../utils/profileValidation";
 import { getWorkspacePath } from "../utils/roles";
+import "../styles/profile-setup-clinical.css";
 
 const BLOOD_TYPES = ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -337,27 +338,43 @@ export default function PersonalPatientProfilePage() {
   }
 
   return (
-    <main className="workspace-root profile-setup-root">
+    <main className="workspace-root profile-setup-root profile-setup-clinical">
       <section className="profile-setup-page">
         <div className="container profile-setup-shell">
           <aside className="profile-setup-intro">
             <a className="brand" href="/">
-              <span className="brand-mark">+</span>
+              <span className="brand-mark" aria-hidden="true">
+                <img src="/logo.svg" alt="" width="36" height="36" />
+              </span>
               <span>MediMate AI</span>
             </a>
             <div>
-              <p className="eyebrow">First login</p>
-              <h1>Hoàn thiện hồ sơ sức khỏe</h1>
+              <p className="eyebrow">Thiết lập hồ sơ</p>
+              <h1>Hoàn thiện hồ sơ sức khỏe.</h1>
               <p>
-                Những thông tin này giúp MediMate cá nhân hóa tư vấn triệu chứng, gợi ý chuyên khoa và chuẩn bị dữ liệu nền trước khi bạn đi khám.
+                Chỉ nhập những thông tin bạn biết chính xác. Bạn có thể xem lại và cập nhật hồ sơ trong không gian cá nhân.
               </p>
+            </div>
+            <div className="profile-setup-privacy-note">
+              <ShieldCheck size={20} aria-hidden="true" />
+              <div>
+                <strong>Dữ liệu sức khỏe nhạy cảm</strong>
+                <span>Thông tin được dùng cho hồ sơ và các tính năng bạn chủ động sử dụng.</span>
+              </div>
             </div>
             <div className="profile-setup-progress">
               <div>
                 <span>Tiến độ hồ sơ</span>
                 <strong>{progress}%</strong>
               </div>
-              <div className="profile-progress-bar">
+              <div
+                className="profile-progress-bar"
+                role="progressbar"
+                aria-label="Tiến độ hoàn thiện hồ sơ"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={progress}
+              >
                 <span style={{ width: `${progress}%` }} />
               </div>
             </div>
@@ -366,66 +383,67 @@ export default function PersonalPatientProfilePage() {
           <form className="profile-setup-form" onSubmit={handleSubmit} noValidate>
             <div className="profile-setup-heading">
               <div>
-                <p className="eyebrow">Bệnh nhân</p>
-                <h2>Thông tin cá nhân</h2>
+                <p className="eyebrow">Hồ sơ lần đầu</p>
+                <h2>Thông tin của bạn</h2>
+                <p>Hoàn thành các mục bắt buộc trước khi lưu hồ sơ.</p>
               </div>
-              <span className="soft-badge">{loading ? "Đang tải" : "Bước 1/1"}</span>
+              <span className="soft-badge">{loading ? "Đang tải" : "Thiết lập ban đầu"}</span>
             </div>
 
             <ApiMessage message={message} />
             <ErrorSummary errors={errors} summaryRef={errorSummaryRef} />
 
-            <section className="profile-form-section">
-              <div className="profile-section-title">
+            <fieldset className="profile-form-section">
+              <legend className="profile-section-title">
                 <span>Thông tin liên hệ</span>
                 <strong>Bắt buộc</strong>
-              </div>
+              </legend>
               <div className="form-two-cols">
                 <Field id="patient-profile-displayName" label="Họ và tên" error={errors.displayName} required>
-                  <input value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
+                  <input name="displayName" autoComplete="name" value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field id="patient-profile-dateOfBirth" label="Ngày sinh" error={errors.dateOfBirth} required>
-                  <input type="date" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
+                  <input name="dateOfBirth" type="date" autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field id="patient-profile-gender" label="Giới tính" error={errors.gender} required>
-                  <select value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>
+                  <select name="gender" autoComplete="sex" value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>
                     <option value="1">Nam</option>
                     <option value="2">Nữ</option>
                   </select>
                 </Field>
                 <Field id="patient-profile-phoneNumber" label="Số điện thoại" error={errors.phoneNumber} required>
-                  <input type="tel" inputMode="tel" autoComplete="tel" value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} disabled={loading || submitting} />
+                  <input name="phoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} disabled={loading || submitting} />
                 </Field>
               </div>
               <Field id="patient-profile-address" label="Địa chỉ" error={errors.address} required>
-                <input autoComplete="street-address" value={form.address} onChange={(event) => updateField("address", event.target.value)} disabled={loading || submitting} />
+                <input name="address" autoComplete="street-address" value={form.address} onChange={(event) => updateField("address", event.target.value)} disabled={loading || submitting} />
               </Field>
-            </section>
+            </fieldset>
 
-            <section className="profile-form-section">
-              <div className="profile-section-title">
+            <fieldset className="profile-form-section">
+              <legend className="profile-section-title">
                 <span>Thông tin sức khỏe</span>
-                <strong>Nền tảng tư vấn</strong>
-              </div>
+                <strong>Chỉ nhập khi biết rõ</strong>
+              </legend>
               <div className="form-three-cols">
                 <Field id="patient-profile-bloodType" label="Nhóm máu">
-                  <select value={form.bloodType} onChange={(event) => updateField("bloodType", event.target.value)} disabled={loading || submitting}>
+                  <select name="bloodType" value={form.bloodType} onChange={(event) => updateField("bloodType", event.target.value)} disabled={loading || submitting}>
                     {BLOOD_TYPES.map((type) => (
                       <option key={type || "empty"} value={type}>{type || "Chưa rõ"}</option>
                     ))}
                   </select>
                 </Field>
                 <Field id="patient-profile-height" label="Chiều cao (cm)" error={errors.height}>
-                  <input type="number" min="40" max="250" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
+                  <input name="height" type="number" min="40" max="250" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field id="patient-profile-weight" label="Cân nặng (kg)" error={errors.weight}>
-                  <input type="number" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
+                  <input name="weight" type="number" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
                 </Field>
               </div>
               <Field id="patient-profile-allergyNote" label="Dị ứng" error={errors.allergyNote}>
-                <textarea rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
+                <textarea name="allergyNote" rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
               </Field>
-            </section>
+            </fieldset>
 
             <section className="profile-form-section profile-setup-disease-section" aria-labelledby="profile-setup-disease-title">
               <div className="profile-setup-disease-heading">
@@ -463,6 +481,7 @@ export default function PersonalPatientProfilePage() {
                           error={errors[`chronicDiseases.${index}.diseaseName`]}
                         >
                           <input
+                            name={`chronicDiseases[${index}].diseaseName`}
                             maxLength={160}
                             value={disease.diseaseName}
                             onChange={(event) => updateDisease(index, "diseaseName", event.target.value)}
@@ -475,14 +494,14 @@ export default function PersonalPatientProfilePage() {
                           label="Từ ngày"
                           error={errors[`chronicDiseases.${index}.from`]}
                         >
-                          <input type="date" value={disease.from} onChange={(event) => updateDisease(index, "from", event.target.value)} disabled={loading || submitting} />
+                          <input name={`chronicDiseases[${index}].from`} type="date" value={disease.from} onChange={(event) => updateDisease(index, "from", event.target.value)} disabled={loading || submitting} />
                         </Field>
                         <Field
                           id={`patient-profile-disease-${index}-to`}
                           label="Đến ngày"
                           error={errors[`chronicDiseases.${index}.to`]}
                         >
-                          <input type="date" value={disease.to} onChange={(event) => updateDisease(index, "to", event.target.value)} disabled={loading || submitting} />
+                          <input name={`chronicDiseases[${index}].to`} type="date" value={disease.to} onChange={(event) => updateDisease(index, "to", event.target.value)} disabled={loading || submitting} />
                         </Field>
                         <Field
                           id={`patient-profile-disease-${index}-note`}
@@ -490,6 +509,7 @@ export default function PersonalPatientProfilePage() {
                           error={errors[`chronicDiseases.${index}.note`]}
                         >
                           <textarea
+                            name={`chronicDiseases[${index}].note`}
                             rows={3}
                             maxLength={1000}
                             value={disease.note}

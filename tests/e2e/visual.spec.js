@@ -7,6 +7,11 @@ import { openRoute, preparePage } from "./helpers.js";
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const visualStyles = path.join(currentDirectory, "visual-stabilize.css");
 const LANDING_MAP_STYLE = { version: 8, name: "Landing visual map", sources: {}, layers: [] };
+const PROFILE_SETUP_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
+  "",
+].join(".");
 
 test.describe("visual baseline", () => {
   for (const route of VISUAL_ROUTES) {
@@ -14,6 +19,45 @@ test.describe("visual baseline", () => {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
+        if (route.name === "profile-setup") {
+          await page.addInitScript((accessToken) => {
+            localStorage.setItem("medimate.auth", JSON.stringify({
+              accessToken,
+              userId: "55555555-5555-4555-8555-555555555555",
+              roles: ["Patient"],
+              firstLogin: true,
+              isProfileCompleted: false,
+            }));
+          }, PROFILE_SETUP_TOKEN);
+          await page.route("**/api/users/me", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: {
+                id: "55555555-5555-4555-8555-555555555555",
+                displayName: "Nguyễn Minh",
+                address: "",
+                gender: 1,
+                dateOfBirth: null,
+                isFirstLogin: true,
+                isProfileCompleted: false,
+              },
+            }),
+          }));
+          await page.route("**/api/patient-profiles**", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: {
+                items: [],
+                pageNumber: 1,
+                pageSize: 100,
+                totalCount: 0,
+                totalPages: 0,
+              },
+            }),
+          }));
+        }
         if (route.name === "landing") {
           await page.route("**/api/medical-facilities/active", (request) => request.fulfill({
             contentType: "application/json",
@@ -86,6 +130,10 @@ test.describe("visual baseline", () => {
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");
           await expect(page.getByLabel("Cơ sở y tế - khoa")).toBeEnabled();
+        }
+        if (route.name === "profile-setup") {
+          await expect(page.locator("#patient-profile-displayName")).toHaveValue("Nguyễn Minh");
+          await expect(page.getByRole("button", { name: "Hoàn tất hồ sơ" })).toBeEnabled();
         }
         const routeLoading = page.locator("[data-route-loading]");
         if (await routeLoading.count()) {

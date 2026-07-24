@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { preparePage } from "./helpers";
 
@@ -6,6 +7,61 @@ const ACCESS_TOKEN = [
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
   "",
 ].join(".");
+
+test("patient profile setup remains accessible at narrow widths", async ({ page }) => {
+  await preparePage(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      userId: "55555555-5555-4555-8555-555555555555",
+      roles: ["Patient"],
+      firstLogin: true,
+      isProfileCompleted: false,
+    }));
+  }, ACCESS_TOKEN);
+
+  await page.route("**/api/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        id: "55555555-5555-4555-8555-555555555555",
+        displayName: "Nguyen Minh",
+        address: "",
+        gender: 1,
+        dateOfBirth: null,
+        isFirstLogin: true,
+        isProfileCompleted: false,
+      },
+    }),
+  }));
+  await page.route("**/api/patient-profiles**", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: { items: [], pageNumber: 1, pageSize: 100, totalCount: 0, totalPages: 0 },
+    }),
+  }));
+
+  await page.goto("/patient/profile/setup", { waitUntil: "domcontentloaded" });
+  const displayName = page.locator("#patient-profile-displayName");
+  await expect(displayName).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const seriousViolations = accessibility.violations
+    .filter((violation) => ["critical", "serious"].includes(violation.impact))
+    .map((violation) => violation.id);
+
+  expect(seriousViolations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await displayName.focus();
+  await expect(displayName).toBeFocused();
+  await expect(displayName).toHaveCSS("outline-width", "3px");
+});
 
 test("patient profile setup validates contact and health values before saving", async ({ page }) => {
   await preparePage(page);
