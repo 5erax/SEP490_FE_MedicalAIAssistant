@@ -527,24 +527,44 @@ test("admin clinical question form sends the Swagger DTO", async ({ page }) => {
       clinicalPayload = route.request().postDataJSON();
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { id: "question-id", ...clinicalPayload } }) });
     }
+    if (url.pathname === "/api/icd-chapters" && method === "GET") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items: [{
+              id: CHAPTER_ID,
+              chapterCode: "A-B",
+              chapterName: "Bệnh truyền nhiễm",
+              keywordWeights: {},
+            }],
+            pageNumber: 1,
+            pageSize: 20,
+            totalCount: 1,
+            totalPages: 1,
+          },
+        }),
+      });
+    }
     const paged = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities", "/api/clinical-questions", "/api/icd-chapters"].includes(url.pathname);
     return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: paged ? { items: [], pageNumber: 1, pageSize: 20, totalCount: 0, totalPages: 1 } : [] }) });
   });
 
   await page.goto("/app/admin/clinical-questions", { waitUntil: "domcontentloaded" });
-  await page.getByLabel("ID chương ICD").fill(CHAPTER_ID);
-  await page.getByLabel("Mã chương ICD").fill("A-B");
-  await page.getByLabel("Câu hỏi tiếng Việt").fill("Bạn có sốt cao không?");
-  await page.getByLabel("Câu hỏi tiếng Anh").fill("Do you have a high fever?");
-  await page.getByLabel("Thứ tự").fill("2");
-  await page.getByRole("button", { name: "Tạo mới", exact: true }).click();
+  await page.getByRole("button", { name: "Tạo câu hỏi", exact: true }).first().click();
+  await page.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER_ID);
+  await page.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có sốt cao không?");
+  await page.getByLabel("Câu hỏi tiếng Anh (bắt buộc)").fill("Do you have a high fever?");
+  await page.getByLabel("Thứ tự (bắt buộc)").fill("2");
+  await page.getByRole("button", { name: "Tạo câu hỏi", exact: true }).last().click();
 
   expect(clinicalPayload).toEqual({
     chapterId: CHAPTER_ID,
-    chapterCode: "A-B",
     questionVi: "Bạn có sốt cao không?",
     englishPrefix: "Do you have a high fever?",
     sortOrder: 2,
+    answers: {},
   });
 });
 

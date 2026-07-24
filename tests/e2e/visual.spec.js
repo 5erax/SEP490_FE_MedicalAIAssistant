@@ -75,7 +75,7 @@ test.describe("visual baseline", () => {
             }),
           }));
         }
-        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities", "admin-departments", "admin-icd-chapters"].includes(route.name)) {
+        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities", "admin-departments", "admin-icd-chapters", "admin-clinical-questions"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -206,7 +206,7 @@ test.describe("visual baseline", () => {
               },
             ]
             : [];
-          const visualAdminIcdChapters = route.name === "admin-icd-chapters"
+          const visualAdminIcdChapters = ["admin-icd-chapters", "admin-clinical-questions"].includes(route.name)
             ? [
               {
                 id: "icd-visual-circulatory",
@@ -225,6 +225,40 @@ test.describe("visual baseline", () => {
                 chapterCode: "XVIII",
                 chapterName: "Triệu chứng, dấu hiệu và phát hiện lâm sàng",
                 keywordWeights: { "mệt mỏi": 4, "chóng mặt": 3, "đau đầu": 3, sốt: 2, "khó chịu": 1 },
+              },
+            ]
+            : [];
+          const visualAdminClinicalQuestions = route.name === "admin-clinical-questions"
+            ? [
+              {
+                id: "clinical-question-visual-01",
+                chapterId: "icd-visual-circulatory",
+                chapterCode: "IX",
+                questionVi: "Bạn có cảm thấy đau ngực hoặc khó thở khi vận động không?",
+                englishPrefix: "Do you experience chest pain or shortness of breath during activity?",
+                sortOrder: 1,
+                answers: { Có: "Yes", Không: "No" },
+                createdAt: "2026-07-21T08:30:00Z",
+              },
+              {
+                id: "clinical-question-visual-02",
+                chapterId: "icd-visual-respiratory",
+                chapterCode: "X",
+                questionVi: "Bạn có ho kéo dài hoặc nghe tiếng khò khè khi thở không?",
+                englishPrefix: "Do you have a persistent cough or wheezing?",
+                sortOrder: 2,
+                answers: { Có: "Yes", Không: "No", "Không chắc": "Not sure" },
+                createdAt: "2026-07-22T09:45:00Z",
+              },
+              {
+                id: "clinical-question-visual-03",
+                chapterId: "icd-visual-symptoms",
+                chapterCode: "XVIII",
+                questionVi: "Triệu chứng hiện tại ảnh hưởng đến sinh hoạt hằng ngày ở mức nào?",
+                englishPrefix: "How much do your current symptoms affect daily activities?",
+                sortOrder: 3,
+                answers: { Nhẹ: "Mild", Vừa: "Moderate", Nặng: "Severe" },
+                createdAt: "2026-07-23T10:15:00Z",
               },
             ]
             : [];
@@ -291,6 +325,21 @@ test.describe("visual baseline", () => {
                     pageNumber: 1,
                     pageSize: 10,
                     totalCount: visualAdminIcdChapters.length,
+                    totalPages: 1,
+                  },
+                }),
+              });
+            }
+            if (pathname === "/api/clinical-questions") {
+              return request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    items: visualAdminClinicalQuestions,
+                    pageNumber: 1,
+                    pageSize: 10,
+                    totalCount: visualAdminClinicalQuestions.length,
                     totalPages: 1,
                   },
                 }),
@@ -484,6 +533,19 @@ test.describe("visual baseline", () => {
             { exact: true },
           )).toBeVisible();
           await expect(page.getByText("Bệnh hệ tuần hoàn", { exact: true })).toBeVisible();
+        }
+        if (route.name === "admin-clinical-questions") {
+          await expect(page.getByRole("heading", {
+            name: "Câu hỏi lâm sàng trong hệ thống",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "3 câu hỏi đang hiển thị",
+            { exact: true },
+          )).toBeVisible();
+          await expect(page.getByText(
+            "Bạn có cảm thấy đau ngực hoặc khó thở khi vận động không?",
+            { exact: true },
+          )).toBeVisible();
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");
