@@ -568,11 +568,11 @@ test("admin ICD form sends keywordWeights instead of unsupported description", a
   });
 
   await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Tạo ICD" }).click();
-  await page.getByLabel("Mã Chapter").fill("A-B");
-  await page.getByLabel("Tên Chapter").fill("Bệnh truyền nhiễm");
+  await page.getByRole("button", { name: "Tạo chương ICD", exact: true }).first().click();
+  await page.getByLabel("Mã chương (bắt buộc)").fill("A-B");
+  await page.getByLabel("Tên chương (bắt buộc)").fill("Bệnh truyền nhiễm");
   await page.getByLabel("Danh sách từ khóa").fill('{"sốt":5,"ho":3}');
-  await page.getByRole("button", { name: "Tạo ICD Chapter", exact: true }).click();
+  await page.getByRole("button", { name: "Tạo chương ICD", exact: true }).last().click();
 
   expect(icdPayload).toEqual({ chapterCode: "A-B", chapterName: "Bệnh truyền nhiễm", keywordWeights: { sốt: 5, ho: 3 } });
 });
@@ -614,10 +614,10 @@ test("admin can update the ICD chapter code", async ({ page }) => {
 
   await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Sửa" }).click();
-  const chapterCodeField = page.getByLabel("Mã Chapter");
+  const chapterCodeField = page.getByLabel("Mã chương (bắt buộc)");
   await expect(chapterCodeField).toBeEditable();
   await chapterCodeField.fill("A-C");
-  await page.getByLabel("Tên Chapter").fill("Bệnh truyền nhiễm cập nhật");
+  await page.getByLabel("Tên chương (bắt buộc)").fill("Bệnh truyền nhiễm cập nhật");
   await page.getByRole("button", { name: "Lưu cập nhật" }).click();
 
   expect(updatePayload).toEqual({

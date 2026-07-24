@@ -1675,12 +1675,15 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       const response = editingIcdChapterId
         ? await icdChaptersApi.update(editingIcdChapterId, payload)
         : await icdChaptersApi.create(payload);
+      const successMessage = response.message
+        || (editingIcdChapterId ? "Đã cập nhật chương ICD." : "Đã tạo chương ICD.");
+      const targetPage = editingIcdChapterId ? icdChapterPageInfo.pageNumber : 1;
+      resetIcdChapterForm();
+      await loadIcdChapters(targetPage, icdChapterPageInfo.pageSize);
       setIcdChapterMessage({
         type: "success",
-        text: response.message || (editingIcdChapterId ? "Đã cập nhật ICD Chapter." : "Đã tạo ICD Chapter."),
+        text: successMessage,
       });
-      resetIcdChapterForm();
-      await loadIcdChapters(editingIcdChapterId ? icdChapterPageInfo.pageNumber : 1, icdChapterPageInfo.pageSize);
     } catch (error) {
       setIcdChapterMessage({ type: "error", text: error.message });
     } finally {
@@ -1706,10 +1709,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     setIcdChapterMessage(null);
     try {
       const response = await icdChaptersApi.remove(id);
-      setIcdChapterMessage({ type: "success", text: response.message || "Đã xóa ICD Chapter." });
-      showToast({ type: "success", title: "Đã xóa ICD Chapter", message: response.message || "Danh mục đã được cập nhật." });
+      const successMessage = response.message || "Đã xóa chương ICD.";
       if (editingIcdChapterId === id) resetIcdChapterForm();
       await loadIcdChapters(icdChapterPageInfo.pageNumber, icdChapterPageInfo.pageSize);
+      setIcdChapterMessage({ type: "success", text: successMessage });
+      showToast({ type: "success", title: "Đã xóa chương ICD", message: response.message || "Danh mục đã được cập nhật." });
     } catch (error) {
       setIcdChapterMessage({ type: "error", text: error.message });
     }

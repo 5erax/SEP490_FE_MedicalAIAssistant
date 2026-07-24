@@ -75,7 +75,7 @@ test.describe("visual baseline", () => {
             }),
           }));
         }
-        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities", "admin-departments"].includes(route.name)) {
+        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities", "admin-departments", "admin-icd-chapters"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -206,6 +206,28 @@ test.describe("visual baseline", () => {
               },
             ]
             : [];
+          const visualAdminIcdChapters = route.name === "admin-icd-chapters"
+            ? [
+              {
+                id: "icd-visual-circulatory",
+                chapterCode: "IX",
+                chapterName: "Bệnh hệ tuần hoàn",
+                keywordWeights: { "đau ngực": 5, "khó thở": 4, "hồi hộp": 3 },
+              },
+              {
+                id: "icd-visual-respiratory",
+                chapterCode: "X",
+                chapterName: "Bệnh hệ hô hấp",
+                keywordWeights: { ho: 5, "khò khè": 4, "đau họng": 2 },
+              },
+              {
+                id: "icd-visual-symptoms",
+                chapterCode: "XVIII",
+                chapterName: "Triệu chứng, dấu hiệu và phát hiện lâm sàng",
+                keywordWeights: { "mệt mỏi": 4, "chóng mặt": 3, "đau đầu": 3, sốt: 2, "khó chịu": 1 },
+              },
+            ]
+            : [];
           await page.route("**/api/**", (request) => {
             const url = new URL(request.request().url());
             const pathname = url.pathname;
@@ -256,6 +278,21 @@ test.describe("visual baseline", () => {
                       totalPages: 1,
                     }
                     : visualAdminDepartments,
+                }),
+              });
+            }
+            if (pathname === "/api/icd-chapters") {
+              return request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    items: visualAdminIcdChapters,
+                    pageNumber: 1,
+                    pageSize: 10,
+                    totalCount: visualAdminIcdChapters.length,
+                    totalPages: 1,
+                  },
                 }),
               });
             }
@@ -437,6 +474,16 @@ test.describe("visual baseline", () => {
             { exact: true },
           )).toBeVisible();
           await expect(page.getByText("Khoa Tim mạch", { exact: true })).toBeVisible();
+        }
+        if (route.name === "admin-icd-chapters") {
+          await expect(page.getByRole("heading", {
+            name: "Chương ICD trong hệ thống",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "3 chương ICD đang hiển thị",
+            { exact: true },
+          )).toBeVisible();
+          await expect(page.getByText("Bệnh hệ tuần hoàn", { exact: true })).toBeVisible();
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");
