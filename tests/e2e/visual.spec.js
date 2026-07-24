@@ -75,7 +75,7 @@ test.describe("visual baseline", () => {
             }),
           }));
         }
-        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities", "admin-departments", "admin-icd-chapters", "admin-clinical-questions"].includes(route.name)) {
+        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities", "admin-departments", "admin-icd-chapters", "admin-clinical-questions", "admin-patient-profiles"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -262,6 +262,49 @@ test.describe("visual baseline", () => {
               },
             ]
             : [];
+          const visualAdminPatientProfiles = route.name === "admin-patient-profiles"
+            ? [
+              {
+                id: "profile-visual-01",
+                userId: "user-visual-patient-01",
+                userDisplayName: "Nguyễn Minh An",
+                bloodType: "A+",
+                height: 168,
+                weight: 58,
+                allergyNote: "Dị ứng hải sản",
+                chronicDiseases: [],
+                isProfileCompleted: true,
+                isDeleted: false,
+                updatedAt: "2026-07-23T08:30:00Z",
+              },
+              {
+                id: "profile-visual-02",
+                userId: "user-visual-patient-02",
+                userDisplayName: "Trần Hoàng Nam",
+                bloodType: "O+",
+                height: 174,
+                weight: 70,
+                allergyNote: null,
+                chronicDiseases: [{ diseaseName: "Tăng huyết áp" }],
+                isProfileCompleted: true,
+                isDeleted: false,
+                updatedAt: "2026-07-22T09:45:00Z",
+              },
+              {
+                id: "profile-visual-03",
+                userId: "user-visual-patient-03",
+                userDisplayName: "Lê Thu Hà",
+                bloodType: null,
+                height: null,
+                weight: null,
+                allergyNote: null,
+                chronicDiseases: [],
+                isProfileCompleted: false,
+                isDeleted: false,
+                createdAt: "2026-07-21T10:15:00Z",
+              },
+            ]
+            : [];
           await page.route("**/api/**", (request) => {
             const url = new URL(request.request().url());
             const pathname = url.pathname;
@@ -340,6 +383,21 @@ test.describe("visual baseline", () => {
                     pageNumber: 1,
                     pageSize: 10,
                     totalCount: visualAdminClinicalQuestions.length,
+                    totalPages: 1,
+                  },
+                }),
+              });
+            }
+            if (pathname === "/api/patient-profiles") {
+              return request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    items: visualAdminPatientProfiles,
+                    pageNumber: 1,
+                    pageSize: 10,
+                    totalCount: visualAdminPatientProfiles.length,
                     totalPages: 1,
                   },
                 }),
@@ -546,6 +604,16 @@ test.describe("visual baseline", () => {
             "Bạn có cảm thấy đau ngực hoặc khó thở khi vận động không?",
             { exact: true },
           )).toBeVisible();
+        }
+        if (route.name === "admin-patient-profiles") {
+          await expect(page.getByRole("heading", {
+            name: "Hồ sơ bệnh nhân trong hệ thống",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "3 hồ sơ đang hiển thị",
+            { exact: true },
+          )).toBeVisible();
+          await expect(page.getByText("Nguyễn Minh An", { exact: true })).toBeVisible();
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { preparePage } from "./helpers";
 
@@ -73,12 +74,14 @@ test("admin creates, updates and deletes patient profiles from Swagger contract"
   });
 
   await page.goto("/app/admin/patient-profiles", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Hồ sơ bệnh nhân", level: 2 })).toBeVisible();
-  await expect(page.getByText("User 11111111", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hồ sơ bệnh nhân trong hệ thống", level: 2 })).toBeVisible();
+  await expect(page.getByText("Người dùng 11111111", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Tạo hồ sơ" }).click();
+  const createButton = page.getByRole("button", { name: "Tạo hồ sơ", exact: true }).first();
+  await createButton.click();
   const dialog = page.getByRole("dialog", { name: "Tạo hồ sơ bệnh nhân" });
-  await dialog.getByLabel("User ID").fill(USER_2);
+  await expect(dialog.getByLabel("ID người dùng (bắt buộc)")).toBeFocused();
+  await dialog.getByLabel("ID người dùng (bắt buộc)").fill(USER_2);
   await dialog.getByLabel("Nhóm máu").selectOption("O+");
   await dialog.getByLabel("Chiều cao (cm)").fill("172");
   await dialog.getByLabel("Cân nặng (kg)").fill("68");
@@ -96,11 +99,25 @@ test("admin creates, updates and deletes patient profiles from Swagger contract"
     allergyNote: "Không ghi nhận",
     chronicDiseases: [{ diseaseName: "Tăng huyết áp", from: "2024-01-01", to: null, note: null }],
   });
-  await expect(page.getByText("User 22222222", { exact: true })).toBeVisible();
+  await expect(page.getByText("Người dùng 22222222", { exact: true })).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+  await expect(createButton).toBeFocused();
 
-  const createdRow = page.locator(".patient-profile-row").filter({ hasText: "User 22222222" });
-  await createdRow.getByRole("button", { name: "Sửa" }).click();
+  const accessibility = await new AxeBuilder({ page })
+    .include(".patient-profile-clinical-panel")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(accessibility.violations
+    .filter((violation) => ["critical", "serious"].includes(violation.impact))
+    .map((violation) => ({
+      id: violation.id,
+      nodes: violation.nodes.map((node) => ({ target: node.target, summary: node.failureSummary })),
+    }))).toEqual([]);
+
+  const createdRow = page.locator(".patient-profile-card").filter({ hasText: "Người dùng 22222222" });
+  await createdRow.getByRole("button", { name: "Sửa hồ sơ của Người dùng 22222222" }).click();
   const editDialog = page.getByRole("dialog", { name: "Cập nhật hồ sơ bệnh nhân" });
+  await expect(editDialog.getByLabel("Chiều cao (cm)")).toBeFocused();
   await editDialog.getByLabel("Cân nặng (kg)").fill("70");
   await editDialog.getByRole("button", { name: "Lưu cập nhật" }).click();
   expect(updatePayload).toEqual({
@@ -112,8 +129,22 @@ test("admin creates, updates and deletes patient profiles from Swagger contract"
   });
   expect(updatePayload.userId).toBeUndefined();
 
-  await page.locator(".patient-profile-row").filter({ hasText: "User 22222222" }).getByRole("button", { name: "Xóa" }).click();
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+
+  await page.emulateMedia({ forcedColors: "active" });
+  const deleteButton = page.locator(".patient-profile-card")
+    .filter({ hasText: "Người dùng 22222222" })
+    .getByRole("button", { name: "Xóa hồ sơ của Người dùng 22222222" });
+  expect((await deleteButton.boundingBox())?.height).toBeGreaterThanOrEqual(42);
+  await deleteButton.focus();
+  await expect(deleteButton).toBeFocused();
+  await page.emulateMedia({ forcedColors: "none" });
+
+  await deleteButton.click();
   await page.getByRole("dialog").getByRole("button", { name: "Xóa hồ sơ" }).click();
-  await expect(page.getByText("User 22222222", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Người dùng 22222222", { exact: true })).toHaveCount(0);
   expect(deletedProfileId).toBe(PROFILE_2);
 });

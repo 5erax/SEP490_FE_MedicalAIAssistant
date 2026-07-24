@@ -1,4 +1,20 @@
-import { Filter, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Droplets,
+  Filter,
+  HeartPulse,
+  Pencil,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Ruler,
+  Search,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  Weight,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
@@ -14,10 +30,13 @@ const BLOOD_TYPE_OPTIONS = [
   { value: "O-", label: "O-" },
 ];
 
-function Field({ label, children, help, className = "" }) {
+function Field({ label, children, help, className = "", required = false }) {
   return (
     <label className={`clean-field ${className}`.trim()}>
-      <span>{label}</span>
+      <span>
+        {label}
+        {required && <small className="patient-profile-required-note"> (bắt buộc)</small>}
+      </span>
       {children}
       {help && <small>{help}</small>}
     </label>
@@ -63,6 +82,8 @@ export default function AdminPatientProfilesSection({
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const wasSavingRef = useRef(false);
+  const firstFieldRef = useRef(null);
+  const dialogTriggerRef = useRef(null);
 
   useEffect(() => {
     if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
@@ -72,11 +93,13 @@ export default function AdminPatientProfilesSection({
   }, [formOpen, message, saving]);
 
   function openCreateForm() {
+    dialogTriggerRef.current = document.activeElement;
     onCreate();
     setFormOpen(true);
   }
 
   function openEditForm(profile) {
+    dialogTriggerRef.current = document.activeElement;
     onEdit(profile);
     setFormOpen(true);
   }
@@ -102,48 +125,77 @@ export default function AdminPatientProfilesSection({
   }, [normalizedSearch, profiles]);
 
   return (
-    <section className="admin-panel ai-config-admin-panel patient-profile-admin-panel">
-      <div className="panel-title-row ai-config-section-heading">
-        <div>
-          <p className="eyebrow">Patient Profile</p>
-          <h2>Hồ sơ bệnh nhân</h2>
-          <p className="muted-text">Quản lý hồ sơ sức khỏe, chỉ số cơ bản và bệnh nền của người dùng trong hệ thống.</p>
+    <section
+      className="admin-panel ai-config-admin-panel patient-profile-admin-panel patient-profile-clinical-panel"
+      aria-labelledby="admin-patient-profile-title"
+    >
+      <header className="patient-profile-clinical-heading">
+        <div className="patient-profile-clinical-heading-copy">
+          <p className="eyebrow">Dữ liệu sức khỏe</p>
+          <h2 id="admin-patient-profile-title">Hồ sơ bệnh nhân trong hệ thống</h2>
+          <p>Quản lý nhóm máu, chỉ số cơ thể, ghi chú dị ứng và bệnh nền đã được lưu trong hồ sơ người dùng.</p>
         </div>
-        <div className="facility-panel-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>Tải lại</button>
-          <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>
-            <Plus size={15} /> Tạo hồ sơ
+        <div className="patient-profile-clinical-heading-actions">
+          <div className="patient-profile-clinical-context">
+            <ShieldCheck size={18} aria-hidden="true" />
+            <span>Dữ liệu sức khỏe nhạy cảm · Chỉ dành cho quản trị viên</span>
+          </div>
+          <button className="btn btn-ghost btn-small patient-profile-reload-button" type="button" onClick={onReload}>
+            <RefreshCw size={15} aria-hidden="true" /> Tải lại
+          </button>
+          <button className="btn btn-primary btn-small patient-profile-create-button" type="button" onClick={openCreateForm}>
+            <Plus size={15} aria-hidden="true" /> Tạo hồ sơ
           </button>
         </div>
-      </div>
+      </header>
 
-      {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
+      {message && (
+        <div
+          className={`api-message ${message.type}`}
+          role={message.type === "error" ? "alert" : "status"}
+          aria-live={message.type === "error" ? "assertive" : "polite"}
+        >
+          {message.text}
+        </div>
+      )}
 
-      <section className="ai-config-filter-card">
-        <div className="ai-config-filter-card-header">
+      <section className="ai-config-filter-card patient-profile-filter-card" aria-labelledby="patient-profile-filter-title">
+        <div className="ai-config-filter-card-header patient-profile-filter-heading">
+          <span aria-hidden="true"><Filter size={18} /></span>
           <div>
-            <strong>Bộ lọc hồ sơ bệnh nhân</strong>
+            <h3 id="patient-profile-filter-title">Tìm hồ sơ trên trang hiện tại</h3>
             <p>Tìm theo ID hồ sơ, ID người dùng, nhóm máu, dị ứng hoặc bệnh nền trên trang hiện tại.</p>
           </div>
         </div>
 
-        <div className="ai-config-toolbar">
+        <form
+          className="ai-config-toolbar patient-profile-filter-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onLoadPage(1);
+          }}
+        >
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
-            <div className="ai-config-search-field">
-              <Search size={16} />
-              <input
-                value={search}
-                onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Tìm ID người dùng, nhóm máu, dị ứng hoặc bệnh nền..."
-              />
-            </div>
+            <label className="patient-profile-search-field">
+              <span>Tìm hồ sơ bệnh nhân</span>
+              <span className="patient-profile-search-control">
+                <Search size={17} aria-hidden="true" />
+                <input
+                  type="search"
+                  autoComplete="off"
+                  value={search}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  placeholder="ID người dùng, nhóm máu, dị ứng hoặc bệnh nền"
+                />
+              </span>
+            </label>
           </div>
 
           <div className="ai-config-toolbar-row ai-config-toolbar-filters">
-            <div className="ai-config-filter-grid department-filter-grid">
+            <div className="ai-config-filter-grid patient-profile-filter-grid">
               <CustomSelect
                 className="clean-field"
-                label="Per page"
+                label="Hiển thị"
                 value={pageInfo.pageSize}
                 options={PAGE_SIZE_OPTIONS}
                 onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
@@ -151,20 +203,33 @@ export default function AdminPatientProfilesSection({
             </div>
 
             <div className="ai-config-filter-actions">
-              <button className="btn btn-primary btn-small" type="button" onClick={() => onLoadPage(1)} disabled={loading}>
-                <Filter size={14} /> Apply
+              <button className="btn btn-primary btn-small" type="submit" disabled={loading}>
+                <Filter size={14} aria-hidden="true" /> Áp dụng
               </button>
               <button className="btn btn-ghost btn-small" type="button" onClick={() => onSearchChange("")} disabled={loading}>
-                <RotateCcw size={14} /> Clear
+                <RotateCcw size={14} aria-hidden="true" /> Xóa lọc
               </button>
             </div>
           </div>
-        </div>
+        </form>
       </section>
 
-      <div className="admin-panel">
+      {!loading && !error && (
+        <div className="patient-profile-result-summary" role="status" aria-live="polite">
+          <HeartPulse size={18} aria-hidden="true" />
+          <p>
+            <strong>{visibleProfiles.length} hồ sơ đang hiển thị</strong>
+            <span>{pageInfo.totalCount} hồ sơ trong danh sách hiện tại</span>
+          </p>
+        </div>
+      )}
+
+      <div className="patient-profile-result-panel">
         {loading ? (
-          <LoadingState label="Đang tải hồ sơ bệnh nhân..." />
+          <LoadingState
+            label="Đang tải hồ sơ bệnh nhân..."
+            description="Thông tin sức khỏe đang được đồng bộ từ hệ thống."
+          />
         ) : error ? (
           <ErrorState
             title="Không thể tải hồ sơ bệnh nhân"
@@ -172,31 +237,78 @@ export default function AdminPatientProfilesSection({
             action={<Button onClick={onReload}>Thử tải lại</Button>}
           />
         ) : visibleProfiles.length === 0 ? (
-          <EmptyState title="Không có hồ sơ phù hợp" description="Thử đổi từ khóa tìm kiếm hoặc tạo hồ sơ mới." />
+          <EmptyState
+            title="Không có hồ sơ phù hợp"
+            description={search
+              ? "Hãy điều chỉnh từ khóa hoặc xóa bộ lọc để xem lại danh sách."
+              : "Tạo hồ sơ đầu tiên để bắt đầu quản lý dữ liệu sức khỏe."}
+            action={search
+              ? <button className="btn btn-ghost btn-small" type="button" onClick={() => onSearchChange("")}>Xóa bộ lọc</button>
+              : <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>Tạo hồ sơ</button>}
+          />
         ) : (
-          <div className="admin-table-list patient-profile-list">
+          <div className="patient-profile-card-list" role="list" aria-label="Danh sách hồ sơ bệnh nhân">
             {visibleProfiles.map((profile) => {
               const status = getProfileStatus(profile);
+              const displayName = profile.userDisplayName || profile.fullName || `Người dùng ${String(profile.userId).slice(0, 8)}`;
               return (
-                <article className="admin-user-row patient-profile-row" key={profile.id}>
-                  <div className="patient-profile-row-main">
-                    <strong>{profile.userDisplayName || profile.fullName || `User ${String(profile.userId).slice(0, 8)}`}</strong>
-                    <span>{profile.allergyNote || "Chưa ghi nhận dị ứng."}</span>
-                    <small>{profile.id}</small>
-                    <div className="admin-badge-stack">
-                      <span className={`status-pill ${status.tone}`}>{status.label}</span>
-                      <span className="status-pill neutral">Nhóm máu {profile.bloodType || "N/A"}</span>
-                      <span className="status-pill neutral">{profile.chronicDiseases?.length ?? 0} bệnh nền</span>
+                <article className="patient-profile-card" key={profile.id} role="listitem">
+                  <div className="patient-profile-card-identity">
+                    <span className="patient-profile-avatar" aria-hidden="true"><UserRound size={22} /></span>
+                    <div>
+                      <strong>{displayName}</strong>
+                      <span>ID người dùng · {profile.userId || "Không có dữ liệu"}</span>
+                      <small>ID hồ sơ · {profile.id}</small>
                     </div>
                   </div>
-                  <div className="patient-profile-metrics">
-                    <span><strong>{profile.height ?? "--"}</strong><small>cm</small></span>
-                    <span><strong>{profile.weight ?? "--"}</strong><small>kg</small></span>
-                    <span><strong>{formatDateTime(profile.updatedAt ?? profile.createdAt)}</strong><small>Cập nhật</small></span>
+
+                  <div className="patient-profile-card-status">
+                    <div className="admin-badge-stack">
+                      <span className={`status-pill ${status.tone}`}>{status.label}</span>
+                      <span className="status-pill neutral">{profile.chronicDiseases?.length ?? 0} bệnh nền</span>
+                    </div>
+                    <p>
+                      <AlertTriangle size={14} aria-hidden="true" />
+                      <span>{profile.allergyNote || "Chưa ghi nhận dị ứng"}</span>
+                    </p>
                   </div>
-                  <div className="record-actions">
-                    <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(profile)}>Sửa</button>
-                    <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(profile)}>Xóa</button>
+
+                  <dl className="patient-profile-card-metrics">
+                    <div>
+                      <dt><Droplets size={14} aria-hidden="true" /> Nhóm máu</dt>
+                      <dd>{profile.bloodType || "Chưa xác định"}</dd>
+                    </div>
+                    <div>
+                      <dt><Ruler size={14} aria-hidden="true" /> Chiều cao</dt>
+                      <dd>{profile.height != null ? `${profile.height} cm` : "Chưa cập nhật"}</dd>
+                    </div>
+                    <div>
+                      <dt><Weight size={14} aria-hidden="true" /> Cân nặng</dt>
+                      <dd>{profile.weight != null ? `${profile.weight} kg` : "Chưa cập nhật"}</dd>
+                    </div>
+                    <div>
+                      <dt><Activity size={14} aria-hidden="true" /> Cập nhật</dt>
+                      <dd>{formatDateTime(profile.updatedAt ?? profile.createdAt)}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="record-actions patient-profile-card-actions">
+                    <button
+                      className="btn btn-ghost btn-small"
+                      type="button"
+                      aria-label={`Sửa hồ sơ của ${displayName}`}
+                      onClick={() => openEditForm(profile)}
+                    >
+                      <Pencil size={15} aria-hidden="true" /> Sửa
+                    </button>
+                    <button
+                      className="btn btn-dark btn-small patient-profile-delete-button"
+                      type="button"
+                      aria-label={`Xóa hồ sơ của ${displayName}`}
+                      onClick={() => onDelete(profile)}
+                    >
+                      <Trash2 size={15} aria-hidden="true" /> Xóa
+                    </button>
                   </div>
                 </article>
               );
@@ -205,8 +317,8 @@ export default function AdminPatientProfilesSection({
         )}
       </div>
 
-      {!error && (
-        <div className="pagination-row">
+      {!loading && !error && (
+        <nav className="pagination-row patient-profile-pagination" aria-label="Phân trang hồ sơ bệnh nhân">
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => onLoadPage(Math.max(1, pageInfo.pageNumber - 1))}>
             Trước
           </button>
@@ -214,7 +326,7 @@ export default function AdminPatientProfilesSection({
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => onLoadPage(Math.min(pageInfo.totalPages || 1, pageInfo.pageNumber + 1))}>
             Sau
           </button>
-        </div>
+        </nav>
       )}
 
       {formOpen && (
@@ -222,15 +334,18 @@ export default function AdminPatientProfilesSection({
           backdropClassName="doctor-modal-backdrop"
           className="doctor-modal facility-form-modal patient-profile-form-modal"
           labelledBy="patient-profile-modal-title"
+          describedBy="patient-profile-modal-description"
           onClose={closeForm}
           closeOnBackdrop={!saving}
           closeOnEscape={!saving}
+          initialFocusRef={firstFieldRef}
+          restoreFocusRef={dialogTriggerRef}
         >
           <header className="doctor-modal-header">
             <div>
               <p className="eyebrow">{editingProfileId ? "Update" : "Create"}</p>
               <h2 id="patient-profile-modal-title">{editingProfileId ? "Cập nhật hồ sơ bệnh nhân" : "Tạo hồ sơ bệnh nhân"}</h2>
-              <p>Quản lý thông tin sức khỏe cơ bản và bệnh nền dùng cho luồng chăm sóc cá nhân.</p>
+              <p id="patient-profile-modal-description">Chỉ nhập thông tin sức khỏe đã được người dùng cung cấp và xác nhận.</p>
             </div>
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={saving}>×</button>
           </header>
@@ -244,8 +359,9 @@ export default function AdminPatientProfilesSection({
                 </div>
                 <div className="facility-form-grid">
                   {!editingProfileId && (
-                    <Field label="User ID" className="facility-form-span-2" help="GUID người dùng sở hữu hồ sơ.">
+                    <Field label="ID người dùng" className="facility-form-span-2" help="GUID người dùng sở hữu hồ sơ." required>
                       <input
+                        ref={firstFieldRef}
                         value={form.userId}
                         onChange={(event) => onFieldChange("userId", event.target.value)}
                         placeholder="Ví dụ: 3fa85f64-5717-4562-b3fc-2c963f66afa6"
@@ -262,6 +378,7 @@ export default function AdminPatientProfilesSection({
                   />
                   <Field label="Chiều cao (cm)">
                     <input
+                      ref={editingProfileId ? firstFieldRef : undefined}
                       type="number"
                       min="0"
                       step="0.1"
@@ -295,7 +412,7 @@ export default function AdminPatientProfilesSection({
                 <div className="facility-form-card-head patient-profile-disease-head">
                   <div>
                     <h3>Bệnh nền</h3>
-                    <p>Thêm các bệnh mạn tính hoặc tình trạng sức khỏe cần theo dõi.</p>
+                    <p>Chỉ thêm bệnh mạn tính hoặc tình trạng sức khỏe đã được xác nhận.</p>
                   </div>
                   <button className="btn btn-primary btn-small" type="button" onClick={onAddDisease}>
                     <Plus size={14} /> Thêm bệnh nền
@@ -310,7 +427,7 @@ export default function AdminPatientProfilesSection({
                     <article className="patient-profile-disease-card" key={disease.localId ?? disease.id ?? index}>
                       <div className="patient-profile-disease-card-head">
                         <strong>Bệnh nền #{index + 1}</strong>
-                        <button className="btn btn-ghost btn-small" type="button" onClick={() => onRemoveDisease(index)} aria-label="Xóa bệnh nền">
+                        <button className="btn btn-ghost btn-small" type="button" onClick={() => onRemoveDisease(index)} aria-label={`Xóa bệnh nền số ${index + 1}`}>
                           <Trash2 size={14} /> Xóa
                         </button>
                       </div>
