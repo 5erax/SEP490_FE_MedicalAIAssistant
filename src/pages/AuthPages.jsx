@@ -1,6 +1,13 @@
 import { useId, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { FileClock, LockKeyhole, ShieldCheck, UserRoundCheck } from "lucide-react";
+import {
+  ClipboardCheck,
+  FileClock,
+  LockKeyhole,
+  ShieldCheck,
+  UserRoundCheck,
+  UserRoundPlus,
+} from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Navbar } from "../components/landing/Navbar";
 import { navigate } from "../router/navigation";
@@ -124,12 +131,17 @@ const authCopy = {
     ],
   },
   signup: {
-    eyebrow: "Tài khoản mới",
-    title: "Tạo tài khoản để lưu hồ sơ và dùng thử miễn phí.",
-    copy: "Chỉ cần vài thông tin cơ bản để MediMate AI cá nhân hóa trải nghiệm chăm sóc sức khỏe.",
-    sideTitle: "Bắt đầu nhẹ nhàng",
-    sideCopy: "Bạn có thể dùng các tính năng cơ bản trước, sau đó nâng cấp khi cần phân tích sâu hơn.",
-    points: ["Bắt đầu miễn phí", "Lưu lịch sử sức khỏe", "Nâng cấp khi cần"],
+    eyebrow: "Tài khoản MediMate",
+    title: "Tạo tài khoản của bạn.",
+    copy: "Thiết lập thông tin đăng nhập để lưu hồ sơ, xem lại lịch sử phiên và sử dụng các công cụ dành cho tài khoản.",
+    sideEyebrow: "Bắt đầu với MediMate",
+    sideTitle: "Thiết lập tài khoản rõ ràng, từng bước.",
+    sideCopy: "Cung cấp thông tin cơ bản trước, sau đó hoàn thiện hồ sơ sức khỏe trong không gian cá nhân.",
+    points: [
+      { label: "Tạo thông tin đăng nhập", icon: UserRoundPlus },
+      { label: "Hoàn thiện hồ sơ sau đăng ký", icon: ClipboardCheck },
+      { label: "Xem lại phiên trên cùng tài khoản", icon: FileClock },
+    ],
   },
   recovery: {
     eyebrow: "Khôi phục",
@@ -144,16 +156,17 @@ const authCopy = {
 function AuthShell({ mode = "login", children }) {
   const content = authCopy[mode] ?? authCopy.login;
   const isLogin = mode === "login";
+  const usesClinicalAuth = mode === "login" || mode === "signup";
 
   return (
-    <main className={`landing-page auth-shell-page auth-mode-${mode}`}>
-      <Navbar variant={isLogin ? "landing" : "default"} />
+    <main className={`landing-page auth-shell-page auth-mode-${mode}${usesClinicalAuth ? " auth-mode-clinical" : ""}`}>
+      <Navbar variant={usesClinicalAuth ? "landing" : "default"} />
       <section className="auth-page">
         <div className="container auth-layout auth-layout-clean">
           <aside className="auth-side-panel">
             <a className="brand auth-brand" href="/">
               <span className="brand-mark" aria-hidden="true">
-                {isLogin ? <img src="/logo.svg" alt="" width="36" height="36" /> : "+"}
+                {usesClinicalAuth ? <img src="/logo.svg" alt="" width="36" height="36" /> : "+"}
               </span>
               <span>MediMate AI</span>
             </a>
@@ -174,10 +187,14 @@ function AuthShell({ mode = "login", children }) {
                 </div>
               ))}
             </div>
-            {isLogin && (
+            {usesClinicalAuth && (
               <p className="auth-privacy-note">
-                <LockKeyhole size={17} aria-hidden="true" />
-                Thông tin đăng nhập được truyền qua kết nối bảo mật.
+                {isLogin
+                  ? <LockKeyhole size={17} aria-hidden="true" />
+                  : <ShieldCheck size={17} aria-hidden="true" />}
+                {isLogin
+                  ? "Thông tin đăng nhập được truyền qua kết nối bảo mật."
+                  : "Chỉ cung cấp thông tin cần thiết để tạo và bảo vệ tài khoản."}
               </p>
             )}
           </aside>
@@ -389,19 +406,30 @@ export function SignupPage() {
     <AuthShell mode="signup">
       <form className="clean-form auth-form-clean" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
-        <div className="form-two-cols">
-          <Field label="Email" name="email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} autoComplete="email" spellCheck={false} required />
-          <Field label="Tên đăng nhập" name="userName" value={form.userName} onChange={(event) => update("userName", event.target.value)} autoComplete="username" spellCheck={false} required />
-          <Field label="Tên hiển thị" name="displayName" value={form.displayName} onChange={(event) => update("displayName", event.target.value)} autoComplete="name" required />
-          <Field label="Địa chỉ" name="address" value={form.address} onChange={(event) => update("address", event.target.value)} autoComplete="street-address" />
-          <Field label="Mật khẩu" name="password" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" hint={PASSWORD_HINT} required />
-          <Field label="Nhập lại mật khẩu" name="confirmPassword" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" hint="Nhập lại đúng mật khẩu mới để tránh khóa nhầm tài khoản." required />
-          <SelectField label="Giới tính" name="gender" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
-            <option value="1">Nam</option>
-            <option value="2">Nữ</option>
-          </SelectField>
-          <Field label="Ngày sinh" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={(event) => update("dateOfBirth", event.target.value)} autoComplete="bday" />
-        </div>
+        <fieldset className="auth-field-group">
+          <legend>Thông tin tài khoản</legend>
+          <p>Dùng để nhận diện tài khoản và hiển thị trong không gian cá nhân.</p>
+          <div className="form-two-cols">
+            <Field label="Email" name="email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} autoComplete="email" spellCheck={false} required />
+            <Field label="Tên đăng nhập" name="userName" value={form.userName} onChange={(event) => update("userName", event.target.value)} autoComplete="username" spellCheck={false} required />
+            <Field label="Tên hiển thị" name="displayName" value={form.displayName} onChange={(event) => update("displayName", event.target.value)} autoComplete="name" required />
+            <Field label="Địa chỉ" name="address" value={form.address} onChange={(event) => update("address", event.target.value)} autoComplete="street-address" />
+          </div>
+        </fieldset>
+
+        <fieldset className="auth-field-group">
+          <legend>Bảo mật và thông tin cơ bản</legend>
+          <p>Mật khẩu bảo vệ tài khoản; ngày sinh và giới tính có thể được bổ sung hoặc kiểm tra lại trong hồ sơ.</p>
+          <div className="form-two-cols">
+            <Field label="Mật khẩu" name="password" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" hint={PASSWORD_HINT} required />
+            <Field label="Nhập lại mật khẩu" name="confirmPassword" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" hint="Nhập lại đúng mật khẩu mới để tránh khóa nhầm tài khoản." required />
+            <SelectField label="Giới tính" name="gender" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
+              <option value="1">Nam</option>
+              <option value="2">Nữ</option>
+            </SelectField>
+            <Field label="Ngày sinh" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={(event) => update("dateOfBirth", event.target.value)} autoComplete="bday" />
+          </div>
+        </fieldset>
 
         <label className="api-check auth-consent">
           <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} required />
