@@ -100,6 +100,7 @@ export const VISUAL_ROUTES = [
   { name: "patient-recovery", path: "/recovery-plan" },
   { name: "patient-medication", path: "/medication" },
   { name: "nearby-clinic", path: "/map" },
+  { name: "admin-overview", path: "/app/admin" },
   { name: "admin-gate", path: "/app/admin" },
   { name: "not-found", path: "/route-that-does-not-exist" },
 ];

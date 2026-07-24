@@ -226,6 +226,60 @@
     padding: 0 12px 14px;
   }
 
+  .admin-operator .admin-sidebar {
+    gap: 14px;
+    padding: 18px 16px;
+  }
+
+  .admin-operator .admin-nav {
+    display: flex;
+    gap: 8px;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 10px 0;
+    scrollbar-width: thin;
+    scroll-snap-type: x proximity;
+  }
+
+  .admin-operator .admin-nav button {
+    grid-template-columns: 32px auto;
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 6px 12px 6px 7px;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  .admin-operator .admin-nav-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .admin-operator .admin-session-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 12px;
+    margin-top: 0;
+    padding: 14px;
+  }
+
+  .admin-operator .admin-session-card span,
+  .admin-operator .admin-session-card strong,
+  .admin-operator .admin-session-card small {
+    grid-column: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-operator .admin-session-card .btn {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    min-height: 44px;
+    margin: 0;
+  }
+
   .admin-operator .admin-topbar {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -304,8 +358,8 @@
   }
 
   .admin-operator .admin-nav button {
-    grid-template-columns: 30px minmax(0, 1fr);
-    min-height: 46px;
+    grid-template-columns: 32px auto;
+    min-height: 44px;
     font-size: 13px;
   }
 

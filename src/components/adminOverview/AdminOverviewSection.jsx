@@ -1,11 +1,47 @@
 import {
-  ArrowRight,
+  ArrowUpRight,
   BrainCircuit,
   Building2,
   Database,
+  ShieldCheck,
   Stethoscope,
   Users,
 } from "lucide-react";
+
+const OVERVIEW_METRICS = [
+  {
+    label: "Tài khoản người dùng",
+    shortLabel: "Tài khoản",
+    description: "Tài khoản hiện có trong hệ thống.",
+    section: "users",
+    icon: Users,
+  },
+  {
+    label: "Hồ sơ bác sĩ",
+    shortLabel: "Bác sĩ",
+    description: "Hồ sơ bác sĩ đã được ghi nhận.",
+    section: "doctors",
+    icon: Stethoscope,
+  },
+  {
+    label: "Cấu hình AI",
+    shortLabel: "Cấu hình AI",
+    description: "Cấu hình prompt và mô hình hiện có.",
+    section: "ai-configs",
+    icon: BrainCircuit,
+  },
+  {
+    label: "Cơ sở y tế",
+    shortLabel: "Cơ sở y tế",
+    description: "Cơ sở y tế đang được quản lý.",
+    section: "facilities",
+    icon: Building2,
+  },
+];
+
+function getAdminPath(section) {
+  return `/app/admin/${section}`;
+}
 
 export default function AdminOverviewSection({
   aiConfigsLoading,
@@ -18,83 +54,91 @@ export default function AdminOverviewSection({
   userTotalCount,
   onOpenSection,
 }) {
-  const metrics = [
-    {
-      label: "Tài khoản",
-      description: "Tổng số tài khoản do API người dùng trả về.",
-      value: userTotalCount,
-      loading: usersLoading,
-      section: "users",
-      icon: Users,
-    },
-    {
-      label: "Bác sĩ",
-      description: "Tổng số hồ sơ bác sĩ trong hệ thống.",
-      value: doctorTotalCount,
-      loading: doctorsLoading,
-      section: "doctors",
-      icon: Stethoscope,
-    },
-    {
-      label: "Cấu hình AI",
-      description: "Tổng số cấu hình prompt và mô hình AI.",
-      value: aiConfigTotalCount,
-      loading: aiConfigsLoading,
-      section: "ai-configs",
-      icon: BrainCircuit,
-    },
-    {
-      label: "Cơ sở y tế",
-      description: "Tổng số cơ sở y tế đã được quản lý.",
-      value: facilityTotalCount,
-      loading: facilitiesLoading,
-      section: "facilities",
-      icon: Building2,
-    },
-  ];
+  const metricState = {
+    users: { value: userTotalCount, loading: usersLoading },
+    doctors: { value: doctorTotalCount, loading: doctorsLoading },
+    "ai-configs": { value: aiConfigTotalCount, loading: aiConfigsLoading },
+    facilities: { value: facilityTotalCount, loading: facilitiesLoading },
+  };
 
   return (
     <section className="admin-overview" aria-labelledby="admin-overview-title">
       <header className="admin-overview-heading">
-        <div>
+        <div className="admin-overview-heading-copy">
           <p className="eyebrow">Tổng quan quản trị</p>
-          <h2 id="admin-overview-title">Dữ liệu hệ thống đã xác nhận</h2>
+          <h2 id="admin-overview-title">Thông tin cốt lõi của hệ thống</h2>
           <p>
-            Các tổng số dưới đây lấy trực tiếp từ API phân trang. Trạng thái chi tiết được hiển thị tại từng trang quản lý.
+            Theo dõi số lượng bản ghi hiện có và mở nhanh khu vực bạn cần quản lý.
           </p>
         </div>
-        <span><Database size={18} aria-hidden="true" /> Nguồn dữ liệu API</span>
+
+        <div className="admin-overview-source">
+          <span className="admin-overview-source-icon" aria-hidden="true">
+            <Database size={19} />
+          </span>
+          <span>
+            <small>Nguồn dữ liệu</small>
+            <strong>API quản trị</strong>
+          </span>
+        </div>
       </header>
 
-      <div className="admin-overview-grid">
-        {metrics.map((metric) => {
+      <div className="admin-overview-grid" aria-label="Số lượng dữ liệu quản trị">
+        {OVERVIEW_METRICS.map((metric, index) => {
           const Icon = metric.icon;
+          const state = metricState[metric.section];
           return (
-            <button
+            <a
               className="admin-overview-card"
-              type="button"
+              href={getAdminPath(metric.section)}
               key={metric.section}
-              onClick={() => onOpenSection(metric.section)}
-              aria-label={`Mở trang ${metric.label}`}
+              onClick={(event) => {
+                event.preventDefault();
+                onOpenSection(metric.section);
+              }}
+              aria-label={`Mở trang ${metric.shortLabel}`}
+              aria-busy={state.loading}
             >
-              <span className="admin-overview-card-icon"><Icon size={20} aria-hidden="true" /></span>
+              <span className="admin-overview-card-top">
+                <span className="admin-overview-card-icon">
+                  <Icon size={21} aria-hidden="true" />
+                </span>
+                <span className="admin-overview-card-index" aria-hidden="true">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+              </span>
+
               <span className="admin-overview-card-copy">
                 <small>{metric.label}</small>
-                <strong>{metric.loading ? "Đang tải" : metric.value}</strong>
+                <strong>
+                  {state.loading ? (
+                    <>
+                      <span className="admin-overview-loading" aria-hidden="true">—</span>
+                      <span className="sr-only">Đang tải số lượng {metric.shortLabel}</span>
+                    </>
+                  ) : state.value}
+                </strong>
                 <span>{metric.description}</span>
               </span>
-              <ArrowRight size={18} aria-hidden="true" />
-            </button>
+
+              <span className="admin-overview-card-action">
+                Xem danh sách
+                <ArrowUpRight size={17} aria-hidden="true" />
+              </span>
+            </a>
           );
         })}
       </div>
 
-      <aside className="admin-overview-scope" aria-label="Phạm vi số liệu">
-        <strong>Phạm vi số liệu</strong>
-        <p>
-          Tổng quan không tạo điểm số, xu hướng, lịch vận hành hoặc cảnh báo từ dữ liệu của riêng trang hiện tại.
-          Hãy mở từng khu vực để xem trạng thái và thao tác có sẵn từ backend.
-        </p>
+      <aside className="admin-overview-scope" aria-label="Phạm vi dữ liệu tổng quan">
+        <ShieldCheck size={21} aria-hidden="true" />
+        <div>
+          <strong>Chỉ hiển thị dữ liệu đã có</strong>
+          <p>
+            Các con số trên được lấy từ tổng số bản ghi API trả về. MediMate không tự suy
+            đoán hiệu suất, xu hướng hoặc cảnh báo vận hành.
+          </p>
+        </div>
       </aside>
     </section>
   );

@@ -12,6 +12,11 @@ const PATIENT_TOKEN = [
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
   "",
 ].join(".");
+const ADMIN_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20ifQ",
+  "",
+].join(".");
 
 test.describe("visual baseline", () => {
   for (const route of VISUAL_ROUTES) {
@@ -69,6 +74,52 @@ test.describe("visual baseline", () => {
               data: [],
             }),
           }));
+        }
+        if (route.name === "admin-overview") {
+          await page.addInitScript((accessToken) => {
+            localStorage.setItem("medimate.auth", JSON.stringify({
+              accessToken,
+              email: "admin@example.com",
+              roles: ["Admin"],
+            }));
+          }, ADMIN_TOKEN);
+          const adminTotals = {
+            "/api/users": 128,
+            "/api/doctors": 42,
+            "/api/ai-configs": 8,
+            "/api/medical-facilities": 24,
+          };
+          await page.route("**/api/**", (request) => {
+            const pathname = new URL(request.request().url()).pathname;
+            if (pathname === "/api/users/me") {
+              return request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: { name: "Quản trị MediMate", roles: ["Admin"] },
+                }),
+              });
+            }
+            if (Object.hasOwn(adminTotals, pathname)) {
+              return request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    items: [],
+                    pageNumber: 1,
+                    pageSize: 10,
+                    totalCount: adminTotals[pathname],
+                    totalPages: 1,
+                  },
+                }),
+              });
+            }
+            return request.fulfill({
+              contentType: "application/json",
+              body: JSON.stringify({ success: true, data: [] }),
+            });
+          });
         }
         if (route.name === "landing") {
           await page.route("**/api/medical-facilities/active", (request) => request.fulfill({
@@ -172,6 +223,12 @@ test.describe("visual baseline", () => {
         if (route.name === "nearby-clinic") {
           await expect(page.locator(".maplibregl-canvas")).toBeVisible();
           await expect(page.getByText("Bệnh viện kiểm thử", { exact: true })).toBeVisible();
+        }
+        if (route.name === "admin-overview") {
+          await expect(page.getByRole("heading", {
+            name: "Thông tin cốt lõi của hệ thống",
+          })).toBeVisible();
+          await expect(page.getByRole("link", { name: "Mở trang Tài khoản" })).toContainText("128");
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");
