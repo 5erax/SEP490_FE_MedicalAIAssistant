@@ -1,0 +1,121 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
+import { preparePage } from "./helpers.js";
+
+const USER_ID = "55555555-5555-4555-8555-555555555555";
+const ACCESS_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
+  "",
+].join(".");
+
+async function openPatientProfile(page, path = "/profile") {
+  await preparePage(page);
+  await page.addInitScript(({ accessToken, userId }) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      userId,
+      roles: ["Patient"],
+      isProfileCompleted: true,
+    }));
+  }, { accessToken: ACCESS_TOKEN, userId: USER_ID });
+
+  await page.route("**/api/**", (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: USER_ID,
+            displayName: "Nguyễn Minh",
+            email: "patient@example.com",
+            gender: 1,
+            dateOfBirth: "1990-01-01",
+            phoneNumber: "",
+            address: "",
+          },
+        }),
+      });
+    }
+    if (url.pathname === "/api/patient-profiles") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items: [],
+            pageNumber: 1,
+            pageSize: 100,
+            totalCount: 0,
+            totalPages: 0,
+          },
+        }),
+      });
+    }
+    if (url.pathname === "/api/user-subscriptions/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    }
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: null }),
+    });
+  });
+
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#profile-panel-info")).toBeVisible();
+}
+
+test("patient profile stays usable at 320px without horizontal overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await openPatientProfile(page);
+
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  await expect(page.getByRole("tab", { name: "Thông tin" }).last()).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("button", { name: "Chỉnh sửa" })).toBeVisible();
+});
+
+test("patient profile tabs support keyboard navigation", async ({ page }) => {
+  await openPatientProfile(page);
+
+  const infoTab = page.locator("#profile-tab-info");
+  await infoTab.focus();
+  await page.keyboard.press("ArrowRight");
+
+  const medicalTab = page.locator("#profile-tab-medical");
+  await expect(medicalTab).toBeFocused();
+  await expect(medicalTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#profile-panel-medical")).toBeVisible();
+});
+
+test("patient profile has no serious automated accessibility violations", async ({ page }) => {
+  await openPatientProfile(page);
+
+  const results = await new AxeBuilder({ page })
+    .include(".profile-page")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const seriousViolations = results.violations
+    .filter((violation) => ["critical", "serious"].includes(violation.impact))
+    .map((violation) => violation.id);
+
+  expect(seriousViolations).toEqual([]);
+});
+
+test("patient profile remains legible in forced colors", async ({ page }) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await openPatientProfile(page);
+
+  await expect(page.getByRole("button", { name: "Chỉnh sửa" })).toBeVisible();
+  await page.getByRole("button", { name: "Chỉnh sửa" }).click();
+  await expect(page.getByLabel("Họ và tên")).toBeEditable();
+  await expect(page.locator("#profile-panel-info")).toHaveCSS("border-top-style", "solid");
+});

@@ -355,7 +355,7 @@ export default function UserProfilePage() {
   ].filter(([value]) => !value).map(([, label]) => label);
 
   return (
-    <main className="profile-page">
+    <div className="profile-page">
       <style>{styles}</style>
       <aside className="profile-sidebar">
         <div className="profile-identity">
@@ -373,7 +373,7 @@ export default function UserProfilePage() {
       </aside>
 
       <section className="profile-content">
-        <nav className="profile-quick-nav" aria-label="Dieu huong nhanh">
+        <nav className="profile-quick-nav" aria-label="Điều hướng nhanh">
           <button type="button" onClick={() => go("/dashboard")}>← Trang chủ</button>
           <button type="button" onClick={() => go("/dashboard")}>Phân tích triệu chứng</button>
           <button type="button" onClick={() => go("/records")}>Hồ sơ y tế</button>
@@ -419,7 +419,7 @@ export default function UserProfilePage() {
         {toast && <div className="toast" role={Object.keys(errors).length ? "alert" : "status"} aria-live={Object.keys(errors).length ? "assertive" : "polite"}>{toast}</div>}
 
         {activeTab === "info" && (
-          <form ref={profileFormRef} id="profile-panel-info" role="tabpanel" aria-labelledby="profile-tab-info" className={`profile-card ${isEditing ? "is-editing" : ""}`} onSubmit={saveProfile} noValidate>
+          <form ref={profileFormRef} id="profile-panel-info" role="tabpanel" aria-labelledby="profile-tab-info" className={`profile-card ${isEditing ? "is-editing" : ""}`} aria-busy={savingProfile} onSubmit={saveProfile} noValidate>
             <div className="profile-head">
               <div><h1>Thông tin cá nhân</h1><span>Cơ bản</span></div>
               {!isEditing ? <button type="button" onClick={() => setIsEditing(true)} disabled={loading}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!profileDirty || savingProfile}>{savingProfile ? "Đang lưu..." : "Lưu thay đổi"}</button><button type="button" onClick={cancelProfileEdit} disabled={savingProfile}>Huỷ</button></div>}
@@ -436,7 +436,7 @@ export default function UserProfilePage() {
         )}
 
         {activeTab === "medical" && (
-          <form ref={medicalFormRef} id="profile-panel-medical" role="tabpanel" aria-labelledby="profile-tab-medical" className={`profile-card ${isMedicalEditing ? "is-editing" : ""}`} onSubmit={saveMedical} noValidate>
+          <form ref={medicalFormRef} id="profile-panel-medical" role="tabpanel" aria-labelledby="profile-tab-medical" className={`profile-card ${isMedicalEditing ? "is-editing" : ""}`} aria-busy={savingMedical} onSubmit={saveMedical} noValidate>
             <div className="profile-head"><div><h1>Hồ sơ y tế</h1><span>{patientProfileId ? "Đã đồng bộ" : "Chưa tạo"}</span></div>{!isMedicalEditing ? <button type="button" onClick={() => setIsMedicalEditing(true)} disabled={loading}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!medicalDirty || savingMedical}>{savingMedical ? "Đang lưu..." : "Lưu hồ sơ"}</button><button type="button" onClick={resetMedicalForm} disabled={savingMedical}>Huỷ</button></div>}</div>
             <div className="medical-privacy-note"><ShieldCheck size={19} aria-hidden="true" /><div><strong>Dữ liệu sức khỏe nhạy cảm</strong><p>Thông tin này hỗ trợ cá nhân hóa tư vấn. Chỉ nhập dữ liệu bạn biết chính xác.</p></div></div>
             <div className="form-grid three">
@@ -553,7 +553,7 @@ export default function UserProfilePage() {
           <PaymentHistoryPanel />
         )}
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -631,4 +631,415 @@ const styles = `
 @media(prefers-reduced-motion:reduce){.profile-summary-card{transition:none}.profile-summary-card:hover{transform:none}}
 @media(forced-colors:active){.profile-summary-card i b{background:Highlight}.profile-summary-card,.profile-card,.profile-overview{box-shadow:none}}
 @media(max-width:767px){.profile-page{display:block}.profile-sidebar{display:none}.profile-content{padding:14px}.profile-overview,.profile-card{padding:18px}.profile-overview-person,.profile-summary-grid{grid-template-columns:1fr}.mobile-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:12px;scrollbar-width:thin}.mobile-tabs button{min-width:112px;border:1px solid var(--line,#dde4d5);background:var(--paper,#fff);color:var(--ink,#111412);text-align:center}.mobile-tabs button.active{background:var(--color-primary-soft,#eef7e8);border-color:var(--line-strong,#111412)}.mobile-tabs span,.mobile-tabs small{display:block}.profile-head,.profile-disease-head{flex-direction:column}.profile-load-warning{grid-template-columns:auto minmax(0,1fr)}.profile-load-warning button{grid-column:1/-1;width:100%}.form-grid,.form-grid.three,.profile-form-actions,.profile-disease-grid{grid-template-columns:1fr}.profile-form-actions button,.profile-head>div:last-child,.profile-head>div:last-child button,.profile-disease-head button{width:100%}}
+
+/* Patient profile refresh */
+.profile-page{
+  --profile-navy:#0c2d35;
+  --profile-teal:#087f78;
+  --profile-teal-dark:#05665f;
+  --profile-mint:#eaf6f1;
+  --profile-mint-strong:#d8eee6;
+  --profile-surface:#fff;
+  --profile-subtle:#f7faf8;
+  --profile-line:#d7e3dd;
+  --profile-muted:#61706b;
+  display:grid;
+  grid-template-columns:230px minmax(0,1fr);
+  width:100%;
+  min-height:720px;
+  overflow:hidden;
+  border:0;
+  background:var(--profile-subtle);
+  color:var(--profile-navy);
+}
+.profile-sidebar{
+  position:relative;
+  top:auto;
+  width:auto;
+  height:auto;
+  min-height:100%;
+  padding:28px 18px;
+  border:0;
+  border-right:1px solid var(--profile-line);
+  background:rgba(255,255,255,.92);
+}
+.profile-identity{
+  margin-bottom:20px;
+  padding:0 8px 22px;
+  border-bottom:1px solid var(--profile-line);
+  text-align:left;
+}
+.profile-identity span{
+  width:54px;
+  height:54px;
+  margin:0 0 14px;
+  border:1px solid #b9dbce;
+  border-radius:16px;
+  background:var(--profile-mint);
+  color:var(--profile-teal-dark);
+  font-size:18px;
+  box-shadow:none;
+}
+.profile-identity strong{
+  overflow:hidden;
+  color:var(--profile-navy);
+  font-size:15px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.profile-identity small{
+  overflow:hidden;
+  margin-top:5px;
+  color:var(--profile-muted);
+  font-size:11px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.profile-sidebar nav{gap:5px}
+.profile-sidebar button{
+  position:relative;
+  min-height:46px;
+  padding:11px 12px;
+  border:1px solid transparent;
+  border-radius:12px;
+  color:#52625d;
+  font-size:13px;
+  font-weight:800;
+}
+.profile-sidebar button span{color:#73827d}
+.profile-sidebar button.active{
+  border:1px solid #cbe2d9;
+  background:var(--profile-mint);
+  color:var(--profile-navy);
+}
+.profile-sidebar button.active::before{
+  position:absolute;
+  top:10px;
+  bottom:10px;
+  left:-18px;
+  width:3px;
+  border-radius:0 3px 3px 0;
+  background:var(--profile-teal);
+  content:"";
+}
+.profile-sidebar button.active span{color:var(--profile-teal-dark)}
+.profile-content{
+  width:min(100%,1020px);
+  margin:0 auto;
+  padding:30px clamp(20px,3vw,40px) 40px;
+}
+.profile-overview{
+  position:relative;
+  gap:22px;
+  margin-bottom:18px;
+  overflow:hidden;
+  border:1px solid var(--profile-line);
+  border-radius:20px;
+  background:linear-gradient(135deg,#fff 0%,#f4fbf8 100%);
+  padding:26px;
+  box-shadow:0 16px 42px rgba(12,45,53,.07);
+}
+.profile-overview::after{
+  position:absolute;
+  top:-64px;
+  right:-50px;
+  width:190px;
+  height:190px;
+  border:28px solid rgba(8,127,120,.045);
+  border-radius:50%;
+  content:"";
+  pointer-events:none;
+}
+.profile-overview-person{
+  position:relative;
+  z-index:1;
+  gap:16px;
+}
+.profile-overview-person>span{
+  width:62px;
+  height:62px;
+  border:1px solid #b7dacf;
+  border-radius:18px;
+  background:var(--profile-mint);
+  color:var(--profile-teal-dark);
+  font-size:20px;
+  box-shadow:none;
+}
+.profile-overview-person p,
+.profile-summary-grid span{
+  color:var(--profile-teal-dark);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.12em;
+}
+.profile-overview-person h1{
+  max-width:720px;
+  margin-top:5px;
+  color:var(--profile-navy);
+  font-size:clamp(25px,3vw,36px);
+  letter-spacing:-.035em;
+}
+.profile-overview-person small,
+.profile-summary-grid small{color:var(--profile-muted);font-weight:650}
+.profile-summary-grid{
+  position:relative;
+  z-index:1;
+  gap:12px;
+}
+.profile-summary-grid article,
+.profile-summary-card{
+  min-height:122px;
+  border:1px solid var(--profile-line);
+  border-radius:15px;
+  background:rgba(255,255,255,.84);
+  padding:15px;
+  box-shadow:none;
+}
+.profile-summary-card{
+  transition:border-color .18s ease,background .18s ease,transform .18s ease;
+}
+.profile-summary-card:hover{
+  border-color:#a8cec0;
+  background:#fff;
+  transform:translateY(-2px);
+}
+.profile-summary-grid strong{
+  margin-top:3px;
+  color:var(--profile-navy);
+  font-size:23px;
+}
+.profile-summary-card i{
+  height:5px;
+  margin-top:auto;
+  background:#e6eeea;
+}
+.profile-summary-card i b{background:var(--profile-teal)}
+.profile-card{
+  gap:22px;
+  border:1px solid var(--profile-line);
+  border-radius:20px;
+  background:var(--profile-surface);
+  padding:clamp(20px,3vw,30px);
+  box-shadow:0 16px 42px rgba(12,45,53,.065);
+}
+.profile-card.is-editing{
+  border-color:#9fcab9;
+  box-shadow:0 0 0 3px rgba(8,127,120,.08),0 16px 42px rgba(12,45,53,.065);
+}
+.profile-card h1{
+  color:var(--profile-navy);
+  font-size:clamp(23px,3vw,30px);
+  letter-spacing:-.025em;
+}
+.profile-head{align-items:center}
+.profile-head>div:first-child{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:9px;
+}
+.profile-head span,
+.plan-box span{
+  border:1px solid #c9e3d9;
+  background:var(--profile-mint);
+  color:var(--profile-teal-dark);
+  padding:5px 9px;
+  font-size:10px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.profile-head button,
+.profile-form-actions button,
+.lime,
+.danger button{
+  min-height:43px;
+  border:1px solid #b7c9c1;
+  border-radius:11px;
+  background:#fff;
+  color:var(--profile-navy);
+  padding:0 15px;
+  font-weight:850;
+  box-shadow:none;
+}
+.profile-head button:hover,
+.profile-form-actions button:hover{border-color:var(--profile-teal);background:#f7fbf9}
+.profile-head .lime,
+.lime{
+  border-color:var(--profile-teal);
+  background:var(--profile-teal);
+  color:#fff;
+}
+.profile-head .lime:hover,
+.lime:hover{background:var(--profile-teal-dark);color:#fff}
+.form-grid{gap:16px}
+.field{
+  gap:7px;
+  color:#43534e;
+  font-size:12px;
+  font-weight:800;
+}
+.field input,
+.field select,
+.field textarea{
+  min-height:47px;
+  border:1px solid #bdccc5;
+  border-radius:11px;
+  background:#fff;
+  color:var(--profile-navy);
+  padding:12px 13px;
+  font-weight:650;
+  outline:none;
+}
+.field input:hover:not(:disabled),
+.field select:hover:not(:disabled),
+.field textarea:hover:not(:disabled){border-color:#82ad9d}
+.field input:focus,
+.field select:focus,
+.field textarea:focus{
+  border-color:var(--profile-teal);
+  box-shadow:0 0 0 3px rgba(8,127,120,.12);
+}
+.field input:disabled,
+.field select:disabled,
+.field textarea:disabled{
+  border-color:#dfe7e3;
+  background:#f6f8f7;
+  color:#53635e;
+}
+.field em{
+  top:35px;
+  right:9px;
+  background:var(--profile-mint);
+  color:var(--profile-teal-dark);
+}
+.medical-privacy-note{
+  border-color:#c3dfd4;
+  border-radius:14px;
+  background:#f0f8f5;
+  color:var(--profile-teal-dark);
+  padding:14px;
+}
+.profile-disease-section{
+  gap:16px;
+  border-color:var(--profile-line);
+  border-radius:16px;
+  background:var(--profile-subtle);
+  padding:18px;
+}
+.profile-disease-head h2{color:var(--profile-navy);font-size:18px}
+.profile-disease-head p{color:var(--profile-muted)}
+.profile-disease-head button{
+  border:1px solid #add0c3;
+  border-radius:11px;
+  background:var(--profile-mint);
+  color:var(--profile-teal-dark);
+  box-shadow:none;
+}
+.profile-disease-card{
+  border-color:var(--profile-line);
+  box-shadow:0 8px 24px rgba(12,45,53,.045);
+}
+.profile-disease-card-head button{border-width:1px;background:#fff}
+.profile-disease-empty{
+  border-color:#bfcfc8;
+  background:#fff;
+  color:var(--profile-muted);
+}
+.plan-box{
+  border-color:var(--profile-line);
+  border-radius:16px;
+  background:linear-gradient(135deg,#f7fbf9,#eef8f4);
+  padding:22px;
+}
+.plan-box strong{color:var(--profile-navy)}
+.toast{
+  border:1px solid #a9cbbb;
+  border-radius:12px;
+  background:#eaf7ef;
+  color:#164d3f;
+  box-shadow:none;
+}
+.profile-load-warning{border-width:1px;box-shadow:none}
+.mobile-tabs{display:none}
+.profile-sidebar button:focus-visible,
+.mobile-tabs button:focus-visible,
+.profile-summary-card:focus-visible,
+.profile-card button:focus-visible,
+.profile-quick-nav button:focus-visible{
+  outline:3px solid #3daea5;
+  outline-offset:3px;
+}
+@media(max-width:900px){
+  .profile-page{grid-template-columns:190px minmax(0,1fr)}
+  .profile-sidebar{padding:24px 12px}
+  .profile-sidebar button.active::before{left:-12px}
+  .profile-summary-grid{grid-template-columns:1fr 1fr}
+  .profile-summary-grid article:last-child{grid-column:1/-1;min-height:96px}
+  .form-grid.three{grid-template-columns:1fr 1fr}
+}
+@media(max-width:767px){
+  .profile-page{
+    display:block;
+    min-height:auto;
+    overflow:visible;
+    background:transparent;
+  }
+  .profile-content{width:100%;padding:0}
+  .profile-overview{padding:20px;margin-bottom:12px;border-radius:17px}
+  .profile-overview::after{display:none}
+  .profile-overview-person{grid-template-columns:auto minmax(0,1fr)}
+  .profile-summary-grid{grid-template-columns:1fr}
+  .profile-summary-grid article:last-child{grid-column:auto}
+  .profile-summary-grid article,.profile-summary-card{min-height:108px}
+  .mobile-tabs{
+    display:flex;
+    margin:0 0 12px;
+    padding:2px 1px 7px;
+    gap:7px;
+    overflow-x:auto;
+    scroll-snap-type:x proximity;
+  }
+  .mobile-tabs button{
+    display:grid;
+    flex:0 0 108px;
+    place-items:center;
+    gap:3px;
+    min-height:62px;
+    border:1px solid var(--profile-line);
+    border-radius:13px;
+    background:#fff;
+    color:var(--profile-muted);
+    scroll-snap-align:start;
+  }
+  .mobile-tabs button.active{
+    border-color:#acd0c2;
+    background:var(--profile-mint);
+    color:var(--profile-navy);
+  }
+  .profile-card{gap:18px;padding:19px;border-radius:17px}
+  .profile-head{align-items:flex-start}
+  .profile-head>div:last-child{display:grid;grid-template-columns:1fr 1fr}
+  .profile-head>div:last-child button{width:100%}
+  .form-grid,.form-grid.three,.profile-form-actions,.profile-disease-grid{grid-template-columns:1fr}
+  .profile-disease-section{padding:14px}
+  .profile-disease-head button{width:100%}
+}
+@media(max-width:420px){
+  .profile-overview-person>span{width:50px;height:50px;border-radius:14px}
+  .profile-overview-person h1{font-size:23px}
+  .profile-card h1{font-size:22px}
+  .profile-head>div:first-child{align-items:flex-start}
+  .profile-head>div:last-child{width:100%}
+  .profile-summary-grid strong{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+  .profile-summary-card{transition:none}
+  .profile-summary-card:hover{transform:none}
+}
+@media(forced-colors:active){
+  .profile-page,.profile-sidebar,.profile-overview,.profile-card,.profile-summary-card,.profile-summary-grid article{background:Canvas;color:CanvasText}
+  .profile-overview,.profile-card,.profile-summary-card,.profile-summary-grid article,.profile-sidebar,.field input,.field select,.field textarea,.mobile-tabs button{border:1px solid CanvasText}
+  .profile-overview::after,.profile-sidebar button.active::before{display:none}
+  .profile-sidebar button.active,.mobile-tabs button.active,.lime,.profile-head .lime{background:Highlight;color:HighlightText}
+}
 `;

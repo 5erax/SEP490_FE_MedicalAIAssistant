@@ -19,7 +19,7 @@ test.describe("visual baseline", () => {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
-        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat", "patient-records"].includes(route.name)) {
+        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat", "patient-records", "patient-profile"].includes(route.name)) {
           await page.addInitScript(({ accessToken, isProfileSetup }) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -40,6 +40,7 @@ test.describe("visual baseline", () => {
               data: {
                 id: "55555555-5555-4555-8555-555555555555",
                 displayName: "Nguyễn Minh",
+                email: "patient@example.com",
                 address: "",
                 gender: 1,
                 dateOfBirth: null,
@@ -59,6 +60,13 @@ test.describe("visual baseline", () => {
                 totalCount: 0,
                 totalPages: 0,
               },
+            }),
+          }));
+          await page.route("**/api/user-subscriptions/me", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: [],
             }),
           }));
         }
@@ -150,6 +158,10 @@ test.describe("visual baseline", () => {
         if (route.name === "patient-records") {
           await expect(page.getByRole("heading", { name: "Hồ sơ y tế chưa được mở trên MediMate" })).toBeVisible();
           await expect(page.getByText("Không có hồ sơ nào được tạo hoặc lưu từ màn hình này.")).toBeVisible();
+        }
+        if (route.name === "patient-profile") {
+          await expect(page.locator("#profile-panel-info")).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Nguyễn Minh" })).toBeVisible();
         }
         const routeLoading = page.locator("[data-route-loading]");
         if (await routeLoading.count()) {
