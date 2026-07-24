@@ -1,11 +1,19 @@
-import { Building2, Filter, MapPin, Pencil, Plus, Power, RefreshCw, RotateCcw, Search, Trash2 } from "lucide-react";
+import { Building2, ExternalLink, Filter, MapPin, Pencil, Plus, Power, RefreshCw, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services/cloudinaryUploadService";
 import { Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 function ApiMessage({ message }) {
   if (!message) return null;
-  return <div className={`api-message ${message.type}`}>{message.text}</div>;
+  return (
+    <div
+      className={`api-message ${message.type}`}
+      role={message.type === "error" ? "alert" : "status"}
+      aria-live={message.type === "error" ? "assertive" : "polite"}
+    >
+      {message.text}
+    </div>
+  );
 }
 
 function Field({ label, children, help, className = "" }) {
@@ -19,6 +27,17 @@ function Field({ label, children, help, className = "" }) {
 }
 
 function hasValidCoordinatePair(facility) {
+  if (
+    facility?.latitude === null
+    || facility?.latitude === undefined
+    || facility?.latitude === ""
+    || facility?.longitude === null
+    || facility?.longitude === undefined
+    || facility?.longitude === ""
+  ) {
+    return false;
+  }
+
   const latitude = Number(facility?.latitude);
   const longitude = Number(facility?.longitude);
   return Number.isFinite(latitude)
@@ -180,44 +199,58 @@ export default function AdminFacilitiesSection({
       label: department.departmentName || department.name || "Chuyên khoa chưa đặt tên",
     })),
   ];
+  const visibleFacilityCount = facilities.length;
+  const mappedFacilityCount = facilities.filter(hasValidCoordinatePair).length;
 
   return (
-    <section className="admin-panel ai-config-admin-panel facility-admin-panel">
-      <div className="panel-title-row ai-config-section-heading">
-        <div>
+    <section
+      className="admin-panel ai-config-admin-panel facility-admin-panel facility-clinical-panel"
+      aria-labelledby="admin-facilities-title"
+    >
+      <header className="facility-clinical-heading">
+        <div className="facility-clinical-heading-copy">
           <p className="eyebrow">Cơ sở y tế</p>
-          <h2>Danh sách cơ sở</h2>
-          <p className="muted-text">Quản lý bệnh viện, phòng khám và chuyên khoa liên kết dùng cho điều phối bác sĩ.</p>
+          <h2 id="admin-facilities-title">Cơ sở y tế trong hệ thống</h2>
+          <p>Quản lý thông tin công khai, vị trí bản đồ và các chuyên khoa đang được liên kết với từng cơ sở.</p>
         </div>
-        <div className="facility-panel-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>Tải lại</button>
-          <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>
+        <div className="facility-clinical-heading-actions">
+          <div className="facility-clinical-context" aria-label="Thông tin danh sách hiện tại">
+            <ShieldCheck size={18} aria-hidden="true" />
+            <span>Dữ liệu cơ sở dùng cho bản đồ và điều phối</span>
+          </div>
+          <button className="btn btn-ghost btn-small facility-reload-button" type="button" onClick={onReload}>
+            <RefreshCw size={15} aria-hidden="true" /> Tải lại
+          </button>
+          <button className="btn btn-primary btn-small facility-create-button" type="button" onClick={openCreateForm}>
             <Plus size={15} /> Tạo cơ sở
           </button>
         </div>
-      </div>
+      </header>
       <ApiMessage message={message} />
 
-      <section className="ai-config-filter-card">
-        <div className="ai-config-filter-card-header">
+      <section className="ai-config-filter-card facility-filter-card" aria-labelledby="facility-filter-title">
+        <div className="ai-config-filter-card-header facility-filter-heading">
+          <span aria-hidden="true"><Filter size={18} /></span>
           <div>
-            <strong>Bộ lọc cơ sở y tế</strong>
+            <h3 id="facility-filter-title">Lọc danh sách cơ sở</h3>
             <p>Lọc theo tên cơ sở, địa chỉ, chuyên khoa và trạng thái hiển thị.</p>
           </div>
         </div>
 
-        <form className="ai-config-toolbar" onSubmit={onApplyFilters}>
+        <form className="ai-config-toolbar facility-filter-form" onSubmit={onApplyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
-            <label className="ai-config-search-field">
-              <Search size={16} />
-              <span className="sr-only">Tìm cơ sở y tế</span>
-              <input
-                type="search"
-                autoComplete="off"
-                value={filters.search}
-                onChange={(event) => onFilterChange("search", event.target.value)}
-                placeholder="Tìm tên bệnh viện, địa chỉ hoặc chuyên khoa..."
-              />
+            <label className="facility-search-field">
+              <span>Tìm cơ sở</span>
+              <span className="facility-search-control">
+                <Search size={17} aria-hidden="true" />
+                <input
+                  type="search"
+                  autoComplete="off"
+                  value={filters.search}
+                  onChange={(event) => onFilterChange("search", event.target.value)}
+                  placeholder="Tên bệnh viện, phòng khám hoặc địa chỉ"
+                />
+              </span>
             </label>
           </div>
 
@@ -258,7 +291,20 @@ export default function AdminFacilitiesSection({
         </form>
       </section>
 
-      <div className="admin-panel">
+      {!loading && !loadError && (
+        <div className="facility-result-summary" role="status" aria-live="polite">
+          <Building2 size={18} aria-hidden="true" />
+          <p>
+            <strong>{visibleFacilityCount} cơ sở đang hiển thị</strong>
+            <span>
+              {pageInfo.totalCount} cơ sở phù hợp
+              {visibleFacilityCount > 0 ? ` · ${mappedFacilityCount} có tọa độ bản đồ` : ""}
+            </span>
+          </p>
+        </div>
+      )}
+
+      <div className="facility-result-panel">
         {loading ? (
           <LoadingState
             label="Đang tải danh sách cơ sở y tế..."
@@ -328,10 +374,21 @@ export default function AdminFacilitiesSection({
 
                   <footer className="facility-admin-actions">
                     <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(facility)}><Pencil size={15} aria-hidden="true" /> Sửa</button>
+                    {hasValidCoordinatePair(facility) && (
+                      <a
+                        className="btn btn-ghost btn-small"
+                        href={`https://www.openstreetmap.org/?mlat=${facility.latitude}&mlon=${facility.longitude}#map=16/${facility.latitude}/${facility.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Xem ${facility.facilityName || "cơ sở y tế"} trên OpenStreetMap`}
+                      >
+                        <ExternalLink size={15} aria-hidden="true" /> Bản đồ
+                      </a>
+                    )}
                     <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(facility)}>
                       <Power size={15} aria-hidden="true" /> {isFacilityActive(facility) ? "Tắt" : "Bật"}
                     </button>
-                    <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(facility)}><Trash2 size={15} aria-hidden="true" /> Xóa</button>
+                    <button className="btn btn-dark btn-small facility-delete-button" type="button" onClick={() => onDelete(facility)}><Trash2 size={15} aria-hidden="true" /> Xóa</button>
                   </footer>
                 </article>
               );
@@ -340,7 +397,7 @@ export default function AdminFacilitiesSection({
         )}
       </div>
       {!loading && !loadError && (
-        <div className="pagination-row">
+        <nav className="pagination-row facility-pagination" aria-label="Phân trang cơ sở y tế">
           <button
             className="btn btn-ghost btn-small"
             type="button"
@@ -358,7 +415,7 @@ export default function AdminFacilitiesSection({
           >
             Sau
           </button>
-        </div>
+        </nav>
       )}
 
       {formOpen && (

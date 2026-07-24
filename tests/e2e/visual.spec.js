@@ -75,7 +75,7 @@ test.describe("visual baseline", () => {
             }),
           }));
         }
-        if (["admin-overview", "admin-users", "admin-doctors"].includes(route.name)) {
+        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -151,6 +151,39 @@ test.describe("visual baseline", () => {
               },
             ]
             : [];
+          const visualAdminFacilities = route.name === "admin-facilities"
+            ? [
+              {
+                id: "facility-visual-01",
+                facilityName: "Bệnh viện Đa khoa Trung tâm",
+                address: "125 Nguyễn Chí Thanh, Quận 5, TP.HCM",
+                latitude: 10.75852,
+                longitude: 106.66187,
+                facilityType: "Bệnh viện",
+                isActive: true,
+              },
+              {
+                id: "facility-visual-02",
+                facilityName: "Phòng khám Chuyên khoa An Bình",
+                address: "42 Hai Bà Trưng, Quận 1, TP.HCM",
+                latitude: null,
+                longitude: null,
+                facilityType: "Phòng khám chuyên khoa",
+                isActive: true,
+                departments: [{ departmentName: "Khoa Nội tổng quát" }],
+              },
+              {
+                id: "facility-visual-03",
+                facilityName: "Trung tâm Y tế Thành phố",
+                address: "18 Lý Thường Kiệt, Quận 10, TP.HCM",
+                latitude: 10.77211,
+                longitude: 106.66789,
+                facilityType: "Trung tâm y tế",
+                isActive: false,
+                departments: [{ departmentName: "Khoa Nhi" }],
+              },
+            ]
+            : [];
           await page.route("**/api/**", (request) => {
             const pathname = new URL(request.request().url()).pathname;
             if (pathname === "/api/users/me") {
@@ -167,13 +200,21 @@ test.describe("visual baseline", () => {
                 contentType: "application/json",
                 body: JSON.stringify({
                   success: true,
-                  data: [{
-                    id: "33333333-3333-4333-8333-333333333333",
-                    facilityId: "11111111-1111-4111-8111-111111111111",
-                    facilityName: "Bệnh viện Đa khoa Trung tâm",
-                    departmentId: "22222222-2222-4222-8222-222222222222",
-                    departmentName: "Khoa Tim mạch",
-                  }],
+                  data: route.name === "admin-facilities"
+                    ? [{
+                      id: "33333333-3333-4333-8333-333333333333",
+                      facilityId: "facility-visual-01",
+                      facilityName: "Bệnh viện Đa khoa Trung tâm",
+                      departmentId: "22222222-2222-4222-8222-222222222222",
+                      departmentName: "Khoa Tim mạch",
+                    }]
+                    : [{
+                      id: "33333333-3333-4333-8333-333333333333",
+                      facilityId: "11111111-1111-4111-8111-111111111111",
+                      facilityName: "Bệnh viện Đa khoa Trung tâm",
+                      departmentId: "22222222-2222-4222-8222-222222222222",
+                      departmentName: "Khoa Tim mạch",
+                    }],
                 }),
               });
             }
@@ -182,7 +223,9 @@ test.describe("visual baseline", () => {
                 ? visualAdminUsers
                 : pathname === "/api/doctors"
                   ? visualAdminDoctors
-                  : [];
+                  : pathname === "/api/medical-facilities"
+                    ? visualAdminFacilities
+                    : [];
               return request.fulfill({
                 contentType: "application/json",
                 body: JSON.stringify({
@@ -326,6 +369,23 @@ test.describe("visual baseline", () => {
             "3 đang hiển thị · 3 hồ sơ phù hợp",
             { exact: true },
           )).toBeVisible();
+        }
+        if (route.name === "admin-facilities") {
+          await expect(page.getByRole("heading", {
+            name: "Cơ sở y tế trong hệ thống",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "3 cơ sở đang hiển thị",
+            { exact: true },
+          )).toBeVisible();
+          await expect(page.getByRole("link", {
+            name: "Xem Bệnh viện Đa khoa Trung tâm trên OpenStreetMap",
+          })).toBeVisible();
+          await expect(
+            page.locator(".facility-admin-card")
+              .filter({ hasText: "Phòng khám Chuyên khoa An Bình" })
+              .getByRole("link"),
+          ).toHaveCount(0);
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");

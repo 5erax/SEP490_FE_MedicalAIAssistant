@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { Buffer } from "node:buffer";
 import { preparePage } from "./helpers";
@@ -306,6 +307,24 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
   await page.goto("/app/admin/facilities", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByText("Có tọa độ bản đồ", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 cơ sở đang hiển thị", { exact: true })).toBeVisible();
+  const mapLink = page.getByRole("link", { name: "Xem Bệnh viện Đa khoa A trên OpenStreetMap" });
+  await expect(mapLink).toHaveAttribute(
+    "href",
+    "https://www.openstreetmap.org/?mlat=10.8491&mlon=106.7715#map=16/10.8491/106.7715",
+  );
+  await expect(mapLink).toHaveAttribute("rel", "noreferrer");
+  expect((await mapLink.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".facility-clinical-panel")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const seriousViolations = accessibility.violations
+    .filter((violation) => ["critical", "serious"].includes(violation.impact))
+    .map((violation) => violation.id);
+  expect(seriousViolations).toEqual([]);
+
   await page.getByRole("button", { name: "Sửa" }).click();
   const facilityDialog = page.getByRole("dialog");
   await expect(facilityDialog.locator(".facility-image-preview")).toHaveAttribute("src", "https://res.cloudinary.com/demo/image/upload/facility-a.jpg");

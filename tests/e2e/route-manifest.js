@@ -103,6 +103,7 @@ export const VISUAL_ROUTES = [
   { name: "admin-overview", path: "/app/admin" },
   { name: "admin-users", path: "/app/admin/users" },
   { name: "admin-doctors", path: "/app/admin/doctors" },
+  { name: "admin-facilities", path: "/app/admin/facilities" },
   { name: "admin-gate", path: "/app/admin" },
   { name: "not-found", path: "/route-that-does-not-exist" },
 ];

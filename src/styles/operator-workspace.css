@@ -2,6 +2,7 @@
 @import "./admin/controls-and-forms.css";
 @import "./admin/admin-shell.css";
 @import "./admin/facility-forms.css";
+@import "./admin/facilities-clinical.css";
 @import "./admin/overview.css";
 @import "./admin/doctors-and-users.css";
 @import "./admin/doctors-clinical.css";
