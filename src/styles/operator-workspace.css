@@ -4,6 +4,7 @@
 @import "./admin/facility-forms.css";
 @import "./admin/overview.css";
 @import "./admin/doctors-and-users.css";
+@import "./admin/users-clinical.css";
 @import "./admin/modals-clinical.css";
 @import "./admin/ai-clinical-config.css";
 @import "./admin/subscriptions-and-details.css";

@@ -75,7 +75,7 @@ test.describe("visual baseline", () => {
             }),
           }));
         }
-        if (route.name === "admin-overview") {
+        if (["admin-overview", "admin-users"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -89,6 +89,34 @@ test.describe("visual baseline", () => {
             "/api/ai-configs": 8,
             "/api/medical-facilities": 24,
           };
+          const visualAdminUsers = route.name === "admin-users"
+            ? [
+              {
+                identityId: "user-visual-01",
+                displayName: "Nguyễn Minh Anh",
+                email: "minhanh@example.com",
+                status: "approved",
+                isActive: true,
+                isDeleted: false,
+              },
+              {
+                identityId: "user-visual-02",
+                displayName: "Trần Hoàng Nam",
+                email: "hoangnam@example.com",
+                status: "pending",
+                isActive: true,
+                isDeleted: false,
+              },
+              {
+                identityId: "user-visual-03",
+                displayName: "Lê Thu Hà",
+                email: "thuha@example.com",
+                status: "approved",
+                isActive: true,
+                isDeleted: false,
+              },
+            ]
+            : [];
           await page.route("**/api/**", (request) => {
             const pathname = new URL(request.request().url()).pathname;
             if (pathname === "/api/users/me") {
@@ -101,15 +129,18 @@ test.describe("visual baseline", () => {
               });
             }
             if (Object.hasOwn(adminTotals, pathname)) {
+              const items = pathname === "/api/users" ? visualAdminUsers : [];
               return request.fulfill({
                 contentType: "application/json",
                 body: JSON.stringify({
                   success: true,
                   data: {
-                    items: [],
+                    items,
                     pageNumber: 1,
                     pageSize: 10,
-                    totalCount: adminTotals[pathname],
+                    totalCount: pathname === "/api/users" && visualAdminUsers.length
+                      ? visualAdminUsers.length
+                      : adminTotals[pathname],
                     totalPages: 1,
                   },
                 }),
@@ -229,6 +260,12 @@ test.describe("visual baseline", () => {
             name: "Thông tin cốt lõi của hệ thống",
           })).toBeVisible();
           await expect(page.getByRole("link", { name: "Mở trang Tài khoản" })).toContainText("128");
+        }
+        if (route.name === "admin-users") {
+          await expect(page.getByRole("heading", {
+            name: "Người dùng trong hệ thống",
+          })).toBeVisible();
+          await expect(page.getByText("Nguyễn Minh Anh", { exact: true })).toBeVisible();
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");

@@ -78,13 +78,14 @@ test("admin retries a failed user list and receives an empty state", async ({ pa
   await page.keyboard.press("Enter");
 
   await expect(page.getByText("Không có tài khoản phù hợp", { exact: true })).toBeVisible();
-  await expect(page.getByText("Trang 1 / 1 · 0/0 hiển thị · 0 chờ duyệt", { exact: true })).toBeVisible();
+  await expect(page.getByText("Trang 1 / 1 · 0/0 hiển thị", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   expect(userRequestCount).toBe(3);
 });
 
 test("admin user filters use consistent labelled controls and status styling", async ({ page }) => {
   await preparePage(page);
+  await page.setViewportSize({ width: 320, height: 800 });
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
       accessToken,
@@ -186,10 +187,26 @@ test("admin user filters use consistent labelled controls and status styling", a
   await expect(page.getByText("approved-string@example.com", { exact: true })).toHaveCount(0);
   await expect(page.getByText("approved-number@example.com", { exact: true })).toHaveCount(0);
   await expect(page.getByText("pending-doctor@example.com", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 đang hiển thị · 1 chờ duyệt · 3 tài khoản có thể quản lý trong dữ liệu đã tải", { exact: true })).toBeVisible();
+
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  const adminNavigation = page.getByRole("navigation", { name: "Điều hướng admin" });
+  const activeNavigationItem = adminNavigation.getByRole("button", { name: "Người dùng" });
+  const navigationBox = await adminNavigation.boundingBox();
+  const activeNavigationBox = await activeNavigationItem.boundingBox();
+  expect(activeNavigationBox.x).toBeGreaterThanOrEqual(navigationBox.x);
+  expect(activeNavigationBox.x + activeNavigationBox.width).toBeLessThanOrEqual(
+    navigationBox.x + navigationBox.width,
+  );
+  const deleteButton = page.getByRole("button", { name: "Xóa tài khoản Pending Doctor" });
+  expect((await deleteButton.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 
   const accessibility = await new AxeBuilder({ page })
     .include(".admin-users-panel")
-    .withRules(["color-contrast"])
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
-  expect(accessibility.violations).toEqual([]);
+  const seriousViolations = accessibility.violations
+    .filter((violation) => ["critical", "serious"].includes(violation.impact))
+    .map((violation) => violation.id);
+  expect(seriousViolations).toEqual([]);
 });

@@ -363,6 +363,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [patientProfilePageInfo, setPatientProfilePageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const activeSection = initialSection;
   const activeAdminItem = ADMIN_NAV_ITEMS.find((item) => item.id === `admin.${activeSection}`);
+  const adminNavRef = useRef(null);
   const [search, setSearch] = useState("");
   const [userStatusFilter, setUserStatusFilter] = useState(USER_STATUS_FILTERS.all);
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
@@ -416,6 +417,14 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [facilityLoadError, setFacilityLoadError] = useState("");
   const [patientProfileMessage, setPatientProfileMessage] = useState(null);
   const [patientProfileLoadError, setPatientProfileLoadError] = useState("");
+
+  useEffect(() => {
+    const navigation = adminNavRef.current;
+    const activeButton = navigation?.querySelector("button.active");
+    if (!navigation || !activeButton) return;
+
+    navigation.scrollLeft = Math.max(0, activeButton.offsetLeft - 8);
+  }, [activeSection]);
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [doctorLoadError, setDoctorLoadError] = useState("");
   const [aiConfigMessage, setAIConfigMessage] = useState(null);
@@ -1906,7 +1915,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
               <span>MediMate AI</span>
             </a>
 
-            <nav className="admin-nav" aria-label="Điều hướng admin">
+            <nav ref={adminNavRef} className="admin-nav" aria-label="Điều hướng admin">
               {ADMIN_NAV_ITEMS.map((item) => {
                 const Icon = ADMIN_NAV_ICONS[item.icon];
                 const section = item.id.replace("admin.", "");
