@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Cpu,
   RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import { Button, ErrorState, LoadingState } from "../ui";
 import AIConfigTable from "./AIConfigTable";
@@ -34,42 +35,59 @@ export default function AdminAIConfigsSection({
   onView,
 }) {
   return (
-    <section className="admin-panel ai-config-admin-panel">
-      <div className="panel-title-row ai-config-section-heading">
-        <div>
-          <p className="eyebrow">Nền tảng AI</p>
-          <h2>Quản lý cấu hình AI</h2>
-          <p className="muted-text">Quản lý prompt, model và hành vi AI trong hệ thống MediMate AI.</p>
+    <section
+      className="admin-panel ai-config-admin-panel ai-config-clinical-panel"
+      aria-labelledby="admin-ai-config-title"
+    >
+      <header className="ai-config-clinical-heading">
+        <div className="ai-config-clinical-heading-copy">
+          <p className="eyebrow">Vận hành trí tuệ nhân tạo</p>
+          <h2 id="admin-ai-config-title">Cấu hình AI trong hệ thống</h2>
+          <p>Quản lý prompt hệ thống, mô hình và tham số phản hồi của các tính năng AI đang được MediMate sử dụng.</p>
         </div>
-        <button className="btn btn-ghost btn-small" type="button" onClick={() => onLoadPage()}>
-          <RefreshCw size={15} /> Đồng bộ cấu hình
-        </button>
-      </div>
+        <div className="ai-config-clinical-heading-actions">
+          <span>
+            <ShieldAlert size={18} aria-hidden="true" />
+            Chỉ quản trị viên được thay đổi cấu hình
+          </span>
+          <button className="btn btn-ghost btn-small" type="button" onClick={() => onLoadPage()}>
+            <RefreshCw size={15} aria-hidden="true" /> Tải lại
+          </button>
+        </div>
+      </header>
 
-      <section className="ai-config-kpi-grid">
+      <aside className="ai-config-impact-note" aria-label="Lưu ý vận hành">
+        <ShieldAlert size={19} aria-hidden="true" />
+        <div>
+          <strong>Thay đổi có thể ảnh hưởng phản hồi AI đang vận hành</strong>
+          <p>Kiểm tra đúng tính năng, mô hình, prompt và trạng thái trước khi lưu hoặc bật cấu hình.</p>
+        </div>
+      </aside>
+
+      <section className="ai-config-kpi-grid" aria-label="Tổng quan cấu hình trên trang hiện tại">
         <article>
-          <span><BrainCircuit size={16} /></span>
+          <span><BrainCircuit size={16} aria-hidden="true" /></span>
           <div>
             <small>Tổng cấu hình</small>
             <strong>{pageInfo.totalCount}</strong>
           </div>
         </article>
         <article>
-          <span><Cpu size={16} /></span>
+          <span><Cpu size={16} aria-hidden="true" /></span>
           <div>
             <small>Đang bật trên trang</small>
             <strong>{activeCount}</strong>
           </div>
         </article>
         <article>
-          <span><Activity size={16} /></span>
+          <span><Activity size={16} aria-hidden="true" /></span>
           <div>
             <small>Đang tắt trên trang</small>
             <strong>{disabledCount}</strong>
           </div>
         </article>
         <article>
-          <span><ClipboardList size={16} /></span>
+          <span><ClipboardList size={16} aria-hidden="true" /></span>
           <div>
             <small>Tính năng trên trang</small>
             <strong>{featureCount}</strong>
@@ -77,7 +95,15 @@ export default function AdminAIConfigsSection({
         </article>
       </section>
 
-      {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
+      {message && (
+        <div
+          className={`api-message ${message.type}`}
+          role={message.type === "error" ? "alert" : "status"}
+          aria-live={message.type === "error" ? "assertive" : "polite"}
+        >
+          {message.text}
+        </div>
+      )}
 
       <AIConfigToolbar
         filters={filters}
@@ -91,6 +117,16 @@ export default function AdminAIConfigsSection({
         onReset={onFilterReset}
         onCreate={onCreate}
       />
+
+      {!loading && !error && (
+        <div className="ai-config-result-summary" role="status" aria-live="polite">
+          <BrainCircuit size={18} aria-hidden="true" />
+          <p>
+            <strong>{configs.length} cấu hình đang hiển thị</strong>
+            <span>{pageInfo.totalCount} cấu hình trong danh mục</span>
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <LoadingState
@@ -120,8 +156,8 @@ export default function AdminAIConfigsSection({
         />
       )}
 
-      {!error && (
-        <div className="pagination-row">
+      {!loading && !error && (
+        <nav className="pagination-row ai-config-pagination" aria-label="Phân trang cấu hình AI">
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => onLoadPage(pageInfo.pageNumber - 1)}>
             Trước
           </button>
@@ -129,7 +165,7 @@ export default function AdminAIConfigsSection({
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => onLoadPage(pageInfo.pageNumber + 1)}>
             Sau
           </button>
-        </div>
+        </nav>
       )}
     </section>
   );

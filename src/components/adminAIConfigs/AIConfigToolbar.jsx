@@ -33,10 +33,11 @@ export default function AIConfigToolbar({
   ];
 
   return (
-    <section className="ai-config-filter-card">
-      <div className="ai-config-filter-card-header">
+    <section className="ai-config-filter-card ai-config-clinical-filter-card" aria-labelledby="ai-config-filter-title">
+      <div className="ai-config-filter-card-header ai-config-clinical-filter-heading">
+        <span aria-hidden="true"><Filter size={18} /></span>
         <div>
-          <strong>Bộ lọc cấu hình AI</strong>
+          <h3 id="ai-config-filter-title">Lọc danh mục cấu hình</h3>
           <p>Lọc prompt, mô hình và tính năng đang vận hành trong MediMate AI.</p>
         </div>
       </div>
@@ -44,18 +45,20 @@ export default function AIConfigToolbar({
       <form className="ai-config-toolbar" onSubmit={onSubmit}>
         <div className="ai-config-toolbar-row ai-config-toolbar-primary">
           <label className="ai-config-search-field">
-            <Search size={16} />
-            <span className="sr-only">Tìm cấu hình</span>
-            <input
-              type="search"
-              autoComplete="off"
-              value={filters.search}
-              onChange={(event) => onChange("search", event.target.value)}
-              placeholder="Tìm cấu hình, tính năng, mô hình hoặc nội dung prompt..."
-            />
+            <span>Tìm cấu hình</span>
+            <span className="ai-config-search-control">
+              <Search size={17} aria-hidden="true" />
+              <input
+                type="search"
+                autoComplete="off"
+                value={filters.search}
+                onChange={(event) => onChange("search", event.target.value)}
+                placeholder="Tên tính năng, mô hình hoặc nội dung prompt"
+              />
+            </span>
           </label>
           <button className="btn btn-primary btn-small ai-config-add-button" type="button" onClick={onCreate}>
-            <BrainCircuit size={15} /> Thêm cấu hình
+            <BrainCircuit size={15} aria-hidden="true" /> Tạo cấu hình
           </button>
         </div>
 
@@ -99,8 +102,8 @@ export default function AIConfigToolbar({
           </div>
 
           <div className="ai-config-filter-actions">
-            <button className="btn btn-primary btn-small" type="submit"><Filter size={14} /> Áp dụng</button>
-            <button className="btn btn-ghost btn-small" type="button" onClick={onReset}><RotateCcw size={14} /> Xóa lọc</button>
+            <button className="btn btn-primary btn-small" type="submit"><Filter size={14} aria-hidden="true" /> Áp dụng</button>
+            <button className="btn btn-ghost btn-small" type="button" onClick={onReset}><RotateCcw size={14} aria-hidden="true" /> Xóa lọc</button>
           </div>
         </div>
       </form>

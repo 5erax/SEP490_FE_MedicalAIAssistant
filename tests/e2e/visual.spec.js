@@ -75,7 +75,7 @@ test.describe("visual baseline", () => {
             }),
           }));
         }
-        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities", "admin-departments", "admin-icd-chapters", "admin-clinical-questions", "admin-patient-profiles"].includes(route.name)) {
+        if (["admin-overview", "admin-users", "admin-doctors", "admin-ai-configs", "admin-facilities", "admin-departments", "admin-icd-chapters", "admin-clinical-questions", "admin-patient-profiles"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -148,6 +148,40 @@ test.describe("visual baseline", () => {
                 facilityName: "Bệnh viện Nhi đồng",
                 yearsOfExperience: 6,
                 isActive: false,
+              },
+            ]
+            : [];
+          const visualAdminAIConfigs = route.name === "admin-ai-configs"
+            ? [
+              {
+                id: "ai-config-visual-01",
+                taskType: "symptom-analysis-prod",
+                systemPrompt: "Hỗ trợ làm rõ triệu chứng, nêu giới hạn y tế và khuyến nghị gặp người có chuyên môn khi cần.",
+                model: "medimate-clinical-v2",
+                temperature: 0.2,
+                maxTokens: 1200,
+                isActive: true,
+                updatedAt: "2026-07-23T08:30:00Z",
+              },
+              {
+                id: "ai-config-visual-02",
+                taskType: "consultation-questions",
+                systemPrompt: "Tạo câu hỏi ngắn gọn để người dùng chuẩn bị thông tin trước khi trao đổi với bác sĩ.",
+                model: "medimate-consult-v1",
+                temperature: 0.3,
+                maxTokens: 900,
+                isActive: true,
+                updatedAt: "2026-07-22T09:45:00Z",
+              },
+              {
+                id: "ai-config-visual-03",
+                taskType: "specialty-suggestion-stage",
+                systemPrompt: "Tổng hợp thông tin đã cung cấp và đưa ra gợi ý chuyên khoa mang tính tham khảo.",
+                model: "medimate-routing-v1",
+                temperature: null,
+                maxTokens: null,
+                isActive: false,
+                createdAt: "2026-07-21T10:15:00Z",
               },
             ]
             : [];
@@ -408,6 +442,8 @@ test.describe("visual baseline", () => {
                 ? visualAdminUsers
                 : pathname === "/api/doctors"
                   ? visualAdminDoctors
+                  : pathname === "/api/ai-configs"
+                    ? visualAdminAIConfigs
                   : pathname === "/api/medical-facilities"
                     ? visualAdminFacilities
                     : [];
@@ -554,6 +590,19 @@ test.describe("visual baseline", () => {
             "3 đang hiển thị · 3 hồ sơ phù hợp",
             { exact: true },
           )).toBeVisible();
+        }
+        if (route.name === "admin-ai-configs") {
+          await expect(page.getByRole("heading", {
+            name: "Cấu hình AI trong hệ thống",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "3 cấu hình đang hiển thị",
+            { exact: true },
+          )).toBeVisible();
+          await expect(
+            page.getByRole("list", { name: "Danh sách cấu hình AI" })
+              .getByText("symptom-analysis-prod", { exact: true }),
+          ).toBeVisible();
         }
         if (route.name === "admin-facilities") {
           await expect(page.getByRole("heading", {

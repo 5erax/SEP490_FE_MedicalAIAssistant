@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BrainCircuit } from "lucide-react";
+import { useRef, useState } from "react";
+import { BrainCircuit, ShieldAlert } from "lucide-react";
 import { Dialog } from "../ui";
 
 const EMPTY_FORM = {
@@ -62,7 +62,10 @@ export default function AIConfigFormModal({
 }) {
   const [form, setForm] = useState(() => toFormValue(config));
   const [errors, setErrors] = useState({});
-  const title = mode === "edit" ? "Update AI Configuration" : "Create AI Configuration";
+  const firstFieldRef = useRef(null);
+  const errorSummaryRef = useRef(null);
+  const title = mode === "edit" ? "Cập nhật cấu hình AI" : "Tạo cấu hình AI";
+  const hasErrors = Object.values(errors).some(Boolean);
 
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -73,7 +76,10 @@ export default function AIConfigFormModal({
     event.preventDefault();
     const nextErrors = validate(form);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
+    if (Object.keys(nextErrors).length) {
+      window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
+      return;
+    }
     onSubmit(buildPayload(form));
   }
 
@@ -82,68 +88,121 @@ export default function AIConfigFormModal({
       backdropClassName="ai-config-modal-backdrop"
       className="ai-config-modal"
       labelledBy="ai-config-modal-title"
+      describedBy="ai-config-modal-description"
       onClose={onClose}
       closeOnBackdrop={!saving}
       closeOnEscape={!saving}
+      initialFocusRef={firstFieldRef}
       restoreFocusRef={restoreFocusRef}
     >
         <header className="ai-config-modal-header">
-          <span className="ai-config-modal-icon"><BrainCircuit size={22} /></span>
+          <span className="ai-config-modal-icon"><BrainCircuit size={22} aria-hidden="true" /></span>
           <div>
-            <p className="eyebrow">AI Platform Console</p>
+            <p className="eyebrow">Vận hành AI</p>
             <h2 id="ai-config-modal-title">{title}</h2>
-            <p>Điều chỉnh prompt, model và tham số vận hành cho từng tính năng AI.</p>
+            <p id="ai-config-modal-description">Điều chỉnh prompt, mô hình và tham số của một tính năng AI đã có trong hệ thống.</p>
           </div>
-          <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose}>×</button>
+          <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose} disabled={saving}>×</button>
         </header>
 
-        <form className="clean-form ai-config-form" onSubmit={handleSubmit}>
+        <form className="clean-form ai-config-form" onSubmit={handleSubmit} noValidate>
+          <aside className="ai-config-modal-warning">
+            <ShieldAlert size={18} aria-hidden="true" />
+            <p><strong>Kiểm tra kỹ trước khi lưu.</strong> Prompt, mô hình và trạng thái mới có thể ảnh hưởng phản hồi AI đang vận hành.</p>
+          </aside>
+
+          {hasErrors && (
+            <div
+              ref={errorSummaryRef}
+              className="ai-config-error-summary"
+              role="alert"
+              tabIndex="-1"
+            >
+              <strong>Chưa thể lưu cấu hình</strong>
+              <span>Kiểm tra các trường được đánh dấu bên dưới.</span>
+            </div>
+          )}
+
           <div className="form-two-cols">
             <label className={`clean-field ${errors.taskType ? "ai-config-field-error" : ""}`}>
-              <span>Feature Type / Task Type</span>
-              <input value={form.taskType} onChange={(event) => update("taskType", event.target.value)} placeholder="symptom-analysis" />
-              <small>{errors.taskType || "Dùng để phân loại cấu hình theo từng tính năng AI."}</small>
+              <span>Loại tính năng <small className="ai-config-required-note">(bắt buộc)</small></span>
+              <input
+                ref={firstFieldRef}
+                value={form.taskType}
+                onChange={(event) => update("taskType", event.target.value)}
+                placeholder="Ví dụ: symptom-analysis"
+                required
+                aria-invalid={Boolean(errors.taskType)}
+                aria-describedby="ai-config-task-help"
+              />
+              <small id="ai-config-task-help">{errors.taskType || "Định danh cấu hình theo tính năng AI của hệ thống."}</small>
             </label>
             <label className={`clean-field ${errors.model ? "ai-config-field-error" : ""}`}>
-              <span>AI Model</span>
-              <input value={form.model} onChange={(event) => update("model", event.target.value)} placeholder="gpt-4o-mini, medimate-triage-v1..." />
-              {errors.model && <small>{errors.model}</small>}
+              <span>Mô hình AI <small className="ai-config-required-note">(bắt buộc)</small></span>
+              <input
+                value={form.model}
+                onChange={(event) => update("model", event.target.value)}
+                placeholder="Tên mô hình theo cấu hình backend"
+                required
+                aria-invalid={Boolean(errors.model)}
+                aria-describedby={errors.model ? "ai-config-model-error" : undefined}
+              />
+              {errors.model && <small id="ai-config-model-error">{errors.model}</small>}
             </label>
             <label className={`clean-field ${errors.temperature ? "ai-config-field-error" : ""}`}>
-              <span>Temperature</span>
-              <input type="number" step="0.1" min="0" max="2" value={form.temperature} onChange={(event) => update("temperature", event.target.value)} />
-              <small>{errors.temperature || "Giá trị thấp giúp phản hồi ổn định hơn trong ngữ cảnh y tế."}</small>
+              <span>Nhiệt độ phản hồi</span>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="2"
+                value={form.temperature}
+                onChange={(event) => update("temperature", event.target.value)}
+                aria-invalid={Boolean(errors.temperature)}
+                aria-describedby="ai-config-temperature-help"
+              />
+              <small id="ai-config-temperature-help">{errors.temperature || "Giá trị từ 0 đến 2; giá trị thấp cho phản hồi ổn định hơn."}</small>
             </label>
             <label className={`clean-field ${errors.maxTokens ? "ai-config-field-error" : ""}`}>
-              <span>Max Tokens</span>
-              <input type="number" min="1" value={form.maxTokens} onChange={(event) => update("maxTokens", event.target.value)} />
-              {errors.maxTokens && <small>{errors.maxTokens}</small>}
+              <span>Token tối đa</span>
+              <input
+                type="number"
+                min="1"
+                value={form.maxTokens}
+                onChange={(event) => update("maxTokens", event.target.value)}
+                aria-invalid={Boolean(errors.maxTokens)}
+                aria-describedby={errors.maxTokens ? "ai-config-token-error" : undefined}
+              />
+              {errors.maxTokens && <small id="ai-config-token-error">{errors.maxTokens}</small>}
             </label>
           </div>
 
           <label className={`clean-field ${errors.systemPrompt ? "ai-config-field-error" : ""}`}>
-            <span>Prompt / System Instruction</span>
+            <span>Prompt hệ thống <small className="ai-config-required-note">(bắt buộc)</small></span>
             <textarea
               rows={9}
               value={form.systemPrompt}
               onChange={(event) => update("systemPrompt", event.target.value)}
               placeholder="Nhập system instruction định hướng hành vi AI, giới hạn an toàn và cách phản hồi cho bệnh nhân..."
+              required
+              aria-invalid={Boolean(errors.systemPrompt)}
+              aria-describedby="ai-config-prompt-help"
             />
-            <small>{errors.systemPrompt || "Nên mô tả vai trò, ranh giới y tế, tone phản hồi và điều kiện khuyến nghị gặp bác sĩ."}</small>
+            <small id="ai-config-prompt-help">{errors.systemPrompt || "Nêu rõ vai trò, ranh giới y tế, cách phản hồi và điều kiện khuyến nghị gặp người có chuyên môn."}</small>
           </label>
 
           <label className="clean-field ai-config-status-field">
-            <span>Status</span>
+            <span>Trạng thái sau khi lưu</span>
             <select value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="true">Đang bật</option>
+              <option value="false">Đang tắt</option>
             </select>
           </label>
 
           <div className="doctor-modal-actions">
-            <button className="btn btn-ghost" type="button" onClick={onClose}>Hủy</button>
+            <button className="btn btn-ghost" type="button" onClick={onClose} disabled={saving}>Hủy</button>
             <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Create Config"}
+              {saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Tạo cấu hình"}
             </button>
           </div>
         </form>

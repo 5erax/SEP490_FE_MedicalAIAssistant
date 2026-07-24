@@ -103,6 +103,7 @@ export const VISUAL_ROUTES = [
   { name: "admin-overview", path: "/app/admin" },
   { name: "admin-users", path: "/app/admin/users" },
   { name: "admin-doctors", path: "/app/admin/doctors" },
+  { name: "admin-ai-configs", path: "/app/admin/ai-configs" },
   { name: "admin-facilities", path: "/app/admin/facilities" },
   { name: "admin-departments", path: "/app/admin/departments" },
   { name: "admin-icd-chapters", path: "/app/admin/icd-chapters" },

@@ -1,5 +1,5 @@
-import { BrainCircuit } from "lucide-react";
-import { Dialog } from "../ui";
+import { BrainCircuit, Gauge, ServerCog, ShieldCheck } from "lucide-react";
+import { Badge, Dialog } from "../ui";
 import { formatDateTime, formatEnvironment, getEnvironment } from "./aiConfigUtils";
 
 export default function AIConfigDetailModal({ config, restoreFocusRef, onClose }) {
@@ -10,48 +10,56 @@ export default function AIConfigDetailModal({ config, restoreFocusRef, onClose }
       backdropClassName="ai-config-modal-backdrop"
       className="ai-config-modal ai-config-detail-modal"
       labelledBy="ai-config-detail-title"
+      describedBy="ai-config-detail-description"
       onClose={onClose}
       restoreFocusRef={restoreFocusRef}
     >
         <header className="ai-config-modal-header">
-          <span className="ai-config-modal-icon"><BrainCircuit size={22} /></span>
+          <span className="ai-config-modal-icon"><BrainCircuit size={22} aria-hidden="true" /></span>
           <div>
-            <p className="eyebrow">AI Config Detail</p>
+            <p className="eyebrow">Chi tiết cấu hình AI</p>
             <h2 id="ai-config-detail-title">{config.taskType || "AI configuration"}</h2>
-            <p>{config.model || "Chưa chọn model"} · {config.isActive ? "Active" : "Inactive"}</p>
+            <p id="ai-config-detail-description">{config.model || "Chưa chọn mô hình"} · {config.isActive ? "Đang bật" : "Đang tắt"}</p>
           </div>
           <button className="doctor-modal-close" type="button" aria-label="Đóng chi tiết" onClick={onClose}>×</button>
         </header>
 
+        <div className="ai-config-detail-status">
+          <Badge tone={config.isActive ? "success" : "warning"}>
+            {config.isActive ? "Đang bật" : "Đang tắt"}
+          </Badge>
+          <span><ShieldCheck size={15} aria-hidden="true" /> Chỉ hiển thị dữ liệu cấu hình backend cung cấp</span>
+        </div>
+
         <div className="ai-config-detail-grid">
           <article>
-            <span>Feature Type</span>
+            <span><ServerCog size={14} aria-hidden="true" /> Loại tính năng</span>
             <strong>{config.taskType || "Chưa cập nhật"}</strong>
           </article>
           <article>
-            <span>Environment</span>
+            <span>Môi trường</span>
             <strong>{formatEnvironment(getEnvironment(config))}</strong>
           </article>
           <article>
-            <span>Temperature</span>
-            <strong>{config.temperature ?? "Auto"}</strong>
+            <span><Gauge size={14} aria-hidden="true" /> Nhiệt độ</span>
+            <strong>{config.temperature ?? "Tự động"}</strong>
           </article>
           <article>
-            <span>Max Tokens</span>
-            <strong>{config.maxTokens ?? "Auto"}</strong>
+            <span>Token tối đa</span>
+            <strong>{config.maxTokens ?? "Tự động"}</strong>
           </article>
           <article>
-            <span>Created</span>
+            <span>Ngày tạo</span>
             <strong>{formatDateTime(config.createdAt)}</strong>
           </article>
           <article>
-            <span>Updated</span>
+            <span>Cập nhật gần nhất</span>
             <strong>{formatDateTime(config.updatedAt || config.createdAt)}</strong>
           </article>
         </div>
 
         <section className="ai-config-prompt-block">
-          <span>Prompt / System Instruction</span>
+          <span>Prompt hệ thống</span>
           <pre>{config.systemPrompt || "Chưa có system prompt."}</pre>
         </section>
     </Dialog>
