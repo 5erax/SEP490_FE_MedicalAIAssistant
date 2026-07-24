@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Clock3, Send, X } from "lucide-react";
+import { Bot, Clock3, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi } from "../../services/api";
@@ -596,7 +596,11 @@ export default function FacilityMap({
           </div>
         </div>
       )}
-      {mapStatus === "ready" && <button className="locate-button" type="button" onClick={onLocate} aria-label="Định vị tôi">⌖</button>}
+      {mapStatus === "ready" && (
+        <button className="locate-button" type="button" onClick={onLocate} aria-label="Định vị tôi">
+          <LocateFixed size={18} aria-hidden="true" />
+        </button>
+      )}
       <MapConsultationAssistant
         key={consultationFacility?.facilityId || "map-consultation"}
         consultationFacility={consultationFacility}

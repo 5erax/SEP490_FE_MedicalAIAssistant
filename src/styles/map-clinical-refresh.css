@@ -1,0 +1,683 @@
+.map-clinical-refresh {
+  --map-ink: #0b2d35;
+  --map-muted: #526c70;
+  --map-subtle: #6c8184;
+  --map-teal: #0c7c78;
+  --map-teal-strong: #09625f;
+  --map-teal-soft: #e6f5f1;
+  --map-jade: #d8eee7;
+  --map-surface: #ffffff;
+  --map-surface-soft: #f6faf8;
+  --map-canvas: #edf4f0;
+  --map-line: #ceded9;
+  --map-line-strong: #a9c4bd;
+  --map-focus: #d28a24;
+  --map-danger: #a23a32;
+  --map-danger-line: #ddb6b0;
+  --map-danger-soft: #fff2ef;
+  color-scheme: light;
+  background: var(--map-canvas);
+  color: var(--map-ink);
+}
+
+.map-clinical-refresh :where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--map-focus);
+  outline-offset: 3px;
+}
+
+.map-clinical-refresh .map-skip-link {
+  left: min(456px, calc(100vw - 360px));
+  top: 14px;
+  border: 1px solid var(--map-teal-strong);
+  border-radius: 10px;
+  background: var(--map-surface);
+  color: var(--map-teal-strong);
+  box-shadow: 0 10px 30px rgba(12, 75, 72, 0.16);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.map-clinical-refresh .clinic-sidebar {
+  width: min(440px, 41vw);
+  flex-basis: min(440px, 41vw);
+  border-right: 1px solid var(--map-line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 252, 250, 0.98));
+  padding: 24px 22px 74px;
+  color: var(--map-ink);
+  scrollbar-color: var(--map-line-strong) transparent;
+}
+
+.map-clinical-refresh .clinic-sidebar::-webkit-scrollbar {
+  width: 9px;
+}
+
+.map-clinical-refresh .clinic-sidebar::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--map-line-strong);
+  background-clip: padding-box;
+}
+
+.map-clinical-refresh .map-sidebar-screen {
+  min-height: auto;
+}
+
+.map-clinical-refresh .map-sidebar-head {
+  gap: 7px;
+  margin-bottom: 22px;
+}
+
+.map-clinical-refresh .map-sidebar-head p {
+  color: var(--map-teal-strong);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.map-clinical-refresh .map-sidebar-head h2 {
+  max-width: 340px;
+  margin: 0;
+  color: var(--map-ink);
+  font-family: var(--display);
+  font-size: clamp(29px, 3vw, 38px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.map-clinical-refresh .map-sidebar-head span {
+  max-width: 360px;
+  color: var(--map-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.map-clinical-refresh .map-page-actions {
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.map-clinical-refresh .map-page-actions button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--map-line);
+  border-radius: 11px;
+  background: var(--map-surface);
+  color: var(--map-ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.map-clinical-refresh .map-page-actions button:last-child {
+  border-color: var(--map-teal);
+  background: var(--map-teal);
+  color: #ffffff;
+}
+
+.map-clinical-refresh .map-page-actions button:hover {
+  border-color: var(--map-teal);
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .map-page-actions button:last-child:hover {
+  background: var(--map-teal-strong);
+  color: #ffffff;
+}
+
+.map-clinical-refresh .clinic-search {
+  min-height: 52px;
+  border: 1px solid var(--map-line-strong);
+  border-radius: 13px;
+  background: var(--map-surface);
+  box-shadow: none;
+  color: var(--map-teal-strong);
+  padding: 0 13px;
+}
+
+.map-clinical-refresh .clinic-search:focus-within {
+  border-color: var(--map-teal);
+  box-shadow: 0 0 0 3px rgba(12, 124, 120, 0.12);
+}
+
+.map-clinical-refresh .clinic-search input {
+  height: 48px;
+  background: transparent;
+  color: var(--map-ink);
+  font-size: 14px;
+}
+
+.map-clinical-refresh .clinic-search input::placeholder {
+  color: var(--map-subtle);
+  opacity: 1;
+}
+
+.map-clinical-refresh .clinic-search button {
+  width: 32px;
+  height: 32px;
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .facility-type-filter {
+  gap: 7px;
+  padding: 13px 0 2px;
+}
+
+.map-clinical-refresh .facility-type-filter button {
+  min-height: 38px;
+  border: 1px solid var(--map-line);
+  background: var(--map-surface);
+  color: var(--map-muted);
+  padding: 0 13px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.map-clinical-refresh .facility-type-filter button.active {
+  border-color: var(--map-teal);
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .result-summary {
+  margin: 22px 0 10px;
+}
+
+.map-clinical-refresh .result-summary h2 {
+  color: var(--map-ink);
+  font-size: 16px;
+}
+
+.map-clinical-refresh .result-summary span {
+  color: var(--map-muted);
+  font-weight: 650;
+}
+
+.map-clinical-refresh .facility-list-panel {
+  gap: 11px;
+}
+
+.map-clinical-refresh .facility-result-card {
+  border: 1px solid var(--map-line);
+  border-radius: 15px;
+  background: var(--map-surface);
+  padding: 15px;
+  box-shadow: none;
+}
+
+.map-clinical-refresh .facility-result-card:hover,
+.map-clinical-refresh .facility-result-card:focus-within,
+.map-clinical-refresh .facility-result-card.selected {
+  border-color: var(--map-teal);
+  box-shadow: 0 12px 32px rgba(18, 83, 78, 0.09);
+  transform: none;
+}
+
+.map-clinical-refresh .facility-top strong {
+  color: var(--map-ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.map-clinical-refresh .type-badge,
+.map-clinical-refresh .type-badge.clinic,
+.map-clinical-refresh .type-badge.pharmacy,
+.map-clinical-refresh .type-badge.other {
+  border: 1px solid var(--map-line);
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+  padding: 5px 8px;
+}
+
+.map-clinical-refresh .type-badge.emergency {
+  border-color: var(--map-danger-line);
+  background: var(--map-danger-soft);
+  color: var(--map-danger);
+}
+
+.map-clinical-refresh .facility-card-address {
+  color: var(--map-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.map-clinical-refresh .facility-card-meta {
+  gap: 6px;
+}
+
+.map-clinical-refresh .facility-card-meta span {
+  border-color: var(--map-line);
+  background: var(--map-surface-soft);
+  color: var(--map-muted);
+  font-weight: 650;
+}
+
+.map-clinical-refresh .facility-select-button {
+  min-height: 44px;
+  border: 1px solid var(--map-line-strong);
+  border-radius: 10px;
+  background: var(--map-surface-soft);
+  color: var(--map-teal-strong);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.map-clinical-refresh .facility-select-button:hover {
+  border-color: var(--map-teal);
+  background: var(--map-teal-soft);
+}
+
+.map-clinical-refresh .facility-select-button[aria-pressed="true"] {
+  border-color: var(--map-teal);
+  background: var(--map-teal);
+  color: #ffffff;
+}
+
+.map-clinical-refresh .sidebar-note {
+  border: 1px solid var(--map-line);
+  border-radius: 12px;
+  background: var(--map-teal-soft);
+  color: var(--map-muted);
+  font-weight: 650;
+}
+
+.map-clinical-refresh .sidebar-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 14px -2px 0;
+}
+
+.map-clinical-refresh .sidebar-disclaimer svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--map-teal);
+}
+
+.map-clinical-refresh .map-stage {
+  padding: 14px;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(12, 124, 120, 0.08), transparent 25rem),
+    var(--map-canvas);
+}
+
+.map-clinical-refresh .map-stage > .map-panel,
+.map-clinical-refresh .map-panel {
+  inset: 14px;
+  margin: 0;
+  border: 1px solid var(--map-line);
+  border-radius: 20px;
+  background: #e8efeb;
+  box-shadow: 0 18px 48px rgba(24, 73, 68, 0.11);
+}
+
+.map-clinical-refresh .clinic-marker {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #ffffff;
+  background: var(--map-teal);
+  color: #ffffff;
+  box-shadow: 0 5px 16px rgba(8, 75, 72, 0.32);
+}
+
+.map-clinical-refresh .clinic-marker.selected,
+.map-clinical-refresh .clinic-marker[aria-pressed="true"] {
+  border-color: #ffffff;
+  background: var(--map-teal-strong);
+  box-shadow: 0 0 0 4px var(--map-jade), 0 8px 20px rgba(8, 75, 72, 0.34);
+}
+
+.map-clinical-refresh .clinic-marker:focus-visible {
+  outline: 3px solid var(--map-focus);
+  outline-offset: 4px;
+}
+
+.map-clinical-refresh .user-marker {
+  border-color: #ffffff;
+  background: rgba(12, 124, 120, 0.28);
+}
+
+.map-clinical-refresh .user-marker span {
+  background: var(--map-teal);
+}
+
+.map-clinical-refresh .locate-button {
+  width: 46px;
+  height: 46px;
+  border: 2px solid #ffffff;
+  background: var(--map-teal);
+  color: #ffffff;
+  box-shadow: 0 10px 26px rgba(8, 75, 72, 0.24);
+}
+
+.map-clinical-refresh .clinic-popup .maplibregl-popup-content {
+  border: 1px solid var(--map-line);
+  border-radius: 14px;
+  background: var(--map-surface);
+  color: var(--map-ink);
+  box-shadow: 0 18px 44px rgba(15, 61, 58, 0.18);
+}
+
+.map-clinical-refresh .popup-card button {
+  min-height: 42px;
+  border: 1px solid var(--map-teal);
+  background: var(--map-teal);
+  color: #ffffff;
+}
+
+.map-clinical-refresh .facility-detail-sidebar,
+.map-clinical-refresh .doctor-detail-view {
+  background: var(--map-surface-soft);
+}
+
+.map-clinical-refresh .facility-detail-topbar,
+.map-clinical-refresh .doctor-detail-topbar {
+  border-bottom-color: var(--map-line);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.map-clinical-refresh .facility-detail-topbar button,
+.map-clinical-refresh .doctor-detail-topbar button {
+  min-height: 44px;
+  border-color: var(--map-line);
+  background: var(--map-surface);
+  color: var(--map-ink);
+}
+
+.map-clinical-refresh .facility-detail-media {
+  border-color: var(--map-line);
+  background: var(--map-teal-soft);
+  color: var(--map-teal);
+}
+
+.map-clinical-refresh .facility-detail-summary h2,
+.map-clinical-refresh .doctor-detail-summary h2 {
+  color: var(--map-ink);
+  letter-spacing: -0.03em;
+}
+
+.map-clinical-refresh .facility-detail-summary p,
+.map-clinical-refresh .doctor-detail-summary p {
+  color: var(--map-muted);
+}
+
+.map-clinical-refresh .facility-quick-actions button,
+.map-clinical-refresh .facility-quick-actions a {
+  min-height: 48px;
+  border-color: var(--map-line);
+  background: var(--map-surface);
+  color: var(--map-ink);
+}
+
+.map-clinical-refresh .facility-quick-actions .primary {
+  border-color: var(--map-teal);
+  background: var(--map-teal);
+  color: #ffffff;
+}
+
+.map-clinical-refresh .facility-detail-tabs {
+  border-color: var(--map-line);
+  background: var(--map-surface);
+}
+
+.map-clinical-refresh .facility-detail-tabs button {
+  min-height: 44px;
+  color: var(--map-muted);
+}
+
+.map-clinical-refresh .facility-detail-tabs button.active {
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .facility-detail-tabs button.active::after {
+  background: var(--map-teal);
+}
+
+.map-clinical-refresh .facility-info-group,
+.map-clinical-refresh .review-item,
+.map-clinical-refresh .current-user-review {
+  border-color: var(--map-line);
+  background: var(--map-surface);
+  box-shadow: none;
+}
+
+.map-clinical-refresh .facility-review-form :where(textarea, input, select),
+.map-clinical-refresh .busy-hours-heading select {
+  border-color: var(--map-line-strong);
+  background: var(--map-surface);
+  color: var(--map-ink);
+}
+
+.map-clinical-refresh .map-ai-panel {
+  border: 1px solid var(--map-line);
+  background: var(--map-surface);
+  box-shadow: -16px 0 46px rgba(15, 61, 58, 0.14);
+}
+
+.map-clinical-refresh .map-ai-header,
+.map-clinical-refresh .map-ai-composer {
+  border-color: var(--map-line);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.map-clinical-refresh .map-ai-chat,
+.map-clinical-refresh .map-ai-history,
+.map-clinical-refresh .map-ai-thread {
+  background: var(--map-surface-soft);
+}
+
+.map-clinical-refresh .map-ai-message-bubble.bot,
+.map-clinical-refresh .map-ai-question-card,
+.map-clinical-refresh .map-ai-history-title {
+  border-color: var(--map-line);
+  background: var(--map-surface);
+  color: var(--map-ink);
+  box-shadow: none;
+}
+
+.map-clinical-refresh .map-ai-message-bubble.user {
+  border-color: var(--map-line-strong);
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .map-ai-composer input,
+.map-clinical-refresh .map-ai-select-control select {
+  border-color: var(--map-line-strong);
+  background: var(--map-surface);
+  color: var(--map-ink);
+}
+
+.map-clinical-refresh .map-ai-composer button,
+.map-clinical-refresh .map-ai-launcher {
+  border-color: var(--map-teal);
+  background: var(--map-teal);
+  color: #ffffff;
+  box-shadow: 0 10px 26px rgba(8, 75, 72, 0.24);
+}
+
+.map-clinical-refresh .map-ai-composer button:hover:not(:disabled) {
+  background: var(--map-teal-strong);
+  box-shadow: 0 12px 28px rgba(8, 75, 72, 0.28);
+}
+
+.map-clinical-refresh .map-status-overlay {
+  background: rgba(246, 250, 248, 0.9);
+}
+
+.map-clinical-refresh .map-loading-spinner {
+  border-color: rgba(12, 124, 120, 0.2);
+  border-top-color: var(--map-teal);
+}
+
+.map-clinical-refresh .map-fallback {
+  background:
+    linear-gradient(90deg, rgba(11, 45, 53, 0.05) 1px, transparent 1px),
+    linear-gradient(rgba(11, 45, 53, 0.05) 1px, transparent 1px),
+    var(--map-surface-soft);
+  background-size: 36px 36px;
+}
+
+.map-clinical-refresh .map-fallback-actions button {
+  border-color: var(--map-teal);
+  background: var(--map-teal);
+  color: #ffffff;
+}
+
+@media (max-width: 960px) {
+  .map-clinical-refresh .clinic-sidebar {
+    width: min(400px, 44vw);
+    flex-basis: min(400px, 44vw);
+    padding-inline: 18px;
+  }
+
+  .map-clinical-refresh .map-sidebar-head h2 {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 760px) {
+  .map-clinical-refresh {
+    min-height: 100svh;
+    height: 100svh;
+  }
+
+  .map-clinical-refresh .map-stage {
+    flex-basis: 46%;
+    min-height: 250px;
+    padding: 8px;
+  }
+
+  .map-clinical-refresh .map-stage > .map-panel {
+    inset: 8px;
+    border-radius: 16px;
+  }
+
+  .map-clinical-refresh .clinic-sidebar {
+    width: 100%;
+    flex: 1 1 54%;
+    border-top: 1px solid var(--map-line);
+    padding: 18px 14px 88px;
+  }
+
+  .map-clinical-refresh .map-sidebar-head {
+    margin-bottom: 16px;
+  }
+
+  .map-clinical-refresh .map-sidebar-head h2 {
+    font-size: 28px;
+  }
+
+  .map-clinical-refresh .map-ai-panel {
+    right: 8px;
+    bottom: 74px;
+    left: 8px;
+    max-height: min(430px, calc(100% - 92px));
+    border-radius: 17px;
+  }
+
+}
+
+@media (max-width: 420px) {
+  .map-clinical-refresh .map-page-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .map-clinical-refresh .map-sidebar-head h2 {
+    font-size: 26px;
+  }
+
+  .map-clinical-refresh .facility-result-card {
+    padding: 14px;
+  }
+
+  .map-clinical-refresh .facility-detail-topbar,
+  .map-clinical-refresh .doctor-detail-topbar {
+    padding-inline: 12px;
+  }
+}
+
+[data-theme="dark"] .map-clinical-refresh {
+  --map-ink: #e7f2ef;
+  --map-muted: #aec3bf;
+  --map-subtle: #8fa6a2;
+  --map-teal: #55c3b9;
+  --map-teal-strong: #8bd9d1;
+  --map-teal-soft: #153b39;
+  --map-jade: #214b46;
+  --map-surface: #102d2f;
+  --map-surface-soft: #143638;
+  --map-canvas: #0b2426;
+  --map-line: #355b56;
+  --map-line-strong: #52766f;
+  --map-focus: #f2ba62;
+  --map-danger: #ffaaa0;
+  --map-danger-line: #8b504c;
+  --map-danger-soft: #4a2525;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .map-clinical-refresh .clinic-sidebar,
+[data-theme="dark"] .map-clinical-refresh .facility-detail-topbar,
+[data-theme="dark"] .map-clinical-refresh .doctor-detail-topbar,
+[data-theme="dark"] .map-clinical-refresh .map-ai-header,
+[data-theme="dark"] .map-clinical-refresh .map-ai-composer {
+  background: rgba(16, 45, 47, 0.96);
+}
+
+[data-theme="dark"] .map-clinical-refresh .map-status-overlay {
+  background: rgba(11, 36, 38, 0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-clinical-refresh *,
+  .map-clinical-refresh *::before,
+  .map-clinical-refresh *::after {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
+
+@media (forced-colors: active) {
+  .map-clinical-refresh,
+  .map-clinical-refresh .clinic-sidebar,
+  .map-clinical-refresh .facility-result-card,
+  .map-clinical-refresh .sidebar-note,
+  .map-clinical-refresh .facility-info-group,
+  .map-clinical-refresh .map-ai-panel {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .map-clinical-refresh .facility-result-card,
+  .map-clinical-refresh .sidebar-note,
+  .map-clinical-refresh .facility-info-group,
+  .map-clinical-refresh .map-ai-panel,
+  .map-clinical-refresh :where(button, input, select, textarea) {
+    border: 1px solid CanvasText;
+  }
+
+  .map-clinical-refresh :where(button, a, input, select, textarea):focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
+
+  .map-clinical-refresh .clinic-marker,
+  .map-clinical-refresh .locate-button {
+    border: 2px solid ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+    forced-color-adjust: none;
+  }
+
+  .map-clinical-refresh .facility-type-filter button.active,
+  .map-clinical-refresh .facility-select-button[aria-pressed="true"] {
+    background: Highlight;
+    color: HighlightText;
+  }
+}

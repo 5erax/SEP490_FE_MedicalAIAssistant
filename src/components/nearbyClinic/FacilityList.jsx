@@ -12,7 +12,9 @@ export default function FacilityList({
       <div className="result-summary">
         <div>
           <h2 id="facility-list-title">Danh sách cơ sở</h2>
-          <span>{loading ? "Đang tải dữ liệu" : `${facilities.length} kết quả phù hợp`}</span>
+          <span role="status" aria-live="polite">
+            {loading ? "Đang tải dữ liệu" : `${facilities.length} kết quả phù hợp`}
+          </span>
         </div>
       </div>
       {loading && [0, 1, 2].map((item) => (

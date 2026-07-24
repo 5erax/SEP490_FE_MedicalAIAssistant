@@ -5,11 +5,15 @@ import {
   Building2,
   Clock3,
   Globe2,
+  House,
   ImagePlus,
+  Info,
+  LocateFixed,
   MapPin,
   Pencil,
   Phone,
   Route,
+  Search,
   Share2,
   Star,
   Stethoscope,
@@ -27,6 +31,7 @@ import {
   getStoredAuth,
   medicalFacilitiesApi,
 } from "../services/api";
+import "../styles/map-clinical-refresh.css";
 
 const TYPE_LABELS = {
   hospital: "Bệnh viện",
@@ -456,11 +461,11 @@ function NearbyClinicPage() {
             : ""
           : "Chưa có cơ sở y tế đang hoạt động.");
       })
-      .catch((error) => {
+      .catch(() => {
         if (active) {
           setFacilities([]);
           setSelectedFacility(null);
-          setApiNotice(error.message || "Không tải được dữ liệu cơ sở y tế.");
+          setApiNotice("Chưa thể tải danh sách cơ sở y tế. Vui lòng kiểm tra kết nối và thử lại.");
         }
       })
       .finally(() => {
@@ -991,24 +996,30 @@ function NearbyClinicPage() {
   const showLegacyMapDetail = Boolean(0);
 
   return (
-    <main className="clinic-page">
+    <main className="clinic-page map-clinical-refresh">
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list">Bỏ qua bản đồ, đến danh sách cơ sở</a>
-      <aside className={`clinic-sidebar sidebar-view-${sidebarView}`} aria-live="polite">
+      <aside className={`clinic-sidebar sidebar-view-${sidebarView}`}>
         {sidebarView === "hospital-list" && (
         <div className="map-sidebar-screen sidebar-screen-active">
         <header className="map-sidebar-head">
           <p>Cơ sở y tế</p>
-          <h1>Tìm nơi khám phù hợp</h1>
+          <h2>Tìm nơi khám phù hợp</h2>
           <span>Chọn một cơ sở để xem địa chỉ, chuyên khoa và đánh giá.</span>
         </header>
         <div className="map-page-actions">
-          <button type="button" onClick={() => navigate("/dashboard")}>← Trang chủ</button>
-          <button type="button" onClick={handleLocateMe}>Định vị tôi</button>
+          <button type="button" onClick={() => navigate("/dashboard")}>
+            <House size={16} aria-hidden="true" />
+            Trang chủ
+          </button>
+          <button type="button" onClick={handleLocateMe}>
+            <LocateFixed size={16} aria-hidden="true" />
+            Định vị tôi
+          </button>
         </div>
         <div className="clinic-search">
-          <span aria-hidden="true">⌕</span>
+          <Search size={17} aria-hidden="true" />
           <label className="sr-only" htmlFor="facility-search">Tìm cơ sở y tế</label>
           <input
             id="facility-search"
@@ -1058,7 +1069,12 @@ function NearbyClinicPage() {
         </div>
         )}
 
-        {sidebarView === "hospital-list" && <div className="sidebar-note">ℹ Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</div>}
+        {sidebarView === "hospital-list" && (
+          <div className="sidebar-note sidebar-disclaimer">
+            <Info size={16} aria-hidden="true" />
+            <span>Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</span>
+          </div>
+        )}
         {sidebarView === "hospital-detail" && detailFacility && (
           <section
             className="map-sidebar-screen facility-detail-sidebar sidebar-screen-active"

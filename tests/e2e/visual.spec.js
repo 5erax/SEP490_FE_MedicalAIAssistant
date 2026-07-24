@@ -105,6 +105,36 @@ test.describe("visual baseline", () => {
             body: JSON.stringify(LANDING_MAP_STYLE),
           }));
         }
+        if (route.name === "nearby-clinic") {
+          await page.route("**/api/medical-facilities/active", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: [{
+                id: "11111111-1111-4111-8111-111111111111",
+                facilityName: "Bệnh viện kiểm thử",
+                address: "123 Nguyễn Trãi, TP.HCM",
+                latitude: 10.77,
+                longitude: 106.69,
+                phone: "0123456789",
+                facilityType: "Hospital",
+                openingHours: "24/7",
+                departments: [{
+                  departmentId: "33333333-3333-4333-8333-333333333333",
+                  departmentName: "Tim mạch",
+                }],
+              }],
+            }),
+          }));
+          await page.route("**/api/facility-departments/active", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({ success: true, data: [] }),
+          }));
+          await page.route("https://basemaps.cartocdn.com/**", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify(LANDING_MAP_STYLE),
+          }));
+        }
         if (route.name === "doctor-register") {
           await page.route(
             "**/api/doctor-invitations/validate?token=visual-doctor-token",
@@ -138,6 +168,10 @@ test.describe("visual baseline", () => {
         if (route.name === "landing") {
           await expect(page.locator(".maplibregl-canvas")).toBeVisible();
           await expect(page.getByRole("heading", { name: "MediMate+ 30 ngày" })).toBeVisible();
+        }
+        if (route.name === "nearby-clinic") {
+          await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+          await expect(page.getByText("Bệnh viện kiểm thử", { exact: true })).toBeVisible();
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");

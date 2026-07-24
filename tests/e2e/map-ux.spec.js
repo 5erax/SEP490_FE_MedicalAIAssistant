@@ -293,3 +293,40 @@ test("geolocation denial does not remove the rendered map", async ({ page, conte
   await expect(page.getByText("Không thể lấy vị trí của bạn.", { exact: true })).toBeVisible();
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
 });
+
+test("map refresh remains usable on mobile, dark mode and forced colors", async ({ page }) => {
+  await preparePage(page);
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await mockMapApis(page, [facility()]);
+  await mockSuccessfulMapStyle(page);
+
+  await page.goto("/map", { waitUntil: "domcontentloaded" });
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+  await expect(page.getByRole("heading", { name: "Tìm nơi khám phù hợp" })).toBeVisible();
+  await expect(page.locator(".clinic-sidebar")).not.toHaveAttribute("aria-live");
+  await expect(page.getByText("1 kết quả phù hợp", { exact: true })).toHaveAttribute("role", "status");
+  await expect(page.locator(".map-page-actions").getByRole("button", { name: "Định vị tôi" })).toHaveCSS("min-height", "44px");
+
+  await page.emulateMedia({ forcedColors: "active" });
+  await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" })).toBeVisible();
+});
+
+test("facility API failure uses safe Vietnamese recovery copy", async ({ page }) => {
+  await preparePage(page);
+  await page.route("**/api/**", (route) => route.abort("failed"));
+  await mockSuccessfulMapStyle(page);
+
+  await page.goto("/map", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText(
+    "Chưa thể tải danh sách cơ sở y tế. Vui lòng kiểm tra kết nối và thử lại.",
+    { exact: true },
+  )).toBeVisible();
+  await expect(page.getByText("Failed to fetch", { exact: true })).toHaveCount(0);
+});
