@@ -1217,7 +1217,11 @@
     padding: 14px;
   }
 
-  .user-shell .chatbot-page,
+  .user-shell .chatbot-page {
+    height: calc(100svh - 180px);
+    border-radius: 18px;
+  }
+
   .user-shell .clinic-page {
     height: calc(100svh - 150px);
     border-radius: 18px;
@@ -1242,7 +1246,7 @@
 
   .patient-help-launcher {
     right: 16px;
-    bottom: 96px;
+    bottom: var(--patient-help-mobile-bottom, 96px);
   }
 
   .patient-help-menu {

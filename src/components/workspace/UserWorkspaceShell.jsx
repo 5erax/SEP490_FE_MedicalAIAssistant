@@ -528,7 +528,10 @@ export default function UserWorkspaceShell({ children }) {
           onComplete={handlePatientSetupComplete}
         />
       )}
-      <PatientOnboardingAssistant auth={auth} />
+      <PatientOnboardingAssistant
+        auth={auth}
+        mobileBottomOffset={path === "/chat" ? "170px" : undefined}
+      />
     </div>
   );
 }

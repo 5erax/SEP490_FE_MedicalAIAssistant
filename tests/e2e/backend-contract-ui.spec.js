@@ -22,6 +22,18 @@ async function authenticate(page) {
   }, TOKEN);
 }
 
+async function authenticatePremiumPatient(page) {
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      email: "patient@example.com",
+      roles: ["Patient"],
+      isPremium: true,
+      isProfileCompleted: true,
+    }));
+  }, TOKEN);
+}
+
 test.skip("symptom analysis renders the legacy analyze response", async ({ page }) => {
   await preparePage(page);
   await authenticate(page);
@@ -478,7 +490,7 @@ test("clinical diagnosis uses the dedicated Swagger endpoint", async ({ page }) 
 
 test("chat sends the backend WebChatbotRequest and renders its answer", async ({ page }) => {
   await preparePage(page);
-  await authenticate(page);
+  await authenticatePremiumPatient(page);
   let chatPayload = null;
 
   await page.route("**/api/web-chatbot/message", async (route) => {
@@ -493,7 +505,7 @@ test("chat sends the backend WebChatbotRequest and renders its answer", async ({
   });
 
   await page.goto("/chat", { waitUntil: "domcontentloaded" });
-  await page.getByPlaceholder("Nhập triệu chứng hoặc câu hỏi...").fill("Tôi bị đau đầu");
+  await page.getByPlaceholder("Mô tả triệu chứng hoặc đặt câu hỏi...").fill("Tôi bị đau đầu");
   await page.getByRole("button", { name: "Gửi", exact: true }).click();
 
   await expect(page.getByText("Phản hồi từ backend", { exact: true })).toBeVisible();
