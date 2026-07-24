@@ -13,6 +13,7 @@ import {
   MapPin,
   Menu,
   MessageSquare,
+  Pill,
   Search,
   Settings2,
   UserRound,
@@ -157,7 +158,11 @@ export default function UserWorkspaceShell({ children }) {
   const premiumAccess = hasPremiumAccess(auth);
   const path = getCurrentPath();
   const activeItem = NAV_ITEMS.find((item) => path === item.path)
-    ?? (path === "/profile" ? { label: "Hồ sơ", icon: UserRound } : NAV_ITEMS[0]);
+    ?? (path === "/profile"
+      ? { label: "Hồ sơ", icon: UserRound }
+      : path === "/medication"
+        ? { label: "Kiểm tra thuốc", icon: Pill }
+        : NAV_ITEMS[0]);
   const ActiveIcon = activeItem.icon;
   const accountUser = accountState.accessToken === accessToken ? accountState.user : null;
   const cachedAccountUser = accessToken ? getCachedAccountUser(accessToken) : null;

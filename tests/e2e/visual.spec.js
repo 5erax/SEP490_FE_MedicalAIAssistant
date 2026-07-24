@@ -19,7 +19,7 @@ test.describe("visual baseline", () => {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
-        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat", "patient-records", "patient-profile", "patient-recovery"].includes(route.name)) {
+        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat", "patient-records", "patient-profile", "patient-recovery", "patient-medication"].includes(route.name)) {
           await page.addInitScript(({ accessToken, isProfileSetup }) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -166,6 +166,10 @@ test.describe("visual baseline", () => {
         if (route.name === "patient-recovery") {
           await expect(page.getByRole("heading", { name: "Kế hoạch phục hồi chưa được mở" })).toBeVisible();
           await expect(page.getByText("MediMate hiện chưa tạo, lưu hoặc theo dõi kế hoạch phục hồi cá nhân.")).toBeVisible();
+        }
+        if (route.name === "patient-medication") {
+          await expect(page.getByRole("heading", { name: "Xem trước ảnh trước khi trao đổi với người có chuyên môn" })).toBeVisible();
+          await expect(page.getByText("MediMate hiện chưa nhận diện thuốc hoặc kiểm tra tương tác từ ảnh.")).toBeVisible();
         }
         const routeLoading = page.locator("[data-route-loading]");
         if (await routeLoading.count()) {

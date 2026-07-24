@@ -29,7 +29,7 @@ test("medication upload rejects unsupported files and previews decoded images", 
     buffer: Buffer.from("<script>alert('xss')</script>"),
   });
   await expect(page.getByRole("alert")).toHaveText("Chỉ chấp nhận ảnh JPG, PNG hoặc WEBP.");
-  await expect(page.getByRole("button", { name: "Nhận diện" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Kiểm tra trạng thái nhận diện" })).toBeDisabled();
 
   await fileInput.setInputFiles({
     name: "medicine.png",
@@ -41,5 +41,10 @@ test("medication upload rejects unsupported files and previews decoded images", 
   });
 
   await expect(page.getByRole("img", { name: "Ảnh thuốc đã chọn" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Nhận diện" })).toBeEnabled();
+  const statusButton = page.getByRole("button", { name: "Kiểm tra trạng thái nhận diện" });
+  await expect(statusButton).toBeEnabled();
+  await statusButton.click();
+  await expect(page.locator(".scan-feedback")).toContainText(
+    "Tính năng nhận diện thuốc đang được hoàn thiện.",
+  );
 });

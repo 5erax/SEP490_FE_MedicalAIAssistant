@@ -1,4 +1,14 @@
 import { useRef, useState } from "react";
+import {
+  Camera,
+  Check,
+  FileImage,
+  ImagePlus,
+  MapPin,
+  ScanLine,
+  ShieldCheck,
+  Upload,
+} from "lucide-react";
 import { navigate as goTo } from "../router/navigation";
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -9,16 +19,18 @@ function delay(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function formatFileSize(size) {
+  if (!Number.isFinite(size) || size <= 0) return "";
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function MedicationScanPage() {
   const [file, setFile] = useState(null);
   const [fileError, setFileError] = useState("");
   const [scanStatus, setScanStatus] = useState("idle");
   const [scanStep, setScanStep] = useState("");
   const [scanError, setScanError] = useState("");
-  const [scanResult, setScanResult] = useState(null);
-  const [drugList, setDrugList] = useState([]);
-  const [drugInput, setDrugInput] = useState("");
-  const [interactions, setInteractions] = useState([]);
   const previewCanvasRef = useRef(null);
 
   const clearPreview = () => {
@@ -65,9 +77,8 @@ function MedicationScanPage() {
     }
 
     setScanStatus("idle");
+    setScanStep("");
     setScanError("");
-    setScanResult(null);
-    setInteractions([]);
   };
 
   const handleDrop = async (event) => {
@@ -87,218 +98,669 @@ function MedicationScanPage() {
     setScanStep("Đang kiểm tra trạng thái dịch vụ nhận diện thuốc...");
     await delay(600);
     setScanStatus("idle");
-    setScanError("Tính năng nhận diện thuốc đang được hoàn thiện. Ảnh của bạn chỉ được xem trước trên trình duyệt và không được phân tích hoặc lưu.");
-  };
-
-  const addDrug = () => {
-    const name = drugInput.trim();
-    if (!name || drugList.includes(name)) return;
-    setDrugList((current) => [...current, name]);
-    setDrugInput("");
-  };
-
-  const checkInteraction = () => {
-    if (!scanResult || drugList.length === 0) return;
-    setInteractions([]);
+    setScanStep("");
+    setScanError(
+      "Tính năng nhận diện thuốc đang được hoàn thiện. Ảnh của bạn chỉ được xem trước trên trình duyệt và không được phân tích hoặc lưu.",
+    );
   };
 
   return (
-    <main className="medication-page">
+    <div className="medication-page">
       <style>{styles}</style>
-      <section className="scan-panel">
-        <div className="medication-support-note" role="status">
-          Tính năng nhận diện thuốc đang được hoàn thiện. Bạn vẫn có thể xem trước ảnh, nhưng hệ thống chưa phân tích hoặc lưu ảnh này.
+
+      <header className="medication-intro">
+        <div>
+          <span className="medication-status">
+            <ShieldCheck size={16} aria-hidden="true" />
+            Tính năng thử nghiệm
+          </span>
+          <p className="medication-eyebrow">Kiểm tra nhãn thuốc</p>
+          <h1>Xem trước ảnh trước khi trao đổi với người có chuyên môn</h1>
         </div>
-        <nav className="medication-quick-nav" aria-label="Dieu huong nhanh">
-          <button type="button" onClick={() => goTo("/dashboard")}>← Trang chủ</button>
-          <button type="button" onClick={() => goTo("/chat")}>Chat AI</button>
-          <button type="button" onClick={() => goTo("/records")}>Hồ sơ y tế</button>
-        </nav>
-        <p className="mini-label">Nhận diện thuốc qua ảnh</p>
-        <h1>Chụp ảnh hoặc tải lên nhãn thuốc</h1>
-        <label
-          className={`upload-zone ${file ? "has-preview" : ""}`}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={handleDrop}
-        >
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
-          <canvas
-            ref={previewCanvasRef}
-            role="img"
-            aria-label="Ảnh thuốc đã chọn"
-            hidden={!file}
-          />
-          {!file && (
+        <p>
+          MediMate hiện chưa nhận diện thuốc hoặc kiểm tra tương tác từ ảnh.
+          Bạn có thể chọn ảnh để kiểm tra độ rõ ngay trên thiết bị; ảnh không được gửi hoặc lưu.
+        </p>
+      </header>
+
+      <section className="medication-workspace" aria-label="Xem trước ảnh nhãn thuốc">
+        <section className="scan-panel" aria-labelledby="medication-upload-title">
+          <div className="scan-panel-head">
             <div>
-              <span>📷</span>
-              <strong>Chọn ảnh nhãn thuốc</strong>
-              <small>Hỗ trợ JPG, PNG, WEBP · Tối đa 10MB</small>
+              <p className="medication-eyebrow">Ảnh nhãn thuốc</p>
+              <h2 id="medication-upload-title">
+                {file ? "Ảnh đã sẵn sàng để xem trước" : "Chọn một ảnh rõ và đầy đủ"}
+              </h2>
+            </div>
+            <span aria-hidden="true"><FileImage size={21} /></span>
+          </div>
+
+          <label
+            className={`upload-zone ${file ? "has-preview" : ""}`}
+            htmlFor="medication-label-upload"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={handleDrop}
+          >
+            <input
+              id="medication-label-upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              aria-describedby="medication-upload-hint medication-file-feedback"
+              onChange={handleFileChange}
+            />
+            <canvas
+              ref={previewCanvasRef}
+              role="img"
+              aria-label="Ảnh thuốc đã chọn"
+              hidden={!file}
+            />
+            {!file && (
+              <div className="upload-placeholder">
+                <span aria-hidden="true"><ImagePlus size={28} /></span>
+                <strong>Chọn hoặc kéo ảnh vào đây</strong>
+                <small id="medication-upload-hint">JPG, PNG hoặc WEBP · tối đa 10 MB</small>
+              </div>
+            )}
+          </label>
+
+          <p
+            id="medication-file-feedback"
+            className={fileError ? "upload-error" : "medication-live-empty"}
+            role="alert"
+            aria-atomic="true"
+          >
+            {fileError}
+          </p>
+
+          <div className="upload-actions" aria-label="Cách chọn ảnh">
+            <label>
+              <Upload size={17} aria-hidden="true" />
+              Tải ảnh lên
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Tải ảnh nhãn thuốc lên"
+                onChange={handleFileChange}
+              />
+            </label>
+            <label>
+              <Camera size={17} aria-hidden="true" />
+              Chụp ảnh
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                aria-label="Chụp ảnh nhãn thuốc"
+                onChange={handleFileChange}
+              />
+            </label>
+          </div>
+
+          <button
+            className="primary-action"
+            type="button"
+            disabled={!file || scanStatus === "scanning"}
+            aria-describedby="medication-scan-availability"
+            onClick={handleScan}
+          >
+            <ScanLine size={18} aria-hidden="true" />
+            {scanStatus === "scanning" ? "Đang kiểm tra..." : "Kiểm tra trạng thái nhận diện"}
+          </button>
+
+          <div
+            className={`scan-feedback ${scanStatus === "scanning" ? "is-loading" : ""} ${scanError ? "has-message" : ""}`}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {scanStatus === "scanning" && (
+              <>
+                <span className="scan-progress" aria-hidden="true" />
+                <strong>{scanStep}</strong>
+              </>
+            )}
+            {scanError && <p>{scanError}</p>}
+          </div>
+        </section>
+
+        <aside className="medication-guidance" aria-labelledby="medication-guidance-title">
+          <div className="medication-guidance-head">
+            <span aria-hidden="true"><ShieldCheck size={23} /></span>
+            <div>
+              <p className="medication-eyebrow">Giới hạn hiện tại</p>
+              <h2 id="medication-guidance-title">Chưa có kết quả phân tích thuốc</h2>
+            </div>
+          </div>
+
+          <p id="medication-scan-availability" className="medication-guidance-copy">
+            Trang này không xác định tên thuốc, hoạt chất, liều dùng hay mức độ tương tác.
+            Không dùng ảnh xem trước để tự quyết định cách sử dụng thuốc.
+          </p>
+
+          <ul className="medication-checklist">
+            <li>
+              <Check size={17} aria-hidden="true" />
+              <span>Ảnh chỉ được xử lý cục bộ để tạo bản xem trước.</span>
+            </li>
+            <li>
+              <Check size={17} aria-hidden="true" />
+              <span>Không có dữ liệu thuốc mẫu được hiển thị như kết quả thật.</span>
+            </li>
+            <li>
+              <Check size={17} aria-hidden="true" />
+              <span>Thông tin sử dụng thuốc cần được xác nhận với bác sĩ hoặc dược sĩ.</span>
+            </li>
+          </ul>
+
+          {file ? (
+            <div className="selected-file" role="status" aria-live="polite" aria-atomic="true">
+              <span aria-hidden="true"><FileImage size={19} /></span>
+              <div>
+                <strong>Ảnh đã chọn</strong>
+                <p>{file.name} · {formatFileSize(file.size)}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="selected-file is-empty">
+              <span aria-hidden="true"><ImagePlus size={19} /></span>
+              <div>
+                <strong>Chưa chọn ảnh</strong>
+                <p>Ưu tiên ảnh đủ sáng, thấy rõ tên và thông tin trên nhãn.</p>
+              </div>
             </div>
           )}
-        </label>
-        {fileError && <p className="upload-error" role="alert">{fileError}</p>}
-        <div className="upload-actions">
-          <label>
-            Chọn ảnh
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
-          </label>
-          <label>
-            Chụp ảnh
-            <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={handleFileChange} />
-          </label>
-        </div>
-        <button className="primary-action" type="button" disabled={!file || scanStatus === "scanning"} onClick={handleScan}>
-          Nhận diện →
-        </button>
 
-        {scanStatus === "scanning" && (
-          <div className="scan-progress">
-            <span />
-            <strong>{scanStep}</strong>
-          </div>
-        )}
-        {scanError && <p className="upload-error" role="alert">{scanError}</p>}
+          <button className="facility-action" type="button" onClick={() => goTo("/map")}>
+            <MapPin size={17} aria-hidden="true" />
+            Tìm cơ sở y tế
+          </button>
+        </aside>
       </section>
-
-      <section className="scan-result-panel">
-        {!scanResult ? (
-          <div className="empty-result">
-            <div>+</div>
-            <h2>Kết quả nhận diện sẽ hiển thị tại đây</h2>
-            <p>Sau khi quét, bạn có thể xem hoạt chất, hàm lượng và kiểm tra tương tác thuốc cơ bản.</p>
-          </div>
-        ) : (
-          <>
-            <article className="medicine-card">
-              <div className="medicine-head">
-                <h2>{scanResult.medicineName}</h2>
-                <span>{scanResult.confidence}% khớp</span>
-              </div>
-              <div className="medicine-grid">
-                <p><span>Hoạt chất</span>{scanResult.activeIngredient}</p>
-                <p><span>Dạng bào chế</span>{scanResult.dosageForm}</p>
-                <p><span>Hàm lượng</span>{scanResult.strength}</p>
-                <p><span>Nhà sản xuất</span>{scanResult.manufacturer}</p>
-              </div>
-              <div className="medicine-copy">
-                <strong>Công dụng</strong>
-                <p>{scanResult.usage}</p>
-                <strong>Liều dùng</strong>
-                <p>{scanResult.dosage}</p>
-                <strong>Tác dụng phụ thường gặp</strong>
-                <div className="side-effects">
-                  {scanResult.sideEffects.map((item) => <span key={item}>{item}</span>)}
-                </div>
-              </div>
-              <em>{scanResult.requiresPrescription ? "Cần kê đơn bác sĩ" : "Không kê đơn"}</em>
-            </article>
-
-            <div className="med-disclaimer">Thông tin thuốc chỉ dùng để tham khảo. Luôn dùng thuốc theo hướng dẫn của bác sĩ hoặc dược sĩ.</div>
-
-            <article className="interaction-card">
-              <p className="mini-label">Kiểm tra tương tác thuốc</p>
-              <h2>Bạn đang dùng thuốc nào khác?</h2>
-              <div className="drug-input-row">
-                <input
-                  value={drugInput}
-                  onChange={(event) => setDrugInput(event.target.value)}
-                  onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addDrug(); } }}
-                  placeholder="Nhập tên thuốc..."
-                />
-                <button type="button" onClick={addDrug}>+</button>
-              </div>
-              <div className="drug-tags">
-                {drugList.map((drug) => (
-                  <span key={drug}>{drug}<button type="button" onClick={() => setDrugList((current) => current.filter((item) => item !== drug))}>×</button></span>
-                ))}
-              </div>
-              <button className="dark-action" type="button" disabled={drugList.length === 0} onClick={checkInteraction}>Kiểm tra tương tác</button>
-
-              {interactions.length > 0 && (
-                <div className="interaction-list">
-                  {interactions.map((item) => (
-                    <article key={`${item.medicineA}-${item.medicineB}`}>
-                      <span className={`severity ${item.severity.toLowerCase()}`}>{item.severity}</span>
-                      <strong>{item.medicineA} + {item.medicineB}</strong>
-                      <p>{item.description}</p>
-                      <small>{item.recommendation}</small>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </article>
-          </>
-        )}
-      </section>
-    </main>
+    </div>
   );
 }
 
 const styles = `
-.medication-support-note { border: 1.5px solid #9f1239; border-radius: 10px; background: #fff1f2; color: #881337; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; font-weight: 800; line-height: 1.55; }
-.medication-page { min-height: 100svh; display: grid; grid-template-columns: minmax(0, .9fr) minmax(360px, 1.1fr); gap: 18px; background: var(--bg); color: var(--ink); padding: 22px; }
-.scan-panel, .scan-result-panel > article, .empty-result, .med-disclaimer { border: 1.5px solid var(--ink); border-radius: 14px; background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
-.scan-panel { padding: clamp(20px, 3vw, 28px); align-self: start; }
-.medication-quick-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.medication-quick-nav button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 0 13px; font-weight: 900; }
-.medication-quick-nav button:first-child { background: var(--lime); }
-.mini-label { display: inline-flex; align-items: center; gap: 9px; margin: 0 0 12px; color: var(--lime-dark); font-size: 11px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-.mini-label::before { content: ""; width: 12px; height: 2px; background: currentColor; }
-.scan-panel h1 { margin: 0 0 16px; font-family: var(--display); font-size: clamp(30px, 5vw, 46px); line-height: 1.06; }
-.upload-zone { min-height: 280px; display: grid; place-items: center; border: 1.5px dashed var(--ink); border-radius: 12px; background: var(--paper-soft); padding: 22px; text-align: center; cursor: pointer; }
-.upload-zone input, .upload-actions input { display: none; }
-.upload-zone span { display: grid; place-items: center; width: 62px; height: 62px; margin: 0 auto 12px; border-radius: 50%; background: var(--mint); font-size: 28px; }
-.upload-zone strong, .upload-zone small { display: block; }
-.upload-zone small { margin-top: 7px; color: var(--muted); }
-.upload-zone canvas { width: 100%; max-height: 300px; object-fit: contain; border: 1.5px solid var(--ink); border-radius: 10px; }
-.upload-error { margin: 10px 0 0; border: 1px solid #b42318; border-radius: 8px; background: #fff1f0; color: #8f1d16; padding: 10px 12px; font-size: 13px; font-weight: 800; }
-.upload-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-.upload-actions label, .primary-action, .dark-action { min-height: 44px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 9px; font-weight: 900; }
-.upload-actions label { background: #fff; cursor: pointer; }
-.primary-action { width: 100%; margin-top: 12px; background: var(--lime); color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
-.primary-action:disabled, .dark-action:disabled { opacity: .46; cursor: not-allowed; box-shadow: none; }
-.scan-progress { display: grid; gap: 10px; margin-top: 16px; }
-.scan-progress span { height: 10px; overflow: hidden; border: 1.5px solid var(--ink); border-radius: 999px; background: linear-gradient(90deg, var(--lime), var(--teal), var(--lime)); background-size: 200% 100%; animation: slide 1s linear infinite; }
-.scan-progress strong { color: var(--muted); font-size: 13px; }
-.scan-result-panel { display: grid; gap: 14px; align-content: start; }
-.empty-result { min-height: 500px; display: grid; place-items: center; align-content: center; gap: 10px; padding: 28px; text-align: center; }
-.empty-result div { width: 74px; height: 74px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 50%; background: var(--lime); box-shadow: 4px 4px 0 var(--ink); font-size: 42px; font-weight: 900; }
-.empty-result h2 { margin: 0; font-size: clamp(24px, 4vw, 34px); }
-.empty-result p { max-width: 520px; margin: 0; color: var(--muted); line-height: 1.6; }
-.medicine-card, .interaction-card { padding: clamp(18px, 3vw, 24px); }
-.medicine-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-.medicine-head h2, .interaction-card h2 { margin: 0; font-size: 26px; }
-.medicine-head span { border-radius: 999px; background: var(--lime); padding: 7px 10px; font-size: 12px; font-weight: 900; white-space: nowrap; }
-.medicine-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
-.medicine-grid p { margin: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-soft); padding: 12px; font-weight: 900; }
-.medicine-grid span { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
-.medicine-copy { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
-.medicine-copy p { margin: 7px 0 14px; color: var(--muted); line-height: 1.6; }
-.side-effects { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
-.side-effects span { border-radius: 999px; background: rgba(239,111,97,.12); color: #b42318; padding: 6px 9px; font-size: 12px; font-weight: 900; }
-.medicine-card em { display: inline-flex; margin-top: 16px; border-radius: 999px; background: var(--ink); color: #fff; padding: 7px 11px; font-style: normal; font-weight: 900; }
-.med-disclaimer { padding: 12px; background: rgba(245,158,11,.14); color: #7c3f00; font-size: 13px; font-weight: 800; line-height: 1.5; box-shadow: none; }
-.drug-input-row { display: grid; grid-template-columns: minmax(0,1fr) 44px; gap: 8px; margin-top: 14px; }
-.drug-input-row input { min-width: 0; border: 1.5px solid var(--ink); border-radius: 9px; padding: 11px; outline: none; }
-.drug-input-row button { border: 1.5px solid var(--ink); border-radius: 9px; background: var(--lime); font-size: 22px; font-weight: 900; }
-.drug-tags { display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; margin: 12px 0; }
-.drug-tags span { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: var(--mint); color: var(--teal); padding: 6px 8px 6px 10px; font-size: 12px; font-weight: 900; }
-.drug-tags button { border: 0; background: transparent; color: inherit; font-size: 16px; font-weight: 900; }
-.dark-action { width: 100%; background: var(--ink); color: #fff; }
-.interaction-list { display: grid; gap: 10px; margin-top: 14px; }
-.interaction-list article { border: 1px solid var(--line); border-radius: 10px; background: var(--paper-soft); padding: 13px; }
-.interaction-list strong { display: block; margin-top: 8px; }
-.interaction-list p { color: var(--muted); line-height: 1.55; }
-.interaction-list small { color: var(--teal); font-weight: 900; line-height: 1.5; }
-.severity { border-radius: 999px; padding: 5px 8px; background: #eef1e8; font-size: 11px; font-weight: 900; }
-.severity.low { background: #eef1e8; color: var(--muted); }
-.severity.moderate { background: rgba(245,158,11,.18); color: #92400e; }
-.severity.high { background: rgba(249,115,22,.18); color: #9a3412; }
-.severity.critical { background: rgba(239,111,97,.16); color: #b42318; }
-@keyframes slide { to { background-position: -200% 0; } }
-@media (max-width: 860px) {
-  .medication-page { grid-template-columns: 1fr; padding: 14px; }
-  .medicine-grid { grid-template-columns: 1fr; }
+.medication-page {
+  --med-bg: var(--color-surface-soft);
+  --med-card: var(--color-surface);
+  --med-text: var(--color-ink);
+  --med-muted: var(--color-muted);
+  --med-line: var(--color-line);
+  --med-line-strong: var(--color-line-strong);
+  --med-primary: var(--color-info);
+  --med-primary-strong: var(--color-info-strong);
+  --med-primary-soft: var(--color-info-bg);
+  display: grid;
+  gap: 18px;
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  color: var(--med-text);
+}
+
+.medication-page h1,
+.medication-page h2,
+.medication-page p {
+  margin: 0;
+}
+
+.medication-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .72fr);
+  gap: clamp(24px, 5vw, 64px);
+  align-items: end;
+  border-bottom: 1px solid var(--med-line);
+  padding: 8px 4px 24px;
+}
+
+.medication-intro > div {
+  display: grid;
+  justify-items: start;
+  gap: 11px;
+}
+
+.medication-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--med-line-strong);
+  border-radius: 999px;
+  background: var(--med-card);
+  color: var(--med-primary-strong);
+  padding: 7px 11px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.medication-eyebrow {
+  color: var(--med-primary-strong);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.medication-intro h1 {
+  max-width: 720px;
+  font-size: clamp(35px, 4.8vw, 58px);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+
+.medication-intro > p {
+  max-width: 480px;
+  color: var(--med-muted);
+  font-size: 14px;
+  line-height: 1.72;
+}
+
+.medication-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
+  overflow: hidden;
+  border: 1px solid var(--med-line);
+  border-radius: 23px;
+  background: var(--med-card);
+  box-shadow: 0 22px 60px color-mix(in srgb, var(--med-text) 8%, transparent);
+}
+
+.scan-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--med-card);
+  padding: clamp(20px, 3.5vw, 34px);
+  box-shadow: none;
+}
+
+.scan-panel-head,
+.medication-guidance-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.scan-panel-head h2,
+.medication-guidance h2 {
+  margin-top: 5px;
+  font-size: clamp(21px, 2.5vw, 28px);
+  line-height: 1.18;
+  letter-spacing: -.025em;
+}
+
+.scan-panel-head > span,
+.medication-guidance-head > span {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 45px;
+  height: 45px;
+  border: 1px solid var(--med-line);
+  border-radius: 14px;
+  background: var(--med-primary-soft);
+  color: var(--med-primary-strong);
+}
+
+.upload-zone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px dashed var(--med-line-strong);
+  border-radius: 17px;
+  background:
+    linear-gradient(var(--med-line), var(--med-line)) 18px 18px / 34px 1px no-repeat,
+    linear-gradient(var(--med-line), var(--med-line)) 18px 18px / 1px 34px no-repeat,
+    linear-gradient(var(--med-line), var(--med-line)) calc(100% - 52px) 18px / 34px 1px no-repeat,
+    linear-gradient(var(--med-line), var(--med-line)) calc(100% - 18px) 18px / 1px 34px no-repeat,
+    linear-gradient(var(--med-line), var(--med-line)) 18px calc(100% - 18px) / 34px 1px no-repeat,
+    linear-gradient(var(--med-line), var(--med-line)) 18px calc(100% - 52px) / 1px 34px no-repeat,
+    linear-gradient(var(--med-line), var(--med-line)) calc(100% - 52px) calc(100% - 18px) / 34px 1px no-repeat,
+    linear-gradient(var(--med-line), var(--med-line)) calc(100% - 18px) calc(100% - 52px) / 1px 34px no-repeat,
+    var(--med-bg);
+  padding: 28px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.upload-zone > input,
+.upload-actions input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-zone:focus-within,
+.upload-actions label:focus-within {
+  outline: 3px solid var(--med-primary);
+  outline-offset: 3px;
+}
+
+.upload-placeholder {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.upload-placeholder > span {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 4px;
+  border: 1px solid var(--med-line);
+  border-radius: 18px;
+  background: var(--med-card);
+  color: var(--med-primary-strong);
+}
+
+.upload-placeholder strong {
+  font-size: 17px;
+}
+
+.upload-placeholder small {
+  color: var(--med-muted);
+  font-size: 12px;
+}
+
+.upload-zone canvas {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border: 1px solid var(--med-line);
+  border-radius: 12px;
+  background: var(--med-card);
+}
+
+.upload-zone canvas[hidden] {
+  display: none;
+}
+
+.medication-live-empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.upload-error {
+  border: 1px solid var(--color-danger);
+  border-radius: 11px;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  padding: 11px 13px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.upload-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.upload-actions label,
+.primary-action,
+.facility-action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border: 1px solid var(--med-line-strong);
+  border-radius: 11px;
+  background: var(--med-card);
+  color: var(--med-text);
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.upload-actions label {
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.primary-action {
+  width: 100%;
+  border-color: var(--med-primary);
+  background: var(--med-primary);
+  color: var(--color-surface);
+}
+
+.primary-action:hover:not(:disabled) {
+  background: var(--med-primary-strong);
+}
+
+.primary-action:disabled {
+  border-style: dashed;
+  border-color: var(--med-line-strong);
+  background: var(--med-bg);
+  color: var(--med-muted);
+  cursor: not-allowed;
+}
+
+.scan-feedback {
+  display: none;
+}
+
+.scan-feedback.is-loading,
+.scan-feedback.has-message {
+  display: grid;
+  gap: 9px;
+  border: 1px solid var(--med-line);
+  border-radius: 12px;
+  background: var(--med-bg);
+  padding: 12px 13px;
+}
+
+.scan-feedback strong,
+.scan-feedback p {
+  color: var(--med-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.scan-progress {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--med-primary), var(--color-primary), var(--med-primary));
+  background-size: 200% 100%;
+  animation: medication-progress 1s linear infinite;
+}
+
+.medication-guidance {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+  border-left: 1px solid var(--med-line);
+  background: var(--med-bg);
+  padding: clamp(22px, 3.5vw, 34px);
+}
+
+.medication-guidance-copy {
+  color: var(--med-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.medication-checklist {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.medication-checklist li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border-top: 1px solid var(--med-line);
+  padding: 15px 0;
+  color: var(--med-text);
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.55;
+}
+
+.medication-checklist svg {
+  margin-top: 2px;
+  color: var(--med-primary-strong);
+}
+
+.selected-file {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  border: 1px solid var(--med-line);
+  border-radius: 13px;
+  background: var(--med-card);
+  padding: 13px;
+}
+
+.selected-file > span {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  border-radius: 11px;
+  background: var(--med-primary-soft);
+  color: var(--med-primary-strong);
+}
+
+.selected-file strong {
+  font-size: 13px;
+}
+
+.selected-file p {
+  overflow-wrap: anywhere;
+  margin-top: 3px;
+  color: var(--med-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.facility-action {
+  width: 100%;
+  margin-top: auto;
+}
+
+.facility-action:hover {
+  border-color: var(--med-primary);
+  background: var(--med-card);
+}
+
+.medication-page button:focus-visible {
+  outline: 3px solid var(--med-primary);
+  outline-offset: 3px;
+}
+
+@keyframes medication-progress {
+  to { background-position: -200% 0; }
+}
+
+@media (max-width: 920px) {
+  .medication-intro,
+  .medication-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .medication-guidance {
+    border-top: 1px solid var(--med-line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .medication-page {
+    gap: 14px;
+  }
+
+  .medication-intro {
+    gap: 15px;
+    padding: 2px 1px 18px;
+  }
+
+  .medication-intro h1 {
+    font-size: clamp(34px, 11.5vw, 46px);
+  }
+
+  .medication-workspace {
+    border-radius: 18px;
+  }
+
+  .scan-panel,
+  .medication-guidance {
+    padding: 19px;
+  }
+
+  .upload-zone {
+    min-height: 280px;
+    padding: 20px;
+  }
+
+  .upload-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-progress {
+    animation: none;
+    background: var(--med-primary);
+  }
+}
+
+@media (forced-colors: active) {
+  .medication-workspace,
+  .scan-panel,
+  .medication-guidance,
+  .upload-zone,
+  .upload-placeholder > span,
+  .scan-panel-head > span,
+  .medication-guidance-head > span,
+  .selected-file,
+  .selected-file > span,
+  .upload-error,
+  .scan-feedback {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+
+  .primary-action,
+  .facility-action,
+  .upload-actions label {
+    border: 1px solid ButtonBorder;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+
+  .medication-page :focus-visible {
+    outline-color: Highlight;
+  }
 }
 `;
 
