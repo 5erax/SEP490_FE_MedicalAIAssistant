@@ -1,0 +1,591 @@
+.admin-operator .doctor-clinical-panel {
+  gap: 20px;
+  overflow: visible;
+}
+
+.admin-operator .doctor-clinical-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 20px;
+}
+
+.admin-operator .doctor-clinical-heading-copy {
+  max-width: 680px;
+}
+
+.admin-operator .doctor-clinical-heading-copy h2,
+.admin-operator .doctor-clinical-heading-copy p {
+  margin: 0;
+}
+
+.admin-operator .doctor-clinical-heading-copy h2 {
+  color: var(--color-ink);
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 950;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.admin-operator .doctor-clinical-heading-copy > p:last-child {
+  max-width: 620px;
+  margin-top: 12px;
+  color: var(--color-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.admin-operator .doctor-clinical-heading-meta {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.admin-operator .doctor-clinical-heading-meta > span {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--color-line);
+  border-radius: 13px;
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.admin-operator .doctor-clinical-heading-meta svg {
+  color: var(--color-info-strong);
+}
+
+.admin-operator .doctor-clinical-heading-meta strong {
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.admin-operator .doctor-invitation-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(223, 248, 237, 0.55), rgba(255, 255, 255, 0.92)),
+    var(--color-surface);
+  padding: 18px;
+}
+
+.admin-operator .doctor-invitation-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-operator .doctor-invitation-card-heading > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.admin-operator .doctor-invitation-card-heading h3,
+.admin-operator .doctor-invitation-card-heading p {
+  margin: 0;
+}
+
+.admin-operator .doctor-invitation-card-heading h3 {
+  color: var(--color-ink);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.admin-operator .doctor-invitation-card-heading .eyebrow {
+  margin-bottom: 4px;
+  font-size: 10px;
+}
+
+.admin-operator .doctor-invitation-card-heading > div > p:last-child {
+  margin-top: 5px;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-operator .doctor-invitation-admin {
+  grid-template-columns: minmax(230px, 0.8fr) minmax(280px, 1.2fr) auto;
+  gap: 12px;
+  align-items: end;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.admin-operator .doctor-invitation-admin .clean-field {
+  min-width: 0;
+}
+
+.admin-operator .doctor-invitation-admin .clean-field > span {
+  color: var(--color-ink);
+  font-size: 12px;
+}
+
+.admin-operator .doctor-invitation-admin .clean-field > span small {
+  color: var(--color-muted);
+  font-weight: 650;
+}
+
+.admin-operator .doctor-invitation-admin input,
+.admin-operator .doctor-invitation-admin select {
+  min-height: 48px;
+  border-color: var(--color-control-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.admin-operator .doctor-invitation-submit {
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.admin-operator .doctor-invitation-latest {
+  grid-column: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  border: 1px solid rgba(8, 127, 140, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 12px 14px;
+}
+
+.admin-operator .doctor-invitation-latest > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-operator .doctor-invitation-latest > div > svg {
+  flex: 0 0 auto;
+  color: var(--color-info-strong);
+}
+
+.admin-operator .doctor-invitation-latest strong,
+.admin-operator .doctor-invitation-latest small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.admin-operator .doctor-invitation-latest strong {
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.admin-operator .doctor-invitation-latest small {
+  margin-top: 2px;
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-operator .doctor-invitation-expiry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-operator .doctor-invitation-latest > .ui-button {
+  margin-left: auto;
+}
+
+.admin-operator .doctor-filter-card {
+  gap: 18px;
+  border-color: var(--color-line);
+  border-radius: 20px;
+  background: var(--color-surface-soft);
+  padding: 18px;
+}
+
+.admin-operator .doctor-filter-card-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-operator .doctor-filter-card-header > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.admin-operator .doctor-filter-card-header h3,
+.admin-operator .doctor-filter-card-header p {
+  margin: 0;
+}
+
+.admin-operator .doctor-filter-card-header h3 {
+  color: var(--color-ink);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+}
+
+.admin-operator .doctor-filter-card-header p {
+  margin-top: 4px;
+  color: var(--color-muted);
+}
+
+.admin-operator .doctor-filter-bar {
+  grid-template-columns: minmax(260px, 1.25fr) minmax(520px, 2fr);
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-operator .doctor-search-label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  color: var(--color-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-operator .doctor-search-field {
+  min-height: 48px;
+  border-color: var(--color-control-border);
+  border-radius: 12px;
+  color: var(--color-info-strong);
+  padding-inline: 14px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-operator .doctor-search-field input {
+  min-height: 46px;
+  font-family: var(--font-body);
+  font-weight: 650;
+}
+
+.admin-operator .doctor-search-field input::placeholder {
+  color: rgba(17, 20, 18, 0.56);
+}
+
+.admin-operator .doctor-filter-grid {
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+}
+
+.admin-operator .doctor-filter-grid .custom-select-trigger {
+  min-height: 48px;
+  border-color: var(--color-control-border);
+  border-radius: 12px;
+  color: var(--color-ink);
+}
+
+.admin-operator .doctor-filter-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 14px;
+}
+
+.admin-operator .doctor-filter-result-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-operator .doctor-filter-result-summary svg {
+  color: var(--color-info-strong);
+}
+
+.admin-operator .doctor-filter-result-summary strong {
+  color: var(--color-ink);
+}
+
+.admin-operator .doctor-filter-actions .ui-button {
+  min-height: 44px;
+}
+
+.admin-operator .doctor-filter-sync {
+  margin: -8px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-operator .doctor-table-wrap {
+  border-color: var(--color-line);
+  border-radius: 18px;
+  box-shadow: 0 16px 42px rgba(24, 54, 31, 0.07);
+}
+
+.admin-operator .doctor-table-wrap .ui-table {
+  min-width: 0;
+}
+
+.admin-operator .doctor-table-wrap .ui-table thead th {
+  background: #0f1715;
+  color: #fff;
+}
+
+.admin-operator .doctor-table-wrap .ui-table tbody th {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.admin-operator .doctor-table-wrap .ui-table tbody tr:hover {
+  background: #f7fbf8;
+  box-shadow: inset 4px 0 0 #8ed8ca;
+}
+
+.admin-operator .doctor-table-wrap .record-actions .ui-button {
+  min-height: 40px;
+  border-radius: 10px;
+}
+
+.admin-operator .doctor-table-wrap .record-actions .doctor-danger-action,
+.admin-operator .doctor-card-actions .doctor-danger-action {
+  border-color: rgba(185, 48, 54, 0.25);
+  background: #fff7f7;
+  color: #a3262d;
+}
+
+.admin-operator .doctor-table-wrap .record-actions .doctor-danger-action:hover,
+.admin-operator .doctor-card-actions .doctor-danger-action:hover {
+  border-color: #a3262d;
+  background: #a3262d;
+  color: #fff;
+}
+
+.admin-operator .doctor-responsive-card {
+  border-color: var(--color-line);
+  border-radius: 18px;
+  box-shadow: 0 14px 36px rgba(24, 54, 31, 0.07);
+}
+
+.admin-operator .doctor-responsive-card-header {
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 14px;
+}
+
+.admin-operator .doctor-card-details dt {
+  color: #52615b;
+}
+
+.admin-operator .doctor-card-actions .ui-button {
+  min-height: 44px;
+}
+
+.admin-operator .doctor-pagination {
+  border-top: 1px solid var(--color-line);
+  padding-top: 16px;
+}
+
+.admin-operator .doctor-form-error-summary {
+  margin: 16px 20px 0;
+  border: 1px solid rgba(185, 48, 54, 0.28);
+  border-left: 4px solid #a3262d;
+  border-radius: 12px;
+  background: #fff7f7;
+  color: #7e1f25;
+  padding: 12px 14px;
+}
+
+.admin-operator .doctor-form-error-summary:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 3px;
+}
+
+.admin-operator .doctor-form-error-summary strong {
+  font-size: 14px;
+}
+
+.admin-operator .doctor-form-error-summary ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1180px) {
+  .admin-operator .doctor-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-filter-grid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-operator .doctor-clinical-heading {
+    display: grid;
+  }
+
+  .admin-operator .doctor-clinical-heading-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-operator .doctor-invitation-admin {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-operator .doctor-invitation-submit {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-operator .doctor-clinical-panel {
+    gap: 16px;
+  }
+
+  .admin-operator .doctor-clinical-heading {
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  .admin-operator .doctor-clinical-heading-copy h2 {
+    font-size: clamp(28px, 10vw, 36px);
+  }
+
+  .admin-operator .doctor-clinical-heading-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-invitation-card,
+  .admin-operator .doctor-filter-card {
+    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .admin-operator .doctor-invitation-admin,
+  .admin-operator .doctor-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-invitation-submit {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .admin-operator .doctor-invitation-latest {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-operator .doctor-invitation-latest > .ui-button {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .admin-operator .doctor-filter-card-header {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .admin-operator .doctor-filter-card-header .doctor-add-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .admin-operator .doctor-filter-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-operator .doctor-filter-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-operator .doctor-filter-actions .ui-button {
+    width: 100%;
+  }
+
+  .admin-operator .doctor-responsive-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-operator .doctor-card-details {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-operator .doctor-card-actions .doctor-danger-action {
+    grid-column: 1 / -1;
+  }
+
+  .admin-operator .doctor-pagination {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .admin-operator .doctor-pagination > span {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-operator .doctor-search-field,
+  .admin-operator .doctor-table-wrap .ui-table tbody tr {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .admin-operator .doctor-clinical-heading-meta > span,
+  .admin-operator .doctor-invitation-card,
+  .admin-operator .doctor-invitation-card-heading > span,
+  .admin-operator .doctor-invitation-latest,
+  .admin-operator .doctor-filter-card,
+  .admin-operator .doctor-filter-card-header > span,
+  .admin-operator .doctor-search-field,
+  .admin-operator .doctor-responsive-card,
+  .admin-operator .doctor-form-error-summary {
+    border: 1px solid CanvasText;
+  }
+
+  .admin-operator .doctor-table-wrap .ui-table thead th {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .admin-operator .doctor-table-wrap .record-actions .doctor-danger-action,
+  .admin-operator .doctor-card-actions .doctor-danger-action {
+    border-color: ButtonBorder;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+}

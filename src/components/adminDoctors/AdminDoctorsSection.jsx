@@ -1,7 +1,26 @@
-import { RefreshCw } from "lucide-react";
+import {
+  Clock3,
+  MailPlus,
+  RefreshCw,
+  ShieldCheck,
+  Stethoscope,
+  UserRoundCheck,
+} from "lucide-react";
 import { Button, ErrorState, LoadingState } from "../ui";
 import DoctorFilters from "./DoctorFilters";
 import DoctorTable from "./DoctorTable";
+
+const INVITATION_STATUS_LABELS = {
+  pending: "Đang chờ đăng ký",
+  accepted: "Đã đăng ký",
+  expired: "Đã hết hạn",
+  revoked: "Đã thu hồi",
+};
+
+function getInvitationStatusLabel(status) {
+  const normalizedStatus = String(status || "pending").toLowerCase();
+  return INVITATION_STATUS_LABELS[normalizedStatus] || status;
+}
 
 export default function AdminDoctorsSection({
   departments,
@@ -31,68 +50,124 @@ export default function AdminDoctorsSection({
   onToggleStatus,
 }) {
   const availableDoctors = doctors.filter((doctor) => !doctor.userId);
+  const invitationStatus = String(lastInvitation?.status || "pending").toLowerCase();
 
   return (
-    <section className="admin-panel doctor-admin-panel">
-      <div className="panel-title-row doctor-section-heading">
-        <div>
-          <p className="eyebrow">Nhân sự y tế</p>
-          <h2>Quản lý bác sĩ</h2>
-          <p className="muted-text">Tạo, cập nhật, lọc và quản lý trạng thái bác sĩ theo cơ sở y tế và khoa công tác.</p>
+    <section
+      className="admin-panel doctor-admin-panel doctor-clinical-panel"
+      aria-labelledby="admin-doctors-title"
+    >
+      <header className="doctor-clinical-heading">
+        <div className="doctor-clinical-heading-copy">
+          <p className="eyebrow">Đội ngũ chuyên môn</p>
+          <h2 id="admin-doctors-title">Bác sĩ trong hệ thống</h2>
+          <p>
+            Quản lý hồ sơ công tác, trạng thái hiển thị và lời mời đăng ký dành
+            cho bác sĩ.
+          </p>
         </div>
-      </div>
 
-      {invitationMessage && <div className={`api-message ${invitationMessage.type}`}>{invitationMessage.text}</div>}
-
-      <form className="doctor-invitation-admin" onSubmit={onInvitationSubmit}>
-        <div>
-          <strong>Gửi lời mời đăng ký bác sĩ</strong>
-          <p>Email là bắt buộc. Có thể chọn hồ sơ bác sĩ có sẵn để liên kết tài khoản.</p>
+        <div className="doctor-clinical-heading-meta" aria-label="Tóm tắt danh sách">
+          <span>
+            <Stethoscope size={17} aria-hidden="true" />
+            <strong>{pageInfo.totalCount}</strong> hồ sơ theo bộ lọc
+          </span>
+          <span>
+            <ShieldCheck size={17} aria-hidden="true" />
+            Thao tác quản trị có xác nhận
+          </span>
         </div>
-        <label className="clean-field">
-          <span>Email bác sĩ</span>
-          <input
-            type="email"
-            autoComplete="email"
-            value={invitation.email}
-            onChange={(event) => onInvitationChange("email", event.target.value)}
-            required
-          />
-        </label>
-        <label className="clean-field">
-          <span>Hồ sơ bác sĩ có sẵn (không bắt buộc)</span>
-          <select value={invitation.doctorId} onChange={(event) => onInvitationChange("doctorId", event.target.value)}>
-            <option value="">Tạo bác sĩ mới khi đăng ký</option>
-            {availableDoctors.map((doctor) => (
-              <option key={doctor.id} value={doctor.id}>
-                {doctor.fullName || doctor.id}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="btn btn-primary btn-small" type="submit" disabled={savingInvitation}>
-          {savingInvitation ? "Đang gửi..." : "Gửi invitation"}
-        </button>
+      </header>
+
+      {invitationMessage && (
+        <div
+          className={`api-message ${invitationMessage.type}`}
+          role={invitationMessage.type === "error" ? "alert" : "status"}
+          aria-live="polite"
+        >
+          {invitationMessage.text}
+        </div>
+      )}
+
+      <section className="doctor-invitation-card" aria-labelledby="doctor-invitation-title">
+        <div className="doctor-invitation-card-heading">
+          <span aria-hidden="true"><MailPlus size={20} /></span>
+          <div>
+            <p className="eyebrow">Liên kết tài khoản</p>
+            <h3 id="doctor-invitation-title">Gửi lời mời đăng ký bác sĩ</h3>
+            <p>
+              Nhập email và tùy chọn liên kết với một hồ sơ chưa có tài khoản.
+            </p>
+          </div>
+        </div>
+
+        <form className="doctor-invitation-admin" onSubmit={onInvitationSubmit}>
+          <label className="clean-field">
+            <span>Email bác sĩ <small>(bắt buộc)</small></span>
+            <input
+              type="email"
+              autoComplete="email"
+              value={invitation.email}
+              onChange={(event) => onInvitationChange("email", event.target.value)}
+              placeholder="bacsi@example.com"
+              required
+            />
+          </label>
+          <label className="clean-field">
+            <span>Hồ sơ liên kết <small>(không bắt buộc)</small></span>
+            <select
+              value={invitation.doctorId}
+              onChange={(event) => onInvitationChange("doctorId", event.target.value)}
+            >
+              <option value="">Tạo hồ sơ mới sau khi đăng ký</option>
+              {availableDoctors.map((doctor) => (
+                <option key={doctor.id} value={doctor.id}>
+                  {doctor.fullName || doctor.id}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            className="doctor-invitation-submit"
+            type="submit"
+            disabled={savingInvitation}
+          >
+            <MailPlus size={16} aria-hidden="true" />
+            {savingInvitation ? "Đang gửi lời mời..." : "Gửi lời mời"}
+          </Button>
+        </form>
+
         {lastInvitation && (
-          <div className="doctor-invitation-latest" role="status">
-            <span>
-              {lastInvitation.email} · {lastInvitation.status || "Pending"}
-              {lastInvitation.expiresAt && ` · hết hạn ${new Date(lastInvitation.expiresAt).toLocaleString("vi-VN")}`}
-            </span>
-            {String(lastInvitation.status).toLowerCase() !== "revoked" && (
-              <button className="btn btn-ghost btn-small" type="button" onClick={onRevokeInvitation}>
-                Thu hồi
-              </button>
+          <div className="doctor-invitation-latest" role="status" aria-live="polite">
+            <div>
+              <UserRoundCheck size={18} aria-hidden="true" />
+              <span>
+                <strong>{lastInvitation.email}</strong>
+                <small>{getInvitationStatusLabel(lastInvitation.status)}</small>
+              </span>
+            </div>
+            {lastInvitation.expiresAt && (
+              <span className="doctor-invitation-expiry">
+                <Clock3 size={15} aria-hidden="true" />
+                Hết hạn {new Date(lastInvitation.expiresAt).toLocaleString("vi-VN")}
+              </span>
+            )}
+            {invitationStatus !== "revoked" && (
+              <Button tone="secondary" size="sm" type="button" onClick={onRevokeInvitation}>
+                Thu hồi lời mời
+              </Button>
             )}
           </div>
         )}
-      </form>
+      </section>
 
       <DoctorFilters
         filters={filters}
         departments={departments}
         facilities={facilities}
         pageSize={pageInfo.pageSize}
+        resultCount={doctors.length}
+        totalCount={pageInfo.totalCount}
         onChange={onFilterChange}
         onPageSizeChange={onPageSizeChange}
         onSubmit={onFilterSubmit}
@@ -100,7 +175,11 @@ export default function AdminDoctorsSection({
         onCreate={onCreate}
       />
 
-      {facilitiesLoading && <p className="muted-text">Đang đồng bộ danh sách bệnh viện cho bộ lọc...</p>}
+      {facilitiesLoading && (
+        <p className="doctor-filter-sync" role="status">
+          Đang đồng bộ danh sách bệnh viện cho bộ lọc...
+        </p>
+      )}
 
       {loading ? (
         <LoadingState
@@ -130,15 +209,31 @@ export default function AdminDoctorsSection({
       )}
 
       {!error && (
-        <div className="pagination-row">
-          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => onNavigatePage(pageInfo.pageNumber - 1)}>
+        <nav className="pagination-row doctor-pagination" aria-label="Phân trang danh sách bác sĩ">
+          <Button
+            tone="secondary"
+            size="sm"
+            type="button"
+            disabled={pageInfo.pageNumber <= 1 || loading}
+            onClick={() => onNavigatePage(pageInfo.pageNumber - 1)}
+          >
             Trước
-          </button>
-          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {pageInfo.totalCount} bác sĩ</span>
-          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => onNavigatePage(pageInfo.pageNumber + 1)}>
+          </Button>
+          <span>
+            Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1}
+            <span aria-hidden="true"> · </span>
+            {pageInfo.totalCount} bác sĩ
+          </span>
+          <Button
+            tone="secondary"
+            size="sm"
+            type="button"
+            disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading}
+            onClick={() => onNavigatePage(pageInfo.pageNumber + 1)}
+          >
             Sau
-          </button>
-        </div>
+          </Button>
+        </nav>
       )}
     </section>
   );

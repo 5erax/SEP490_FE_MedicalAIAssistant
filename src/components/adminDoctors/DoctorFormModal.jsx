@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { uploadImageToCloudinary } from "../../services/cloudinaryUploadService";
 import { Dialog } from "../ui";
 
@@ -114,6 +114,11 @@ export default function DoctorFormModal({
   const title = mode === "edit" ? "Cập nhật bác sĩ" : "Thêm bác sĩ mới";
   const locked = saving || imageUploading;
   const currentImageUrl = getSafeImageUrl(form.imageUrl.trim());
+  const hasErrors = Object.values(errors).some(Boolean);
+  const focusErrorSummary = useCallback((node) => {
+    if (!node) return;
+    window.setTimeout(() => node.focus(), 0);
+  }, []);
 
   const options = useMemo(() => {
     const current = form.facilityDepartmentId
@@ -191,6 +196,22 @@ export default function DoctorFormModal({
         </header>
 
         <form className="clean-form facility-form doctor-form" onSubmit={handleSubmit}>
+          {hasErrors && (
+            <div
+              ref={focusErrorSummary}
+              className="doctor-form-error-summary"
+              role="alert"
+              tabIndex={-1}
+            >
+              <strong>Kiểm tra lại thông tin bác sĩ</strong>
+              <ul>
+                {Object.values(errors).filter(Boolean).map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="facility-form-body">
             <section className="facility-form-card" aria-labelledby="doctor-work-section">
               <div className="facility-form-card-head">
@@ -254,9 +275,8 @@ export default function DoctorFormModal({
                 <label className={`clean-field ${errors.yearsOfExperience ? "doctor-field-error" : ""}`}>
                   <span>Số năm kinh nghiệm</span>
                   <input
-                    min="0"
-                    step="1"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={form.yearsOfExperience}
                     onChange={(event) => update("yearsOfExperience", event.target.value)}
                     placeholder="Ví dụ: 8"

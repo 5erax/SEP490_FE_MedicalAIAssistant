@@ -102,6 +102,7 @@ export const VISUAL_ROUTES = [
   { name: "nearby-clinic", path: "/map" },
   { name: "admin-overview", path: "/app/admin" },
   { name: "admin-users", path: "/app/admin/users" },
+  { name: "admin-doctors", path: "/app/admin/doctors" },
   { name: "admin-gate", path: "/app/admin" },
   { name: "not-found", path: "/route-that-does-not-exist" },
 ];

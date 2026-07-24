@@ -420,10 +420,17 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
   useEffect(() => {
     const navigation = adminNavRef.current;
-    const activeButton = navigation?.querySelector("button.active");
-    if (!navigation || !activeButton) return;
+    if (!navigation) return undefined;
 
-    navigation.scrollLeft = Math.max(0, activeButton.offsetLeft - 8);
+    function revealActiveItem() {
+      const activeButton = navigation.querySelector("button.active");
+      if (!activeButton) return;
+      navigation.scrollLeft = Math.max(0, activeButton.offsetLeft - 8);
+    }
+
+    revealActiveItem();
+    window.addEventListener("resize", revealActiveItem);
+    return () => window.removeEventListener("resize", revealActiveItem);
   }, [activeSection]);
   const [doctorMessage, setDoctorMessage] = useState(null);
   const [doctorLoadError, setDoctorLoadError] = useState("");

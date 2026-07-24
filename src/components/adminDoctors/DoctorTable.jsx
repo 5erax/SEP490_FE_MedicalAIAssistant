@@ -23,6 +23,10 @@ function formatExperience(years) {
   return `${years} năm`;
 }
 
+function getDoctorName(doctor) {
+  return doctor.fullName || "bác sĩ chưa đặt tên";
+}
+
 const DEPARTMENT_ROLE_LABELS = {
   0: "Bác sĩ",
   1: "Phó trưởng khoa",
@@ -83,13 +87,33 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
       key: "actions",
       header: "Thao tác",
       render: (doctor) => (
-        <div className="record-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(doctor)}><Pencil size={14} /> Sửa</button>
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(doctor)}>
-            <Power size={14} />
+        <div className="record-actions" aria-label={`Thao tác với ${getDoctorName(doctor)}`}>
+          <Button
+            tone="secondary"
+            size="sm"
+            aria-label={`Sửa hồ sơ ${getDoctorName(doctor)}`}
+            onClick={() => onEdit(doctor)}
+          >
+            <Pencil size={14} aria-hidden="true" /> Sửa
+          </Button>
+          <Button
+            tone="secondary"
+            size="sm"
+            aria-label={`${doctor.isActive ? "Tạm ẩn" : "Kích hoạt"} ${getDoctorName(doctor)}`}
+            onClick={() => onToggleStatus(doctor)}
+          >
+            <Power size={14} aria-hidden="true" />
             {doctor.isActive ? "Tạm ẩn" : "Kích hoạt"}
-          </button>
-          <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(doctor)}><Trash2 size={14} /> Xóa</button>
+          </Button>
+          <Button
+            tone="danger"
+            size="sm"
+            className="doctor-danger-action"
+            aria-label={`Xóa hồ sơ ${getDoctorName(doctor)}`}
+            onClick={() => onDelete(doctor)}
+          >
+            <Trash2 size={14} aria-hidden="true" /> Xóa
+          </Button>
         </div>
       ),
     },
@@ -157,13 +181,33 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
               </div>
             </dl>
 
-            <div className="record-actions doctor-card-actions" aria-label={`Thao tác với ${doctor.fullName || "bác sĩ"}`}>
-              <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(doctor)}><Pencil size={14} /> Sửa</button>
-              <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(doctor)}>
-                <Power size={14} />
+            <div className="record-actions doctor-card-actions" aria-label={`Thao tác với ${getDoctorName(doctor)}`}>
+              <Button
+                tone="secondary"
+                size="sm"
+                aria-label={`Sửa hồ sơ ${getDoctorName(doctor)}`}
+                onClick={() => onEdit(doctor)}
+              >
+                <Pencil size={14} aria-hidden="true" /> Sửa
+              </Button>
+              <Button
+                tone="secondary"
+                size="sm"
+                aria-label={`${doctor.isActive ? "Tạm ẩn" : "Kích hoạt"} ${getDoctorName(doctor)}`}
+                onClick={() => onToggleStatus(doctor)}
+              >
+                <Power size={14} aria-hidden="true" />
                 {doctor.isActive ? "Tạm ẩn" : "Kích hoạt"}
-              </button>
-              <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(doctor)}><Trash2 size={14} /> Xóa</button>
+              </Button>
+              <Button
+                tone="danger"
+                size="sm"
+                className="doctor-danger-action"
+                aria-label={`Xóa hồ sơ ${getDoctorName(doctor)}`}
+                onClick={() => onDelete(doctor)}
+              >
+                <Trash2 size={14} aria-hidden="true" /> Xóa
+              </Button>
             </div>
           </article>
         ))}

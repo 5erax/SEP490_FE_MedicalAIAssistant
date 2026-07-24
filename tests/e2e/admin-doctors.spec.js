@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { Buffer } from "node:buffer";
 import { preparePage } from "./helpers";
 
@@ -106,6 +107,13 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
   await dialog.getByLabel("Cơ sở y tế - khoa").selectOption(FACILITY_DEPARTMENT_ID);
   await dialog.getByLabel("Họ và tên bác sĩ").fill("BS. Nguyễn Minh Anh");
   await dialog.getByLabel("Học hàm/học vị").fill("ThS.BS");
+  await dialog.getByLabel("Số năm kinh nghiệm").fill("-1");
+  await dialog.getByRole("button", { name: "Thêm bác sĩ", exact: true }).click();
+  const errorSummary = dialog.getByRole("alert").filter({
+    hasText: "Kiểm tra lại thông tin bác sĩ",
+  });
+  await expect(errorSummary).toBeFocused();
+  await expect(errorSummary).toContainText("Số năm kinh nghiệm phải là số nguyên không âm.");
   await dialog.getByLabel("Số năm kinh nghiệm").fill("8");
   await dialog.getByLabel("Vai trò trong khoa").selectOption("0");
   await dialog.locator('input[type="file"]').setInputFiles({
@@ -269,7 +277,7 @@ test("doctor management keeps filters in the URL and adapts long records", async
     { waitUntil: "domcontentloaded" },
   );
 
-  await expect(page.getByPlaceholder("Tìm theo họ tên bác sĩ...")).toHaveValue("Minh Anh");
+  await expect(page.getByLabel("Tìm bác sĩ")).toHaveValue("Minh Anh");
   await expect(page.getByLabel("Trạng thái")).toHaveValue("true");
   await expect(page.getByLabel("Hiển thị")).toHaveValue("20");
   await expect(page.getByText("Trang 2 / 2 · 21 bác sĩ", { exact: true })).toBeVisible();
@@ -280,12 +288,12 @@ test("doctor management keeps filters in the URL and adapts long records", async
     PageSize: "20",
   });
 
-  await page.getByPlaceholder("Tìm theo họ tên bác sĩ...").fill("Bác sĩ mới");
+  await page.getByLabel("Tìm bác sĩ").fill("Bác sĩ mới");
   await page.getByRole("button", { name: "Áp dụng" }).click();
   await expect.poll(() => new URL(page.url()).searchParams.get("search")).toBe("Bác sĩ mới");
   await page.goBack();
   await expect.poll(() => new URL(page.url()).searchParams.get("search")).toBe("Minh Anh");
-  await expect(page.getByPlaceholder("Tìm theo họ tên bác sĩ...")).toHaveValue("Minh Anh");
+  await expect(page.getByLabel("Tìm bác sĩ")).toHaveValue("Minh Anh");
 
   const tableWrap = page.locator(".doctor-table-wrap");
   await expect(tableWrap).toBeVisible();
@@ -323,5 +331,27 @@ test("doctor management keeps filters in the URL and adapts long records", async
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(cardList.getByText("Khoa công tác", { exact: true })).toBeVisible();
   await expect(cardList.getByText("Bệnh viện", { exact: true })).toBeVisible();
-  await expect(cardList.getByRole("button", { name: "Tạm ẩn" })).toBeVisible();
+  const statusButton = cardList.getByRole("button", {
+    name: /Tạm ẩn PGS\.TS\.BS Nguyễn Hoàng Minh Anh/,
+  });
+  await expect(statusButton).toBeVisible();
+  expect((await statusButton.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+
+  const adminNavigation = page.getByRole("navigation", { name: "Điều hướng admin" });
+  const activeNavigationItem = adminNavigation.getByRole("button", { name: "Bác sĩ" });
+  const navigationBox = await adminNavigation.boundingBox();
+  const activeNavigationBox = await activeNavigationItem.boundingBox();
+  expect(activeNavigationBox.x).toBeGreaterThanOrEqual(navigationBox.x);
+  expect(activeNavigationBox.x + activeNavigationBox.width).toBeLessThanOrEqual(
+    navigationBox.x + navigationBox.width,
+  );
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".doctor-clinical-panel")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  const seriousViolations = accessibility.violations
+    .filter((violation) => ["critical", "serious"].includes(violation.impact))
+    .map((violation) => violation.id);
+  expect(seriousViolations).toEqual([]);
 });

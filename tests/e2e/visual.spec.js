@@ -75,7 +75,7 @@ test.describe("visual baseline", () => {
             }),
           }));
         }
-        if (["admin-overview", "admin-users"].includes(route.name)) {
+        if (["admin-overview", "admin-users", "admin-doctors"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -117,6 +117,40 @@ test.describe("visual baseline", () => {
               },
             ]
             : [];
+          const visualAdminDoctors = route.name === "admin-doctors"
+            ? [
+              {
+                id: "doctor-visual-01",
+                fullName: "BS.CKI Nguyễn Minh Anh",
+                academicTitle: "Bác sĩ chuyên khoa I",
+                departmentName: "Khoa Tim mạch",
+                departmentRoleName: "Bác sĩ",
+                facilityName: "Bệnh viện Đa khoa Trung tâm",
+                yearsOfExperience: 9,
+                isActive: true,
+              },
+              {
+                id: "doctor-visual-02",
+                fullName: "ThS.BS Trần Hoàng Nam",
+                academicTitle: "Thạc sĩ, Bác sĩ",
+                departmentName: "Khoa Nội tổng quát",
+                departmentRoleName: "Phó trưởng khoa",
+                facilityName: "Bệnh viện Thành phố",
+                yearsOfExperience: 14,
+                isActive: true,
+              },
+              {
+                id: "doctor-visual-03",
+                fullName: "BS Lê Thu Hà",
+                academicTitle: "Bác sĩ",
+                departmentName: "Khoa Nhi",
+                departmentRoleName: "Bác sĩ",
+                facilityName: "Bệnh viện Nhi đồng",
+                yearsOfExperience: 6,
+                isActive: false,
+              },
+            ]
+            : [];
           await page.route("**/api/**", (request) => {
             const pathname = new URL(request.request().url()).pathname;
             if (pathname === "/api/users/me") {
@@ -128,8 +162,27 @@ test.describe("visual baseline", () => {
                 }),
               });
             }
+            if (pathname === "/api/facility-departments/active") {
+              return request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: [{
+                    id: "33333333-3333-4333-8333-333333333333",
+                    facilityId: "11111111-1111-4111-8111-111111111111",
+                    facilityName: "Bệnh viện Đa khoa Trung tâm",
+                    departmentId: "22222222-2222-4222-8222-222222222222",
+                    departmentName: "Khoa Tim mạch",
+                  }],
+                }),
+              });
+            }
             if (Object.hasOwn(adminTotals, pathname)) {
-              const items = pathname === "/api/users" ? visualAdminUsers : [];
+              const items = pathname === "/api/users"
+                ? visualAdminUsers
+                : pathname === "/api/doctors"
+                  ? visualAdminDoctors
+                  : [];
               return request.fulfill({
                 contentType: "application/json",
                 body: JSON.stringify({
@@ -138,9 +191,7 @@ test.describe("visual baseline", () => {
                     items,
                     pageNumber: 1,
                     pageSize: 10,
-                    totalCount: pathname === "/api/users" && visualAdminUsers.length
-                      ? visualAdminUsers.length
-                      : adminTotals[pathname],
+                    totalCount: items.length || adminTotals[pathname],
                     totalPages: 1,
                   },
                 }),
@@ -266,6 +317,15 @@ test.describe("visual baseline", () => {
             name: "Người dùng trong hệ thống",
           })).toBeVisible();
           await expect(page.getByText("Nguyễn Minh Anh", { exact: true })).toBeVisible();
+        }
+        if (route.name === "admin-doctors") {
+          await expect(page.getByRole("heading", {
+            name: "Bác sĩ trong hệ thống",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "3 đang hiển thị · 3 hồ sơ phù hợp",
+            { exact: true },
+          )).toBeVisible();
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");

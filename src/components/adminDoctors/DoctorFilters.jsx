@@ -1,11 +1,13 @@
-import { Filter, RotateCcw, Search, Stethoscope } from "lucide-react";
-import { CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
+import { Filter, ListFilter, RotateCcw, Search, Stethoscope, UsersRound } from "lucide-react";
+import { Button, CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 
 export default function DoctorFilters({
   filters,
   departments,
   facilities,
   pageSize,
+  resultCount,
+  totalCount,
   onChange,
   onPageSizeChange,
   onSubmit,
@@ -33,65 +35,87 @@ export default function DoctorFilters({
   ];
 
   return (
-    <section className="doctor-filter-card">
+    <section className="doctor-filter-card" aria-labelledby="doctor-filter-title">
       <div className="doctor-filter-card-header">
+        <span aria-hidden="true"><ListFilter size={19} /></span>
         <div>
-          <strong>Bộ lọc bác sĩ</strong>
-          <p>Tìm nhanh và thu hẹp danh sách theo chuyên khoa, bệnh viện hoặc trạng thái.</p>
+          <h3 id="doctor-filter-title">Tìm và lọc hồ sơ bác sĩ</h3>
+          <p>Thu hẹp danh sách theo chuyên khoa, bệnh viện hoặc trạng thái hiển thị.</p>
         </div>
+        <Button className="doctor-add-button" type="button" onClick={onCreate}>
+          <Stethoscope size={15} aria-hidden="true" />
+          Thêm bác sĩ
+        </Button>
       </div>
 
       <form className="doctor-filter-bar" onSubmit={onSubmit}>
-        <div className="doctor-toolbar-row doctor-toolbar-row-primary">
-          <div className="doctor-search-field">
-            <Search size={16} />
+        <label className="doctor-search-label">
+          <span>Tìm bác sĩ</span>
+          <span className="doctor-search-field">
+            <Search size={17} aria-hidden="true" />
             <input
+              type="search"
               value={filters.search}
               onChange={(event) => onChange("search", event.target.value)}
-              placeholder="Tìm theo họ tên bác sĩ..."
+              placeholder="Nhập họ tên bác sĩ"
+              aria-describedby="doctor-filter-result-summary"
             />
-          </div>
+          </span>
+        </label>
 
-          <button className="btn btn-primary btn-small doctor-add-button" type="button" onClick={onCreate}>
-            <Stethoscope size={14} /> Thêm bác sĩ
-          </button>
+        <div className="doctor-filter-grid">
+          <CustomSelect
+            className="clean-field"
+            label="Chuyên khoa"
+            value={filters.departmentId}
+            options={departmentOptions}
+            onChange={(nextValue) => onChange("departmentId", nextValue)}
+          />
+          <CustomSelect
+            className="clean-field"
+            label="Bệnh viện"
+            value={filters.facilityId}
+            options={facilityOptions}
+            onChange={(nextValue) => onChange("facilityId", nextValue)}
+          />
+          <CustomSelect
+            className="clean-field"
+            label="Trạng thái"
+            value={filters.isActive}
+            options={statusOptions}
+            onChange={(nextValue) => onChange("isActive", nextValue)}
+          />
+          <CustomSelect
+            className="clean-field"
+            label="Hiển thị"
+            value={pageSize}
+            options={PAGE_SIZE_OPTIONS}
+            onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
+          />
         </div>
 
-        <div className="doctor-toolbar-row doctor-toolbar-row-filters">
-          <div className="doctor-filter-grid">
-            <CustomSelect
-              className="clean-field"
-              label="Chuyên khoa"
-              value={filters.departmentId}
-              options={departmentOptions}
-              onChange={(nextValue) => onChange("departmentId", nextValue)}
-            />
-            <CustomSelect
-              className="clean-field"
-              label="Bệnh viện"
-              value={filters.facilityId}
-              options={facilityOptions}
-              onChange={(nextValue) => onChange("facilityId", nextValue)}
-            />
-            <CustomSelect
-              className="clean-field"
-              label="Trạng thái"
-              value={filters.isActive}
-              options={statusOptions}
-              onChange={(nextValue) => onChange("isActive", nextValue)}
-            />
-            <CustomSelect
-              className="clean-field"
-              label="Hiển thị"
-              value={pageSize}
-              options={PAGE_SIZE_OPTIONS}
-              onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
-            />
+        <div className="doctor-filter-footer">
+          <div
+            className="doctor-filter-result-summary"
+            id="doctor-filter-result-summary"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <UsersRound size={17} aria-hidden="true" />
+            <span>
+              <strong>{resultCount}</strong> đang hiển thị
+              <span aria-hidden="true"> · </span>
+              <strong>{totalCount}</strong> hồ sơ phù hợp
+            </span>
           </div>
-
           <div className="doctor-filter-actions">
-            <button className="btn btn-primary btn-small" type="submit"><Filter size={14} /> Áp dụng</button>
-            <button className="btn btn-ghost btn-small" type="button" onClick={onReset}><RotateCcw size={14} /> Xóa lọc</button>
+            <Button type="submit">
+              <Filter size={15} aria-hidden="true" /> Áp dụng
+            </Button>
+            <Button tone="secondary" type="button" onClick={onReset}>
+              <RotateCcw size={15} aria-hidden="true" /> Xóa lọc
+            </Button>
           </div>
         </div>
       </form>
