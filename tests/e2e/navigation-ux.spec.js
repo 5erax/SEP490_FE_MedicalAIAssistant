@@ -631,7 +631,7 @@ test.describe("global navigation UX", () => {
     await preparePage(page);
 
     await openRoute(page, "/medical-assistant");
-    await expect(page.getByRole("button", { name: "Bắt đầu phân tích" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Bắt đầu mô tả triệu chứng" })).toBeVisible();
   });
 
   test("removed safety guide resolves to the not-found page", async ({ page }) => {

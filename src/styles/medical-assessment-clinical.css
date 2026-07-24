@@ -6,6 +6,8 @@
   --clinical-mint-soft: #f4faf8;
   --clinical-line: #c8ddd7;
   --clinical-muted: #526a70;
+  --clinical-surface: var(--color-surface, #ffffff);
+  --clinical-surface-soft: var(--color-surface-soft, #f7faf7);
   min-height: calc(100svh - 76px);
   overflow: visible;
   background:
@@ -13,6 +15,170 @@
     linear-gradient(180deg, #f7fbfa 0%, #eef7f4 100%);
   color: var(--clinical-ink);
   padding: clamp(28px, 4vw, 54px) clamp(20px, 4vw, 52px) clamp(48px, 6vw, 76px);
+}
+
+.assessment-entry-page {
+  align-content: start;
+}
+
+.assessment-entry-page .assessment-shell {
+  gap: clamp(22px, 3vw, 34px);
+}
+
+.clinical-entry-overview {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  overflow: hidden;
+  border: 1px solid var(--clinical-line);
+  border-radius: 18px;
+  background: var(--clinical-surface);
+  box-shadow: 0 22px 58px rgba(11, 45, 53, 0.08);
+}
+
+.clinical-entry-primary,
+.clinical-entry-outcome {
+  min-width: 0;
+  padding: clamp(26px, 4vw, 48px);
+}
+
+.clinical-entry-primary {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+}
+
+.clinical-entry-outcome {
+  border-left: 1px solid var(--clinical-line);
+  background: var(--clinical-surface-soft);
+}
+
+.clinical-entry-kicker {
+  margin: 0;
+  color: var(--clinical-teal-dark);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.clinical-entry-primary h2,
+.clinical-entry-outcome h2 {
+  margin: 0;
+  color: var(--clinical-ink);
+  font-size: clamp(26px, 3.2vw, 40px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.clinical-entry-outcome h2 {
+  margin-top: 10px;
+  font-size: clamp(24px, 2.5vw, 32px);
+}
+
+.clinical-entry-lead {
+  max-width: 670px;
+  margin: 0;
+  color: var(--clinical-muted);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.clinical-entry-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clinical-entry-prompts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--clinical-line);
+  border-radius: 999px;
+  background: var(--clinical-mint-soft);
+  color: var(--clinical-ink);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.clinical-entry-prompts svg {
+  color: var(--clinical-teal-dark);
+}
+
+.clinical-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.clinical-entry-actions .ui-button {
+  min-height: 48px;
+  justify-content: center;
+}
+
+.clinical-entry-privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0;
+  border-top: 1px solid var(--clinical-line);
+  color: var(--clinical-muted);
+  padding-top: 17px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.clinical-entry-privacy svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--clinical-teal-dark);
+}
+
+.clinical-outcome-list {
+  display: grid;
+  gap: 0;
+  margin-top: 24px;
+}
+
+.clinical-outcome-list article {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 13px;
+  border-top: 1px solid var(--clinical-line);
+  padding: 17px 0;
+}
+
+.clinical-outcome-list article > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--clinical-line);
+  border-radius: 12px;
+  background: var(--clinical-mint);
+  color: var(--clinical-teal-dark);
+}
+
+.clinical-outcome-list h3 {
+  margin: 0 0 5px;
+  color: var(--clinical-ink);
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.clinical-outcome-list p {
+  margin: 0;
+  color: var(--clinical-muted);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .assessment-clinical-refresh .assessment-shell {
@@ -478,6 +644,15 @@
     width: 100%;
     min-width: 0;
   }
+
+  .clinical-entry-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-entry-outcome {
+    border-top: 1px solid var(--clinical-line);
+    border-left: 0;
+  }
 }
 
 @media (max-width: 480px) {
@@ -504,6 +679,16 @@
   .assessment-clinical-refresh .simple-symptom-input textarea {
     min-height: 138px;
   }
+
+  .clinical-entry-primary,
+  .clinical-entry-outcome {
+    padding: 22px 18px;
+  }
+
+  .clinical-entry-actions,
+  .clinical-entry-actions .ui-button {
+    width: 100%;
+  }
 }
 
 html[data-theme="dark"] .assessment-clinical-refresh {
@@ -514,6 +699,8 @@ html[data-theme="dark"] .assessment-clinical-refresh {
   --clinical-mint-soft: #102d2e;
   --clinical-line: #315452;
   --clinical-muted: #b2c8c5;
+  --clinical-surface: #102a2d;
+  --clinical-surface-soft: #0d2528;
   background: #0c2226;
 }
 
@@ -537,6 +724,13 @@ html[data-theme="dark"] .assessment-clinical-refresh .simple-symptom-input texta
 }
 
 @media (forced-colors: active) {
+  .clinical-entry-overview,
+  .clinical-entry-outcome,
+  .clinical-outcome-list article > span,
+  .clinical-entry-prompts li {
+    border-color: CanvasText;
+  }
+
   .assessment-clinical-refresh .assessment-scope-note,
   .assessment-clinical-refresh .clinical-card,
   .assessment-clinical-refresh .clinical-entry-card > article,

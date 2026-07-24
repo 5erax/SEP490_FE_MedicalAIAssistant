@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, History, MapPin, Send, ShieldCheck, Stethoscope } from "lucide-react";
+import {
+  CircleCheck,
+  FileText,
+  History,
+  MapPin,
+  Send,
+  ShieldCheck,
+  Stethoscope,
+} from "lucide-react";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
@@ -131,6 +139,8 @@ function AssessmentShell({
   title,
   description,
   activeStep,
+  showStepper = true,
+  pageClassName = "",
   historyAction = {
     label: "Lịch sử phân tích",
     sessionType: "diagnoses",
@@ -142,7 +152,7 @@ function AssessmentShell({
   const opensHistoryPanel = !historyAction.to;
 
   return (
-    <main className="assessment-page clinical-page assessment-clinical-refresh">
+    <main className={`assessment-page clinical-page assessment-clinical-refresh ${pageClassName}`.trim()}>
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
         <header className="assessment-header clinical-hero">
           <div className="assessment-heading-main">
@@ -182,7 +192,7 @@ function AssessmentShell({
           </div>
         </header>
 
-        <Stepper active={activeStep} />
+        {showStepper && <Stepper active={activeStep} />}
         {children}
       </section>
 
@@ -199,10 +209,6 @@ function AssessmentShell({
       )}
     </main>
   );
-}
-
-function MobileHeroAction({ children }) {
-  return <div className="clinical-mobile-hero-action">{children}</div>;
 }
 
 function Stepper({ active }) {
@@ -227,45 +233,73 @@ function Stepper({ active }) {
 function EntryPage() {
   return (
     <AssessmentShell
-      eyebrow="Tư vấn lâm sàng"
-      title="Phân tích lâm sàng qua triệu chứng"
-      description="Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi tổng hợp kết quả tham khảo."
+      eyebrow="Hỗ trợ trước khi đi khám"
+      title="Làm rõ triệu chứng trước khi đi khám"
+      description="Mô tả dấu hiệu bằng lời của bạn để nhận thông tin tham khảo và chuẩn bị bước tiếp theo phù hợp."
       activeStep={0}
+      showStepper={false}
+      pageClassName="assessment-entry-page"
     >
-      <MobileHeroAction>
-        <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
-          Bắt đầu phân tích
-        </Button>
-      </MobileHeroAction>
+      <section className="clinical-entry-overview" aria-labelledby="clinical-entry-title">
+        <div className="clinical-entry-primary">
+          <p className="clinical-entry-kicker">Bắt đầu phiên mới</p>
+          <h2 id="clinical-entry-title">Điều gì đang khiến bạn lo lắng?</h2>
+          <p className="clinical-entry-lead">
+            Hãy mô tả triệu chứng chính, thời điểm bắt đầu và mức độ hiện tại.
+            MediMate sẽ đặt thêm những câu hỏi cần thiết trước khi tổng hợp thông tin.
+          </p>
 
-      <div className="clinical-entry-card">
-        <article>
-          <ClipboardList size={24} aria-hidden="true" />
-          <h2>Một ô nhập duy nhất</h2>
-          <p>Người dùng chỉ cần nhập mô tả triệu chứng, hệ thống sẽ tự chọn các câu hỏi làm rõ phù hợp.</p>
-        </article>
+          <ul className="clinical-entry-prompts" aria-label="Thông tin nên chuẩn bị">
+            <li><CircleCheck size={18} aria-hidden="true" />Dấu hiệu bạn đang gặp</li>
+            <li><CircleCheck size={18} aria-hidden="true" />Bắt đầu từ khi nào</li>
+            <li><CircleCheck size={18} aria-hidden="true" />Mức độ và thay đổi gần đây</li>
+          </ul>
 
-        <article>
-          <Stethoscope size={24} aria-hidden="true" />
-          <h2>Làm rõ bằng câu hỏi</h2>
-          <p>Hệ thống chọn câu hỏi lâm sàng phù hợp dựa trên nội dung người dùng cung cấp.</p>
-        </article>
+          <div className="clinical-entry-actions">
+            <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
+              Bắt đầu mô tả triệu chứng
+            </Button>
+            <Button tone="secondary" size="lg" onClick={() => navigate("/map")}>
+              <MapPin size={18} aria-hidden="true" />
+              Tìm cơ sở y tế
+            </Button>
+          </div>
 
-        <article>
-          <MapPin size={24} aria-hidden="true" />
-          <h2>Gợi ý bước tiếp theo</h2>
-          <p>Kết quả gồm nhận định tham khảo, chuyên khoa và cơ sở y tế liên quan.</p>
-        </article>
-      </div>
+          <p className="clinical-entry-privacy">
+            <ShieldCheck size={18} aria-hidden="true" />
+            Chỉ cung cấp thông tin cần thiết cho phiên phân tích; không nhập thông tin định danh không liên quan.
+          </p>
+        </div>
 
-      <div className="assessment-actions clinical-actions-center clinical-entry-actions">
-        <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
-          Bắt đầu phân tích
-        </Button>
-        <Button tone="secondary" onClick={() => navigate("/map")}>
-          Tìm cơ sở y tế
-        </Button>
-      </div>
+        <aside className="clinical-entry-outcome" aria-labelledby="clinical-outcome-title">
+          <p className="clinical-entry-kicker">Thông tin bạn nhận được</p>
+          <h2 id="clinical-outcome-title">Định hướng rõ ràng hơn cho bước tiếp theo</h2>
+
+          <div className="clinical-outcome-list">
+            <article>
+              <span aria-hidden="true"><FileText size={21} /></span>
+              <div>
+                <h3>Nhận định tham khảo</h3>
+                <p>Tổng hợp từ mô tả và câu trả lời trong phiên.</p>
+              </div>
+            </article>
+            <article>
+              <span aria-hidden="true"><Stethoscope size={21} /></span>
+              <div>
+                <h3>Chuyên khoa phù hợp</h3>
+                <p>Gợi ý nơi nên bắt đầu thăm khám khi có dữ liệu phù hợp.</p>
+              </div>
+            </article>
+            <article>
+              <span aria-hidden="true"><MapPin size={21} /></span>
+              <div>
+                <h3>Cơ sở y tế liên quan</h3>
+                <p>Tiếp tục tìm kiếm trên danh sách cơ sở đang có trong hệ thống.</p>
+              </div>
+            </article>
+          </div>
+        </aside>
+      </section>
     </AssessmentShell>
   );
 }

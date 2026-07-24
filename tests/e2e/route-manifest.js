@@ -90,6 +90,7 @@ export const VISUAL_ROUTES = [
   { name: "forgot-password", path: "/forgot-password" },
   { name: "change-password", path: "/change-password" },
   { name: "doctor-register", path: "/register-doctor?token=visual-doctor-token" },
+  { name: "medical-assistant", path: "/medical-assistant" },
   { name: "profile-setup", path: "/patient/profile/setup" },
   { name: "patient-dashboard", path: "/dashboard" },
   { name: "symptom-analysis", path: "/symptom" },

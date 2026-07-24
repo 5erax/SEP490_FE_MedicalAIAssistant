@@ -143,6 +143,14 @@ test.describe("visual baseline", () => {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");
           await expect(page.getByLabel("Cơ sở y tế - khoa")).toBeEnabled();
         }
+        if (route.name === "medical-assistant") {
+          await expect(page.getByRole("heading", {
+            name: "Làm rõ triệu chứng trước khi đi khám",
+          })).toBeVisible();
+          await expect(page.getByRole("button", {
+            name: "Bắt đầu mô tả triệu chứng",
+          })).toBeVisible();
+        }
         if (route.name === "profile-setup") {
           await expect(page.locator("#patient-profile-displayName")).toHaveValue("Nguyễn Minh");
           await expect(page.getByRole("button", { name: "Hoàn tất hồ sơ" })).toBeEnabled();
