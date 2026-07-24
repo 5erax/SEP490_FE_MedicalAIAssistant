@@ -20,8 +20,6 @@ const FEATURE_LIMIT_LABELS = {
   symptomAnalysisPerMonth: (limit) => `${limit} lượt phân tích triệu chứng mỗi tháng`,
   aiChatPerDay: (limit) => `${limit} lượt trò chuyện với trợ lý AI mỗi ngày`,
   clinicalQuestionPerMonth: (limit) => `${limit} bộ câu hỏi lâm sàng mỗi tháng`,
-  recoveryPlanPerMonth: (limit) => `${limit} kế hoạch phục hồi mỗi tháng`,
-  medicationScanPerMonth: (limit) => `${limit} lượt kiểm tra thuốc mỗi tháng`,
 };
 
 export function getPlanBenefits(value) {
