@@ -1,12 +1,16 @@
-import { Filter, Plus, RotateCcw, Search } from "lucide-react";
+import { BookOpen, Filter, Hash, Pencil, Plus, RefreshCw, RotateCcw, Search, Stethoscope, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CustomSelect, Dialog, PAGE_SIZE_OPTIONS } from "../ui";
+import { CustomSelect, Dialog, EmptyState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
-function Field({ label, children }) {
+function Field({ label, children, className = "", help, required = false }) {
   return (
-    <label className="clean-field">
-      <span>{label}</span>
+    <label className={`clean-field ${className}`.trim()}>
+      <span>
+        {label}
+        {required && <small className="department-required-note"> (bắt buộc)</small>}
+      </span>
       {children}
+      {help && <small>{help}</small>}
     </label>
   );
 }
@@ -35,6 +39,8 @@ export default function AdminDepartmentsSection({
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const wasSavingRef = useRef(false);
+  const nameInputRef = useRef(null);
+  const dialogTriggerRef = useRef(null);
 
   useEffect(() => {
     if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
@@ -44,11 +50,13 @@ export default function AdminDepartmentsSection({
   }, [formOpen, message, saving]);
 
   function openCreateForm() {
+    dialogTriggerRef.current = document.activeElement;
     onReset();
     setFormOpen(true);
   }
 
   function openEditForm(department) {
+    dialogTriggerRef.current = document.activeElement;
     onEdit(department);
     setFormOpen(true);
   }
@@ -60,48 +68,71 @@ export default function AdminDepartmentsSection({
   }
 
   return (
-    <section className="admin-panel ai-config-admin-panel department-admin-panel">
-      <div className="panel-title-row ai-config-section-heading">
-        <div>
+    <section
+      className="admin-panel ai-config-admin-panel department-admin-panel department-clinical-panel"
+      aria-labelledby="admin-departments-title"
+    >
+      <header className="department-clinical-heading">
+        <div className="department-clinical-heading-copy">
           <p className="eyebrow">Chuyên khoa</p>
-          <h2>Danh mục chuyên khoa</h2>
-          <p className="muted-text">Quản lý các chuyên khoa dùng trong bác sĩ, cơ sở y tế và luồng phân tích lâm sàng.</p>
+          <h2 id="admin-departments-title">Chuyên khoa trong hệ thống</h2>
+          <p>Quản lý danh mục dùng để liên kết bác sĩ, cơ sở y tế và kết quả định hướng chuyên khoa.</p>
         </div>
-        <div className="facility-panel-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>Tải lại</button>
-          <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>
-            <Plus size={15} /> Tạo chuyên khoa
+        <div className="department-clinical-heading-actions">
+          <div className="department-clinical-context">
+            <Stethoscope size={18} aria-hidden="true" />
+            <span>Dữ liệu dùng xuyên suốt luồng điều hướng y tế</span>
+          </div>
+          <button className="btn btn-ghost btn-small department-reload-button" type="button" onClick={onReload}>
+            <RefreshCw size={15} aria-hidden="true" /> Tải lại
+          </button>
+          <button className="btn btn-primary btn-small department-create-button" type="button" onClick={openCreateForm}>
+            <Plus size={15} aria-hidden="true" /> Tạo chuyên khoa
           </button>
         </div>
-      </div>
+      </header>
 
-      {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
+      {message && (
+        <div
+          className={`api-message ${message.type}`}
+          role={message.type === "error" ? "alert" : "status"}
+          aria-live={message.type === "error" ? "assertive" : "polite"}
+        >
+          {message.text}
+        </div>
+      )}
 
-      <section className="ai-config-filter-card">
-        <div className="ai-config-filter-card-header">
+      <section className="ai-config-filter-card department-filter-card" aria-labelledby="department-filter-title">
+        <div className="ai-config-filter-card-header department-filter-heading">
+          <span aria-hidden="true"><Filter size={18} /></span>
           <div>
-            <strong>Bộ lọc chuyên khoa</strong>
-            <p>Tìm theo tên chuyên khoa, mô tả, mã chương ICD hoặc ID trong hệ thống MediMate AI.</p>
+            <h3 id="department-filter-title">Lọc danh mục chuyên khoa</h3>
+            <p>Tìm theo tên, mô tả, mã chương ICD hoặc mã hệ thống.</p>
           </div>
         </div>
 
-        <form className="ai-config-toolbar" onSubmit={onApplyFilters}>
+        <form className="ai-config-toolbar department-filter-form" onSubmit={onApplyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
-            <div className="ai-config-search-field">
-              <Search size={16} />
-              <input
-                value={filters.search}
-                onChange={(event) => onFilterChange("search", event.target.value)}
-                placeholder="Tìm tên chuyên khoa, mô tả hoặc mã ICD..."
-              />
-            </div>
+            <label className="department-search-field">
+              <span>Tìm chuyên khoa</span>
+              <span className="department-search-control">
+                <Search size={17} aria-hidden="true" />
+                <input
+                  type="search"
+                  autoComplete="off"
+                  value={filters.search}
+                  onChange={(event) => onFilterChange("search", event.target.value)}
+                  placeholder="Tên chuyên khoa, mô tả hoặc mã ICD"
+                />
+              </span>
+            </label>
           </div>
 
           <div className="ai-config-toolbar-row ai-config-toolbar-filters">
             <div className="ai-config-filter-grid department-filter-grid">
               <CustomSelect
                 className="clean-field"
-                label="Per page"
+                label="Hiển thị"
                 value={pageInfo.pageSize}
                 options={PAGE_SIZE_OPTIONS}
                 onChange={(nextPageSize) => onPageSizeChange(Number(nextPageSize))}
@@ -109,31 +140,82 @@ export default function AdminDepartmentsSection({
             </div>
 
             <div className="ai-config-filter-actions">
-              <button className="btn btn-primary btn-small" type="submit" disabled={loading}><Filter size={14} /> Apply</button>
+              <button className="btn btn-primary btn-small" type="submit" disabled={loading}>
+                <Filter size={14} aria-hidden="true" /> Áp dụng
+              </button>
               <button className="btn btn-ghost btn-small" type="button" onClick={onClearFilters} disabled={loading}>
-                <RotateCcw size={14} /> Clear
+                <RotateCcw size={14} aria-hidden="true" /> Xóa lọc
               </button>
             </div>
           </div>
         </form>
       </section>
 
-      <div className="admin-panel">
+      {!loading && (
+        <div className="department-result-summary" role="status" aria-live="polite">
+          <BookOpen size={18} aria-hidden="true" />
+          <p>
+            <strong>{departments.length} chuyên khoa đang hiển thị</strong>
+            <span>{allDepartmentsCount} chuyên khoa phù hợp trong danh mục</span>
+          </p>
+        </div>
+      )}
+
+      <div className="department-result-panel">
         {loading ? (
-          <p className="muted-text">Đang tải chuyên khoa...</p>
+          <LoadingState
+            label="Đang tải danh mục chuyên khoa..."
+            description="Dữ liệu chuyên khoa và mã chương ICD đang được đồng bộ."
+          />
         ) : (
-          <div className="admin-table-list">
-            {departments.length === 0 && <p className="muted-text">Chưa có chuyên khoa.</p>}
+          <div className="department-card-list" role="list" aria-label="Danh mục chuyên khoa">
+            {departments.length === 0 && (
+              <EmptyState
+                title="Chưa có chuyên khoa phù hợp"
+                description={filters.search
+                  ? "Hãy điều chỉnh từ khóa hoặc xóa bộ lọc để xem lại toàn bộ danh mục."
+                  : "Tạo chuyên khoa đầu tiên để liên kết với bác sĩ và cơ sở y tế."}
+                action={filters.search
+                  ? <button className="btn btn-ghost btn-small" type="button" onClick={onClearFilters}>Xóa bộ lọc</button>
+                  : <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>Tạo chuyên khoa</button>}
+              />
+            )}
             {departments.map((department) => (
-              <article className="admin-user-row" key={department.id}>
-                <div>
-                  <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-                  <span>{department.description || "Chưa có mô tả."}</span>
-                  <small>{department.id}</small>
+              <article className="department-card" key={department.id} role="listitem">
+                <div className="department-card-icon" aria-hidden="true">
+                  <Stethoscope size={21} />
                 </div>
-                <div className="record-actions">
-                  <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(department)}>Sửa</button>
-                  <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(department.id)}>Xóa</button>
+                <div className="department-card-content">
+                  <strong>{department.departmentName || "Chưa đặt tên"}</strong>
+                  <p>{department.description || "Chưa có mô tả cho chuyên khoa này."}</p>
+                  <dl className="department-card-meta">
+                    <div>
+                      <dt><BookOpen size={13} aria-hidden="true" /> Chương ICD</dt>
+                      <dd>{department.chapterCode || "Chưa liên kết"}</dd>
+                    </div>
+                    <div>
+                      <dt><Hash size={13} aria-hidden="true" /> Mã hệ thống</dt>
+                      <dd>{department.id || "Không có dữ liệu"}</dd>
+                    </div>
+                  </dl>
+                </div>
+                <div className="record-actions department-card-actions">
+                  <button
+                    className="btn btn-ghost btn-small"
+                    type="button"
+                    aria-label={`Sửa chuyên khoa ${department.departmentName || "chưa đặt tên"}`}
+                    onClick={() => openEditForm(department)}
+                  >
+                    <Pencil size={15} aria-hidden="true" /> Sửa
+                  </button>
+                  <button
+                    className="btn btn-dark btn-small department-delete-button"
+                    type="button"
+                    aria-label={`Xóa chuyên khoa ${department.departmentName || "chưa đặt tên"}`}
+                    onClick={() => onDelete(department.id)}
+                  >
+                    <Trash2 size={15} aria-hidden="true" /> Xóa
+                  </button>
                 </div>
               </article>
             ))}
@@ -142,7 +224,7 @@ export default function AdminDepartmentsSection({
       </div>
 
       {!loading && (
-        <div className="pagination-row">
+        <nav className="pagination-row department-pagination" aria-label="Phân trang chuyên khoa">
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => onLoadPage(Math.max(1, pageInfo.pageNumber - 1))}>
             Trước
           </button>
@@ -150,7 +232,7 @@ export default function AdminDepartmentsSection({
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => onLoadPage(Math.min(pageInfo.totalPages || 1, pageInfo.pageNumber + 1))}>
             Sau
           </button>
-        </div>
+        </nav>
       )}
 
       {formOpen && (
@@ -161,12 +243,14 @@ export default function AdminDepartmentsSection({
           onClose={closeForm}
           closeOnBackdrop={!saving}
           closeOnEscape={!saving}
+          initialFocusRef={nameInputRef}
+          restoreFocusRef={dialogTriggerRef}
         >
           <header className="doctor-modal-header">
             <div>
-              <p className="eyebrow">{editingDepartmentId ? "Update" : "Create"}</p>
+              <p className="eyebrow">{editingDepartmentId ? "Cập nhật" : "Tạo mới"}</p>
               <h2 id="department-modal-title">{editingDepartmentId ? "Cập nhật chuyên khoa" : "Tạo chuyên khoa"}</h2>
-              <p>Nhập tên, mô tả và mã chương ICD để dùng trong hệ thống điều phối lâm sàng.</p>
+              <p>Thông tin được dùng khi liên kết bác sĩ, cơ sở y tế và kết quả định hướng chuyên khoa.</p>
             </div>
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={saving}>×</button>
           </header>
@@ -180,17 +264,21 @@ export default function AdminDepartmentsSection({
                 </div>
 
                 <div className="facility-form-grid department-form-grid">
-                  <Field label="Tên chuyên khoa" className="facility-form-span-2">
+                  <Field label="Tên chuyên khoa" className="facility-form-span-2" required>
                     <input
+                      ref={nameInputRef}
                       value={form.departmentName}
                       onChange={(event) => onFormChange("departmentName", event.target.value)}
                       placeholder="Ví dụ: Tim mạch"
-                      autoFocus
                       required
                     />
                   </Field>
 
-                  <Field label="Mô tả" className="facility-form-span-2">
+                  <Field
+                    label="Mô tả"
+                    className="facility-form-span-2"
+                    help="Mô tả ngắn phạm vi chuyên môn hoặc nhóm vấn đề thường được tiếp nhận."
+                  >
                     <textarea
                       rows={5}
                       value={form.description}
@@ -199,7 +287,11 @@ export default function AdminDepartmentsSection({
                     />
                   </Field>
 
-                  <Field label="Mã chương ICD" className="facility-form-span-2">
+                  <Field
+                    label="Mã chương ICD"
+                    className="facility-form-span-2"
+                    help="Nhập mã chương ICD đã được backend sử dụng cho chuyên khoa này, nếu có."
+                  >
                     <input
                       value={form.chapterCode}
                       onChange={(event) => onFormChange("chapterCode", event.target.value)}

@@ -1567,15 +1567,16 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       const response = editingDepartmentId
         ? await medicalDepartmentsApi.update(editingDepartmentId, departmentForm)
         : await medicalDepartmentsApi.create(departmentForm);
-      setDepartmentMessage({
+      const successMessage = {
         type: "success",
         text: response.message || (editingDepartmentId ? "Đã cập nhật chuyên khoa." : "Đã tạo chuyên khoa."),
-      });
+      };
       resetDepartmentForm();
       await Promise.all([
         loadDepartments(),
         loadDepartmentCatalog(departmentPageInfo.pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters),
       ]);
+      setDepartmentMessage(successMessage);
     } catch (error) {
       setDepartmentMessage({ type: "error", text: error.message });
     } finally {
@@ -1595,12 +1596,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     setDepartmentMessage(null);
     try {
       const response = await medicalDepartmentsApi.remove(id);
-      setDepartmentMessage({ type: "success", text: response.message || "Đã xóa chuyên khoa." });
-      showToast({ type: "success", title: "Đã xóa chuyên khoa", message: response.message || "Danh mục đã được cập nhật." });
       await Promise.all([
         loadDepartments(),
         loadDepartmentCatalog(departmentPageInfo.pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters),
       ]);
+      setDepartmentMessage({ type: "success", text: response.message || "Đã xóa chuyên khoa." });
+      showToast({ type: "success", title: "Đã xóa chuyên khoa", message: response.message || "Danh mục đã được cập nhật." });
     } catch (error) {
       setDepartmentMessage({ type: "error", text: error.message });
     }

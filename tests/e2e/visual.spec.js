@@ -75,7 +75,7 @@ test.describe("visual baseline", () => {
             }),
           }));
         }
-        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities"].includes(route.name)) {
+        if (["admin-overview", "admin-users", "admin-doctors", "admin-facilities", "admin-departments"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -184,8 +184,31 @@ test.describe("visual baseline", () => {
               },
             ]
             : [];
+          const visualAdminDepartments = route.name === "admin-departments"
+            ? [
+              {
+                id: "department-visual-cardiology",
+                departmentName: "Khoa Tim mạch",
+                description: "Tiếp nhận và theo dõi các vấn đề liên quan đến tim và hệ tuần hoàn.",
+                chapterCode: "IX",
+              },
+              {
+                id: "department-visual-internal-medicine",
+                departmentName: "Khoa Nội tổng quát",
+                description: "Đánh giá ban đầu các vấn đề sức khỏe thường gặp ở người trưởng thành.",
+                chapterCode: "XVIII",
+              },
+              {
+                id: "department-visual-pediatrics",
+                departmentName: "Khoa Nhi",
+                description: "Chăm sóc sức khỏe và theo dõi các vấn đề thường gặp ở trẻ em.",
+                chapterCode: "XVI",
+              },
+            ]
+            : [];
           await page.route("**/api/**", (request) => {
-            const pathname = new URL(request.request().url()).pathname;
+            const url = new URL(request.request().url());
+            const pathname = url.pathname;
             if (pathname === "/api/users/me") {
               return request.fulfill({
                 contentType: "application/json",
@@ -215,6 +238,24 @@ test.describe("visual baseline", () => {
                       departmentId: "22222222-2222-4222-8222-222222222222",
                       departmentName: "Khoa Tim mạch",
                     }],
+                }),
+              });
+            }
+            if (pathname === "/api/medical-departments") {
+              const isPagedRequest = url.searchParams.has("PageNumber");
+              return request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: isPagedRequest
+                    ? {
+                      items: visualAdminDepartments,
+                      pageNumber: 1,
+                      pageSize: 10,
+                      totalCount: visualAdminDepartments.length,
+                      totalPages: 1,
+                    }
+                    : visualAdminDepartments,
                 }),
               });
             }
@@ -386,6 +427,16 @@ test.describe("visual baseline", () => {
               .filter({ hasText: "Phòng khám Chuyên khoa An Bình" })
               .getByRole("link"),
           ).toHaveCount(0);
+        }
+        if (route.name === "admin-departments") {
+          await expect(page.getByRole("heading", {
+            name: "Chuyên khoa trong hệ thống",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "3 chuyên khoa đang hiển thị",
+            { exact: true },
+          )).toBeVisible();
+          await expect(page.getByText("Khoa Tim mạch", { exact: true })).toBeVisible();
         }
         if (route.name === "doctor-register") {
           await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");
