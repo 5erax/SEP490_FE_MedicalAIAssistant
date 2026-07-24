@@ -850,3 +850,102 @@ html[data-theme="dark"] .auth-mode-forgot .auth-recovery-note svg {
     color: CanvasText;
   }
 }
+
+.auth-mode-reset .auth-layout-clean {
+  width: min(1120px, calc(100% - 40px));
+  grid-template-columns: minmax(350px, 0.88fr) minmax(500px, 1.12fr);
+}
+
+.auth-mode-reset .auth-side-panel {
+  min-height: 680px;
+}
+
+.auth-mode-reset .auth-card-clean {
+  padding: clamp(28px, 3.5vw, 42px);
+}
+
+.auth-mode-reset .auth-card-header-clean {
+  margin-bottom: 22px;
+}
+
+.auth-mode-reset .auth-card-header-clean h2 {
+  font-size: clamp(34px, 3.6vw, 44px);
+}
+
+.auth-mode-reset .auth-field-group {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--auth-line);
+  border-radius: 15px;
+  padding: 17px 18px 18px;
+}
+
+.auth-mode-reset .auth-field-group legend {
+  padding: 0 8px;
+  color: var(--auth-navy);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.auth-mode-reset .auth-field-group > p {
+  margin: -2px 0 15px;
+  color: var(--auth-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.auth-mode-reset .auth-reset-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-mode-reset .clean-field-error {
+  color: #9c3f2b;
+  font-weight: 800;
+}
+
+html[data-theme="dark"] .auth-mode-reset .auth-field-group {
+  border-color: var(--auth-line);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+html[data-theme="dark"] .auth-mode-reset .clean-field-error {
+  color: #ffb9a4;
+}
+
+@media (max-width: 920px) {
+  .auth-mode-reset .auth-layout-clean {
+    width: min(700px, calc(100% - 32px));
+    grid-template-columns: 1fr;
+  }
+
+  .auth-mode-reset .auth-side-panel {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-mode-reset .auth-layout-clean {
+    width: calc(100% - 24px);
+  }
+
+  .auth-mode-reset .auth-card-clean {
+    padding: 24px 18px;
+  }
+
+  .auth-mode-reset .auth-field-group {
+    padding: 16px 14px;
+  }
+}
+
+@media (forced-colors: active) {
+  .auth-mode-reset .auth-field-group {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .auth-mode-reset .clean-field-error {
+    color: CanvasText;
+  }
+}

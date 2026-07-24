@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import {
   ClipboardCheck,
@@ -159,20 +159,26 @@ const authCopy = {
       { label: "Đặt lại mật khẩu ở bước tiếp theo", icon: LockKeyhole },
     ],
   },
-  recovery: {
-    eyebrow: "Khôi phục",
-    title: "Lấy lại quyền truy cập tài khoản.",
-    copy: "Nhập email để nhận mã xác thực và đặt lại mật khẩu mới.",
-    sideTitle: "Bảo vệ tài khoản của bạn",
-    sideCopy: "Sau khi đổi mật khẩu, hãy đăng nhập lại để tiếp tục sử dụng MediMate AI.",
-    points: ["Nhận mã xác thực", "Đặt mật khẩu mới", "Đăng nhập lại"],
+  reset: {
+    eyebrow: "Bảo mật tài khoản",
+    title: "Đặt lại mật khẩu.",
+    copy: "Nhập email, mã xác thực đã nhận và mật khẩu mới để hoàn tất khôi phục tài khoản.",
+    sideEyebrow: "Bước xác thực",
+    sideTitle: "Hoàn tất khôi phục tài khoản.",
+    sideCopy: "Mã xác thực giúp hệ thống kiểm tra yêu cầu trước khi cập nhật mật khẩu mới.",
+    privacyNote: "Không chia sẻ mã xác thực hoặc mật khẩu mới với bất kỳ ai.",
+    points: [
+      { label: "Xác nhận email của tài khoản", icon: Mail },
+      { label: "Nhập mã xác thực đã nhận", icon: KeyRound },
+      { label: "Tạo mật khẩu mới", icon: LockKeyhole },
+    ],
   },
 };
 
 function AuthShell({ mode = "login", children }) {
   const content = authCopy[mode] ?? authCopy.login;
   const isLogin = mode === "login";
-  const usesClinicalAuth = mode === "login" || mode === "signup" || mode === "forgot";
+  const usesClinicalAuth = ["login", "signup", "forgot", "reset"].includes(mode);
 
   return (
     <main className={`landing-page auth-shell-page auth-mode-${mode}${usesClinicalAuth ? " auth-mode-clinical" : ""}`}>
@@ -231,14 +237,23 @@ function AuthShell({ mode = "login", children }) {
   );
 }
 
-function Field({ label, hint, ...props }) {
+function Field({ label, hint, error, inputRef, ...props }) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
+  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <div className="clean-field">
       <label htmlFor={id}>{label}</label>
-      <input id={id} aria-describedby={hintId} {...props} />
+      <input
+        id={id}
+        ref={inputRef}
+        aria-describedby={describedBy}
+        aria-invalid={error ? "true" : undefined}
+        {...props}
+      />
       {hint && <small id={hintId}>{hint}</small>}
+      {error && <small className="clean-field-error" id={errorId}>{error}</small>}
     </div>
   );
 }
@@ -522,6 +537,7 @@ export function ChangePasswordPage() {
   const [form, setForm] = useState({ email: "", otp: "", newPassword: "", confirmNewPassword: "" });
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const confirmPasswordRef = useRef(null);
 
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -534,6 +550,7 @@ export function ChangePasswordPage() {
     if (form.newPassword !== form.confirmNewPassword) {
       setMessage({ type: "error", text: "Mật khẩu mới nhập lại chưa khớp." });
       setSubmitting(false);
+      window.requestAnimationFrame(() => confirmPasswordRef.current?.focus());
       return;
     }
     try {
@@ -548,14 +565,66 @@ export function ChangePasswordPage() {
     }
   }
 
+  const passwordMismatch = message?.type === "error"
+    && message.text === "Mật khẩu mới nhập lại chưa khớp.";
+
   return (
-    <AuthShell mode="recovery">
+    <AuthShell mode="reset">
       <form className="clean-form auth-form-clean" onSubmit={handleSubmit}>
         <ApiMessage message={message} />
-        <Field label="Email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} required />
-        <Field label="Mã xác thực" value={form.otp} onChange={(event) => update("otp", event.target.value)} required />
-        <Field label="Mật khẩu mới" type="password" value={form.newPassword} onChange={(event) => update("newPassword", event.target.value)} hint={PASSWORD_HINT} required />
-        <Field label="Nhập lại mật khẩu mới" type="password" value={form.confirmNewPassword} onChange={(event) => update("confirmNewPassword", event.target.value)} required />
+        <fieldset className="auth-field-group">
+          <legend>Xác minh tài khoản</legend>
+          <p>Dùng email của tài khoản và mã xác thực bạn đã nhận.</p>
+          <div className="auth-reset-fields">
+            <Field
+              label="Email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={(event) => update("email", event.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              spellCheck={false}
+              required
+            />
+            <Field
+              label="Mã xác thực"
+              name="otp"
+              value={form.otp}
+              onChange={(event) => update("otp", event.target.value)}
+              autoComplete="one-time-code"
+              required
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="auth-field-group">
+          <legend>Mật khẩu mới</legend>
+          <p>Tạo mật khẩu mới và nhập lại chính xác để xác nhận.</p>
+          <div className="auth-reset-fields">
+            <Field
+              label="Mật khẩu mới"
+              name="newPassword"
+              type="password"
+              value={form.newPassword}
+              onChange={(event) => update("newPassword", event.target.value)}
+              autoComplete="new-password"
+              hint={PASSWORD_HINT}
+              required
+            />
+            <Field
+              label="Nhập lại mật khẩu mới"
+              name="confirmNewPassword"
+              type="password"
+              value={form.confirmNewPassword}
+              onChange={(event) => update("confirmNewPassword", event.target.value)}
+              autoComplete="new-password"
+              inputRef={confirmPasswordRef}
+              error={passwordMismatch ? message.text : undefined}
+              required
+            />
+          </div>
+        </fieldset>
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
           {submitting ? "Đang đổi..." : "Đổi mật khẩu"}
         </button>

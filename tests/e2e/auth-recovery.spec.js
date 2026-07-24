@@ -50,3 +50,67 @@ test("forgot password announces backend failures without clearing the email", as
   );
   await expect(page.getByLabel("Email")).toHaveValue("patient@example.com");
 });
+
+test("change password submits the existing reset contract and keeps recovery links", async ({ page }) => {
+  let requestBody = null;
+
+  await preparePage(page);
+  await page.route("**/api/authentication/change-password", async (route) => {
+    requestBody = route.request().postDataJSON();
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        message: "Đổi mật khẩu thành công. Bạn có thể đăng nhập lại.",
+      }),
+    });
+  });
+
+  await openRoute(page, "/change-password");
+  await page.getByLabel("Email").fill("patient@example.com");
+  await page.getByLabel("Mã xác thực").fill("reset-code");
+  await page.getByLabel("Mật khẩu mới", { exact: true }).fill("SecurePass!2026");
+  await page.getByLabel("Nhập lại mật khẩu mới").fill("SecurePass!2026");
+  await page.getByRole("button", { name: "Đổi mật khẩu" }).click();
+
+  await expect(page.locator(".api-message.success")).toContainText(
+    "Đổi mật khẩu thành công. Bạn có thể đăng nhập lại.",
+  );
+  await expect(page.getByRole("link", { name: "Gửi lại mã" }))
+    .toHaveAttribute("href", "/forgot-password");
+  await expect(page.locator("form").getByRole("link", { name: "Đăng nhập" }))
+    .toHaveAttribute("href", "/login");
+  expect(requestBody).toEqual({
+    email: "patient@example.com",
+    otp: "reset-code",
+    newPassword: "SecurePass!2026",
+    confirmNewPassword: "SecurePass!2026",
+  });
+});
+
+test("change password blocks mismatched confirmation and focuses the field", async ({ page }) => {
+  let requestCalls = 0;
+
+  await preparePage(page);
+  await page.route("**/api/authentication/change-password", async (route) => {
+    requestCalls += 1;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true }),
+    });
+  });
+
+  await openRoute(page, "/change-password");
+  await page.getByLabel("Email").fill("patient@example.com");
+  await page.getByLabel("Mã xác thực").fill("reset-code");
+  await page.getByLabel("Mật khẩu mới", { exact: true }).fill("SecurePass!2026");
+  const confirmation = page.getByLabel("Nhập lại mật khẩu mới");
+  await confirmation.fill("DifferentPass!2026");
+  await page.getByRole("button", { name: "Đổi mật khẩu" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("Mật khẩu mới nhập lại chưa khớp.");
+  await expect(confirmation).toHaveAttribute("aria-invalid", "true");
+  await expect(confirmation).toBeFocused();
+  await expect(confirmation).toHaveValue("DifferentPass!2026");
+  expect(requestCalls).toBe(0);
+});
