@@ -49,10 +49,43 @@ test.describe("visual baseline", () => {
             body: JSON.stringify(LANDING_MAP_STYLE),
           }));
         }
+        if (route.name === "doctor-register") {
+          await page.route(
+            "**/api/doctor-invitations/validate?token=visual-doctor-token",
+            (request) => request.fulfill({
+              contentType: "application/json",
+              body: JSON.stringify({
+                success: true,
+                data: {
+                  isValid: true,
+                  email: "doctor@example.com",
+                  doctorId: null,
+                  isLinkedToExistingDoctorProfile: false,
+                  suggestedFullName: "BS. Nguyễn Minh Anh",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/facility-departments/active", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: [{
+                id: "11111111-1111-1111-1111-111111111111",
+                facilityName: "Bệnh viện Đa khoa Thành phố",
+                departmentName: "Khoa Nội tổng quát",
+              }],
+            }),
+          }));
+        }
         await openRoute(page, route.path);
         if (route.name === "landing") {
           await expect(page.locator(".maplibregl-canvas")).toBeVisible();
           await expect(page.getByRole("heading", { name: "MediMate+ 30 ngày" })).toBeVisible();
+        }
+        if (route.name === "doctor-register") {
+          await expect(page.getByLabel("Email")).toHaveValue("doctor@example.com");
+          await expect(page.getByLabel("Cơ sở y tế - khoa")).toBeEnabled();
         }
         const routeLoading = page.locator("[data-route-loading]");
         if (await routeLoading.count()) {

@@ -1,4 +1,9 @@
 import { cloneElement, useCallback, useEffect, useRef, useState } from "react";
+import {
+  ClipboardCheck,
+  ShieldCheck,
+  Stethoscope,
+} from "lucide-react";
 import { Navbar } from "../components/landing/Navbar";
 import { replaceRoute } from "../router/navigation";
 import { withReturnTo } from "../router/returnIntent";
@@ -22,6 +27,12 @@ const DEPARTMENT_ROLES = [
   { value: "2", label: "Trưởng khoa (Head)" },
   { value: "3", label: "Chuyên gia đầu ngành (Leading Expert)" },
   { value: "4", label: "Cố vấn (Consultant)" },
+];
+
+const INVITATION_STEPS = [
+  { label: "Xác thực lời mời", icon: ShieldCheck },
+  { label: "Hoàn thiện thông tin", icon: ClipboardCheck },
+  { label: "Sẵn sàng vào hệ thống", icon: Stethoscope },
 ];
 
 function getToken() {
@@ -369,33 +380,41 @@ export default function DoctorRegisterInvitationPage() {
           : "";
 
   return (
-    <main className="landing-page auth-shell-page doctor-invitation-page">
+    <main className="landing-page auth-shell-page auth-mode-clinical auth-mode-doctor doctor-invitation-page">
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {announcement}
       </div>
-      <Navbar />
+      <Navbar variant="landing" />
       <section className="auth-page">
         <div className="container auth-layout auth-layout-clean doctor-invitation-layout">
           <aside className="auth-side-panel">
             <a className="brand auth-brand" href="/">
-              <span className="brand-mark">+</span>
+              <span className="brand-mark" aria-hidden="true">
+                <img src="/logo.svg" alt="" width="36" height="36" />
+              </span>
               <span>MediMate AI</span>
             </a>
             <div>
-              <p className="eyebrow">Doctor Invitation</p>
-              <h1>Hoàn tất tài khoản bác sĩ của bạn.</h1>
+              <p className="eyebrow">Dành cho bác sĩ được mời</p>
+              <h1>Hoàn tất tài khoản bác sĩ.</h1>
               <p>
-                Lời mời xác nhận đúng email và hồ sơ được quản trị viên chuẩn bị trước khi tạo tài khoản đăng nhập.
+                Xác nhận lời mời và bổ sung thông tin cần thiết để truy cập không gian làm việc trên MediMate.
               </p>
             </div>
             <div className="auth-step-list">
-              {["Kiểm tra lời mời", "Hoàn thiện thông tin", "Đăng nhập hệ thống"].map((step, index) => (
-                <div key={step}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{step}</strong>
+              {INVITATION_STEPS.map((step) => (
+                <div key={step.label}>
+                  <span>
+                    <step.icon size={19} strokeWidth={1.8} aria-hidden="true" />
+                  </span>
+                  <strong>{step.label}</strong>
                 </div>
               ))}
             </div>
+            <p className="auth-privacy-note">
+              <ShieldCheck size={17} aria-hidden="true" />
+              Chỉ sử dụng liên kết lời mời do quản trị viên MediMate cung cấp.
+            </p>
           </aside>
 
           <div className="auth-card auth-card-clean doctor-invitation-card">
@@ -470,68 +489,81 @@ export default function DoctorRegisterInvitationPage() {
                   aria-busy={status === "submitting"}
                 >
                   <ErrorSummary errors={errors} summaryRef={errorSummaryRef} />
-                  <div className="form-two-cols">
-                    <Field id="doctor-email" label="Email">
-                      <input type="email" value={invitation?.email || ""} readOnly aria-readonly="true" />
-                    </Field>
-                    <Field id="doctor-fullName" label="Họ và tên" error={errors.fullName} required>
-                      <input
-                        value={form.fullName}
-                        onChange={(event) => updateField("fullName", event.target.value)}
-                        autoComplete="name"
+                  <fieldset className="doctor-form-group">
+                    <legend>Thông tin tài khoản</legend>
+                    <p>Email được xác định từ lời mời. Bạn bổ sung tên hiển thị, mật khẩu và số điện thoại nếu cần.</p>
+                    <div className="form-two-cols">
+                      <Field id="doctor-email" label="Email">
+                        <input
+                          name="email"
+                          type="email"
+                          value={invitation?.email || ""}
+                          autoComplete="email"
+                          readOnly
+                          aria-readonly="true"
+                        />
+                      </Field>
+                      <Field id="doctor-fullName" label="Họ và tên" error={errors.fullName} required>
+                        <input
+                          name="fullName"
+                          value={form.fullName}
+                          onChange={(event) => updateField("fullName", event.target.value)}
+                          autoComplete="name"
+                          required
+                        />
+                      </Field>
+                      <Field
+                        id="doctor-password"
+                        label="Mật khẩu"
+                        error={errors.password}
+                        hint="Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
                         required
-                      />
-                    </Field>
-                    <Field
-                      id="doctor-password"
-                      label="Mật khẩu"
-                      error={errors.password}
-                      hint="Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
-                      required
-                    >
-                      <input
-                        type="password"
-                        value={form.password}
-                        onChange={(event) => updateField("password", event.target.value)}
-                        autoComplete="new-password"
+                      >
+                        <input
+                          name="password"
+                          type="password"
+                          value={form.password}
+                          onChange={(event) => updateField("password", event.target.value)}
+                          autoComplete="new-password"
+                          required
+                        />
+                      </Field>
+                      <Field
+                        id="doctor-confirmPassword"
+                        label="Nhập lại mật khẩu"
+                        error={errors.confirmPassword}
                         required
-                      />
-                    </Field>
-                    <Field
-                      id="doctor-confirmPassword"
-                      label="Nhập lại mật khẩu"
-                      error={errors.confirmPassword}
-                      required
-                    >
-                      <input
-                        type="password"
-                        value={form.confirmPassword}
-                        onChange={(event) => updateField("confirmPassword", event.target.value)}
-                        autoComplete="new-password"
-                        required
-                      />
-                    </Field>
-                    <Field
-                      id="doctor-phoneNumber"
-                      label="Số điện thoại"
-                      error={errors.phoneNumber}
-                      hint="Không bắt buộc."
-                    >
-                      <input
-                        type="tel"
-                        value={form.phoneNumber}
-                        onChange={(event) => updateField("phoneNumber", event.target.value)}
-                        autoComplete="tel"
-                      />
-                    </Field>
-                  </div>
+                      >
+                        <input
+                          name="confirmPassword"
+                          type="password"
+                          value={form.confirmPassword}
+                          onChange={(event) => updateField("confirmPassword", event.target.value)}
+                          autoComplete="new-password"
+                          required
+                        />
+                      </Field>
+                      <Field
+                        id="doctor-phoneNumber"
+                        label="Số điện thoại"
+                        error={errors.phoneNumber}
+                        hint="Không bắt buộc."
+                      >
+                        <input
+                          name="phoneNumber"
+                          type="tel"
+                          value={form.phoneNumber}
+                          onChange={(event) => updateField("phoneNumber", event.target.value)}
+                          autoComplete="tel"
+                        />
+                      </Field>
+                    </div>
+                  </fieldset>
 
                   {!isLinkedProfile && (
-                    <section className="doctor-professional-section">
-                      <div className="doctor-section-heading">
-                        <strong>Thông tin chuyên môn</strong>
-                        <span>Dành cho hồ sơ bác sĩ mới</span>
-                      </div>
+                    <fieldset className="doctor-form-group doctor-professional-section">
+                      <legend>Thông tin chuyên môn</legend>
+                      <p>Chọn đúng cơ sở, khoa và vai trò được ghi nhận trong lời mời của bạn.</p>
 
                       {facilityError && (
                         <div className="doctor-facility-warning" role="status" aria-atomic="true">
@@ -551,6 +583,7 @@ export default function DoctorRegisterInvitationPage() {
                           required
                         >
                           <select
+                            name="facilityDepartmentId"
                             value={form.facilityDepartmentId}
                             onChange={(event) => updateField("facilityDepartmentId", event.target.value)}
                             disabled={facilityLoading || !facilityDepartments.length}
@@ -571,6 +604,7 @@ export default function DoctorRegisterInvitationPage() {
                           required
                         >
                           <select
+                            name="departmentRole"
                             value={form.departmentRole}
                             onChange={(event) => updateField("departmentRole", event.target.value)}
                           >
@@ -581,6 +615,7 @@ export default function DoctorRegisterInvitationPage() {
                         </Field>
                         <Field id="doctor-qualification" label="Chuyên môn / bằng cấp">
                           <input
+                            name="qualification"
                             value={form.qualification}
                             onChange={(event) => updateField("qualification", event.target.value)}
                             placeholder="Ví dụ: Bác sĩ chuyên khoa I"
@@ -592,6 +627,7 @@ export default function DoctorRegisterInvitationPage() {
                           error={errors.yearsOfExperience}
                         >
                           <input
+                            name="yearsOfExperience"
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
@@ -600,7 +636,7 @@ export default function DoctorRegisterInvitationPage() {
                           />
                         </Field>
                       </div>
-                    </section>
+                    </fieldset>
                   )}
 
                   <button className="btn btn-primary auth-submit" type="submit" disabled={submitDisabled}>
