@@ -530,7 +530,9 @@ export default function UserWorkspaceShell({ children }) {
       )}
       <PatientOnboardingAssistant
         auth={auth}
-        mobileBottomOffset={path === "/chat" ? "170px" : undefined}
+        mobileBottomOffset={
+          path === "/chat" ? "170px" : path === "/records" ? "190px" : undefined
+        }
       />
     </div>
   );

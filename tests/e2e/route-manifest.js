@@ -94,6 +94,7 @@ export const VISUAL_ROUTES = [
   { name: "patient-dashboard", path: "/dashboard" },
   { name: "symptom-analysis", path: "/symptom" },
   { name: "patient-chat", path: "/chat" },
+  { name: "patient-records", path: "/records" },
   { name: "nearby-clinic", path: "/map" },
   { name: "admin-gate", path: "/app/admin" },
   { name: "not-found", path: "/route-that-does-not-exist" },

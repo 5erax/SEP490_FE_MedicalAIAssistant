@@ -19,7 +19,7 @@ test.describe("visual baseline", () => {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
-        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat"].includes(route.name)) {
+        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat", "patient-records"].includes(route.name)) {
           await page.addInitScript(({ accessToken, isProfileSetup }) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -146,6 +146,10 @@ test.describe("visual baseline", () => {
         if (route.name === "patient-chat") {
           await expect(page.getByRole("heading", { name: "Bạn đang cần tìm hiểu điều gì?" })).toBeVisible();
           await expect(page.getByLabel("Nội dung cần hỏi")).toBeVisible();
+        }
+        if (route.name === "patient-records") {
+          await expect(page.getByRole("heading", { name: "Hồ sơ y tế chưa được mở trên MediMate" })).toBeVisible();
+          await expect(page.getByText("Không có hồ sơ nào được tạo hoặc lưu từ màn hình này.")).toBeVisible();
         }
         const routeLoading = page.locator("[data-route-loading]");
         if (await routeLoading.count()) {
