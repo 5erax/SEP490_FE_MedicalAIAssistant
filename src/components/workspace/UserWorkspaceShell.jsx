@@ -135,7 +135,7 @@ function loadAccountUser(accessToken) {
   return promise;
 }
 
-export default function UserWorkspaceShell({ children, contentMode = "contained" }) {
+export default function UserWorkspaceShell({ children }) {
   const [notice, setNotice] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -360,12 +360,17 @@ export default function UserWorkspaceShell({ children, contentMode = "contained"
           })}
         </nav>
 
+        {!premiumAccess && (
+          <section className="user-shell-plan" aria-labelledby="medimate-plan-title">
+            <span>MediMate+</span>
+            <strong id="medimate-plan-title">Mở rộng quyền lợi sử dụng</strong>
+            <p>Xem các quyền lợi và hạn mức MediMate+ hiện đang được cung cấp.</p>
+            <button type="button" onClick={() => goTo("/pricing")}>Xem gói MediMate+</button>
+          </section>
+        )}
       </aside>
 
-      <main
-        ref={mainRef}
-        className={`user-shell-main ${contentMode === "full-bleed" ? "has-full-bleed-content" : ""}`}
-      >
+      <main ref={mainRef} className="user-shell-main">
         <header className="user-shell-topbar">
           <div className="user-shell-title" data-onboarding="patient-title">
             <button
@@ -468,7 +473,7 @@ export default function UserWorkspaceShell({ children, contentMode = "contained"
           </div>
         </header>
 
-        <section className={`user-shell-content ${contentMode === "full-bleed" ? "is-full-bleed" : ""}`}>
+        <section className="user-shell-content">
           {children}
         </section>
       </main>

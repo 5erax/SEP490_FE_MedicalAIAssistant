@@ -14,7 +14,6 @@ import { getCanonicalPath, resolveRoute } from "./router/routes";
 import { replaceRoute } from "./router/navigation";
 import { resolveRouteAccess } from "./router/access";
 import { AppLoading } from "./components/ui";
-import { hasAuthRole } from "./utils/roles";
 
 const NearbyClinicPage = lazy(() => import("./pages/NearbyClinicPage"));
 const MedicalAssistantPage = lazy(() => import("./pages/MedicalAssistantPage"));
@@ -36,8 +35,8 @@ if (window.location.pathname.startsWith("/app/admin")) {
   void loadAdminWorkspacePage();
 }
 
-function userWorkspace(page, contentMode = "contained") {
-  return <UserWorkspaceShell contentMode={contentMode}>{page}</UserWorkspaceShell>;
+function userWorkspace(page) {
+  return <UserWorkspaceShell>{page}</UserWorkspaceShell>;
 }
 
 function lazyPage(page) {
@@ -102,9 +101,7 @@ function App() {
     case "patient.chat":
       return userWorkspace(lazyPage(<ChatbotPage />));
     case "public.map":
-      return auth && !hasAuthRole(auth, "admin")
-        ? userWorkspace(lazyPage(<NearbyClinicPage />), "full-bleed")
-        : lazyPage(<NearbyClinicPage />);
+      return lazyPage(<NearbyClinicPage />);
     case "patient.records":
       return userWorkspace(lazyPage(<MedicalRecordPage />));
     case "patient.recovery":
