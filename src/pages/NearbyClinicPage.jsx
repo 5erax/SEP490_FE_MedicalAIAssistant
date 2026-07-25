@@ -1020,7 +1020,7 @@ function NearbyClinicPage() {
         </div>
         <div className="clinic-search">
           <Search size={17} aria-hidden="true" />
-          <label className="sr-only" htmlFor="facility-search">Tìm cơ sở y tế</label>
+          <label className="sr-only" htmlFor="facility-search">Lọc danh sách cơ sở y tế</label>
           <input
             id="facility-search"
             name="search"

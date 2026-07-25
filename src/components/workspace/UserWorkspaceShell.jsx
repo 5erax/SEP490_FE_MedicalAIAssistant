@@ -50,6 +50,12 @@ const NAV_ITEMS = getNavigationModel("patient")
   }));
 
 const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
+const SECONDARY_ACTIVE_ITEMS = {
+  "/chat": { label: "Trợ lý AI", icon: MessageSquare },
+  "/profile": { label: "Hồ sơ", icon: UserRound },
+  "/medication": { label: "Kiểm tra thuốc", icon: Pill },
+  "/assessment/history": { label: "Lịch sử phân tích", icon: ClipboardList },
+};
 const EMPTY_ACCOUNT_CACHE = { accessToken: "", user: null };
 
 let accountUserCache = EMPTY_ACCOUNT_CACHE;
@@ -158,11 +164,10 @@ export default function UserWorkspaceShell({ children }) {
   const premiumAccess = hasPremiumAccess(auth);
   const path = getCurrentPath();
   const activeItem = NAV_ITEMS.find((item) => path === item.path)
-    ?? (path === "/profile"
-      ? { label: "Hồ sơ", icon: UserRound }
-      : path === "/medication"
-        ? { label: "Kiểm tra thuốc", icon: Pill }
-        : NAV_ITEMS[0]);
+    ?? SECONDARY_ACTIVE_ITEMS[path]
+    ?? (path.startsWith("/assessment/")
+      ? { label: "Phân tích lâm sàng", icon: Activity }
+      : NAV_ITEMS[0]);
   const ActiveIcon = activeItem.icon;
   const accountUser = accountState.accessToken === accessToken ? accountState.user : null;
   const cachedAccountUser = accessToken ? getCachedAccountUser(accessToken) : null;
@@ -301,7 +306,7 @@ export default function UserWorkspaceShell({ children }) {
         tabIndex={mobileMenuOpen ? -1 : undefined}
       >
         <a className="user-shell-brand" href="/dashboard">
-          <span>+</span>
+          <span><img src="/logo.svg" alt="" width="30" height="30" /></span>
           <strong>MediMate</strong>
         </a>
         <button
@@ -356,12 +361,14 @@ export default function UserWorkspaceShell({ children }) {
           })}
         </nav>
 
-        <section className="user-shell-plan">
-          <span>MediMate+</span>
-          <strong>Chăm sóc sâu hơn</strong>
-          <p>Mở khoá theo dõi sức khoẻ và tư vấn sau khám.</p>
-          <button type="button" onClick={() => goTo("/pricing")}>Nâng cấp</button>
-        </section>
+        {!premiumAccess && (
+          <section className="user-shell-plan">
+            <span>MediMate+</span>
+            <strong>Chăm sóc sâu hơn</strong>
+            <p>Mở khoá theo dõi sức khoẻ và tư vấn sau khám.</p>
+            <button type="button" onClick={() => goTo("/pricing")}>Nâng cấp</button>
+          </section>
+        )}
       </aside>
 
       <main ref={mainRef} className="user-shell-main">

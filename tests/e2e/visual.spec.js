@@ -24,7 +24,7 @@ test.describe("visual baseline", () => {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
-        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat", "patient-records", "patient-profile", "patient-recovery", "patient-medication"].includes(route.name)) {
+        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat", "patient-records", "patient-profile", "patient-recovery", "patient-medication", "patient-map"].includes(route.name)) {
           await page.addInitScript(({ accessToken, isProfileSetup }) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -502,7 +502,7 @@ test.describe("visual baseline", () => {
             body: JSON.stringify(LANDING_MAP_STYLE),
           }));
         }
-        if (route.name === "nearby-clinic") {
+        if (["nearby-clinic", "patient-map"].includes(route.name)) {
           await page.route("**/api/medical-facilities/active", (request) => request.fulfill({
             contentType: "application/json",
             body: JSON.stringify({
@@ -566,7 +566,7 @@ test.describe("visual baseline", () => {
           await expect(page.locator(".maplibregl-canvas")).toBeVisible();
           await expect(page.getByRole("heading", { name: "MediMate+ 30 ngày" })).toBeVisible();
         }
-        if (route.name === "nearby-clinic") {
+        if (["nearby-clinic", "patient-map"].includes(route.name)) {
           await expect(page.locator(".maplibregl-canvas")).toBeVisible();
           await expect(page.getByText("Bệnh viện kiểm thử", { exact: true })).toBeVisible();
         }

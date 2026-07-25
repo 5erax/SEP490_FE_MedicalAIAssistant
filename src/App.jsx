@@ -14,6 +14,7 @@ import { getCanonicalPath, resolveRoute } from "./router/routes";
 import { replaceRoute } from "./router/navigation";
 import { resolveRouteAccess } from "./router/access";
 import { AppLoading } from "./components/ui";
+import { hasAuthRole } from "./utils/roles";
 
 const NearbyClinicPage = lazy(() => import("./pages/NearbyClinicPage"));
 const MedicalAssistantPage = lazy(() => import("./pages/MedicalAssistantPage"));
@@ -59,6 +60,7 @@ function App() {
   const path = window.location.pathname;
   const route = resolveRoute(path);
   const canonicalPath = getCanonicalPath(route);
+  const auth = getStoredAuth();
 
   useEffect(() => {
     document.title = route?.title ?? "MediMate AI";
@@ -72,7 +74,7 @@ function App() {
   if (!route) return <StaticPage path={path} />;
 
   const requestedPath = `${canonicalPath || path}${window.location.search}${window.location.hash}`;
-  const redirectPath = resolveRouteAccess(route, getStoredAuth(), requestedPath);
+  const redirectPath = resolveRouteAccess(route, auth, requestedPath);
   if (redirectPath) {
     return <RouteRedirect to={redirectPath} />;
   }
@@ -100,7 +102,9 @@ function App() {
     case "patient.chat":
       return userWorkspace(lazyPage(<ChatbotPage />));
     case "public.map":
-      return lazyPage(<NearbyClinicPage />);
+      return auth && !hasAuthRole(auth, "admin")
+        ? userWorkspace(lazyPage(<NearbyClinicPage />))
+        : lazyPage(<NearbyClinicPage />);
     case "patient.records":
       return userWorkspace(lazyPage(<MedicalRecordPage />));
     case "patient.recovery":

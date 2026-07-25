@@ -99,6 +99,7 @@ export const VISUAL_ROUTES = [
   { name: "patient-profile", path: "/profile" },
   { name: "patient-recovery", path: "/recovery-plan" },
   { name: "patient-medication", path: "/medication" },
+  { name: "patient-map", path: "/map" },
   { name: "nearby-clinic", path: "/map" },
   { name: "admin-overview", path: "/app/admin" },
   { name: "admin-users", path: "/app/admin/users" },

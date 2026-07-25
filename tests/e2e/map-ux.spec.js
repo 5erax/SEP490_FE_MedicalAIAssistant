@@ -216,7 +216,7 @@ test("map search matches facility departments from active backend data", async (
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
-  await page.getByLabel("Tìm cơ sở y tế").fill("da lieu");
+  await page.getByLabel("Lọc danh sách cơ sở y tế").fill("da lieu");
   await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toBeVisible();
   await expect(page.getByText("Bệnh viện Tim", { exact: true })).toHaveCount(0);
   const dermatologyCard = page.locator(".facility-result-card").filter({ hasText: "Phòng khám Da liễu" });
