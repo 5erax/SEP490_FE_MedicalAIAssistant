@@ -116,6 +116,12 @@ test("patient shell keeps the MediMate Plus upgrade entry functional", async ({ 
 
   await openRoute(page, "/dashboard");
 
+  const activeNavigation = page.locator('.user-shell-nav a[href="/dashboard"]');
+  await expect(activeNavigation).toHaveCSS("background-color", "rgb(230, 244, 238)");
+  await expect(activeNavigation).toHaveCSS("color", "rgb(5, 97, 106)");
+  expect(await activeNavigation.evaluate((element) => getComputedStyle(element).boxShadow))
+    .toContain("rgb(8, 127, 140)");
+
   const upgradeCard = page.locator(".user-shell-plan");
   await expect(upgradeCard).toBeVisible();
   await expect(upgradeCard).toContainText("MediMate+");
