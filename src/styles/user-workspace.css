@@ -5,13 +5,12 @@
   --workspace-ink: var(--color-ink);
   --workspace-muted: color-mix(in srgb, var(--color-ink) 62%, transparent);
   --workspace-line: color-mix(in srgb, var(--color-ink) 13%, transparent);
-  --workspace-lime: var(--color-primary);
   --workspace-mint: var(--color-primary-soft);
   min-height: 100svh;
   display: grid;
   grid-template-columns: 292px minmax(0, 1fr);
   background:
-    linear-gradient(135deg, rgba(196, 233, 149, 0.18), rgba(8, 127, 140, 0.08) 42%, transparent 70%),
+    linear-gradient(135deg, rgba(8, 127, 140, 0.045), rgba(230, 244, 238, 0.42) 46%, transparent 72%),
     var(--workspace-bg);
   color: var(--workspace-ink);
   font-family: "Be Vietnam Pro", system-ui, sans-serif;
@@ -32,7 +31,7 @@
   flex-direction: column;
   gap: 16px;
   border-right: 1px solid var(--workspace-line);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.94);
   overflow-y: auto;
   padding: 20px 18px 24px;
   backdrop-filter: blur(18px);
@@ -53,11 +52,12 @@
   height: 42px;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--workspace-ink);
+  overflow: hidden;
+  border: 1px solid var(--workspace-line);
   border-radius: 12px;
-  background: var(--workspace-ink);
-  color: var(--workspace-lime);
-  box-shadow: 3px 3px 0 var(--workspace-lime);
+  background: var(--workspace-mint);
+  color: var(--color-info-strong);
+  box-shadow: 0 8px 22px rgba(8, 127, 140, 0.1);
 }
 
 .user-shell-brand img {
@@ -86,7 +86,7 @@
   color: var(--workspace-muted);
   padding: 9px 12px;
   text-align: left;
-  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+  transition: background 180ms ease, color 180ms ease;
 }
 
 .user-shell-nav button:hover,
@@ -95,7 +95,6 @@
 .user-shell-nav a.active {
   background: var(--workspace-mint);
   color: var(--workspace-ink);
-  transform: translateX(2px);
 }
 
 .user-shell-nav button > svg:first-child,
@@ -148,11 +147,11 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 14px;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 18px;
   background: #fff;
   color: var(--workspace-ink);
-  box-shadow: 6px 6px 0 var(--workspace-ink);
+  box-shadow: 0 24px 64px rgba(16, 20, 17, 0.16);
   padding: 18px;
 }
 
@@ -162,8 +161,8 @@
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: var(--workspace-lime);
-  color: var(--workspace-ink);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
 }
 
 .app-notice h2,
@@ -191,7 +190,7 @@
 
 .app-notice-actions button {
   min-height: 40px;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 10px;
   padding: 0 14px;
   color: var(--workspace-ink);
@@ -203,8 +202,9 @@
 }
 
 .app-notice-actions button:last-child {
-  background: var(--workspace-lime);
-  box-shadow: 3px 3px 0 var(--workspace-ink);
+  border-color: var(--color-info-strong);
+  background: var(--color-info-strong);
+  color: #fff;
 }
 
 .patient-setup-modal-backdrop {
@@ -227,11 +227,11 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 26px;
   background: rgba(255, 255, 255, 0.96);
   color: var(--workspace-ink);
-  box-shadow: 8px 8px 0 var(--workspace-ink), 0 28px 80px rgba(16, 20, 17, 0.22);
+  box-shadow: 0 28px 80px rgba(16, 20, 17, 0.2);
 }
 
 .patient-setup-modal-header {
@@ -241,7 +241,7 @@
   align-items: center;
   border-bottom: 1px solid var(--workspace-line);
   background:
-    linear-gradient(135deg, rgba(196, 233, 149, 0.2), rgba(255, 255, 255, 0.86)),
+    linear-gradient(135deg, rgba(8, 127, 140, 0.08), rgba(255, 255, 255, 0.86)),
     #fff;
   padding: clamp(22px, 3vw, 30px);
 }
@@ -251,10 +251,11 @@
   place-items: center;
   width: 58px;
   height: 58px;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 18px;
-  background: var(--workspace-lime);
-  box-shadow: 4px 4px 0 var(--workspace-ink);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+  box-shadow: 0 10px 26px rgba(8, 127, 140, 0.1);
 }
 
 .patient-setup-modal-header h2,
@@ -300,7 +301,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--teal), var(--workspace-lime));
+  background: linear-gradient(90deg, var(--teal), var(--color-info));
   transition: width 220ms ease;
 }
 
@@ -423,20 +424,20 @@
   justify-content: center;
   gap: 8px;
   min-height: 40px;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--color-info-strong);
   border-radius: 12px;
-  background: var(--workspace-lime);
-  color: var(--workspace-ink);
+  background: var(--color-info-strong);
+  color: #fff;
   padding: 0 13px;
   font-weight: 950;
-  box-shadow: 3px 3px 0 var(--workspace-ink);
-  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+  box-shadow: 0 8px 20px rgba(8, 127, 140, 0.14);
+  transition: background 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
 }
 
 .patient-setup-add-disease:hover:not(:disabled),
 .patient-setup-disease-head button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 4px 4px 0 var(--workspace-ink);
+  background: var(--color-info);
+  box-shadow: 0 10px 24px rgba(8, 127, 140, 0.18);
 }
 
 .patient-setup-add-disease:disabled,
@@ -483,7 +484,9 @@
 
 .patient-setup-disease-head button {
   min-height: 36px;
+  border-color: var(--workspace-line);
   background: #fff;
+  color: var(--workspace-ink);
   box-shadow: none;
 }
 
@@ -533,54 +536,15 @@
   }
 }
 
-.user-shell-plan {
-  flex-shrink: 0;
-  display: grid;
-  gap: 10px;
-  margin-top: 8px;
-  border: 1.5px solid var(--workspace-ink);
-  border-radius: 18px;
-  background: var(--workspace-ink);
-  color: #fff;
-  padding: 16px;
-  box-shadow: 4px 4px 0 rgba(16, 20, 17, 0.18);
-}
-
-.user-shell-plan span {
-  width: fit-content;
-  border-radius: 999px;
-  background: var(--workspace-lime);
-  color: var(--workspace-ink);
-  padding: 6px 10px;
-  font-size: 11.5px;
-  font-weight: 950;
-}
-
-.user-shell-plan strong {
-  font-size: 19px;
-}
-
-.user-shell-plan p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 12.5px;
-  line-height: 1.55;
-}
-
-.user-shell-plan button {
-  width: 100%;
-  min-height: 42px;
-  border: 1.5px solid var(--workspace-lime);
-  border-radius: 10px;
-  background: var(--workspace-lime);
-  color: var(--workspace-ink);
-  font-weight: 950;
-}
-
 .user-shell-main {
   min-width: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+}
+
+.user-shell-main.has-full-bleed-content {
+  height: 100svh;
+  overflow: hidden;
 }
 
 .user-shell-topbar {
@@ -592,7 +556,7 @@
   gap: 14px;
   align-items: center;
   border-bottom: 1px solid var(--workspace-line);
-  background: rgba(244, 247, 239, 0.84);
+  background: rgba(247, 250, 248, 0.94);
   padding: 17px 24px;
   backdrop-filter: blur(20px);
 }
@@ -617,8 +581,9 @@
 }
 
 .title-icon {
-  background: var(--workspace-lime);
-  border-color: rgba(16, 20, 17, 0.22);
+  border-color: var(--workspace-line);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
 }
 
 .user-shell-title p,
@@ -708,8 +673,8 @@
 .user-chip span {
   display: grid;
   place-items: center;
-  background: var(--workspace-ink);
-  color: var(--workspace-lime);
+  background: var(--color-info-strong);
+  color: #fff;
   font-size: 11px;
   font-weight: 950;
 }
@@ -717,7 +682,7 @@
 .user-chip img {
   display: block;
   object-fit: cover;
-  background: var(--workspace-ink);
+  background: var(--color-info-bg);
 }
 
 .user-chip strong {
@@ -740,12 +705,12 @@
   display: grid;
   gap: 6px;
   width: min(300px, calc(100vw - 28px));
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 16px;
   background: var(--workspace-card);
   color: var(--workspace-ink);
   padding: 10px;
-  box-shadow: 0 22px 60px rgba(16, 20, 17, 0.18);
+  box-shadow: 0 22px 60px rgba(16, 20, 17, 0.14);
 }
 
 .account-menu-summary {
@@ -767,8 +732,8 @@
 .account-menu-summary > span {
   display: grid;
   place-items: center;
-  background: var(--workspace-ink);
-  color: var(--workspace-lime);
+  background: var(--color-info-strong);
+  color: #fff;
   font-size: 12px;
   font-weight: 950;
 }
@@ -776,7 +741,7 @@
 .account-menu-summary > img {
   display: block;
   object-fit: cover;
-  background: var(--workspace-ink);
+  background: var(--color-info-bg);
 }
 
 .account-menu-summary strong,
@@ -857,6 +822,17 @@
   padding: 22px;
 }
 
+.user-shell-content.is-full-bleed {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.user-shell-content :where(a, button, input, select, textarea, [tabindex]):focus {
+  scroll-margin-top: 92px;
+  scroll-margin-bottom: 96px;
+}
+
 .user-shell-mobile-nav {
   display: none;
 }
@@ -876,23 +852,23 @@
   height: 52px;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 50%;
-  background: var(--workspace-lime);
-  color: var(--workspace-ink);
-  box-shadow: 4px 4px 0 var(--workspace-ink);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+  box-shadow: 0 12px 32px rgba(8, 127, 140, 0.16);
 }
 
 .patient-help-menu {
   width: min(300px, calc(100vw - 40px));
   display: grid;
   gap: 12px;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 16px;
   background: var(--workspace-card);
   color: var(--workspace-ink);
   padding: 14px;
-  box-shadow: 0 22px 60px rgba(16, 20, 17, 0.2);
+  box-shadow: 0 22px 60px rgba(16, 20, 17, 0.14);
 }
 
 .patient-help-menu strong,
@@ -918,10 +894,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--color-info-strong);
   border-radius: 11px;
-  background: var(--workspace-lime);
-  color: var(--workspace-ink);
+  background: var(--color-info-strong);
+  color: #fff;
   font-weight: 950;
 }
 
@@ -941,7 +917,7 @@
 .patient-tour-highlight {
   position: fixed;
   z-index: 91;
-  border: 2px solid var(--workspace-lime);
+  border: 2px solid var(--color-info);
   border-radius: 18px;
   box-shadow:
     0 0 0 9999px rgba(16, 20, 17, 0.48),
@@ -957,12 +933,12 @@
   width: min(390px, calc(100vw - 44px));
   display: grid;
   gap: 12px;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 18px;
   background: var(--workspace-card);
   color: var(--workspace-ink);
   padding: 18px;
-  box-shadow: 6px 6px 0 var(--workspace-ink);
+  box-shadow: 0 24px 64px rgba(16, 20, 17, 0.18);
 }
 
 .patient-tour-panel.is-centered {
@@ -1016,7 +992,7 @@
 
 .patient-tour-actions button {
   min-height: 42px;
-  border: 1.5px solid var(--workspace-ink);
+  border: 1px solid var(--workspace-line);
   border-radius: 11px;
   background: #fff;
   color: var(--workspace-ink);
@@ -1031,8 +1007,9 @@
 }
 
 .patient-tour-actions button:last-child {
-  background: var(--workspace-lime);
-  box-shadow: 3px 3px 0 var(--workspace-ink);
+  border-color: var(--color-info-strong);
+  background: var(--color-info-strong);
+  color: #fff;
 }
 
 .patient-tour-actions button:disabled {
@@ -1074,6 +1051,31 @@
   border-radius: 22px;
   background: var(--workspace-card);
   box-shadow: 0 24px 72px rgba(16, 20, 17, 0.08);
+}
+
+.user-shell-content.is-full-bleed .clinic-page {
+  height: calc(100svh - 77px);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.user-shell-content.is-full-bleed .map-clinical-refresh .map-stage {
+  padding: 0;
+}
+
+.user-shell-content.is-full-bleed .map-clinical-refresh .map-stage > .map-panel,
+.user-shell-content.is-full-bleed .map-clinical-refresh .map-panel {
+  inset: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.user-shell-content.is-full-bleed .map-clinical-refresh .map-panel > .maplibregl-map {
+  margin: 0;
+  border-radius: 0;
 }
 
 .user-shell .feature-card,
@@ -1293,6 +1295,10 @@
     padding: 14px;
   }
 
+  .user-shell-content.is-full-bleed {
+    padding: 0;
+  }
+
   .user-shell .chatbot-page {
     height: calc(100svh - 180px);
     border-radius: 18px;
@@ -1301,6 +1307,11 @@
   .user-shell .clinic-page {
     height: calc(100svh - 150px);
     border-radius: 18px;
+  }
+
+  .user-shell-content.is-full-bleed .clinic-page {
+    height: calc(100svh - 146px);
+    border-radius: 0;
   }
 
   .user-shell-mobile-nav {
@@ -1371,8 +1382,8 @@
 
   .user-shell-mobile-nav button.active,
   .user-shell-mobile-nav a.active {
-    background: var(--workspace-lime);
-    color: var(--workspace-ink);
+    background: var(--workspace-mint);
+    color: var(--color-info-strong);
   }
 
   .user-shell-mobile-nav span {

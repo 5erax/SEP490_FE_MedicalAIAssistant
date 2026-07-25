@@ -243,6 +243,7 @@
 
 .assessment-clinical-refresh .assessment-history-action {
   position: static;
+  z-index: auto;
   width: 100%;
   display: grid;
   gap: 12px;

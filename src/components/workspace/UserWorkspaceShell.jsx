@@ -1,6 +1,5 @@
 import {
   Activity,
-  Bell,
   CalendarDays,
   ChevronRight,
   ClipboardList,
@@ -136,7 +135,7 @@ function loadAccountUser(accessToken) {
   return promise;
 }
 
-export default function UserWorkspaceShell({ children }) {
+export default function UserWorkspaceShell({ children, contentMode = "contained" }) {
   const [notice, setNotice] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -361,17 +360,12 @@ export default function UserWorkspaceShell({ children }) {
           })}
         </nav>
 
-        {!premiumAccess && (
-          <section className="user-shell-plan">
-            <span>MediMate+</span>
-            <strong>Chăm sóc sâu hơn</strong>
-            <p>Mở khoá theo dõi sức khoẻ và tư vấn sau khám.</p>
-            <button type="button" onClick={() => goTo("/pricing")}>Nâng cấp</button>
-          </section>
-        )}
       </aside>
 
-      <main ref={mainRef} className="user-shell-main">
+      <main
+        ref={mainRef}
+        className={`user-shell-main ${contentMode === "full-bleed" ? "has-full-bleed-content" : ""}`}
+      >
         <header className="user-shell-topbar">
           <div className="user-shell-title" data-onboarding="patient-title">
             <button
@@ -406,11 +400,6 @@ export default function UserWorkspaceShell({ children }) {
           </form>
 
           <div className="user-shell-actions">
-            {auth && (
-              <button className="icon-btn" type="button" aria-label="Thông báo">
-                <Bell size={18} />
-              </button>
-            )}
             <div className="account-menu" ref={accountMenuRef}>
               <button
                 ref={accountButtonRef}
@@ -479,7 +468,7 @@ export default function UserWorkspaceShell({ children }) {
           </div>
         </header>
 
-        <section className="user-shell-content">
+        <section className={`user-shell-content ${contentMode === "full-bleed" ? "is-full-bleed" : ""}`}>
           {children}
         </section>
       </main>

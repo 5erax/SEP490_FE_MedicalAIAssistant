@@ -34,7 +34,7 @@ async function preparePatient(page, overrides = {}) {
   }));
 }
 
-test("authenticated facility map stays inside the patient workspace", async ({ page }) => {
+test("authenticated facility map fills the patient workspace content area", async ({ page }) => {
   await preparePatient(page);
   await page.route("**/api/medical-facilities/active", (route) => route.fulfill({
     contentType: "application/json",
@@ -53,12 +53,51 @@ test("authenticated facility map stays inside the patient workspace", async ({ p
   await expect(page.getByRole("searchbox", { name: "Lọc danh sách cơ sở y tế" })).toHaveValue("tim mach");
   await expect(page.locator(".map-page-actions").getByRole("button", { name: "Trang chủ" })).toBeHidden();
 
+  await expect(page.locator(".user-shell-content")).toHaveClass(/is-full-bleed/);
+  await expect(page.locator(".user-shell-main")).toHaveClass(/has-full-bleed-content/);
+  await expect(page.locator(".clinic-page")).toHaveCSS("border-top-style", "none");
+  await expect(page.locator(".clinic-page")).toHaveCSS("border-top-left-radius", "0px");
+  await expect(page.locator(".map-stage")).toHaveCSS("padding-top", "0px");
+  await expect(page.locator(".map-panel")).toHaveCSS("border-top-left-radius", "0px");
+  await expect(page.locator(".map-panel")).toHaveCSS("margin-top", "0px");
+  await expect(page.locator(".map-panel")).toHaveCSS("top", "0px");
+
+  const [mainBox, topbarBox, mapBox] = await Promise.all([
+    page.locator(".user-shell-main").boundingBox(),
+    page.locator(".user-shell-topbar").boundingBox(),
+    page.locator(".clinic-page").boundingBox(),
+  ]);
+  expect(Math.abs(mapBox.x - mainBox.x)).toBeLessThan(1);
+  expect(Math.abs(mapBox.width - mainBox.width)).toBeLessThan(1);
+  expect(Math.abs(mapBox.y - (topbarBox.y + topbarBox.height))).toBeLessThan(2);
+
+  const [mapStageBox, mapPanelBox] = await Promise.all([
+    page.locator(".map-stage").boundingBox(),
+    page.locator(".map-panel").boundingBox(),
+  ]);
+  expect(Math.abs(mapPanelBox.x - mapStageBox.x)).toBeLessThan(1);
+  expect(Math.abs(mapPanelBox.y - mapStageBox.y)).toBeLessThan(1);
+  expect(Math.abs(mapPanelBox.width - mapStageBox.width)).toBeLessThan(1);
+
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
   expect(
     accessibility.violations.filter(({ impact }) => ["critical", "serious"].includes(impact)),
   ).toEqual([]);
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  const [mobileStageBox, mobilePanelBox, mobileLibraryMapBox] = await Promise.all([
+    page.locator(".map-stage").boundingBox(),
+    page.locator(".map-panel").boundingBox(),
+    page.locator(".map-panel > .maplibregl-map").boundingBox(),
+  ]);
+  expect(Math.abs(mobilePanelBox.x - mobileStageBox.x)).toBeLessThan(1);
+  expect(Math.abs(mobilePanelBox.y - mobileStageBox.y)).toBeLessThan(1);
+  expect(Math.abs(mobileLibraryMapBox.x - mobilePanelBox.x)).toBeLessThan(1);
+  expect(Math.abs(mobileLibraryMapBox.y - mobilePanelBox.y)).toBeLessThan(1);
+  expect(Math.abs(mobileLibraryMapBox.width - mobilePanelBox.width)).toBeLessThan(1);
+  await expect(page.locator(".map-panel > .maplibregl-map")).toHaveCSS("border-top-left-radius", "0px");
 });
 
 test("public facility map remains available without the private workspace", async ({ page }) => {
@@ -111,13 +150,32 @@ test("profile sections use one workspace navigation hierarchy", async ({ page })
   await expect(medicalTab).toHaveAttribute("aria-selected", "true");
 });
 
-test("premium patients do not see an upgrade promotion", async ({ page }) => {
-  await preparePatient(page, { isPremium: true });
+test("patient shell omits unsupported promotion and notification controls", async ({ page }) => {
+  await preparePatient(page);
 
   await openRoute(page, "/dashboard");
 
   await expect(page.locator(".user-shell-plan")).toHaveCount(0);
+  await expect(page.locator('button[aria-label="Thông báo"]')).toHaveCount(0);
   await expect(page.locator(".user-shell-brand img")).toHaveAttribute("src", "/logo.svg");
+  await expect(page.locator(".title-icon")).toHaveCSS("background-color", "rgb(230, 244, 238)");
+});
+
+test("clinical history action stays below the sticky workspace header", async ({ page }) => {
+  await preparePatient(page);
+
+  await openRoute(page, "/symptom");
+
+  const historyAction = page.locator(".assessment-history-action");
+  await expect(historyAction).toBeVisible();
+  await expect(historyAction).toHaveCSS("position", "static");
+  await expect(historyAction).toHaveCSS("z-index", "auto");
+
+  const [topbarBox, actionBox] = await Promise.all([
+    page.locator(".user-shell-topbar").boundingBox(),
+    historyAction.boundingBox(),
+  ]);
+  expect(actionBox.y).toBeGreaterThanOrEqual(topbarBox.y + topbarBox.height);
 });
 
 test("mobile workspace navigation fills the available width", async ({ page }) => {

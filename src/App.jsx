@@ -36,8 +36,8 @@ if (window.location.pathname.startsWith("/app/admin")) {
   void loadAdminWorkspacePage();
 }
 
-function userWorkspace(page) {
-  return <UserWorkspaceShell>{page}</UserWorkspaceShell>;
+function userWorkspace(page, contentMode = "contained") {
+  return <UserWorkspaceShell contentMode={contentMode}>{page}</UserWorkspaceShell>;
 }
 
 function lazyPage(page) {
@@ -103,7 +103,7 @@ function App() {
       return userWorkspace(lazyPage(<ChatbotPage />));
     case "public.map":
       return auth && !hasAuthRole(auth, "admin")
-        ? userWorkspace(lazyPage(<NearbyClinicPage />))
+        ? userWorkspace(lazyPage(<NearbyClinicPage />), "full-bleed")
         : lazyPage(<NearbyClinicPage />);
     case "patient.records":
       return userWorkspace(lazyPage(<MedicalRecordPage />));
