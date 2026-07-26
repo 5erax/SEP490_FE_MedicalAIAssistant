@@ -44,6 +44,10 @@
   margin: 0;
 }
 
+.admin-operator .ai-config-clinical-heading-copy .eyebrow {
+  color: var(--ai-config-teal);
+}
+
 .admin-operator .ai-config-clinical-heading-copy h2 {
   max-width: 800px;
   color: var(--ai-config-ink);
@@ -459,6 +463,10 @@
   box-shadow: 0 16px 36px rgba(0, 128, 136, 0.1);
 }
 
+.ai-config-modal .ai-config-modal-header .eyebrow {
+  color: var(--ai-config-modal-teal);
+}
+
 .ai-config-modal .ai-config-modal-header h2 {
   color: var(--ai-config-modal-ink);
   font-weight: 900;
@@ -683,6 +691,27 @@
   background: rgba(255, 255, 255, 0.97);
   padding: 16px clamp(24px, 3.2vw, 36px) 20px;
   box-shadow: 0 -18px 34px rgba(10, 45, 48, 0.08);
+}
+
+.ai-config-modal .doctor-modal-actions .btn-primary {
+  border-color: rgba(8, 127, 140, 0.86);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 44%),
+    linear-gradient(135deg, #0b8994 0%, #066874 100%);
+  color: #ffffff;
+  box-shadow:
+    0 14px 28px rgba(8, 127, 140, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.ai-config-modal .doctor-modal-actions .btn-primary:hover {
+  border-color: rgba(4, 86, 96, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 46%),
+    linear-gradient(135deg, #0a98a4 0%, #075c67 100%);
+  box-shadow:
+    0 18px 34px rgba(8, 127, 140, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
 }
 
 .ai-config-detail-modal {
