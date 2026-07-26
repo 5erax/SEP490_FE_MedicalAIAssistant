@@ -660,8 +660,11 @@
 
 /* Refined doctor create/edit modal */
 .doctor-form-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: min(1040px, calc(100vw - 32px));
   max-height: calc(100svh - 28px);
+  overflow: hidden;
   border: 1px solid rgba(0, 128, 136, 0.18);
   border-radius: 30px;
   background:
@@ -739,18 +742,27 @@
 }
 
 .doctor-form-modal .facility-form {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  overflow: hidden;
   background: transparent;
 }
 
 .doctor-form-modal .facility-form-body {
   gap: 18px;
-  padding: 22px clamp(24px, 3.2vw, 36px) 26px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px clamp(24px, 3.2vw, 36px) 32px;
+  scroll-padding: 24px;
   scrollbar-color: rgba(0, 128, 136, 0.42) transparent;
 }
 
 .doctor-form-modal .facility-form-card {
   position: relative;
   gap: 18px;
+  min-height: fit-content;
   border-color: rgba(0, 128, 136, 0.16);
   border-radius: 24px;
   background:
@@ -843,12 +855,13 @@
 }
 
 .doctor-form-modal .facility-image-uploader {
-  grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 22px;
 }
 
 .doctor-form-modal .facility-image-preview-shell {
-  min-height: 260px;
+  min-height: 240px;
   border-color: rgba(0, 128, 136, 0.24);
   border-radius: 22px;
   background:
@@ -872,8 +885,6 @@
 }
 
 .doctor-form-modal .facility-form-actions {
-  position: sticky;
-  bottom: 0;
   z-index: 5;
   border-top-color: rgba(0, 128, 136, 0.14);
   background: rgba(255, 255, 255, 0.92);
@@ -929,7 +940,7 @@
   }
 
   .doctor-form-modal .facility-form-body {
-    padding: 18px;
+    padding: 18px 18px 24px;
   }
 
   .doctor-form-modal .facility-form-grid,
