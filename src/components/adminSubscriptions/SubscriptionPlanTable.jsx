@@ -109,7 +109,7 @@ export default function SubscriptionPlanTable({ plans, onEdit, onToggleStatus, o
             <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(plan)}>
               <Power size={14} /> {plan.isActive ? "Tạm ẩn" : "Mở bán"}
             </button>
-            <button className="btn btn-dark btn-small" type="button" onClick={() => onDelete(plan)}>
+            <button className="btn btn-dark btn-small subscription-delete-button" type="button" onClick={() => onDelete(plan)}>
               <Trash2 size={14} /> Xóa
             </button>
           </div>
