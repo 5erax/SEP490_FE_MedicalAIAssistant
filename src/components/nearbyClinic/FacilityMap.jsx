@@ -151,7 +151,7 @@ function MapConsultationAssistant({ consultationFacility = null }) {
   const initialDepartmentId = normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "";
   const [open, setOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("suggest");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
+  const [selectedDepartmentId] = useState(initialDepartmentId);
   const [symptoms, setSymptoms] = useState("");
   const [symptomMessages, setSymptomMessages] = useState([]);
   const [questions, setQuestions] = useState([]);
@@ -266,38 +266,21 @@ function MapConsultationAssistant({ consultationFacility = null }) {
               <div className="map-ai-thread" ref={threadRef} aria-live="polite">
                 <article className="map-ai-message-bubble bot">
                   <span><Bot size={15} /></span>
-                  <p>Xin chào. Mình sẽ giúp bạn chuẩn bị trước khi khám.</p>
+                  <p><strong>Mình có thể giúp gì cho bạn hôm nay?</strong></p>
                 </article>
 
-                <article className="map-ai-message-bubble bot has-control">
+                <article className="map-ai-message-bubble bot">
                   <span><Bot size={15} /></span>
-                  <div>
-                    <p>Bạn muốn khám chuyên khoa nào?</p>
-                    <label className="map-ai-select-control">
-                      <span>Chuyên khoa tại {consultationFacility.facilityName}</span>
-                      <select
-                        aria-label="Chọn chuyên khoa"
-                        value={selectedDepartmentId}
-                        onChange={(event) => setSelectedDepartmentId(event.target.value)}
-                        disabled={normalizedDepartments.length === 0}
-                      >
-                        <option value="">
-                          {normalizedDepartments.length ? "Chọn chuyên khoa" : "Cơ sở chưa có chuyên khoa"}
-                        </option>
-                        {normalizedDepartments.map((department) => (
-                          <option key={department.id} value={department.id}>{department.name}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
+                  <p>Hãy mô tả triệu chứng hoặc tình trạng sức khỏe của bạn.</p>
+                </article>
+
+                <article className="map-ai-message-bubble bot">
+                  <span><Bot size={15} /></span>
+                  <p>Mình sẽ chuẩn bị danh sách câu hỏi để bạn trao đổi với bác sĩ.</p>
                 </article>
 
                 {selectedDepartmentId && (
                   <>
-                    <article className="map-ai-message-bubble bot">
-                      <span><Bot size={15} /></span>
-                      <p>Bạn đang gặp triệu chứng gì?</p>
-                    </article>
                     {symptomMessages.map((symptomMessage, index) => (
                       <article className="map-ai-message-bubble user symptom" key={`${symptomMessage}-${index}`}>
                         <p>{symptomMessage}</p>
