@@ -6,7 +6,7 @@ html[data-theme="dark"],
 html[data-theme="dark"] body,
 html[data-theme="dark"] #root,
 html[data-theme="dark"] #main-content {
-  background: #121816 !important;
+  background: #0f1412 !important;
   color: #f3f6f4 !important;
 }
 
@@ -27,14 +27,14 @@ html[data-theme="dark"] :is(
   .profile-setup-clinical
 ) {
   background:
-    radial-gradient(circle at 20% 0%, rgba(103, 197, 142, 0.08), transparent 34%),
-    linear-gradient(135deg, #121816 0%, #161d1b 100%) !important;
+    radial-gradient(circle at 18% 0%, rgba(103, 197, 142, 0.055), transparent 34%),
+    linear-gradient(135deg, #0f1412 0%, #121816 54%, #101513 100%) !important;
   color: #f3f6f4 !important;
 }
 
 html[data-theme="dark"] :is(
   .admin-sidebar,
-  .workspace-sidebar,
+  .user-shell-sidebar,
   .profile-sidebar,
   .clinic-sidebar,
   .nav-care,
@@ -44,9 +44,107 @@ html[data-theme="dark"] :is(
   .map-ai-composer
 ) {
   border-color: #2b3733 !important;
-  background: #121816 !important;
+  background: #101614 !important;
   color: #f3f6f4 !important;
   box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-shell {
+  --workspace-bg: #0f1412;
+  --workspace-surface: #161d1b;
+  --workspace-card: #1b2421;
+  --workspace-ink: #f3f6f4;
+  --workspace-muted: #c2cbc7;
+  --workspace-line: #2b3733;
+  --workspace-mint: rgba(103, 197, 142, 0.14);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(103, 197, 142, 0.045), transparent 34%),
+    linear-gradient(135deg, #0f1412 0%, #121816 56%, #101513 100%) !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-sidebar {
+  border-color: #2b3733 !important;
+  background: linear-gradient(180deg, #101614 0%, #0f1412 100%) !important;
+}
+
+html[data-theme="dark"] :is(.user-shell-brand, .user-shell-brand strong) {
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-brand span {
+  border-color: #33413c !important;
+  background: #1b2421 !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(.user-shell-topbar, .user-shell-content) {
+  background: transparent !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-topbar {
+  border-color: #2b3733 !important;
+  background: rgba(18, 24, 22, 0.94) !important;
+  backdrop-filter: blur(18px);
+}
+
+html[data-theme="dark"] .user-shell-title .title-icon {
+  border-color: #33413c !important;
+  background: #1b2421 !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] .user-shell-title p,
+html[data-theme="dark"] .user-shell-nav small,
+html[data-theme="dark"] .user-shell-plan p {
+  color: #c2cbc7 !important;
+}
+
+html[data-theme="dark"] .user-shell-title h1,
+html[data-theme="dark"] .user-shell-nav strong,
+html[data-theme="dark"] .user-shell-plan strong {
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button, a) {
+  color: #c2cbc7 !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button, a):hover {
+  border-color: #33413c !important;
+  background: #1b2421 !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button.active, a.active) {
+  border-color: rgba(103, 197, 142, 0.42) !important;
+  background: #1e2a25 !important;
+  color: #f3f6f4 !important;
+  box-shadow: inset 3px 0 0 #67c58e !important;
+}
+
+html[data-theme="dark"] .user-shell-plan {
+  border-color: #33413c !important;
+  background: #17211d !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-plan > span {
+  background: rgba(103, 197, 142, 0.15) !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] .user-shell-plan button {
+  border-color: #67c58e !important;
+  background: #67c58e !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(.user-chip, .account-menu-panel, .user-shell-search) {
+  border-color: #33413c !important;
+  background: #1a2320 !important;
+  color: #f3f6f4 !important;
 }
 
 html[data-theme="dark"] :is(
@@ -86,7 +184,7 @@ html[data-theme="dark"] :is(
   .doctor-detail-card
 ) {
   border-color: #33413c !important;
-  background: #202a27 !important;
+  background: #1b2421 !important;
   color: #f3f6f4 !important;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
 }
@@ -103,7 +201,7 @@ html[data-theme="dark"] :is(
   .map-ai-message
 ):hover {
   border-color: #4c5c56 !important;
-  background: #26332e !important;
+  background: #222d29 !important;
 }
 
 html[data-theme="dark"] :is(
@@ -255,9 +353,13 @@ html[data-theme="dark"] :is(
   .admin-nav button.active,
   .workspace-nav button:hover,
   .workspace-nav button.active,
+  .user-shell-nav button:hover,
+  .user-shell-nav button.active,
+  .user-shell-nav a:hover,
+  .user-shell-nav a.active,
   .profile-sidebar button.active
 ) {
-  background: #24322d !important;
+  background: #1e2a25 !important;
   color: #f3f6f4 !important;
   box-shadow: none !important;
 }
