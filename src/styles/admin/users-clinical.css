@@ -340,6 +340,9 @@
 }
 
 .admin-operator .admin-user-card .admin-user-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 84px;
   min-height: 44px;
   border-color: #a42424;
@@ -351,6 +354,21 @@
 
 .admin-operator .admin-user-card .admin-user-delete-btn:hover {
   background: #ffe8e4;
+}
+
+.admin-operator .admin-user-card .admin-user-delete-btn > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-operator .admin-user-card .admin-user-delete-btn svg {
+  flex: 0 0 auto;
+  margin: 0;
+  transform: none;
 }
 
 .admin-operator .admin-users-pagination {
