@@ -144,6 +144,7 @@
 .admin-operator .btn-primary,
 .admin-operator .ui-button--primary,
 .admin-operator .doctor-add-button,
+.admin-operator .doctor-invitation-submit,
 .admin-operator .clinical-create-button,
 .admin-operator .department-create-button,
 .admin-operator .facility-create-button {
@@ -161,6 +162,7 @@
 .admin-operator .btn-primary:hover,
 .admin-operator .ui-button--primary:hover,
 .admin-operator .doctor-add-button:hover,
+.admin-operator .doctor-invitation-submit:hover,
 .admin-operator .clinical-create-button:hover,
 .admin-operator .department-create-button:hover,
 .admin-operator .facility-create-button:hover {
@@ -177,6 +179,7 @@
 .admin-operator .btn-primary:active,
 .admin-operator .ui-button--primary:active,
 .admin-operator .doctor-add-button:active,
+.admin-operator .doctor-invitation-submit:active,
 .admin-operator .clinical-create-button:active,
 .admin-operator .department-create-button:active,
 .admin-operator .facility-create-button:active {
@@ -187,6 +190,7 @@
 .admin-operator .btn-primary svg,
 .admin-operator .ui-button--primary svg,
 .admin-operator .doctor-add-button svg,
+.admin-operator .doctor-invitation-submit svg,
 .admin-operator .clinical-create-button svg,
 .admin-operator .department-create-button svg,
 .admin-operator .facility-create-button svg {
@@ -378,7 +382,6 @@
   color: var(--admin-primary-strong);
 }
 
-.admin-operator .doctor-invitation-submit,
 .admin-operator .doctor-filter-sync {
   border-color: var(--admin-ink);
   background: var(--admin-primary);
