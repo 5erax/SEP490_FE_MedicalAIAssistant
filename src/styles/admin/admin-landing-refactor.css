@@ -147,10 +147,15 @@
 .admin-operator .clinical-create-button,
 .admin-operator .department-create-button,
 .admin-operator .facility-create-button {
-  border-color: rgba(17, 20, 18, 0.9);
-  background: var(--admin-primary);
-  color: var(--admin-ink);
-  box-shadow: var(--shadow-hard);
+  border-color: rgba(8, 127, 140, 0.86);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 44%),
+    linear-gradient(135deg, #0b8994 0%, #066874 100%);
+  color: #ffffff;
+  box-shadow:
+    0 14px 28px rgba(8, 127, 140, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  transform: none;
 }
 
 .admin-operator .btn-primary:hover,
@@ -159,10 +164,34 @@
 .admin-operator .clinical-create-button:hover,
 .admin-operator .department-create-button:hover,
 .admin-operator .facility-create-button:hover {
-  border-color: var(--admin-ink);
-  background: #c9eff0;
-  box-shadow: 3px 3px 0 var(--admin-ink);
-  transform: translate(1px, 1px);
+  border-color: rgba(4, 86, 96, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 46%),
+    linear-gradient(135deg, #0a98a4 0%, #075c67 100%);
+  box-shadow:
+    0 18px 34px rgba(8, 127, 140, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+  transform: translateY(-1px);
+}
+
+.admin-operator .btn-primary:active,
+.admin-operator .ui-button--primary:active,
+.admin-operator .doctor-add-button:active,
+.admin-operator .clinical-create-button:active,
+.admin-operator .department-create-button:active,
+.admin-operator .facility-create-button:active {
+  box-shadow: 0 10px 20px rgba(8, 127, 140, 0.16);
+  transform: translateY(0);
+}
+
+.admin-operator .btn-primary svg,
+.admin-operator .ui-button--primary svg,
+.admin-operator .doctor-add-button svg,
+.admin-operator .clinical-create-button svg,
+.admin-operator .department-create-button svg,
+.admin-operator .facility-create-button svg {
+  color: currentColor;
+  stroke-width: 2.25;
 }
 
 .admin-operator .btn-dark,
