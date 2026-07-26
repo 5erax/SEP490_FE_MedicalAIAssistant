@@ -744,7 +744,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
           </header>
           <div className="doctor-modal-actions clinical-delete-actions">
             <button className="btn btn-ghost" type="button" onClick={() => setDeleteTarget(null)} disabled={status === "saving"}>Giữ lại</button>
-            <button ref={deleteConfirmRef} className="btn btn-dark" type="button" onClick={confirmRemove} disabled={status === "saving"}>
+            <button ref={deleteConfirmRef} className="btn btn-dark clinical-delete-confirm" type="button" onClick={confirmRemove} disabled={status === "saving"}>
               {status === "saving" ? "Đang xóa..." : "Xóa câu hỏi"}
             </button>
           </div>
