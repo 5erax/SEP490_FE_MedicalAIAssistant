@@ -1284,6 +1284,7 @@ function NearbyClinicPage() {
         <FacilityMap
           chatContext={chatContext}
           consultationFacility={detailPanelOpen && !detailLoading ? detailFacility : null}
+          showConsultationAssistant={Boolean(auth?.accessToken)}
           facilities={mappableFacilities}
           locationError={locationError}
           mapRef={mapRef}

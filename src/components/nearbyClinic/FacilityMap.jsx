@@ -424,6 +424,7 @@ function MapConsultationAssistant({ consultationFacility = null }) {
 export default function FacilityMap({
   chatContext,
   consultationFacility = null,
+  showConsultationAssistant = true,
   facilities,
   hidePopup = false,
   locationError,
@@ -601,10 +602,12 @@ export default function FacilityMap({
           <LocateFixed size={18} aria-hidden="true" />
         </button>
       )}
-      <MapConsultationAssistant
-        key={consultationFacility?.facilityId || "map-consultation"}
-        consultationFacility={consultationFacility}
-      />
+      {showConsultationAssistant && (
+        <MapConsultationAssistant
+          key={consultationFacility?.facilityId || "map-consultation"}
+          consultationFacility={consultationFacility}
+        />
+      )}
       {locationError && <div className="location-error">{locationError}</div>}
     </section>
   );
