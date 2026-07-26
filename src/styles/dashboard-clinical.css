@@ -88,9 +88,11 @@
   width: 100%;
   min-height: 44px;
   justify-content: center;
-  border-color: var(--clinical-line);
-  background: #fff;
+  border-color: rgba(8, 127, 140, 0.22);
+  background:
+    linear-gradient(135deg, #ffffff, rgba(230, 244, 238, 0.92));
   color: var(--clinical-ink);
+  box-shadow: 0 12px 34px rgba(8, 97, 106, 0.1);
 }
 
 .specialty-clinical-page .specialty-scope-note {
