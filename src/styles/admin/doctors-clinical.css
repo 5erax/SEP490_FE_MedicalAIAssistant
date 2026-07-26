@@ -440,6 +440,62 @@
   }
 }
 
+.admin-operator .doctor-invitation-submit,
+.admin-operator .doctor-filter-card-header .doctor-add-button,
+.admin-operator .doctor-filter-actions .ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  border-radius: 14px;
+  white-space: nowrap;
+}
+
+.admin-operator .doctor-invitation-submit > span,
+.admin-operator .doctor-filter-card-header .doctor-add-button > span,
+.admin-operator .doctor-filter-actions .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-operator .doctor-invitation-submit svg,
+.admin-operator .doctor-filter-card-header .doctor-add-button svg,
+.admin-operator .doctor-filter-actions .ui-button svg {
+  flex: 0 0 auto;
+  margin: 0;
+  transform: none;
+}
+
+.admin-operator .doctor-invitation-submit {
+  min-width: 132px;
+  padding-inline: 18px;
+}
+
+.admin-operator .doctor-filter-card-header .doctor-add-button {
+  min-width: 134px;
+  padding-inline: 18px;
+}
+
+.admin-operator .doctor-filter-actions .ui-button {
+  min-width: 112px;
+  padding-inline: 16px;
+}
+
+.admin-operator .doctor-filter-actions .ui-button--secondary {
+  min-width: 104px;
+}
+
+@media (max-width: 680px) {
+  .admin-operator .doctor-filter-card-header .doctor-add-button,
+  .admin-operator .doctor-filter-actions .ui-button {
+    width: 100%;
+  }
+}
+
 @media (max-width: 860px) {
   .admin-operator .doctor-clinical-heading {
     display: grid;
