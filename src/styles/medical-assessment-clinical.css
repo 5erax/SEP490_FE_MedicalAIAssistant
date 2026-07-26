@@ -720,16 +720,18 @@
 }
 
 html[data-theme="dark"] .assessment-clinical-refresh {
-  --clinical-ink: #e5f5f1;
-  --clinical-teal: #63c9bc;
-  --clinical-teal-dark: #8bd8cf;
-  --clinical-mint: #173e3c;
-  --clinical-mint-soft: #102d2e;
-  --clinical-line: #315452;
-  --clinical-muted: #b2c8c5;
-  --clinical-surface: #102a2d;
-  --clinical-surface-soft: #0d2528;
-  background: #0c2226;
+  --clinical-ink: #f5f8f6;
+  --clinical-teal: #5fc6be;
+  --clinical-teal-dark: #70d6ce;
+  --clinical-mint: rgba(95, 198, 190, 0.16);
+  --clinical-mint-soft: #202926;
+  --clinical-line: #3a4a45;
+  --clinical-muted: #c8d2ce;
+  --clinical-surface: #202926;
+  --clinical-surface-soft: #151b19;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(95, 198, 190, 0.06), transparent 34%),
+    linear-gradient(135deg, #111614 0%, #151b19 54%, #101412 100%);
 }
 
 html[data-theme="dark"] .assessment-clinical-refresh :is(
@@ -743,12 +745,22 @@ html[data-theme="dark"] .assessment-clinical-refresh :is(
   .question-choice-grid label,
   .boolean-answer-group label
 ) {
-  background: #102a2d;
+  background: #202926;
+  border-color: #3a4a45;
 }
 
 html[data-theme="dark"] .assessment-clinical-refresh .simple-symptom-input textarea {
-  background: #0d2528;
+  background: #151b19;
+  border-color: #3a4a45;
   color: var(--clinical-ink);
+}
+
+html[data-theme="dark"] .assessment-clinical-refresh .simple-symptom-input textarea:hover {
+  border-color: #51615b;
+}
+
+html[data-theme="dark"] .assessment-clinical-refresh .simple-symptom-input textarea:focus {
+  border-color: #5fc6be;
 }
 
 @media (forced-colors: active) {

@@ -1,0 +1,699 @@
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] #root,
+html[data-theme="dark"] #main-content {
+  background: #0f1412 !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(
+  .landing-page,
+  .auth-mode-clinical,
+  .admin-operator,
+  .admin-shell,
+  .admin-main,
+  .user-workspace,
+  .workspace-shell,
+  .patient-workspace,
+  .specialty-page,
+  .specialty-clinical-page,
+  .assessment-clinical-refresh,
+  .map-clinical-refresh,
+  .pricing-page,
+  .profile-setup-clinical
+) {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(103, 197, 142, 0.055), transparent 34%),
+    linear-gradient(135deg, #0f1412 0%, #121816 54%, #101513 100%) !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(
+  .admin-sidebar,
+  .user-shell-sidebar,
+  .profile-sidebar,
+  .clinic-sidebar,
+  .nav-care,
+  .facility-detail-topbar,
+  .doctor-detail-topbar,
+  .map-ai-header,
+  .map-ai-composer
+) {
+  border-color: #2b3733 !important;
+  background: #101614 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-shell {
+  --workspace-bg: #0f1412;
+  --workspace-surface: #161d1b;
+  --workspace-card: #1b2421;
+  --workspace-ink: #f3f6f4;
+  --workspace-muted: #c2cbc7;
+  --workspace-line: #2b3733;
+  --workspace-mint: rgba(103, 197, 142, 0.14);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(103, 197, 142, 0.045), transparent 34%),
+    linear-gradient(135deg, #0f1412 0%, #121816 56%, #101513 100%) !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-sidebar {
+  border-color: #2b3733 !important;
+  background: linear-gradient(180deg, #101614 0%, #0f1412 100%) !important;
+}
+
+html[data-theme="dark"] :is(.user-shell-brand, .user-shell-brand strong) {
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-brand span {
+  border-color: #33413c !important;
+  background: #1b2421 !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(.user-shell-topbar, .user-shell-content) {
+  background: transparent !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-topbar {
+  border-color: #2b3733 !important;
+  background: rgba(18, 24, 22, 0.94) !important;
+  backdrop-filter: blur(18px);
+}
+
+html[data-theme="dark"] .user-shell-title .title-icon {
+  border-color: #33413c !important;
+  background: #1b2421 !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] .user-shell-title p,
+html[data-theme="dark"] .user-shell-nav small,
+html[data-theme="dark"] .user-shell-plan p {
+  color: #c2cbc7 !important;
+}
+
+html[data-theme="dark"] .user-shell-title h1,
+html[data-theme="dark"] .user-shell-nav strong,
+html[data-theme="dark"] .user-shell-plan strong {
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button, a) {
+  color: #c2cbc7 !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button, a):hover {
+  border-color: #33413c !important;
+  background: #1b2421 !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button.active, a.active) {
+  border-color: rgba(103, 197, 142, 0.42) !important;
+  background: #1e2a25 !important;
+  color: #f3f6f4 !important;
+  box-shadow: inset 3px 0 0 #67c58e !important;
+}
+
+html[data-theme="dark"] .user-shell-plan {
+  border-color: #33413c !important;
+  background: #17211d !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .user-shell-plan > span {
+  background: rgba(103, 197, 142, 0.15) !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] .user-shell-plan button {
+  border-color: #67c58e !important;
+  background: #67c58e !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] :is(.user-chip, .account-menu-panel, .user-shell-search) {
+  border-color: #33413c !important;
+  background: #1a2320 !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .admin-operator {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(103, 197, 142, 0.052), transparent 34%),
+    linear-gradient(135deg, #0f1412 0%, #121816 54%, #101513 100%) !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-shell {
+  border-color: rgba(51, 65, 60, 0.72) !important;
+  background: #121816 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-sidebar {
+  border-color: #2b3733 !important;
+  background: #101614 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-main {
+  background: #0f1412 !important;
+}
+
+html[data-theme="dark"] .admin-operator :is(.admin-topbar, .admin-hero-panel) {
+  border-color: #33413c !important;
+  background: #1a2320 !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav {
+  border-color: #2b3733 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav button {
+  color: #c2cbc7 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav button:hover,
+html[data-theme="dark"] .admin-operator .admin-nav button.active {
+  background: #1e2a25 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav-icon {
+  background: #1a2320 !important;
+  color: #8b9691 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav button.active .admin-nav-icon,
+html[data-theme="dark"] .admin-operator .admin-nav button:hover .admin-nav-icon {
+  background: rgba(103, 197, 142, 0.15) !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-session-card {
+  border: 1px solid #33413c !important;
+  background: #17211d !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .admin-operator :is(.admin-icon-button, .admin-profile-chip > span) {
+  background: #202a27 !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(
+  .ui-card,
+  .ui-state,
+  .ui-alert,
+  .ui-table-wrap,
+  .admin-hero-panel,
+  .admin-overview-card,
+  .admin-users-panel,
+  .admin-user-card,
+  .admin-filter-panel,
+  .admin-card,
+  .clinical-catalog-panel,
+  .clinical-question-card,
+  .department-clinical-panel,
+  .department-card,
+  .doctor-clinical-panel,
+  .doctor-table-shell,
+  .facility-clinical-panel,
+  .facility-admin-row,
+  .icd-clinical-panel,
+  .icd-card,
+  .patient-profile-card,
+  .subscription-card,
+  .subscription-plan-row,
+  .dialog-panel,
+  .care-card,
+  .studio-card,
+  .studio-chatbox,
+  .profile-card,
+  .profile-form-section,
+  .payment-history-panel,
+  .map-ai-panel,
+  .map-ai-message,
+  .facility-detail-card,
+  .doctor-detail-card
+) {
+  border-color: #33413c !important;
+  background: #1b2421 !important;
+  color: #f3f6f4 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="dark"] :is(
+  .ui-card,
+  .admin-overview-card,
+  .admin-user-card,
+  .clinical-question-card,
+  .department-card,
+  .facility-admin-row,
+  .icd-card,
+  .subscription-plan-row,
+  .map-ai-message
+):hover {
+  border-color: #4c5c56 !important;
+  background: #222d29 !important;
+}
+
+html[data-theme="dark"] :is(
+  input,
+  textarea,
+  select,
+  .ui-field input,
+  .ui-field textarea,
+  .ui-field select,
+  .admin-search,
+  .clean-field input,
+  .clean-field select,
+  .map-ai-composer input,
+  .map-ai-composer textarea
+) {
+  border-color: #33413c !important;
+  background: #202a27 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select)::placeholder {
+  color: #8b9691 !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select):hover {
+  border-color: #4c5c56 !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select):focus,
+html[data-theme="dark"] :is(input, textarea, select):focus-visible {
+  border-color: #67c58e !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  p,
+  small,
+  label,
+  .muted-text,
+  .admin-topbar-context span,
+  .admin-profile-chip small,
+  .admin-hero-panel p:not(.eyebrow),
+  .studio-heading p,
+  .care-section-summary p
+) {
+  color: #c2cbc7 !important;
+}
+
+html[data-theme="dark"] :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  strong,
+  .admin-topbar-context strong,
+  .admin-profile-chip strong,
+  .ui-state strong,
+  .studio-heading strong
+) {
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(
+  .eyebrow,
+  .care-eyebrow,
+  .mini-label,
+  .admin-section-kicker,
+  .studio-eyebrow,
+  .clinical-kicker
+) {
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-primary,
+  .ui-button-primary,
+  .admin-action-button--primary,
+  .care-button-primary
+) {
+  border-color: #67c58e !important;
+  background: #67c58e !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-primary,
+  .ui-button-primary,
+  .admin-action-button--primary,
+  .care-button-primary
+):hover {
+  border-color: #58bf7c !important;
+  background: #58bf7c !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-secondary,
+  .btn-ghost,
+  .ui-button-secondary,
+  .ui-button-ghost,
+  .admin-action-button--secondary,
+  .admin-action-button--ghost,
+  .care-button-secondary
+) {
+  border-color: #33413c !important;
+  background: #283430 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-secondary,
+  .btn-ghost,
+  .ui-button-secondary,
+  .ui-button-ghost,
+  .admin-action-button--secondary,
+  .admin-action-button--ghost,
+  .care-button-secondary
+):hover {
+  border-color: #4c5c56 !important;
+  background: #34413c !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-info, .admin-nav-icon, .ui-state-icon, .care-price-icon) {
+  background: rgba(103, 197, 142, 0.15) !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-success, .status-success, .soft-badge) {
+  background: #234332 !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-warning, .ui-alert-warning) {
+  background: #5a4723 !important;
+  color: #f0bd6a !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-danger, .ui-alert-danger, .ui-error) {
+  border-color: rgba(255, 155, 155, 0.32) !important;
+  background: #4d2a2a !important;
+  color: #ff9b9b !important;
+}
+
+html[data-theme="dark"] :is(
+  .admin-nav button:hover,
+  .admin-nav button.active,
+  .workspace-nav button:hover,
+  .workspace-nav button.active,
+  .user-shell-nav button:hover,
+  .user-shell-nav button.active,
+  .user-shell-nav a:hover,
+  .user-shell-nav a.active,
+  .profile-sidebar button.active
+) {
+  background: #1e2a25 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  .admin-nav button.active .admin-nav-icon,
+  .workspace-nav button.active svg,
+  .profile-sidebar button.active svg
+) {
+  background: rgba(103, 197, 142, 0.15) !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(.ui-table th, thead th) {
+  border-color: #2b3733 !important;
+  background: #161d1b !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(.ui-table td, tbody td, hr, .divider) {
+  border-color: #2b3733 !important;
+}
+
+html[data-theme="dark"] :is(.assistant-message, .chat-assistant, .message-assistant) {
+  background: #24322d !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(.user-message, .chat-user, .message-user) {
+  background: #67c58e !important;
+  color: #ffffff !important;
+}
+
+/* Dark mode readability pass: neutral surfaces with landing-page teal accents. */
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] #root,
+html[data-theme="dark"] #main-content {
+  background: #111614 !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] :is(
+  .landing-page,
+  .auth-mode-clinical,
+  .admin-operator,
+  .admin-shell,
+  .admin-main,
+  .user-workspace,
+  .workspace-shell,
+  .patient-workspace,
+  .specialty-page,
+  .specialty-clinical-page,
+  .assessment-clinical-refresh,
+  .map-clinical-refresh,
+  .pricing-page,
+  .profile-setup-clinical
+) {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(95, 198, 190, 0.06), transparent 34%),
+    linear-gradient(135deg, #111614 0%, #151b19 55%, #101412 100%) !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] .user-shell {
+  --workspace-bg: #111614;
+  --workspace-surface: #151b19;
+  --workspace-card: #202926;
+  --workspace-ink: #f5f8f6;
+  --workspace-muted: #c8d2ce;
+  --workspace-line: #293633;
+  --workspace-mint: rgba(95, 198, 190, 0.14);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(95, 198, 190, 0.045), transparent 34%),
+    linear-gradient(135deg, #111614 0%, #151b19 56%, #101412 100%) !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] .user-shell-sidebar {
+  border-color: #293633 !important;
+  background: linear-gradient(180deg, #141a18 0%, #111614 100%) !important;
+}
+
+html[data-theme="dark"] .user-shell-topbar {
+  border-color: #293633 !important;
+  background: rgba(17, 22, 20, 0.96) !important;
+}
+
+html[data-theme="dark"] :is(.user-shell-title h1, .user-shell-brand strong, .user-shell-nav strong, .user-chip strong) {
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] :is(.user-shell-title p, .user-shell-nav small, .user-shell-plan p, .user-chip span) {
+  color: #c8d2ce !important;
+}
+
+html[data-theme="dark"] :is(.user-shell-brand span, .user-shell-title .title-icon, .admin-nav-icon, .ui-state-icon) {
+  border-color: #3a4a45 !important;
+  background: rgba(95, 198, 190, 0.14) !important;
+  color: #70d6ce !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button, a) {
+  color: #c8d2ce !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button, a):hover {
+  border-color: #3a4a45 !important;
+  background: #202926 !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] .user-shell-nav :is(button.active, a.active) {
+  border-color: rgba(95, 198, 190, 0.44) !important;
+  background: #1b2927 !important;
+  color: #f5f8f6 !important;
+  box-shadow: inset 3px 0 0 #5fc6be !important;
+}
+
+html[data-theme="dark"] :is(.user-chip, .account-menu-panel, .user-shell-search, .user-shell-plan) {
+  border-color: #3a4a45 !important;
+  background: #181f1d !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] :is(
+  .ui-card,
+  .ui-state,
+  .ui-alert,
+  .ui-table-wrap,
+  .admin-shell,
+  .admin-main,
+  .admin-hero-panel,
+  .admin-sidebar,
+  .admin-search,
+  .admin-session-card,
+  .admin-icon-button,
+  .admin-profile-chip,
+  .care-card,
+  .studio-card,
+  .studio-chatbox,
+  .profile-card,
+  .profile-form-section,
+  .payment-history-panel,
+  .map-ai-panel,
+  .map-ai-message,
+  .facility-detail-card,
+  .doctor-detail-card
+) {
+  border-color: #3a4a45 !important;
+  background: #202926 !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] :is(
+  input,
+  textarea,
+  select,
+  .ui-field input,
+  .ui-field textarea,
+  .ui-field select,
+  .admin-search,
+  .clean-field input,
+  .clean-field select,
+  .map-ai-composer input,
+  .map-ai-composer textarea
+) {
+  border-color: #3a4a45 !important;
+  background: #151b19 !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select)::placeholder {
+  color: #96a39e !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select):hover {
+  border-color: #51615b !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select):focus,
+html[data-theme="dark"] :is(input, textarea, select):focus-visible {
+  border-color: #5fc6be !important;
+}
+
+html[data-theme="dark"] :is(
+  .eyebrow,
+  .care-eyebrow,
+  .mini-label,
+  .admin-section-kicker,
+  .studio-eyebrow,
+  .clinical-kicker
+) {
+  color: #70d6ce !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-primary,
+  .ui-button-primary,
+  .admin-action-button--primary,
+  .care-button-primary
+) {
+  border-color: #5fc6be !important;
+  background: #5fc6be !important;
+  color: #09201e !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-primary,
+  .ui-button-primary,
+  .admin-action-button--primary,
+  .care-button-primary
+):hover {
+  border-color: #70d6ce !important;
+  background: #70d6ce !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-secondary,
+  .btn-ghost,
+  .ui-button-secondary,
+  .ui-button-ghost,
+  .admin-action-button--secondary,
+  .admin-action-button--ghost,
+  .care-button-secondary
+) {
+  border-color: #3a4a45 !important;
+  background: #232e2a !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] .analysis-history-button {
+  border-color: #3a4a45 !important;
+  background: #202926 !important;
+  color: #f5f8f6 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28) !important;
+}
+
+html[data-theme="dark"] .analysis-history-button svg {
+  background: rgba(95, 198, 190, 0.16) !important;
+  color: #70d6ce !important;
+}
+
+html[data-theme="dark"] :is(.specialty-scope-note, .assessment-scope-note) {
+  border-color: #3a4a45 !important;
+  border-left-color: #5fc6be !important;
+  background: #18211e !important;
+  color: #c8d2ce !important;
+}
+
+html[data-theme="dark"] :is(.specialty-scope-note h3, .assessment-scope-note h3) {
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-info, .ui-state-icon, .care-price-icon) {
+  background: rgba(95, 198, 190, 0.16) !important;
+  color: #70d6ce !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-success, .status-success, .soft-badge) {
+  background: #203a2d !important;
+  color: #83d6a4 !important;
+}
+
+html[data-theme="dark"] :is(.assistant-message, .chat-assistant, .message-assistant) {
+  background: #1d2b27 !important;
+  color: #f5f8f6 !important;
+}
+
+html[data-theme="dark"] :is(.user-message, .chat-user, .message-user) {
+  background: #5fc6be !important;
+  color: #09201e !important;
+}
