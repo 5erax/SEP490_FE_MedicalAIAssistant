@@ -378,7 +378,8 @@
   gap: 12px;
   border-top: 1px solid var(--users-line);
   margin: 0;
-  padding-top: 18px;
+  min-height: 72px;
+  padding: 18px 12px 4px;
 }
 
 .admin-operator .admin-users-pagination > span {
@@ -392,6 +393,37 @@
   min-height: 44px;
   border-color: var(--users-line);
   color: var(--users-ink);
+}
+
+.admin-operator .admin-users-pagination .ui-button {
+  min-width: 72px;
+  min-height: 36px;
+  padding-inline: 14px;
+  border-color: #d8e3df;
+  border-radius: 10px;
+  background: #fff;
+  color: #5f7474;
+  box-shadow: none;
+  font-size: 13px;
+}
+
+.admin-operator .admin-users-pagination .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-operator .admin-users-pagination .ui-button:not(:disabled):hover {
+  border-color: #a9c9c4;
+  color: var(--users-ink);
+}
+
+.admin-operator .admin-users-pagination .ui-button:disabled {
+  background: #fbfcfc;
+  color: #9ba9a7;
+  opacity: 1;
 }
 
 .admin-operator .admin-users-pagination .btn {
