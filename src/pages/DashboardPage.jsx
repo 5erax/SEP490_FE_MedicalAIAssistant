@@ -501,9 +501,10 @@ export default function DashboardPage() {
                 loadingLabel="Đang tạo câu hỏi..."
                 disabled={!input.trim()}
                 type="submit"
+                aria-label="Gửi triệu chứng"
+                title="Gửi triệu chứng"
               >
                 <Send size={18} />
-                <span>Gợi ý chuyên khoa</span>
               </Button>
             </div>
           </form>

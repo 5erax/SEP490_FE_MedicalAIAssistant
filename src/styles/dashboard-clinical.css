@@ -266,16 +266,22 @@
 }
 
 .specialty-clinical-page .studio-chat-actions .studio-submit-icon {
-  width: auto;
-  min-width: 190px;
+  width: 52px;
+  min-width: 52px;
   height: 48px;
-  gap: 9px;
+  display: inline-grid;
+  place-items: center;
   border-color: rgba(8, 127, 140, 0.42);
-  border-radius: 10px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #087f8c, #0e8a83);
   color: #fff;
-  padding: 0 20px;
+  padding: 0;
   box-shadow: 0 12px 24px rgba(8, 97, 106, 0.16);
+}
+
+.specialty-clinical-page .studio-chat-actions .studio-submit-icon > span {
+  display: inline-grid;
+  place-items: center;
 }
 
 .specialty-clinical-page .studio-chat-actions .studio-submit-icon:hover:not(:disabled) {
