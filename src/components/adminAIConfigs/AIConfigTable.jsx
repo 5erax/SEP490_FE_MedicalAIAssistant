@@ -115,7 +115,7 @@ export default function AIConfigTable({ configs, onView, onEdit, onToggleStatus,
                 <Power size={15} aria-hidden="true" /> {config.isActive ? "Tắt" : "Bật"}
               </button>
               <button
-                className="btn btn-dark btn-small"
+                className="btn btn-dark btn-small ai-config-delete-button"
                 type="button"
                 aria-label={`Xóa cấu hình ${configName}`}
                 onClick={() => onDelete(config)}
