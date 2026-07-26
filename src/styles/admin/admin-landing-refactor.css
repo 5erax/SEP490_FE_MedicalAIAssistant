@@ -6,9 +6,9 @@
   --admin-muted: var(--color-muted);
   --admin-line: var(--color-line);
   --admin-line-strong: var(--color-line-strong);
-  --admin-primary: var(--color-primary);
-  --admin-primary-soft: var(--color-primary-soft);
-  --admin-primary-strong: var(--color-primary-strong);
+  --admin-primary: #b9e6e7;
+  --admin-primary-soft: #eef8f6;
+  --admin-primary-strong: var(--color-info-strong);
   --admin-accent: var(--color-info);
   --admin-accent-strong: var(--color-info-strong);
   --admin-accent-soft: var(--color-info-bg);
@@ -18,8 +18,8 @@
 
 .admin-operator .admin-page {
   background:
-    radial-gradient(circle at 6% 4%, rgba(196, 233, 149, 0.52), transparent 26%),
-    radial-gradient(circle at 96% 7%, rgba(8, 127, 140, 0.18), transparent 30%),
+    radial-gradient(circle at 6% 4%, rgba(185, 230, 231, 0.5), transparent 26%),
+    radial-gradient(circle at 96% 7%, rgba(8, 127, 140, 0.2), transparent 30%),
     linear-gradient(135deg, rgba(247, 248, 243, 0.96), rgba(230, 244, 238, 0.72) 52%, rgba(255, 255, 255, 0.92)),
     var(--admin-bg);
 }
@@ -93,8 +93,8 @@
 
 .admin-operator .admin-nav button:hover,
 .admin-operator .admin-nav button.active {
-  border-color: rgba(8, 127, 140, 0.28);
-  background: linear-gradient(135deg, rgba(230, 244, 238, 0.98), rgba(238, 247, 232, 0.94));
+  border-color: rgba(8, 127, 140, 0.34);
+  background: linear-gradient(135deg, rgba(230, 244, 238, 0.98), rgba(255, 255, 255, 0.92));
   color: var(--admin-accent-strong);
 }
 
@@ -123,7 +123,7 @@
 }
 
 .admin-operator .admin-profile-chip > span {
-  background: linear-gradient(145deg, var(--admin-primary), #f7d985);
+  background: linear-gradient(145deg, var(--admin-primary), #dff5ee);
   color: var(--admin-ink);
 }
 
@@ -160,7 +160,7 @@
 .admin-operator .department-create-button:hover,
 .admin-operator .facility-create-button:hover {
   border-color: var(--admin-ink);
-  background: #d4f4a8;
+  background: #c9eff0;
   box-shadow: 3px 3px 0 var(--admin-ink);
   transform: translate(1px, 1px);
 }
@@ -381,5 +381,21 @@
 .admin-operator .admin-user-avatar {
   border-color: rgba(8, 127, 140, 0.18);
   background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
+
+.admin-operator button:focus-visible,
+.admin-operator a:focus-visible,
+.admin-operator input:focus,
+.admin-operator select:focus,
+.admin-operator textarea:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.14);
+}
+
+.admin-operator .ui-badge-success,
+.admin-operator .status-pill.success {
+  background: var(--admin-primary-soft);
   color: var(--admin-accent-strong);
 }
