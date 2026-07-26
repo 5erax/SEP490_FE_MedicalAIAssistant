@@ -298,3 +298,88 @@
   background: var(--admin-accent-soft);
   color: var(--admin-accent-strong);
 }
+
+.admin-operator .doctor-clinical-panel,
+.admin-operator .doctor-admin-panel {
+  gap: 24px;
+}
+
+.admin-operator .doctor-clinical-heading,
+.admin-operator .doctor-section-heading {
+  border-bottom: 1px solid rgba(221, 228, 213, 0.95);
+  padding-bottom: 18px;
+}
+
+.admin-operator .doctor-clinical-heading-copy h2,
+.admin-operator .doctor-section-heading h2 {
+  letter-spacing: -0.045em;
+}
+
+.admin-operator .doctor-clinical-heading-copy p,
+.admin-operator .doctor-section-heading .muted-text {
+  color: var(--admin-muted);
+}
+
+.admin-operator .doctor-clinical-heading-meta > span,
+.admin-operator .doctor-invitation-latest,
+.admin-operator .doctor-filter-result-summary {
+  border-color: rgba(221, 228, 213, 0.9);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--admin-ink);
+}
+
+.admin-operator .doctor-invitation-card,
+.admin-operator .doctor-filter-card {
+  border-color: rgba(221, 228, 213, 0.95);
+  background:
+    radial-gradient(circle at top left, rgba(230, 244, 238, 0.78), transparent 42%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(251, 252, 247, 0.94));
+  box-shadow: var(--admin-shadow-card);
+}
+
+.admin-operator .doctor-invitation-card-heading > span,
+.admin-operator .doctor-filter-card-header > span {
+  border: 1px solid rgba(8, 127, 140, 0.14);
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
+
+.admin-operator .doctor-invitation-card-heading .eyebrow,
+.admin-operator .doctor-clinical-heading .eyebrow {
+  color: var(--admin-primary-strong);
+}
+
+.admin-operator .doctor-invitation-submit,
+.admin-operator .doctor-filter-sync {
+  border-color: var(--admin-ink);
+  background: var(--admin-primary);
+  color: var(--admin-ink);
+  box-shadow: var(--shadow-hard);
+}
+
+.admin-operator .doctor-table-wrap .ui-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(230, 244, 238, 0.54), #ffffff 58%);
+}
+
+.admin-operator .doctor-table-wrap .record-actions {
+  gap: 10px;
+}
+
+.admin-operator .doctor-table-wrap .record-actions .btn,
+.admin-operator .doctor-table-wrap .record-actions .ui-button,
+.admin-operator .doctor-card-actions .ui-button {
+  min-height: 42px;
+  border-radius: 13px;
+}
+
+.admin-operator .doctor-experience,
+.admin-operator .doctor-table-wrap .status-pill {
+  border: 1px solid rgba(8, 127, 140, 0.12);
+}
+
+.doctor-primary-cell .doctor-avatar,
+.admin-operator .admin-user-avatar {
+  border-color: rgba(8, 127, 140, 0.18);
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
