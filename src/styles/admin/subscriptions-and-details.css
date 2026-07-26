@@ -638,14 +638,18 @@
 }
 
 .subscription-modal {
-  width: min(780px, 100%);
-  max-height: calc(100svh - 40px);
-  overflow: auto;
-  border: 1px solid rgba(16, 20, 17, 0.14);
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 30px 90px rgba(16, 20, 17, 0.22);
-  padding: clamp(20px, 3vw, 28px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(920px, calc(100vw - 32px));
+  max-height: calc(100svh - 28px);
+  overflow: hidden;
+  border: 1px solid rgba(0, 128, 136, 0.18);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(207, 244, 238, 0.72), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 252, 249, 0.96));
+  box-shadow: 0 34px 90px rgba(12, 58, 62, 0.22);
+  padding: 0;
   animation: doctorModalIn 180ms ease both;
 }
 
@@ -653,33 +657,228 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: start;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 18px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(0, 128, 136, 0.14);
+  padding: 30px clamp(24px, 4vw, 36px) 26px;
 }
 
 .subscription-modal-header h2 {
   margin: 0;
-  font-size: clamp(24px, 3.2vw, 32px);
-  font-weight: 760;
-  line-height: 1.18;
+  color: #102f35;
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
 }
 
 .subscription-modal-header p:not(.eyebrow) {
-  max-width: 580px;
-  margin: 8px 0 0;
-  color: rgba(16, 20, 17, 0.62);
-  font-size: 13px;
-  font-weight: 650;
+  max-width: 640px;
+  margin: 12px 0 0;
+  color: rgba(16, 47, 53, 0.66);
+  font-size: 14px;
+  font-weight: 720;
   line-height: 1.55;
 }
 
 .subscription-plan-form {
-  gap: 16px;
+  overflow-y: auto;
+  gap: 22px;
+  background: #f6faf8;
+  padding: 24px clamp(24px, 4vw, 36px) 0;
+  scrollbar-color: rgba(0, 128, 136, 0.38) transparent;
+}
+
+.subscription-modal-warning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(214, 151, 51, 0.34);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 250, 235, 0.94), rgba(255, 246, 220, 0.72));
+  color: #815516;
+  padding: 13px 15px;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.subscription-modal-warning svg {
+  flex: 0 0 auto;
+}
+
+.subscription-form-sections {
+  display: grid;
+  gap: 22px;
+}
+
+.subscription-form-card {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  gap: 22px;
+  border: 1px solid rgba(0, 128, 136, 0.16);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(230, 247, 244, 0.62), rgba(255, 255, 255, 0.94) 44%),
+    #ffffff;
+  box-shadow: 0 20px 52px rgba(12, 58, 62, 0.08);
+  padding: 24px;
+}
+
+.subscription-form-card::before {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, #008891, #6fd0c8);
+  content: "";
+}
+
+.subscription-form-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-left: 8px;
+}
+
+.subscription-form-card-head > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(0, 128, 136, 0.12);
+  border-radius: 14px;
+  background: #e6f7f4;
+  color: #087f8c;
+}
+
+.subscription-form-card-head h3,
+.subscription-form-card-head p {
+  margin: 0;
+}
+
+.subscription-form-card-head h3 {
+  color: #102f35;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.subscription-form-card-head p {
+  margin-top: 4px;
+  color: rgba(16, 47, 53, 0.64);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.subscription-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.subscription-form-grid .subscription-duration-inline {
+  max-width: none;
+}
+
+.subscription-form-card > .clean-field {
+  width: 100%;
+}
+
+.subscription-modal .clean-field input,
+.subscription-modal .clean-field select,
+.subscription-modal .clean-field textarea {
+  border-color: rgba(16, 47, 53, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #102f35;
+}
+
+.subscription-modal .clean-field input:focus,
+.subscription-modal .clean-field select:focus,
+.subscription-modal .clean-field textarea:focus {
+  border-color: rgba(8, 127, 140, 0.88);
+  box-shadow: 0 0 0 3px rgba(8, 127, 140, 0.12);
+  outline: none;
 }
 
 .subscription-plan-form textarea {
-  min-height: 180px;
+  min-height: 220px;
   font-family: Consolas, "Courier New", monospace;
+}
+
+.subscription-modal .doctor-modal-actions {
+  position: sticky;
+  right: 0;
+  bottom: 0;
+  margin: 2px calc(clamp(24px, 4vw, 36px) * -1) 0;
+  border-top: 1px solid rgba(0, 128, 136, 0.12);
+  background:
+    linear-gradient(180deg, rgba(246, 250, 248, 0.82), #ffffff 42%),
+    #ffffff;
+  padding: 18px clamp(24px, 4vw, 36px) 22px;
+}
+
+.subscription-modal .doctor-modal-actions .btn-primary {
+  border-color: rgba(8, 127, 140, 0.86);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 44%),
+    linear-gradient(135deg, #0b8994 0%, #066874 100%);
+  color: #ffffff;
+  box-shadow:
+    0 14px 28px rgba(8, 127, 140, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.subscription-modal .doctor-modal-actions .btn-primary:hover {
+  border-color: rgba(4, 86, 96, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 46%),
+    linear-gradient(135deg, #0a98a4 0%, #075c67 100%);
+  box-shadow:
+    0 18px 34px rgba(8, 127, 140, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+}
+
+@media (max-width: 760px) {
+  .subscription-modal {
+    width: 100%;
+    max-height: calc(100svh - 24px);
+    border-radius: 24px;
+  }
+
+  .subscription-modal-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 22px 18px 18px;
+  }
+
+  .subscription-modal-header h2 {
+    font-size: clamp(28px, 9vw, 36px);
+  }
+
+  .subscription-plan-form {
+    padding-inline: 18px;
+  }
+
+  .subscription-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-form-card {
+    padding: 20px;
+  }
+
+  .subscription-modal .doctor-modal-actions {
+    margin-inline: -18px;
+    padding-inline: 18px;
+  }
 }
 
 .clean-field.subscription-field-error input,
