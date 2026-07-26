@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { BrainCircuit, ShieldAlert } from "lucide-react";
+import { BrainCircuit, MessageSquareText, ShieldAlert, SlidersHorizontal, ToggleLeft } from "lucide-react";
 import { Dialog } from "../ui";
 
 const EMPTY_FORM = {
@@ -123,7 +123,17 @@ export default function AIConfigFormModal({
             </div>
           )}
 
-          <div className="form-two-cols">
+          <div className="ai-config-form-sections">
+          <section className="ai-config-form-card" aria-labelledby="ai-config-operation-section">
+            <div className="ai-config-form-card-head">
+              <span><SlidersHorizontal size={18} aria-hidden="true" /></span>
+              <div>
+                <h3 id="ai-config-operation-section">Thiết lập vận hành</h3>
+                <p>Định danh tính năng, model và giới hạn phản hồi cho cấu hình AI.</p>
+              </div>
+            </div>
+
+          <div className="form-two-cols ai-config-form-grid">
             <label className={`clean-field ${errors.taskType ? "ai-config-field-error" : ""}`}>
               <span>Loại tính năng <small className="ai-config-required-note">(bắt buộc)</small></span>
               <input
@@ -176,6 +186,16 @@ export default function AIConfigFormModal({
               {errors.maxTokens && <small id="ai-config-token-error">{errors.maxTokens}</small>}
             </label>
           </div>
+          </section>
+
+          <section className="ai-config-form-card ai-config-prompt-card" aria-labelledby="ai-config-prompt-section">
+            <div className="ai-config-form-card-head">
+              <span><MessageSquareText size={18} aria-hidden="true" /></span>
+              <div>
+                <h3 id="ai-config-prompt-section">Prompt hệ thống</h3>
+                <p>Thiết lập vai trò, ranh giới an toàn và cách AI phản hồi với người dùng.</p>
+              </div>
+            </div>
 
           <label className={`clean-field ${errors.systemPrompt ? "ai-config-field-error" : ""}`}>
             <span>Prompt hệ thống <small className="ai-config-required-note">(bắt buộc)</small></span>
@@ -190,6 +210,16 @@ export default function AIConfigFormModal({
             />
             <small id="ai-config-prompt-help">{errors.systemPrompt || "Nêu rõ vai trò, ranh giới y tế, cách phản hồi và điều kiện khuyến nghị gặp người có chuyên môn."}</small>
           </label>
+          </section>
+
+          <section className="ai-config-form-card ai-config-status-card" aria-labelledby="ai-config-status-section">
+            <div className="ai-config-form-card-head">
+              <span><ToggleLeft size={18} aria-hidden="true" /></span>
+              <div>
+                <h3 id="ai-config-status-section">Trạng thái</h3>
+                <p>Chọn cấu hình sẽ được bật hay tắt ngay sau khi lưu.</p>
+              </div>
+            </div>
 
           <label className="clean-field ai-config-status-field">
             <span>Trạng thái sau khi lưu</span>
@@ -198,6 +228,8 @@ export default function AIConfigFormModal({
               <option value="false">Đang tắt</option>
             </select>
           </label>
+          </section>
+          </div>
 
           <div className="doctor-modal-actions">
             <button className="btn btn-ghost" type="button" onClick={onClose} disabled={saving}>Hủy</button>
