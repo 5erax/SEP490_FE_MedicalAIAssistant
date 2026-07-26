@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { CreditCard } from "lucide-react";
+import { CreditCard, Gauge, ShieldAlert } from "lucide-react";
 import { Dialog } from "../ui";
 
 const DEFAULT_FEATURE_LIMITS = `{
@@ -40,22 +40,22 @@ function validate(form) {
   const price = Number(form.price);
   const duration = Number(form.durationInDays);
 
-  if (!form.planName.trim()) errors.planName = "Vui lòng nhập tên gói.";
+  if (!form.planName.trim()) errors.planName = "Vui long nhap ten goi.";
   if (form.price === "" || Number.isNaN(price) || price < 0) {
-    errors.price = "Giá gói phải là số lớn hơn hoặc bằng 0.";
+    errors.price = "Gia goi phai la so lon hon hoac bang 0.";
   }
   if (!Number.isInteger(duration) || duration <= 0) {
-    errors.durationInDays = "Thời hạn phải là số ngày nguyên dương.";
+    errors.durationInDays = "Thoi han phai la so ngay nguyen duong.";
   }
 
   if (form.featureLimitJson.trim()) {
     try {
       const parsed = JSON.parse(form.featureLimitJson);
       if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
-        errors.featureLimitJson = "Giới hạn tính năng cần nhập theo dạng danh sách hợp lệ.";
+        errors.featureLimitJson = "Gioi han tinh nang can nhap theo dang danh sach hop le.";
       }
     } catch {
-      errors.featureLimitJson = "Giới hạn tính năng chưa đúng định dạng.";
+      errors.featureLimitJson = "Gioi han tinh nang chua dung dinh dang.";
     }
   }
 
@@ -85,7 +85,7 @@ export default function SubscriptionPlanFormModal({
   const [form, setForm] = useState(() => toFormValue(plan));
   const [errors, setErrors] = useState({});
   const closeButtonRef = useRef(null);
-  const title = mode === "edit" ? "Cập nhật gói dịch vụ" : "Tạo gói dịch vụ";
+  const title = mode === "edit" ? "Cap nhat goi dich vu" : "Tao goi dich vu";
 
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -111,93 +111,122 @@ export default function SubscriptionPlanFormModal({
       initialFocusRef={closeButtonRef}
       restoreFocusRef={restoreFocusRef}
     >
-        <header className="subscription-modal-header">
-          <span className="subscription-modal-icon" aria-hidden="true"><CreditCard size={22} /></span>
-          <div>
-            <p className="eyebrow">Quản lý doanh thu</p>
-            <h2 id="subscription-modal-title">{title}</h2>
-            <p>Cấu hình giá, thời hạn và giới hạn quyền lợi hiển thị trên trang đăng ký gói.</p>
-          </div>
-          <button ref={closeButtonRef} className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose}>×</button>
-        </header>
+      <header className="subscription-modal-header">
+        <span className="subscription-modal-icon" aria-hidden="true">
+          <CreditCard size={22} />
+        </span>
+        <div>
+          <p className="eyebrow">Quan ly doanh thu</p>
+          <h2 id="subscription-modal-title">{title}</h2>
+          <p>Cau hinh gia, thoi han va gioi han quyen loi hien thi tren trang dang ky goi.</p>
+        </div>
+        <button ref={closeButtonRef} className="doctor-modal-close" type="button" aria-label="Dong form" onClick={onClose}>×</button>
+      </header>
 
-        <form className="clean-form subscription-plan-form" onSubmit={handleSubmit}>
-          <div className="form-two-cols">
-            <label className={`clean-field ${errors.planName ? "subscription-field-error" : ""}`}>
-              <span>Tên gói</span>
-              <input
-                value={form.planName}
-                onChange={(event) => update("planName", event.target.value)}
-                placeholder="Ví dụ: MediMate+ Tháng"
-                required
-                aria-invalid={errors.planName ? "true" : undefined}
-                aria-describedby={errors.planName ? "subscription-name-error" : undefined}
+      <form className="clean-form subscription-plan-form" onSubmit={handleSubmit}>
+        <aside className="subscription-modal-warning">
+          <ShieldAlert size={18} aria-hidden="true" />
+          <span>Kiem tra gia, thoi han va han muc truoc khi hien thi goi tren trang dang ky.</span>
+        </aside>
+
+        <div className="subscription-form-sections">
+          <section className="subscription-form-card">
+            <div className="subscription-form-card-head">
+              <span aria-hidden="true"><CreditCard size={20} /></span>
+              <div>
+                <h3>Thong tin goi</h3>
+                <p>Ten, gia, thoi han va trang thai hien thi cua goi dich vu.</p>
+              </div>
+            </div>
+
+            <div className="subscription-form-grid">
+              <label className={`clean-field ${errors.planName ? "subscription-field-error" : ""}`}>
+                <span>Ten goi</span>
+                <input
+                  value={form.planName}
+                  onChange={(event) => update("planName", event.target.value)}
+                  placeholder="Vi du: MediMate+ Thang"
+                  required
+                  aria-invalid={errors.planName ? "true" : undefined}
+                  aria-describedby={errors.planName ? "subscription-name-error" : undefined}
+                />
+                {errors.planName && <small id="subscription-name-error" role="alert">{errors.planName}</small>}
+              </label>
+
+              <label className={`clean-field ${errors.price ? "subscription-field-error" : ""}`}>
+                <span>Gia goi (VND)</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={form.price}
+                  onChange={(event) => update("price", event.target.value)}
+                  placeholder="149000"
+                  required
+                  aria-invalid={errors.price ? "true" : undefined}
+                  aria-describedby={errors.price ? "subscription-price-error" : undefined}
+                />
+                {errors.price && <small id="subscription-price-error" role="alert">{errors.price}</small>}
+              </label>
+
+              <label className={`clean-field subscription-duration-inline ${errors.durationInDays ? "subscription-field-error" : ""}`}>
+                <span>Thoi han (ngay)</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={form.durationInDays}
+                  onChange={(event) => update("durationInDays", event.target.value)}
+                  required
+                  aria-invalid={errors.durationInDays ? "true" : undefined}
+                  aria-describedby={errors.durationInDays ? "subscription-duration-error" : undefined}
+                />
+                {errors.durationInDays && <small id="subscription-duration-error" role="alert">{errors.durationInDays}</small>}
+              </label>
+
+              <label className="clean-field">
+                <span>Trang thai</span>
+                <select value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
+                  <option value="true">Dang ban</option>
+                  <option value="false">Tam an</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section className="subscription-form-card subscription-limits-card">
+            <div className="subscription-form-card-head">
+              <span aria-hidden="true"><Gauge size={20} /></span>
+              <div>
+                <h3>Gioi han tinh nang</h3>
+                <p>Cau hinh han muc su dung cho tung quyen loi trong goi.</p>
+              </div>
+            </div>
+
+            <label className={`clean-field ${errors.featureLimitJson ? "subscription-field-error" : ""}`}>
+              <span>Gioi han tinh nang</span>
+              <textarea
+                rows={8}
+                spellCheck="false"
+                value={form.featureLimitJson}
+                onChange={(event) => update("featureLimitJson", event.target.value)}
+                aria-invalid={errors.featureLimitJson ? "true" : undefined}
+                aria-describedby="subscription-feature-help"
               />
-              {errors.planName && <small id="subscription-name-error" role="alert">{errors.planName}</small>}
+              <small id="subscription-feature-help" role={errors.featureLimitJson ? "alert" : undefined}>
+                {errors.featureLimitJson || "Nhap cac han muc theo tung tinh nang, vi du so luot dung moi thang."}
+              </small>
             </label>
+          </section>
+        </div>
 
-            <label className={`clean-field ${errors.price ? "subscription-field-error" : ""}`}>
-              <span>Giá gói (VND)</span>
-              <input
-                type="number"
-                min="0"
-                step="1000"
-                value={form.price}
-                onChange={(event) => update("price", event.target.value)}
-                placeholder="149000"
-                required
-                aria-invalid={errors.price ? "true" : undefined}
-                aria-describedby={errors.price ? "subscription-price-error" : undefined}
-              />
-              {errors.price && <small id="subscription-price-error" role="alert">{errors.price}</small>}
-            </label>
-
-            <label className={`clean-field ${errors.durationInDays ? "subscription-field-error" : ""}`}>
-              <span>Thời hạn (ngày)</span>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={form.durationInDays}
-                onChange={(event) => update("durationInDays", event.target.value)}
-                required
-                aria-invalid={errors.durationInDays ? "true" : undefined}
-                aria-describedby={errors.durationInDays ? "subscription-duration-error" : undefined}
-              />
-              {errors.durationInDays && <small id="subscription-duration-error" role="alert">{errors.durationInDays}</small>}
-            </label>
-
-            <label className="clean-field">
-              <span>Trạng thái</span>
-              <select value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
-                <option value="true">Đang bán</option>
-                <option value="false">Tạm ẩn</option>
-              </select>
-            </label>
-          </div>
-
-          <label className={`clean-field ${errors.featureLimitJson ? "subscription-field-error" : ""}`}>
-            <span>Giới hạn tính năng</span>
-            <textarea
-              rows={8}
-              spellCheck="false"
-              value={form.featureLimitJson}
-              onChange={(event) => update("featureLimitJson", event.target.value)}
-              aria-invalid={errors.featureLimitJson ? "true" : undefined}
-              aria-describedby="subscription-feature-help"
-            />
-            <small id="subscription-feature-help" role={errors.featureLimitJson ? "alert" : undefined}>
-              {errors.featureLimitJson || "Nhập các hạn mức theo từng tính năng, ví dụ số lượt dùng mỗi tháng."}
-            </small>
-          </label>
-
-          <div className="doctor-modal-actions">
-            <button className="btn btn-ghost" type="button" onClick={onClose}>Hủy</button>
-            <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Tạo gói"}
-            </button>
-          </div>
-        </form>
+        <div className="doctor-modal-actions">
+          <button className="btn btn-ghost" type="button" onClick={onClose}>Huy</button>
+          <button className="btn btn-primary" type="submit" disabled={saving}>
+            {saving ? "Dang luu..." : mode === "edit" ? "Luu cap nhat" : "Tao goi"}
+          </button>
+        </div>
+      </form>
     </Dialog>
   );
 }
