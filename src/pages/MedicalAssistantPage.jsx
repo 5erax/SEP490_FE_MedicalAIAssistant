@@ -403,9 +403,9 @@ function IntakePage() {
             loadingLabel="Đang tạo câu hỏi..."
             disabled={!trimmedInput}
             aria-label="Tiếp tục phân tích lâm sàng"
+            title="Tiếp tục phân tích lâm sàng"
           >
             <Send size={18} />
-            <span>Tiếp tục phân tích</span>
           </Button>
         </div>
       </form>

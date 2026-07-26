@@ -422,17 +422,22 @@
 }
 
 .assessment-clinical-refresh .clinical-submit-row .ui-button {
-  width: auto;
-  min-width: 205px;
+  width: 52px;
+  min-width: 52px;
   min-height: 48px;
-  gap: 9px;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   border-color: rgba(8, 127, 140, 0.42);
-  border-radius: 10px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #087f8c, #0e8a83);
   color: #fff;
-  padding-inline: 20px;
+  padding: 0;
   box-shadow: 0 12px 24px rgba(8, 97, 106, 0.16);
+}
+
+.assessment-clinical-refresh .clinical-submit-row .ui-button > span {
+  display: inline-grid;
+  place-items: center;
 }
 
 .assessment-clinical-refresh .clinical-submit-row .ui-button:hover:not(:disabled) {
