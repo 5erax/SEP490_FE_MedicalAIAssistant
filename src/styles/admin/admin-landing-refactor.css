@@ -357,6 +357,47 @@
   box-shadow: var(--shadow-hard);
 }
 
+.admin-operator .clinical-create-button {
+  min-height: 46px;
+  border: 1px solid rgba(5, 97, 106, 0.88);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 42%),
+    linear-gradient(135deg, #087f8c, #05616a);
+  color: #ffffff;
+  box-shadow:
+    0 14px 28px rgba(8, 127, 140, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  gap: 10px;
+  padding-inline: 18px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.admin-operator .clinical-create-button svg {
+  color: currentColor;
+  stroke-width: 2.2;
+}
+
+.admin-operator .clinical-create-button:hover {
+  border-color: rgba(4, 76, 82, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 44%),
+    linear-gradient(135deg, #0a8f9c, #05545d);
+  box-shadow:
+    0 18px 34px rgba(8, 127, 140, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  transform: translateY(-1px);
+}
+
+.admin-operator .clinical-create-button:active {
+  box-shadow: 0 10px 20px rgba(8, 127, 140, 0.16);
+  transform: translateY(0);
+}
+
 .admin-operator .doctor-table-wrap .ui-table tbody tr:hover {
   background: linear-gradient(90deg, rgba(230, 244, 238, 0.54), #ffffff 58%);
 }
