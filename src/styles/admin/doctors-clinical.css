@@ -657,3 +657,294 @@
     color: ButtonText;
   }
 }
+
+/* Refined doctor create/edit modal */
+.doctor-form-modal {
+  width: min(1040px, calc(100vw - 32px));
+  max-height: calc(100svh - 28px);
+  border: 1px solid rgba(0, 128, 136, 0.18);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top left, rgba(205, 247, 244, 0.72), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%);
+  box-shadow: 0 34px 90px rgba(12, 58, 62, 0.22);
+}
+
+.doctor-form-modal .doctor-modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  align-items: flex-start;
+  border-bottom-color: rgba(0, 128, 136, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 30px clamp(24px, 3.2vw, 36px) 22px;
+  backdrop-filter: blur(18px);
+}
+
+.doctor-form-modal .doctor-modal-header > div:first-child {
+  display: grid;
+  gap: 8px;
+}
+
+.doctor-form-modal .doctor-modal-header .eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 10px;
+  color: #007f89;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+}
+
+.doctor-form-modal .doctor-modal-header .eyebrow::before {
+  width: 28px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.doctor-form-modal .doctor-modal-header h2 {
+  max-width: 680px;
+  color: #082f35;
+  font-size: clamp(34px, 4.8vw, 52px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.doctor-form-modal .doctor-modal-header p:not(.eyebrow) {
+  max-width: 620px;
+  margin-top: 4px;
+  color: rgba(8, 47, 53, 0.68);
+  font-size: 14px;
+  font-weight: 720;
+  line-height: 1.6;
+}
+
+.doctor-form-modal .doctor-modal-close {
+  width: 46px;
+  height: 46px;
+  border-color: rgba(0, 128, 136, 0.22);
+  background: rgba(255, 255, 255, 0.9);
+  color: #082f35;
+  box-shadow: 0 12px 28px rgba(12, 58, 62, 0.1);
+}
+
+.doctor-form-modal .doctor-modal-close:hover {
+  border-color: rgba(0, 128, 136, 0.42);
+  background: #e9fbf8;
+  color: #007f89;
+}
+
+.doctor-form-modal .facility-form {
+  background: transparent;
+}
+
+.doctor-form-modal .facility-form-body {
+  gap: 18px;
+  padding: 22px clamp(24px, 3.2vw, 36px) 26px;
+  scrollbar-color: rgba(0, 128, 136, 0.42) transparent;
+}
+
+.doctor-form-modal .facility-form-card {
+  position: relative;
+  gap: 18px;
+  border-color: rgba(0, 128, 136, 0.16);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(246, 255, 252, 0.9)),
+    #fff;
+  padding: clamp(20px, 2.4vw, 26px);
+  box-shadow: 0 18px 44px rgba(8, 47, 53, 0.07);
+  overflow: hidden;
+}
+
+.doctor-form-modal .facility-form-card::before {
+  position: absolute;
+  inset: 18px auto 18px 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, #008891, #8fd8d2);
+  content: "";
+}
+
+.doctor-form-modal .facility-form-card-head {
+  padding-left: 10px;
+}
+
+.doctor-form-modal .facility-form-card-head h3 {
+  color: #082f35;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.doctor-form-modal .facility-form-card-head p {
+  max-width: 720px;
+  color: rgba(8, 47, 53, 0.62);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.doctor-form-modal .facility-form-grid {
+  gap: 16px 18px;
+}
+
+.doctor-form-modal .clean-field > span,
+.doctor-form-modal .facility-department-picker legend {
+  color: rgba(8, 47, 53, 0.78);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.doctor-form-modal .clean-field input,
+.doctor-form-modal .clean-field select,
+.doctor-form-modal .clean-field textarea,
+.doctor-form-modal .facility-department-options label {
+  min-height: 48px;
+  border-color: rgba(8, 47, 53, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #082f35;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.doctor-form-modal .clean-field input:focus,
+.doctor-form-modal .clean-field select:focus,
+.doctor-form-modal .clean-field textarea:focus {
+  border-color: #008891;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 136, 145, 0.14);
+  outline: none;
+}
+
+.doctor-form-modal .clean-field input::placeholder,
+.doctor-form-modal .clean-field textarea::placeholder {
+  color: rgba(8, 47, 53, 0.44);
+}
+
+.doctor-form-modal .clean-checkbox {
+  align-items: center;
+  border-color: rgba(0, 128, 136, 0.18);
+  border-radius: 16px;
+  background: rgba(234, 250, 247, 0.8);
+  color: rgba(8, 47, 53, 0.72);
+}
+
+.doctor-form-modal .clean-checkbox:focus-within {
+  border-color: #008891;
+  box-shadow: 0 0 0 3px rgba(0, 136, 145, 0.14);
+}
+
+.doctor-form-modal .facility-image-uploader {
+  grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.doctor-form-modal .facility-image-preview-shell {
+  min-height: 260px;
+  border-color: rgba(0, 128, 136, 0.24);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(230, 253, 249, 0.9), rgba(255, 255, 255, 0.78)),
+    #f6fffc;
+}
+
+.doctor-form-modal .facility-image-empty {
+  color: rgba(8, 47, 53, 0.52);
+}
+
+.doctor-form-modal .facility-image-action-row .btn-outline {
+  border-color: rgba(0, 128, 136, 0.22);
+  border-radius: 14px;
+  color: #007f89;
+}
+
+.doctor-form-modal .facility-image-action-row .btn-outline:hover {
+  border-color: #008891;
+  background: #e9fbf8;
+}
+
+.doctor-form-modal .facility-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  border-top-color: rgba(0, 128, 136, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 18px clamp(24px, 3.2vw, 36px);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 -18px 36px rgba(8, 47, 53, 0.08);
+}
+
+.doctor-form-modal .facility-form-actions .btn-outline,
+.doctor-form-modal .facility-form-actions .btn-primary {
+  min-height: 50px;
+  border-radius: 15px;
+  padding-inline: 24px;
+  font-weight: 900;
+}
+
+.doctor-form-modal .facility-form-actions .btn-outline {
+  border-color: rgba(8, 47, 53, 0.24);
+  background: #fff;
+  color: #082f35;
+}
+
+.doctor-form-modal .facility-form-actions .btn-outline:hover {
+  border-color: rgba(0, 128, 136, 0.38);
+  background: #f3fffc;
+}
+
+.doctor-form-modal .facility-form-actions .btn-primary {
+  border-color: #062f35;
+  background: linear-gradient(135deg, #008891, #0a777f);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(0, 128, 136, 0.22);
+}
+
+.doctor-form-modal .facility-form-actions .btn-primary:hover {
+  background: linear-gradient(135deg, #0a777f, #006a72);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 760px) {
+  .doctor-form-modal {
+    width: min(100%, calc(100vw - 18px));
+    max-height: calc(100svh - 18px);
+    border-radius: 24px;
+  }
+
+  .doctor-form-modal .doctor-modal-header {
+    padding: 24px 20px 18px;
+  }
+
+  .doctor-form-modal .doctor-modal-header h2 {
+    font-size: clamp(30px, 12vw, 42px);
+  }
+
+  .doctor-form-modal .facility-form-body {
+    padding: 18px;
+  }
+
+  .doctor-form-modal .facility-form-grid,
+  .doctor-form-modal .facility-image-uploader {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-form-modal .facility-form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 14px 18px;
+  }
+
+  .doctor-form-modal .facility-form-actions .btn-outline,
+  .doctor-form-modal .facility-form-actions .btn-primary {
+    width: 100%;
+  }
+}
