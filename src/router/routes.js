@@ -69,7 +69,7 @@ const BASE_ROUTES = [
     title: "Chuẩn đoán lâm sàng | MediMate AI",
     access: "auth",
     shell: "patient",
-    navigation: { shell: "patient", label: "Chuẩn đoán lâm sàng", hint: "Làm rõ triệu chứng", icon: "symptom", order: 40 },
+    navigation: { shell: "patient", label: "Chuẩn đoán lâm sàng", hint: "Làm rõ triệu chứng", icon: "symptom", order: 30 },
     aliases: ["/medical-assistant/intake"],
   },
   {
@@ -84,7 +84,7 @@ const BASE_ROUTES = [
     path: "/map",
     title: "Tìm cơ sở y tế | MediMate AI",
     access: "public",
-    navigation: { shell: "patient", label: "Bản đồ", hint: "Cơ sở gần bạn", icon: "map", order: 30, mobile: true },
+    navigation: { shell: "patient", label: "Bản đồ", hint: "Cơ sở gần bạn", icon: "map", order: 40, mobile: true },
   },
   {
     id: "patient.profile",
