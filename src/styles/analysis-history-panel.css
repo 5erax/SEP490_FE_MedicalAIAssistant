@@ -9,7 +9,7 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 84% 14%, rgba(170, 237, 99, 0.22), transparent 28%),
+    radial-gradient(circle at 84% 14%, rgba(8, 127, 140, 0.16), transparent 28%),
     rgba(8, 18, 11, 0.1);
   opacity: 1;
   pointer-events: auto;
@@ -44,7 +44,7 @@
   padding: 24px 24px 18px;
   border-bottom: 1px solid rgba(185, 197, 173, 0.62);
   background:
-    linear-gradient(135deg, rgba(238, 248, 220, 0.9), rgba(255, 255, 255, 0.92) 58%),
+    linear-gradient(135deg, rgba(230, 244, 238, 0.92), rgba(255, 255, 255, 0.92) 58%),
     var(--paper, #fff);
 }
 
@@ -55,14 +55,14 @@
   right: 24px;
   bottom: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(126, 200, 50, 0.24), transparent);
+  background: linear-gradient(90deg, transparent, rgba(8, 127, 140, 0.24), transparent);
 }
 
 .analysis-history-panel-header span {
   display: inline-flex;
   gap: 7px;
   align-items: center;
-  color: var(--lime-dark, #7ec832);
+  color: var(--color-info-strong, #05616a);
   font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.08em;
@@ -108,7 +108,7 @@
   overflow-y: auto;
   padding: 20px 20px 24px;
   background:
-    radial-gradient(circle at 50% 12%, rgba(170, 237, 99, 0.13), transparent 36%),
+    radial-gradient(circle at 50% 12%, rgba(8, 127, 140, 0.1), transparent 36%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(247, 248, 243, 0.86));
 }
 
@@ -119,7 +119,7 @@
 .analysis-history-panel-body::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 999px;
-  background: rgba(126, 200, 50, 0.34);
+  background: rgba(8, 127, 140, 0.32);
   background-clip: padding-box;
 }
 
@@ -144,8 +144,8 @@
 
 .analysis-history-list article:hover,
 .analysis-history-list article.active {
-  border-color: rgba(126, 200, 50, 0.42);
-  box-shadow: 0 12px 34px rgba(34, 63, 20, 0.09);
+  border-color: rgba(8, 127, 140, 0.32);
+  box-shadow: 0 12px 34px rgba(8, 97, 106, 0.09);
   transform: translateY(-1px);
 }
 
@@ -172,8 +172,8 @@
   width: fit-content;
   margin-top: 9px;
   border-radius: 999px;
-  background: var(--lime-light, #eef8dc);
-  color: var(--lime-dark, #7ec832);
+  background: var(--color-info-bg, #e6f4ee);
+  color: var(--color-info-strong, #05616a);
   padding: 5px 9px;
   font-size: 11px;
   font-weight: 900;
@@ -182,7 +182,7 @@
 .analysis-history-detail,
 .analysis-history-empty,
 .analysis-history-state {
-  border: 1px dashed rgba(126, 200, 50, 0.34);
+  border: 1px dashed rgba(8, 127, 140, 0.26);
   border-radius: 22px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 248, 243, 0.9));
@@ -233,10 +233,10 @@
 .analysis-history-state svg:not(.analysis-history-spin) {
   width: 34px;
   height: 34px;
-  border: 1px solid rgba(126, 200, 50, 0.28);
+  border: 1px solid rgba(8, 127, 140, 0.24);
   border-radius: 14px;
-  background: var(--lime-light, #eef8dc);
-  color: var(--lime-dark, #7ec832);
+  background: var(--color-info-bg, #e6f4ee);
+  color: var(--color-info, #087f8c);
   padding: 7px;
   box-sizing: border-box;
 }
@@ -265,21 +265,21 @@
   min-height: 54px;
   border: 1.5px solid #08120b;
   border-radius: 18px;
-  background: var(--lime, #c8f28b);
-  color: #08120b;
-  box-shadow: 0 6px 0 #08120b, 0 18px 34px rgba(71, 117, 30, 0.2);
+  background: var(--color-info, #087f8c);
+  color: #ffffff;
+  box-shadow: 0 6px 0 #08120b, 0 18px 34px rgba(8, 97, 106, 0.2);
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
 
 .analysis-history-panel-footer .ui-button.analysis-history-continue:hover {
-  filter: saturate(1.03);
+  background: var(--color-info-strong, #05616a);
   transform: translateY(-1px);
-  box-shadow: 0 8px 0 #08120b, 0 22px 40px rgba(71, 117, 30, 0.22);
+  box-shadow: 0 8px 0 #08120b, 0 22px 40px rgba(8, 97, 106, 0.22);
 }
 
 .analysis-history-panel-footer .ui-button.analysis-history-continue:active {
   transform: translateY(3px);
-  box-shadow: 0 3px 0 #08120b, 0 12px 24px rgba(71, 117, 30, 0.16);
+  box-shadow: 0 3px 0 #08120b, 0 12px 24px rgba(8, 97, 106, 0.16);
 }
 
 .analysis-history-panel-footer .analysis-history-continue > span {
