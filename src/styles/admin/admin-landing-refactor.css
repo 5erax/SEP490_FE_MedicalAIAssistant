@@ -160,7 +160,7 @@
 .admin-operator .department-create-button:hover,
 .admin-operator .facility-create-button:hover {
   border-color: var(--admin-ink);
-  background: #d4f4a8;
+  background: #c9eff0;
   box-shadow: 3px 3px 0 var(--admin-ink);
   transform: translate(1px, 1px);
 }
@@ -381,5 +381,21 @@
 .admin-operator .admin-user-avatar {
   border-color: rgba(8, 127, 140, 0.18);
   background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
+
+.admin-operator button:focus-visible,
+.admin-operator a:focus-visible,
+.admin-operator input:focus,
+.admin-operator select:focus,
+.admin-operator textarea:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.14);
+}
+
+.admin-operator .ui-badge-success,
+.admin-operator .status-pill.success {
+  background: var(--admin-primary-soft);
   color: var(--admin-accent-strong);
 }
