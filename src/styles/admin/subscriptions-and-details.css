@@ -808,9 +808,68 @@
   outline: none;
 }
 
-.subscription-plan-form textarea {
-  min-height: 220px;
-  font-family: Consolas, "Courier New", monospace;
+.subscription-limit-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.subscription-limit-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.subscription-limit-editor-head > span {
+  color: rgba(16, 47, 53, 0.7);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.subscription-limit-editor-head .btn {
+  border-color: rgba(8, 127, 140, 0.22);
+  background: rgba(230, 247, 244, 0.86);
+  color: #087f8c;
+  box-shadow: none;
+}
+
+.subscription-limit-editor-list {
+  display: grid;
+  gap: 12px;
+}
+
+.subscription-limit-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(150px, 0.7fr) auto;
+  align-items: end;
+  gap: 12px;
+  border: 1px solid rgba(8, 127, 140, 0.14);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(246, 252, 250, 0.92)),
+    #ffffff;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(12, 58, 62, 0.05);
+}
+
+.subscription-limit-editor-row .clean-field {
+  gap: 7px;
+}
+
+.subscription-limit-remove {
+  min-height: 44px;
+  border-color: rgba(196, 42, 42, 0.28);
+  background: rgba(255, 245, 245, 0.92);
+  color: #be2323;
+  box-shadow: none;
+}
+
+.subscription-limit-remove:hover {
+  border-color: rgba(196, 42, 42, 0.38);
+  background: #fff0f0;
+  color: #a61d1d;
 }
 
 .subscription-modal .doctor-modal-actions {
@@ -868,6 +927,10 @@
   }
 
   .subscription-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-limit-editor-row {
     grid-template-columns: 1fr;
   }
 

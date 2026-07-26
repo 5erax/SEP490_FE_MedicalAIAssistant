@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { CreditCard, Gauge, ShieldAlert } from "lucide-react";
+import { CreditCard, Gauge, Plus, ShieldAlert, Trash2 } from "lucide-react";
 import { Dialog } from "../ui";
 
 const DEFAULT_FEATURE_LIMITS = `{
@@ -40,22 +40,22 @@ function validate(form) {
   const price = Number(form.price);
   const duration = Number(form.durationInDays);
 
-  if (!form.planName.trim()) errors.planName = "Vui long nhap ten goi.";
+  if (!form.planName.trim()) errors.planName = "Vui lòng nhập tên gói.";
   if (form.price === "" || Number.isNaN(price) || price < 0) {
-    errors.price = "Gia goi phai la so lon hon hoac bang 0.";
+    errors.price = "Giá gói phải là số lớn hơn hoặc bằng 0.";
   }
   if (!Number.isInteger(duration) || duration <= 0) {
-    errors.durationInDays = "Thoi han phai la so ngay nguyen duong.";
+    errors.durationInDays = "Thời hạn phải là số ngày nguyên dương.";
   }
 
   if (form.featureLimitJson.trim()) {
     try {
       const parsed = JSON.parse(form.featureLimitJson);
       if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
-        errors.featureLimitJson = "Gioi han tinh nang can nhap theo dang danh sach hop le.";
+        errors.featureLimitJson = "Giới hạn tính năng cần nhập theo dạng danh sách hợp lệ.";
       }
     } catch {
-      errors.featureLimitJson = "Gioi han tinh nang chua dung dinh dang.";
+      errors.featureLimitJson = "Giới hạn tính năng chưa đúng định dạng.";
     }
   }
 
@@ -74,6 +74,33 @@ function buildPayload(form) {
   };
 }
 
+function parseFeatureLimitEntries(value) {
+  try {
+    const parsed = value.trim() ? JSON.parse(value) : {};
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") return [];
+    return Object.entries(parsed).map(([key, limit]) => ({
+      key,
+      limit: String(limit ?? ""),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function stringifyFeatureLimitEntries(entries) {
+  const payload = entries.reduce((result, item) => {
+    const key = item.key.trim();
+    if (!key) return result;
+    const numericValue = Number(item.limit);
+    return {
+      ...result,
+      [key]: item.limit !== "" && !Number.isNaN(numericValue) ? numericValue : item.limit,
+    };
+  }, {});
+
+  return JSON.stringify(payload, null, 2);
+}
+
 export default function SubscriptionPlanFormModal({
   mode,
   plan,
@@ -85,11 +112,31 @@ export default function SubscriptionPlanFormModal({
   const [form, setForm] = useState(() => toFormValue(plan));
   const [errors, setErrors] = useState({});
   const closeButtonRef = useRef(null);
-  const title = mode === "edit" ? "Cap nhat goi dich vu" : "Tao goi dich vu";
+  const title = mode === "edit" ? "Cập nhật gói dịch vụ" : "Tạo gói dịch vụ";
+  const featureLimitEntries = parseFeatureLimitEntries(form.featureLimitJson);
 
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: "" }));
+  }
+
+  function updateFeatureLimit(index, key, value) {
+    const nextEntries = featureLimitEntries.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, [key]: value } : item
+    ));
+    update("featureLimitJson", stringifyFeatureLimitEntries(nextEntries));
+  }
+
+  function addFeatureLimit() {
+    update("featureLimitJson", stringifyFeatureLimitEntries([
+      ...featureLimitEntries,
+      { key: "", limit: "" },
+    ]));
+  }
+
+  function removeFeatureLimit(index) {
+    const nextEntries = featureLimitEntries.filter((_, itemIndex) => itemIndex !== index);
+    update("featureLimitJson", stringifyFeatureLimitEntries(nextEntries));
   }
 
   function handleSubmit(event) {
@@ -116,17 +163,25 @@ export default function SubscriptionPlanFormModal({
           <CreditCard size={22} />
         </span>
         <div>
-          <p className="eyebrow">Quan ly doanh thu</p>
+          <p className="eyebrow">Quản lý doanh thu</p>
           <h2 id="subscription-modal-title">{title}</h2>
-          <p>Cau hinh gia, thoi han va gioi han quyen loi hien thi tren trang dang ky goi.</p>
+          <p>Cấu hình giá, thời hạn và giới hạn quyền lợi hiển thị trên trang đăng ký gói.</p>
         </div>
-        <button ref={closeButtonRef} className="doctor-modal-close" type="button" aria-label="Dong form" onClick={onClose}>×</button>
+        <button
+          ref={closeButtonRef}
+          className="doctor-modal-close"
+          type="button"
+          aria-label="Đóng form"
+          onClick={onClose}
+        >
+          ×
+        </button>
       </header>
 
       <form className="clean-form subscription-plan-form" onSubmit={handleSubmit}>
         <aside className="subscription-modal-warning">
           <ShieldAlert size={18} aria-hidden="true" />
-          <span>Kiem tra gia, thoi han va han muc truoc khi hien thi goi tren trang dang ky.</span>
+          <span>Kiểm tra giá, thời hạn và hạn mức trước khi hiển thị gói trên trang đăng ký.</span>
         </aside>
 
         <div className="subscription-form-sections">
@@ -134,18 +189,18 @@ export default function SubscriptionPlanFormModal({
             <div className="subscription-form-card-head">
               <span aria-hidden="true"><CreditCard size={20} /></span>
               <div>
-                <h3>Thong tin goi</h3>
-                <p>Ten, gia, thoi han va trang thai hien thi cua goi dich vu.</p>
+                <h3>Thông tin gói</h3>
+                <p>Tên, giá, thời hạn và trạng thái hiển thị của gói dịch vụ.</p>
               </div>
             </div>
 
             <div className="subscription-form-grid">
               <label className={`clean-field ${errors.planName ? "subscription-field-error" : ""}`}>
-                <span>Ten goi</span>
+                <span>Tên gói</span>
                 <input
                   value={form.planName}
                   onChange={(event) => update("planName", event.target.value)}
-                  placeholder="Vi du: MediMate+ Thang"
+                  placeholder="Ví dụ: MediMate+ Tháng"
                   required
                   aria-invalid={errors.planName ? "true" : undefined}
                   aria-describedby={errors.planName ? "subscription-name-error" : undefined}
@@ -154,7 +209,7 @@ export default function SubscriptionPlanFormModal({
               </label>
 
               <label className={`clean-field ${errors.price ? "subscription-field-error" : ""}`}>
-                <span>Gia goi (VND)</span>
+                <span>Giá gói (VND)</span>
                 <input
                   type="number"
                   min="0"
@@ -170,7 +225,7 @@ export default function SubscriptionPlanFormModal({
               </label>
 
               <label className={`clean-field subscription-duration-inline ${errors.durationInDays ? "subscription-field-error" : ""}`}>
-                <span>Thoi han (ngay)</span>
+                <span>Thời hạn (ngày)</span>
                 <input
                   type="number"
                   min="1"
@@ -185,10 +240,10 @@ export default function SubscriptionPlanFormModal({
               </label>
 
               <label className="clean-field">
-                <span>Trang thai</span>
+                <span>Trạng thái</span>
                 <select value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
-                  <option value="true">Dang ban</option>
-                  <option value="false">Tam an</option>
+                  <option value="true">Đang bán</option>
+                  <option value="false">Tạm ẩn</option>
                 </select>
               </label>
             </div>
@@ -198,32 +253,61 @@ export default function SubscriptionPlanFormModal({
             <div className="subscription-form-card-head">
               <span aria-hidden="true"><Gauge size={20} /></span>
               <div>
-                <h3>Gioi han tinh nang</h3>
-                <p>Cau hinh han muc su dung cho tung quyen loi trong goi.</p>
+                <h3>Giới hạn tính năng</h3>
+                <p>Thiết lập từng hạn mức sử dụng thay vì nhập JSON thủ công.</p>
               </div>
             </div>
 
-            <label className={`clean-field ${errors.featureLimitJson ? "subscription-field-error" : ""}`}>
-              <span>Gioi han tinh nang</span>
-              <textarea
-                rows={8}
-                spellCheck="false"
-                value={form.featureLimitJson}
-                onChange={(event) => update("featureLimitJson", event.target.value)}
-                aria-invalid={errors.featureLimitJson ? "true" : undefined}
-                aria-describedby="subscription-feature-help"
-              />
+            <div className={`subscription-limit-editor ${errors.featureLimitJson ? "subscription-field-error" : ""}`}>
+              <div className="subscription-limit-editor-head">
+                <span>Danh sách hạn mức</span>
+                <button className="btn btn-secondary" type="button" onClick={addFeatureLimit}>
+                  <Plus size={16} /> Thêm hạn mức
+                </button>
+              </div>
+
+              <div className="subscription-limit-editor-list">
+                {featureLimitEntries.map((item, index) => (
+                  <article className="subscription-limit-editor-row" key={`${item.key}-${index}`}>
+                    <label className="clean-field">
+                      <span>Tính năng</span>
+                      <input
+                        value={item.key}
+                        onChange={(event) => updateFeatureLimit(index, "key", event.target.value)}
+                        placeholder="Ví dụ: symptomAnalysisPerMonth"
+                      />
+                    </label>
+                    <label className="clean-field">
+                      <span>Hạn mức</span>
+                      <input
+                        value={item.limit}
+                        onChange={(event) => updateFeatureLimit(index, "limit", event.target.value)}
+                        placeholder="Ví dụ: 30"
+                      />
+                    </label>
+                    <button
+                      className="btn subscription-limit-remove"
+                      type="button"
+                      onClick={() => removeFeatureLimit(index)}
+                      aria-label={`Xóa hạn mức ${index + 1}`}
+                    >
+                      <Trash2 size={15} /> Xóa
+                    </button>
+                  </article>
+                ))}
+              </div>
+
               <small id="subscription-feature-help" role={errors.featureLimitJson ? "alert" : undefined}>
-                {errors.featureLimitJson || "Nhap cac han muc theo tung tinh nang, vi du so luot dung moi thang."}
+                {errors.featureLimitJson || "Mỗi dòng là một quyền lợi và số lượt được dùng trong gói."}
               </small>
-            </label>
+            </div>
           </section>
         </div>
 
         <div className="doctor-modal-actions">
-          <button className="btn btn-ghost" type="button" onClick={onClose}>Huy</button>
+          <button className="btn btn-ghost" type="button" onClick={onClose}>Hủy</button>
           <button className="btn btn-primary" type="submit" disabled={saving}>
-            {saving ? "Dang luu..." : mode === "edit" ? "Luu cap nhat" : "Tao goi"}
+            {saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Tạo gói"}
           </button>
         </div>
       </form>
