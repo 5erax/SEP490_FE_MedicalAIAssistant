@@ -199,27 +199,29 @@ export default function AdminUsersSection({
 
       {!error && (
         <nav className="pagination-row admin-users-pagination" aria-label="Phân trang tài khoản">
-          <button
-            className="btn btn-ghost btn-small"
+          <Button
+            tone="secondary"
+            size="sm"
             type="button"
             disabled={pageInfo.pageNumber <= 1 || loading}
             onClick={() => onLoadPage(pageInfo.pageNumber - 1)}
           >
             Trước
-          </button>
+          </Button>
           <span>
             Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1}
             <span aria-hidden="true"> · </span>
             {rows.length}/{totalVisibleCount} hiển thị
           </span>
-          <button
-            className="btn btn-ghost btn-small"
+          <Button
+            tone="secondary"
+            size="sm"
             type="button"
             disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading}
             onClick={() => onLoadPage(pageInfo.pageNumber + 1)}
           >
             Sau
-          </button>
+          </Button>
         </nav>
       )}
     </section>
