@@ -440,3 +440,52 @@
   background: var(--admin-primary-soft);
   color: var(--admin-accent-strong);
 }
+
+.admin-operator .clinical-catalog-heading-actions .clinical-catalog-create,
+.admin-operator .clinical-catalog-filter-card .ai-config-filter-actions .btn-primary {
+  min-height: 46px;
+  border: 1px solid rgba(8, 127, 140, 0.86);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 44%),
+    linear-gradient(135deg, #0b8994 0%, #066874 100%);
+  color: #ffffff;
+  box-shadow:
+    0 14px 28px rgba(8, 127, 140, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  gap: 10px;
+  padding-inline: 18px;
+  transform: none;
+}
+
+.admin-operator .clinical-catalog-heading-actions .clinical-catalog-create svg,
+.admin-operator .clinical-catalog-filter-card .ai-config-filter-actions .btn-primary svg {
+  color: currentColor;
+  stroke-width: 2.25;
+}
+
+.admin-operator .clinical-catalog-heading-actions .clinical-catalog-create:hover,
+.admin-operator .clinical-catalog-filter-card .ai-config-filter-actions .btn-primary:hover {
+  border-color: rgba(4, 86, 96, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 46%),
+    linear-gradient(135deg, #0a98a4 0%, #075c67 100%);
+  box-shadow:
+    0 18px 34px rgba(8, 127, 140, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+  transform: translateY(-1px);
+}
+
+.admin-operator .clinical-catalog-heading-actions .clinical-catalog-create:active,
+.admin-operator .clinical-catalog-filter-card .ai-config-filter-actions .btn-primary:active {
+  box-shadow: 0 10px 20px rgba(8, 127, 140, 0.16);
+  transform: translateY(0);
+}
+
+.admin-operator .clinical-catalog-heading-actions .clinical-catalog-create:focus-visible,
+.admin-operator .clinical-catalog-filter-card .ai-config-filter-actions .btn-primary:focus-visible {
+  border-color: #057985;
+  box-shadow:
+    0 0 0 4px rgba(8, 127, 140, 0.16),
+    0 14px 28px rgba(8, 127, 140, 0.18);
+}
