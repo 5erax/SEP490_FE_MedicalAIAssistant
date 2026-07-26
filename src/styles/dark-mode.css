@@ -147,6 +147,70 @@ html[data-theme="dark"] :is(.user-chip, .account-menu-panel, .user-shell-search)
   color: #f3f6f4 !important;
 }
 
+html[data-theme="dark"] .admin-operator {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(103, 197, 142, 0.052), transparent 34%),
+    linear-gradient(135deg, #0f1412 0%, #121816 54%, #101513 100%) !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-shell {
+  border-color: rgba(51, 65, 60, 0.72) !important;
+  background: #121816 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-sidebar {
+  border-color: #2b3733 !important;
+  background: #101614 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-main {
+  background: #0f1412 !important;
+}
+
+html[data-theme="dark"] .admin-operator :is(.admin-topbar, .admin-hero-panel) {
+  border-color: #33413c !important;
+  background: #1a2320 !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav {
+  border-color: #2b3733 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav button {
+  color: #c2cbc7 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav button:hover,
+html[data-theme="dark"] .admin-operator .admin-nav button.active {
+  background: #1e2a25 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav-icon {
+  background: #1a2320 !important;
+  color: #8b9691 !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-nav button.active .admin-nav-icon,
+html[data-theme="dark"] .admin-operator .admin-nav button:hover .admin-nav-icon {
+  background: rgba(103, 197, 142, 0.15) !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] .admin-operator .admin-session-card {
+  border: 1px solid #33413c !important;
+  background: #17211d !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] .admin-operator :is(.admin-icon-button, .admin-profile-chip > span) {
+  background: #202a27 !important;
+  color: #67c58e !important;
+}
+
 html[data-theme="dark"] :is(
   .ui-card,
   .ui-state,
