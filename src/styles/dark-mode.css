@@ -1,0 +1,292 @@
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] #root,
+html[data-theme="dark"] #main-content {
+  background: #121816 !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(
+  .landing-page,
+  .auth-mode-clinical,
+  .admin-operator,
+  .admin-shell,
+  .admin-main,
+  .user-workspace,
+  .workspace-shell,
+  .patient-workspace,
+  .specialty-page,
+  .specialty-clinical-page,
+  .assessment-clinical-refresh,
+  .map-clinical-refresh,
+  .pricing-page,
+  .profile-setup-clinical
+) {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(103, 197, 142, 0.08), transparent 34%),
+    linear-gradient(135deg, #121816 0%, #161d1b 100%) !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(
+  .admin-sidebar,
+  .workspace-sidebar,
+  .profile-sidebar,
+  .clinic-sidebar,
+  .nav-care,
+  .facility-detail-topbar,
+  .doctor-detail-topbar,
+  .map-ai-header,
+  .map-ai-composer
+) {
+  border-color: #2b3733 !important;
+  background: #121816 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  .ui-card,
+  .ui-state,
+  .ui-alert,
+  .ui-table-wrap,
+  .admin-hero-panel,
+  .admin-overview-card,
+  .admin-users-panel,
+  .admin-user-card,
+  .admin-filter-panel,
+  .admin-card,
+  .clinical-catalog-panel,
+  .clinical-question-card,
+  .department-clinical-panel,
+  .department-card,
+  .doctor-clinical-panel,
+  .doctor-table-shell,
+  .facility-clinical-panel,
+  .facility-admin-row,
+  .icd-clinical-panel,
+  .icd-card,
+  .patient-profile-card,
+  .subscription-card,
+  .subscription-plan-row,
+  .dialog-panel,
+  .care-card,
+  .studio-card,
+  .studio-chatbox,
+  .profile-card,
+  .profile-form-section,
+  .payment-history-panel,
+  .map-ai-panel,
+  .map-ai-message,
+  .facility-detail-card,
+  .doctor-detail-card
+) {
+  border-color: #33413c !important;
+  background: #202a27 !important;
+  color: #f3f6f4 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="dark"] :is(
+  .ui-card,
+  .admin-overview-card,
+  .admin-user-card,
+  .clinical-question-card,
+  .department-card,
+  .facility-admin-row,
+  .icd-card,
+  .subscription-plan-row,
+  .map-ai-message
+):hover {
+  border-color: #4c5c56 !important;
+  background: #26332e !important;
+}
+
+html[data-theme="dark"] :is(
+  input,
+  textarea,
+  select,
+  .ui-field input,
+  .ui-field textarea,
+  .ui-field select,
+  .admin-search,
+  .clean-field input,
+  .clean-field select,
+  .map-ai-composer input,
+  .map-ai-composer textarea
+) {
+  border-color: #33413c !important;
+  background: #202a27 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select)::placeholder {
+  color: #8b9691 !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select):hover {
+  border-color: #4c5c56 !important;
+}
+
+html[data-theme="dark"] :is(input, textarea, select):focus,
+html[data-theme="dark"] :is(input, textarea, select):focus-visible {
+  border-color: #67c58e !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  p,
+  small,
+  label,
+  .muted-text,
+  .admin-topbar-context span,
+  .admin-profile-chip small,
+  .admin-hero-panel p:not(.eyebrow),
+  .studio-heading p,
+  .care-section-summary p
+) {
+  color: #c2cbc7 !important;
+}
+
+html[data-theme="dark"] :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  strong,
+  .admin-topbar-context strong,
+  .admin-profile-chip strong,
+  .ui-state strong,
+  .studio-heading strong
+) {
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(
+  .eyebrow,
+  .care-eyebrow,
+  .mini-label,
+  .admin-section-kicker,
+  .studio-eyebrow,
+  .clinical-kicker
+) {
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-primary,
+  .ui-button-primary,
+  .admin-action-button--primary,
+  .care-button-primary
+) {
+  border-color: #67c58e !important;
+  background: #67c58e !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-primary,
+  .ui-button-primary,
+  .admin-action-button--primary,
+  .care-button-primary
+):hover {
+  border-color: #58bf7c !important;
+  background: #58bf7c !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-secondary,
+  .btn-ghost,
+  .ui-button-secondary,
+  .ui-button-ghost,
+  .admin-action-button--secondary,
+  .admin-action-button--ghost,
+  .care-button-secondary
+) {
+  border-color: #33413c !important;
+  background: #283430 !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  .btn-secondary,
+  .btn-ghost,
+  .ui-button-secondary,
+  .ui-button-ghost,
+  .admin-action-button--secondary,
+  .admin-action-button--ghost,
+  .care-button-secondary
+):hover {
+  border-color: #4c5c56 !important;
+  background: #34413c !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-info, .admin-nav-icon, .ui-state-icon, .care-price-icon) {
+  background: rgba(103, 197, 142, 0.15) !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-success, .status-success, .soft-badge) {
+  background: #234332 !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-warning, .ui-alert-warning) {
+  background: #5a4723 !important;
+  color: #f0bd6a !important;
+}
+
+html[data-theme="dark"] :is(.ui-badge-danger, .ui-alert-danger, .ui-error) {
+  border-color: rgba(255, 155, 155, 0.32) !important;
+  background: #4d2a2a !important;
+  color: #ff9b9b !important;
+}
+
+html[data-theme="dark"] :is(
+  .admin-nav button:hover,
+  .admin-nav button.active,
+  .workspace-nav button:hover,
+  .workspace-nav button.active,
+  .profile-sidebar button.active
+) {
+  background: #24322d !important;
+  color: #f3f6f4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] :is(
+  .admin-nav button.active .admin-nav-icon,
+  .workspace-nav button.active svg,
+  .profile-sidebar button.active svg
+) {
+  background: rgba(103, 197, 142, 0.15) !important;
+  color: #67c58e !important;
+}
+
+html[data-theme="dark"] :is(.ui-table th, thead th) {
+  border-color: #2b3733 !important;
+  background: #161d1b !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(.ui-table td, tbody td, hr, .divider) {
+  border-color: #2b3733 !important;
+}
+
+html[data-theme="dark"] :is(.assistant-message, .chat-assistant, .message-assistant) {
+  background: #24322d !important;
+  color: #f3f6f4 !important;
+}
+
+html[data-theme="dark"] :is(.user-message, .chat-user, .message-user) {
+  background: #67c58e !important;
+  color: #ffffff !important;
+}
