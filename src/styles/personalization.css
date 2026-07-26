@@ -76,6 +76,117 @@ html[data-theme="dark"] select {
   color-scheme: dark;
 }
 
+html[data-theme="dark"] :is(input, textarea, select) {
+  border-color: var(--color-line-strong);
+  background: var(--dark-input);
+  color: var(--color-ink);
+}
+
+html[data-theme="dark"] :is(input, textarea, select)::placeholder {
+  color: var(--color-subtle);
+}
+
+html[data-theme="dark"] :is(input, textarea, select):hover {
+  border-color: var(--dark-input-hover-border);
+}
+
+html[data-theme="dark"] :is(input, textarea, select):focus,
+html[data-theme="dark"] :is(input, textarea, select):focus-visible {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(
+  .ui-card,
+  .ui-state,
+  .ui-alert,
+  .ui-table-wrap,
+  .admin-shell,
+  .admin-main,
+  .admin-hero-panel,
+  .admin-sidebar,
+  .admin-search,
+  .admin-session-card,
+  .admin-icon-button,
+  .admin-profile-chip,
+  .care-card,
+  .studio-card,
+  .profile-card,
+  .dialog-panel,
+  .payment-history-panel
+) {
+  border-color: var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--dark-shadow);
+}
+
+html[data-theme="dark"] :is(.ui-state, .ui-table-wrap, .admin-main) {
+  background: var(--dark-bg-secondary);
+}
+
+html[data-theme="dark"] :is(.ui-card, .admin-hero-panel, .admin-search, .dialog-panel):hover {
+  border-color: var(--color-line-strong);
+}
+
+html[data-theme="dark"] :is(.btn-primary, .ui-button-primary, button[type="submit"]:not(.btn-secondary, .btn-ghost)) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(.btn-primary, .ui-button-primary, button[type="submit"]:not(.btn-secondary, .btn-ghost)):hover {
+  border-color: #58bf7c;
+  background: #58bf7c;
+}
+
+html[data-theme="dark"] :is(.btn-secondary, .ui-button-secondary, .btn-ghost, .ui-button-ghost) {
+  border-color: var(--color-line-strong);
+  background: var(--dark-button-secondary);
+  color: var(--color-ink);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] :is(.btn-secondary, .ui-button-secondary, .btn-ghost, .ui-button-ghost):hover {
+  border-color: var(--dark-input-hover-border);
+  background: var(--dark-button-secondary-hover);
+}
+
+html[data-theme="dark"] :is(.ui-table th, .admin-table-head, thead th) {
+  border-color: var(--color-line);
+  background: #161d1b;
+  color: var(--color-ink);
+}
+
+html[data-theme="dark"] :is(.ui-table td, tbody td) {
+  border-color: var(--color-line);
+}
+
+html[data-theme="dark"] * {
+  scrollbar-color: #44544d #18211e;
+}
+
+html[data-theme="dark"] *::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+html[data-theme="dark"] *::-webkit-scrollbar-track {
+  background: #18211e;
+}
+
+html[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  border: 3px solid #18211e;
+  border-radius: 999px;
+  background: #44544d;
+}
+
+html[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
 html[data-contrast="more"] {
   --color-muted: var(--color-ink);
   --color-subtle: var(--color-ink);
