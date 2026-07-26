@@ -91,7 +91,7 @@
 }
 
 .display-preferences-panel header p {
-  color: var(--color-primary-strong, #3f641f);
+  color: var(--color-info-strong, #05616a);
   font-size: 11px;
   font-weight: 950;
   letter-spacing: 0.1em;
