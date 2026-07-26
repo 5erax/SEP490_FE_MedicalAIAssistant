@@ -132,3 +132,169 @@
   background: rgba(255, 255, 255, 0.82);
   color: var(--admin-ink);
 }
+
+.admin-operator .btn,
+.admin-operator .ui-button {
+  border-color: rgba(135, 144, 128, 0.32);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--admin-ink);
+  font-weight: 850;
+}
+
+.admin-operator .btn-primary,
+.admin-operator .ui-button--primary,
+.admin-operator .doctor-add-button,
+.admin-operator .clinical-create-button,
+.admin-operator .department-create-button,
+.admin-operator .facility-create-button {
+  border-color: rgba(17, 20, 18, 0.9);
+  background: var(--admin-primary);
+  color: var(--admin-ink);
+  box-shadow: var(--shadow-hard);
+}
+
+.admin-operator .btn-primary:hover,
+.admin-operator .ui-button--primary:hover,
+.admin-operator .doctor-add-button:hover,
+.admin-operator .clinical-create-button:hover,
+.admin-operator .department-create-button:hover,
+.admin-operator .facility-create-button:hover {
+  border-color: var(--admin-ink);
+  background: #d4f4a8;
+  box-shadow: 3px 3px 0 var(--admin-ink);
+  transform: translate(1px, 1px);
+}
+
+.admin-operator .btn-dark,
+.admin-operator .danger-button,
+.admin-operator .record-actions .danger-button,
+.admin-operator .record-actions .ui-button--danger {
+  border-color: var(--admin-ink);
+  background: var(--admin-ink);
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(17, 20, 18, 0.14);
+}
+
+.admin-operator .btn-ghost,
+.admin-operator .ui-button--secondary {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.admin-operator .clean-field input,
+.admin-operator .clean-field textarea,
+.admin-operator .clean-field select,
+.admin-operator .admin-toolbar input,
+.admin-operator .admin-toolbar select,
+.admin-operator .custom-select-trigger,
+.admin-operator .doctor-search-field,
+.admin-operator .admin-search {
+  border-color: rgba(135, 144, 128, 0.34);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--admin-ink);
+}
+
+.admin-operator .clean-field input:focus,
+.admin-operator .clean-field textarea:focus,
+.admin-operator .clean-field select:focus,
+.admin-operator .admin-toolbar input:focus,
+.admin-operator .admin-toolbar select:focus,
+.admin-operator .custom-select-trigger:focus-visible,
+.admin-operator .custom-select.is-open .custom-select-trigger,
+.admin-operator .doctor-search-field:focus-within,
+.admin-operator .admin-search:focus-within {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.14);
+}
+
+.admin-operator .custom-select-popover {
+  border-color: rgba(8, 127, 140, 0.32);
+  background: var(--admin-surface);
+  box-shadow: 0 18px 42px rgba(17, 20, 18, 0.14);
+}
+
+.admin-operator .custom-select-option.is-active {
+  background: var(--admin-accent-soft);
+}
+
+.admin-operator .custom-select-option.is-selected,
+.admin-operator .custom-select-option.is-selected.is-active {
+  background: var(--admin-accent);
+  color: #fff;
+}
+
+.admin-operator .admin-stats article {
+  min-height: 110px;
+  border-color: rgba(221, 228, 213, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(230, 244, 238, 0.64)),
+    var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.admin-operator .admin-stats .admin-stat-icon {
+  border: 1px solid rgba(8, 127, 140, 0.14);
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
+
+.admin-operator .admin-stats .admin-stat-icon svg {
+  color: var(--admin-accent);
+}
+
+.admin-operator .admin-stats span,
+.admin-operator .ui-table th,
+.admin-operator .table-header-row,
+.admin-operator .service-plan-table-head {
+  color: rgba(17, 20, 18, 0.52);
+  letter-spacing: 0.08em;
+}
+
+.admin-operator .ui-table,
+.admin-operator .doctor-table-wrap,
+.admin-operator .admin-table-list,
+.admin-operator .service-plan-table,
+.admin-operator .ai-config-table {
+  border-color: rgba(221, 228, 213, 0.95);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.admin-operator .ui-table thead th,
+.admin-operator .doctor-table-wrap .ui-table th,
+.admin-operator .service-plan-table-head,
+.admin-operator .ai-config-table-head,
+.admin-operator .table-header-row {
+  background: linear-gradient(180deg, #ffffff, var(--admin-surface-soft));
+  color: rgba(17, 20, 18, 0.56);
+}
+
+.admin-operator .ui-table tbody tr,
+.admin-operator .admin-user-row,
+.admin-operator .admin-table-list article,
+.admin-operator .service-plan-card,
+.admin-operator .ai-config-card {
+  border-color: rgba(221, 228, 213, 0.92);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.admin-operator .ui-table tbody tr:hover,
+.admin-operator .admin-user-row:hover,
+.admin-operator .admin-table-list article:hover,
+.admin-operator .service-plan-card:hover,
+.admin-operator .ai-config-card:hover {
+  border-color: rgba(8, 127, 140, 0.22);
+  background: linear-gradient(135deg, #ffffff, rgba(230, 244, 238, 0.48));
+  box-shadow: 0 18px 42px rgba(17, 20, 18, 0.07);
+}
+
+.admin-operator .status-pill {
+  background: var(--admin-primary-soft);
+  color: var(--admin-primary-strong);
+}
+
+.admin-operator .status-pill.info,
+.admin-operator .status-pill.active,
+.admin-operator .soft-badge.info {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
