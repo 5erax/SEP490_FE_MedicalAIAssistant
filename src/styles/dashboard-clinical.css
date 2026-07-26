@@ -226,7 +226,7 @@
 
 .specialty-clinical-page .studio-chatbox .ui-field textarea {
   min-height: 150px;
-  border-color: #abc9c2;
+  border-color: rgba(11, 45, 53, 0.32);
   border-radius: 12px;
   background: #fbfdfc;
   color: var(--clinical-ink);
@@ -235,12 +235,14 @@
 }
 
 .specialty-clinical-page .studio-chatbox .ui-field textarea:hover {
-  border-color: var(--clinical-teal);
+  border-color: rgba(11, 45, 53, 0.58);
 }
 
 .specialty-clinical-page .studio-chatbox .ui-field textarea:focus {
-  border-color: var(--clinical-teal);
-  box-shadow: 0 0 0 3px rgba(14, 138, 131, 0.14);
+  border-color: var(--clinical-ink);
+  box-shadow:
+    0 0 0 3px rgba(8, 127, 140, 0.14),
+    0 12px 28px rgba(11, 45, 53, 0.08);
 }
 
 .specialty-clinical-page .studio-chat-actions {
@@ -263,17 +265,18 @@
   min-width: 190px;
   height: 48px;
   gap: 9px;
-  border-color: var(--clinical-ink);
+  border-color: rgba(8, 127, 140, 0.42);
   border-radius: 10px;
-  background: var(--clinical-ink);
+  background: linear-gradient(135deg, #087f8c, #0e8a83);
   color: #fff;
   padding: 0 20px;
-  box-shadow: 0 9px 20px rgba(11, 45, 53, 0.16);
+  box-shadow: 0 12px 24px rgba(8, 97, 106, 0.16);
 }
 
 .specialty-clinical-page .studio-chat-actions .studio-submit-icon:hover:not(:disabled) {
-  border-color: var(--clinical-teal-dark);
-  background: var(--clinical-teal-dark);
+  border-color: rgba(8, 97, 106, 0.5);
+  background: linear-gradient(135deg, #0e8a83, #2c9b94);
+  box-shadow: 0 14px 28px rgba(8, 97, 106, 0.18);
 }
 
 .specialty-clinical-page .studio-chat-actions .studio-submit-icon:disabled {
@@ -388,7 +391,7 @@
 }
 
 .specialty-clinical-page :is(button, textarea, input, select, a):focus-visible {
-  outline: 3px solid #d88222;
+  outline: 3px solid rgba(8, 127, 140, 0.24);
   outline-offset: 3px;
 }
 
