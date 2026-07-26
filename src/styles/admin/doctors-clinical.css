@@ -482,8 +482,26 @@
 }
 
 .admin-operator .doctor-filter-card-header .doctor-add-button {
-  min-width: 134px;
-  padding-inline: 18px;
+  min-width: 152px;
+  padding-inline: 22px;
+  border-color: rgba(8, 127, 140, 0.86);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 44%),
+    linear-gradient(135deg, #0b8994 0%, #066874 100%);
+  color: #ffffff;
+  box-shadow:
+    0 14px 28px rgba(8, 127, 140, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.admin-operator .doctor-filter-card-header .doctor-add-button:hover {
+  border-color: rgba(4, 86, 96, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 46%),
+    linear-gradient(135deg, #0a98a4 0%, #075c67 100%);
+  box-shadow:
+    0 18px 34px rgba(8, 127, 140, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
 }
 
 .admin-operator .doctor-filter-actions .ui-button {
