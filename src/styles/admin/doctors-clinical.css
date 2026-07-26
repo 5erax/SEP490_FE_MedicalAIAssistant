@@ -442,7 +442,9 @@
 
 .admin-operator .doctor-invitation-submit,
 .admin-operator .doctor-filter-card-header .doctor-add-button,
-.admin-operator .doctor-filter-actions .ui-button {
+.admin-operator .doctor-filter-actions .ui-button,
+.admin-operator .doctor-table-wrap .record-actions .ui-button,
+.admin-operator .doctor-card-actions .ui-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -453,7 +455,9 @@
 
 .admin-operator .doctor-invitation-submit > span,
 .admin-operator .doctor-filter-card-header .doctor-add-button > span,
-.admin-operator .doctor-filter-actions .ui-button > span {
+.admin-operator .doctor-filter-actions .ui-button > span,
+.admin-operator .doctor-table-wrap .record-actions .ui-button > span,
+.admin-operator .doctor-card-actions .ui-button > span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -464,7 +468,9 @@
 
 .admin-operator .doctor-invitation-submit svg,
 .admin-operator .doctor-filter-card-header .doctor-add-button svg,
-.admin-operator .doctor-filter-actions .ui-button svg {
+.admin-operator .doctor-filter-actions .ui-button svg,
+.admin-operator .doctor-table-wrap .record-actions .ui-button svg,
+.admin-operator .doctor-card-actions .ui-button svg {
   flex: 0 0 auto;
   margin: 0;
   transform: none;
@@ -487,6 +493,12 @@
 
 .admin-operator .doctor-filter-actions .ui-button--secondary {
   min-width: 104px;
+}
+
+.admin-operator .doctor-table-wrap .record-actions .ui-button,
+.admin-operator .doctor-card-actions .ui-button {
+  min-width: 118px;
+  padding-inline: 14px;
 }
 
 @media (max-width: 680px) {
