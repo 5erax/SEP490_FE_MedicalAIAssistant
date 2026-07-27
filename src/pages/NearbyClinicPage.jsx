@@ -30,7 +30,6 @@ import {
   feedbackReviewsApi,
   getStoredAuth,
   medicalFacilitiesApi,
-  readAnalysisPayload,
   symptomAnalysisApi,
 } from "../services/api";
 import "../styles/map-clinical-refresh.css";
@@ -181,46 +180,6 @@ function buildClinicalRecommendationContext(analysis) {
   return primaryDiagnosis || diagnoses.length || recommendedDepartment || recommendedFacilities.length
     ? context
     : null;
-}
-
-function buildQueryRecommendationContext(mapQuery) {
-  const recommendedDepartment = mapQuery.departmentId
-    ? sanitizeDepartment({ departmentId: mapQuery.departmentId })
-    : null;
-  const recommendedFacility = mapQuery.facilityId
-    ? sanitizeRecommendedFacility({
-      facilityId: mapQuery.facilityId,
-      departments: recommendedDepartment ? [recommendedDepartment] : [],
-    })
-    : null;
-
-  if (!recommendedDepartment && !recommendedFacility) return null;
-
-  return {
-    diagnoses: [],
-    primaryDiagnosis: null,
-    recommendedDepartment,
-    recommendedFacilities: recommendedFacility ? [recommendedFacility] : [],
-    sessionId: mapQuery.sessionId,
-  };
-}
-
-function mergeClinicalRecommendationContexts(primaryContext, fallbackContext) {
-  if (!primaryContext) return fallbackContext;
-  if (!fallbackContext) return primaryContext;
-
-  return {
-    diagnoses: primaryContext.diagnoses.length
-      ? primaryContext.diagnoses
-      : fallbackContext.diagnoses,
-    primaryDiagnosis: primaryContext.primaryDiagnosis ?? fallbackContext.primaryDiagnosis,
-    recommendedDepartment: primaryContext.recommendedDepartment
-      ?? fallbackContext.recommendedDepartment,
-    recommendedFacilities: primaryContext.recommendedFacilities.length
-      ? primaryContext.recommendedFacilities
-      : fallbackContext.recommendedFacilities,
-    sessionId: primaryContext.sessionId || fallbackContext.sessionId,
-  };
 }
 
 function coordinateOrNull(value, minimum, maximum) {
@@ -549,54 +508,26 @@ function NearbyClinicPage() {
 
     if (!auth?.accessToken || !mapQuery.sessionId) return undefined;
 
-    const queryContext = buildQueryRecommendationContext(mapQuery);
     const cachedContext = buildClinicalRecommendationContext(
       symptomAnalysisApi.getCachedClinicalAnalysis(mapQuery.sessionId),
     );
     let active = true;
 
-    if (cachedContext) {
-      Promise.resolve().then(() => {
-        if (!active) return;
-        setRecommendationContext(mergeClinicalRecommendationContexts(cachedContext, queryContext));
+    Promise.resolve().then(() => {
+      if (!active) return;
+      if (cachedContext) {
+        setRecommendationContext(cachedContext);
         setClinicalStatus("ready");
         setClinicalNotice("");
-      });
-      return () => {
-        active = false;
-      };
-    }
+        return;
+      }
 
-    symptomAnalysisApi.get(mapQuery.sessionId)
-      .then((response) => {
-        if (!active) return;
-        const context = mergeClinicalRecommendationContexts(
-          buildClinicalRecommendationContext(readAnalysisPayload(response)),
-          queryContext,
-        );
-        if (!context) {
-          setClinicalStatus("error");
-          setClinicalNotice("Phiên phân tích chưa có kết quả gợi ý phù hợp.");
-          return;
-        }
-        setRecommendationContext(context);
-        setClinicalStatus("ready");
-      })
-      .catch((error) => {
-        if (!active) return;
-        if (queryContext && error?.status !== 401 && error?.status !== 403) {
-          setRecommendationContext(queryContext);
-          setClinicalStatus("ready");
-          setClinicalNotice("");
-          return;
-        }
-        setClinicalStatus(error?.status === 401 || error?.status === 403 ? "locked" : "error");
-        setClinicalNotice(
-          error?.status === 401 || error?.status === 403
-            ? "Bạn cần đăng nhập đúng tài khoản đã tạo phiên phân tích này."
-            : "Không thể tải lại kết quả gợi ý chuyên khoa. Vui lòng quay về trang chủ và thử lại.",
-        );
-      });
+      setRecommendationContext(null);
+      setClinicalStatus("error");
+      setClinicalNotice(
+        "Kết quả gợi ý không còn trong phiên hiện tại. Vui lòng quay lại trang chủ và gửi lại triệu chứng.",
+      );
+    });
 
     return () => {
       active = false;
@@ -604,7 +535,7 @@ function NearbyClinicPage() {
   }, [
     auth?.accessToken,
     isClinicalFlow,
-    mapQuery,
+    mapQuery.sessionId,
   ]);
 
   useEffect(() => {

@@ -475,6 +475,7 @@ export const symptomAnalysisApi = {
     const analysis = data.analysis ?? data.result ?? null;
 
     if (resolvedSessionId && analysis && typeof analysis === "object") {
+      clinicalAnalysisCache.clear();
       clinicalAnalysisCache.set(resolvedSessionId, analysis);
     }
 
