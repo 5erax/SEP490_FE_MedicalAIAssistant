@@ -759,6 +759,17 @@
   line-height: 1.5;
 }
 
+.map-clinical-refresh .map-clinical-availability {
+  margin: 0;
+  border: 1px solid var(--map-line);
+  border-radius: 10px;
+  background: var(--map-surface-soft);
+  padding: 9px 10px;
+  color: var(--map-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .map-clinical-refresh .map-clinical-summary-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

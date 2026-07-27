@@ -254,6 +254,10 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Viêm họng cấp");
     await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("ICD-10: J02");
     await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Tai Mũi Họng");
+    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Chuyên khoa được gợi ý");
+    await expect(page.locator(".facility-result-card")).toHaveCount(1);
+    await expect(page.locator(".clinic-marker")).toHaveCount(1);
+    await expect(page.getByText("Phòng khám Đánh Giá Cao", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Dữ liệu nội bộ không được hiển thị")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ })).toBeVisible();

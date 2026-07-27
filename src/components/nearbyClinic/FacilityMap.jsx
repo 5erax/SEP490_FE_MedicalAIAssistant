@@ -522,51 +522,49 @@ export default function FacilityMap({
               <strong>Đang khôi phục kết quả phân tích…</strong>
             </div>
           )}
-          {clinicalStatus !== "loading" && clinicalNotice && (
+          {clinicalStatus !== "loading" && clinicalStatus !== "ready" && clinicalNotice && (
             <div className="map-clinical-summary-state">
               <strong>Chưa thể hiển thị kết quả</strong>
               <p>{clinicalNotice}</p>
             </div>
           )}
-          {clinicalStatus === "ready" && selectedFacility && (
+          {clinicalStatus === "ready" && (
             <>
               <header>
-                <small>Nhận định lâm sàng tham khảo</small>
-                <strong>{selectedFacility.facilityName}</strong>
-                <span>{selectedFacility.address}</span>
+                <small>Chuyên khoa được gợi ý</small>
+                <strong>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</strong>
+                {recommendedDepartment?.reason && <span>Lý do tham khảo: {recommendedDepartment.reason}</span>}
               </header>
               <div className="map-clinical-summary-body">
-                {primaryDiagnosis && (
+                {selectedFacility && (
                   <div>
-                    <small>Gợi ý ưu tiên</small>
-                    <strong>{getDiagnosisName(primaryDiagnosis)}</strong>
-                    {getDiagnosisIcd(primaryDiagnosis) && <span>ICD-10: {getDiagnosisIcd(primaryDiagnosis)}</span>}
+                    <small>Cơ sở được đề xuất</small>
+                    <strong>{selectedFacility.facilityName}</strong>
+                    <span>{selectedFacility.address}</span>
                   </div>
                 )}
-                {recommendedDepartment && (
+                {primaryDiagnosis && (
                   <div>
-                    <small>Chuyên khoa phù hợp</small>
-                    <strong>{recommendedDepartment.departmentName}</strong>
+                    <small>Nhận định tham khảo</small>
+                    <strong>{getDiagnosisName(primaryDiagnosis)}</strong>
+                    {getDiagnosisIcd(primaryDiagnosis) && <span>ICD-10: {getDiagnosisIcd(primaryDiagnosis)}</span>}
                   </div>
                 )}
                 {Number.isFinite(confidence) && confidence > 0 && (
                   <span className="map-clinical-confidence">{confidence}% phù hợp</span>
                 )}
               </div>
+              {clinicalNotice && <p className="map-clinical-availability" role="status">{clinicalNotice}</p>}
               {recommendedDepartment?.isEmergencySuggested && (
                 <p className="map-clinical-urgent">Hệ thống ghi nhận dấu hiệu cần được ưu tiên đánh giá y tế.</p>
               )}
               <p className="map-clinical-disclaimer">
                 Kết quả không thay thế chẩn đoán hoặc điều trị của bác sĩ.
               </p>
-              <button type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
+              {selectedFacility && (
+                <button type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
+              )}
             </>
-          )}
-          {clinicalStatus === "ready" && !selectedFacility && !clinicalNotice && (
-            <div className="map-clinical-summary-state">
-              <strong>Chưa có cơ sở phù hợp</strong>
-              <p>Không có bệnh viện đang hoạt động khớp với kết quả gợi ý hiện tại.</p>
-            </div>
           )}
         </aside>
       )}

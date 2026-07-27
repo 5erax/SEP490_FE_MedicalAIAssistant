@@ -106,6 +106,13 @@ function sanitizeDepartment(department) {
       ?? "",
     ).trim(),
     departmentName: department.departmentName ?? department.DepartmentName ?? department.name ?? "",
+    icdChapterCode: String(
+      department.icdChapterCode
+      ?? department.IcdChapterCode
+      ?? "",
+    ).trim(),
+    priorityRank: Number(department.priorityRank ?? department.PriorityRank ?? 0) || 0,
+    reason: String(department.reason ?? department.Reason ?? "").trim(),
     isEmergencySuggested: emergencyValue === true
       || String(emergencyValue ?? "").toLowerCase() === "true",
   };
@@ -622,16 +629,18 @@ function NearbyClinicPage() {
       index,
     ]));
   }, [recommendationContext?.recommendedFacilities]);
-  const effectiveDepartmentId = recommendationContext?.recommendedDepartment?.departmentId
-    || (isClinicalFlow
-      ? (clinicalStatus === "ready" ? requestedDepartmentId : "")
-      : requestedDepartmentId);
+  const effectiveDepartmentId = isClinicalFlow
+    ? ""
+    : requestedDepartmentId;
 
   const filteredFacilities = useMemo(() => {
+    if (isClinicalFlow && clinicalStatus !== "ready") return [];
+    if (isClinicalFlow && recommendedFacilityOrder.size === 0) return [];
+
     const normalized = normalizeSearchText(debouncedSearch);
     const normalizedDepartmentId = String(effectiveDepartmentId).trim();
     const normalizedDepartmentSearch = normalizeSearchText(effectiveDepartmentId);
-    const hasRecommendedFacilities = isClinicalFlow && recommendedFacilityOrder.size > 0;
+    const hasRecommendedFacilities = isClinicalFlow;
     const matches = facilities.filter((facility) => {
       const searchable = [
         facility.facilityName,
@@ -658,6 +667,7 @@ function NearbyClinicPage() {
       : matches;
   }, [
     debouncedSearch,
+    clinicalStatus,
     effectiveDepartmentId,
     facilities,
     isClinicalFlow,
@@ -1295,7 +1305,7 @@ function NearbyClinicPage() {
         <FacilityList
           cardRefs={cardRefs}
           facilities={visibleFacilities}
-          loading={loadingFacilities}
+          loading={loadingFacilities || (isClinicalFlow && clinicalStatus === "loading")}
           selectedFacilityId={selectedFacility?.facilityId}
           onCall={callFacility}
           onDirections={openDirections}
