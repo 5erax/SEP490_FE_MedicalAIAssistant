@@ -59,7 +59,7 @@ function readInitialIntakeState() {
   return normalizeInitialState(prefill ? null : readStoredIntakeState(), prefill);
 }
 
-export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
+export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPayload }) {
   const questionsPanelRef = useRef(null);
   const [initialState] = useState(readInitialIntakeState);
   const [input, setInput] = useState(initialState.input);
@@ -145,13 +145,28 @@ export function useSymptomIntake({ readQuestionsPayload, readResultPayload }) {
       const diagnoses = Array.isArray(diagnosis.diagnoses)
         ? diagnosis.diagnoses
         : Array.isArray(diagnosis.Diagnoses) ? diagnosis.Diagnoses : [];
-      setResult({
+      const completedResult = {
         ...diagnosis,
         diagnoses,
         primaryDiagnosis: diagnoses[0] ?? diagnosis.primaryDiagnosis ?? diagnosis.PrimaryDiagnosis ?? null,
         diagnosisModel: diagnosis.model ?? diagnosis.Model ?? null,
+      };
+      writeStoredIntakeState({
+        input,
+        sessionId,
+        questions,
+        answers,
+        currentQuestionIndex,
+        result: completedResult,
+        status: "result",
       });
+      setResult(completedResult);
       setStatus("result");
+      onResult?.({
+        input,
+        result: completedResult,
+        sessionId,
+      });
     } catch (apiError) {
       setError(apiError.message || "Không thể gửi câu trả lời. Vui lòng thử lại.");
       setStatus("questions");

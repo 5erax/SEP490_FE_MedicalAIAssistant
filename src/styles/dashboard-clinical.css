@@ -377,13 +377,16 @@
 }
 
 .specialty-clinical-page .specialty-answer-grid button {
+  position: relative;
+  min-height: 48px;
+  gap: 8px;
   border-color: #abc9c2;
   border-radius: 10px;
   background: #fff;
   color: var(--clinical-ink);
 }
 
-.specialty-clinical-page .specialty-answer-grid button:hover {
+.specialty-clinical-page .specialty-answer-grid button:hover:not(:disabled) {
   border-color: var(--clinical-teal);
   background: var(--clinical-mint);
 }
@@ -393,11 +396,68 @@
   border-color: var(--clinical-teal-dark);
   background: var(--clinical-teal-dark);
   color: #fff;
-  box-shadow: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.specialty-clinical-page .specialty-answer-grid button.selected::before {
+  content: "✓";
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .specialty-clinical-page .studio-question-actions.specialty-question-actions {
+  display: grid;
+  grid-template-columns: auto auto minmax(160px, 1fr);
+  gap: 10px;
+  align-items: stretch;
   border-color: var(--clinical-line);
+}
+
+.specialty-clinical-page .specialty-question-actions .ui-button {
+  min-height: 48px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.specialty-clinical-page .specialty-question-actions .clinical-question-reset {
+  border-color: transparent;
+  color: var(--clinical-muted);
+}
+
+.specialty-clinical-page .specialty-question-actions .clinical-question-reset:hover:not(:disabled) {
+  border-color: var(--clinical-line);
+  background: var(--clinical-mint-soft);
+  color: var(--clinical-ink);
+}
+
+.specialty-clinical-page .specialty-question-actions .clinical-question-previous {
+  border-color: #abc9c2;
+  background: #fff;
+  color: var(--clinical-ink);
+}
+
+.specialty-clinical-page .specialty-question-actions :is(
+  .clinical-question-next,
+  .clinical-question-submit
+) {
+  justify-self: end;
+  min-width: 180px;
+  border-color: var(--clinical-teal-dark);
+  background: var(--clinical-teal-dark);
+  color: #fff;
+}
+
+.specialty-clinical-page .specialty-question-actions .ui-button:disabled {
+  border-color: #cddbd7;
+  background: #edf3f1;
+  color: #6d7d78;
+  opacity: 1;
 }
 
 .specialty-clinical-page .studio-result-panel {
@@ -494,6 +554,19 @@
   .specialty-clinical-page .specialty-emergency-note {
     padding: 15px;
   }
+
+  .specialty-clinical-page .studio-question-actions.specialty-question-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .specialty-clinical-page .specialty-question-actions :is(
+    .clinical-question-next,
+    .clinical-question-submit
+  ) {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-self: stretch;
+  }
 }
 
 @media (max-width: 480px) {
@@ -519,6 +592,17 @@
 
   .specialty-clinical-page .studio-chatbox .ui-field textarea {
     min-height: 138px;
+  }
+
+  .specialty-clinical-page .studio-question-actions.specialty-question-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .specialty-clinical-page .specialty-question-actions :is(
+    .clinical-question-next,
+    .clinical-question-submit
+  ) {
+    grid-column: auto;
   }
 }
 

@@ -144,14 +144,25 @@ function AccessibleFacilityMarker({ facility, selected, onSelect }) {
   );
 }
 
-function MapConsultationAssistant({ consultationFacility = null }) {
+function MapConsultationAssistant({
+  accessLocked = false,
+  clinicalMode = false,
+  consultationFacility = null,
+  onLogin,
+  recommendedDepartment = null,
+}) {
   const normalizedDepartments = useMemo(() => (
     getFacilityConsultationDepartments(consultationFacility)
   ), [consultationFacility]);
-  const initialDepartmentId = normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "";
-  const [open, setOpen] = useState(true);
+  const recommendedDepartmentId = String(recommendedDepartment?.departmentId ?? "").trim();
+  const matchedRecommendedDepartment = normalizedDepartments.find((department) => (
+    department.id === recommendedDepartmentId
+  ));
+  const initialDepartmentId = matchedRecommendedDepartment?.id
+    ?? (normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "");
+  const [open, setOpen] = useState(!clinicalMode);
   const [activeTab, setActiveTab] = useState("suggest");
-  const [selectedDepartmentId] = useState(initialDepartmentId);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
   const [symptoms, setSymptoms] = useState("");
   const [symptomMessages, setSymptomMessages] = useState([]);
   const [questions, setQuestions] = useState([]);
@@ -234,7 +245,7 @@ function MapConsultationAssistant({ consultationFacility = null }) {
     }
   }
 
-  if (!consultationFacility) return null;
+  if (!consultationFacility && !clinicalMode) return null;
 
   return (
     <>
@@ -261,7 +272,18 @@ function MapConsultationAssistant({ consultationFacility = null }) {
             </div>
           </header>
 
-          {activeTab === "suggest" ? (
+          {accessLocked ? (
+            <div className="map-ai-unavailable" role="status">
+              <strong>Đăng nhập để tiếp tục</strong>
+              <p>Kết quả phiên phân tích chỉ được hiển thị cho tài khoản đã tạo phiên.</p>
+              <button type="button" onClick={onLogin}>Đăng nhập</button>
+            </div>
+          ) : !consultationFacility ? (
+            <div className="map-ai-unavailable" role="status">
+              <strong>Chưa có cơ sở phù hợp</strong>
+              <p>AI hỗ trợ theo bệnh viện sẽ sẵn sàng khi hệ thống xác định được cơ sở và chuyên khoa hợp lệ.</p>
+            </div>
+          ) : activeTab === "suggest" ? (
             <form className="map-ai-chat" onSubmit={handleGenerate}>
               <div className="map-ai-thread" ref={threadRef} aria-live="polite">
                 <article className="map-ai-message-bubble bot">
@@ -278,6 +300,26 @@ function MapConsultationAssistant({ consultationFacility = null }) {
                   <span><Bot size={15} /></span>
                   <p>Mình sẽ chuẩn bị danh sách câu hỏi để bạn trao đổi với bác sĩ.</p>
                 </article>
+
+                {normalizedDepartments.length > 1 && (
+                  <label className="map-ai-department-field">
+                    <span>Chuyên khoa tại {consultationFacility.facilityName}</span>
+                    <select
+                      value={selectedDepartmentId}
+                      onChange={(event) => setSelectedDepartmentId(event.target.value)}
+                    >
+                      <option value="">Chọn chuyên khoa</option>
+                      {normalizedDepartments.map((department) => (
+                        <option key={department.id} value={department.id}>{department.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {normalizedDepartments.length === 1 && (
+                  <p className="map-ai-department-summary">
+                    Chuyên khoa: <strong>{normalizedDepartments[0].name}</strong>
+                  </p>
+                )}
 
                 {selectedDepartmentId && (
                   <>
@@ -405,8 +447,13 @@ function MapConsultationAssistant({ consultationFacility = null }) {
 }
 
 export default function FacilityMap({
+  assistantAccessLocked = false,
   chatContext,
+  clinicalNotice = "",
+  clinicalStatus = "idle",
   consultationFacility = null,
+  isClinicalFlow = false,
+  onAssistantLogin,
   showConsultationAssistant = true,
   facilities,
   hidePopup = false,
@@ -465,6 +512,62 @@ export default function FacilityMap({
           <strong>Gợi ý chuyên khoa qua triệu chứng</strong>
           <p>{chatContext.symptom}</p>
           <span>{chatContext.answer}</span>
+        </aside>
+      )}
+      {isClinicalFlow && (
+        <aside className="map-clinical-summary" aria-label="Kết quả gợi ý chuyên khoa" aria-live="polite">
+          {clinicalStatus === "loading" && (
+            <div className="map-clinical-summary-state" role="status">
+              <span className="map-loading-spinner" aria-hidden="true" />
+              <strong>Đang khôi phục kết quả phân tích…</strong>
+            </div>
+          )}
+          {clinicalStatus !== "loading" && clinicalNotice && (
+            <div className="map-clinical-summary-state">
+              <strong>Chưa thể hiển thị kết quả</strong>
+              <p>{clinicalNotice}</p>
+            </div>
+          )}
+          {clinicalStatus === "ready" && selectedFacility && (
+            <>
+              <header>
+                <small>Nhận định lâm sàng tham khảo</small>
+                <strong>{selectedFacility.facilityName}</strong>
+                <span>{selectedFacility.address}</span>
+              </header>
+              <div className="map-clinical-summary-body">
+                {primaryDiagnosis && (
+                  <div>
+                    <small>Gợi ý ưu tiên</small>
+                    <strong>{getDiagnosisName(primaryDiagnosis)}</strong>
+                    {getDiagnosisIcd(primaryDiagnosis) && <span>ICD-10: {getDiagnosisIcd(primaryDiagnosis)}</span>}
+                  </div>
+                )}
+                {recommendedDepartment && (
+                  <div>
+                    <small>Chuyên khoa phù hợp</small>
+                    <strong>{recommendedDepartment.departmentName}</strong>
+                  </div>
+                )}
+                {Number.isFinite(confidence) && confidence > 0 && (
+                  <span className="map-clinical-confidence">{confidence}% phù hợp</span>
+                )}
+              </div>
+              {recommendedDepartment?.isEmergencySuggested && (
+                <p className="map-clinical-urgent">Hệ thống ghi nhận dấu hiệu cần được ưu tiên đánh giá y tế.</p>
+              )}
+              <p className="map-clinical-disclaimer">
+                Kết quả không thay thế chẩn đoán hoặc điều trị của bác sĩ.
+              </p>
+              <button type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
+            </>
+          )}
+          {clinicalStatus === "ready" && !selectedFacility && !clinicalNotice && (
+            <div className="map-clinical-summary-state">
+              <strong>Chưa có cơ sở phù hợp</strong>
+              <p>Không có bệnh viện đang hoạt động khớp với kết quả gợi ý hiện tại.</p>
+            </div>
+          )}
         </aside>
       )}
 
@@ -587,8 +690,15 @@ export default function FacilityMap({
       )}
       {showConsultationAssistant && (
         <MapConsultationAssistant
-          key={consultationFacility?.facilityId || "map-consultation"}
+          key={[
+            consultationFacility?.facilityId || "map-consultation",
+            recommendedDepartment?.departmentId || "no-recommendation",
+          ].join(":")}
+          accessLocked={assistantAccessLocked}
+          clinicalMode={isClinicalFlow}
           consultationFacility={consultationFacility}
+          onLogin={onAssistantLogin}
+          recommendedDepartment={recommendedDepartment}
         />
       )}
       {locationError && <div className="location-error">{locationError}</div>}

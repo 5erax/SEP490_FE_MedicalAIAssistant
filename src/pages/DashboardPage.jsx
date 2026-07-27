@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CircleAlert, ClipboardPlus, History, MapPin, Send, ShieldCheck, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -180,11 +180,6 @@ function getFacilityId(facility) {
   return facility?.facilityId || facility?.id || "";
 }
 
-function saveMapRecommendationContext(context) {
-  if (typeof sessionStorage === "undefined") return;
-  sessionStorage.setItem("medimate.map.recommendation", JSON.stringify(context));
-}
-
 function formatDistance(distanceKm) {
   if (distanceKm == null) return "";
   if (distanceKm < 1) return `${Math.round(distanceKm * 1000)} m`;
@@ -229,6 +224,15 @@ function getFacilityRankingReason(facility, department, userLocation) {
     : "Được gợi ý từ nhận định tham khảo.";
 }
 
+function sortRecommendedFacilities(result, userLocation) {
+  const department = result?.recommendedDepartment;
+  return [...(result?.recommendedFacilities ?? [])]
+    .sort((left, right) => (
+      scoreFacility(right, department, userLocation)
+      - scoreFacility(left, department, userLocation)
+    ));
+}
+
 function readProfilePromptDismissed() {
   if (typeof sessionStorage === "undefined") return false;
   return sessionStorage.getItem("medimate.profile.prompt.dismissed") === "true";
@@ -241,7 +245,6 @@ function isPlainObject(value) {
 export default function DashboardPage() {
   const auth = getStoredAuth();
   const isAdminSession = hasAuthRole(auth, "admin");
-  const routedResultRef = useRef("");
   const {
     answeredCount,
     answers,
@@ -262,6 +265,7 @@ export default function DashboardPage() {
     submitAnswers,
     updateAnswer,
   } = useSymptomIntake({
+    onResult: handleDiagnosisResult,
     readQuestionsPayload,
     readResultPayload,
   });
@@ -286,8 +290,7 @@ export default function DashboardPage() {
     }))
     .sort((left, right) => left.rank - right.rank);
   const recommendedDepartment = result?.recommendedDepartment;
-  const sortedFacilities = [...(result?.recommendedFacilities ?? [])]
-    .sort((left, right) => scoreFacility(right, recommendedDepartment, userLocation) - scoreFacility(left, recommendedDepartment, userLocation));
+  const sortedFacilities = sortRecommendedFacilities(result, userLocation);
 
   const activeStep = status === "result"
     ? 2
@@ -347,39 +350,31 @@ export default function DashboardPage() {
     );
   }
 
-  function openFacilities() {
-    const topFacility = sortedFacilities[0] ?? null;
+  function openFacilities(
+    completedResult = result,
+    completedSessionId = sessionId,
+  ) {
+    const completedDepartment = completedResult?.recommendedDepartment;
+    const completedFacilities = completedResult?.recommendedFacilities ?? [];
+    const topFacility = completedFacilities[0] ?? null;
     const params = new URLSearchParams();
     const facilityId = getFacilityId(topFacility);
-    const search = topFacility?.facilityName || recommendedDepartment?.departmentName || getDiagnosisName(primaryDiagnosis) || input;
 
     params.set("source", "clinical");
     if (facilityId) params.set("facilityId", facilityId);
-    if (recommendedDepartment?.departmentId) params.set("departmentId", recommendedDepartment.departmentId);
-    if (search) params.set("search", search);
-    if (sessionId) params.set("sessionId", sessionId);
-
-    saveMapRecommendationContext({
-      symptom: input,
-      sessionId,
-      primaryDiagnosis,
-      diagnoses,
-      recommendedDepartment,
-      recommendedFacilities: sortedFacilities,
-      selectedFacilityId: facilityId,
-    });
+    if (completedDepartment?.departmentId) params.set("departmentId", completedDepartment.departmentId);
+    if (completedSessionId) params.set("sessionId", completedSessionId);
 
     const query = params.toString();
     navigate(query ? `/map?${query}` : "/map");
   }
 
-  useEffect(() => {
-    if (status !== "result" || !result) return;
-    const routeKey = `${sessionId || "no-session"}:${getDiagnosisName(primaryDiagnosis) || recommendedDepartment?.departmentName || "result"}`;
-    if (routedResultRef.current === routeKey) return;
-    routedResultRef.current = routeKey;
-    openFacilities();
-  }, [result, status]); // eslint-disable-line react-hooks/exhaustive-deps
+  function handleDiagnosisResult({
+    result: completedResult,
+    sessionId: completedSessionId,
+  }) {
+    openFacilities(completedResult, completedSessionId);
+  }
 
   function goToPreviousQuestion() {
     setCurrentQuestionIndex((index) => Math.max(0, index - 1));
@@ -628,6 +623,7 @@ export default function DashboardPage() {
 
             <div className="studio-question-actions specialty-question-actions">
               <Button
+                className="clinical-question-reset"
                 type="button"
                 tone="ghost"
                 disabled={status === "submitting"}
@@ -637,6 +633,7 @@ export default function DashboardPage() {
               </Button>
 
               <Button
+                className="clinical-question-previous"
                 type="button"
                 tone="secondary"
                 disabled={currentQuestionIndex === 0 || status === "submitting"}
@@ -647,6 +644,7 @@ export default function DashboardPage() {
 
               {currentQuestionIndex < questions.length - 1 ? (
                 <Button
+                  className="clinical-question-next"
                   type="button"
                   disabled={!currentQuestionAnswered || status === "submitting"}
                   onClick={goToNextQuestion}
@@ -655,6 +653,7 @@ export default function DashboardPage() {
                 </Button>
               ) : (
                 <Button
+                  className="clinical-question-submit"
                   size="lg"
                   type="submit"
                   loading={status === "submitting"}

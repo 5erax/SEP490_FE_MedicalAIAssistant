@@ -57,8 +57,8 @@ test.describe("patient specialty intake", () => {
 
   test("asks follow-up questions and recommends a matching hospital in place", async ({ page }) => {
     let questionPayload = null;
-    let answerPayload = null;
     let diagnosisPayload = null;
+    let consultationPayload = null;
     const recommendedFacility = {
       id: FACILITY_ID,
       facilityName: "Bệnh viện Tai Mũi Họng",
@@ -98,13 +98,15 @@ test.describe("patient specialty intake", () => {
       });
     });
 
-    await page.route("**/api/symptom-analysis/submit-clinical-question-answers", async (route) => {
-      answerPayload = route.request().postDataJSON();
+    await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => {
+      diagnosisPayload = route.request().postDataJSON();
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
           data: {
+            sessionId: SESSION_ID,
+            model: "google/medgemma-4b-it",
             analysis: {
               primaryDiagnosis: {
                 rank: 1,
@@ -116,7 +118,9 @@ test.describe("patient specialty intake", () => {
               diagnoses: [{
                 rank: 1,
                 diseaseName: "Viêm họng cấp",
+                icd10Code: "J02",
                 paGivenB: 0.86,
+                clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
               }],
               recommendedDepartment: {
                 departmentId: DEPARTMENT_ID,
@@ -131,26 +135,36 @@ test.describe("patient specialty intake", () => {
       });
     });
 
-    await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => {
-      diagnosisPayload = route.request().postDataJSON();
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: {
-            sessionId: SESSION_ID,
-            model: "google/medgemma-4b-it",
-            diagnoses: [{
+    await page.route(`**/api/symptom-analysis/${SESSION_ID}`, async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          analysis: {
+            primaryDiagnosis: {
               rank: 1,
               diseaseName: "Viêm họng cấp",
               icd10Code: "J02",
               paGivenB: 0.86,
               clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
-            }],
+            },
+            recommendedDepartment: {
+              departmentId: DEPARTMENT_ID,
+              departmentName: "Tai Mũi Họng",
+              confidenceScore: 0.86,
+              isEmergencySuggested: false,
+            },
+            recommendedFacilities: [
+              {
+                facilityId: FACILITY_ID,
+                facilityName: recommendedFacility.facilityName,
+                medGemmaPrompt: "Dữ liệu nội bộ không được hiển thị",
+              },
+            ],
           },
-        }),
-      });
-    });
+        },
+      }),
+    }));
 
     await page.route("**/api/medical-facilities/active", (route) => route.fulfill({
       contentType: "application/json",
@@ -172,6 +186,19 @@ test.describe("patient specialty intake", () => {
       body: JSON.stringify({ success: true, data: [{ facilityId: FACILITY_ID, departmentId: DEPARTMENT_ID }] }),
     }));
 
+    await page.route("**/api/consultation-sessions/generate-questions-for-consultant-session", async (route) => {
+      consultationPayload = route.request().postDataJSON();
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            questions: [{ questionVi: "Bạn muốn hỏi bác sĩ điều gì?" }],
+          },
+        }),
+      });
+    });
+
     await page.route("**/api/doctors**", (route) => route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 12, totalCount: 0, totalPages: 0 } }),
@@ -190,7 +217,7 @@ test.describe("patient specialty intake", () => {
     await openRoute(page, "/dashboard");
 
     const symptoms = page.getByLabel("Triệu chứng bạn đang gặp");
-    const submit = page.getByRole("button", { name: "Gợi ý chuyên khoa", exact: true });
+    const submit = page.getByRole("button", { name: "Gửi triệu chứng", exact: true });
     const currentStep = page.locator('[aria-current="step"]');
 
     await expect(page.getByRole("heading", { level: 2, name: "Gợi ý chuyên khoa qua triệu chứng" })).toBeVisible();
@@ -213,33 +240,65 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByText("Bạn có sốt trên 38 độ không?")).toBeVisible();
 
     await page.getByRole("button", { name: "Có" }).click();
-    await page.getByRole("button", { name: "Tiếp tục phân tích" }).click();
+    await page.getByRole("button", { name: "Xem gợi ý" }).click();
 
-    await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
-    await expect(currentStep).toContainText("Kết quả");
-    await expect(page.getByText("Tai Mũi Họng", { exact: true })).toBeVisible();
-    await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
-    await expect(page.getByText("Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.")).toBeVisible();
-    await expect(page.getByText("#1")).toBeVisible();
-    await expect(page.getByText("Ưu tiên vì có chuyên khoa liên quan, có tọa độ sẵn sàng điều hướng, 4.7 sao đánh giá, đang hoạt động.")).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/map\\?[^#]*source=clinical`));
+    const mapUrl = new URL(page.url());
+    expect(mapUrl.searchParams.get("sessionId")).toBe(SESSION_ID);
+    expect(mapUrl.searchParams.get("facilityId")).toBe(FACILITY_ID);
+    expect(mapUrl.searchParams.get("departmentId")).toBe(DEPARTMENT_ID);
+    expect(mapUrl.searchParams.has("search")).toBe(false);
 
-    await page.getByRole("button", { name: "Mở bản đồ" }).click();
-    await expect(page).toHaveURL(new RegExp(`/map\\?[^#]*facilityId=${FACILITY_ID}`));
-    await expect(page.locator(".facility-detail-view").getByRole("heading", { name: "Bệnh viện Tai Mũi Họng", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Lọc danh sách cơ sở y tế")).toHaveValue("");
+    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Bệnh viện Tai Mũi Họng");
+    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Viêm họng cấp");
+    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("ICD-10: J02");
+    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Tai Mũi Họng");
+    await expect(page.getByText("Dữ liệu nội bộ không được hiển thị")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ })).toBeVisible();
 
+    await page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" }).click();
+    await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
+    await page.getByLabel("Triệu chứng của bạn").fill("Đau họng và sốt nhẹ");
+    await page.getByRole("button", { name: "Tạo gợi ý câu hỏi" }).click();
+    await expect(page.getByText("Bạn muốn hỏi bác sĩ điều gì?")).toBeVisible();
+    expect(consultationPayload).toEqual({
+      departmentId: DEPARTMENT_ID,
+      symptoms: "Đau họng và sốt nhẹ",
+    });
+
+    await page.getByRole("button", { name: "Đóng AI hỗ trợ" }).click();
+    await page
+      .getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })
+      .getByRole("button", { name: "Xem chi tiết" })
+      .click();
+    await expect(page).toHaveURL(/tab=overview/);
+    await expect(page.locator(".facility-detail-sidebar")).toBeVisible();
+
     await page.goBack();
+    await expect(page).not.toHaveURL(/tab=overview/);
+    await expect(page.locator(".facility-detail-sidebar")).toHaveCount(0);
+    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toBeVisible();
+
+    await page.goForward();
+    await expect(page).toHaveURL(/tab=overview/);
+    await expect(page.locator(".facility-detail-sidebar")).toBeVisible();
+    await page.goBack();
+
+    await page.locator(".map-page-actions").getByRole("button", { name: "Trang chủ" }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.waitForTimeout(500);
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(currentStep).toContainText("Kết quả");
     await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
 
     expect(questionPayload).toEqual({ userInput: "Sốt nhẹ 2 ngày kèm đau họng" });
-    expect(answerPayload).toEqual({
+    expect(diagnosisPayload).toEqual({
       sessionId: SESSION_ID,
       answers: [{ questionId: QUESTION_ID, answers: { yes: true, no: false } }],
     });
-    expect(diagnosisPayload).toEqual(answerPayload);
   });
 
   test("accepts nested backend question response shapes", async ({ page }) => {
@@ -261,7 +320,7 @@ test.describe("patient specialty intake", () => {
 
     await openRoute(page, "/dashboard");
     await page.getByLabel("Triệu chứng bạn đang gặp").fill("Ho và đau họng");
-    await page.getByRole("button", { name: "Gợi ý chuyên khoa", exact: true }).click();
+    await page.getByRole("button", { name: "Gửi triệu chứng", exact: true }).click();
 
     await expect(page.getByText("Bạn có ho kéo dài trên 3 ngày không?")).toBeVisible();
     await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeHidden();
@@ -281,7 +340,7 @@ test.describe("patient specialty intake", () => {
 
     await openRoute(page, "/dashboard");
     await page.getByLabel("Triệu chứng bạn đang gặp").fill("Đau không rõ vị trí");
-    await page.getByRole("button", { name: "Gợi ý chuyên khoa", exact: true }).click();
+    await page.getByRole("button", { name: "Gửi triệu chứng", exact: true }).click();
 
     await expect(page.getByText("AI chưa có câu hỏi phù hợp")).toBeVisible();
     await expect(page.getByRole("button", { name: "Quay lại biểu mẫu" })).toBeVisible();
