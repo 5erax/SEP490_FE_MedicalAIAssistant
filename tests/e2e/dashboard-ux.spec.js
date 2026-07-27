@@ -235,6 +235,24 @@ test.describe("patient specialty intake", () => {
     await expect(page.locator(".clinic-marker")).toHaveCount(1);
     await expect(page.getByText("Phòng khám Đánh Giá Cao", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Dữ liệu nội bộ không được hiển thị")).toHaveCount(0);
+
+    const cachedRecommendation = await page.evaluate(() => JSON.parse(
+      sessionStorage.getItem("medimate.clinical-map.recommendation"),
+    ));
+    expect(Object.keys(cachedRecommendation).sort()).toEqual([
+      "recommendedDepartment",
+      "recommendedFacilities",
+      "sessionId",
+    ]);
+    expect(cachedRecommendation.sessionId).toBe(SESSION_ID);
+    expect(cachedRecommendation.recommendedDepartment.departmentId).toBe(DEPARTMENT_ID);
+    expect(cachedRecommendation.recommendedFacilities).toHaveLength(1);
+    expect(cachedRecommendation.recommendedFacilities[0].facilityId).toBe(FACILITY_ID);
+    expect(JSON.stringify(cachedRecommendation)).not.toContain("medGemmaPrompt");
+    expect(JSON.stringify(cachedRecommendation)).not.toContain("clinicalReasoning");
+    expect(cachedRecommendation).not.toHaveProperty("primaryDiagnosis");
+    expect(cachedRecommendation).not.toHaveProperty("diagnoses");
+
     await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ })).toBeVisible();
 
@@ -279,6 +297,17 @@ test.describe("patient specialty intake", () => {
       sessionId: SESSION_ID,
       answers: [{ questionId: QUESTION_ID, answers: { yes: true, no: false } }],
     });
+    expect(sessionDetailRequests).toBe(0);
+
+    await page.goto(mapUrl.href, { waitUntil: "domcontentloaded" });
+    await expect(page.locator(".map-clinical-summary")).toContainText(
+      recommendedFacility.departments[0].departmentName,
+    );
+    await expect(page.locator(".facility-result-card")).toHaveCount(1);
+    await expect(page.locator(".facility-result-card")).toContainText(
+      recommendedFacility.facilityName,
+    );
+    await expect(page.locator(".clinic-marker")).toHaveCount(1);
     expect(sessionDetailRequests).toBe(0);
   });
 

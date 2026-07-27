@@ -1,4 +1,4 @@
-import { authApi, clearStoredAuth } from "./api";
+import { authApi, clearStoredAuth, symptomAnalysisApi } from "./api";
 
 function clearMedimateSessionCache() {
   if (typeof sessionStorage === "undefined") return;
@@ -16,6 +16,7 @@ export async function logoutUser({ redirectTo = "/", onClear, redirect } = {}) {
   } catch (error) {
     apiError = error;
   } finally {
+    symptomAnalysisApi.clearCachedClinicalAnalysis();
     clearStoredAuth();
     clearMedimateSessionCache();
     onClear?.();
