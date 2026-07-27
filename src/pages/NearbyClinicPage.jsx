@@ -128,8 +128,23 @@ function sanitizeRecommendedFacility(facility) {
     ?? "",
   ).trim();
   if (!id) return null;
+  const departmentItems = Array.isArray(facility.departments) ? facility.departments : [];
   return {
+    address: String(facility.address ?? "").trim(),
+    departments: departmentItems.map((department) => ({
+      departmentId: String(department?.departmentId ?? department?.id ?? "").trim(),
+      departmentName: String(department?.departmentName ?? department?.name ?? "").trim(),
+    })).filter((department) => department.departmentId || department.departmentName),
     facilityId: id,
+    facilityName: String(facility.facilityName ?? facility.name ?? "").trim(),
+    facilityType: String(facility.facilityType ?? "").trim(),
+    imageUrl: String(facility.imageUrl ?? "").trim(),
+    isActive: facility.isActive !== false,
+    latitude: coordinateOrNull(facility.latitude, -90, 90),
+    longitude: coordinateOrNull(facility.longitude, -180, 180),
+    openingHours: String(facility.openingHours ?? "").trim(),
+    phone: String(facility.phone ?? "").trim(),
+    website: String(facility.website ?? "").trim(),
   };
 }
 
@@ -629,6 +644,47 @@ function NearbyClinicPage() {
       index,
     ]));
   }, [recommendationContext?.recommendedFacilities]);
+  const clinicalRecommendationFacilities = useMemo(() => {
+    if (!isClinicalFlow || clinicalStatus !== "ready") return [];
+
+    return (recommendationContext?.recommendedFacilities ?? [])
+      .filter((facility) => facility.isActive !== false)
+      .map((recommendedFacility) => {
+        const activeFacility = facilities.find((facility) => (
+          String(facility.facilityId) === String(recommendedFacility.facilityId)
+        ));
+        const departmentNames = recommendedFacility.departments
+          .map((department) => department.departmentName)
+          .filter(Boolean);
+        const departmentIds = recommendedFacility.departments
+          .map((department) => department.departmentId)
+          .filter(Boolean);
+        if (activeFacility) {
+          return normalizeFacility({
+            ...activeFacility,
+            address: recommendedFacility.address || activeFacility.address,
+            departments: recommendedFacility.departments.length
+              ? recommendedFacility.departments
+              : activeFacility.consultationDepartments,
+            facilityName: recommendedFacility.facilityName || activeFacility.facilityName,
+            facilityType: recommendedFacility.facilityType || activeFacility.facilityType,
+            imageUrl: recommendedFacility.imageUrl || activeFacility.imageUrl,
+            latitude: recommendedFacility.latitude ?? activeFacility.latitude,
+            longitude: recommendedFacility.longitude ?? activeFacility.longitude,
+            openingHours: recommendedFacility.openingHours || activeFacility.openingHours,
+            phone: recommendedFacility.phone || activeFacility.phone,
+            website: recommendedFacility.website || activeFacility.website,
+          }, activeFacility.departments, activeFacility.departmentIds);
+        }
+
+        return normalizeFacility(recommendedFacility, departmentNames, departmentIds);
+      });
+  }, [
+    clinicalStatus,
+    facilities,
+    isClinicalFlow,
+    recommendationContext?.recommendedFacilities,
+  ]);
   const effectiveDepartmentId = isClinicalFlow
     ? ""
     : requestedDepartmentId;
@@ -641,7 +697,8 @@ function NearbyClinicPage() {
     const normalizedDepartmentId = String(effectiveDepartmentId).trim();
     const normalizedDepartmentSearch = normalizeSearchText(effectiveDepartmentId);
     const hasRecommendedFacilities = isClinicalFlow;
-    const matches = facilities.filter((facility) => {
+    const sourceFacilities = isClinicalFlow ? clinicalRecommendationFacilities : facilities;
+    const matches = sourceFacilities.filter((facility) => {
       const searchable = [
         facility.facilityName,
         facility.address,
@@ -668,6 +725,7 @@ function NearbyClinicPage() {
   }, [
     debouncedSearch,
     clinicalStatus,
+    clinicalRecommendationFacilities,
     effectiveDepartmentId,
     facilities,
     isClinicalFlow,
@@ -700,9 +758,9 @@ function NearbyClinicPage() {
   );
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
   const unavailableRecommendationCount = isClinicalFlow && recommendedFacilityOrder.size > 0
-    ? [...recommendedFacilityOrder.keys()].filter((facilityId) => (
-      !facilities.some((facility) => String(facility.facilityId) === facilityId)
-    )).length
+    ? (recommendationContext?.recommendedFacilities ?? [])
+      .filter((facility) => facility.isActive === false)
+      .length
     : 0;
   const effectiveClinicalNotice = clinicalNotice || (
     isClinicalFlow && !loadingFacilities && unavailableRecommendationCount > 0
@@ -866,7 +924,10 @@ function NearbyClinicPage() {
     const handlePopState = () => {
       const nextQuery = readMapQuery();
       const params = new URLSearchParams(window.location.search);
-      const matchedFacility = facilities.find((facility) => (
+      const navigationFacilities = nextQuery.source === "clinical"
+        ? clinicalRecommendationFacilities
+        : facilities;
+      const matchedFacility = navigationFacilities.find((facility) => (
         String(facility.facilityId) === String(nextQuery.facilityId)
       ));
       const shouldShowClinicalDetail = nextQuery.source === "clinical"
@@ -897,7 +958,7 @@ function NearbyClinicPage() {
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [facilities, handleCardClick, openFacilityDetail]);
+  }, [clinicalRecommendationFacilities, facilities, handleCardClick, openFacilityDetail]);
 
   useEffect(() => {
     if (
@@ -931,8 +992,8 @@ function NearbyClinicPage() {
   useEffect(() => {
     if (
       !isClinicalFlow
-      || loadingFacilities
       || clinicalStatus !== "ready"
+      || mapStatus !== "ready"
       || initialClinicalSelectionRef.current
       || visibleFacilities.length === 0
     ) return;
@@ -953,7 +1014,7 @@ function NearbyClinicPage() {
     clinicalStatus,
     handleCardClick,
     isClinicalFlow,
-    loadingFacilities,
+    mapStatus,
     requestedFacilityId,
     syncMapUrl,
     visibleFacilities,
@@ -1305,7 +1366,7 @@ function NearbyClinicPage() {
         <FacilityList
           cardRefs={cardRefs}
           facilities={visibleFacilities}
-          loading={loadingFacilities || (isClinicalFlow && clinicalStatus === "loading")}
+          loading={isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
           onCall={callFacility}
           onDirections={openDirections}

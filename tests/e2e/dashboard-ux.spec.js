@@ -140,6 +140,8 @@ test.describe("patient specialty intake", () => {
       body: JSON.stringify({
         success: true,
         data: {
+          sessionId: SESSION_ID,
+          medGemmaPrompt: "Dữ liệu nội bộ không được hiển thị",
           analysis: {
             primaryDiagnosis: {
               rank: 1,
@@ -156,9 +158,17 @@ test.describe("patient specialty intake", () => {
             },
             recommendedFacilities: [
               {
-                facilityId: FACILITY_ID,
+                id: FACILITY_ID,
                 facilityName: recommendedFacility.facilityName,
-                medGemmaPrompt: "Dữ liệu nội bộ không được hiển thị",
+                address: recommendedFacility.address,
+                latitude: recommendedFacility.latitude,
+                longitude: recommendedFacility.longitude,
+                facilityType: "hospital",
+                isActive: true,
+                departments: [{
+                  departmentId: DEPARTMENT_ID,
+                  departmentName: "Tai Mũi Họng",
+                }],
               },
             ],
           },
@@ -168,7 +178,7 @@ test.describe("patient specialty intake", () => {
 
     await page.route("**/api/medical-facilities/active", (route) => route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ success: true, data: [recommendedFacility, secondaryFacility] }),
+      body: JSON.stringify({ success: true, data: [secondaryFacility] }),
     }));
 
     await page.route(`**/api/medical-facilities/${FACILITY_ID}`, (route) => route.fulfill({
