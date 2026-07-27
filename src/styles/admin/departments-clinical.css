@@ -363,6 +363,187 @@
   resize: vertical;
 }
 
+.department-form-modal {
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100svh - 28px);
+  overflow: hidden;
+  border: 1px solid rgba(0, 128, 136, 0.18);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(207, 244, 238, 0.72), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 252, 249, 0.96));
+  box-shadow: 0 34px 90px rgba(12, 58, 62, 0.22);
+}
+
+.department-form-modal .doctor-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 18px;
+  border-bottom: 1px solid rgba(0, 128, 136, 0.14);
+  background:
+    radial-gradient(circle at 0 0, rgba(0, 128, 136, 0.1), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 252, 249, 0.96));
+  padding: 30px clamp(24px, 4vw, 36px) 26px;
+}
+
+.department-modal-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid rgba(0, 128, 136, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(221, 250, 246, 0.98), rgba(237, 255, 252, 0.84));
+  color: #087f8c;
+  box-shadow: 0 18px 36px rgba(8, 127, 140, 0.12);
+}
+
+.department-form-modal .doctor-modal-header .eyebrow {
+  color: #087f8c;
+}
+
+.department-form-modal .doctor-modal-header .eyebrow::before {
+  background: #087f8c;
+}
+
+.department-form-modal .doctor-modal-header h2 {
+  color: #102f35;
+  font-size: clamp(32px, 4vw, 46px);
+  line-height: 0.98;
+}
+
+.department-form-modal .doctor-modal-header p:not(.eyebrow) {
+  max-width: 660px;
+  margin-top: 12px;
+  color: rgba(16, 47, 53, 0.66);
+  font-size: 14px;
+  font-weight: 720;
+  line-height: 1.55;
+}
+
+.department-form-modal .department-form {
+  overflow-y: auto;
+  background: #f6faf8;
+  padding: 24px clamp(24px, 4vw, 36px) 0;
+  scrollbar-color: rgba(0, 128, 136, 0.38) transparent;
+}
+
+.department-form-modal .facility-form-body {
+  display: grid;
+  gap: 22px;
+}
+
+.department-form-modal .facility-form-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 128, 136, 0.16);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(230, 247, 244, 0.62), rgba(255, 255, 255, 0.94) 44%),
+    #ffffff;
+  box-shadow: 0 20px 52px rgba(12, 58, 62, 0.08);
+  padding: 24px;
+}
+
+.department-form-modal .facility-form-card::before {
+  position: absolute;
+  top: 22px;
+  bottom: 22px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, #087f8c, #6fd2cf);
+  content: "";
+}
+
+.department-form-modal .facility-form-card-head {
+  margin-bottom: 22px;
+  padding-left: 22px;
+}
+
+.department-form-modal .facility-form-card-head h3 {
+  margin: 0;
+  color: #102f35;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.department-form-modal .facility-form-card-head p {
+  max-width: 620px;
+  margin: 7px 0 0;
+  color: rgba(16, 47, 53, 0.62);
+  font-size: 13px;
+  font-weight: 720;
+  line-height: 1.5;
+}
+
+.department-form-modal .clean-field {
+  gap: 8px;
+}
+
+.department-form-modal .clean-field > span {
+  color: #344f52;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.department-form-modal .clean-field input,
+.department-form-modal .clean-field textarea {
+  border-color: #c8d6d0;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #102f35;
+  font-weight: 680;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.department-form-modal .clean-field input:hover,
+.department-form-modal .clean-field textarea:hover {
+  border-color: rgba(0, 128, 136, 0.42);
+}
+
+.department-form-modal .clean-field input:focus,
+.department-form-modal .clean-field textarea:focus {
+  border-color: #087f8c;
+  box-shadow: 0 0 0 3px rgba(0, 128, 136, 0.14);
+  outline: 0;
+}
+
+.department-form-modal .doctor-modal-actions {
+  position: sticky;
+  z-index: 2;
+  bottom: 0;
+  margin: 24px calc(clamp(24px, 4vw, 36px) * -1) 0;
+  border-top: 1px solid #d6e2dc;
+  background: rgba(255, 255, 255, 0.97);
+  padding: 16px clamp(24px, 4vw, 36px) 20px;
+  box-shadow: 0 -18px 34px rgba(10, 45, 48, 0.08);
+}
+
+.department-form-modal .doctor-modal-actions .btn-primary {
+  border-color: rgba(8, 127, 140, 0.86);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 44%),
+    linear-gradient(135deg, #0b8994 0%, #066874 100%);
+  color: #ffffff;
+  box-shadow:
+    0 14px 28px rgba(8, 127, 140, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.department-form-modal .doctor-modal-actions .btn-primary:hover {
+  border-color: rgba(4, 86, 96, 0.95);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 46%),
+    linear-gradient(135deg, #0a98a4 0%, #075c67 100%);
+  box-shadow:
+    0 18px 34px rgba(8, 127, 140, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+}
+
 @media (max-width: 900px) {
   .admin-operator .department-clinical-heading {
     grid-template-columns: 1fr;

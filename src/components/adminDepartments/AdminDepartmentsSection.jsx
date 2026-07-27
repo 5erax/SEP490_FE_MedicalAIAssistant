@@ -247,6 +247,9 @@ export default function AdminDepartmentsSection({
           restoreFocusRef={dialogTriggerRef}
         >
           <header className="doctor-modal-header">
+            <span className="department-modal-icon" aria-hidden="true">
+              <BookOpen size={26} />
+            </span>
             <div>
               <p className="eyebrow">{editingDepartmentId ? "Cập nhật" : "Tạo mới"}</p>
               <h2 id="department-modal-title">{editingDepartmentId ? "Cập nhật chuyên khoa" : "Tạo chuyên khoa"}</h2>
