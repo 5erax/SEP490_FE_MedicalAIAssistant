@@ -681,6 +681,14 @@
   line-height: 1.55;
 }
 
+.subscription-modal-header .eyebrow {
+  color: #087f8c;
+}
+
+.subscription-modal-header .eyebrow::before {
+  background: #087f8c;
+}
+
 .subscription-plan-form {
   overflow-y: auto;
   gap: 22px;
