@@ -259,11 +259,11 @@ export default function AdminDepartmentsSection({
           </header>
 
           <form className="clean-form doctor-form facility-form department-form" onSubmit={onSubmit}>
-            <div className="facility-form-body">
-              <section className="facility-form-card" aria-labelledby="department-basic-section">
+            <div className="facility-form-body department-form-body">
+              <section className="facility-form-card department-form-section" aria-labelledby="department-basic-section">
                 <div className="facility-form-card-head">
                   <h3 id="department-basic-section">Thông tin chuyên khoa</h3>
-                  <p>Thông tin này được dùng khi gán bác sĩ, cơ sở y tế và gợi ý chuyên khoa phù hợp.</p>
+                  <p>Tên chuyên khoa hiển thị trong danh mục quản trị, bản đồ và luồng gợi ý.</p>
                 </div>
 
                 <div className="facility-form-grid department-form-grid">
@@ -276,7 +276,16 @@ export default function AdminDepartmentsSection({
                       required
                     />
                   </Field>
+                </div>
+              </section>
 
+              <section className="facility-form-card department-form-section" aria-labelledby="department-description-section">
+                <div className="facility-form-card-head">
+                  <h3 id="department-description-section">Phạm vi chuyên môn</h3>
+                  <p>Mô tả nhóm triệu chứng, chức năng và vấn đề thường được tiếp nhận.</p>
+                </div>
+
+                <div className="facility-form-grid department-form-grid">
                   <Field
                     label="Mô tả"
                     className="facility-form-span-2"
@@ -289,7 +298,16 @@ export default function AdminDepartmentsSection({
                       placeholder="Mô tả chức năng, nhóm triệu chứng thường gặp..."
                     />
                   </Field>
+                </div>
+              </section>
 
+              <section className="facility-form-card department-form-section" aria-labelledby="department-icd-section">
+                <div className="facility-form-card-head">
+                  <h3 id="department-icd-section">Liên kết ICD</h3>
+                  <p>Mã chương ICD giúp backend liên kết chuyên khoa với dữ liệu lâm sàng.</p>
+                </div>
+
+                <div className="facility-form-grid department-form-grid">
                   <Field
                     label="Mã chương ICD"
                     className="facility-form-span-2"
