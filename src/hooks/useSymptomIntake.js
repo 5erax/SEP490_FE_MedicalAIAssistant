@@ -9,6 +9,18 @@ import { trackUxEvent } from "../utils/analytics";
 const RESUMABLE_STATUSES = new Set(["idle", "questions", "no-questions", "result"]);
 let intakeStateCache = null;
 
+function getAnalysisErrorMessage(apiError) {
+  const technicalMessage = String(apiError?.message ?? "");
+  const isUpstreamAnalysisFailure = apiError?.status === 502
+    || /medgemma|analysis failed|parse.*json|json.*response/i.test(technicalMessage);
+
+  if (isUpstreamAnalysisFailure) {
+    return "Dịch vụ AI chưa thể hoàn tất phân tích lần này. Vui lòng thử lại sau ít phút.";
+  }
+
+  return technicalMessage || "Không thể gửi câu trả lời. Vui lòng thử lại.";
+}
+
 function readSymptomPrefill() {
   if (typeof sessionStorage === "undefined") return "";
   const prefill = sessionStorage.getItem("medimate.symptom.prefill") ?? "";
@@ -140,7 +152,7 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
     setStatus("submitting");
     try {
       const payload = buildClinicalQuestionAnswerItems(questions, answers);
-      const diagnosisResponse = await symptomAnalysisApi.submitDiagnosis(sessionId, payload);
+      const diagnosisResponse = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
       const diagnosis = readResultPayload(diagnosisResponse) ?? {};
       const diagnoses = Array.isArray(diagnosis.diagnoses)
         ? diagnosis.diagnoses
@@ -168,7 +180,7 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
         sessionId,
       });
     } catch (apiError) {
-      setError(apiError.message || "Không thể gửi câu trả lời. Vui lòng thử lại.");
+      setError(getAnalysisErrorMessage(apiError));
       setStatus("questions");
     }
   }

@@ -7,6 +7,7 @@ const FALLBACK_ANSWER_OPTIONS = [
 ];
 
 const BOOLEAN_CHOICE_PREFIX = "__medimate_boolean_choice__";
+const clinicalAnalysisCache = new Map();
 
 const CLINICAL_TRANSLATIONS = new Map([
   [
@@ -460,8 +461,8 @@ export const symptomAnalysisApi = {
     });
   },
 
-  submitClinicalQuestionAnswers(sessionId, answers) {
-    return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_CLINICAL_QUESTION_ANSWERS, {
+  async submitClinicalQuestionAnswers(sessionId, answers) {
+    const response = await apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_CLINICAL_QUESTION_ANSWERS, {
       method: "POST",
       body: {
         sessionId,
@@ -469,6 +470,19 @@ export const symptomAnalysisApi = {
       },
       auth: true,
     });
+    const data = unwrapApiData(response) ?? {};
+    const resolvedSessionId = String(data.sessionId ?? sessionId ?? "").trim();
+    const analysis = data.analysis ?? data.result ?? null;
+
+    if (resolvedSessionId && analysis && typeof analysis === "object") {
+      clinicalAnalysisCache.set(resolvedSessionId, analysis);
+    }
+
+    return response;
+  },
+
+  getCachedClinicalAnalysis(sessionId) {
+    return clinicalAnalysisCache.get(String(sessionId ?? "").trim()) ?? null;
   },
 
   submitDiagnosis(sessionId, answers) {

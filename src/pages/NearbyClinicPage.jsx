@@ -157,8 +157,11 @@ function buildClinicalRecommendationContext(analysis) {
   const primaryDiagnosis = sanitizeDiagnosis(
     analysis.primaryDiagnosis ?? analysis.PrimaryDiagnosis,
   ) ?? diagnoses[0] ?? null;
+  const departmentItems = analysis.recommendedDepartments ?? analysis.RecommendedDepartments;
   const recommendedDepartment = sanitizeDepartment(
-    analysis.recommendedDepartment ?? analysis.RecommendedDepartment,
+    analysis.recommendedDepartment
+    ?? analysis.RecommendedDepartment
+    ?? (Array.isArray(departmentItems) ? departmentItems[0] : null),
   );
   const facilityItems = analysis.recommendedFacilities ?? analysis.RecommendedFacilities;
   const recommendedFacilities = (Array.isArray(facilityItems)
@@ -167,12 +170,56 @@ function buildClinicalRecommendationContext(analysis) {
     .map(sanitizeRecommendedFacility)
     .filter(Boolean);
 
-  return {
+  const context = {
     diagnoses,
     primaryDiagnosis,
     recommendedDepartment,
     recommendedFacilities,
     sessionId: String(analysis.sessionId ?? "").trim(),
+  };
+
+  return primaryDiagnosis || diagnoses.length || recommendedDepartment || recommendedFacilities.length
+    ? context
+    : null;
+}
+
+function buildQueryRecommendationContext(mapQuery) {
+  const recommendedDepartment = mapQuery.departmentId
+    ? sanitizeDepartment({ departmentId: mapQuery.departmentId })
+    : null;
+  const recommendedFacility = mapQuery.facilityId
+    ? sanitizeRecommendedFacility({
+      facilityId: mapQuery.facilityId,
+      departments: recommendedDepartment ? [recommendedDepartment] : [],
+    })
+    : null;
+
+  if (!recommendedDepartment && !recommendedFacility) return null;
+
+  return {
+    diagnoses: [],
+    primaryDiagnosis: null,
+    recommendedDepartment,
+    recommendedFacilities: recommendedFacility ? [recommendedFacility] : [],
+    sessionId: mapQuery.sessionId,
+  };
+}
+
+function mergeClinicalRecommendationContexts(primaryContext, fallbackContext) {
+  if (!primaryContext) return fallbackContext;
+  if (!fallbackContext) return primaryContext;
+
+  return {
+    diagnoses: primaryContext.diagnoses.length
+      ? primaryContext.diagnoses
+      : fallbackContext.diagnoses,
+    primaryDiagnosis: primaryContext.primaryDiagnosis ?? fallbackContext.primaryDiagnosis,
+    recommendedDepartment: primaryContext.recommendedDepartment
+      ?? fallbackContext.recommendedDepartment,
+    recommendedFacilities: primaryContext.recommendedFacilities.length
+      ? primaryContext.recommendedFacilities
+      : fallbackContext.recommendedFacilities,
+    sessionId: primaryContext.sessionId || fallbackContext.sessionId,
   };
 }
 
@@ -502,12 +549,31 @@ function NearbyClinicPage() {
 
     if (!auth?.accessToken || !mapQuery.sessionId) return undefined;
 
+    const queryContext = buildQueryRecommendationContext(mapQuery);
+    const cachedContext = buildClinicalRecommendationContext(
+      symptomAnalysisApi.getCachedClinicalAnalysis(mapQuery.sessionId),
+    );
     let active = true;
+
+    if (cachedContext) {
+      Promise.resolve().then(() => {
+        if (!active) return;
+        setRecommendationContext(mergeClinicalRecommendationContexts(cachedContext, queryContext));
+        setClinicalStatus("ready");
+        setClinicalNotice("");
+      });
+      return () => {
+        active = false;
+      };
+    }
 
     symptomAnalysisApi.get(mapQuery.sessionId)
       .then((response) => {
         if (!active) return;
-        const context = buildClinicalRecommendationContext(readAnalysisPayload(response));
+        const context = mergeClinicalRecommendationContexts(
+          buildClinicalRecommendationContext(readAnalysisPayload(response)),
+          queryContext,
+        );
         if (!context) {
           setClinicalStatus("error");
           setClinicalNotice("Phiên phân tích chưa có kết quả gợi ý phù hợp.");
@@ -518,6 +584,12 @@ function NearbyClinicPage() {
       })
       .catch((error) => {
         if (!active) return;
+        if (queryContext && error?.status !== 401 && error?.status !== 403) {
+          setRecommendationContext(queryContext);
+          setClinicalStatus("ready");
+          setClinicalNotice("");
+          return;
+        }
         setClinicalStatus(error?.status === 401 || error?.status === 403 ? "locked" : "error");
         setClinicalNotice(
           error?.status === 401 || error?.status === 403
@@ -529,7 +601,11 @@ function NearbyClinicPage() {
     return () => {
       active = false;
     };
-  }, [auth?.accessToken, isClinicalFlow, mapQuery.sessionId]);
+  }, [
+    auth?.accessToken,
+    isClinicalFlow,
+    mapQuery,
+  ]);
 
   useEffect(() => {
     if (mapStatus !== "loading") return undefined;
@@ -637,17 +713,45 @@ function NearbyClinicPage() {
     };
   }, [selectedFacility?.facilityId, selectedFacility?.isMockFacility]);
 
+  const resolvedRecommendationContext = useMemo(() => {
+    if (
+      !recommendationContext
+      || recommendationContext.recommendedDepartment?.departmentName
+      || !requestedDepartmentId
+    ) return recommendationContext;
+
+    const requestedFacility = facilities.find((facility) => (
+      String(facility.facilityId) === String(requestedFacilityId)
+    ));
+    const matchingDepartment = requestedFacility?.consultationDepartments?.find((department) => (
+      String(department.id) === String(requestedDepartmentId)
+    ));
+    if (!matchingDepartment?.name) return recommendationContext;
+
+    return {
+      ...recommendationContext,
+      recommendedDepartment: {
+        ...recommendationContext.recommendedDepartment,
+        departmentName: matchingDepartment.name,
+      },
+    };
+  }, [
+    facilities,
+    recommendationContext,
+    requestedDepartmentId,
+    requestedFacilityId,
+  ]);
   const recommendedFacilityOrder = useMemo(() => {
-    const entries = recommendationContext?.recommendedFacilities ?? [];
+    const entries = resolvedRecommendationContext?.recommendedFacilities ?? [];
     return new globalThis.Map(entries.map((facility, index) => [
       String(facility.facilityId),
       index,
     ]));
-  }, [recommendationContext?.recommendedFacilities]);
+  }, [resolvedRecommendationContext?.recommendedFacilities]);
   const clinicalRecommendationFacilities = useMemo(() => {
     if (!isClinicalFlow || clinicalStatus !== "ready") return [];
 
-    return (recommendationContext?.recommendedFacilities ?? [])
+    return (resolvedRecommendationContext?.recommendedFacilities ?? [])
       .filter((facility) => facility.isActive !== false)
       .map((recommendedFacility) => {
         const activeFacility = facilities.find((facility) => (
@@ -683,7 +787,7 @@ function NearbyClinicPage() {
     clinicalStatus,
     facilities,
     isClinicalFlow,
-    recommendationContext?.recommendedFacilities,
+    resolvedRecommendationContext?.recommendedFacilities,
   ]);
   const effectiveDepartmentId = isClinicalFlow
     ? ""
@@ -758,7 +862,7 @@ function NearbyClinicPage() {
   );
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
   const unavailableRecommendationCount = isClinicalFlow && recommendedFacilityOrder.size > 0
-    ? (recommendationContext?.recommendedFacilities ?? [])
+    ? (resolvedRecommendationContext?.recommendedFacilities ?? [])
       .filter((facility) => facility.isActive === false)
       .length
     : 0;
@@ -1609,7 +1713,7 @@ function NearbyClinicPage() {
           mapRenderKey={mapRenderKey}
           mapStatus={mapStatus}
           selectedFacility={selectedFacility}
-          recommendationContext={recommendationContext}
+          recommendationContext={resolvedRecommendationContext}
           userLocation={userLocation}
           viewState={viewState}
           hidePopup={detailPanelOpen || isClinicalFlow}

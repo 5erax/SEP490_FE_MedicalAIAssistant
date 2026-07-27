@@ -57,7 +57,7 @@ test.describe("patient specialty intake", () => {
 
   test("asks follow-up questions and recommends a matching hospital in place", async ({ page }) => {
     let questionPayload = null;
-    let diagnosisPayload = null;
+    let clinicalAnswersPayload = null;
     let consultationPayload = null;
     const recommendedFacility = {
       id: FACILITY_ID,
@@ -98,8 +98,8 @@ test.describe("patient specialty intake", () => {
       });
     });
 
-    await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => {
-      diagnosisPayload = route.request().postDataJSON();
+    await page.route("**/api/symptom-analysis/submit-clinical-question-answers", async (route) => {
+      clinicalAnswersPayload = route.request().postDataJSON();
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
@@ -128,7 +128,7 @@ test.describe("patient specialty intake", () => {
                 confidenceScore: 0.86,
                 reason: "Nên khám chuyên khoa tai mũi họng.",
               },
-              recommendedFacilities: [recommendedFacility, secondaryFacility],
+              recommendedFacilities: [recommendedFacility],
             },
           },
         }),
@@ -309,10 +309,105 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
 
     expect(questionPayload).toEqual({ userInput: "Sốt nhẹ 2 ngày kèm đau họng" });
-    expect(diagnosisPayload).toEqual({
+    expect(clinicalAnswersPayload).toEqual({
       sessionId: SESSION_ID,
       answers: [{ questionId: QUESTION_ID, answers: { yes: true, no: false } }],
     });
+  });
+
+  test("does not expose upstream MedGemma parsing errors", async ({ page }) => {
+    await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          sessionId: SESSION_ID,
+          questions: [{
+            questionId: QUESTION_ID,
+            questionVi: "Bạn có sốt trên 38 độ không?",
+            answers: { yes: "Có", no: "Không" },
+          }],
+        },
+      }),
+    }));
+    await page.route("**/api/symptom-analysis/submit-clinical-question-answers", async (route) => route.fulfill({
+      status: 502,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: false,
+        message: "MedGemma analysis failed. Failed to parse MedGemma diagnoses JSON response.",
+      }),
+    }));
+
+    await openRoute(page, "/dashboard");
+    await page.getByLabel("Triệu chứng bạn đang gặp").fill("Sốt cao và đau đầu");
+    await page.getByRole("button", { name: "Gửi triệu chứng", exact: true }).click();
+    await page.getByRole("button", { name: "Có" }).click();
+    await page.getByRole("button", { name: "Xem gợi ý" }).click();
+
+    await expect(page.getByText(
+      "Dịch vụ AI chưa thể hoàn tất phân tích lần này. Vui lòng thử lại sau ít phút.",
+    )).toBeVisible();
+    await expect(page.getByText(/MedGemma analysis failed/i)).toHaveCount(0);
+    await expect(page.getByText(/Failed to parse/i)).toHaveCount(0);
+  });
+
+  test("restores clinical map recommendations from route identifiers", async ({ page }) => {
+    const recommendedFacility = {
+      id: FACILITY_ID,
+      facilityName: "Bệnh viện Bệnh Nhiệt đới",
+      address: "764 Võ Văn Kiệt, Phường 1, Quận 5",
+      latitude: 10.7529,
+      longitude: 106.6784,
+      facilityType: "hospital",
+      isActive: true,
+      departments: [{
+        departmentId: DEPARTMENT_ID,
+        departmentName: "Khoa truyền nhiễm và siêu vi",
+      }],
+    };
+
+    await page.route(`**/api/symptom-analysis/${SESSION_ID}`, async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          sessionId: SESSION_ID,
+          recommendedDepartments: [{
+            departmentId: DEPARTMENT_ID,
+            departmentName: "Khoa truyền nhiễm và siêu vi",
+            confidenceScore: 0.86,
+            priorityRank: 1,
+            isEmergencySuggested: false,
+          }],
+        },
+      }),
+    }));
+    await page.route("**/api/medical-facilities/active", async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [recommendedFacility] }),
+    }));
+    await page.route("**/api/facility-departments/active", async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [] }),
+    }));
+    await page.route("https://basemaps.cartocdn.com/**", async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(MAP_STYLE),
+    }));
+
+    await openRoute(
+      page,
+      `/map?source=clinical&sessionId=${SESSION_ID}&facilityId=${FACILITY_ID}&departmentId=${DEPARTMENT_ID}`,
+    );
+
+    await expect(
+      page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" }),
+    ).toContainText("Khoa truyền nhiễm và siêu vi");
+    await expect(page.locator(".facility-result-card")).toHaveCount(1);
+    await expect(page.locator(".facility-result-card")).toContainText("Bệnh viện Bệnh Nhiệt đới");
+    await expect(page.locator(".clinic-marker")).toHaveCount(1);
+    await expect(page.getByText("Chưa xác định chuyên khoa", { exact: true })).toHaveCount(0);
   });
 
   test("accepts nested backend question response shapes", async ({ page }) => {
