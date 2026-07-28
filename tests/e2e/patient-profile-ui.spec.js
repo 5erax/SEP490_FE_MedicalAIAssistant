@@ -9,7 +9,7 @@ const ACCESS_TOKEN = [
   "",
 ].join(".");
 
-async function openPatientProfile(page, path = "/profile") {
+async function openPatientProfile(page, path = "/profile", { subscriptions = [] } = {}) {
   await preparePage(page);
   await page.addInitScript(({ accessToken, userId }) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -57,7 +57,7 @@ async function openPatientProfile(page, path = "/profile") {
     if (url.pathname === "/api/user-subscriptions/me") {
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: [] }),
+        body: JSON.stringify({ success: true, data: subscriptions }),
       });
     }
     return route.fulfill({
@@ -80,6 +80,13 @@ test("patient profile stays usable at 320px without horizontal overflow", async 
   }));
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
   await expect(page.getByRole("tab", { name: "Thông tin" }).last()).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Giao dịch" }).last()).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Bảo mật" }).last()).toBeVisible();
+  const mobileTabs = await page.locator(".mobile-tabs").evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(mobileTabs.scrollWidth).toBeLessThanOrEqual(mobileTabs.clientWidth);
   await expect(page.getByRole("button", { name: "Chỉnh sửa" })).toBeVisible();
 });
 
@@ -118,6 +125,18 @@ test("patient profile remains legible in forced colors", async ({ page }) => {
   await page.getByRole("button", { name: "Chỉnh sửa" }).click();
   await expect(page.getByLabel("Họ và tên")).toBeEditable();
   await expect(page.locator("#profile-panel-info")).toHaveCSS("border-top-style", "solid");
+});
+
+test("patient profile localizes known plan and subscription labels", async ({ page }) => {
+  await openPatientProfile(page, "/profile", {
+    subscriptions: [{ planName: "Free", statusName: "Active" }],
+  });
+
+  await page.getByRole("tab", { name: "Gói dịch vụ" }).first().click();
+  const packagePanel = page.locator("#profile-panel-package");
+  await expect(packagePanel.getByText("Miễn phí", { exact: true })).toBeVisible();
+  await expect(packagePanel.getByText("Đang hoạt động", { exact: false })).toBeVisible();
+  await expect(packagePanel.getByText("Free", { exact: true })).toHaveCount(0);
 });
 
 test("patient profile does not present failed requests as empty real data", async ({ page }) => {

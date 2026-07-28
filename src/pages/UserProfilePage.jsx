@@ -30,6 +30,27 @@ const tabs = [
   ["security", ShieldCheck, "Bảo mật"],
 ];
 const TAB_IDS = new Set(tabs.map(([id]) => id));
+const SUBSCRIPTION_STATUS_LABELS = {
+  active: "Đang hoạt động",
+  pending: "Đang chờ",
+  expired: "Đã hết hạn",
+  cancelled: "Đã hủy",
+  canceled: "Đã hủy",
+  inactive: "Không hoạt động",
+};
+
+function formatPlanName(planName) {
+  const normalizedName = String(planName ?? "").trim();
+  if (!normalizedName) return "Miễn phí";
+  if (["free", "freemium"].includes(normalizedName.toLowerCase())) return "Miễn phí";
+  return normalizedName;
+}
+
+function formatSubscriptionStatus(statusName) {
+  const normalizedStatus = String(statusName ?? "").trim();
+  if (!normalizedStatus) return "Chưa có gói trả phí";
+  return SUBSCRIPTION_STATUS_LABELS[normalizedStatus.toLowerCase()] ?? normalizedStatus;
+}
 
 function getInitialTab() {
   const requestedTab = new URLSearchParams(window.location.search).get("tab");
@@ -471,11 +492,11 @@ export default function UserProfilePage() {
               <strong>
                 {sectionLoadState.subscription === "loading"
                   ? "Đang tải"
-                  : subscriptionReady ? subscription?.planName || "Miễn phí" : "Không khả dụng"}
+                  : subscriptionReady ? formatPlanName(subscription?.planName) : "Không khả dụng"}
               </strong>
               <small>
                 {subscriptionReady
-                  ? subscription?.statusName || "Chưa có gói trả phí"
+                  ? formatSubscriptionStatus(subscription?.statusName)
                   : "Chưa thể xác định gói hiện tại."}
               </small>
             </article>
@@ -677,11 +698,11 @@ export default function UserProfilePage() {
             <h1>Gói dịch vụ</h1>
             <div className="plan-box">
               <span>Gói hiện tại</span>
-              <strong>{subscription?.planName || "Miễn phí"}</strong>
+              <strong>{formatPlanName(subscription?.planName)}</strong>
               <p>
                 {subscription
-                  ? `${subscription.statusName || "Đang hoạt động"}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
-                  : "Bạn chưa có subscription trả phí đang hoạt động."}
+                  ? `${formatSubscriptionStatus(subscription.statusName)}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
+                  : "Bạn chưa có gói đăng ký trả phí đang hoạt động."}
               </p>
             </div>
             <button className="lime" type="button" onClick={() => go("/pricing")}>Nâng cấp MediMate+</button>
@@ -1138,25 +1159,25 @@ const styles = `
   .profile-summary-grid article:last-child{grid-column:auto}
   .profile-summary-grid article,.profile-summary-card{min-height:108px}
   .mobile-tabs{
-    display:flex;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
     margin:0 0 12px;
-    padding:2px 1px 7px;
+    padding:2px 1px;
     gap:7px;
-    overflow-x:auto;
-    scroll-snap-type:x proximity;
+    overflow:visible;
   }
   .mobile-tabs button{
     display:grid;
-    flex:0 0 108px;
+    width:100%;
     place-items:center;
     gap:3px;
-    min-height:62px;
+    min-height:58px;
     border:1px solid var(--profile-line);
     border-radius:13px;
     background:#fff;
     color:var(--profile-muted);
-    scroll-snap-align:start;
   }
+  .mobile-tabs button:last-child{grid-column:1/-1}
   .mobile-tabs button.active{
     border-color:#acd0c2;
     background:var(--profile-mint);

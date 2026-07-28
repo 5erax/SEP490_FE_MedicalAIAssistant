@@ -1,10 +1,25 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Clock3, FileText, LoaderCircle, X } from "lucide-react";
+import { ArrowRight, Clock3, FileText, LoaderCircle, RefreshCw, X } from "lucide-react";
 import { Button, useOverlayFocus } from "../ui";
 import { symptomAnalysisApi, unwrapApiData } from "../../services/symptomAnalysisService";
 import "../../styles/analysis-history-panel.css";
 
 export const ANALYSIS_HISTORY_PANEL_ID = "analysis-history-panel";
+const SESSION_TYPE_LABELS = {
+  department: "Gợi ý chuyên khoa",
+  diagnoses: "Phân tích lâm sàng",
+  diagnosis: "Phân tích lâm sàng",
+};
+const SESSION_STATUS_LABELS = {
+  pending: "Đang chờ",
+  processing: "Đang xử lý",
+  in_progress: "Đang xử lý",
+  completed: "Hoàn tất",
+  complete: "Hoàn tất",
+  failed: "Không thành công",
+  cancelled: "Đã hủy",
+  canceled: "Đã hủy",
+};
 
 function getSessionId(session) {
   return session?.sessionId || session?.id || "";
@@ -19,6 +34,31 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Chưa có ngày tạo";
   return date.toLocaleString("vi-VN");
+}
+
+function formatSessionType(value, fallbackType) {
+  const normalized = String(value || fallbackType || "").trim().toLowerCase();
+  return SESSION_TYPE_LABELS[normalized] || SESSION_TYPE_LABELS[fallbackType] || "Phiên phân tích";
+}
+
+function formatSessionStatus(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return SESSION_STATUS_LABELS[normalized] || "Đang cập nhật";
+}
+
+function getSafeHistoryError(error, detail = false) {
+  if (error?.status === 401) {
+    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để xem lịch sử.";
+  }
+  if (error?.status === 403) {
+    return "Bạn không có quyền xem phiên phân tích này.";
+  }
+  if (detail && error?.status === 404) {
+    return "Không tìm thấy phiên phân tích hoặc phiên này không còn khả dụng.";
+  }
+  return detail
+    ? "Chưa thể tải chi tiết phiên. Vui lòng thử lại."
+    : "Chưa thể tải lịch sử phân tích. Vui lòng thử lại.";
 }
 
 function getDetailSummary(detail, sessionType) {
@@ -87,6 +127,7 @@ export default function AnalysisHistoryPanel({
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [detailStatus, setDetailStatus] = useState("idle");
   const [announcement, setAnnouncement] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const panelRef = useRef(null);
   const closeButtonRef = useRef(null);
 
@@ -136,7 +177,7 @@ export default function AnalysisHistoryPanel({
       })
       .catch((requestError) => {
         if (!active) return;
-        const message = requestError.message || `Không thể tải ${copy.sessionLabel}.`;
+        const message = getSafeHistoryError(requestError);
         setError(message);
         setAnnouncement(message);
       })
@@ -147,13 +188,11 @@ export default function AnalysisHistoryPanel({
     return () => {
       active = false;
     };
-  }, [copy.sessionLabel, open, sessionType]);
+  }, [copy.sessionLabel, open, reloadKey, sessionType]);
 
-  async function viewDetail(session) {
-    const sessionId = getSessionId(session);
+  async function loadDetail(sessionId) {
     if (!sessionId) return;
 
-    setSelectedSessionId(sessionId);
     setDetailStatus("loading");
     setSelectedDetail(null);
     setAnnouncement("Đang tải chi tiết phiên.");
@@ -163,12 +202,25 @@ export default function AnalysisHistoryPanel({
       setSelectedDetail(unwrapApiData(response) || response);
       setAnnouncement("Đã tải chi tiết phiên.");
     } catch (requestError) {
-      const message = requestError.message || "Không thể tải chi tiết phiên.";
+      const message = getSafeHistoryError(requestError, true);
       setSelectedDetail({ error: message });
       setAnnouncement(message);
     } finally {
       setDetailStatus("idle");
     }
+  }
+
+  function viewDetail(session) {
+    const sessionId = getSessionId(session);
+    if (!sessionId) return;
+    setSelectedSessionId(sessionId);
+    loadDetail(sessionId);
+  }
+
+  function retryHistory() {
+    setStatus("loading");
+    setError("");
+    setReloadKey((current) => current + 1);
   }
 
   return (
@@ -208,6 +260,10 @@ export default function AnalysisHistoryPanel({
               {error && (
                 <div className="analysis-history-state error">
                   <p>{error}</p>
+                  <Button type="button" tone="secondary" size="sm" onClick={retryHistory}>
+                    <RefreshCw size={16} aria-hidden="true" />
+                    Thử lại
+                  </Button>
                 </div>
               )}
 
@@ -229,7 +285,11 @@ export default function AnalysisHistoryPanel({
                         <div>
                           <strong>{getSessionTitle(session, copy.fallback)}</strong>
                           <span>{formatDate(session.createdAt || session.createdDate)}</span>
-                          <small>{session.sessionType || sessionType} · {session.status || "Đang cập nhật"}</small>
+                          <small>
+                            {formatSessionType(session.sessionType, sessionType)}
+                            {" · "}
+                            {formatSessionStatus(session.status)}
+                          </small>
                         </div>
                         <Button type="button" tone="secondary" size="sm" onClick={() => viewDetail(session)}>
                           Chi tiết
@@ -246,7 +306,13 @@ export default function AnalysisHistoryPanel({
                   {detailStatus === "loading" ? (
                     <p>Đang tải chi tiết...</p>
                   ) : selectedDetail?.error ? (
-                    <p className="analysis-history-detail-error">{selectedDetail.error}</p>
+                    <div className="analysis-history-detail-retry">
+                      <p className="analysis-history-detail-error">{selectedDetail.error}</p>
+                      <Button type="button" tone="secondary" size="sm" onClick={() => loadDetail(selectedSessionId)}>
+                        <RefreshCw size={16} aria-hidden="true" />
+                        Thử lại
+                      </Button>
+                    </div>
                   ) : selectedDetail ? (
                     <>
                       <strong>{getSessionTitle(selectedDetail, copy.fallback)}</strong>

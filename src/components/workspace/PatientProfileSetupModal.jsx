@@ -250,6 +250,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
           aria-valuenow={progress}
         >
           <strong>{progress}%</strong>
+          <small>{completedFields}/7 mục cơ bản · trường bắt buộc cần hoàn tất</small>
           <span><i style={{ width: `${progress}%` }} /></span>
         </div>
       </header>

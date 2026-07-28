@@ -364,7 +364,7 @@ export default function PersonalPatientProfilePage() {
             </div>
             <div className="profile-setup-progress">
               <div>
-                <span>Tiến độ hồ sơ</span>
+                <span>Tiến độ hồ sơ · {completedFields}/7 mục cơ bản</span>
                 <strong>{progress}%</strong>
               </div>
               <div
@@ -388,6 +388,24 @@ export default function PersonalPatientProfilePage() {
                 <p>Hoàn thành các mục bắt buộc trước khi lưu hồ sơ.</p>
               </div>
               <span className="soft-badge">{loading ? "Đang tải" : "Thiết lập ban đầu"}</span>
+            </div>
+
+            <div className="profile-setup-progress profile-setup-mobile-progress">
+              <div>
+                <span>Tiến độ · {completedFields}/7 mục cơ bản</span>
+                <strong>{progress}%</strong>
+              </div>
+              <div
+                className="profile-progress-bar"
+                role="progressbar"
+                aria-label="Tiến độ hoàn thiện hồ sơ trên di động"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={progress}
+              >
+                <span style={{ width: `${progress}%` }} />
+              </div>
+              <small>Các trường có nhãn “bắt buộc” cần được hoàn tất trước khi lưu.</small>
             </div>
 
             <ApiMessage message={message} />
