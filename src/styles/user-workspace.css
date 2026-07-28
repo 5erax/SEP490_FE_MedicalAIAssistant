@@ -6,7 +6,14 @@
   --workspace-muted: color-mix(in srgb, var(--color-ink) 62%, transparent);
   --workspace-line: color-mix(in srgb, var(--color-ink) 13%, transparent);
   --workspace-mint: var(--color-info-bg);
+  --patient-mobile-nav-offset: 0px;
+  --patient-mobile-nav-height: 0px;
+  --patient-mobile-inline-edge: 0px;
+  --patient-mobile-help-slot: 0px;
+  --patient-safe-bottom: 96px;
+  --patient-help-bottom: 22px;
   min-height: 100svh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 292px minmax(0, 1fr);
   background:
@@ -885,11 +892,12 @@
 .user-shell-content {
   min-width: 0;
   padding: 22px;
+  scroll-padding-bottom: var(--patient-safe-bottom);
 }
 
 .user-shell-content :where(a, button, input, select, textarea, [tabindex]):focus {
   scroll-margin-top: 92px;
-  scroll-margin-bottom: 96px;
+  scroll-margin-bottom: var(--patient-safe-bottom);
 }
 
 .user-shell-mobile-nav {
@@ -899,7 +907,7 @@
 .patient-help-launcher {
   position: fixed;
   right: 22px;
-  bottom: 22px;
+  bottom: var(--patient-help-bottom);
   z-index: 70;
   display: grid;
   justify-items: end;
@@ -1246,6 +1254,16 @@
 
 @media (max-width: 860px) {
   .user-shell {
+    --patient-mobile-nav-offset: max(10px, env(safe-area-inset-bottom));
+    --patient-mobile-nav-height: 68px;
+    --patient-mobile-inline-edge: 6px;
+    --patient-mobile-help-slot: 52px;
+    --patient-safe-bottom: calc(
+      var(--patient-mobile-nav-offset)
+      + var(--patient-mobile-nav-height)
+      + 16px
+    );
+    --patient-help-bottom: calc(var(--patient-mobile-nav-offset) + 8px);
     display: block;
   }
 
@@ -1260,6 +1278,7 @@
     display: flex;
     width: min(320px, calc(100vw - 48px));
     height: 100svh;
+    height: 100dvh;
     box-shadow: 18px 0 60px rgba(16, 20, 17, 0.22);
     padding:
       max(20px, env(safe-area-inset-top))
@@ -1329,24 +1348,29 @@
   }
 
   .user-shell-content {
-    padding: 14px 14px calc(96px + env(safe-area-inset-bottom));
+    min-height: calc(100svh - 66px);
+    min-height: calc(100dvh - 66px);
+    padding: 14px 14px var(--patient-safe-bottom);
+    scroll-padding-bottom: var(--patient-safe-bottom);
   }
 
   .user-shell .chatbot-page {
-    height: calc(100svh - 180px);
+    height: calc(100svh - 176px);
+    height: calc(100dvh - 176px);
     border-radius: 18px;
   }
 
   .user-shell .clinic-page {
     height: calc(100svh - 150px);
+    height: calc(100dvh - 150px);
     border-radius: 18px;
   }
 
   .user-shell-mobile-nav {
     position: fixed;
-    right: 10px;
-    bottom: max(10px, env(safe-area-inset-bottom));
-    left: 10px;
+    right: var(--patient-mobile-inline-edge);
+    bottom: var(--patient-mobile-nav-offset);
+    left: var(--patient-mobile-inline-edge);
     z-index: 30;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1354,14 +1378,14 @@
     border: 1px solid rgba(16, 20, 17, 0.16);
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.9);
-    padding: 7px 46px 7px 7px;
+    padding: 7px var(--patient-mobile-help-slot) 7px 7px;
     box-shadow: 0 18px 52px rgba(16, 20, 17, 0.16);
     backdrop-filter: blur(18px);
   }
 
   .patient-help-launcher {
-    right: 10px;
-    bottom: calc(17px + env(safe-area-inset-bottom));
+    right: var(--patient-mobile-inline-edge);
+    bottom: var(--patient-help-bottom);
   }
 
   .patient-help-button {
@@ -1418,6 +1442,25 @@
     padding: 7px 2px;
     font-size: 10px;
     font-weight: 900;
+  }
+
+  .user-shell-content :where(
+    button,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select,
+    textarea
+  ) {
+    min-height: 44px;
+  }
+
+  .user-shell-content :where(input, select, textarea, button, [tabindex]):focus {
+    scroll-margin-bottom: var(--patient-safe-bottom);
+  }
+
+  .user-shell .chatbot-message-area,
+  .user-shell .profile-content,
+  .user-shell .assessment-shell {
+    scroll-padding-bottom: var(--patient-safe-bottom);
   }
 
   .user-shell-mobile-nav button.active,

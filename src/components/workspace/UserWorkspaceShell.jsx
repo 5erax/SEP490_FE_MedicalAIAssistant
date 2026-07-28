@@ -291,6 +291,61 @@ export default function UserWorkspaceShell({ children }) {
     };
   }, [accountMenuOpen]);
 
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main) return undefined;
+
+    const mobileViewport = window.matchMedia("(max-width: 860px)");
+    let focusFrame = 0;
+
+    function keepFocusedControlVisible(element) {
+      if (
+        !mobileViewport.matches
+        || !(element instanceof HTMLElement)
+        || !main.contains(element)
+        || !element.matches("button, input, select, textarea, [tabindex]")
+      ) {
+        return;
+      }
+
+      window.cancelAnimationFrame(focusFrame);
+      focusFrame = window.requestAnimationFrame(() => {
+        const shell = main.closest(".user-shell");
+        const topbar = main.querySelector(".user-shell-topbar");
+        if (!shell || !topbar || !element.isConnected) return;
+
+        const safeBottom = Number.parseFloat(
+          window.getComputedStyle(shell).getPropertyValue("--patient-safe-bottom"),
+        ) || 0;
+        const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+        const topBoundary = topbar.getBoundingClientRect().bottom + 8;
+        const bottomBoundary = viewportHeight - safeBottom;
+        const elementRect = element.getBoundingClientRect();
+
+        if (elementRect.top < topBoundary || elementRect.bottom > bottomBoundary) {
+          element.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+        }
+      });
+    }
+
+    function handleFocusIn(event) {
+      keepFocusedControlVisible(event.target);
+    }
+
+    function handleViewportResize() {
+      keepFocusedControlVisible(document.activeElement);
+    }
+
+    main.addEventListener("focusin", handleFocusIn);
+    window.visualViewport?.addEventListener("resize", handleViewportResize);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      main.removeEventListener("focusin", handleFocusIn);
+      window.visualViewport?.removeEventListener("resize", handleViewportResize);
+    };
+  }, []);
+
   return (
     <div className="user-shell">
       {mobileMenuOpen && (
@@ -545,12 +600,7 @@ export default function UserWorkspaceShell({ children }) {
           onComplete={handlePatientSetupComplete}
         />
       )}
-      <PatientOnboardingAssistant
-        auth={auth}
-        mobileBottomOffset={
-          path === "/chat" ? "170px" : path === "/records" ? "190px" : undefined
-        }
-      />
+      <PatientOnboardingAssistant auth={auth} />
     </div>
   );
 }
