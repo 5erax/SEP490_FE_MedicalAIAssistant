@@ -73,6 +73,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
   const [errors, setErrors] = useState({});
   const [resolvedUserId, setResolvedUserId] = useState(auth?.userId ?? auth?.identityId ?? "");
   const firstFieldRef = useRef(null);
+  const formRef = useRef(null);
 
   const completedFields = useMemo(
     () => Object.entries({
@@ -189,6 +190,9 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
 
     if (Object.keys(nextErrors).length > 0) {
       setMessage({ type: "error", text: "Vui lòng kiểm tra lại các thông tin bắt buộc." });
+      window.requestAnimationFrame(() => {
+        formRef.current?.querySelector('[aria-invalid="true"]')?.focus();
+      });
       return;
     }
 
@@ -229,7 +233,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
       initialFocusRef={firstFieldRef}
     >
       <header className="patient-setup-modal-header">
-        <span className="patient-setup-modal-icon"><HeartPulse size={24} /></span>
+        <span className="patient-setup-modal-icon"><HeartPulse size={24} aria-hidden="true" /></span>
         <div>
           <p className="eyebrow">Lần đăng nhập đầu tiên</p>
           <h2 id="patient-setup-modal-title">Hoàn thiện hồ sơ sức khỏe</h2>
@@ -237,13 +241,20 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
             Điền hồ sơ bệnh nhân trước khi vào trang chính để MediMate cá nhân hóa tư vấn cho bạn.
           </p>
         </div>
-        <div className="patient-setup-modal-progress" aria-label={`Tiến độ hồ sơ ${progress}%`}>
+        <div
+          className="patient-setup-modal-progress"
+          role="progressbar"
+          aria-label="Tiến độ hoàn thiện hồ sơ"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={progress}
+        >
           <strong>{progress}%</strong>
           <span><i style={{ width: `${progress}%` }} /></span>
         </div>
       </header>
 
-      <form className="patient-setup-modal-form" onSubmit={handleSubmit} noValidate>
+      <form ref={formRef} className="patient-setup-modal-form" onSubmit={handleSubmit} noValidate>
         <ApiMessage message={message} />
         <section className="patient-setup-modal-section">
           <div className="patient-setup-modal-section-title">
@@ -252,23 +263,23 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
           </div>
           <div className="patient-setup-modal-grid two">
             <SetupField label="Họ và tên" error={errors.displayName}>
-              <input ref={firstFieldRef} value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
+              <input ref={firstFieldRef} name="displayName" autoComplete="name" value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
             </SetupField>
             <SetupField label="Ngày sinh" error={errors.dateOfBirth}>
-              <input type="date" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
+              <input name="dateOfBirth" type="date" autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
             </SetupField>
             <SetupField label="Giới tính" error={errors.gender}>
-              <select value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>
+              <select name="gender" autoComplete="sex" value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>
                 <option value="1">Nam</option>
                 <option value="2">Nữ</option>
               </select>
             </SetupField>
             <SetupField label="Số điện thoại" error={errors.phoneNumber}>
-              <input type="tel" inputMode="tel" autoComplete="tel" value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} disabled={loading || submitting} />
+              <input name="phoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} disabled={loading || submitting} />
             </SetupField>
           </div>
           <SetupField label="Địa chỉ" error={errors.address}>
-            <input value={form.address} onChange={(event) => updateField("address", event.target.value)} disabled={loading || submitting} />
+            <input name="address" autoComplete="street-address" value={form.address} onChange={(event) => updateField("address", event.target.value)} disabled={loading || submitting} />
           </SetupField>
         </section>
 
@@ -279,21 +290,21 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
           </div>
           <div className="patient-setup-modal-grid three">
             <SetupField label="Nhóm máu">
-              <select value={form.bloodType} onChange={(event) => updateField("bloodType", event.target.value)} disabled={loading || submitting}>
+              <select name="bloodType" value={form.bloodType} onChange={(event) => updateField("bloodType", event.target.value)} disabled={loading || submitting}>
                 {BLOOD_TYPES.map((type) => (
                   <option key={type || "empty"} value={type}>{type || "Chưa rõ"}</option>
                 ))}
               </select>
             </SetupField>
             <SetupField label="Chiều cao (cm)" error={errors.height}>
-              <input type="number" min="40" max="250" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
+              <input name="height" type="number" inputMode="decimal" min="40" max="250" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
             </SetupField>
             <SetupField label="Cân nặng (kg)" error={errors.weight}>
-              <input type="number" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
+              <input name="weight" type="number" inputMode="decimal" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
             </SetupField>
           </div>
           <SetupField label="Dị ứng" error={errors.allergyNote}>
-            <textarea rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
+            <textarea name="allergyNote" rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa…" disabled={loading || submitting} />
           </SetupField>
         </section>
 
@@ -304,7 +315,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
               <p>Thêm bệnh mạn tính hoặc tình trạng sức khỏe cần theo dõi.</p>
             </div>
             <button className="patient-setup-add-disease" type="button" onClick={addDisease} disabled={loading || submitting}>
-              <Plus size={15} /> Thêm bệnh nền
+              <Plus size={15} aria-hidden="true" /> Thêm bệnh nền
             </button>
           </div>
 
@@ -317,21 +328,21 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
                 <div className="patient-setup-disease-head">
                   <strong>Bệnh nền #{index + 1}</strong>
                   <button type="button" onClick={() => removeDisease(index)} disabled={loading || submitting} aria-label="Xóa bệnh nền">
-                    <Trash2 size={15} /> Xóa
+                    <Trash2 size={15} aria-hidden="true" /> Xóa
                   </button>
                 </div>
                 <div className="patient-setup-modal-grid two">
                   <SetupField label="Tên bệnh" error={errors[`chronicDiseases.${index}.diseaseName`]}>
-                    <input maxLength={160} value={disease.diseaseName} onChange={(event) => updateDisease(index, "diseaseName", event.target.value)} placeholder="Ví dụ: Tăng huyết áp" disabled={loading || submitting} />
+                    <input name={`chronicDiseases[${index}].diseaseName`} maxLength={160} value={disease.diseaseName} onChange={(event) => updateDisease(index, "diseaseName", event.target.value)} placeholder="Ví dụ: Tăng huyết áp" disabled={loading || submitting} />
                   </SetupField>
                   <SetupField label="Ghi chú" error={errors[`chronicDiseases.${index}.note`]}>
-                    <input maxLength={1000} value={disease.note} onChange={(event) => updateDisease(index, "note", event.target.value)} placeholder="Ví dụ: đang theo dõi, dùng thuốc hằng ngày..." disabled={loading || submitting} />
+                    <input name={`chronicDiseases[${index}].note`} maxLength={1000} value={disease.note} onChange={(event) => updateDisease(index, "note", event.target.value)} placeholder="Ví dụ: đang theo dõi, dùng thuốc hằng ngày…" disabled={loading || submitting} />
                   </SetupField>
                   <SetupField label="Từ ngày" error={errors[`chronicDiseases.${index}.from`]}>
-                    <input type="date" value={disease.from} onChange={(event) => updateDisease(index, "from", event.target.value)} disabled={loading || submitting} />
+                    <input name={`chronicDiseases[${index}].from`} type="date" value={disease.from} onChange={(event) => updateDisease(index, "from", event.target.value)} disabled={loading || submitting} />
                   </SetupField>
                   <SetupField label="Đến ngày" error={errors[`chronicDiseases.${index}.to`]}>
-                    <input type="date" value={disease.to} onChange={(event) => updateDisease(index, "to", event.target.value)} disabled={loading || submitting} />
+                    <input name={`chronicDiseases[${index}].to`} type="date" value={disease.to} onChange={(event) => updateDisease(index, "to", event.target.value)} disabled={loading || submitting} />
                   </SetupField>
                 </div>
               </article>
@@ -343,7 +354,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
         <footer className="patient-setup-modal-actions">
           <p>Thông tin này có thể chỉnh lại trong Hồ sơ cá nhân sau khi hoàn tất.</p>
           <button className="btn btn-primary" type="submit" disabled={loading || submitting}>
-            {submitting ? "Đang lưu hồ sơ..." : "Hoàn tất và vào trang chính"}
+            {submitting ? "Đang lưu hồ sơ…" : "Hoàn tất và vào trang chính"}
           </button>
         </footer>
       </form>

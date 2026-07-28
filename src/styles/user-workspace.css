@@ -96,6 +96,11 @@
   color: var(--color-info-strong);
 }
 
+.user-shell-nav button:focus-visible,
+.user-shell-nav a:focus-visible {
+  border-color: var(--color-info);
+}
+
 .user-shell-nav button.active,
 .user-shell-nav a.active {
   border-color: color-mix(in srgb, var(--color-info) 24%, transparent);
@@ -677,6 +682,13 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.78);
   padding: 0 14px;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.user-shell-search:focus-within {
+  border-color: var(--color-info);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.12);
 }
 
 .user-shell-search input {
@@ -1235,7 +1247,6 @@
 @media (max-width: 860px) {
   .user-shell {
     display: block;
-    padding-bottom: 78px;
   }
 
   .user-shell-sidebar {
@@ -1250,6 +1261,10 @@
     width: min(320px, calc(100vw - 48px));
     height: 100svh;
     box-shadow: 18px 0 60px rgba(16, 20, 17, 0.22);
+    padding:
+      max(20px, env(safe-area-inset-top))
+      18px
+      max(24px, env(safe-area-inset-bottom));
   }
 
   .user-shell-drawer-backdrop {
@@ -1268,8 +1283,8 @@
     right: 14px;
     display: grid;
     place-items: center;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     border: 1px solid var(--workspace-line);
     border-radius: 11px;
     background: #fff;
@@ -1314,7 +1329,7 @@
   }
 
   .user-shell-content {
-    padding: 14px;
+    padding: 14px 14px calc(96px + env(safe-area-inset-bottom));
   }
 
   .user-shell .chatbot-page {
@@ -1330,7 +1345,7 @@
   .user-shell-mobile-nav {
     position: fixed;
     right: 10px;
-    bottom: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
     left: 10px;
     z-index: 30;
     display: grid;
@@ -1339,17 +1354,28 @@
     border: 1px solid rgba(16, 20, 17, 0.16);
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.9);
-    padding: 7px;
+    padding: 7px 46px 7px 7px;
     box-shadow: 0 18px 52px rgba(16, 20, 17, 0.16);
     backdrop-filter: blur(18px);
   }
 
   .patient-help-launcher {
-    right: 16px;
-    bottom: var(--patient-help-mobile-bottom, 96px);
+    right: 10px;
+    bottom: calc(17px + env(safe-area-inset-bottom));
+  }
+
+  .patient-help-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    background: rgba(232, 247, 242, 0.96);
+    box-shadow: none;
   }
 
   .patient-help-menu {
+    position: absolute;
+    right: 0;
+    bottom: 58px;
     width: min(300px, calc(100vw - 32px));
   }
 
@@ -1383,6 +1409,7 @@
     display: grid;
     place-items: center;
     gap: 3px;
+    min-height: 52px;
     min-width: 0;
     border: 0;
     border-radius: 14px;
@@ -1417,5 +1444,19 @@
 
   .user-shell .dash-header h1 {
     font-size: 36px;
+  }
+}
+
+@media (forced-colors: active) {
+  .user-shell-nav button.active,
+  .user-shell-nav a.active,
+  .user-shell-mobile-nav button.active,
+  .user-shell-mobile-nav a.active {
+    border: 2px solid Highlight;
+  }
+
+  .user-shell-search:focus-within {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
   }
 }

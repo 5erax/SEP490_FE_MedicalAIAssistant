@@ -128,9 +128,9 @@ function sessionTypeCopy(sessionType) {
       empty: "Chưa có phiên gợi ý chuyên khoa nào",
     }
     : {
-      title: "Lịch sử chuẩn đoán lâm sàng",
-      description: "Các phiên chuẩn đoán lâm sàng gần đây của tài khoản này.",
-      empty: "Chưa có phiên chuẩn đoán lâm sàng nào",
+      title: "Lịch sử chẩn đoán lâm sàng",
+      description: "Các phiên chẩn đoán lâm sàng gần đây của tài khoản này.",
+      empty: "Chưa có phiên chẩn đoán lâm sàng nào",
     };
 }
 
@@ -386,8 +386,7 @@ function IntakePage() {
             onChange={(event) => updateUserInput(event.target.value)}
             disabled={isSubmitting}
             rows={6}
-            placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ..."
-            autoFocus
+            placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ…"
           />
           <small>Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm để gợi ý phù hợp hơn.</small>
         </label>
@@ -400,12 +399,12 @@ function IntakePage() {
             type="submit"
             size="lg"
             loading={isSubmitting}
-            loadingLabel="Đang tạo câu hỏi..."
+            loadingLabel="Đang tạo câu hỏi…"
             disabled={!trimmedInput}
             aria-label="Tiếp tục phân tích lâm sàng"
             title="Tiếp tục phân tích lâm sàng"
           >
-            <Send size={18} />
+            <Send size={18} aria-hidden="true" />
           </Button>
         </div>
       </form>
@@ -658,7 +657,7 @@ function QuestionsPage({ sessionId }) {
             <Button
               type="submit"
               loading={status === "submitting"}
-              loadingLabel="Đang phân tích..."
+              loadingLabel="Đang phân tích…"
               disabled={!canSubmit}
             >
               Xem gợi ý
@@ -734,7 +733,7 @@ function ResultPage({ sessionId }) {
         description="MediMate đang lấy lại kết quả phiên đánh giá."
         activeStep={2}
       >
-        <LoadingState label="Đang tải phiên đánh giá..." />
+        <LoadingState label="Đang tải phiên đánh giá…" />
       </AssessmentShell>
     );
   }
@@ -760,7 +759,7 @@ function ResultPage({ sessionId }) {
     <AssessmentShell
       eyebrow="Bước 3"
       title="Chẩn đoán lâm sàng"
-      description="Tổng hợp kết quả từ mô hình Bayesian, thứ tự khả năng bệnh và xác suất P(A|B) tham khảo."
+      description="Tổng hợp các khả năng cần lưu ý dựa trên thông tin bạn đã cung cấp. Tỷ lệ chỉ thể hiện mức độ phù hợp tham khảo."
       activeStep={2}
     >
       <Alert
@@ -780,7 +779,7 @@ function ResultPage({ sessionId }) {
             {diagnosisReasoning(primaryDiagnosis) && <p>{diagnosisReasoning(primaryDiagnosis)}</p>}
             <div className="diagnosis-meta-row">
               {diagnosisIcd(primaryDiagnosis) && <small>ICD-10: {diagnosisIcd(primaryDiagnosis)}</small>}
-              <strong>{confidencePercent(diagnosisPAGivenB(primaryDiagnosis))}% P(A|B)</strong>
+              <strong>{confidencePercent(diagnosisPAGivenB(primaryDiagnosis))}% phù hợp tham khảo</strong>
               {diagnosisKeyword(primaryDiagnosis) && <small>{diagnosisKeyword(primaryDiagnosis)}</small>}
             </div>
           </article>
@@ -849,11 +848,11 @@ function HistoryPage() {
       historyAction={
         sessionType === "department"
           ? { label: "Tiếp tục tư vấn", to: "/dashboard" }
-          : { label: "Tiếp tục chuẩn đoán", to: "/medical-assistant/intake" }
+          : { label: "Tiếp tục chẩn đoán", to: "/medical-assistant/intake" }
       }
     >
       {status === "loading" && (
-        <LoadingState label="Đang tải lịch sử đánh giá..." />
+        <LoadingState label="Đang tải lịch sử đánh giá…" />
       )}
 
       {error && (

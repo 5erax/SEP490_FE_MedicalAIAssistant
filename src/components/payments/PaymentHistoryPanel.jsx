@@ -276,7 +276,7 @@ export default function PaymentHistoryPanel() {
     <section
       id="profile-panel-transactions"
       role="tabpanel"
-      aria-labelledby="profile-tab-transactions"
+      aria-label="Lịch sử thanh toán"
       className="profile-card payment-history"
       aria-busy={loading}
     >

@@ -21,10 +21,44 @@ function formatDate(value) {
   return date.toLocaleString("vi-VN");
 }
 
-function getDetailSummary(detail) {
+function getDetailSummary(detail, sessionType) {
   const data = unwrapApiData(detail) || detail || {};
-  const diagnoses = data.diagnoses || data.Diagnoses || data.analysis?.diagnoses || [];
-  const department = data.recommendedDepartment || data.department || data.Department;
+  const analysis = data.analysis || data.Analysis || data;
+  const department = analysis.recommendedDepartment
+    || analysis.RecommendedDepartment
+    || analysis.department
+    || analysis.Department;
+  const facilities = analysis.recommendedFacilities || analysis.RecommendedFacilities || [];
+
+  if (sessionType === "department") {
+    const fallbackDepartment = Array.isArray(facilities)
+      ? facilities.flatMap((facility) => (
+        Array.isArray(facility?.departments)
+          ? facility.departments
+          : Array.isArray(facility?.Departments) ? facility.Departments : []
+      ))[0]
+      : null;
+    const departmentName = department?.departmentName
+      || department?.DepartmentName
+      || fallbackDepartment?.departmentName
+      || fallbackDepartment?.DepartmentName
+      || "";
+    const facilityNames = Array.isArray(facilities)
+      ? facilities
+        .map((facility) => facility?.facilityName || facility?.FacilityName || facility?.name)
+        .filter(Boolean)
+        .slice(0, 3)
+      : [];
+
+    if (departmentName && facilityNames.length > 0) {
+      return `Chuyên khoa: ${departmentName}. Cơ sở gợi ý: ${facilityNames.join(", ")}.`;
+    }
+    if (departmentName) return `Chuyên khoa được gợi ý: ${departmentName}.`;
+    if (facilityNames.length > 0) return `Cơ sở được gợi ý: ${facilityNames.join(", ")}.`;
+    return analysis.status || analysis.Status || "Đang cập nhật gợi ý chuyên khoa";
+  }
+
+  const diagnoses = analysis.diagnoses || analysis.Diagnoses || [];
 
   if (Array.isArray(diagnoses) && diagnoses.length > 0) {
     return diagnoses
@@ -34,8 +68,7 @@ function getDetailSummary(detail) {
       .join(", ");
   }
 
-  if (department?.departmentName) return department.departmentName;
-  return data.status || data.Status || "Đang cập nhật";
+  return analysis.status || analysis.Status || "Đang cập nhật";
 }
 
 export default function AnalysisHistoryPanel({
@@ -103,7 +136,7 @@ export default function AnalysisHistoryPanel({
       })
       .catch((requestError) => {
         if (!active) return;
-        const message = requestError.message || "Không thể tải lịch sử phân tích.";
+        const message = requestError.message || `Không thể tải ${copy.sessionLabel}.`;
         setError(message);
         setAnnouncement(message);
       })
@@ -217,7 +250,7 @@ export default function AnalysisHistoryPanel({
                   ) : selectedDetail ? (
                     <>
                       <strong>{getSessionTitle(selectedDetail, copy.fallback)}</strong>
-                      <p>{getDetailSummary(selectedDetail)}</p>
+                      <p>{getDetailSummary(selectedDetail, sessionType)}</p>
                     </>
                   ) : null}
                 </section>

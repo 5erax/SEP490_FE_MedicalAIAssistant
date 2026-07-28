@@ -64,6 +64,11 @@ function getCurrentPath() {
   return window.location.pathname;
 }
 
+function isNavigationItemActive(item, path) {
+  if (path === item.path) return true;
+  return item.path === "/symptom" && path.startsWith("/assessment/");
+}
+
 function getInitials(nameOrEmail = "MediMate") {
   const name = String(nameOrEmail).split("@")[0];
   return name
@@ -315,13 +320,13 @@ export default function UserWorkspaceShell({ children }) {
           aria-label="Đóng menu"
           onClick={() => setMobileMenuOpen(false)}
         >
-          <X size={19} />
+          <X size={19} aria-hidden="true" />
         </button>
 
         <nav className="user-shell-nav" data-onboarding="patient-nav">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = path === item.path;
+            const isActive = isNavigationItemActive(item, path);
             const locked = isLocked(item.path);
             const content = (
               <>
@@ -365,7 +370,13 @@ export default function UserWorkspaceShell({ children }) {
             <span>MediMate+</span>
             <strong id="medimate-plan-title">Mở rộng quyền lợi sử dụng</strong>
             <p>Xem các quyền lợi và hạn mức MediMate+ hiện đang được cung cấp.</p>
-            <button type="button" onClick={() => goTo("/pricing")}>Xem gói MediMate+</button>
+            <button
+              type="button"
+              aria-label="Nâng cấp · Xem gói MediMate+"
+              onClick={() => goTo("/pricing")}
+            >
+              Nâng cấp
+            </button>
           </section>
         )}
       </aside>
@@ -381,9 +392,9 @@ export default function UserWorkspaceShell({ children }) {
               ref={mobileMenuButtonRef}
               onClick={() => setMobileMenuOpen(true)}
             >
-              <Menu size={19} />
+              <Menu size={19} aria-hidden="true" />
             </button>
-            <span className="title-icon"><ActiveIcon size={19} strokeWidth={2.2} /></span>
+            <span className="title-icon"><ActiveIcon size={19} strokeWidth={2.2} aria-hidden="true" /></span>
             <div>
               <p>Không gian cá nhân</p>
               <h1>{activeItem.label}</h1>
@@ -391,7 +402,7 @@ export default function UserWorkspaceShell({ children }) {
           </div>
 
           <form className="user-shell-search" role="search" onSubmit={handleSearch} data-onboarding="patient-search">
-            <Search size={17} />
+            <Search size={17} aria-hidden="true" />
             <label className="sr-only" htmlFor="workspace-search">Tìm cơ sở y tế</label>
             <input
               id="workspace-search"
@@ -417,7 +428,7 @@ export default function UserWorkspaceShell({ children }) {
                 onClick={() => setAccountMenuOpen((current) => !current)}
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+                  <img src={avatarUrl} alt="" width="32" height="32" referrerPolicy="no-referrer" />
                 ) : (
                   <span>{getInitials(displayName)}</span>
                 )}
@@ -432,7 +443,7 @@ export default function UserWorkspaceShell({ children }) {
                 >
                   <div className="account-menu-summary">
                     {avatarUrl ? (
-                      <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+                      <img src={avatarUrl} alt="" width="38" height="38" referrerPolicy="no-referrer" />
                     ) : (
                       <span>{getInitials(displayName)}</span>
                     )}
@@ -517,7 +528,7 @@ export default function UserWorkspaceShell({ children }) {
           restoreFocusRef={noticeTriggerRef}
           onClose={closeNotice}
         >
-            <span className="app-notice-icon"><Crown size={20} /></span>
+            <span className="app-notice-icon"><Crown size={20} aria-hidden="true" /></span>
             <div>
               <h2 id="app-notice-title">{notice.title}</h2>
               <p id="app-notice-description">{notice.text}</p>

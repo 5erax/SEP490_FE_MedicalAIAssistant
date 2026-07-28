@@ -117,6 +117,13 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveAttribute("aria-pressed", "true");
 
+  const overviewTab = page.getByRole("tab", { name: "Tổng quan" });
+  await expect(overviewTab).toHaveAttribute("aria-selected", "true");
+  await overviewTab.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Bác sĩ" })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "Bác sĩ" }).press("End");
+  await expect(page.getByRole("tab", { name: "Đánh giá" })).toHaveAttribute("aria-selected", "true");
+
   const skipMap = page.getByRole("link", { name: "Bỏ qua bản đồ, đến danh sách cơ sở" });
   await expect(skipMap).toHaveAttribute("href", "#facility-list");
 });
@@ -177,6 +184,15 @@ test("pre-visit AI appears after facility detail and uses its department id", as
   });
   expect(requestedApiPaths).not.toContain("/api/medical-departments");
   expect(requestedApiPaths).toContain("/api/facility-departments/active");
+
+  const closeAssistant = page.getByRole("button", { name: "Đóng AI hỗ trợ" });
+  await closeAssistant.click();
+  const assistantLauncher = page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" });
+  await expect(assistantLauncher).toBeFocused();
+  await assistantLauncher.click();
+  await expect(page.getByRole("button", { name: "Đóng AI hỗ trợ" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(assistantLauncher).toBeFocused();
 });
 
 test("facility without coordinates stays in the list without a false marker", async ({ page }) => {

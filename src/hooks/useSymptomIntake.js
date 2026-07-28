@@ -9,13 +9,13 @@ import { trackUxEvent } from "../utils/analytics";
 const RESUMABLE_STATUSES = new Set(["idle", "questions", "no-questions", "result"]);
 let intakeStateCache = null;
 
-function getAnalysisErrorMessage(apiError) {
+function getRecommendationErrorMessage(apiError) {
   const technicalMessage = String(apiError?.message ?? "");
   const isUpstreamAnalysisFailure = apiError?.status === 502
     || /medgemma|analysis failed|parse.*json|json.*response/i.test(technicalMessage);
 
   if (isUpstreamAnalysisFailure) {
-    return "Dịch vụ AI chưa thể hoàn tất phân tích lần này. Vui lòng thử lại sau ít phút.";
+    return "Dịch vụ AI chưa thể tạo gợi ý chuyên khoa lần này. Vui lòng thử lại sau ít phút.";
   }
 
   return technicalMessage || "Không thể gửi câu trả lời. Vui lòng thử lại.";
@@ -92,7 +92,8 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
   useEffect(() => {
     if (!['questions', 'submitting'].includes(status) || questions.length === 0) return;
     const handle = window.setTimeout(() => {
-      questionsPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      questionsPanelRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
       questionsPanelRef.current?.focus({ preventScroll: true });
     }, 80);
     return () => window.clearTimeout(handle);
@@ -152,16 +153,20 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
     setStatus("submitting");
     try {
       const payload = buildClinicalQuestionAnswerItems(questions, answers);
-      const diagnosisResponse = await symptomAnalysisApi.submitClinicalQuestionAnswers(sessionId, payload);
-      const diagnosis = readResultPayload(diagnosisResponse) ?? {};
-      const diagnoses = Array.isArray(diagnosis.diagnoses)
-        ? diagnosis.diagnoses
-        : Array.isArray(diagnosis.Diagnoses) ? diagnosis.Diagnoses : [];
+      const recommendationResponse = await symptomAnalysisApi.submitClinicalQuestionAnswers(
+        sessionId,
+        payload,
+      );
+      const recommendation = readResultPayload(recommendationResponse) ?? {};
       const completedResult = {
-        ...diagnosis,
-        diagnoses,
-        primaryDiagnosis: diagnoses[0] ?? diagnosis.primaryDiagnosis ?? diagnosis.PrimaryDiagnosis ?? null,
-        diagnosisModel: diagnosis.model ?? diagnosis.Model ?? null,
+        recommendedDepartment: recommendation.recommendedDepartment
+          ?? recommendation.RecommendedDepartment
+          ?? null,
+        recommendedFacilities: Array.isArray(recommendation.recommendedFacilities)
+          ? recommendation.recommendedFacilities
+          : Array.isArray(recommendation.RecommendedFacilities)
+            ? recommendation.RecommendedFacilities
+            : [],
       };
       writeStoredIntakeState({
         input,
@@ -180,7 +185,7 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
         sessionId,
       });
     } catch (apiError) {
-      setError(getAnalysisErrorMessage(apiError));
+      setError(getRecommendationErrorMessage(apiError));
       setStatus("questions");
     }
   }

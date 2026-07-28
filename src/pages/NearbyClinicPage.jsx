@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
-  Bookmark,
   Building2,
   Clock3,
   Globe2,
@@ -50,21 +49,7 @@ const DETAIL_TABS = [
   ["reviews", "Đánh giá"],
 ];
 
-const BUSY_HOURS = {
-  monday: { label: "Thứ Hai", values: [22, 38, 68, 88, 76, 46, 54, 72, 64, 38] },
-  tuesday: { label: "Thứ Ba", values: [18, 34, 62, 82, 70, 42, 50, 68, 60, 34] },
-  wednesday: { label: "Thứ Tư", values: [20, 36, 64, 84, 72, 44, 52, 70, 62, 36] },
-  thursday: { label: "Thứ Năm", values: [18, 32, 58, 78, 68, 40, 48, 66, 58, 32] },
-  friday: { label: "Thứ Sáu", values: [24, 42, 70, 90, 80, 50, 58, 76, 68, 40] },
-};
-const BUSY_HOUR_LABELS = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
 const RATING_LABELS = ["", "Rất tệ", "Không hài lòng", "Bình thường", "Hài lòng", "Rất hài lòng"];
-
-function getBusyLevel(value) {
-  if (value >= 75) return { label: "Đông", tone: "high" };
-  if (value >= 45) return { label: "Vừa", tone: "medium" };
-  return { label: "Ít", tone: "low" };
-}
 
 function getValidTab(value) {
   return DETAIL_TABS.some(([id]) => id === value) ? value : "overview";
@@ -80,16 +65,6 @@ function readMapQuery() {
     sessionId: params.get("sessionId") || "",
     source: params.get("source") || "",
     tab: getValidTab(params.get("tab")),
-  };
-}
-
-function sanitizeDiagnosis(diagnosis) {
-  if (!diagnosis || typeof diagnosis !== "object") return null;
-  return {
-    diseaseName: diagnosis.diseaseName ?? diagnosis.DiseaseName ?? "",
-    icd10Code: diagnosis.icd10Code ?? diagnosis.Icd10Code ?? "",
-    paGivenB: Number(diagnosis.paGivenB ?? diagnosis.PAGivenB ?? 0) || 0,
-    rank: Number(diagnosis.rank ?? diagnosis.Rank ?? 0) || 0,
   };
 }
 
@@ -127,35 +102,34 @@ function sanitizeRecommendedFacility(facility) {
     ?? "",
   ).trim();
   if (!id) return null;
-  const departmentItems = Array.isArray(facility.departments) ? facility.departments : [];
+  const departmentItems = facility.departments ?? facility.Departments;
   return {
-    address: String(facility.address ?? "").trim(),
-    departments: departmentItems.map((department) => ({
-      departmentId: String(department?.departmentId ?? department?.id ?? "").trim(),
-      departmentName: String(department?.departmentName ?? department?.name ?? "").trim(),
+    address: String(facility.address ?? facility.Address ?? "").trim(),
+    departments: (Array.isArray(departmentItems) ? departmentItems : []).map((department) => ({
+      departmentId: String(
+        department?.departmentId ?? department?.DepartmentId ?? department?.id ?? "",
+      ).trim(),
+      departmentName: String(
+        department?.departmentName ?? department?.DepartmentName ?? department?.name ?? "",
+      ).trim(),
     })).filter((department) => department.departmentId || department.departmentName),
     facilityId: id,
-    facilityName: String(facility.facilityName ?? facility.name ?? "").trim(),
-    facilityType: String(facility.facilityType ?? "").trim(),
-    imageUrl: String(facility.imageUrl ?? "").trim(),
-    isActive: facility.isActive !== false,
-    latitude: coordinateOrNull(facility.latitude, -90, 90),
-    longitude: coordinateOrNull(facility.longitude, -180, 180),
-    openingHours: String(facility.openingHours ?? "").trim(),
-    phone: String(facility.phone ?? "").trim(),
-    website: String(facility.website ?? "").trim(),
+    facilityName: String(
+      facility.facilityName ?? facility.FacilityName ?? facility.name ?? "",
+    ).trim(),
+    facilityType: String(facility.facilityType ?? facility.FacilityType ?? "").trim(),
+    imageUrl: String(facility.imageUrl ?? facility.ImageUrl ?? "").trim(),
+    isActive: (facility.isActive ?? facility.IsActive) !== false,
+    latitude: coordinateOrNull(facility.latitude ?? facility.Latitude, -90, 90),
+    longitude: coordinateOrNull(facility.longitude ?? facility.Longitude, -180, 180),
+    openingHours: String(facility.openingHours ?? facility.OpeningHours ?? "").trim(),
+    phone: String(facility.phone ?? facility.Phone ?? "").trim(),
+    website: String(facility.website ?? facility.Website ?? "").trim(),
   };
 }
 
 function buildClinicalRecommendationContext(analysis) {
   if (!analysis || typeof analysis !== "object") return null;
-  const diagnosisItems = analysis.diagnoses ?? analysis.Diagnoses;
-  const diagnoses = (Array.isArray(diagnosisItems) ? diagnosisItems : [])
-    .map(sanitizeDiagnosis)
-    .filter(Boolean);
-  const primaryDiagnosis = sanitizeDiagnosis(
-    analysis.primaryDiagnosis ?? analysis.PrimaryDiagnosis,
-  ) ?? diagnoses[0] ?? null;
   const departmentItems = analysis.recommendedDepartments ?? analysis.RecommendedDepartments;
   const recommendedDepartment = sanitizeDepartment(
     analysis.recommendedDepartment
@@ -170,14 +144,12 @@ function buildClinicalRecommendationContext(analysis) {
     .filter(Boolean);
 
   const context = {
-    diagnoses,
-    primaryDiagnosis,
     recommendedDepartment,
     recommendedFacilities,
     sessionId: String(analysis.sessionId ?? "").trim(),
   };
 
-  return primaryDiagnosis || diagnoses.length || recommendedDepartment || recommendedFacilities.length
+  return recommendedDepartment || recommendedFacilities.length
     ? context
     : null;
 }
@@ -448,7 +420,7 @@ function NearbyClinicPage() {
       return "Đăng nhập để xem lại kết quả gợi ý chuyên khoa của bạn.";
     }
     if (!mapQuery.sessionId) {
-      return "Không tìm thấy mã phiên phân tích để khôi phục kết quả.";
+      return "Không tìm thấy mã phiên gợi ý để khôi phục kết quả.";
     }
     return "";
   });
@@ -481,7 +453,6 @@ function NearbyClinicPage() {
   const [editingReview, setEditingReview] = useState(false);
   const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
-  const [busyDay, setBusyDay] = useState("monday");
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
   const [mapStatus, setMapStatus] = useState("loading");
@@ -1102,6 +1073,32 @@ function NearbyClinicPage() {
     }
   };
 
+  const handleHospitalTabKeyDown = (event, currentTabId) => {
+    const currentIndex = DETAIL_TABS.findIndex(([tabId]) => tabId === currentTabId);
+    if (currentIndex < 0) return;
+
+    let nextIndex;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (currentIndex + 1) % DETAIL_TABS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (currentIndex - 1 + DETAIL_TABS.length) % DETAIL_TABS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = DETAIL_TABS.length - 1;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    const nextTabId = DETAIL_TABS[nextIndex][0];
+    changeHospitalTab(nextTabId);
+    event.currentTarget
+      .closest('[role="tablist"]')
+      ?.querySelector(`#facility-tab-${nextTabId}`)
+      ?.focus();
+  };
+
   const openDoctorDetail = (doctor) => {
     savedDetailScrollRef.current = detailBodyRef.current?.scrollTop ?? 0;
     setSelectedDoctor(doctor);
@@ -1451,7 +1448,6 @@ function NearbyClinicPage() {
               <div className="facility-quick-actions" aria-label={`Thao tác nhanh với ${detailFacility.facilityName}`}>
                 <button type="button" className="primary" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}><Route size={18} /><span>Chỉ đường</span></button>
                 <button type="button" disabled={!detailFacility.phone} title={detailFacility.phone ? undefined : "Cơ sở chưa có số điện thoại"} onClick={() => callFacility(detailFacility)}><Phone size={18} /><span>Gọi</span></button>
-                <button type="button" aria-label="Lưu cơ sở y tế"><Bookmark size={18} /><span>Lưu</span></button>
                 <button type="button" onClick={() => shareFacility(detailFacility)}><Share2 size={18} /><span>Chia sẻ</span></button>
                 {detailFacility.website && <a href={detailFacility.website} target="_blank" rel="noreferrer"><Globe2 size={18} /><span>Website</span></a>}
               </div>
@@ -1459,7 +1455,18 @@ function NearbyClinicPage() {
 
               <div className="facility-detail-tabs" role="tablist" aria-label="Thông tin cơ sở y tế">
                 {DETAIL_TABS.map(([tabId, label]) => (
-                  <button key={tabId} type="button" role="tab" aria-selected={activeHospitalTab === tabId} className={activeHospitalTab === tabId ? "active" : ""} onClick={() => changeHospitalTab(tabId)}>
+                  <button
+                    key={tabId}
+                    id={`facility-tab-${tabId}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeHospitalTab === tabId}
+                    aria-controls={`facility-panel-${tabId}`}
+                    tabIndex={activeHospitalTab === tabId ? 0 : -1}
+                    className={activeHospitalTab === tabId ? "active" : ""}
+                    onClick={() => changeHospitalTab(tabId)}
+                    onKeyDown={(event) => handleHospitalTabKeyDown(event, tabId)}
+                  >
                     {label}
                   </button>
                 ))}
@@ -1469,7 +1476,12 @@ function NearbyClinicPage() {
               {detailError && <p className="facility-detail-error">{detailError}</p>}
 
               {activeHospitalTab === "overview" && (
-                <div className="facility-detail-tab-panel" role="tabpanel">
+                <div
+                  id="facility-panel-overview"
+                  className="facility-detail-tab-panel"
+                  role="tabpanel"
+                  aria-labelledby="facility-tab-overview"
+                >
                   <section className="facility-info-group">
                     <h3>Thông tin tổng quan</h3>
                     <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
@@ -1484,35 +1496,8 @@ function NearbyClinicPage() {
                     <div className="facility-detail-tags">{detailFacility.departments.map((department) => <span key={department}>{department}</span>)}</div>
                   </section>
                   <section className="facility-info-group busy-hours-section">
-                    <div className="busy-hours-heading">
-                      <div><h3>Xu hướng đông khách</h3><p>Ước tính theo khung giờ khám, chưa được bệnh viện xác nhận.</p></div>
-                      <label>Chọn ngày
-                        <select value={busyDay} onChange={(event) => setBusyDay(event.target.value)}>
-                          {Object.entries(BUSY_HOURS).map(([day, data]) => <option key={day} value={day}>{data.label}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                    <figure className="busy-hours-chart" aria-labelledby="busy-hours-caption">
-                      <div className="busy-hours-bars" role="img" aria-label={`Biểu đồ xu hướng đông khách ước tính ${BUSY_HOURS[busyDay].label}. Khung 09:00 được ước tính ở mức đông.`}>
-                        {BUSY_HOURS[busyDay].values.map((value, index) => (
-                          <div className="busy-hour-column" key={BUSY_HOUR_LABELS[index]}>
-                            <span className={`busy-hour-value ${getBusyLevel(value).tone}`}>{getBusyLevel(value).label}</span>
-                            <i style={{ height: `${value}%` }} />
-                            <small>{BUSY_HOUR_LABELS[index].replace(":00", "h")}</small>
-                          </div>
-                        ))}
-                      </div>
-                      <figcaption id="busy-hours-caption"><strong>Không phải dữ liệu đo lường.</strong> Biểu đồ chỉ hỗ trợ chọn thời điểm tham khảo. Hãy gọi bệnh viện để xác nhận trước khi đến.</figcaption>
-                    </figure>
-                    <details className="busy-hours-data">
-                      <summary>Xem chi tiết theo giờ</summary>
-                      <table>
-                        <caption>Xu hướng đông khách ước tính {BUSY_HOURS[busyDay].label}</caption>
-                        <thead><tr><th scope="col">Giờ</th><th scope="col">Mức ước tính</th></tr></thead>
-                        <tbody>{BUSY_HOURS[busyDay].values.map((value, index) => <tr key={BUSY_HOUR_LABELS[index]}><td>{BUSY_HOUR_LABELS[index]}</td><td><span className={`busy-level-badge ${getBusyLevel(value).tone}`}>{getBusyLevel(value).label}</span></td></tr>)}</tbody>
-                      </table>
-                      <p>Nguồn: mô hình hiển thị nội bộ dựa trên khung giờ khám; chưa có dữ liệu lượng khách từ bệnh viện.</p>
-                    </details>
+                    <h3>Mức độ đông khách</h3>
+                    <p>Hệ thống chưa có dữ liệu lượng khách theo thời gian thực từ cơ sở này. Vui lòng liên hệ trực tiếp trước khi đến.</p>
                   </section>
                   <section className="facility-info-group">
                     <h3>Tiện ích hiện có dữ liệu</h3>
@@ -1522,7 +1507,12 @@ function NearbyClinicPage() {
               )}
 
               {activeHospitalTab === "doctors" && (
-                <div className="facility-detail-tab-panel" role="tabpanel">
+                <div
+                  id="facility-panel-doctors"
+                  className="facility-detail-tab-panel"
+                  role="tabpanel"
+                  aria-labelledby="facility-tab-doctors"
+                >
                   <section className="facility-info-group">
                     <h3>Danh sách bác sĩ</h3>
                     {detailDoctorsLoading && <p className="facility-detail-status">Đang tải danh sách bác sĩ...</p>}
@@ -1545,7 +1535,12 @@ function NearbyClinicPage() {
               )}
 
               {activeHospitalTab === "reviews" && (
-                <div className="facility-detail-tab-panel" role="tabpanel">
+                <div
+                  id="facility-panel-reviews"
+                  className="facility-detail-tab-panel"
+                  role="tabpanel"
+                  aria-labelledby="facility-tab-reviews"
+                >
                   <section className="facility-info-group">
                     <h3>Đánh giá người dùng</h3>
                     <div className="review-overview"><strong>{detailAverageRating ? detailAverageRating.toFixed(1) : "--"}</strong><div className="review-summary-stars" aria-label={detailAverageRating ? `${detailAverageRating.toFixed(1)} trên 5 sao` : "Chưa có điểm đánh giá"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={detailAverageRating >= rating - 0.25 ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{reviewsTotalCount} đánh giá</span></div>

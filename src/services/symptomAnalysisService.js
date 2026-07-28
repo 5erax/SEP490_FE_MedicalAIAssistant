@@ -61,17 +61,6 @@ function normalizeCoordinate(value) {
   return Number.isFinite(coordinate) ? coordinate : null;
 }
 
-function createDiagnosisSnapshot(diagnosis) {
-  if (!isPlainObject(diagnosis)) return null;
-
-  return {
-    diseaseName: normalizeText(diagnosis.diseaseName ?? diagnosis.DiseaseName),
-    icd10Code: normalizeText(diagnosis.icd10Code ?? diagnosis.Icd10Code),
-    paGivenB: Number(diagnosis.paGivenB ?? diagnosis.PAGivenB ?? 0) || 0,
-    rank: Number(diagnosis.rank ?? diagnosis.Rank ?? 0) || 0,
-  };
-}
-
 function createDepartmentSnapshot(department) {
   if (!isPlainObject(department)) return null;
 
@@ -137,10 +126,6 @@ function createFacilitySnapshot(facility) {
 function createClinicalMapSnapshot(analysis, fallbackSessionId) {
   if (!isPlainObject(analysis)) return null;
 
-  const diagnosisItems = analysis.diagnoses ?? analysis.Diagnoses;
-  const diagnoses = (Array.isArray(diagnosisItems) ? diagnosisItems : [])
-    .map(createDiagnosisSnapshot)
-    .filter(Boolean);
   const facilityItems = analysis.recommendedFacilities ?? analysis.RecommendedFacilities;
   const recommendedFacilities = (
     Array.isArray(facilityItems) ? facilityItems : []
@@ -152,18 +137,12 @@ function createClinicalMapSnapshot(analysis, fallbackSessionId) {
   )
     ?? recommendedFacilities[0]?.departments?.[0]
     ?? null;
-  const primaryDiagnosis = createDiagnosisSnapshot(
-    analysis.primaryDiagnosis ?? analysis.PrimaryDiagnosis,
-  )
-    ?? diagnoses[0]
-    ?? null;
 
-  if (!primaryDiagnosis && !recommendedDepartment && recommendedFacilities.length === 0) {
+  if (!recommendedDepartment && recommendedFacilities.length === 0) {
     return null;
   }
 
   return {
-    primaryDiagnosis,
     recommendedDepartment,
     recommendedFacilities,
     sessionId: normalizeText(analysis.sessionId ?? analysis.SessionId ?? fallbackSessionId),

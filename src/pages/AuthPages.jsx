@@ -373,7 +373,7 @@ export function LoginPage() {
           <a href="/forgot-password">Quên mật khẩu?</a>
         </div>
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
-          {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
+          {submitting ? "Đang đăng nhập…" : "Đăng nhập"}
         </button>
         <div className="auth-bottom-link">
           <span>Chưa có tài khoản?</span>
@@ -400,10 +400,13 @@ export function SignupPage() {
   });
   const [accepted, setAccepted] = useState(false);
   const [message, setMessage] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const confirmPasswordRef = useRef(null);
 
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => ({ ...current, [key]: "" }));
   }
 
   async function handleSubmit(event) {
@@ -413,7 +416,9 @@ export function SignupPage() {
       return;
     }
     if (form.password !== form.confirmPassword) {
-      setMessage({ type: "error", text: "Mật khẩu nhập lại chưa khớp. Vui lòng kiểm tra lại." });
+      setMessage(null);
+      setFieldErrors({ confirmPassword: "Mật khẩu nhập lại chưa khớp. Vui lòng kiểm tra lại." });
+      window.requestAnimationFrame(() => confirmPasswordRef.current?.focus());
       return;
     }
     setSubmitting(true);
@@ -453,7 +458,7 @@ export function SignupPage() {
           <p>Mật khẩu bảo vệ tài khoản; ngày sinh và giới tính có thể được bổ sung hoặc kiểm tra lại trong hồ sơ.</p>
           <div className="form-two-cols">
             <Field label="Mật khẩu" name="password" type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" hint={PASSWORD_HINT} required />
-            <Field label="Nhập lại mật khẩu" name="confirmPassword" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" hint="Nhập lại đúng mật khẩu mới để tránh khóa nhầm tài khoản." required />
+            <Field label="Nhập lại mật khẩu" name="confirmPassword" type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} autoComplete="new-password" hint="Nhập lại đúng mật khẩu mới để tránh khóa nhầm tài khoản." error={fieldErrors.confirmPassword} inputRef={confirmPasswordRef} required />
             <SelectField label="Giới tính" name="gender" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
               <option value="1">Nam</option>
               <option value="2">Nữ</option>
@@ -467,8 +472,8 @@ export function SignupPage() {
           <span>Tôi đồng ý với điều khoản sử dụng và hiểu MediMate AI không thay thế bác sĩ.</span>
         </label>
 
-        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting || !accepted}>
-          {submitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
+          {submitting ? "Đang tạo tài khoản…" : "Tạo tài khoản"}
         </button>
         <div className="auth-bottom-link">
           <span>Đã có tài khoản?</span>
@@ -521,7 +526,7 @@ export function ForgotPasswordPage() {
           <p>Sau khi nhận hướng dẫn, dùng mã xác thực ở bước đặt lại mật khẩu.</p>
         </div>
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
-          {submitting ? "Đang gửi..." : "Gửi hướng dẫn"}
+          {submitting ? "Đang gửi…" : "Gửi hướng dẫn"}
         </button>
         <div className="auth-bottom-link">
           <a href="/change-password">Tôi đã có mã xác thực</a>
@@ -626,7 +631,7 @@ export function ChangePasswordPage() {
           </div>
         </fieldset>
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
-          {submitting ? "Đang đổi..." : "Đổi mật khẩu"}
+          {submitting ? "Đang đổi…" : "Đổi mật khẩu"}
         </button>
         <div className="auth-bottom-link">
           <a href="/forgot-password">Gửi lại mã</a>

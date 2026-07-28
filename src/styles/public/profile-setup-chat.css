@@ -329,6 +329,7 @@
 }
 
 .landing-chat-launcher.suppressed {
+  visibility: hidden;
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
@@ -408,6 +409,7 @@
   width: min(390px, calc(100vw - 32px));
   height: min(620px, calc(100svh - 132px));
   overflow: hidden;
+  overscroll-behavior: contain;
   border: 1.5px solid var(--ink);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.92);

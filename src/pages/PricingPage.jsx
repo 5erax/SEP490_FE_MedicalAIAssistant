@@ -65,6 +65,7 @@ function PricingPage() {
   const [apiPlans, setApiPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [plansError, setPlansError] = useState("");
+  const [plansLoadAttempt, setPlansLoadAttempt] = useState(0);
   const [subscriptions, setSubscriptions] = useState([]);
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(Boolean(auth));
   const [checkoutState, setCheckoutState] = useState({ status: "idle", message: "", paymentId: "" });
@@ -136,7 +137,7 @@ function PricingPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [plansLoadAttempt]);
 
   useEffect(() => {
     if (!auth) return undefined;
@@ -373,16 +374,25 @@ function PricingPage() {
         </div>
       </header>
 
-      {!plansLoading && paidPlans.length === 0 && (
+      {!plansLoading && plansError ? (
         <div className="pricing-api-message error" role="alert">
+          <span>Chưa thể tải thông tin gói lúc này.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setPlansLoading(true);
+              setPlansError("");
+              setPlansLoadAttempt((current) => current + 1);
+            }}
+          >
+            Thử tải lại
+          </button>
+        </div>
+      ) : !plansLoading && paidPlans.length === 0 ? (
+        <div className="pricing-api-message error" role="status">
           Hiện chưa có gói trả phí khả dụng. Bạn vẫn có thể sử dụng các tiện ích công khai.
         </div>
-      )}
-      {plansError && (
-        <div className="pricing-api-message error" role="alert">
-          Chưa thể tải thông tin gói lúc này. Vui lòng thử lại sau.
-        </div>
-      )}
+      ) : null}
 
       <section className="plans-grid" aria-label="So sánh các gói MediMate">
         <article className="plan-card plan-card-basic">
@@ -423,7 +433,7 @@ function PricingPage() {
           <p className="plan-kicker">Quyền lợi có hạn mức</p>
           <h2>{paidPlan?.planName || "MediMate+"}</h2>
           <div className="price-line">
-            <strong>{plansLoading ? "Đang tải..." : currentPrice ? formatPrice(currentPrice) : "Chưa cấu hình"}</strong>
+            <strong>{plansLoading ? "Đang tải…" : currentPrice ? formatPrice(currentPrice) : "Chưa cấu hình"}</strong>
             {paidPlan && <span>/ {paidPlan.durationInDays} ngày</span>}
           </div>
           <p className="plan-summary">
@@ -791,10 +801,24 @@ const refreshStyles = `
 }
 .pricing-api-message {
   width: min(1120px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   margin: 24px auto 0;
   border-width: 1px;
   border-radius: 12px;
   box-shadow: none;
+}
+.pricing-api-message button {
+  min-height: 44px;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  padding: 0 14px;
+  font-weight: 850;
 }
 .plans-grid {
   width: min(1120px, 100%);
@@ -1145,6 +1169,13 @@ const refreshStyles = `
   }
   .billing-panel {
     padding: 14px;
+  }
+  .pricing-api-message {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .pricing-api-message button {
+    width: 100%;
   }
   .plans-grid .plan-card {
     padding: 22px 18px;

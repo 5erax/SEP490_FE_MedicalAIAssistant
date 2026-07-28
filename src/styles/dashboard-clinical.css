@@ -470,9 +470,13 @@
   box-shadow: 0 14px 38px rgba(11, 45, 53, 0.07);
 }
 
-.specialty-clinical-page .studio-result-card.primary {
+.specialty-clinical-page .studio-result-card.specialty {
   border-top: 4px solid var(--clinical-teal);
-  background: linear-gradient(140deg, #fff 0%, var(--clinical-mint-soft) 100%);
+  background: linear-gradient(140deg, var(--color-surface) 0%, var(--clinical-mint-soft) 100%);
+}
+
+.specialty-clinical-page .specialty-result-head span {
+  color: var(--clinical-teal);
 }
 
 .specialty-clinical-page :is(button, textarea, input, select, a):focus-visible {
@@ -653,10 +657,17 @@ html[data-theme="dark"] .specialty-clinical-page .specialty-emergency-note p {
   color: #ffd2bf;
 }
 
+html[data-theme="dark"] .specialty-clinical-page .specialty-confidence-badge {
+  border-color: rgba(112, 214, 206, 0.45);
+  background: rgba(95, 198, 190, 0.14);
+  color: #baf2ed;
+}
+
 @media (forced-colors: active) {
   .specialty-clinical-page .specialty-scope-note,
   .specialty-clinical-page .specialty-emergency-note,
-  .specialty-clinical-page .studio-chatbox {
+  .specialty-clinical-page .studio-chatbox,
+  .specialty-clinical-page .specialty-confidence-badge {
     border: 2px solid CanvasText;
   }
 

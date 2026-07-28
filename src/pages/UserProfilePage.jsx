@@ -360,7 +360,7 @@ export default function UserProfilePage() {
       <aside className="profile-sidebar">
         <div className="profile-identity">
           <span>{initials(profileForm.displayName)}</span>
-          <strong>{profileForm.displayName || (loading ? "Đang tải..." : "Người dùng")}</strong>
+          <strong>{profileForm.displayName || (loading ? "Đang tải…" : "Người dùng")}</strong>
           <small>{profileForm.email}</small>
         </div>
         <nav role="tablist" aria-label="Các mục hồ sơ">
@@ -385,7 +385,7 @@ export default function UserProfilePage() {
             <span>{initials(profileForm.displayName)}</span>
             <div>
               <p>Không gian cá nhân</p>
-              <h1>{profileForm.displayName || (loading ? "Đang tải hồ sơ..." : "Cập nhật hồ sơ của bạn")}</h1>
+              <h1>{profileForm.displayName || (loading ? "Đang tải hồ sơ…" : "Cập nhật hồ sơ của bạn")}</h1>
               <small>{profileForm.email || "Chưa có email"}</small>
             </div>
           </div>
@@ -393,13 +393,13 @@ export default function UserProfilePage() {
             <button type="button" className="profile-summary-card" onClick={() => selectTab("info")}>
               <span>Thông tin</span>
               <strong>{personalCompletion}/5</strong>
-              <small>{personalMissing.length ? `Còn thiếu: ${personalMissing.slice(0, 2).join(", ")}${personalMissing.length > 2 ? "..." : ""}` : "Đã hoàn thiện thông tin cơ bản"}</small>
+              <small>{personalMissing.length ? `Còn thiếu: ${personalMissing.slice(0, 2).join(", ")}${personalMissing.length > 2 ? "…" : ""}` : "Đã hoàn thiện thông tin cơ bản"}</small>
               <i role="progressbar" aria-label="Tiến độ thông tin cá nhân" aria-valuemin="0" aria-valuemax="5" aria-valuenow={personalCompletion}><b style={{ width: `${personalCompletion * 20}%` }} /></i>
             </button>
             <button type="button" className="profile-summary-card" onClick={() => selectTab("medical")}>
               <span>Y tế</span>
               <strong>{medicalCompletion}/5</strong>
-              <small>{medicalMissing.length ? `Còn thiếu: ${medicalMissing.slice(0, 2).join(", ")}${medicalMissing.length > 2 ? "..." : ""}` : "Đã hoàn thiện dữ liệu sức khỏe"}</small>
+              <small>{medicalMissing.length ? `Còn thiếu: ${medicalMissing.slice(0, 2).join(", ")}${medicalMissing.length > 2 ? "…" : ""}` : "Đã hoàn thiện dữ liệu sức khỏe"}</small>
               <i role="progressbar" aria-label="Tiến độ hồ sơ y tế" aria-valuemin="0" aria-valuemax="5" aria-valuenow={medicalCompletion}><b style={{ width: `${medicalCompletion * 20}%` }} /></i>
             </button>
             <article>
@@ -419,32 +419,32 @@ export default function UserProfilePage() {
         {toast && <div className="toast" role={Object.keys(errors).length ? "alert" : "status"} aria-live={Object.keys(errors).length ? "assertive" : "polite"}>{toast}</div>}
 
         {activeTab === "info" && (
-          <form ref={profileFormRef} id="profile-panel-info" role="tabpanel" aria-labelledby="profile-tab-info" className={`profile-card ${isEditing ? "is-editing" : ""}`} aria-busy={savingProfile} onSubmit={saveProfile} noValidate>
+          <form ref={profileFormRef} id="profile-panel-info" role="tabpanel" aria-label="Thông tin cá nhân" className={`profile-card ${isEditing ? "is-editing" : ""}`} aria-busy={savingProfile} onSubmit={saveProfile} noValidate>
             <div className="profile-head">
               <div><h1>Thông tin cá nhân</h1><span>Cơ bản</span></div>
-              {!isEditing ? <button type="button" onClick={() => setIsEditing(true)} disabled={loading}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!profileDirty || savingProfile}>{savingProfile ? "Đang lưu..." : "Lưu thay đổi"}</button><button type="button" onClick={cancelProfileEdit} disabled={savingProfile}>Huỷ</button></div>}
+              {!isEditing ? <button type="button" onClick={() => setIsEditing(true)} disabled={loading}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!profileDirty || savingProfile}>{savingProfile ? "Đang lưu…" : "Lưu thay đổi"}</button><button type="button" onClick={cancelProfileEdit} disabled={savingProfile}>Huỷ</button></div>}
             </div>
             <div className="form-grid">
-              <Field label="Họ và tên" error={errors.displayName} wide><input value={profileForm.displayName} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("displayName", e.target.value)} /></Field>
-              <Field label="Email" wide><input value={profileForm.email} disabled /><em>Không thể đổi</em></Field>
-              <Field label="Giới tính" error={errors.gender}><select value={profileForm.gender} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("gender", e.target.value)}><option value="1">Nam</option><option value="2">Nữ</option><option value="0">Khác</option></select></Field>
-              <Field label="Ngày sinh" error={errors.dateOfBirth}><input type="date" value={profileForm.dateOfBirth} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
-              <Field label="Số điện thoại" error={errors.phoneNumber}><input type="tel" inputMode="tel" autoComplete="tel" value={profileForm.phoneNumber} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
-              <Field label="Địa chỉ" error={errors.address} wide><input value={profileForm.address} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
+              <Field label="Họ và tên" error={errors.displayName} wide><input name="displayName" autoComplete="name" value={profileForm.displayName} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("displayName", e.target.value)} /></Field>
+              <Field label="Email" wide><input name="email" type="email" autoComplete="email" value={profileForm.email} disabled /><em>Không thể đổi</em></Field>
+              <Field label="Giới tính" error={errors.gender}><select name="gender" autoComplete="sex" value={profileForm.gender} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("gender", e.target.value)}><option value="1">Nam</option><option value="2">Nữ</option><option value="0">Khác</option></select></Field>
+              <Field label="Ngày sinh" error={errors.dateOfBirth}><input name="dateOfBirth" type="date" autoComplete="bday" value={profileForm.dateOfBirth} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
+              <Field label="Số điện thoại" error={errors.phoneNumber}><input name="phoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={profileForm.phoneNumber} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
+              <Field label="Địa chỉ" error={errors.address} wide><input name="address" autoComplete="street-address" value={profileForm.address} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
             </div>
           </form>
         )}
 
         {activeTab === "medical" && (
-          <form ref={medicalFormRef} id="profile-panel-medical" role="tabpanel" aria-labelledby="profile-tab-medical" className={`profile-card ${isMedicalEditing ? "is-editing" : ""}`} aria-busy={savingMedical} onSubmit={saveMedical} noValidate>
-            <div className="profile-head"><div><h1>Hồ sơ y tế</h1><span>{patientProfileId ? "Đã đồng bộ" : "Chưa tạo"}</span></div>{!isMedicalEditing ? <button type="button" onClick={() => setIsMedicalEditing(true)} disabled={loading}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!medicalDirty || savingMedical}>{savingMedical ? "Đang lưu..." : "Lưu hồ sơ"}</button><button type="button" onClick={resetMedicalForm} disabled={savingMedical}>Huỷ</button></div>}</div>
+          <form ref={medicalFormRef} id="profile-panel-medical" role="tabpanel" aria-label="Hồ sơ y tế" className={`profile-card ${isMedicalEditing ? "is-editing" : ""}`} aria-busy={savingMedical} onSubmit={saveMedical} noValidate>
+            <div className="profile-head"><div><h1>Hồ sơ y tế</h1><span>{patientProfileId ? "Đã đồng bộ" : "Chưa tạo"}</span></div>{!isMedicalEditing ? <button type="button" onClick={() => setIsMedicalEditing(true)} disabled={loading}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!medicalDirty || savingMedical}>{savingMedical ? "Đang lưu…" : "Lưu hồ sơ"}</button><button type="button" onClick={resetMedicalForm} disabled={savingMedical}>Huỷ</button></div>}</div>
             <div className="medical-privacy-note"><ShieldCheck size={19} aria-hidden="true" /><div><strong>Dữ liệu sức khỏe nhạy cảm</strong><p>Thông tin này hỗ trợ cá nhân hóa tư vấn. Chỉ nhập dữ liệu bạn biết chính xác.</p></div></div>
             <div className="form-grid three">
-              <Field label="Nhóm máu"><select value={medicalForm.bloodType} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("bloodType", e.target.value)}><option value="">Chưa rõ</option>{["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((v)=><option key={v}>{v}</option>)}</select></Field>
-              <Field label="Chiều cao (cm)" error={errors.height}><input type="number" min="40" max="250" step="0.1" value={medicalForm.height} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("height", e.target.value)} /></Field>
-              <Field label="Cân nặng (kg)" error={errors.weight}><input type="number" min="2" max="500" step="0.1" value={medicalForm.weight} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("weight", e.target.value)} /></Field>
+              <Field label="Nhóm máu"><select name="bloodType" value={medicalForm.bloodType} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("bloodType", e.target.value)}><option value="">Chưa rõ</option>{["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((v)=><option key={v}>{v}</option>)}</select></Field>
+              <Field label="Chiều cao (cm)" error={errors.height}><input name="height" type="number" inputMode="decimal" min="40" max="250" step="0.1" value={medicalForm.height} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("height", e.target.value)} /></Field>
+              <Field label="Cân nặng (kg)" error={errors.weight}><input name="weight" type="number" inputMode="decimal" min="2" max="500" step="0.1" value={medicalForm.weight} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("weight", e.target.value)} /></Field>
             </div>
-            <Field label="Dị ứng" error={errors.allergyNote}><textarea rows={4} maxLength={1000} placeholder="Ví dụ: thuốc, thực phẩm, phấn hoa..." value={medicalForm.allergyNote} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("allergyNote", e.target.value)} /></Field>
+            <Field label="Dị ứng" error={errors.allergyNote}><textarea name="allergyNote" rows={4} maxLength={1000} placeholder="Ví dụ: thuốc, thực phẩm, phấn hoa…" value={medicalForm.allergyNote} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("allergyNote", e.target.value)} /></Field>
             <section className="profile-disease-section" aria-label="Bệnh nền">
               <div className="profile-disease-head">
                 <div>
@@ -476,17 +476,21 @@ export default function UserProfilePage() {
                           <span>Tên bệnh</span>
                           <input
                             data-disease-name
+                            id={`profile-disease-${index}-name`}
+                            name={`chronicDiseases.${index}.diseaseName`}
                             value={disease.diseaseName}
-                            placeholder="Ví dụ: hen suyễn, tăng huyết áp..."
+                            placeholder="Ví dụ: hen suyễn, tăng huyết áp…"
                             disabled={!isMedicalEditing || savingMedical}
                             onChange={(event) => updateMedicalDisease(index, "diseaseName", event.target.value)}
                             aria-invalid={Boolean(errors[`chronicDiseases.${index}.diseaseName`])}
+                            aria-describedby={errors[`chronicDiseases.${index}.diseaseName`] ? `profile-disease-${index}-name-error` : undefined}
                           />
-                          {errors[`chronicDiseases.${index}.diseaseName`] && <small>{errors[`chronicDiseases.${index}.diseaseName`]}</small>}
+                          {errors[`chronicDiseases.${index}.diseaseName`] && <small id={`profile-disease-${index}-name-error`}>{errors[`chronicDiseases.${index}.diseaseName`]}</small>}
                         </label>
                         <label className="field">
                           <span>Từ ngày</span>
                           <input
+                            name={`chronicDiseases.${index}.from`}
                             type="date"
                             value={disease.from}
                             disabled={!isMedicalEditing || savingMedical}
@@ -496,25 +500,29 @@ export default function UserProfilePage() {
                         <label className="field">
                           <span>Đến ngày</span>
                           <input
+                            name={`chronicDiseases.${index}.to`}
                             type="date"
                             value={disease.to}
                             disabled={!isMedicalEditing || savingMedical}
                             onChange={(event) => updateMedicalDisease(index, "to", event.target.value)}
                             aria-invalid={Boolean(errors[`chronicDiseases.${index}.to`])}
+                            aria-describedby={errors[`chronicDiseases.${index}.to`] ? `profile-disease-${index}-to-error` : undefined}
                           />
-                          {errors[`chronicDiseases.${index}.to`] && <small>{errors[`chronicDiseases.${index}.to`]}</small>}
+                          {errors[`chronicDiseases.${index}.to`] && <small id={`profile-disease-${index}-to-error`}>{errors[`chronicDiseases.${index}.to`]}</small>}
                         </label>
                         <label className="field wide">
                           <span>Ghi chú</span>
                           <textarea
+                            name={`chronicDiseases.${index}.note`}
                             rows={3}
                             value={disease.note}
-                            placeholder="Ví dụ: đang dùng thuốc, tái khám định kỳ..."
+                            placeholder="Ví dụ: đang dùng thuốc, tái khám định kỳ…"
                             disabled={!isMedicalEditing || savingMedical}
                             onChange={(event) => updateMedicalDisease(index, "note", event.target.value)}
                             aria-invalid={Boolean(errors[`chronicDiseases.${index}.note`])}
+                            aria-describedby={errors[`chronicDiseases.${index}.note`] ? `profile-disease-${index}-note-error` : undefined}
                           />
-                          {errors[`chronicDiseases.${index}.note`] && <small>{errors[`chronicDiseases.${index}.note`]}</small>}
+                          {errors[`chronicDiseases.${index}.note`] && <small id={`profile-disease-${index}-note-error`}>{errors[`chronicDiseases.${index}.note`]}</small>}
                         </label>
                       </div>
                     </article>
@@ -526,7 +534,7 @@ export default function UserProfilePage() {
         )}
 
         {activeTab === "security" && (
-          <section id="profile-panel-security" role="tabpanel" aria-labelledby="profile-tab-security" className="profile-card">
+          <section id="profile-panel-security" role="tabpanel" aria-label="Bảo mật" className="profile-card">
             <h1>Bảo mật</h1>
             <p>Mật khẩu được xác nhận bằng mã OTP gửi qua email.</p>
             <button className="lime" type="button" onClick={() => go("/forgot-password")}>Gửi mã đổi mật khẩu</button>
@@ -534,11 +542,11 @@ export default function UserProfilePage() {
         )}
 
         {activeTab === "package" && (
-          <section id="profile-panel-package" role="tabpanel" aria-labelledby="profile-tab-package" className="profile-card">
+          <section id="profile-panel-package" role="tabpanel" aria-label="Gói dịch vụ" className="profile-card">
             <h1>Gói dịch vụ</h1>
             <div className="plan-box">
               <span>Gói hiện tại</span>
-              <strong>{subscription?.planName || (loading ? "Đang tải..." : "Free")}</strong>
+              <strong>{subscription?.planName || (loading ? "Đang tải…" : "Free")}</strong>
               <p>
                 {subscription
                   ? `${subscription.statusName || "Đang hoạt động"}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
@@ -852,7 +860,7 @@ const styles = `
 .profile-form-actions button,
 .lime,
 .danger button{
-  min-height:43px;
+  min-height:44px;
   border:1px solid #b7c9c1;
   border-radius:11px;
   background:#fff;
@@ -898,6 +906,12 @@ const styles = `
 .field textarea:focus{
   border-color:var(--profile-teal);
   box-shadow:0 0 0 3px rgba(8,127,120,.12);
+}
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible{
+  outline:3px solid var(--profile-teal);
+  outline-offset:2px;
 }
 .field input:disabled,
 .field select:disabled,
@@ -1041,5 +1055,6 @@ const styles = `
   .profile-overview,.profile-card,.profile-summary-card,.profile-summary-grid article,.profile-sidebar,.field input,.field select,.field textarea,.mobile-tabs button{border:1px solid CanvasText}
   .profile-overview::after,.profile-sidebar button.active::before{display:none}
   .profile-sidebar button.active,.mobile-tabs button.active,.lime,.profile-head .lime{background:Highlight;color:HighlightText}
+  .field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline-color:Highlight}
 }
 `;

@@ -15,35 +15,11 @@ import { hasAuthRole, shouldSetupPatientProfile } from "../utils/roles";
 import "../styles/dashboard.css";
 import "../styles/dashboard-clinical.css";
 
-/* The service owns clinical question selection and diagnosis generation. */
+/* The service owns clinical question selection and specialty recommendation. */
 function confidencePercent(value) {
   const numeric = Number(value ?? 0);
   if (!Number.isFinite(numeric)) return 0;
   return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
-}
-
-function getDiagnosisField(diagnosis, camelKey, pascalKey, fallback = "") {
-  return diagnosis?.[camelKey] ?? diagnosis?.[pascalKey] ?? fallback;
-}
-
-function getDiagnosisName(diagnosis) {
-  return getDiagnosisField(diagnosis, "diseaseName", "DiseaseName", "Chưa xác định");
-}
-
-function getDiagnosisRank(diagnosis, index = 0) {
-  return Number(getDiagnosisField(diagnosis, "rank", "Rank", index + 1)) || index + 1;
-}
-
-function getDiagnosisIcd(diagnosis) {
-  return getDiagnosisField(diagnosis, "icd10Code", "Icd10Code", "");
-}
-
-function getDiagnosisReasoning(diagnosis) {
-  return getDiagnosisField(diagnosis, "clinicalReasoning", "ClinicalReasoning", "");
-}
-
-function getDiagnosisPAGivenB(diagnosis) {
-  return Number(getDiagnosisField(diagnosis, "paGivenB", "PAGivenB", 0)) || 0;
 }
 
 function unwrapPayload(response) {
@@ -131,6 +107,56 @@ function readQuestionsPayload(response) {
 function readResultPayload(response) {
   const data = unwrapPayload(response);
   return data?.analysis ?? data?.result ?? data ?? null;
+}
+
+function getRecommendedDepartment(result) {
+  function normalizeDepartment(department) {
+    if (!department || typeof department !== "object") return null;
+    const departmentId = String(
+      department.departmentId
+      ?? department.DepartmentId
+      ?? department.id
+      ?? "",
+    ).trim();
+    const departmentName = String(
+      department.departmentName
+      ?? department.DepartmentName
+      ?? department.name
+      ?? "",
+    ).trim();
+    if (!departmentId && !departmentName) return null;
+
+    return {
+      ...department,
+      confidenceScore: Number(
+        department.confidenceScore ?? department.ConfidenceScore ?? 0,
+      ) || 0,
+      departmentId,
+      departmentName,
+      isEmergencySuggested: (
+        department.isEmergencySuggested ?? department.IsEmergencySuggested
+      ) === true,
+      priorityRank: Number(
+        department.priorityRank ?? department.PriorityRank ?? 0,
+      ) || 0,
+    };
+  }
+
+  const directDepartment = normalizeDepartment(
+    result?.recommendedDepartment ?? result?.RecommendedDepartment,
+  );
+  if (directDepartment) return directDepartment;
+
+  const facilities = result?.recommendedFacilities ?? result?.RecommendedFacilities;
+  const departments = Array.isArray(facilities)
+    ? facilities.flatMap((facility) => (
+      Array.isArray(facility?.departments)
+        ? facility.departments
+        : Array.isArray(facility?.Departments) ? facility.Departments : []
+    ))
+    : [];
+
+  return departments.map(normalizeDepartment).find(Boolean) ?? null;
 }
 
 function hasDepartmentMatch(facility, department) {
@@ -221,11 +247,11 @@ function getFacilityRankingReason(facility, department, userLocation) {
 
   return reasons.length
     ? `Ưu tiên vì ${reasons.join(", ")}.`
-    : "Được gợi ý từ nhận định tham khảo.";
+    : "Nằm trong danh sách cơ sở được hệ thống gợi ý.";
 }
 
 function sortRecommendedFacilities(result, userLocation) {
-  const department = result?.recommendedDepartment;
+  const department = getRecommendedDepartment(result);
   return [...(result?.recommendedFacilities ?? [])]
     .sort((left, right) => (
       scoreFacility(right, department, userLocation)
@@ -277,19 +303,7 @@ export default function DashboardPage() {
   const [locationStatus, setLocationStatus] = useState("idle");
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
 
-  const primaryDiagnosis = result?.primaryDiagnosis;
-  const diagnoses = result?.diagnoses ?? [];
-  const diagnosisRows = diagnoses
-    .map((diagnosis, index) => ({
-      diagnosis,
-      rank: getDiagnosisRank(diagnosis, index),
-      name: getDiagnosisName(diagnosis),
-      icd10Code: getDiagnosisIcd(diagnosis),
-      paGivenB: getDiagnosisPAGivenB(diagnosis),
-      probability: confidencePercent(getDiagnosisPAGivenB(diagnosis)),
-    }))
-    .sort((left, right) => left.rank - right.rank);
-  const recommendedDepartment = result?.recommendedDepartment;
+  const recommendedDepartment = getRecommendedDepartment(result);
   const sortedFacilities = sortRecommendedFacilities(result, userLocation);
 
   const activeStep = status === "result"
@@ -354,7 +368,7 @@ export default function DashboardPage() {
     completedResult = result,
     completedSessionId = sessionId,
   ) {
-    const completedDepartment = completedResult?.recommendedDepartment;
+    const completedDepartment = getRecommendedDepartment(completedResult);
     const completedFacilities = completedResult?.recommendedFacilities ?? [];
     const topFacility = completedFacilities[0] ?? null;
     const params = new URLSearchParams();
@@ -414,7 +428,7 @@ export default function DashboardPage() {
             <div>
               <p className="studio-eyebrow">Tư vấn chuyên khoa</p>
               <h2 id="specialty-intake-title">Gợi ý chuyên khoa qua triệu chứng</h2>
-              <p>Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi đưa ra kết quả tham khảo và gợi ý nơi thăm khám.</p>
+              <p>Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi gợi ý chuyên khoa và cơ sở y tế phù hợp.</p>
             </div>
           </div>
           <div className="studio-heading-actions specialty-heading-aside">
@@ -516,7 +530,7 @@ export default function DashboardPage() {
         )}
 
         {error && (
-          <Alert tone="danger" title="Không thể kết nối dịch vụ phân tích" live>
+          <Alert tone="danger" title="Không thể kết nối dịch vụ gợi ý chuyên khoa" live>
             {error}
           </Alert>
         )}
@@ -601,7 +615,7 @@ export default function DashboardPage() {
                   })}
                 </div>
               ) : (
-                <div className="specialty-answer-grid specialty-answer-choice-grid" role="radiogroup" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
+                <div className="specialty-answer-grid specialty-answer-choice-grid" role="group" aria-label={`Trả lời câu hỏi ${currentQuestionIndex + 1}`}>
                   {currentAnswerOptions.map(([answerKey, label], answerIndex) => (
                     <button
                       className={[
@@ -657,7 +671,7 @@ export default function DashboardPage() {
                   size="lg"
                   type="submit"
                   loading={status === "submitting"}
-                  loadingLabel="Đang phân tích..."
+                  loadingLabel="Đang tạo gợi ý..."
                   disabled={!canSubmitAnswers}
                 >
                   Xem gợi ý
@@ -668,44 +682,48 @@ export default function DashboardPage() {
         )}
 
         {status === "result" && (
-          <section className="studio-result-panel" aria-label="Nhận định tham khảo và gợi ý bệnh viện">
-            <article className="studio-result-card primary">
-              <span>Chẩn đoán lâm sàng</span>
-              <h2>{getDiagnosisName(primaryDiagnosis)}</h2>
-              {getDiagnosisReasoning(primaryDiagnosis) && <p>{getDiagnosisReasoning(primaryDiagnosis)}</p>}
-              <div className="studio-result-meta">
-                {getDiagnosisIcd(primaryDiagnosis) && <small>ICD-10: {getDiagnosisIcd(primaryDiagnosis)}</small>}
-                {primaryDiagnosis && <strong>{confidencePercent(getDiagnosisPAGivenB(primaryDiagnosis))}% phù hợp</strong>}
-              </div>
-              <small>Kết quả này không thay thế bác sĩ và cần được kiểm tra bởi chuyên gia y tế.</small>
-            </article>
-
-            {diagnosisRows.length > 0 && (
-              <article className="studio-result-card diagnosis-analytics">
-                <span>Thứ tự chẩn đoán</span>
-                <h2>Xếp hạng bệnh theo PAGivenB</h2>
-                <div className="diagnosis-bar-chart" aria-label="Biểu đồ cột thứ tự bệnh">
-                  {diagnosisRows.map((row) => (
-                    <div className="diagnosis-bar-column" key={`${row.rank}-${row.name}`}>
-                      <em>{row.probability}%</em>
-                      <div className="diagnosis-column-track">
-                        <i style={{ height: `${Math.max(6, row.probability)}%` }} />
-                      </div>
-                      <strong>#{row.rank}</strong>
-                      <span>{row.name}</span>
-                      {row.icd10Code && <small>ICD-10: {row.icd10Code}</small>}
-                    </div>
-                  ))}
+          <section className="studio-result-panel" aria-label="Kết quả gợi ý chuyên khoa và cơ sở y tế">
+            <article className="studio-result-card specialty">
+              <div className="specialty-result-head">
+                <div>
+                  <span>Chuyên khoa được gợi ý</span>
+                  <h2>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</h2>
                 </div>
-              </article>
-            )}
+                {confidencePercent(recommendedDepartment?.confidenceScore) > 0 && (
+                  <strong
+                    className="specialty-confidence-badge"
+                    aria-label={`Mức phù hợp tham khảo ${confidencePercent(recommendedDepartment?.confidenceScore)} phần trăm`}
+                  >
+                    {confidencePercent(recommendedDepartment?.confidenceScore)}% phù hợp
+                  </strong>
+                )}
+              </div>
+              <p>
+                {recommendedDepartment?.departmentName
+                  ? "Đây là chuyên khoa được hệ thống đề xuất để bạn tham khảo khi chọn nơi thăm khám."
+                  : "Hệ thống chưa trả về chuyên khoa cụ thể. Bạn vẫn có thể xem các cơ sở y tế được gợi ý bên dưới."}
+              </p>
+              {Number(recommendedDepartment?.priorityRank) > 0 && (
+                <div className="studio-result-meta">
+                  <small>Thứ tự ưu tiên: {recommendedDepartment.priorityRank}</small>
+                </div>
+              )}
+              {recommendedDepartment?.isEmergencySuggested && (
+                <Alert tone="warning">
+                  Kết quả ghi nhận dấu hiệu cần được ưu tiên đánh giá tại cơ sở y tế.
+                </Alert>
+              )}
+              <small className="specialty-result-disclaimer">
+                Gợi ý này giúp định hướng nơi khám. Cơ sở y tế sẽ xác nhận chuyên khoa phù hợp sau khi đánh giá trực tiếp.
+              </small>
+            </article>
 
             <article className="studio-result-card facilities">
               <div className="studio-panel-head compact">
                 <div>
-                  <span>Bệnh viện phù hợp</span>
-                  <h2>Ưu tiên chuyên khoa liên quan, gần và có dữ liệu tốt</h2>
-                  <p>Khoảng cách chỉ được dùng khi bạn cho phép truy cập vị trí và cơ sở có tọa độ hợp lệ.</p>
+                  <span>Cơ sở y tế được gợi ý</span>
+                  <h2>Những nơi có chuyên khoa phù hợp</h2>
+                  <p>Danh sách chỉ gồm các cơ sở được trả về trong kết quả gợi ý. Khoảng cách được bổ sung khi bạn cho phép truy cập vị trí.</p>
                 </div>
                 <div className="facility-panel-actions">
                   <Button
@@ -738,7 +756,7 @@ export default function DashboardPage() {
               )}
 
               {sortedFacilities.length === 0 ? (
-                <p>AI chưa trả về cơ sở y tế cụ thể. Bạn có thể mở bản đồ để tìm theo chuyên khoa được đề xuất.</p>
+                <p>Hệ thống chưa trả về cơ sở y tế cụ thể. Hãy thử lại với mô tả triệu chứng rõ hơn.</p>
               ) : (
                 <div className="studio-facility-list">
                   {sortedFacilities.map((facility, index) => (

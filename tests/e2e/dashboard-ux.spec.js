@@ -226,11 +226,13 @@ test.describe("patient specialty intake", () => {
     expect(mapUrl.searchParams.has("search")).toBe(false);
 
     await expect(page.getByLabel("Lọc danh sách cơ sở y tế")).toHaveValue("");
-    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Bệnh viện Tai Mũi Họng");
-    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Viêm họng cấp");
-    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("ICD-10: J02");
-    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Tai Mũi Họng");
-    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Chuyên khoa được gợi ý");
+    const mapRecommendation = page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" });
+    await expect(mapRecommendation).toContainText("Bệnh viện Tai Mũi Họng");
+    await expect(mapRecommendation).toContainText("Tai Mũi Họng");
+    await expect(mapRecommendation).toContainText("Chuyên khoa được gợi ý");
+    await expect(mapRecommendation).not.toContainText("Viêm họng cấp");
+    await expect(mapRecommendation).not.toContainText("ICD-10: J02");
+    await expect(mapRecommendation).not.toContainText("PAGivenB");
     await expect(page.locator(".facility-result-card")).toHaveCount(1);
     await expect(page.locator(".clinic-marker")).toHaveCount(1);
     await expect(page.getByText("Phòng khám Đánh Giá Cao", { exact: true })).toHaveCount(0);
@@ -289,8 +291,13 @@ test.describe("patient specialty intake", () => {
     await page.waitForTimeout(500);
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(currentStep).toContainText("Kết quả");
-    await expect(page.getByText("Viêm họng cấp", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true })).toBeVisible();
+    const specialtyResult = page.locator(".studio-result-panel");
+    await expect(specialtyResult).toContainText("Chuyên khoa được gợi ý");
+    await expect(specialtyResult).toContainText("Tai Mũi Họng");
+    await expect(specialtyResult).toContainText("Bệnh viện Tai Mũi Họng");
+    await expect(specialtyResult).not.toContainText("Viêm họng cấp");
+    await expect(specialtyResult).not.toContainText("ICD-10");
+    await expect(specialtyResult).not.toContainText("PAGivenB");
 
     expect(questionPayload).toEqual({ userInput: "Sốt nhẹ 2 ngày kèm đau họng" });
     expect(clinicalAnswersPayload).toEqual({
@@ -342,7 +349,7 @@ test.describe("patient specialty intake", () => {
     await page.getByRole("button", { name: "Xem gợi ý" }).click();
 
     await expect(page.getByText(
-      "Dịch vụ AI chưa thể hoàn tất phân tích lần này. Vui lòng thử lại sau ít phút.",
+      "Dịch vụ AI chưa thể tạo gợi ý chuyên khoa lần này. Vui lòng thử lại sau ít phút.",
     )).toBeVisible();
     await expect(page.getByText(/MedGemma analysis failed/i)).toHaveCount(0);
     await expect(page.getByText(/Failed to parse/i)).toHaveCount(0);
@@ -514,6 +521,29 @@ test.describe("patient specialty intake", () => {
         }),
       });
     });
+    await page.route(`**/api/symptom-analysis/${historySessions[0].sessionId}`, async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          inputText: historySessions[0].inputText,
+          analysis: {
+            diagnoses: [{
+              diseaseName: "Viêm họng cấp",
+              icd10Code: "J02",
+            }],
+            recommendedDepartment: {
+              departmentId: DEPARTMENT_ID,
+              departmentName: "Tai Mũi Họng",
+            },
+            recommendedFacilities: [{
+              id: FACILITY_ID,
+              facilityName: "Bệnh viện Tai Mũi Họng",
+            }],
+          },
+        },
+      }),
+    }));
 
     await openRoute(page, "/dashboard");
     const initialUrl = page.url();
@@ -531,6 +561,13 @@ test.describe("patient specialty intake", () => {
       { pageNumber: 1, sessionType: "department" },
       { pageNumber: 2, sessionType: "department" },
     ]);
+
+    await drawer.getByRole("button", { name: "Chi tiết" }).first().click();
+    const historyDetail = drawer.locator(".analysis-history-detail");
+    await expect(historyDetail).toContainText("Chuyên khoa: Tai Mũi Họng");
+    await expect(historyDetail).toContainText("Cơ sở gợi ý: Bệnh viện Tai Mũi Họng");
+    await expect(historyDetail).not.toContainText("Viêm họng cấp");
+    await expect(historyDetail).not.toContainText("J02");
 
     await page.keyboard.press("Escape");
     await expect(drawer).toBeHidden();
