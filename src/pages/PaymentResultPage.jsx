@@ -11,9 +11,6 @@ import "../styles/payment-result.css";
 
 const MAX_STATUS_CHECKS = 12;
 const STATUS_CHECK_DELAY = 2500;
-const CANCEL_FALLBACK_MESSAGE =
-  "Bạn đã quay lại từ cổng thanh toán sau khi hủy. MediMate không kích hoạt gói mới và gói hiện tại của bạn vẫn được giữ nguyên.";
-
 function getOrderCode() {
   return new URLSearchParams(window.location.search).get("orderCode")?.trim() || "";
 }
@@ -41,19 +38,13 @@ function classifyPayment(data) {
   return "pending";
 }
 
-function resolvePaymentStatus(data, expectedResult) {
-  const nextStatus = classifyPayment(data);
-  if (expectedResult === "cancel" && nextStatus === "pending") return "cancelled";
-  return nextStatus;
-}
-
 function getView(status) {
   if (status === "cancelled") {
     return {
-      eyebrow: "Đăng ký không thành công",
-      title: "Bạn đã hủy giao dịch.",
+      eyebrow: "Trạng thái đã được xác nhận",
+      title: "Giao dịch đã được xác nhận là đã hủy.",
       description:
-        "Giao dịch PayOS chưa hoàn tất. MediMate không kích hoạt gói mới và bạn không bị mất tiền cho giao dịch này.",
+        "MediMate đã nhận trạng thái hủy từ cổng thanh toán. Bạn có thể kiểm tra lại gói đang dùng trong không gian cá nhân.",
       icon: CircleX,
       tone: "cancelled",
     };
@@ -83,10 +74,10 @@ function getView(status) {
 
   if (status === "pending" || status === "checking") {
     return {
-      eyebrow: "Đang xác minh giao dịch",
-      title: "Chờ PayOS xác nhận một chút.",
+      eyebrow: "Đang kiểm tra trạng thái",
+      title: "Giao dịch chưa được xác nhận.",
       description:
-        "Thanh toán có thể đã hoàn tất nhưng webhook vẫn đang được xử lý. Trang sẽ tự kiểm tra lại.",
+        "MediMate đang chờ trạng thái chính thức từ cổng thanh toán. Trang sẽ tự kiểm tra lại trong ít phút.",
       icon: LoaderCircle,
       tone: "pending",
     };
@@ -94,12 +85,12 @@ function getView(status) {
 
   if (status === "missing") {
     return {
-      eyebrow: "Thiếu thông tin giao dịch",
-      title: "Không tìm thấy mã thanh toán.",
+      eyebrow: "Chưa đủ thông tin xác minh",
+      title: "Chưa thể kiểm tra giao dịch này.",
       description:
-        "Liên kết quay về không có mã giao dịch. Bạn có thể mở bảng giá để kiểm tra gói hiện tại hoặc thử thanh toán lại.",
+        "Liên kết hiện tại không có mã giao dịch. Hãy mở bảng giá hoặc không gian cá nhân để kiểm tra trạng thái trước khi thực hiện giao dịch khác.",
       icon: CreditCard,
-      tone: "error",
+      tone: "pending",
     };
   }
 
@@ -107,30 +98,28 @@ function getView(status) {
     eyebrow: "Chưa xác minh được",
     title: "Không thể kiểm tra giao dịch lúc này.",
     description:
-      "Kết nối xác minh đang gián đoạn. Không tạo thanh toán mới cho đến khi bạn kiểm tra lại trạng thái gói.",
+      "Kết nối xác minh đang gián đoạn. Hãy kiểm tra lại trạng thái gói trước khi thực hiện giao dịch khác.",
     icon: Clock3,
-    tone: "error",
+    tone: "pending",
   };
 }
 
-function getStatusLabel(status, expectedResult) {
+function getStatusLabel(status) {
   if (status === "cancelled") return "Đã hủy";
   if (status === "success") return "Đã kích hoạt";
   if (status === "failed") return "Thất bại";
   if (status === "expired") return "Hết hạn";
-  if (status === "missing") return "Thiếu mã giao dịch";
-  if (expectedResult === "cancel" && status === "checking") return "Đang xác nhận hủy";
+  if (status === "missing" || status === "error") return "Chưa xác minh";
   return "Đang xác minh";
 }
 
-function getInitialStatus(orderCode, expectedResult) {
-  if (expectedResult === "cancel") return orderCode ? "checking" : "cancelled";
+function getInitialStatus(orderCode) {
   return orderCode ? "checking" : "missing";
 }
 
 export default function PaymentResultPage({ expectedResult }) {
   const [orderCode] = useState(getOrderCode);
-  const [status, setStatus] = useState(() => getInitialStatus(orderCode, expectedResult));
+  const [status, setStatus] = useState(() => getInitialStatus(orderCode));
   const [message, setMessage] = useState("");
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
@@ -163,9 +152,9 @@ export default function PaymentResultPage({ expectedResult }) {
         : await paymentsApi.payOsStatus(orderCode);
 
     const data = response.data ?? {};
-    const nextStatus = resolvePaymentStatus(data, expectedResult);
+    const nextStatus = classifyPayment(data);
     setStatus(nextStatus);
-    setMessage(data.message || (expectedResult === "cancel" && nextStatus === "cancelled" ? CANCEL_FALLBACK_MESSAGE : ""));
+    setMessage("");
 
     if (nextStatus === "success") await refreshPremiumState();
     return nextStatus;
@@ -191,13 +180,8 @@ export default function PaymentResultPage({ expectedResult }) {
         timer = window.setTimeout(verify, STATUS_CHECK_DELAY);
       } catch {
         if (!active) return;
-        if (isCancelFlow) {
-          setStatus("cancelled");
-          setMessage(CANCEL_FALLBACK_MESSAGE);
-          return;
-        }
         setStatus("error");
-        setMessage("MediMate chưa nhận được trạng thái chính thức từ PayOS. Vui lòng kiểm tra lại sau ít phút.");
+        setMessage("MediMate chưa nhận được trạng thái chính thức từ cổng thanh toán. Vui lòng kiểm tra lại sau ít phút.");
       }
     };
 
@@ -210,8 +194,8 @@ export default function PaymentResultPage({ expectedResult }) {
   }, [checkStatus, isCancelFlow, orderCode]);
 
   async function handleCheckAgain() {
-    if (isCancelFlow && !orderCode) {
-      setStatus("cancelled");
+    if (!orderCode) {
+      setStatus("missing");
       return;
     }
 
@@ -221,13 +205,8 @@ export default function PaymentResultPage({ expectedResult }) {
     try {
       await checkStatus();
     } catch {
-      if (isCancelFlow) {
-        setStatus("cancelled");
-        setMessage(CANCEL_FALLBACK_MESSAGE);
-        return;
-      }
       setStatus("error");
-      setMessage("MediMate chưa nhận được trạng thái chính thức từ PayOS. Vui lòng kiểm tra lại sau ít phút.");
+      setMessage("MediMate chưa nhận được trạng thái chính thức từ cổng thanh toán. Vui lòng kiểm tra lại sau ít phút.");
     } finally {
       setCheckingAgain(false);
     }
@@ -236,6 +215,14 @@ export default function PaymentResultPage({ expectedResult }) {
   const success = status === "success";
   const settled = success || status === "cancelled" || status === "failed" || status === "expired";
   const verifying = status === "checking" || status === "pending";
+
+  useEffect(() => {
+    document.title = success
+      ? "Thanh toán đã xác nhận | MediMate AI"
+      : status === "cancelled"
+        ? "Giao dịch đã hủy | MediMate AI"
+        : "Trạng thái thanh toán | MediMate AI";
+  }, [status, success]);
 
   function continueAfterPayment() {
     if (success && returnTo) {
@@ -248,11 +235,13 @@ export default function PaymentResultPage({ expectedResult }) {
   }
 
   return (
-    <main className={`payment-result-page payment-result-${view.tone}`}>
+    <main className={`landing-page payment-result-page payment-result-${view.tone}`}>
       <div className="payment-result-glow" aria-hidden="true" />
 
       <a className="payment-result-brand" href="/">
-        <span aria-hidden="true">+</span>
+        <span aria-hidden="true">
+          <img src="/logo.svg" alt="" width="34" height="34" />
+        </span>
         <strong>MediMate AI</strong>
       </a>
 
@@ -277,7 +266,7 @@ export default function PaymentResultPage({ expectedResult }) {
             </div>
             <div>
               <dt>Trạng thái</dt>
-              <dd>{getStatusLabel(status, expectedResult)}</dd>
+              <dd>{getStatusLabel(status)}</dd>
             </div>
           </dl>
         )}
@@ -295,10 +284,10 @@ export default function PaymentResultPage({ expectedResult }) {
           ) : (
             <>
               <button className="payment-result-primary" type="button" onClick={() => navigate("/pricing")}>
-                {isCancelFlow ? "Quay lại bảng giá" : settled ? "Chọn lại gói" : "Về bảng giá"} <ArrowRight size={17} />
+                {isCancelFlow && status === "cancelled" ? "Quay lại bảng giá" : settled ? "Chọn lại gói" : "Về bảng giá"} <ArrowRight size={17} />
               </button>
               <button type="button" onClick={() => navigate("/dashboard")}>
-                Tiếp tục với gói hiện tại
+                {hasAuth ? "Mở không gian cá nhân" : "Đăng nhập để kiểm tra"}
               </button>
             </>
           )}
@@ -314,8 +303,10 @@ export default function PaymentResultPage({ expectedResult }) {
 
       <p className="payment-result-support">
         {status === "cancelled"
-          ? "Bạn đã rời khỏi thanh toán trước khi hoàn tất. MediMate không ghi nhận khoản thanh toán nào cho giao dịch này, gói hiện tại của bạn vẫn được giữ nguyên."
-          : "Không đóng trình duyệt trong lúc xác minh. Nếu tiền đã trừ nhưng gói chưa kích hoạt, hãy giữ lại mã giao dịch để liên hệ hỗ trợ."}
+          ? "Trạng thái hủy chỉ được hiển thị sau khi cổng thanh toán phản hồi. Hãy kiểm tra không gian cá nhân nếu bạn cần xác nhận gói đang dùng."
+          : "Không thực hiện lại thanh toán khi trạng thái còn đang được xác minh. Hãy giữ mã giao dịch để đối chiếu khi cần."}
+        {" "}
+        <a href="/support">Xem hướng dẫn thanh toán</a>
       </p>
     </main>
   );

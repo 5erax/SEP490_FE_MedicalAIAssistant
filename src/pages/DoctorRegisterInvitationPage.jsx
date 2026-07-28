@@ -23,10 +23,10 @@ const INITIAL_FORM = {
 
 const DEPARTMENT_ROLES = [
   { value: "0", label: "Bác sĩ" },
-  { value: "1", label: "Phó khoa (Deputy Head)" },
-  { value: "2", label: "Trưởng khoa (Head)" },
-  { value: "3", label: "Chuyên gia đầu ngành (Leading Expert)" },
-  { value: "4", label: "Cố vấn (Consultant)" },
+  { value: "1", label: "Phó khoa" },
+  { value: "2", label: "Trưởng khoa" },
+  { value: "3", label: "Chuyên gia đầu ngành" },
+  { value: "4", label: "Cố vấn" },
 ];
 
 const INVITATION_STEPS = [
@@ -122,7 +122,7 @@ function buildPayload(token, form, isLinkedProfile) {
   };
 }
 
-function getApiErrors(error) {
+function getRawApiErrors(error) {
   const errors = error?.payload?.errors;
   if (Array.isArray(errors) && errors.length) return errors.filter(Boolean);
   if (typeof errors === "string" && errors) return [errors];
@@ -133,6 +133,63 @@ function getApiErrors(error) {
     if (messages.length) return messages;
   }
   return [error?.message || "Không thể hoàn tất đăng ký. Vui lòng thử lại."];
+}
+
+function presentInvitationError(message) {
+  const text = String(message ?? "").trim();
+  const normalized = text.toLowerCase();
+
+  if (!text) return "Không thể hoàn tất đăng ký. Vui lòng thử lại.";
+  if (normalized.includes("invitation link has expired")) {
+    return "Liên kết đăng ký đã hết hạn. Vui lòng đề nghị quản trị viên gửi lời mời mới.";
+  }
+  if (normalized.includes("invitation link has already been used")) {
+    return "Liên kết đăng ký này đã được sử dụng. Hãy đăng nhập hoặc đề nghị quản trị viên kiểm tra lại.";
+  }
+  if (
+    normalized.includes("invalid invitation")
+    || normalized.includes("invitation link is invalid")
+    || normalized.includes("invitation token")
+    || normalized.includes("token is required")
+  ) {
+    return "Liên kết đăng ký không hợp lệ. Vui lòng mở đúng liên kết trong lời mời được gửi cho bạn.";
+  }
+  if (normalized.includes("passwords must be at least 8 characters")) {
+    return "Mật khẩu cần có ít nhất 8 ký tự.";
+  }
+  if (normalized.includes("passwords must have at least one digit")) {
+    return "Mật khẩu cần có ít nhất một chữ số.";
+  }
+  if (normalized.includes("passwords must have at least one uppercase")) {
+    return "Mật khẩu cần có ít nhất một chữ hoa.";
+  }
+  if (normalized.includes("passwords must have at least one lowercase")) {
+    return "Mật khẩu cần có ít nhất một chữ thường.";
+  }
+  if (
+    normalized.includes("phone number is invalid")
+    || normalized.includes("invalid phone")
+  ) {
+    return "Số điện thoại chưa đúng định dạng. Vui lòng kiểm tra lại.";
+  }
+  if (
+    normalized.includes("failed to fetch")
+    || normalized.includes("network")
+    || normalized.includes("timeout")
+  ) {
+    return "Chưa thể kết nối để kiểm tra lời mời. Vui lòng thử lại.";
+  }
+
+  const containsVietnamese = /[À-ỹĐđ]/u.test(text);
+  if (containsVietnamese && !/(token|exception|stack|bearer|request id)/i.test(text)) {
+    return text;
+  }
+
+  return "Chưa thể hoàn tất đăng ký. Vui lòng kiểm tra thông tin và thử lại.";
+}
+
+function getApiErrors(error) {
+  return [...new Set(getRawApiErrors(error).map(presentInvitationError))];
 }
 
 function isInvitationFailure(messages) {
@@ -262,7 +319,9 @@ export default function DoctorRegisterInvitationPage() {
     async function validateInvitation() {
       if (!token) {
         setStatus("invalid");
-        setApiErrors(["Link đăng ký thiếu invitation token."]);
+        setApiErrors([
+          "Liên kết đăng ký không đầy đủ. Vui lòng mở đúng liên kết trong lời mời được gửi cho bạn.",
+        ]);
         return;
       }
 
@@ -274,8 +333,10 @@ export default function DoctorRegisterInvitationPage() {
         if (!data?.isValid) {
           setStatus("invalid");
           setApiErrors([
-            data?.message ||
-              "Link đăng ký đã hết hạn hoặc không hợp lệ. Vui lòng liên hệ quản trị viên để nhận lời mời mới.",
+            presentInvitationError(
+              data?.message
+                || "Liên kết đăng ký đã hết hạn hoặc không hợp lệ. Vui lòng liên hệ quản trị viên để nhận lời mời mới.",
+            ),
           ]);
           return;
         }
@@ -360,9 +421,9 @@ export default function DoctorRegisterInvitationPage() {
       setRegisteredEmail(response?.data?.email || invitation?.email || "");
       setStatus("success");
     } catch (error) {
-      const messages = getApiErrors(error);
-      setApiErrors(messages);
-      setStatus(isInvitationFailure(messages) ? "invalid" : isLinkedProfile ? "ready-linked" : "ready-new");
+      const rawMessages = getRawApiErrors(error);
+      setApiErrors([...new Set(rawMessages.map(presentInvitationError))]);
+      setStatus(isInvitationFailure(rawMessages) ? "invalid" : isLinkedProfile ? "ready-linked" : "ready-new");
     }
   }
 

@@ -729,6 +729,20 @@ html[data-theme="dark"] .auth-mode-clinical .auth-provider-note {
   accent-color: var(--auth-teal);
 }
 
+.auth-mode-signup .auth-consent a {
+  color: var(--auth-teal-dark);
+  font-weight: 900;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.auth-mode-signup .auth-consent a:focus-visible {
+  border-radius: 3px;
+  outline: 3px solid var(--auth-teal);
+  outline-offset: 2px;
+}
+
 html[data-theme="dark"] .auth-mode-signup .auth-field-group {
   border-color: var(--auth-line);
   background: rgba(255, 255, 255, 0.015);

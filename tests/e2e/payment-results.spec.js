@@ -86,14 +86,14 @@ test("payment cancel calls the backend cancel callback before showing retry acti
 
   await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
   await expect.poll(() => cancelRequests).toBeGreaterThan(0);
-  await expect(page.getByRole("heading", { name: "Bạn đã hủy giao dịch." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Giao dịch đã được xác nhận là đã hủy." })).toBeVisible();
   await expect(page.getByText("Đã hủy", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Kiểm tra lại trạng thái" })).toHaveCount(0);
   await page.getByRole("button", { name: "Quay lại bảng giá" }).click();
   await expect(page).toHaveURL(/\/pricing$/);
 });
 
-test("payment cancel stays clear when backend verification is unavailable", async ({ page }) => {
+test("payment cancel remains unverified when backend verification is unavailable", async ({ page }) => {
   let cancelRequests = 0;
   await page.route("**/api/payments/payos-cancel**", (route) => {
     cancelRequests += 1;
@@ -106,11 +106,11 @@ test("payment cancel stays clear when backend verification is unavailable", asyn
 
   await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
   await expect.poll(() => cancelRequests).toBeGreaterThan(0);
-  await expect(page.getByRole("heading", { name: "Bạn đã hủy giao dịch." })).toBeVisible();
-  await expect(page.getByText("Đã hủy", { exact: true })).toBeVisible();
-  await expect(page.getByText("Chưa xác minh được")).toHaveCount(0);
-  await expect(page.getByText("Không thể kiểm tra giao dịch lúc này.")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Kiểm tra lại trạng thái" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Không thể kiểm tra giao dịch lúc này." })).toBeVisible();
+  await expect(page.getByText("Chưa xác minh", { exact: true })).toBeVisible();
+  await expect(page.getByText("Đã hủy", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("bạn không bị mất tiền", { exact: false })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Kiểm tra lại trạng thái" })).toBeVisible();
 });
 
 test("payment cancel trusts backend success over the cancel URL", async ({ page }) => {
@@ -134,3 +134,14 @@ test("payment cancel trusts backend success over the cancel URL", async ({ page 
   await expect(page.getByRole("heading", { name: "MediMate+ đã sẵn sàng." })).toBeVisible();
   await expect(page.getByText("Đã kích hoạt", { exact: true })).toBeVisible();
 });
+
+for (const path of ["/payment/return", "/payment/cancel"]) {
+  test(`${path} stays neutral when the callback has no order code`, async ({ page }) => {
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByRole("heading", { name: "Chưa thể kiểm tra giao dịch này." })).toBeVisible();
+    await expect(page.getByText("Đã hủy", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Đã kích hoạt", { exact: true })).toHaveCount(0);
+    await expect(page).toHaveTitle("Trạng thái thanh toán | MediMate AI");
+  });
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowLeft,
   CircleCheck,
   FileText,
   History,
@@ -8,6 +9,7 @@ import {
   ShieldCheck,
   Stethoscope,
 } from "lucide-react";
+import { Navbar } from "../components/landing/Navbar";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
@@ -240,6 +242,11 @@ function EntryPage() {
       showStepper={false}
       pageClassName="assessment-entry-page"
     >
+      <a className="clinical-entry-back" href="/">
+        <ArrowLeft size={16} aria-hidden="true" />
+        Về trang chủ MediMate
+      </a>
+
       <section className="clinical-entry-overview" aria-labelledby="clinical-entry-title">
         <div className="clinical-entry-primary">
           <p className="clinical-entry-kicker">Bắt đầu phiên mới</p>
@@ -910,5 +917,10 @@ export default function MedicalAssistantPage({ mode = "entry", sessionId = "" })
   if (activeMode === "result") return <ResultPage sessionId={sessionId} />;
   if (activeMode === "history") return <HistoryPage />;
 
-  return <EntryPage />;
+  return (
+    <div className="landing-page public-medical-assistant-entry">
+      <Navbar variant="landing" />
+      <EntryPage />
+    </div>
+  );
 }

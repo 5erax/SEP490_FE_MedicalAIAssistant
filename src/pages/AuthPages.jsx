@@ -412,7 +412,10 @@ export function SignupPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     if (!accepted) {
-      setMessage({ type: "error", text: "Bạn cần đồng ý điều khoản sử dụng và lưu ý y tế." });
+      setMessage({
+        type: "error",
+        text: "Bạn cần xác nhận đã đọc thông tin quyền riêng tư và tuyên bố miễn trừ y tế.",
+      });
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -469,7 +472,12 @@ export function SignupPage() {
 
         <label className="api-check auth-consent">
           <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} required />
-          <span>Tôi đồng ý với điều khoản sử dụng và hiểu MediMate AI không thay thế bác sĩ.</span>
+          <span>
+            Tôi đã đọc{" "}
+            <a href="/privacy">thông tin quyền riêng tư</a>
+            {" "}và hiểu nội dung MediMate chỉ mang tính tham khảo theo{" "}
+            <a href="/medical-disclaimer">tuyên bố miễn trừ y tế</a>.
+          </span>
         </label>
 
         <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>

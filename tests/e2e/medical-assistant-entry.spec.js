@@ -13,6 +13,8 @@ async function openMedicalAssistant(page) {
 test("medical assistant entry explains the supported outcome without technical workflow copy", async ({ page }) => {
   await openMedicalAssistant(page);
 
+  await expect(page.locator(".nav-care").getByRole("link", { name: "MediMate AI" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Về trang chủ MediMate" })).toHaveAttribute("href", "/");
   await expect(page.getByRole("heading", {
     name: "Điều gì đang khiến bạn lo lắng?",
   })).toBeVisible();
@@ -58,7 +60,7 @@ test("medical assistant entry preserves card boundaries in dark and forced-color
   await openMedicalAssistant(page);
 
   await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
-  await expect(page.locator(".assessment-entry-page")).toHaveCSS("color", "rgb(229, 245, 241)");
+  await expect(page.locator(".assessment-entry-page")).toHaveCSS("color", "rgb(245, 248, 246)");
 
   await page.emulateMedia({ forcedColors: "active" });
   await expect(page.locator(".clinical-entry-overview")).toHaveCSS("border-top-style", "solid");
