@@ -44,21 +44,26 @@ function getAdminPath(section) {
 }
 
 export default function AdminOverviewSection({
+  aiConfigsError,
   aiConfigsLoading,
   aiConfigTotalCount,
+  doctorsError,
   doctorsLoading,
   doctorTotalCount,
+  facilitiesError,
   facilitiesLoading,
   facilityTotalCount,
+  usersError,
   usersLoading,
   userTotalCount,
   onOpenSection,
+  onRetryMetric,
 }) {
   const metricState = {
-    users: { value: userTotalCount, loading: usersLoading },
-    doctors: { value: doctorTotalCount, loading: doctorsLoading },
-    "ai-configs": { value: aiConfigTotalCount, loading: aiConfigsLoading },
-    facilities: { value: facilityTotalCount, loading: facilitiesLoading },
+    users: { value: userTotalCount, loading: usersLoading, error: usersError },
+    doctors: { value: doctorTotalCount, loading: doctorsLoading, error: doctorsError },
+    "ai-configs": { value: aiConfigTotalCount, loading: aiConfigsLoading, error: aiConfigsError },
+    facilities: { value: facilityTotalCount, loading: facilitiesLoading, error: facilitiesError },
   };
 
   return (
@@ -94,9 +99,12 @@ export default function AdminOverviewSection({
               key={metric.section}
               onClick={(event) => {
                 event.preventDefault();
-                onOpenSection(metric.section);
+                if (state.error) onRetryMetric(metric.section);
+                else onOpenSection(metric.section);
               }}
-              aria-label={`Mở trang ${metric.shortLabel}`}
+              aria-label={state.error
+                ? `Thử tải lại số lượng ${metric.shortLabel}`
+                : `Mở trang ${metric.shortLabel}`}
               aria-busy={state.loading}
             >
               <span className="admin-overview-card-top">
@@ -116,13 +124,13 @@ export default function AdminOverviewSection({
                       <span className="admin-overview-loading" aria-hidden="true">—</span>
                       <span className="sr-only">Đang tải số lượng {metric.shortLabel}</span>
                     </>
-                  ) : state.value}
+                  ) : state.error ? "Không khả dụng" : state.value}
                 </strong>
-                <span>{metric.description}</span>
+                <span>{state.error ? "Chưa tải được số liệu từ hệ thống." : metric.description}</span>
               </span>
 
               <span className="admin-overview-card-action">
-                Xem danh sách
+                {state.error ? "Thử tải lại" : "Xem danh sách"}
                 <ArrowUpRight size={17} aria-hidden="true" />
               </span>
             </a>

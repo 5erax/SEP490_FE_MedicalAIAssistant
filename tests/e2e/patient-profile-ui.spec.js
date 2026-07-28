@@ -119,3 +119,32 @@ test("patient profile remains legible in forced colors", async ({ page }) => {
   await expect(page.getByLabel("Họ và tên")).toBeEditable();
   await expect(page.locator("#profile-panel-info")).toHaveCSS("border-top-style", "solid");
 });
+
+test("patient profile does not present failed requests as empty real data", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript(({ accessToken, userId }) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      userId,
+      roles: ["Patient"],
+      isProfileCompleted: true,
+    }));
+  }, { accessToken: ACCESS_TOKEN, userId: USER_ID });
+  await page.route("**/api/**", (route) => route.fulfill({
+    status: 503,
+    contentType: "application/json",
+    body: JSON.stringify({ success: false, message: "Internal service detail" }),
+  }));
+
+  await page.goto("/profile", { waitUntil: "domcontentloaded" });
+
+  const profile = page.locator(".profile-page");
+  await expect(profile.getByRole("alert").first()).toContainText("Chưa thể tải");
+  await expect(profile.getByText("Không khả dụng", { exact: true })).toHaveCount(3);
+  await expect(profile.getByText("0/5", { exact: true })).toHaveCount(0);
+  await expect(profile.getByText("Free", { exact: true })).toHaveCount(0);
+  await expect(profile.getByText("Tiêu chuẩn", { exact: true })).toHaveCount(0);
+  await expect(profile.getByText("Internal service detail", { exact: false })).toHaveCount(0);
+  await expect(profile.getByText("Không thể tải thông tin cá nhân", { exact: true })).toBeVisible();
+  await expect(profile.getByRole("button", { name: "Thử tải lại" }).last()).toBeVisible();
+});

@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CustomSelect, Dialog, EmptyState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import { CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 function Field({ label, children, help, className = "", required = false }) {
   return (
@@ -47,6 +47,7 @@ function getKeywords(chapter) {
 export default function AdminICDChaptersSection({
   chapters,
   editingChapterId,
+  error,
   filters,
   form,
   loading,
@@ -190,7 +191,7 @@ export default function AdminICDChaptersSection({
         </form>
       </section>
 
-      {!loading && (
+      {!loading && !error && (
         <div className="icd-result-summary" role="status" aria-live="polite">
           <BookOpen size={18} aria-hidden="true" />
           <p>
@@ -205,6 +206,17 @@ export default function AdminICDChaptersSection({
           <LoadingState
             label="Đang tải danh mục chương ICD..."
             description="Mã chương và trọng số từ khóa đang được đồng bộ."
+          />
+        ) : error ? (
+          <ErrorState
+            title="Không thể tải danh mục chương ICD"
+            description={error}
+            urgent
+            action={(
+              <button className="btn btn-primary btn-small" type="button" onClick={onReload}>
+                <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
+              </button>
+            )}
           />
         ) : (
           <div className="icd-card-list" role="list" aria-label="Danh mục chương ICD">
@@ -293,7 +305,7 @@ export default function AdminICDChaptersSection({
         )}
       </div>
 
-      {!loading && (
+      {!loading && !error && (
         <nav className="pagination-row icd-pagination" aria-label="Phân trang chương ICD">
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => onLoadPage(Math.max(1, pageInfo.pageNumber - 1))}>
             Trước

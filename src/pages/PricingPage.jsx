@@ -373,8 +373,9 @@ function PricingPage() {
     : currentPrice
       ? formatPrice(currentPrice)
       : plansError
-        ? "Tạm thời chưa có dữ liệu"
+        ? "Không khả dụng"
         : "Chưa có gói khả dụng";
+  const paidPlanUnavailable = !plansLoading && Boolean(plansError);
 
   return (
     <>
@@ -500,7 +501,9 @@ function PricingPage() {
               </button>
             </article>
 
-            <article className="pricing-plan-card pricing-plan-card-premium">
+            <article className={`pricing-plan-card pricing-plan-card-premium ${
+              paidPlanUnavailable ? "pricing-plan-card-unavailable" : ""
+            }`}>
               <div className="pricing-plan-card-accent" aria-hidden="true" />
               <div className="pricing-plan-card-heading">
                 <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
@@ -516,7 +519,9 @@ function PricingPage() {
                 {paidPlan && <span>/ {getDurationLabel(paidPlan.durationInDays)}</span>}
               </div>
               <p className="plan-summary">
-                Dành cho người cần sử dụng thường xuyên các tính năng có giới hạn theo gói.
+                {paidPlanUnavailable
+                  ? "Giá và hạn mức sẽ hiển thị lại khi kết nối được khôi phục."
+                  : "Dành cho người cần sử dụng thường xuyên các tính năng có giới hạn theo gói."}
               </p>
               <div className="plan-benefits">
                 <h3>Quyền lợi trong gói</h3>
@@ -530,7 +535,9 @@ function PricingPage() {
                     <li className="plan-benefit-unavailable">
                       {plansLoading
                         ? "Đang tải hạn mức quyền lợi..."
-                        : "Chưa có hạn mức quyền lợi được công bố."}
+                        : paidPlanUnavailable
+                          ? "Quyền lợi chưa khả dụng."
+                          : "Chưa có hạn mức quyền lợi được công bố."}
                     </li>
                   )}
                 </ul>

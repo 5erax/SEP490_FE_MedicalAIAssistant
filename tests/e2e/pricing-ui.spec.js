@@ -128,5 +128,6 @@ test("pricing keeps unavailable paid data explicit and retryable", async ({ page
   await expect(page.getByRole("button", {
     name: "Tạm thời chưa thể đăng ký",
   })).toBeDisabled();
-  await expect(page.getByText("Tạm thời chưa có dữ liệu", { exact: true })).toBeVisible();
+  await expect(page.getByText("Không khả dụng", { exact: true })).toBeVisible();
+  await expect(page.getByText("Quyền lợi chưa khả dụng.", { exact: true })).toBeVisible();
 });

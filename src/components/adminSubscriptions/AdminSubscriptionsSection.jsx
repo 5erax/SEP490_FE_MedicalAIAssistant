@@ -32,22 +32,32 @@ export default function AdminSubscriptionsSection({
         </div>
       </div>
 
-      <section className="subscription-plan-kpis">
-        <article>
-          <span>Tổng số gói</span>
-          <strong>{plans.length}</strong>
-        </article>
-        <article>
-          <span>Đang mở bán</span>
-          <strong>{activeCount}</strong>
-        </article>
-        <article>
-          <span>Đang tạm ẩn</span>
-          <strong>{Math.max(0, plans.length - activeCount)}</strong>
-        </article>
-      </section>
+      {!loading && !error && (
+        <section className="subscription-plan-kpis" aria-label="Tổng quan gói dịch vụ">
+          <article>
+            <span>Tổng số gói</span>
+            <strong>{plans.length}</strong>
+          </article>
+          <article>
+            <span>Đang mở bán</span>
+            <strong>{activeCount}</strong>
+          </article>
+          <article>
+            <span>Đang tạm ẩn</span>
+            <strong>{Math.max(0, plans.length - activeCount)}</strong>
+          </article>
+        </section>
+      )}
 
-      {message && <div className={`api-message ${message.type}`}>{message.text}</div>}
+      {message && (
+        <div
+          className={`api-message ${message.type}`}
+          role={message.type === "error" ? "alert" : "status"}
+          aria-live={message.type === "error" ? "assertive" : "polite"}
+        >
+          {message.text}
+        </div>
+      )}
 
       {loading ? (
         <LoadingState
@@ -58,6 +68,7 @@ export default function AdminSubscriptionsSection({
         <ErrorState
           title="Không thể tải danh sách gói dịch vụ"
           description={error}
+          urgent
           action={(
             <Button onClick={onReload}>
               <RefreshCw size={16} aria-hidden="true" /> Thử tải lại

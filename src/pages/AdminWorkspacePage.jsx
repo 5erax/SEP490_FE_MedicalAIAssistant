@@ -111,6 +111,8 @@ const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử
 const SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.";
 const FACILITY_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cơ sở y tế.";
 const PATIENT_PROFILE_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách hồ sơ bệnh nhân.";
+const DEPARTMENT_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh mục chuyên khoa.";
+const ICD_CHAPTER_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh mục chương ICD.";
 const EMPTY_AI_CONFIG_FILTERS = {
   search: "",
   status: "",
@@ -412,9 +414,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const [usersMessage, setUsersMessage] = useState(null);
   const [usersLoadError, setUsersLoadError] = useState("");
   const [departmentMessage, setDepartmentMessage] = useState(null);
+  const [departmentCatalogLoadError, setDepartmentCatalogLoadError] = useState("");
   const [icdChapterMessage, setIcdChapterMessage] = useState(null);
+  const [icdChapterLoadError, setIcdChapterLoadError] = useState("");
   const [facilityMessage, setFacilityMessage] = useState(null);
   const [facilityLoadError, setFacilityLoadError] = useState("");
+  const [facilityOverviewLoadError, setFacilityOverviewLoadError] = useState("");
   const [patientProfileMessage, setPatientProfileMessage] = useState(null);
   const [patientProfileLoadError, setPatientProfileLoadError] = useState("");
 
@@ -445,6 +450,13 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
   function openSection(section) {
     navigate(getAdminSectionPath(section));
+  }
+
+  function retryOverviewMetric(section) {
+    if (section === "users") loadUsers();
+    else if (section === "doctors") loadDoctors();
+    else if (section === "ai-configs") loadAIConfigs();
+    else if (section === "facilities") loadFacilities();
   }
 
   const manageableUsers = useMemo(() => users.filter((user) => !isProtectedAdminUser(user)), [users]);
@@ -565,7 +577,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         if (profileResult.status === "fulfilled") {
           setProfile(profileResult.value.data ?? {});
         } else {
-          setGlobalMessage({ type: "warning", text: profileResult.reason.message });
+          setGlobalMessage({
+            type: "warning",
+            text: "Chưa thể đồng bộ thông tin tài khoản quản trị. Một số dữ liệu có thể tạm thời chưa khả dụng.",
+          });
         }
 
         if (usersResult.status === "fulfilled") {
@@ -585,10 +600,14 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         if (departmentResult.status === "fulfilled") {
           setDepartments(getDepartmentItems(departmentResult.value));
         } else {
-          setDepartmentMessage({ type: "error", text: departmentResult.reason.message });
+          setDepartmentMessage({
+            type: "warning",
+            text: "Chưa tải được dữ liệu chuyên khoa dùng cho các biểu mẫu liên kết.",
+          });
         }
 
         if (departmentCatalogResult.status === "fulfilled") {
+          setDepartmentCatalogLoadError("");
           const data = departmentCatalogResult.value.data ?? {};
           if (Array.isArray(data)) {
             setDepartmentCatalog(data);
@@ -608,10 +627,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             });
           }
         } else {
-          setDepartmentMessage({ type: "error", text: departmentCatalogResult.reason.message });
+          setDepartmentCatalogLoadError(DEPARTMENT_LOAD_ERROR_MESSAGE);
         }
 
         if (icdChapterResult.status === "fulfilled") {
+          setIcdChapterLoadError("");
           const data = icdChapterResult.value.data ?? {};
           setIcdChapters(data.items ?? []);
           setIcdChapterPageInfo({
@@ -621,7 +641,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             totalPages: data.totalPages ?? 1,
           });
         } else {
-          setIcdChapterMessage({ type: "error", text: icdChapterResult.reason.message });
+          setIcdChapterLoadError(ICD_CHAPTER_LOAD_ERROR_MESSAGE);
         }
 
         if (doctorResult.status === "fulfilled") {
@@ -653,6 +673,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         }
 
         if (facilityResult.status === "fulfilled") {
+          setFacilityOverviewLoadError("");
           const data = facilityResult.value.data ?? {};
           setFacilities(data.items ?? []);
           setFacilityPageInfo({
@@ -661,6 +682,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             totalCount: data.totalCount ?? 0,
             totalPages: data.totalPages ?? 1,
           });
+        } else {
+          setFacilityOverviewLoadError(FACILITY_LOAD_ERROR_MESSAGE);
         }
 
         if (patientProfileResult.status === "fulfilled") {
@@ -693,6 +716,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         );
 
         if (subscriptionPlanResult.status === "fulfilled") {
+          setSubscriptionPlanLoadError("");
           setSubscriptionPlans(Array.isArray(subscriptionPlanResult.value.data) ? subscriptionPlanResult.value.data : []);
         } else {
           setSubscriptionPlanLoadError(SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE);
@@ -797,8 +821,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     try {
       const response = await medicalDepartmentsApi.listAll();
       setDepartments(getDepartmentItems(response));
-    } catch (error) {
-      setDepartmentMessage({ type: "error", text: error.message });
+    } catch {
+      setDepartmentMessage({
+        type: "warning",
+        text: "Chưa tải được dữ liệu chuyên khoa dùng cho các biểu mẫu liên kết.",
+      });
     } finally {
       setDepartmentsLoading(false);
     }
@@ -811,6 +838,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   ) {
     setDepartmentCatalogLoading(true);
     setDepartmentMessage(null);
+    setDepartmentCatalogLoadError("");
     try {
       const response = await medicalDepartmentsApi.list(pageNumber, pageSize, filters);
       const data = response.data ?? {};
@@ -844,8 +872,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
           totalPages: data.totalPages ?? 1,
         });
       }
-    } catch (error) {
-      setDepartmentMessage({ type: "error", text: error.message });
+    } catch {
+      setDepartmentCatalogLoadError(DEPARTMENT_LOAD_ERROR_MESSAGE);
     } finally {
       setDepartmentCatalogLoading(false);
     }
@@ -881,6 +909,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   ) {
     setIcdChaptersLoading(true);
     setIcdChapterMessage(null);
+    setIcdChapterLoadError("");
     try {
       const response = await icdChaptersApi.list(pageNumber, pageSize, filters);
       const data = response.data ?? {};
@@ -891,8 +920,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         totalCount: data.totalCount ?? 0,
         totalPages: data.totalPages ?? 1,
       });
-    } catch (error) {
-      setIcdChapterMessage({ type: "error", text: error.message });
+    } catch {
+      setIcdChapterLoadError(ICD_CHAPTER_LOAD_ERROR_MESSAGE);
     } finally {
       setIcdChaptersLoading(false);
     }
@@ -1104,6 +1133,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     setFacilitiesLoading(true);
     setFacilityMessage(null);
     setFacilityLoadError("");
+    setFacilityOverviewLoadError("");
     try {
       const [facilityResponse, facilityDepartmentResponse] = await Promise.all([
         medicalFacilitiesApi.list(pageNumber, pageSize, filters),
@@ -1121,6 +1151,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       setFacilityDepartments(Array.isArray(data) ? data : data?.items ?? []);
     } catch {
       setFacilityLoadError(FACILITY_LOAD_ERROR_MESSAGE);
+      setFacilityOverviewLoadError(FACILITY_LOAD_ERROR_MESSAGE);
       showToast({
         type: "error",
         title: "Không tải được danh sách cơ sở y tế",
@@ -1373,9 +1404,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       } else {
         await loadSubscriptionPlans();
       }
-    } catch (error) {
-      setSubscriptionPlanMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không lưu được gói dịch vụ", message: error.message });
+    } catch {
+      const message = "Không thể lưu gói dịch vụ lúc này. Vui lòng thử lại.";
+      setSubscriptionPlanMessage({ type: "error", text: message });
+      showToast({ type: "error", title: "Không lưu được gói dịch vụ", message });
     } finally {
       setSavingSubscriptionPlan(false);
     }
@@ -1392,9 +1424,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         title: updatedPlan.isActive ? "Đã mở bán gói" : "Đã tạm ẩn gói",
         message: response.message || "Trạng thái gói dịch vụ đã được cập nhật.",
       });
-    } catch (error) {
-      setSubscriptionPlanMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không đổi được trạng thái gói", message: error.message });
+    } catch {
+      const message = "Không thể cập nhật trạng thái gói lúc này. Vui lòng thử lại.";
+      setSubscriptionPlanMessage({ type: "error", text: message });
+      showToast({ type: "error", title: "Không đổi được trạng thái gói", message });
     }
   }
 
@@ -1412,9 +1445,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       const response = await subscriptionPlansApi.remove(plan.id);
       setSubscriptionPlans((current) => current.filter((item) => item.id !== plan.id));
       showToast({ type: "success", title: "Đã xóa gói dịch vụ", message: response.message || "Danh sách gói đã được cập nhật." });
-    } catch (error) {
-      setSubscriptionPlanMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không xóa được gói dịch vụ", message: error.message });
+    } catch {
+      const message = "Không thể xóa gói dịch vụ lúc này. Vui lòng thử lại.";
+      setSubscriptionPlanMessage({ type: "error", text: message });
+      showToast({ type: "error", title: "Không xóa được gói dịch vụ", message });
     }
   }
 
@@ -1577,8 +1611,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         loadDepartmentCatalog(departmentPageInfo.pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters),
       ]);
       setDepartmentMessage(successMessage);
-    } catch (error) {
-      setDepartmentMessage({ type: "error", text: error.message });
+    } catch {
+      setDepartmentMessage({ type: "error", text: "Không thể lưu chuyên khoa lúc này. Vui lòng thử lại." });
     } finally {
       setSavingDepartment(false);
     }
@@ -1602,8 +1636,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       ]);
       setDepartmentMessage({ type: "success", text: response.message || "Đã xóa chuyên khoa." });
       showToast({ type: "success", title: "Đã xóa chuyên khoa", message: response.message || "Danh mục đã được cập nhật." });
-    } catch (error) {
-      setDepartmentMessage({ type: "error", text: error.message });
+    } catch {
+      setDepartmentMessage({ type: "error", text: "Không thể xóa chuyên khoa lúc này. Vui lòng thử lại." });
     }
   }
 
@@ -1652,7 +1686,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function handleViewIcdChapter(chapter) {
     const id = getIcdChapterId(chapter);
     if (!id) {
-      setIcdChapterMessage({ type: "error", text: "Không tìm thấy ID ICD Chapter." });
+      setIcdChapterMessage({ type: "error", text: "Không thể xác định chương ICD cần tải." });
       return;
     }
 
@@ -1661,8 +1695,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       const response = await icdChaptersApi.get(id);
       startEditIcdChapter(response.data ?? chapter);
       setIcdChapterMessage({ type: "success", text: response.message || "Đã tải chi tiết ICD Chapter." });
-    } catch (error) {
-      setIcdChapterMessage({ type: "error", text: error.message });
+    } catch {
+      setIcdChapterMessage({ type: "error", text: "Không thể tải chi tiết chương ICD lúc này. Vui lòng thử lại." });
     }
   }
 
@@ -1684,8 +1718,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
         type: "success",
         text: successMessage,
       });
-    } catch (error) {
-      setIcdChapterMessage({ type: "error", text: error.message });
+    } catch {
+      setIcdChapterMessage({ type: "error", text: "Không thể lưu chương ICD lúc này. Vui lòng thử lại." });
     } finally {
       setSavingIcdChapter(false);
     }
@@ -1694,7 +1728,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   async function handleDeleteIcdChapter(chapter) {
     const id = getIcdChapterId(chapter);
     if (!id) {
-      setIcdChapterMessage({ type: "error", text: "Không tìm thấy ID ICD Chapter." });
+      setIcdChapterMessage({ type: "error", text: "Không thể xác định chương ICD cần xóa." });
       return;
     }
 
@@ -1714,8 +1748,8 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       await loadIcdChapters(icdChapterPageInfo.pageNumber, icdChapterPageInfo.pageSize);
       setIcdChapterMessage({ type: "success", text: successMessage });
       showToast({ type: "success", title: "Đã xóa chương ICD", message: response.message || "Danh mục đã được cập nhật." });
-    } catch (error) {
-      setIcdChapterMessage({ type: "error", text: error.message });
+    } catch {
+      setIcdChapterMessage({ type: "error", text: "Không thể xóa chương ICD lúc này. Vui lòng thử lại." });
     }
   }
 
@@ -1975,15 +2009,20 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
 
             {activeSection === "overview" && (
               <AdminOverviewSection
+                aiConfigsError={aiConfigLoadError}
                 aiConfigsLoading={aiConfigsLoading}
                 aiConfigTotalCount={aiConfigPageInfo.totalCount}
+                doctorsError={doctorLoadError}
                 doctorsLoading={doctorsLoading}
                 doctorTotalCount={doctorPageInfo.totalCount}
+                facilitiesError={facilityOverviewLoadError}
                 facilitiesLoading={facilitiesLoading}
                 facilityTotalCount={facilityPageInfo.totalCount}
+                usersError={usersLoadError}
                 usersLoading={usersLoading}
                 userTotalCount={pageInfo.totalCount}
                 onOpenSection={openSection}
+                onRetryMetric={retryOverviewMetric}
               />
             )}
 
@@ -2085,6 +2124,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                 allDepartmentsCount={departmentPageInfo.totalCount || departments.length}
                 departments={departmentCatalog}
                 editingDepartmentId={editingDepartmentId}
+                error={departmentCatalogLoadError}
                 filters={departmentFilters}
                 form={departmentForm}
                 loading={departmentCatalogLoading}
@@ -2112,6 +2152,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
               <AdminICDChaptersSection
                 chapters={icdChapters}
                 editingChapterId={editingIcdChapterId}
+                error={icdChapterLoadError}
                 filters={icdChapterFilters}
                 form={icdChapterForm}
                 loading={icdChaptersLoading}
