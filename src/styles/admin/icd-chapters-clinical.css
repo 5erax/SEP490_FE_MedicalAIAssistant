@@ -648,6 +648,108 @@ html[data-theme="dark"] .admin-operator .icd-keyword {
   }
 }
 
+.admin-operator .icd-table-wrap {
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  overflow-x: auto;
+}
+
+.admin-operator .icd-table-wrap .ui-table {
+  width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
+}
+
+.admin-operator .icd-table-wrap .ui-table thead th {
+  background: #0f1715;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-operator .icd-table-wrap .ui-table tbody th {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: 400;
+  text-align: left;
+}
+
+.admin-operator .icd-table-wrap .ui-table th,
+.admin-operator .icd-table-wrap .ui-table td {
+  border-bottom: 1px solid rgba(16, 20, 17, 0.07);
+  padding: 16px 12px;
+  vertical-align: top;
+  min-width: 0;
+}
+
+.admin-operator .icd-table-wrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-operator .icd-table-wrap .ui-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(230, 244, 238, 0.54), #ffffff 58%);
+}
+
+.admin-operator .icd-table-wrap th:nth-child(1) {
+  width: 30%;
+}
+
+.admin-operator .icd-table-wrap th:nth-child(2) {
+  width: 38%;
+}
+
+.admin-operator .icd-table-wrap th:nth-child(3) {
+  width: 32%;
+}
+
+.admin-operator .icd-table-wrap .record-actions {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.admin-operator .icd-table-wrap .record-actions .btn {
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+.icd-primary-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.icd-primary-code {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  min-width: 44px;
+  min-height: 40px;
+  border: 1px solid #cce3dc;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #d9f2ec, #eaf6f2);
+  padding: 4px 8px;
+  color: #056c69;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.icd-primary-cell strong,
+.icd-primary-cell small {
+  display: block;
+}
+
+.icd-primary-cell small {
+  color: rgba(16, 20, 17, 0.55);
+  font-size: 11px;
+  font-weight: 650;
+}
+
 @media (forced-colors: active) {
   .admin-operator .icd-clinical-panel,
   .admin-operator .icd-filter-card,
