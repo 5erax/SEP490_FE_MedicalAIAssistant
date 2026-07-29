@@ -696,6 +696,106 @@ html[data-theme="dark"] .admin-operator .department-card-meta dd {
   }
 }
 
+.admin-operator .department-table-wrap {
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  overflow-x: auto;
+}
+
+.admin-operator .department-table-wrap .ui-table {
+  width: 100%;
+  min-width: 680px;
+  table-layout: fixed;
+}
+
+.admin-operator .department-table-wrap .ui-table thead th {
+  background: #0f1715;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-operator .department-table-wrap .ui-table tbody th {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: 400;
+  text-align: left;
+}
+
+.admin-operator .department-table-wrap .ui-table th,
+.admin-operator .department-table-wrap .ui-table td {
+  border-bottom: 1px solid rgba(16, 20, 17, 0.07);
+  padding: 16px 12px;
+  vertical-align: top;
+  min-width: 0;
+}
+
+.admin-operator .department-table-wrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-operator .department-table-wrap .ui-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(230, 244, 238, 0.54), #ffffff 58%);
+}
+
+.admin-operator .department-table-wrap th:nth-child(1) {
+  width: 46%;
+}
+
+.admin-operator .department-table-wrap th:nth-child(2) {
+  width: 28%;
+}
+
+.admin-operator .department-table-wrap th:nth-child(3) {
+  width: 26%;
+}
+
+.admin-operator .department-table-wrap .record-actions {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.admin-operator .department-table-wrap .record-actions .btn {
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+.department-primary-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.department-primary-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(0, 128, 136, 0.14);
+  border-radius: 12px;
+  background: #e6f7f4;
+  color: #087f8c;
+}
+
+.department-primary-cell strong,
+.department-primary-cell small {
+  display: block;
+}
+
+.department-primary-cell small {
+  color: rgba(16, 20, 17, 0.55);
+  font-size: 12px;
+  font-weight: 620;
+  line-height: 1.5;
+}
+
 @media (forced-colors: active) {
   .admin-operator .department-clinical-panel,
   .admin-operator .department-filter-card,
