@@ -1,6 +1,5 @@
-import { Badge, Button, EmptyState } from "../ui";
+import { Badge, Button, DataTable, EmptyState } from "../ui";
 import { CreditCard, Pencil, Power, Trash2 } from "lucide-react";
-import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 
 function formatPrice(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
@@ -74,17 +73,17 @@ export default function SubscriptionPlanTable({ plans, onEdit, onToggleStatus, o
   }
 
   return (
-    <div className="subscription-plan-card-list" role="list" aria-label="Danh sách gói dịch vụ">
-      <div className="subscription-plan-list-header" aria-hidden="true">
-        <span>Gói dịch vụ</span>
-        <span>Thời hạn / Cập nhật</span>
-        <span>Giới hạn tính năng</span>
-        <span>Trạng thái</span>
-        <span>Thao tác</span>
-      </div>
-      {plans.map((plan) => (
-        <article className="subscription-plan-card" key={plan.id} role="listitem">
-          <div className="subscription-plan-card-main">
+    <DataTable
+      className="subscription-plan-table-wrap"
+      caption="Danh sách gói dịch vụ theo bộ lọc hiện tại"
+      rowHeaderKey="plan"
+      getRowKey={(plan) => plan.id}
+      rows={plans}
+      columns={[
+        {
+          key: "plan",
+          header: "Gói dịch vụ",
+          render: (plan) => (
             <div className="subscription-plan-primary">
               <span className="subscription-plan-icon"><CreditCard size={18} /></span>
               <div>
@@ -92,45 +91,52 @@ export default function SubscriptionPlanTable({ plans, onEdit, onToggleStatus, o
                 <span>{formatPrice(plan.price)}</span>
               </div>
             </div>
-          </div>
-
-          <div className="subscription-plan-card-meta">
-            <span>
-              <small>Thời hạn</small>
-              <strong>{plan.durationInDays} ngày</strong>
-            </span>
-            <span>
-              <small>Cập nhật</small>
-              <strong>{formatDate(plan.updatedAt || plan.createdAt)}</strong>
-            </span>
-          </div>
-
-          <div className="subscription-plan-card-limits">
-            <small>Giới hạn tính năng</small>
+          ),
+        },
+        {
+          key: "duration",
+          header: "Thời hạn",
+          render: (plan) => `${plan.durationInDays} ngày`,
+        },
+        {
+          key: "limits",
+          header: "Giới hạn tính năng",
+          render: (plan) => (
             <span className="subscription-limit-summary">{summarizeLimits(plan.featureLimitJson)}</span>
-          </div>
-
-          <div className="subscription-plan-card-status">
+          ),
+        },
+        {
+          key: "updated",
+          header: "Cập nhật",
+          render: (plan) => formatDate(plan.updatedAt || plan.createdAt),
+        },
+        {
+          key: "status",
+          header: "Trạng thái",
+          render: (plan) => (
             <Badge tone={plan.isActive ? "success" : "warning"}>
               {plan.isActive ? "Đang bán" : "Tạm ẩn"}
             </Badge>
-          </div>
-
-          <div className="record-actions subscription-plan-actions">
-            <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(plan)}>
-              <Pencil size={14} /> Sửa
-            </button>
-            <AdminActionDisclosure>
+          ),
+        },
+        {
+          key: "actions",
+          header: "Thao tác",
+          render: (plan) => (
+            <div className="record-actions subscription-plan-actions">
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(plan)}>
+                <Pencil size={14} /> Sửa
+              </button>
               <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(plan)}>
                 <Power size={14} /> {plan.isActive ? "Tạm ẩn" : "Mở bán"}
               </button>
               <button className="btn btn-dark btn-small subscription-delete-button" type="button" onClick={() => onDelete(plan)}>
                 <Trash2 size={14} /> Xóa
               </button>
-            </AdminActionDisclosure>
-          </div>
-        </article>
-      ))}
-    </div>
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 }
