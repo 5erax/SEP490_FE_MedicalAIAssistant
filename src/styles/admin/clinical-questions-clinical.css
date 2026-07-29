@@ -375,6 +375,28 @@
   padding-top: 18px;
 }
 
+.clinical-question-modal.doctor-modal {
+  border: 1px solid rgba(0, 128, 136, 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(205, 247, 244, 0.72), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%);
+  box-shadow: 0 34px 90px rgba(12, 58, 62, 0.22);
+}
+
+.clinical-question-modal .doctor-modal-header .eyebrow {
+  color: #007f89;
+}
+
+.clinical-question-modal .doctor-modal-header .eyebrow::before {
+  background: currentColor;
+}
+
+.clinical-question-modal .doctor-modal-close:hover {
+  border-color: rgba(0, 128, 136, 0.42);
+  background: #e9fbf8;
+  color: #007f89;
+}
+
 .clinical-question-modal .clinical-required-note {
   color: #795126;
   font: inherit;
