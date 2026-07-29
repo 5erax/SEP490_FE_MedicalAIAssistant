@@ -355,6 +355,20 @@
   min-height: 42px;
 }
 
+.admin-operator .patient-profile-delete-button {
+  border-color: rgba(185, 48, 54, 0.25);
+  background: #fff7f7;
+  color: #a3262d;
+}
+
+@media (hover: hover) {
+  .admin-operator .patient-profile-delete-button:hover {
+    border-color: #a3262d;
+    background: #a3262d;
+    color: #fff;
+  }
+}
+
 .admin-operator .patient-profile-pagination {
   border-top: 1px solid var(--profile-line);
   padding-top: 18px;

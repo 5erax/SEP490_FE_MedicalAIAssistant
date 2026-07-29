@@ -560,6 +560,20 @@
   justify-content: center;
 }
 
+.subscription-delete-button {
+  border-color: rgba(185, 48, 54, 0.25);
+  background: #fff7f7;
+  color: #a3262d;
+}
+
+@media (hover: hover) {
+  .subscription-delete-button:hover {
+    border-color: #a3262d;
+    background: #a3262d;
+    color: #fff;
+  }
+}
+
 .subscription-plan-empty {
   min-height: 300px;
   align-content: center;

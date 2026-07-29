@@ -309,7 +309,17 @@
 }
 
 .admin-operator .facility-clinical-panel .facility-delete-button {
-  background: #17363a;
+  border-color: rgba(185, 48, 54, 0.25);
+  background: #fff7f7;
+  color: #a3262d;
+}
+
+@media (hover: hover) {
+  .admin-operator .facility-clinical-panel .facility-delete-button:hover {
+    border-color: #a3262d;
+    background: #a3262d;
+    color: #fff;
+  }
 }
 
 .admin-operator .facility-pagination {

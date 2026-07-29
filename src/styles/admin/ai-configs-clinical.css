@@ -935,6 +935,20 @@
   }
 }
 
+.admin-operator .ai-config-delete-button {
+  border-color: rgba(185, 48, 54, 0.25);
+  background: #fff7f7;
+  color: #a3262d;
+}
+
+@media (hover: hover) {
+  .admin-operator .ai-config-delete-button:hover {
+    border-color: #a3262d;
+    background: #a3262d;
+    color: #fff;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-operator .ai-config-clinical-card,
   .admin-operator .ai-config-search-control {
