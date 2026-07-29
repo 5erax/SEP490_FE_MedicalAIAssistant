@@ -388,8 +388,11 @@ export default function AdminICDChaptersSection({
             <div className="facility-form-body">
               <section className="facility-form-card" aria-labelledby="icd-basic-section">
                 <div className="facility-form-card-head">
-                  <h3 id="icd-basic-section">Thông tin chương</h3>
-                  <p>Mã và tên chương được lưu trong danh mục ICD của hệ thống.</p>
+                  <span className="facility-form-card-icon" aria-hidden="true"><Hash size={18} /></span>
+                  <div>
+                    <h3 id="icd-basic-section">Thông tin chương</h3>
+                    <p>Mã và tên chương được lưu trong danh mục ICD của hệ thống.</p>
+                  </div>
                 </div>
                 <div className="facility-form-grid">
                   <Field
@@ -436,8 +439,11 @@ export default function AdminICDChaptersSection({
 
               <section className="facility-form-card" aria-labelledby="icd-keywords-section">
                 <div className="facility-form-card-head">
-                  <h3 id="icd-keywords-section">Từ khóa và trọng số</h3>
-                  <p>Thêm các từ khóa liên quan để hệ thống tự động nhận diện chương bệnh khi phân tích triệu chứng.</p>
+                  <span className="facility-form-card-icon" aria-hidden="true"><Tags size={18} /></span>
+                  <div>
+                    <h3 id="icd-keywords-section">Từ khóa và trọng số</h3>
+                    <p>Thêm các từ khóa liên quan để hệ thống tự động nhận diện chương bệnh khi phân tích triệu chứng.</p>
+                  </div>
                 </div>
                 <KeywordWeightEditor
                   ref={keywordEditorRef}
