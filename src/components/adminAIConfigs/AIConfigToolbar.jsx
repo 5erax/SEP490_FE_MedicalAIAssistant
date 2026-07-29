@@ -1,4 +1,5 @@
 import { BrainCircuit, Filter, RotateCcw, Search } from "lucide-react";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 import { formatEnvironment } from "./aiConfigUtils";
 
@@ -31,17 +32,18 @@ export default function AIConfigToolbar({
     { value: "", label: "Tất cả môi trường" },
     ...environments.map((environment) => ({ value: environment, label: formatEnvironment(environment) })),
   ];
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   return (
-    <section className="ai-config-filter-card ai-config-clinical-filter-card" aria-labelledby="ai-config-filter-title">
-      <div className="ai-config-filter-card-header ai-config-clinical-filter-heading">
-        <span aria-hidden="true"><Filter size={18} /></span>
-        <div>
-          <h3 id="ai-config-filter-title">Lọc danh mục cấu hình</h3>
-          <p>Lọc prompt, mô hình và tính năng đang vận hành trong MediMate AI.</p>
-        </div>
-      </div>
-
+    <AdminFilterDisclosure
+      className="ai-config-filter-card ai-config-clinical-filter-card"
+      description="Lọc prompt, mô hình và tính năng đang vận hành trong MediMate AI."
+      headingClassName="ai-config-filter-card-header ai-config-clinical-filter-heading"
+      icon={<Filter size={18} />}
+      summary={`${activeFilterCount} bộ lọc đang dùng`}
+      title="Lọc danh mục cấu hình"
+      titleId="ai-config-filter-title"
+    >
       <form className="ai-config-toolbar" onSubmit={onSubmit}>
         <div className="ai-config-toolbar-row ai-config-toolbar-primary">
           <label className="ai-config-search-field">
@@ -107,6 +109,6 @@ export default function AIConfigToolbar({
           </div>
         </div>
       </form>
-    </section>
+    </AdminFilterDisclosure>
   );
 }

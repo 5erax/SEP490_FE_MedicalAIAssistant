@@ -152,7 +152,8 @@ test("admin manages an AI configuration without changing the API contract", asyn
   await expect(createDialog.getByLabel("Loại tính năng (bắt buộc)")).toBeFocused();
 
   await createDialog.getByRole("button", { name: "Tạo cấu hình" }).click();
-  await expect(createDialog.getByRole("alert")).toBeFocused();
+  await expect(createDialog.getByLabel("Loại tính năng (bắt buộc)")).toBeFocused();
+  await expect(createDialog.getByLabel("Loại tính năng (bắt buộc)")).toHaveAttribute("aria-invalid", "true");
   await expect(createDialog.getByText("Chưa thể lưu cấu hình", { exact: true })).toBeVisible();
 
   await createDialog.getByLabel("Loại tính năng (bắt buộc)").fill("symptom-analysis-prod");
@@ -211,6 +212,7 @@ test("admin manages an AI configuration without changing the API contract", asyn
   await detailDialog.getByRole("button", { name: "Đóng chi tiết" }).click();
   await expect(detailButton).toBeFocused();
 
+  await configList.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("button", { name: "Sửa cấu hình symptom-analysis-prod" }).click();
   const editDialog = page.getByRole("dialog", { name: "Cập nhật cấu hình AI" });
   await expect(editDialog.getByLabel("Loại tính năng (bắt buộc)")).toBeFocused();
@@ -223,6 +225,7 @@ test("admin manages an AI configuration without changing the API contract", asyn
   });
   await expect(configList.getByText("medimate-clinical-v2", { exact: true })).toBeVisible();
 
+  await configList.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("button", { name: "Tắt cấu hình symptom-analysis-prod" }).click();
   expect(state.statusPayload).toEqual({ isActive: false });
   await expect(configList.getByText("Đang tắt", { exact: true })).toBeVisible();
@@ -231,11 +234,12 @@ test("admin manages an AI configuration without changing the API contract", asyn
   expect(await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   )).toBe(true);
+  await configList.getByRole("button", { name: "Thao tác khác" }).click();
   await page.emulateMedia({ forcedColors: "active" });
   const deleteButton = page.getByRole("button", { name: "Xóa cấu hình symptom-analysis-prod" });
   await deleteButton.focus();
   await expect(deleteButton).toBeFocused();
-  expect((await deleteButton.boundingBox())?.height).toBeGreaterThanOrEqual(40);
+  expect((await deleteButton.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   await page.emulateMedia({ forcedColors: "none" });
 
   await deleteButton.click();

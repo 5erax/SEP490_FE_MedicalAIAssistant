@@ -308,6 +308,7 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
 
   await expect(page.getByText("Có tọa độ bản đồ", { exact: true })).toBeVisible();
   await expect(page.getByText("1 cơ sở đang hiển thị", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Thao tác khác" }).click();
   const mapLink = page.getByRole("link", { name: "Xem Bệnh viện Đa khoa A trên OpenStreetMap" });
   await expect(mapLink).toHaveAttribute(
     "href",
@@ -356,10 +357,12 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
     departmentIds: [DEPARTMENT_ID],
   });
 
+  await page.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("button", { name: "Tắt" }).click();
   await expect(page.getByText("Đang tắt", { exact: true })).toBeVisible();
   expect(statusPayload).toEqual({ isActive: false });
 
+  await page.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("button", { name: "Xóa", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xóa cơ sở" }).click();
   await expect(page.getByText("Chưa có cơ sở y tế", { exact: true })).toBeVisible();

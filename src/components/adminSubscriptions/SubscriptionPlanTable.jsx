@@ -1,5 +1,6 @@
 import { Badge, Button, EmptyState } from "../ui";
 import { CreditCard, Pencil, Power, Trash2 } from "lucide-react";
+import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 
 function formatPrice(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
@@ -14,9 +15,12 @@ const FEATURE_LIMIT_LABELS = {
   symptomAnalysisPerMonth: "Phân tích triệu chứng / tháng",
   aiChatPerDay: "Chat AI / ngày",
   clinicalQuestionPerMonth: "Câu hỏi lâm sàng / tháng",
-  recoveryPlanPerMonth: "Kế hoạch phục hồi / tháng",
-  medicationScanPerMonth: "Kiểm tra thuốc / tháng",
 };
+
+const NON_PRODUCTION_LIMIT_KEYS = new Set([
+  "recoveryPlanPerMonth",
+  "medicationScanPerMonth",
+]);
 
 function formatLimitKey(key) {
   if (FEATURE_LIMIT_LABELS[key]) return FEATURE_LIMIT_LABELS[key];
@@ -29,14 +33,24 @@ function formatLimitKey(key) {
 function summarizeLimits(value) {
   if (!value) return "Không giới hạn riêng";
   try {
-    const entries = Object.entries(JSON.parse(value));
-    if (!entries.length) return "Không giới hạn riêng";
-    return entries.slice(0, 3).map(([key, limit]) => (
-      <span className="subscription-limit-row" key={key}>
-        <span>{formatLimitKey(key)}</span>
-        <strong>{limit}</strong>
-      </span>
-    ));
+    const entries = Object.entries(JSON.parse(value))
+      .filter(([key]) => !NON_PRODUCTION_LIMIT_KEYS.has(key));
+    if (!entries.length) return "Chưa có hạn mức production được xác nhận";
+    const visibleEntries = entries.slice(0, 3);
+    const hiddenCount = Math.max(0, entries.length - visibleEntries.length);
+    return (
+      <>
+        {visibleEntries.map(([key, limit]) => (
+          <span className="subscription-limit-row" key={key}>
+            <span>{formatLimitKey(key)}</span>
+            <strong>{limit}</strong>
+          </span>
+        ))}
+        {hiddenCount > 0 && (
+          <span className="subscription-limit-more">+{hiddenCount} hạn mức khác</span>
+        )}
+      </>
+    );
   } catch {
     return "Dữ liệu giới hạn chưa đúng định dạng";
   }
@@ -106,12 +120,14 @@ export default function SubscriptionPlanTable({ plans, onEdit, onToggleStatus, o
             <button className="btn btn-ghost btn-small" type="button" onClick={() => onEdit(plan)}>
               <Pencil size={14} /> Sửa
             </button>
-            <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(plan)}>
-              <Power size={14} /> {plan.isActive ? "Tạm ẩn" : "Mở bán"}
-            </button>
-            <button className="btn btn-dark btn-small subscription-delete-button" type="button" onClick={() => onDelete(plan)}>
-              <Trash2 size={14} /> Xóa
-            </button>
+            <AdminActionDisclosure>
+              <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(plan)}>
+                <Power size={14} /> {plan.isActive ? "Tạm ẩn" : "Mở bán"}
+              </button>
+              <button className="btn btn-dark btn-small subscription-delete-button" type="button" onClick={() => onDelete(plan)}>
+                <Trash2 size={14} /> Xóa
+              </button>
+            </AdminActionDisclosure>
           </div>
         </article>
       ))}

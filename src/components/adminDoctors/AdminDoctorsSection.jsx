@@ -93,10 +93,10 @@ export default function AdminDoctorsSection({
         <div className="doctor-invitation-card-heading">
           <span aria-hidden="true"><MailPlus size={20} /></span>
           <div>
-            <p className="eyebrow">Liên kết tài khoản</p>
-            <h3 id="doctor-invitation-title">Gửi lời mời đăng ký bác sĩ</h3>
+            <p className="eyebrow">Tài khoản đăng nhập</p>
+            <h3 id="doctor-invitation-title">Mời bác sĩ tạo tài khoản</h3>
             <p>
-              Nhập email và tùy chọn liên kết với một hồ sơ chưa có tài khoản.
+              Gửi email đăng ký; thao tác này không tự tạo hồ sơ bác sĩ trong danh mục.
             </p>
           </div>
         </div>
@@ -129,11 +129,12 @@ export default function AdminDoctorsSection({
           </label>
           <Button
             className="doctor-invitation-submit"
+            tone="secondary"
             type="submit"
             disabled={savingInvitation}
           >
             <MailPlus size={16} aria-hidden="true" />
-            {savingInvitation ? "Đang gửi lời mời..." : "Gửi lời mời"}
+            {savingInvitation ? "Đang gửi lời mời..." : "Gửi lời mời đăng ký"}
           </Button>
         </form>
 

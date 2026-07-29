@@ -79,10 +79,9 @@ test("admin can create a subscription plan from the workspace", async ({ page })
   await page.getByLabel("Tên gói").fill("MediMate+ Tháng");
   await page.getByLabel("Giá gói (VND)").fill("149000");
   await page.getByLabel("Thời hạn (ngày)").fill("30");
-  await page.getByLabel("Giới hạn tính năng").fill('{"aiChatPerDay":20}');
-  await page.getByRole("dialog", { name: "Tạo gói dịch vụ" })
-    .getByRole("button", { name: "Tạo gói", exact: true })
-    .click();
+  const createDialog = page.getByRole("dialog", { name: "Tạo gói dịch vụ" });
+  await createDialog.getByRole("button", { name: "Xóa hạn mức 1" }).click();
+  await createDialog.getByRole("button", { name: "Tạo gói", exact: true }).click();
 
   await expect(page.getByText("MediMate+ Tháng", { exact: true })).toBeVisible();
   expect(createdPlan).toEqual({
@@ -149,7 +148,7 @@ test("admin retries a failed subscription plan list and receives an empty state"
 
   await page.goto("/app/admin/subscriptions", { waitUntil: "domcontentloaded" });
 
-  const errorState = page.getByRole("status").filter({ hasText: "Không thể tải danh sách gói dịch vụ" });
+  const errorState = page.getByRole("alert").filter({ hasText: "Không thể tải danh sách gói dịch vụ" });
   await expect(errorState).toBeVisible();
   await expect(errorState).toContainText("Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.");
   await expect(errorState).not.toContainText("Sensitive payment platform detail");

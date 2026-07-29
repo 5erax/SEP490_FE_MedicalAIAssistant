@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { uploadImageToCloudinary } from "../../services/cloudinaryUploadService";
+import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { Dialog } from "../ui";
 
 const EMPTY_FORM = {
@@ -111,14 +112,11 @@ export default function DoctorFormModal({
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadMessage, setImageUploadMessage] = useState(null);
   const [selectedImageName, setSelectedImageName] = useState("");
+  const formRef = useRef(null);
   const title = mode === "edit" ? "Cập nhật bác sĩ" : "Thêm bác sĩ mới";
   const locked = saving || imageUploading;
   const currentImageUrl = getSafeImageUrl(form.imageUrl.trim());
   const hasErrors = Object.values(errors).some(Boolean);
-  const focusErrorSummary = useCallback((node) => {
-    if (!node) return;
-    window.setTimeout(() => node.focus(), 0);
-  }, []);
 
   const options = useMemo(() => {
     const current = form.facilityDepartmentId
@@ -166,7 +164,10 @@ export default function DoctorFormModal({
     const validFacilityDepartmentIds = new Set(options.map((option) => option.id));
     const nextErrors = validate(form, validFacilityDepartmentIds);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
+    if (Object.keys(nextErrors).length) {
+      focusFirstInvalidField(formRef, nextErrors);
+      return;
+    }
     onSubmit(buildDoctorPayload(form));
   }
 
@@ -195,13 +196,11 @@ export default function DoctorFormModal({
           <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose} disabled={locked}>×</button>
         </header>
 
-        <form className="clean-form facility-form doctor-form" onSubmit={handleSubmit}>
+        <form ref={formRef} className="clean-form facility-form doctor-form" onSubmit={handleSubmit} noValidate>
           {hasErrors && (
             <div
-              ref={focusErrorSummary}
               className="doctor-form-error-summary"
               role="alert"
-              tabIndex={-1}
             >
               <strong>Kiểm tra lại thông tin bác sĩ</strong>
               <ul>
@@ -221,12 +220,11 @@ export default function DoctorFormModal({
               <label className={`clean-field ${errors.facilityDepartmentId ? "doctor-field-error" : ""}`}>
                 <span>Cơ sở y tế - khoa</span>
                 <select
+                  {...getAdminFieldProps("facilityDepartmentId", errors.facilityDepartmentId, "facility-department-help")}
                   value={form.facilityDepartmentId}
                   onChange={(event) => update("facilityDepartmentId", event.target.value)}
                   required
                   disabled={!options.length}
-                  aria-invalid={errors.facilityDepartmentId ? "true" : undefined}
-                  aria-describedby="facility-department-help"
                 >
                   <option value="">
                     {options.length ? "Chọn cơ sở y tế và khoa" : "Chưa có khoa tại cơ sở y tế"}
@@ -254,40 +252,38 @@ export default function DoctorFormModal({
                 <label className={`clean-field ${errors.fullName ? "doctor-field-error" : ""}`}>
                   <span>Họ và tên bác sĩ</span>
                   <input
+                    {...getAdminFieldProps("fullName", errors.fullName, errors.fullName ? "doctor-full-name-error" : "")}
                     value={form.fullName}
                     onChange={(event) => update("fullName", event.target.value)}
                     placeholder="Ví dụ: BS. Nguyễn Minh Anh"
                     autoComplete="name"
                     required
-                    aria-invalid={errors.fullName ? "true" : undefined}
-                    aria-describedby={errors.fullName ? "doctor-full-name-error" : undefined}
                   />
                   {errors.fullName && <small id="doctor-full-name-error" role="alert">{errors.fullName}</small>}
                 </label>
                 <label className="clean-field">
                   <span>Chuyên môn</span>
-                  <input value={form.specialty} onChange={(event) => update("specialty", event.target.value)} placeholder="Ví dụ: Tim mạch can thiệp" />
+                  <input name="specialty" value={form.specialty} onChange={(event) => update("specialty", event.target.value)} placeholder="Ví dụ: Tim mạch can thiệp" />
                 </label>
                 <label className="clean-field">
                   <span>Học hàm/học vị</span>
-                  <input value={form.academicTitle} onChange={(event) => update("academicTitle", event.target.value)} placeholder="ThS.BS, CKI, CKII..." />
+                  <input name="academicTitle" value={form.academicTitle} onChange={(event) => update("academicTitle", event.target.value)} placeholder="ThS.BS, CKI, CKII..." />
                 </label>
                 <label className={`clean-field ${errors.yearsOfExperience ? "doctor-field-error" : ""}`}>
                   <span>Số năm kinh nghiệm</span>
                   <input
+                    {...getAdminFieldProps("yearsOfExperience", errors.yearsOfExperience, errors.yearsOfExperience ? "doctor-experience-error" : "")}
                     type="text"
                     inputMode="numeric"
                     value={form.yearsOfExperience}
                     onChange={(event) => update("yearsOfExperience", event.target.value)}
                     placeholder="Ví dụ: 8"
-                    aria-invalid={errors.yearsOfExperience ? "true" : undefined}
-                    aria-describedby={errors.yearsOfExperience ? "doctor-experience-error" : undefined}
                   />
                   {errors.yearsOfExperience && <small id="doctor-experience-error" role="alert">{errors.yearsOfExperience}</small>}
                 </label>
                 <label className="clean-field">
                   <span>Vai trò trong khoa</span>
-                  <select value={form.departmentRole} onChange={(event) => update("departmentRole", event.target.value)}>
+                  <select name="departmentRole" value={form.departmentRole} onChange={(event) => update("departmentRole", event.target.value)}>
                     {ROLE_OPTIONS.map((role) => (
                       <option key={role.value} value={role.value}>{role.label}</option>
                     ))}
@@ -295,7 +291,7 @@ export default function DoctorFormModal({
                 </label>
                 <label className="clean-field">
                   <span>Trạng thái</span>
-                  <select value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
+                  <select name="isActive" value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
                     <option value="true">Đang hoạt động</option>
                     <option value="false">Tạm ẩn</option>
                   </select>
@@ -315,6 +311,9 @@ export default function DoctorFormModal({
                       className="facility-image-preview doctor-image-preview"
                       src={currentImageUrl}
                       alt="Xem trước ảnh bác sĩ"
+                      width="320"
+                      height="320"
+                      decoding="async"
                     />
                   ) : (
                     <div className="facility-image-empty" aria-hidden="true">Chưa có ảnh</div>
@@ -324,6 +323,7 @@ export default function DoctorFormModal({
                   <label className="clean-field">
                     <span>Ảnh bác sĩ</span>
                     <input
+                      name="imageFile"
                       type="file"
                       accept="image/*"
                       onChange={handleImageUpload}
@@ -345,12 +345,11 @@ export default function DoctorFormModal({
                   <label className={`clean-field ${errors.imageUrl ? "doctor-field-error" : ""}`}>
                     <span>Đường dẫn ảnh bác sĩ</span>
                     <input
+                      {...getAdminFieldProps("imageUrl", errors.imageUrl, errors.imageUrl ? "doctor-image-url-error" : "")}
                       type="url"
                       value={form.imageUrl}
                       onChange={(event) => update("imageUrl", event.target.value)}
                       placeholder="https://..."
-                      aria-invalid={errors.imageUrl ? "true" : undefined}
-                      aria-describedby={errors.imageUrl ? "doctor-image-url-error" : undefined}
                     />
                     <small id={errors.imageUrl ? "doctor-image-url-error" : undefined} role={errors.imageUrl ? "alert" : undefined}>
                       {errors.imageUrl || "Bạn có thể dán link ảnh đã có hoặc để trống nếu chưa muốn hiển thị ảnh."}
@@ -371,7 +370,7 @@ export default function DoctorFormModal({
           <div className="doctor-modal-actions facility-form-actions">
             <button className="btn btn-ghost" type="button" onClick={onClose} disabled={locked}>Hủy</button>
             <button className="btn btn-primary" type="submit" disabled={locked}>
-              {imageUploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Thêm bác sĩ"}
+              {imageUploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Tạo hồ sơ bác sĩ"}
             </button>
           </div>
         </form>

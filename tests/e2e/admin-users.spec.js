@@ -192,6 +192,10 @@ test("admin user filters use consistent labelled controls and status styling", a
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   const adminNavigation = page.getByRole("navigation", { name: "Điều hướng admin" });
   const activeNavigationItem = adminNavigation.getByRole("button", { name: "Người dùng" });
+  const navigationToggle = page.locator(".admin-mobile-nav-toggle");
+  await expect(navigationToggle).toHaveAttribute("aria-expanded", "false");
+  await navigationToggle.click();
+  await expect(navigationToggle).toHaveAttribute("aria-expanded", "true");
   const navigationBox = await adminNavigation.boundingBox();
   const activeNavigationBox = await activeNavigationItem.boundingBox();
   expect(activeNavigationBox.x).toBeGreaterThanOrEqual(navigationBox.x);

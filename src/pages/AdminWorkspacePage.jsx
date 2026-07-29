@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  BrainCircuit,
   BookOpen,
   Building2,
   CircleHelp,
   CreditCard,
   FileHeart,
   LayoutDashboard,
-  SlidersHorizontal,
+  Layers3,
+  Menu,
   Stethoscope,
   Users,
+  X,
 } from "lucide-react";
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
@@ -126,9 +129,10 @@ const ADMIN_NAV_ICONS = {
   dashboard: LayoutDashboard,
   users: Users,
   doctor: Stethoscope,
-  ai: SlidersHorizontal,
+  "ai-config": BrainCircuit,
   subscription: CreditCard,
   facility: Building2,
+  departments: Layers3,
   icd: BookOpen,
   question: CircleHelp,
   "patient-profile": FileHeart,
@@ -366,6 +370,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const activeSection = initialSection;
   const activeAdminItem = ADMIN_NAV_ITEMS.find((item) => item.id === `admin.${activeSection}`);
   const adminNavRef = useRef(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [userStatusFilter, setUserStatusFilter] = useState(USER_STATUS_FILTERS.all);
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
@@ -449,6 +454,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
   const displayName = profile?.name || profile?.displayName || auth?.email?.split("@")[0] || "Admin";
 
   function openSection(section) {
+    setMobileNavOpen(false);
     navigate(getAdminSectionPath(section));
   }
 
@@ -1288,11 +1294,11 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
       const savedConfig = response.data;
       setAIConfigMessage({
         type: "success",
-        text: response.message || (aiConfigModal.mode === "edit" ? "Đã cập nhật AI config." : "Đã tạo AI config."),
+        text: response.message || (aiConfigModal.mode === "edit" ? "Đã cập nhật cấu hình AI." : "Đã tạo cấu hình AI."),
       });
       showToast({
         type: "success",
-        title: aiConfigModal.mode === "edit" ? "Đã cập nhật AI config" : "Đã tạo AI config",
+        title: aiConfigModal.mode === "edit" ? "Đã cập nhật cấu hình AI" : "Đã tạo cấu hình AI",
         message: response.message || "AI configuration đã được đồng bộ.",
       });
       setAIConfigModal({ open: false, mode: "create", config: null });
@@ -1664,17 +1670,19 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     setIcdChapterForm(EMPTY_ICD_CHAPTER);
   }
 
-  function buildIcdChapterPayload() {
+  function buildIcdChapterPayload(keywordWeightsOverride) {
     const chapterCode = icdChapterForm.chapterCode.trim();
     const chapterName = icdChapterForm.chapterName.trim();
     if (!chapterCode || !chapterName) {
       throw new Error("Vui lòng nhập mã và tên ICD Chapter.");
     }
-    let keywordWeights;
-    try {
-      keywordWeights = JSON.parse(icdChapterForm.keywordWeights || "{}");
-    } catch {
-      throw new Error("Danh sách trọng số từ khóa chưa đúng định dạng.");
+    let keywordWeights = keywordWeightsOverride;
+    if (!keywordWeights) {
+      try {
+        keywordWeights = JSON.parse(icdChapterForm.keywordWeights || "{}");
+      } catch {
+        throw new Error("Danh sách trọng số từ khóa chưa đúng định dạng.");
+      }
     }
     if (!keywordWeights || Array.isArray(keywordWeights) || typeof keywordWeights !== "object"
       || Object.values(keywordWeights).some((value) => !Number.isInteger(value))) {
@@ -1700,12 +1708,12 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     }
   }
 
-  async function handleSaveIcdChapter(event) {
+  async function handleSaveIcdChapter(event, keywordWeightsOverride) {
     event.preventDefault();
     setSavingIcdChapter(true);
     setIcdChapterMessage(null);
     try {
-      const payload = buildIcdChapterPayload();
+      const payload = buildIcdChapterPayload(keywordWeightsOverride);
       const response = editingIcdChapterId
         ? await icdChaptersApi.update(editingIcdChapterId, payload)
         : await icdChaptersApi.create(payload);
@@ -1953,15 +1961,36 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
     <main className="workspace-root admin-operator">
       <section className="admin-page">
         <div className="container admin-shell">
-          <aside className="admin-sidebar">
-            <a className="brand" href="/">
-              <span className="brand-mark" aria-hidden="true">
-                <img src="/logo.svg" alt="" width="36" height="36" />
-              </span>
-              <span>MediMate AI</span>
-            </a>
+          <aside className={`admin-sidebar ${mobileNavOpen ? "is-mobile-nav-open" : ""}`}>
+            <div className="admin-sidebar-header">
+              <a className="brand" href="/">
+                <span className="brand-mark" aria-hidden="true">
+                  <img src="/logo.svg" alt="" width="36" height="36" />
+                </span>
+                <span>MediMate AI</span>
+              </a>
+              <div className="admin-mobile-context">
+                <span>Quản trị</span>
+                <strong>{activeAdminItem?.label ?? "Tổng quan"}</strong>
+              </div>
+              <button
+                className="admin-mobile-nav-toggle"
+                type="button"
+                aria-expanded={mobileNavOpen}
+                aria-controls="admin-navigation"
+                onClick={() => setMobileNavOpen((current) => !current)}
+              >
+                {mobileNavOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
+                <span>{mobileNavOpen ? "Đóng" : "Danh mục"}</span>
+              </button>
+            </div>
 
-            <nav ref={adminNavRef} className="admin-nav" aria-label="Điều hướng admin">
+            <nav
+              ref={adminNavRef}
+              className={`admin-nav ${mobileNavOpen ? "is-open" : ""}`}
+              id="admin-navigation"
+              aria-label="Điều hướng admin"
+            >
               {ADMIN_NAV_ITEMS.map((item) => {
                 const Icon = ADMIN_NAV_ICONS[item.icon];
                 const section = item.id.replace("admin.", "");
@@ -1970,6 +1999,7 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
                     className={activeSection === section ? "active" : ""}
                     type="button"
                     key={item.id}
+                    aria-current={activeSection === section ? "page" : undefined}
                     onClick={() => openSection(section)}
                   >
                     <span className="admin-nav-icon"><Icon size={17} /></span>

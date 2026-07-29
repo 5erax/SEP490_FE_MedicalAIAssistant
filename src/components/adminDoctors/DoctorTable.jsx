@@ -1,5 +1,6 @@
 import { Badge, Button, DataTable, EmptyState } from "../ui";
 import { Pencil, Power, Stethoscope, Trash2, UserRoundPlus } from "lucide-react";
+import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 
 function getInitials(name = "") {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -13,7 +14,16 @@ function DoctorAvatar({ doctor }) {
 
   return (
     <span className={`doctor-avatar ${imageUrl ? "has-image" : ""}`}>
-      {imageUrl ? <img src={imageUrl} alt={label} /> : getInitials(doctor.fullName)}
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={label}
+          width="48"
+          height="48"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : getInitials(doctor.fullName)}
     </span>
   );
 }
@@ -127,7 +137,7 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
       description="Thử đổi bộ lọc hoặc thêm bác sĩ mới để bắt đầu quản lý danh sách nhân sự y tế."
       action={(
         <Button onClick={onCreate}>
-          <UserRoundPlus size={15} /> Thêm bác sĩ
+          <UserRoundPlus size={15} /> Tạo hồ sơ bác sĩ
         </Button>
       )}
     />
@@ -190,24 +200,26 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
               >
                 <Pencil size={14} aria-hidden="true" /> Sửa
               </Button>
-              <Button
-                tone="secondary"
-                size="sm"
-                aria-label={`${doctor.isActive ? "Tạm ẩn" : "Kích hoạt"} ${getDoctorName(doctor)}`}
-                onClick={() => onToggleStatus(doctor)}
-              >
-                <Power size={14} aria-hidden="true" />
-                {doctor.isActive ? "Tạm ẩn" : "Kích hoạt"}
-              </Button>
-              <Button
-                tone="danger"
-                size="sm"
-                className="doctor-danger-action"
-                aria-label={`Xóa hồ sơ ${getDoctorName(doctor)}`}
-                onClick={() => onDelete(doctor)}
-              >
-                <Trash2 size={14} aria-hidden="true" /> Xóa
-              </Button>
+              <AdminActionDisclosure>
+                <Button
+                  tone="secondary"
+                  size="sm"
+                  aria-label={`${doctor.isActive ? "Tạm ẩn" : "Kích hoạt"} ${getDoctorName(doctor)}`}
+                  onClick={() => onToggleStatus(doctor)}
+                >
+                  <Power size={14} aria-hidden="true" />
+                  {doctor.isActive ? "Tạm ẩn" : "Kích hoạt"}
+                </Button>
+                <Button
+                  tone="danger"
+                  size="sm"
+                  className="doctor-danger-action"
+                  aria-label={`Xóa hồ sơ ${getDoctorName(doctor)}`}
+                  onClick={() => onDelete(doctor)}
+                >
+                  <Trash2 size={14} aria-hidden="true" /> Xóa
+                </Button>
+              </AdminActionDisclosure>
             </div>
           </article>
         ))}

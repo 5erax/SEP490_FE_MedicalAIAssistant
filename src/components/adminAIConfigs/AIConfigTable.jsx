@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Badge, Button, EmptyState } from "../ui";
+import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 import {
   formatDateTime,
   formatEnvironment,
@@ -98,30 +99,32 @@ export default function AIConfigTable({ configs, onView, onEdit, onToggleStatus,
               >
                 <Eye size={15} aria-hidden="true" /> Chi tiết
               </button>
-              <button
-                className="btn btn-ghost btn-small"
-                type="button"
-                aria-label={`Sửa cấu hình ${configName}`}
-                onClick={() => onEdit(config)}
-              >
-                <Pencil size={15} aria-hidden="true" /> Sửa
-              </button>
-              <button
-                className="btn btn-ghost btn-small"
-                type="button"
-                aria-label={`${config.isActive ? "Tắt" : "Bật"} cấu hình ${configName}`}
-                onClick={() => onToggleStatus(config)}
-              >
-                <Power size={15} aria-hidden="true" /> {config.isActive ? "Tắt" : "Bật"}
-              </button>
-              <button
-                className="btn btn-dark btn-small ai-config-delete-button"
-                type="button"
-                aria-label={`Xóa cấu hình ${configName}`}
-                onClick={() => onDelete(config)}
-              >
-                <Trash2 size={15} aria-hidden="true" /> Xóa
-              </button>
+              <AdminActionDisclosure>
+                <button
+                  className="btn btn-ghost btn-small"
+                  type="button"
+                  aria-label={`Sửa cấu hình ${configName}`}
+                  onClick={() => onEdit(config)}
+                >
+                  <Pencil size={15} aria-hidden="true" /> Sửa
+                </button>
+                <button
+                  className="btn btn-ghost btn-small"
+                  type="button"
+                  aria-label={`${config.isActive ? "Tắt" : "Bật"} cấu hình ${configName}`}
+                  onClick={() => onToggleStatus(config)}
+                >
+                  <Power size={15} aria-hidden="true" /> {config.isActive ? "Tắt" : "Bật"}
+                </button>
+                <button
+                  className="btn btn-dark btn-small ai-config-delete-button"
+                  type="button"
+                  aria-label={`Xóa cấu hình ${configName}`}
+                  onClick={() => onDelete(config)}
+                >
+                  <Trash2 size={15} aria-hidden="true" /> Xóa
+                </button>
+              </AdminActionDisclosure>
             </div>
           </article>
         );

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { CreditCard, Gauge, Plus, ShieldAlert, Trash2 } from "lucide-react";
+import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { Dialog } from "../ui";
 
 const DEFAULT_FEATURE_LIMITS = `{
@@ -112,6 +113,7 @@ export default function SubscriptionPlanFormModal({
   const [form, setForm] = useState(() => toFormValue(plan));
   const [errors, setErrors] = useState({});
   const closeButtonRef = useRef(null);
+  const formRef = useRef(null);
   const title = mode === "edit" ? "Cập nhật gói dịch vụ" : "Tạo gói dịch vụ";
   const featureLimitEntries = parseFeatureLimitEntries(form.featureLimitJson);
 
@@ -143,7 +145,10 @@ export default function SubscriptionPlanFormModal({
     event.preventDefault();
     const nextErrors = validate(form);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
+    if (Object.keys(nextErrors).length) {
+      focusFirstInvalidField(formRef, nextErrors);
+      return;
+    }
     onSubmit(buildPayload(form));
   }
 
@@ -178,7 +183,7 @@ export default function SubscriptionPlanFormModal({
         </button>
       </header>
 
-      <form className="clean-form subscription-plan-form" onSubmit={handleSubmit}>
+      <form ref={formRef} className="clean-form subscription-plan-form" onSubmit={handleSubmit} noValidate>
         <aside className="subscription-modal-warning">
           <ShieldAlert size={18} aria-hidden="true" />
           <span>Kiểm tra giá, thời hạn và hạn mức trước khi hiển thị gói trên trang đăng ký.</span>
@@ -198,12 +203,11 @@ export default function SubscriptionPlanFormModal({
               <label className={`clean-field ${errors.planName ? "subscription-field-error" : ""}`}>
                 <span>Tên gói</span>
                 <input
+                  {...getAdminFieldProps("planName", errors.planName, errors.planName ? "subscription-name-error" : "")}
                   value={form.planName}
                   onChange={(event) => update("planName", event.target.value)}
                   placeholder="Ví dụ: MediMate+ Tháng"
                   required
-                  aria-invalid={errors.planName ? "true" : undefined}
-                  aria-describedby={errors.planName ? "subscription-name-error" : undefined}
                 />
                 {errors.planName && <small id="subscription-name-error" role="alert">{errors.planName}</small>}
               </label>
@@ -211,6 +215,7 @@ export default function SubscriptionPlanFormModal({
               <label className={`clean-field ${errors.price ? "subscription-field-error" : ""}`}>
                 <span>Giá gói (VND)</span>
                 <input
+                  {...getAdminFieldProps("price", errors.price, errors.price ? "subscription-price-error" : "")}
                   type="number"
                   min="0"
                   step="1000"
@@ -218,8 +223,6 @@ export default function SubscriptionPlanFormModal({
                   onChange={(event) => update("price", event.target.value)}
                   placeholder="149000"
                   required
-                  aria-invalid={errors.price ? "true" : undefined}
-                  aria-describedby={errors.price ? "subscription-price-error" : undefined}
                 />
                 {errors.price && <small id="subscription-price-error" role="alert">{errors.price}</small>}
               </label>
@@ -227,21 +230,20 @@ export default function SubscriptionPlanFormModal({
               <label className={`clean-field subscription-duration-inline ${errors.durationInDays ? "subscription-field-error" : ""}`}>
                 <span>Thời hạn (ngày)</span>
                 <input
+                  {...getAdminFieldProps("durationInDays", errors.durationInDays, errors.durationInDays ? "subscription-duration-error" : "")}
                   type="number"
                   min="1"
                   step="1"
                   value={form.durationInDays}
                   onChange={(event) => update("durationInDays", event.target.value)}
                   required
-                  aria-invalid={errors.durationInDays ? "true" : undefined}
-                  aria-describedby={errors.durationInDays ? "subscription-duration-error" : undefined}
                 />
                 {errors.durationInDays && <small id="subscription-duration-error" role="alert">{errors.durationInDays}</small>}
               </label>
 
               <label className="clean-field">
                 <span>Trạng thái</span>
-                <select value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
+                <select name="isActive" value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
                   <option value="true">Đang bán</option>
                   <option value="false">Tạm ẩn</option>
                 </select>
@@ -258,7 +260,13 @@ export default function SubscriptionPlanFormModal({
               </div>
             </div>
 
-            <div className={`subscription-limit-editor ${errors.featureLimitJson ? "subscription-field-error" : ""}`}>
+            <div
+              className={`subscription-limit-editor ${errors.featureLimitJson ? "subscription-field-error" : ""}`}
+              data-error-field="featureLimitJson"
+              tabIndex={errors.featureLimitJson ? -1 : undefined}
+              aria-invalid={errors.featureLimitJson ? "true" : undefined}
+              aria-describedby="subscription-feature-help"
+            >
               <div className="subscription-limit-editor-head">
                 <span>Danh sách hạn mức</span>
                 <button className="btn btn-secondary" type="button" onClick={addFeatureLimit}>
@@ -272,6 +280,7 @@ export default function SubscriptionPlanFormModal({
                     <label className="clean-field">
                       <span>Tính năng</span>
                       <input
+                        name={`featureLimit.${index}.key`}
                         value={item.key}
                         onChange={(event) => updateFeatureLimit(index, "key", event.target.value)}
                         placeholder="Ví dụ: symptomAnalysisPerMonth"
@@ -280,6 +289,7 @@ export default function SubscriptionPlanFormModal({
                     <label className="clean-field">
                       <span>Hạn mức</span>
                       <input
+                        name={`featureLimit.${index}.limit`}
                         value={item.limit}
                         onChange={(event) => updateFeatureLimit(index, "limit", event.target.value)}
                         placeholder="Ví dụ: 30"

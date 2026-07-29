@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  Braces,
   Eye,
   Filter,
   Hash,
@@ -13,17 +12,33 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import AdminActionDisclosure from "../admin/AdminActionDisclosure";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
+import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import KeywordWeightEditor from "./KeywordWeightEditor";
 
-function Field({ label, children, help, className = "", required = false }) {
+function Field({
+  label,
+  children,
+  help,
+  helpId,
+  className = "",
+  error = "",
+  required = false,
+}) {
   return (
-    <label className={`clean-field ${className}`.trim()}>
+    <label className={`clean-field ${error ? "icd-field-error" : ""} ${className}`.trim()}>
       <span>
         {label}
         {required && <small className="icd-required-note"> (bắt buộc)</small>}
       </span>
       {children}
-      {help && <small>{help}</small>}
+      {(error || help) && (
+        <small id={helpId} role={error ? "alert" : undefined}>
+          {error || help}
+        </small>
+      )}
     </label>
   );
 }
@@ -69,8 +84,11 @@ export default function AdminICDChaptersSection({
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const wasSavingRef = useRef(false);
+  const formRef = useRef(null);
   const codeInputRef = useRef(null);
   const dialogTriggerRef = useRef(null);
+  const keywordEditorRef = useRef(null);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
@@ -86,25 +104,50 @@ export default function AdminICDChaptersSection({
   function openCreateForm() {
     rememberDialogTrigger();
     onReset();
+    setFieldErrors({});
     setFormOpen(true);
   }
 
   function openEditForm(chapter) {
     rememberDialogTrigger();
     onEdit(chapter);
+    setFieldErrors({});
     setFormOpen(true);
   }
 
   async function openDetailForm(chapter) {
     rememberDialogTrigger();
     await onView(chapter);
+    setFieldErrors({});
     setFormOpen(true);
   }
 
   function closeForm() {
     if (saving) return;
     setFormOpen(false);
+    setFieldErrors({});
     onReset();
+  }
+
+  function handleFormSubmit(event) {
+    event.preventDefault();
+    const nextErrors = {};
+    if (!form.chapterCode.trim()) nextErrors.chapterCode = "Vui lòng nhập mã chương ICD.";
+    if (!form.chapterName.trim()) nextErrors.chapterName = "Vui lòng nhập tên chương ICD.";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      focusFirstInvalidField(formRef, nextErrors);
+      return;
+    }
+
+    const keywordWeights = keywordEditorRef.current?.validate();
+    if (!keywordWeights) return;
+    onSubmit(event, keywordWeights);
+  }
+
+  function handleBasicFieldChange(field, value) {
+    onFormChange(field, value);
+    setFieldErrors((current) => ({ ...current, [field]: "" }));
   }
 
   return (
@@ -142,15 +185,15 @@ export default function AdminICDChaptersSection({
         </div>
       )}
 
-      <section className="ai-config-filter-card icd-filter-card" aria-labelledby="icd-filter-title">
-        <div className="ai-config-filter-card-header icd-filter-heading">
-          <span aria-hidden="true"><Filter size={18} /></span>
-          <div>
-            <h3 id="icd-filter-title">Lọc danh mục chương ICD</h3>
-            <p>Tìm theo mã chương, tên chương hoặc từ khóa đã được cấu hình.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="ai-config-filter-card icd-filter-card"
+        description="Tìm theo mã chương, tên chương hoặc từ khóa đã được cấu hình."
+        headingClassName="ai-config-filter-card-header icd-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${filters.search ? 1 : 0} bộ lọc · ${pageInfo.totalCount} chương`}
+        title="Lọc danh mục chương ICD"
+        titleId="icd-filter-title"
+      >
         <form className="ai-config-toolbar icd-filter-form" onSubmit={onApplyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
             <label className="icd-search-field">
@@ -189,7 +232,7 @@ export default function AdminICDChaptersSection({
             </div>
           </div>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       {!loading && !error && (
         <div className="icd-result-summary" role="status" aria-live="polite">
@@ -281,22 +324,24 @@ export default function AdminICDChaptersSection({
                     >
                       <Eye size={15} aria-hidden="true" /> Chi tiết
                     </button>
-                    <button
-                      className="btn btn-ghost btn-small"
-                      type="button"
-                      aria-label={`Sửa chương ICD ${accessibleName}`}
-                      onClick={() => openEditForm(chapter)}
-                    >
-                      <Pencil size={15} aria-hidden="true" /> Sửa
-                    </button>
-                    <button
-                      className="btn btn-dark btn-small icd-delete-button"
-                      type="button"
-                      aria-label={`Xóa chương ICD ${accessibleName}`}
-                      onClick={() => onDelete(chapter)}
-                    >
-                      <Trash2 size={15} aria-hidden="true" /> Xóa
-                    </button>
+                    <AdminActionDisclosure>
+                      <button
+                        className="btn btn-ghost btn-small"
+                        type="button"
+                        aria-label={`Sửa chương ICD ${accessibleName}`}
+                        onClick={() => openEditForm(chapter)}
+                      >
+                        <Pencil size={15} aria-hidden="true" /> Sửa
+                      </button>
+                      <button
+                        className="btn btn-dark btn-small icd-delete-button"
+                        type="button"
+                        aria-label={`Xóa chương ICD ${accessibleName}`}
+                        onClick={() => onDelete(chapter)}
+                      >
+                        <Trash2 size={15} aria-hidden="true" /> Xóa
+                      </button>
+                    </AdminActionDisclosure>
                   </div>
                 </article>
               );
@@ -338,7 +383,7 @@ export default function AdminICDChaptersSection({
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={saving}>×</button>
           </header>
 
-          <form className="clean-form doctor-form facility-form icd-chapter-form" onSubmit={onSubmit}>
+          <form ref={formRef} className="clean-form doctor-form facility-form icd-chapter-form" onSubmit={handleFormSubmit} noValidate>
             <div className="facility-form-body">
               <section className="facility-form-card" aria-labelledby="icd-basic-section">
                 <div className="facility-form-card-head">
@@ -346,19 +391,41 @@ export default function AdminICDChaptersSection({
                   <p>Mã và tên chương được lưu trong danh mục ICD của hệ thống.</p>
                 </div>
                 <div className="facility-form-grid">
-                  <Field label="Mã chương" required>
+                  <Field
+                    label="Mã chương"
+                    required
+                    error={fieldErrors.chapterCode}
+                    helpId="icd-chapter-code-error"
+                  >
                     <input
+                      {...getAdminFieldProps(
+                        "chapterCode",
+                        fieldErrors.chapterCode,
+                        fieldErrors.chapterCode ? "icd-chapter-code-error" : "",
+                      )}
+                      name="chapterCode"
                       ref={codeInputRef}
                       value={form.chapterCode}
-                      onChange={(event) => onFormChange("chapterCode", event.target.value)}
+                      onChange={(event) => handleBasicFieldChange("chapterCode", event.target.value)}
                       placeholder="Ví dụ: IX"
                       required
                     />
                   </Field>
-                  <Field label="Tên chương" required>
+                  <Field
+                    label="Tên chương"
+                    required
+                    error={fieldErrors.chapterName}
+                    helpId="icd-chapter-name-error"
+                  >
                     <input
+                      {...getAdminFieldProps(
+                        "chapterName",
+                        fieldErrors.chapterName,
+                        fieldErrors.chapterName ? "icd-chapter-name-error" : "",
+                      )}
+                      name="chapterName"
                       value={form.chapterName}
-                      onChange={(event) => onFormChange("chapterName", event.target.value)}
+                      onChange={(event) => handleBasicFieldChange("chapterName", event.target.value)}
                       placeholder="Ví dụ: Bệnh hệ tuần hoàn"
                       required
                     />
@@ -369,24 +436,13 @@ export default function AdminICDChaptersSection({
               <section className="facility-form-card" aria-labelledby="icd-keywords-section">
                 <div className="facility-form-card-head">
                   <h3 id="icd-keywords-section">Từ khóa và trọng số</h3>
-                  <p>Nhập một đối tượng JSON; mỗi giá trị trọng số phải là số nguyên.</p>
+                  <p>Thêm từng từ khóa bằng biểu mẫu; JSON nâng cao vẫn khả dụng khi cần.</p>
                 </div>
-                <Field
-                  label="Danh sách từ khóa"
-                  help='Ví dụ: {"sốt": 5, "ho": 3}. Có thể để {} nếu chưa có từ khóa.'
-                >
-                  <textarea
-                    rows={10}
-                    value={form.keywordWeights}
-                    onChange={(event) => onFormChange("keywordWeights", event.target.value)}
-                    placeholder='{"sốt": 5, "ho": 3}'
-                    spellCheck="false"
-                  />
-                </Field>
-                <div className="icd-json-note">
-                  <Braces size={16} aria-hidden="true" />
-                  <span>Chỉ hỗ trợ cặp từ khóa và điểm số nguyên theo hợp đồng API hiện tại.</span>
-                </div>
+                <KeywordWeightEditor
+                  ref={keywordEditorRef}
+                  value={form.keywordWeights}
+                  onChange={(value) => onFormChange("keywordWeights", value)}
+                />
               </section>
             </div>
             <div className="doctor-modal-actions facility-form-actions">

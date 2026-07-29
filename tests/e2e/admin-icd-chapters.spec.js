@@ -152,9 +152,21 @@ test("admin creates, edits, and deletes an ICD chapter", async ({ page }) => {
 
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByLabel("Mã chương (bắt buộc)")).toBeFocused();
+  await createDialog.getByRole("button", { name: "Tạo chương ICD" }).click();
+  await expect(createDialog.getByLabel("Mã chương (bắt buộc)")).toBeFocused();
+  await expect(createDialog.getByLabel("Mã chương (bắt buộc)")).toHaveAttribute("aria-invalid", "true");
+  await expect(createDialog.getByText("Vui lòng nhập mã chương ICD.", { exact: true })).toBeVisible();
   await createDialog.getByLabel("Mã chương (bắt buộc)").fill("IX");
   await createDialog.getByLabel("Tên chương (bắt buộc)").fill("Bệnh hệ tuần hoàn");
-  await createDialog.getByLabel("Danh sách từ khóa").fill('{"tim":5,"mạch":3}');
+  await createDialog.getByRole("button", { name: "Thêm từ khóa" }).click();
+  let keywordRows = createDialog.locator(".icd-keyword-editor-row");
+  await keywordRows.nth(0).getByRole("textbox", { name: "Từ khóa 1", exact: true }).fill("tim");
+  await keywordRows.nth(0).getByLabel("Trọng số").fill("5");
+  await createDialog.getByRole("button", { name: "Thêm từ khóa" }).click();
+  keywordRows = createDialog.locator(".icd-keyword-editor-row");
+  await keywordRows.nth(1).getByRole("textbox", { name: "Từ khóa 2", exact: true }).fill("mạch");
+  await keywordRows.nth(1).getByLabel("Trọng số").fill("3");
+  await expect(createDialog.getByText("JSON nâng cao", { exact: true })).toBeVisible();
   await createDialog.getByRole("button", { name: "Tạo chương ICD" }).click();
 
   await expect(page.getByText("Đã tạo chương ICD.", { exact: true })).toBeVisible();
@@ -179,6 +191,7 @@ test("admin creates, edits, and deletes an ICD chapter", async ({ page }) => {
     }));
   expect(seriousViolations).toEqual([]);
 
+  await page.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("button", { name: "Sửa chương ICD IX" }).click();
   const editDialog = page.getByRole("dialog");
   await editDialog.getByLabel("Tên chương (bắt buộc)").fill("Bệnh hệ tuần hoàn cập nhật");
@@ -191,6 +204,7 @@ test("admin creates, edits, and deletes an ICD chapter", async ({ page }) => {
     chapterName: "Bệnh hệ tuần hoàn cập nhật",
   });
 
+  await page.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("button", { name: "Xóa chương ICD IX" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xóa ICD Chapter" }).click();
   await expect(page.getByText("Chưa có chương ICD phù hợp", { exact: true })).toBeVisible();
@@ -215,6 +229,10 @@ test("ICD filters and actions remain usable on narrow screens", async ({ page })
 
   await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
 
+  const filterToggle = page.locator(".icd-filter-card .admin-filter-disclosure-toggle");
+  await expect(filterToggle).toHaveAttribute("aria-expanded", "false");
+  await filterToggle.click();
+  await expect(filterToggle).toHaveAttribute("aria-expanded", "true");
   const searchInput = page.getByLabel("Tìm chương ICD");
   await expect(searchInput).toBeVisible();
   await searchInput.fill("không tồn tại");
@@ -236,6 +254,7 @@ test("ICD filters and actions remain usable on narrow screens", async ({ page })
   )).toBeVisible();
 
   await page.emulateMedia({ forcedColors: "active" });
+  await page.getByRole("button", { name: "Thao tác khác" }).click();
   const editButton = page.getByRole("button", { name: "Sửa chương ICD XVIII" });
   await editButton.focus();
   await expect(editButton).toBeFocused();

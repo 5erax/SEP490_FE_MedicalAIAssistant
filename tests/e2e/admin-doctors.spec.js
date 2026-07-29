@@ -100,7 +100,7 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Bác sĩ", exact: true }).click();
   await page.locator(".doctor-filter-card")
-    .getByRole("button", { name: "Thêm bác sĩ", exact: true })
+    .getByRole("button", { name: "Tạo hồ sơ bác sĩ", exact: true })
     .click();
 
   const dialog = page.getByRole("dialog", { name: "Thêm bác sĩ mới" });
@@ -108,11 +108,11 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
   await dialog.getByLabel("Họ và tên bác sĩ").fill("BS. Nguyễn Minh Anh");
   await dialog.getByLabel("Học hàm/học vị").fill("ThS.BS");
   await dialog.getByLabel("Số năm kinh nghiệm").fill("-1");
-  await dialog.getByRole("button", { name: "Thêm bác sĩ", exact: true }).click();
+  await dialog.getByRole("button", { name: "Tạo hồ sơ bác sĩ", exact: true }).click();
   const errorSummary = dialog.getByRole("alert").filter({
     hasText: "Kiểm tra lại thông tin bác sĩ",
   });
-  await expect(errorSummary).toBeFocused();
+  await expect(dialog.getByLabel("Số năm kinh nghiệm")).toBeFocused();
   await expect(errorSummary).toContainText("Số năm kinh nghiệm phải là số nguyên không âm.");
   await dialog.getByLabel("Số năm kinh nghiệm").fill("8");
   await dialog.getByLabel("Vai trò trong khoa").selectOption("0");
@@ -125,7 +125,7 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
   await expect(page.getByText("Đã tải ảnh bác sĩ.", { exact: true })).toBeVisible();
   await expect(dialog.getByLabel("Đường dẫn ảnh bác sĩ")).toHaveValue(uploadedImageUrl);
   await expect(dialog.locator(".doctor-image-preview")).toHaveAttribute("src", uploadedImageUrl);
-  await dialog.getByRole("button", { name: "Thêm bác sĩ", exact: true }).click();
+  await dialog.getByRole("button", { name: "Tạo hồ sơ bác sĩ", exact: true }).click();
 
   await expect(page.getByText("Doctor created successfully.", { exact: true })).toBeVisible();
   expect(cloudinaryUploadRequested).toBe(true);
@@ -331,6 +331,7 @@ test("doctor management keeps filters in the URL and adapts long records", async
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(cardList.getByText("Khoa công tác", { exact: true })).toBeVisible();
   await expect(cardList.getByText("Bệnh viện", { exact: true })).toBeVisible();
+  await cardList.getByRole("button", { name: "Thao tác khác" }).click();
   const statusButton = cardList.getByRole("button", {
     name: /Tạm ẩn PGS\.TS\.BS Nguyễn Hoàng Minh Anh/,
   });
@@ -339,6 +340,10 @@ test("doctor management keeps filters in the URL and adapts long records", async
 
   const adminNavigation = page.getByRole("navigation", { name: "Điều hướng admin" });
   const activeNavigationItem = adminNavigation.getByRole("button", { name: "Bác sĩ" });
+  const navigationToggle = page.locator(".admin-mobile-nav-toggle");
+  await expect(navigationToggle).toHaveAttribute("aria-expanded", "false");
+  await navigationToggle.click();
+  await expect(navigationToggle).toHaveAttribute("aria-expanded", "true");
   const navigationBox = await adminNavigation.boundingBox();
   const activeNavigationBox = await activeNavigationItem.boundingBox();
   expect(activeNavigationBox.x).toBeGreaterThanOrEqual(navigationBox.x);
