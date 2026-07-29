@@ -404,6 +404,26 @@
   color: var(--icd-teal);
 }
 
+.icd-chapter-modal .doctor-modal-header .eyebrow {
+  color: #007f89;
+}
+
+.icd-chapter-modal .doctor-modal-header .eyebrow::before {
+  background: currentColor;
+}
+
+.icd-chapter-modal .doctor-modal-actions .btn-primary {
+  border-color: #062f35;
+  background: linear-gradient(135deg, #008891, #0a777f);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(0, 128, 136, 0.22);
+}
+
+.icd-chapter-modal .doctor-modal-actions .btn-primary:hover {
+  background: linear-gradient(135deg, #0a777f, #006a72);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 1040px) {
   .admin-operator .icd-card {
     grid-template-columns: auto minmax(0, 1fr);
