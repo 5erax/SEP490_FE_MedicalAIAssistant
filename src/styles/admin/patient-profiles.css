@@ -438,9 +438,12 @@
   font: inherit;
 }
 
-.admin-operator .patient-profile-disease-head {
+.patient-profile-disease-head {
   align-items: center;
-  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.patient-profile-disease-head > div {
+  flex: 1 1 auto;
 }
 
 .admin-operator .patient-profile-disease-list {
@@ -566,11 +569,11 @@
     align-items: flex-start;
   }
 
-  .admin-operator .patient-profile-disease-head {
-    grid-template-columns: 1fr;
+  .patient-profile-disease-head {
+    flex-wrap: wrap;
   }
 
-  .admin-operator .patient-profile-disease-head .btn {
+  .patient-profile-disease-head .btn {
     width: 100%;
   }
 }
