@@ -310,15 +310,18 @@
   }
 
   .admin-operator .admin-main {
-    padding-top: 14px;
+    padding: 14px 12px 20px;
   }
 
-  .admin-filter-disclosure-heading {
+  .admin-operator .admin-filter-disclosure-heading {
+    display: grid;
     grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
   }
 
-  .admin-filter-disclosure-toggle {
+  .admin-operator .admin-filter-disclosure-toggle {
     grid-column: 1 / -1;
+    min-width: 0;
     width: 100%;
   }
 
@@ -351,5 +354,53 @@
 
   .icd-keyword-editor-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-operator .admin-filter-disclosure-heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-operator .admin-mobile-context strong {
+    overflow: visible;
+    line-height: 1.25;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .admin-operator .admin-filter-disclosure-icon,
+  .admin-operator .doctor-invitation-card-heading > span {
+    display: none;
+  }
+
+  .admin-operator .doctor-card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .department-clinical-heading-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .department-clinical-context {
+    grid-column: 1;
+  }
+
+  .admin-operator .pagination-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .admin-operator .pagination-row > span {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: center;
+  }
+
+  .admin-operator .pagination-row > .btn {
+    width: 100%;
+    min-width: 0;
   }
 }

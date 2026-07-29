@@ -95,7 +95,7 @@ export default function AdminUsersSection({
                 autoComplete="off"
                 value={search}
                 onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Email, tên hoặc mã người dùng"
+                placeholder="Email, tên hoặc ID"
                 aria-describedby="admin-users-result-summary"
               />
             </span>

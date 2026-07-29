@@ -441,7 +441,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                   autoComplete="off"
                   value={filters.search}
                   onChange={(event) => updateFilter("search", event.target.value)}
-                  placeholder="Nội dung tiếng Việt hoặc tiếng Anh"
+                  placeholder="Nội dung câu hỏi"
                 />
               </span>
             </label>
@@ -505,7 +505,11 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             )}
           />
         ) : (
-          <div className="clinical-question-card-list" role="list" aria-label="Danh mục câu hỏi lâm sàng">
+          <div
+            className="clinical-question-card-list"
+            role={items.length > 0 ? "list" : undefined}
+            aria-label={items.length > 0 ? "Danh mục câu hỏi lâm sàng" : undefined}
+          >
             {items.length === 0 && (
               <EmptyState
                 title="Chưa có câu hỏi lâm sàng phù hợp"

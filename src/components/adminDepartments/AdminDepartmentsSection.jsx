@@ -123,7 +123,7 @@ export default function AdminDepartmentsSection({
                   autoComplete="off"
                   value={filters.search}
                   onChange={(event) => onFilterChange("search", event.target.value)}
-                  placeholder="Tên chuyên khoa, mô tả hoặc mã ICD"
+                  placeholder="Tên hoặc mã ICD"
                 />
               </span>
             </label>
