@@ -366,7 +366,17 @@
 }
 
 .admin-operator .clinical-question-delete {
-  background: #17363a;
+  border-color: rgba(185, 48, 54, 0.25);
+  background: #fff7f7;
+  color: #a3262d;
+}
+
+@media (hover: hover) {
+  .admin-operator .clinical-question-delete:hover {
+    border-color: #a3262d;
+    background: #a3262d;
+    color: #fff;
+  }
 }
 
 .admin-operator .clinical-catalog-pagination {
@@ -462,6 +472,16 @@
 
 .clinical-delete-actions {
   margin-top: 0;
+}
+
+.clinical-delete-confirm {
+  border-color: #7e1f25;
+  background: #a3262d;
+  color: #fff;
+}
+
+.clinical-delete-confirm:hover {
+  background: #7e1f25;
 }
 
 @media (max-width: 1040px) {
