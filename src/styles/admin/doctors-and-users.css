@@ -507,13 +507,20 @@
   border-spacing: 0;
 }
 
-.admin-operator .admin-users-table .ui-table th {
+.admin-operator .admin-users-table .ui-table thead th {
   background: #0f1411;
   color: #fff;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.admin-operator .admin-users-table .ui-table tbody th {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: 400;
+  text-align: left;
 }
 
 .admin-operator .admin-users-table .ui-table th,
@@ -529,7 +536,7 @@
 
 .admin-operator .admin-users-table .ui-table tbody tr:hover {
   background: #fbfcf7;
-  box-shadow: inset 4px 0 0 #b8ef79;
+  box-shadow: inset 4px 0 0 #087f8c;
 }
 
 .admin-operator .admin-users-table .ui-table th:nth-child(1),

@@ -585,6 +585,111 @@
   }
 }
 
+.admin-operator .patient-profile-table-wrap {
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  overflow-x: auto;
+}
+
+.admin-operator .patient-profile-table-wrap .ui-table {
+  width: 100%;
+  min-width: 880px;
+  table-layout: fixed;
+}
+
+.admin-operator .patient-profile-table-wrap .ui-table thead th {
+  background: #0f1715;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-operator .patient-profile-table-wrap .ui-table tbody th {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: 400;
+  text-align: left;
+}
+
+.admin-operator .patient-profile-table-wrap .ui-table th,
+.admin-operator .patient-profile-table-wrap .ui-table td {
+  border-bottom: 1px solid rgba(16, 20, 17, 0.07);
+  padding: 16px 12px;
+  vertical-align: top;
+  min-width: 0;
+}
+
+.admin-operator .patient-profile-table-wrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-operator .patient-profile-table-wrap .ui-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(230, 244, 238, 0.54), #ffffff 58%);
+}
+
+.admin-operator .patient-profile-table-wrap th:nth-child(1) {
+  width: 26%;
+}
+
+.admin-operator .patient-profile-table-wrap th:nth-child(2) {
+  width: 16%;
+}
+
+.admin-operator .patient-profile-table-wrap th:nth-child(3) {
+  width: 20%;
+}
+
+.admin-operator .patient-profile-table-wrap th:nth-child(4) {
+  width: 20%;
+}
+
+.admin-operator .patient-profile-table-wrap th:nth-child(5) {
+  width: 18%;
+}
+
+.admin-operator .patient-profile-table-wrap .record-actions {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.admin-operator .patient-profile-table-wrap .record-actions .btn {
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+.patient-profile-primary-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.patient-profile-primary-cell strong,
+.patient-profile-primary-cell small {
+  display: block;
+}
+
+.patient-profile-primary-cell small {
+  color: rgba(16, 20, 17, 0.55);
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.patient-profile-allergy-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: rgba(16, 20, 17, 0.68);
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.5;
+}
+
 @media (forced-colors: active) {
   .admin-operator .patient-profile-clinical-panel,
   .admin-operator .patient-profile-filter-card,

@@ -1,21 +1,18 @@
 import {
   BrainCircuit,
-  Clock3,
   Eye,
-  Gauge,
   Pencil,
   Power,
   ServerCog,
   Trash2,
 } from "lucide-react";
-import { Badge, Button, EmptyState } from "../ui";
+import { Badge, Button, DataTable, EmptyState } from "../ui";
 import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 import {
   formatDateTime,
   formatEnvironment,
   getConfigName,
   getEnvironment,
-  truncatePrompt,
 } from "./aiConfigUtils";
 
 function formatNumber(value, fallback = "Tự động") {
@@ -41,94 +38,103 @@ export default function AIConfigTable({ configs, onView, onEdit, onToggleStatus,
   }
 
   return (
-    <div className="ai-config-clinical-list" role="list" aria-label="Danh sách cấu hình AI">
-      {configs.map((config) => {
-        const configName = getConfigName(config);
-        const statusLabel = config.isActive ? "Đang bật" : "Đang tắt";
-
-        return (
-          <article className="ai-config-clinical-card" key={config.id} role="listitem">
-            <div className="ai-config-clinical-card-main">
+    <DataTable
+      className="ai-config-table-wrap"
+      caption="Danh sách cấu hình AI theo bộ lọc hiện tại"
+      rowHeaderKey="config"
+      getRowKey={(config) => config.id}
+      rows={configs}
+      columns={[
+        {
+          key: "config",
+          header: "Cấu hình",
+          render: (config) => (
+            <div className="ai-config-primary-cell">
               <span className="ai-config-clinical-orb" aria-hidden="true">
-                <BrainCircuit size={21} />
+                <BrainCircuit size={18} />
               </span>
               <div>
-                <strong>{configName}</strong>
-                <span>
-                  <ServerCog size={13} aria-hidden="true" />
-                  {formatEnvironment(getEnvironment(config))}
-                </span>
-                <small>ID cấu hình · {config.id}</small>
+                <strong>{getConfigName(config)}</strong>
+                <small>
+                  <ServerCog size={12} aria-hidden="true" />
+                  {formatEnvironment(getEnvironment(config))} · ID {config.id}
+                </small>
               </div>
             </div>
-
-            <section className="ai-config-clinical-prompt" aria-label={`Prompt của ${configName}`}>
-              <span>Prompt hệ thống</span>
-              <p>{truncatePrompt(config.systemPrompt, 180)}</p>
-            </section>
-
-            <dl className="ai-config-clinical-metrics">
-              <div>
-                <dt><ServerCog size={14} aria-hidden="true" /> Mô hình</dt>
-                <dd>{config.model || "Chưa chọn mô hình"}</dd>
-              </div>
-              <div>
-                <dt><Gauge size={14} aria-hidden="true" /> Tham số</dt>
-                <dd>Nhiệt độ {formatNumber(config.temperature)} · Token {formatNumber(config.maxTokens)}</dd>
-              </div>
-              <div>
-                <dt><Clock3 size={14} aria-hidden="true" /> Cập nhật</dt>
-                <dd>
-                  <time dateTime={config.updatedAt || config.createdAt || undefined}>
-                    {formatDateTime(config.updatedAt || config.createdAt)}
-                  </time>
-                </dd>
-              </div>
-            </dl>
-
-            <div className="ai-config-clinical-status">
-              <Badge tone={config.isActive ? "success" : "warning"}>{statusLabel}</Badge>
+          ),
+        },
+        {
+          key: "model",
+          header: "Mô hình",
+          render: (config) => (
+            <div className="table-primary-cell">
+              <strong>{config.model || "Chưa chọn mô hình"}</strong>
+              <small>Nhiệt độ {formatNumber(config.temperature)} · Token {formatNumber(config.maxTokens)}</small>
             </div>
-
-            <div className="ai-config-clinical-actions">
-              <button
-                className="btn btn-ghost btn-small"
-                type="button"
-                aria-label={`Xem chi tiết cấu hình ${configName}`}
-                onClick={() => onView(config)}
-              >
-                <Eye size={15} aria-hidden="true" /> Chi tiết
-              </button>
-              <AdminActionDisclosure>
-                <button
-                  className="btn btn-ghost btn-small"
-                  type="button"
-                  aria-label={`Sửa cấu hình ${configName}`}
-                  onClick={() => onEdit(config)}
-                >
-                  <Pencil size={15} aria-hidden="true" /> Sửa
-                </button>
-                <button
-                  className="btn btn-ghost btn-small"
-                  type="button"
-                  aria-label={`${config.isActive ? "Tắt" : "Bật"} cấu hình ${configName}`}
-                  onClick={() => onToggleStatus(config)}
-                >
-                  <Power size={15} aria-hidden="true" /> {config.isActive ? "Tắt" : "Bật"}
-                </button>
+          ),
+        },
+        {
+          key: "updated",
+          header: "Cập nhật",
+          render: (config) => (
+            <time dateTime={config.updatedAt || config.createdAt || undefined}>
+              {formatDateTime(config.updatedAt || config.createdAt)}
+            </time>
+          ),
+        },
+        {
+          key: "status",
+          header: "Trạng thái",
+          render: (config) => (
+            <Badge tone={config.isActive ? "success" : "warning"}>{config.isActive ? "Đang bật" : "Đang tắt"}</Badge>
+          ),
+        },
+        {
+          key: "actions",
+          header: "Thao tác",
+          render: (config) => {
+            const configName = getConfigName(config);
+            return (
+              <div className="record-actions" aria-label={`Thao tác với cấu hình ${configName}`}>
+                <AdminActionDisclosure>
+                  <button
+                    className="btn btn-ghost btn-small"
+                    type="button"
+                    aria-label={`Xem chi tiết cấu hình ${configName}`}
+                    onClick={() => onView(config)}
+                  >
+                    <Eye size={14} aria-hidden="true" /> Chi tiết
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-small"
+                    type="button"
+                    aria-label={`Sửa cấu hình ${configName}`}
+                    onClick={() => onEdit(config)}
+                  >
+                    <Pencil size={14} aria-hidden="true" /> Sửa
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-small"
+                    type="button"
+                    aria-label={`${config.isActive ? "Tắt" : "Bật"} cấu hình ${configName}`}
+                    onClick={() => onToggleStatus(config)}
+                  >
+                    <Power size={14} aria-hidden="true" /> {config.isActive ? "Tắt" : "Bật"}
+                  </button>
+                </AdminActionDisclosure>
                 <button
                   className="btn btn-dark btn-small ai-config-delete-button"
                   type="button"
                   aria-label={`Xóa cấu hình ${configName}`}
                   onClick={() => onDelete(config)}
                 >
-                  <Trash2 size={15} aria-hidden="true" /> Xóa
+                  <Trash2 size={14} aria-hidden="true" /> Xóa
                 </button>
-              </AdminActionDisclosure>
-            </div>
-          </article>
-        );
-      })}
-    </div>
+              </div>
+            );
+          },
+        },
+      ]}
+    />
   );
 }

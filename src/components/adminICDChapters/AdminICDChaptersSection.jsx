@@ -12,10 +12,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
-import { CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 import KeywordWeightEditor from "./KeywordWeightEditor";
 
 function Field({
@@ -262,8 +261,13 @@ export default function AdminICDChaptersSection({
             )}
           />
         ) : (
-          <div className="icd-card-list" role="list" aria-label="Danh mục chương ICD">
-            {chapters.length === 0 && (
+          <DataTable
+            className="icd-table-wrap"
+            caption="Danh mục chương ICD theo bộ lọc hiện tại"
+            rowHeaderKey="chapter"
+            getRowKey={(chapter) => getChapterId(chapter) || getChapterCode(chapter)}
+            rows={chapters}
+            emptyState={(
               <EmptyState
                 title="Chưa có chương ICD phù hợp"
                 description={filters.search
@@ -274,64 +278,62 @@ export default function AdminICDChaptersSection({
                   : <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>Tạo chương ICD</button>}
               />
             )}
-            {chapters.map((chapter) => {
-              const id = getChapterId(chapter);
-              const code = getChapterCode(chapter);
-              const name = getChapterName(chapter);
-              const keywords = getKeywords(chapter);
-              const accessibleName = code || name || "chưa đặt tên";
-
-              return (
-                <article className="icd-card" key={id || code} role="listitem">
-                  <div className="icd-card-code" aria-label={`Mã chương ${code || "chưa có"}`}>
-                    {code || "—"}
-                  </div>
-                  <div className="icd-card-content">
-                    <strong>{name || "Chưa đặt tên chương"}</strong>
-                    <dl className="icd-card-meta">
-                      <div>
-                        <dt><Tags size={13} aria-hidden="true" /> Từ khóa</dt>
-                        <dd>{keywords.length} từ khóa đã cấu hình</dd>
-                      </div>
-                      <div>
-                        <dt><Hash size={13} aria-hidden="true" /> Mã hệ thống</dt>
-                        <dd>{id || "Không có dữ liệu"}</dd>
-                      </div>
-                    </dl>
-                    <div className="icd-keyword-list" aria-label="Từ khóa và trọng số">
-                      {keywords.length === 0 ? (
-                        <span className="icd-keyword-empty">Chưa cấu hình từ khóa</span>
-                      ) : (
-                        <>
-                          {keywords.slice(0, 4).map(([keyword, weight]) => (
-                            <span className="icd-keyword" key={keyword}>
-                              {keyword} <strong>{weight}</strong>
-                            </span>
-                          ))}
-                          {keywords.length > 4 && (
-                            <span className="icd-keyword-more">+{keywords.length - 4} từ khóa</span>
-                          )}
-                        </>
-                      )}
+            columns={[
+              {
+                key: "chapter",
+                header: "Chương ICD",
+                render: (chapter) => (
+                  <div className="icd-primary-cell">
+                    <span className="icd-primary-code">{getChapterCode(chapter) || "—"}</span>
+                    <div>
+                      <strong>{getChapterName(chapter) || "Chưa đặt tên chương"}</strong>
+                      <small>Mã hệ thống · {getChapterId(chapter) || "Không có dữ liệu"}</small>
                     </div>
                   </div>
-                  <div className="record-actions icd-card-actions">
-                    <button
-                      className="btn btn-ghost btn-small"
-                      type="button"
-                      aria-label={`Tải chi tiết chương ICD ${accessibleName}`}
-                      onClick={() => openDetailForm(chapter)}
-                    >
-                      <Eye size={15} aria-hidden="true" /> Chi tiết
-                    </button>
-                    <AdminActionDisclosure>
+                ),
+              },
+              {
+                key: "keywords",
+                header: "Từ khóa",
+                render: (chapter) => {
+                  const keywords = getKeywords(chapter);
+                  if (keywords.length === 0) return <span className="icd-keyword-empty">Chưa cấu hình từ khóa</span>;
+                  return (
+                    <div className="icd-keyword-list" aria-label="Từ khóa và trọng số">
+                      {keywords.slice(0, 4).map(([keyword, weight]) => (
+                        <span className="icd-keyword" key={keyword}>
+                          {keyword} <strong>{weight}</strong>
+                        </span>
+                      ))}
+                      {keywords.length > 4 && (
+                        <span className="icd-keyword-more">+{keywords.length - 4} từ khóa</span>
+                      )}
+                    </div>
+                  );
+                },
+              },
+              {
+                key: "actions",
+                header: "Thao tác",
+                render: (chapter) => {
+                  const accessibleName = getChapterCode(chapter) || getChapterName(chapter) || "chưa đặt tên";
+                  return (
+                    <div className="record-actions" aria-label={`Thao tác với chương ICD ${accessibleName}`}>
+                      <button
+                        className="btn btn-ghost btn-small"
+                        type="button"
+                        aria-label={`Tải chi tiết chương ICD ${accessibleName}`}
+                        onClick={() => openDetailForm(chapter)}
+                      >
+                        <Eye size={14} aria-hidden="true" /> Chi tiết
+                      </button>
                       <button
                         className="btn btn-ghost btn-small"
                         type="button"
                         aria-label={`Sửa chương ICD ${accessibleName}`}
                         onClick={() => openEditForm(chapter)}
                       >
-                        <Pencil size={15} aria-hidden="true" /> Sửa
+                        <Pencil size={14} aria-hidden="true" /> Sửa
                       </button>
                       <button
                         className="btn btn-dark btn-small icd-delete-button"
@@ -339,14 +341,14 @@ export default function AdminICDChaptersSection({
                         aria-label={`Xóa chương ICD ${accessibleName}`}
                         onClick={() => onDelete(chapter)}
                       >
-                        <Trash2 size={15} aria-hidden="true" /> Xóa
+                        <Trash2 size={14} aria-hidden="true" /> Xóa
                       </button>
-                    </AdminActionDisclosure>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                    </div>
+                  );
+                },
+              },
+            ]}
+          />
         )}
       </div>
 

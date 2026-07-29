@@ -1,6 +1,6 @@
-import { BookOpen, Filter, Hash, Pencil, Plus, RefreshCw, RotateCcw, Search, Stethoscope, Trash2 } from "lucide-react";
+import { BookOpen, Filter, Pencil, Plus, RefreshCw, RotateCcw, Search, Stethoscope, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 function Field({ label, children, className = "", help, required = false }) {
   return (
@@ -180,8 +180,13 @@ export default function AdminDepartmentsSection({
             )}
           />
         ) : (
-          <div className="department-card-list" role="list" aria-label="Danh mục chuyên khoa">
-            {departments.length === 0 && (
+          <DataTable
+            className="department-table-wrap"
+            caption="Danh mục chuyên khoa theo bộ lọc hiện tại"
+            rowHeaderKey="department"
+            getRowKey={(department) => department.id}
+            rows={departments}
+            emptyState={(
               <EmptyState
                 title="Chưa có chuyên khoa phù hợp"
                 description={filters.search
@@ -192,46 +197,56 @@ export default function AdminDepartmentsSection({
                   : <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>Tạo chuyên khoa</button>}
               />
             )}
-            {departments.map((department) => (
-              <article className="department-card" key={department.id} role="listitem">
-                <div className="department-card-icon" aria-hidden="true">
-                  <Stethoscope size={21} />
-                </div>
-                <div className="department-card-content">
-                  <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-                  <p>{department.description || "Chưa có mô tả cho chuyên khoa này."}</p>
-                  <dl className="department-card-meta">
+            columns={[
+              {
+                key: "department",
+                header: "Chuyên khoa",
+                render: (department) => (
+                  <div className="department-primary-cell">
+                    <span className="department-primary-icon" aria-hidden="true"><Stethoscope size={18} /></span>
                     <div>
-                      <dt><BookOpen size={13} aria-hidden="true" /> Chương ICD</dt>
-                      <dd>{department.chapterCode || "Chưa liên kết"}</dd>
+                      <strong>{department.departmentName || "Chưa đặt tên"}</strong>
+                      <small>{department.description || "Chưa có mô tả cho chuyên khoa này."}</small>
                     </div>
-                    <div>
-                      <dt><Hash size={13} aria-hidden="true" /> Mã hệ thống</dt>
-                      <dd>{department.id || "Không có dữ liệu"}</dd>
-                    </div>
-                  </dl>
-                </div>
-                <div className="record-actions department-card-actions">
-                  <button
-                    className="btn btn-ghost btn-small"
-                    type="button"
-                    aria-label={`Sửa chuyên khoa ${department.departmentName || "chưa đặt tên"}`}
-                    onClick={() => openEditForm(department)}
-                  >
-                    <Pencil size={15} aria-hidden="true" /> Sửa
-                  </button>
-                  <button
-                    className="btn btn-dark btn-small department-delete-button"
-                    type="button"
-                    aria-label={`Xóa chuyên khoa ${department.departmentName || "chưa đặt tên"}`}
-                    onClick={() => onDelete(department.id)}
-                  >
-                    <Trash2 size={15} aria-hidden="true" /> Xóa
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+                  </div>
+                ),
+              },
+              {
+                key: "icd",
+                header: "Chương ICD",
+                render: (department) => (
+                  <div className="table-primary-cell">
+                    <strong>{department.chapterCode || "Chưa liên kết"}</strong>
+                    <small>Mã hệ thống · {department.id || "Không có dữ liệu"}</small>
+                  </div>
+                ),
+              },
+              {
+                key: "actions",
+                header: "Thao tác",
+                render: (department) => (
+                  <div className="record-actions" aria-label={`Thao tác với chuyên khoa ${department.departmentName || "chưa đặt tên"}`}>
+                    <button
+                      className="btn btn-ghost btn-small"
+                      type="button"
+                      aria-label={`Sửa chuyên khoa ${department.departmentName || "chưa đặt tên"}`}
+                      onClick={() => openEditForm(department)}
+                    >
+                      <Pencil size={14} aria-hidden="true" /> Sửa
+                    </button>
+                    <button
+                      className="btn btn-dark btn-small department-delete-button"
+                      type="button"
+                      aria-label={`Xóa chuyên khoa ${department.departmentName || "chưa đặt tên"}`}
+                      onClick={() => onDelete(department.id)}
+                    >
+                      <Trash2 size={14} aria-hidden="true" /> Xóa
+                    </button>
+                  </div>
+                ),
+              },
+            ]}
+          />
         )}
       </div>
 

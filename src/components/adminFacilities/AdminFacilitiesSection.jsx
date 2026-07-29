@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services/cloudinaryUploadService";
 import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
-import { Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import { Badge, Button, CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -324,69 +324,97 @@ export default function AdminFacilitiesSection({
             )}
           />
         ) : (
-          <div className="facility-admin-list" role="list" aria-label="Danh sách cơ sở y tế">
-            {facilities.length === 0 && (
+          <DataTable
+            className="facility-table-wrap"
+            caption="Danh sách cơ sở y tế theo bộ lọc hiện tại"
+            rowHeaderKey="facility"
+            getRowKey={(facility) => facility.id}
+            rows={facilities}
+            emptyState={(
               <EmptyState
                 title="Chưa có cơ sở y tế"
                 description="Tạo cơ sở và gán chuyên khoa trước khi thêm bác sĩ."
               />
             )}
-            {facilities.map((facility) => {
-              const linkedDepartments = Array.from(new Set([
-                ...facilityDepartments
-                  .filter((item) => String(item.facilityId) === String(facility.id))
-                  .map((item) => item.departmentName),
-                ...(Array.isArray(facility.departments)
-                  ? facility.departments.map((item) => item?.departmentName ?? item?.name)
-                  : []),
-              ].filter(Boolean)));
-              return (
-                <article className="facility-admin-card" key={facility.id} role="listitem">
-                  <header className="facility-admin-card-header">
+            columns={[
+              {
+                key: "facility",
+                header: "Cơ sở y tế",
+                render: (facility) => (
+                  <div className="facility-primary-cell">
                     <span className="facility-admin-thumbnail" aria-hidden="true">
                       {getSafeCurrentImageUrl(facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl)
                         ? (
                           <img
                             src={getSafeCurrentImageUrl(facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl)}
                             alt=""
-                            width="52"
-                            height="52"
+                            width="44"
+                            height="44"
                             loading="lazy"
                             decoding="async"
                           />
                         )
-                        : <Building2 size={22} />}
+                        : <Building2 size={18} />}
                     </span>
                     <div>
                       <strong>{facility.facilityName || "Chưa đặt tên"}</strong>
-                      <span><MapPin size={14} aria-hidden="true" /> {facility.address || "Chưa có địa chỉ."}</span>
+                      <span><MapPin size={13} aria-hidden="true" /> {facility.address || "Chưa có địa chỉ."}</span>
                     </div>
-                    <div className="facility-admin-badges">
-                      <Badge tone={isFacilityActive(facility) ? "success" : "warning"}>
-                        {isFacilityActive(facility) ? "Đang hoạt động" : "Đang tắt"}
-                      </Badge>
-                      <Badge tone={hasValidCoordinatePair(facility) ? "success" : "warning"}>
-                        {hasValidCoordinatePair(facility) ? "Có tọa độ bản đồ" : "Thiếu tọa độ"}
-                      </Badge>
+                  </div>
+                ),
+              },
+              {
+                key: "type",
+                header: "Loại cơ sở",
+                render: (facility) => (
+                  <div className="table-primary-cell">
+                    <strong>{facility.facilityType || "Chưa cập nhật"}</strong>
+                    <small>{formatCoordinatePair(facility)}</small>
+                  </div>
+                ),
+              },
+              {
+                key: "departments",
+                header: "Chuyên khoa liên kết",
+                render: (facility) => {
+                  const linkedDepartments = Array.from(new Set([
+                    ...facilityDepartments
+                      .filter((item) => String(item.facilityId) === String(facility.id))
+                      .map((item) => item.departmentName),
+                    ...(Array.isArray(facility.departments)
+                      ? facility.departments.map((item) => item?.departmentName ?? item?.name)
+                      : []),
+                  ].filter(Boolean)));
+                  return linkedDepartments.length ? (
+                    <div className="facility-table-tags">
+                      {linkedDepartments.map((department) => <span key={department}>{department}</span>)}
                     </div>
-                  </header>
-
-                  <dl className="facility-admin-meta">
-                    <div><dt>Loại cơ sở</dt><dd>{facility.facilityType || "Chưa cập nhật"}</dd></div>
-                    <div><dt>Tọa độ</dt><dd>{formatCoordinatePair(facility)}</dd></div>
-                    <div className="facility-admin-departments">
-                      <dt>Chuyên khoa liên kết</dt>
-                      <dd>
-                        {linkedDepartments.length
-                          ? linkedDepartments.map((department) => <span key={department}>{department}</span>)
-                          : <em>Chưa liên kết chuyên khoa</em>}
-                      </dd>
-                    </div>
-                  </dl>
-
-                  <footer className="facility-admin-actions">
-                    <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(facility)}><Pencil size={15} aria-hidden="true" /> Sửa</button>
+                  ) : <em className="muted-text">Chưa liên kết</em>;
+                },
+              },
+              {
+                key: "status",
+                header: "Trạng thái",
+                render: (facility) => (
+                  <div className="facility-table-badges">
+                    <Badge tone={isFacilityActive(facility) ? "success" : "warning"}>
+                      {isFacilityActive(facility) ? "Đang hoạt động" : "Đang tắt"}
+                    </Badge>
+                    <Badge tone={hasValidCoordinatePair(facility) ? "success" : "warning"}>
+                      {hasValidCoordinatePair(facility) ? "Có tọa độ" : "Thiếu tọa độ"}
+                    </Badge>
+                  </div>
+                ),
+              },
+              {
+                key: "actions",
+                header: "Thao tác",
+                render: (facility) => (
+                  <div className="record-actions" aria-label={`Thao tác với ${facility.facilityName || "cơ sở y tế"}`}>
                     <AdminActionDisclosure>
+                      <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(facility)}>
+                        <Pencil size={14} aria-hidden="true" /> Sửa
+                      </button>
                       {hasValidCoordinatePair(facility) && (
                         <a
                           className="btn btn-ghost btn-small"
@@ -395,19 +423,21 @@ export default function AdminFacilitiesSection({
                           rel="noreferrer"
                           aria-label={`Xem ${facility.facilityName || "cơ sở y tế"} trên OpenStreetMap`}
                         >
-                          <ExternalLink size={15} aria-hidden="true" /> Bản đồ
+                          <ExternalLink size={14} aria-hidden="true" /> Bản đồ
                         </a>
                       )}
                       <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(facility)}>
-                        <Power size={15} aria-hidden="true" /> {isFacilityActive(facility) ? "Tắt" : "Bật"}
+                        <Power size={14} aria-hidden="true" /> {isFacilityActive(facility) ? "Tắt" : "Bật"}
                       </button>
-                      <button className="btn btn-dark btn-small facility-delete-button" type="button" onClick={() => onDelete(facility)}><Trash2 size={15} aria-hidden="true" /> Xóa</button>
                     </AdminActionDisclosure>
-                  </footer>
-                </article>
-              );
-            })}
-          </div>
+                    <button className="btn btn-dark btn-small facility-delete-button" type="button" onClick={() => onDelete(facility)}>
+                      <Trash2 size={14} aria-hidden="true" /> Xóa
+                    </button>
+                  </div>
+                ),
+              },
+            ]}
+          />
         )}
       </div>
       {!loading && !loadError && (
