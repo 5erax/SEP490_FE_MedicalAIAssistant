@@ -105,10 +105,14 @@
 }
 
 .admin-action-disclosure-panel {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 8px;
   margin-top: 8px;
+}
+
+.admin-action-disclosure-panel .btn {
+  width: 100%;
 }
 
 .admin-operator .admin-action-disclosure-panel :is(.btn, button, a) {

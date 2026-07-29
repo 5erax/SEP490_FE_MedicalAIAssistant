@@ -411,7 +411,7 @@ export default function AdminFacilitiesSection({
                 header: "Thao tác",
                 render: (facility) => (
                   <div className="record-actions" aria-label={`Thao tác với ${facility.facilityName || "cơ sở y tế"}`}>
-                    <AdminActionDisclosure>
+                    <AdminActionDisclosure label="Mở rộng">
                       <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(facility)}>
                         <Pencil size={14} aria-hidden="true" /> Sửa
                       </button>

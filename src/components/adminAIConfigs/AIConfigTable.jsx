@@ -96,7 +96,7 @@ export default function AIConfigTable({ configs, onView, onEdit, onToggleStatus,
             const configName = getConfigName(config);
             return (
               <div className="record-actions" aria-label={`Thao tác với cấu hình ${configName}`}>
-                <AdminActionDisclosure>
+                <AdminActionDisclosure label="Mở rộng">
                   <button
                     className="btn btn-ghost btn-small"
                     type="button"
