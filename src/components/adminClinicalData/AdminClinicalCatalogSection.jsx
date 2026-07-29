@@ -1,9 +1,7 @@
 import {
-  CalendarDays,
   CircleHelp,
   FileText,
   Filter,
-  Hash,
   Languages,
   ListChecks,
   Pencil,
@@ -14,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -505,12 +503,13 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             )}
           />
         ) : (
-          <div
-            className="clinical-question-card-list"
-            role={items.length > 0 ? "list" : undefined}
-            aria-label={items.length > 0 ? "Danh mục câu hỏi lâm sàng" : undefined}
-          >
-            {items.length === 0 && (
+          <DataTable
+            className="clinical-question-table-wrap"
+            caption="Danh mục câu hỏi lâm sàng theo bộ lọc hiện tại"
+            rowHeaderKey="question"
+            getRowKey={(item) => item.id}
+            rows={items}
+            emptyState={(
               <EmptyState
                 title="Chưa có câu hỏi lâm sàng phù hợp"
                 description={filters.search || filters.chapterId
@@ -521,62 +520,64 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                   : <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>Tạo câu hỏi</button>}
               />
             )}
-            {items.map((item) => {
-              const chapterCode = getChapterCode(item, chapterById);
-              const createdAt = formatDateTime(item.createdAt);
-              const answerCount = getAnswerCount(item);
-              const questionName = item[config.primaryField] || "chưa có nội dung";
-
-              return (
-                <article className="clinical-question-card" key={item.id} role="listitem">
-                  <div className="clinical-question-card-code" aria-label={`Chương ICD ${chapterCode || "chưa liên kết"}`}>
-                    {chapterCode || "—"}
+            columns={[
+              {
+                key: "question",
+                header: "Câu hỏi",
+                render: (item) => (
+                  <div className="clinical-question-primary-cell">
+                    <span className="clinical-question-primary-code">{getChapterCode(item, chapterById) || "—"}</span>
+                    <div>
+                      <strong>{item[config.primaryField] || "chưa có nội dung"}</strong>
+                      <small><Languages size={12} aria-hidden="true" /> {item[config.secondaryField] || "Chưa có nội dung tiếng Anh."}</small>
+                    </div>
                   </div>
-                  <div className="clinical-question-card-content">
-                    <strong>{questionName}</strong>
-                    <p className="clinical-question-translation">
-                      <Languages size={14} aria-hidden="true" />
-                      <span>{item[config.secondaryField] || "Chưa có nội dung tiếng Anh."}</span>
-                    </p>
-                    <dl className="clinical-question-card-meta">
-                      <div>
-                        <dt><Hash size={13} aria-hidden="true" /> Thứ tự</dt>
-                        <dd>{item.sortOrder ?? "Chưa có"}</dd>
-                      </div>
-                      <div>
-                        <dt><ListChecks size={13} aria-hidden="true" /> Đáp án</dt>
-                        <dd>{answerCount} lựa chọn</dd>
-                      </div>
-                      {createdAt && (
-                        <div>
-                          <dt><CalendarDays size={13} aria-hidden="true" /> Ngày tạo</dt>
-                          <dd>{createdAt}</dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-                  <div className="record-actions clinical-question-card-actions">
-                    <button
-                      className="btn btn-ghost btn-small"
-                      type="button"
-                      aria-label={`Sửa câu hỏi ${questionName}`}
-                      onClick={() => edit(item)}
-                    >
-                      <Pencil size={15} aria-hidden="true" /> Sửa
-                    </button>
-                    <button
-                      className="btn btn-dark btn-small clinical-question-delete"
-                      type="button"
-                      aria-label={`Xóa câu hỏi ${questionName}`}
-                      onClick={() => requestRemove(item)}
-                    >
-                      <Trash2 size={15} aria-hidden="true" /> Xóa
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                ),
+              },
+              {
+                key: "order",
+                header: "Thứ tự",
+                render: (item) => item.sortOrder ?? "Chưa có",
+              },
+              {
+                key: "answers",
+                header: "Đáp án",
+                render: (item) => `${getAnswerCount(item)} lựa chọn`,
+              },
+              {
+                key: "created",
+                header: "Ngày tạo",
+                render: (item) => formatDateTime(item.createdAt) || "Chưa có",
+              },
+              {
+                key: "actions",
+                header: "Thao tác",
+                render: (item) => {
+                  const questionName = item[config.primaryField] || "chưa có nội dung";
+                  return (
+                    <div className="record-actions" aria-label={`Thao tác với câu hỏi ${questionName}`}>
+                      <button
+                        className="btn btn-ghost btn-small"
+                        type="button"
+                        aria-label={`Sửa câu hỏi ${questionName}`}
+                        onClick={() => edit(item)}
+                      >
+                        <Pencil size={14} aria-hidden="true" /> Sửa
+                      </button>
+                      <button
+                        className="btn btn-dark btn-small clinical-question-delete"
+                        type="button"
+                        aria-label={`Xóa câu hỏi ${questionName}`}
+                        onClick={() => requestRemove(item)}
+                      >
+                        <Trash2 size={14} aria-hidden="true" /> Xóa
+                      </button>
+                    </div>
+                  );
+                },
+              },
+            ]}
+          />
         )}
       </div>
 

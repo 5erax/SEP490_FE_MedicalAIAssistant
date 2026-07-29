@@ -638,6 +638,119 @@ html[data-theme="dark"] .admin-operator .clinical-question-card-meta dd {
   }
 }
 
+.admin-operator .clinical-question-table-wrap {
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  overflow-x: auto;
+}
+
+.admin-operator .clinical-question-table-wrap .ui-table {
+  width: 100%;
+  min-width: 900px;
+  table-layout: fixed;
+}
+
+.admin-operator .clinical-question-table-wrap .ui-table thead th {
+  background: #0f1715;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-operator .clinical-question-table-wrap .ui-table tbody th {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-weight: 400;
+  text-align: left;
+}
+
+.admin-operator .clinical-question-table-wrap .ui-table th,
+.admin-operator .clinical-question-table-wrap .ui-table td {
+  border-bottom: 1px solid rgba(16, 20, 17, 0.07);
+  padding: 16px 12px;
+  vertical-align: top;
+  min-width: 0;
+}
+
+.admin-operator .clinical-question-table-wrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-operator .clinical-question-table-wrap .ui-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(230, 244, 238, 0.54), #ffffff 58%);
+}
+
+.admin-operator .clinical-question-table-wrap th:nth-child(1) {
+  width: 38%;
+}
+
+.admin-operator .clinical-question-table-wrap th:nth-child(2) {
+  width: 10%;
+}
+
+.admin-operator .clinical-question-table-wrap th:nth-child(3) {
+  width: 12%;
+}
+
+.admin-operator .clinical-question-table-wrap th:nth-child(4) {
+  width: 16%;
+}
+
+.admin-operator .clinical-question-table-wrap th:nth-child(5) {
+  width: 24%;
+}
+
+.admin-operator .clinical-question-table-wrap .record-actions {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.admin-operator .clinical-question-table-wrap .record-actions .btn {
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+.clinical-question-primary-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.clinical-question-primary-code {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  min-width: 44px;
+  min-height: 40px;
+  border: 1px solid #cce3dc;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #d9f2ec, #eaf6f2);
+  padding: 4px 8px;
+  color: #056c69;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.clinical-question-primary-cell strong,
+.clinical-question-primary-cell small {
+  display: block;
+}
+
+.clinical-question-primary-cell small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(16, 20, 17, 0.55);
+  font-size: 12px;
+  font-weight: 620;
+}
+
 @media (forced-colors: active) {
   .admin-operator .clinical-catalog-panel,
   .admin-operator .clinical-catalog-filter-card,
