@@ -252,12 +252,12 @@ export default function SymptomAnalysisPage() {
   }
 
   return (
-    <main className="symptom-page">
+    <section className="symptom-page" aria-labelledby="symptom-page-title">
       <style>{styles}</style>
       <section className="symptom-shell">
         <header className="symptom-hero">
           <p className="mini-label">Sàng lọc định hướng</p>
-          <h1>Mô tả triệu chứng, trả lời vài câu hỏi yes/no.</h1>
+          <h1 id="symptom-page-title">Mô tả triệu chứng, trả lời vài câu hỏi yes/no.</h1>
           <p>
             MediMate dùng câu hỏi lâm sàng để định hướng chuyên khoa và cơ sở y tế phù hợp.
             Kết quả chỉ mang tính hỗ trợ, không thay thế bác sĩ.
@@ -416,16 +416,16 @@ export default function SymptomAnalysisPage() {
 
             {diagnoses.length > 0 && (
               <article className="symptom-card">
-                <p className="mini-label">Khả năng khác</p>
-                <div className="diagnosis-list">
+                <h2 className="mini-label" id="other-diagnoses-title">Khả năng khác</h2>
+                <ol className="diagnosis-list" aria-labelledby="other-diagnoses-title">
                   {diagnoses.map((diagnosis) => (
-                    <div key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
+                    <li key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
                       <strong>{diagnosis.rank}. {diagnosis.diseaseName || "Nhận định"}</strong>
-                      <span>{confidencePercent(diagnosis.paGivenB)}%</span>
+                      <span>{confidencePercent(diagnosis.paGivenB)}% phù hợp tham khảo</span>
                       {diagnosis.clinicalReasoning && <p>{diagnosis.clinicalReasoning}</p>}
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ol>
               </article>
             )}
 
@@ -474,7 +474,7 @@ export default function SymptomAnalysisPage() {
           </section>
         )}
       </section>
-    </main>
+    </section>
   );
 }
 
@@ -533,8 +533,9 @@ const styles = `
 .confidence-line i { display: block; height: 100%; background: linear-gradient(90deg, var(--lime), var(--teal)); }
 .emergency-badge { margin-top: 12px; background: rgba(239,111,97,.15); color: #b42318; }
 .diagnosis-list, .facility-list { display: grid; gap: 10px; }
-.diagnosis-list > div, .facility-list article { border: 1px solid var(--line); border-radius: 14px; background: var(--paper-soft); padding: 14px; }
-.diagnosis-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.diagnosis-list { margin: 0; padding: 0; list-style: none; }
+.diagnosis-list > li, .facility-list article { border: 1px solid var(--line); border-radius: 14px; background: var(--paper-soft); padding: 14px; }
+.diagnosis-list > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
 .diagnosis-list p { grid-column: 1 / -1; margin: 0; }
 .diagnosis-list span { font-weight: 950; color: var(--teal); }
 .facility-list article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
@@ -549,7 +550,7 @@ const styles = `
 @keyframes questionFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 760px) {
   .symptom-page { padding: 14px; }
-  .diagnosis-steps, .diagnosis-question, .diagnosis-list > div, .facility-list article { grid-template-columns: 1fr; }
+  .diagnosis-steps, .diagnosis-question, .diagnosis-list > li, .facility-list article { grid-template-columns: 1fr; }
   .segmented-answer { width: 100%; }
   .question-card-head { display: grid; }
   .result-actions, .result-actions button, .outline-action, .primary-action { width: 100%; }

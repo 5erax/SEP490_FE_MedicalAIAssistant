@@ -237,3 +237,42 @@ test("landing navigation exposes the active in-page destination", async ({ page 
   });
   await expect(navigation.locator('[aria-current="location"]')).toHaveCount(0);
 });
+
+test("landing mobile overlays keep focus visible and inside the active surface", async ({ page }) => {
+  await preparePage(page);
+  await mockLandingPreviewApis(page);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const menuTrigger = page.getByRole("button", { name: "Mở menu" });
+  await menuTrigger.click();
+
+  const menuDialog = page.getByRole("dialog", { name: "Menu điều hướng" });
+  const menuClose = menuDialog.getByRole("button", { name: "Đóng menu" });
+  await expect(menuDialog).toHaveAttribute("aria-modal", "true");
+  await expect(menuClose).toBeFocused();
+
+  await page.keyboard.press("Shift+Tab");
+  await expect.poll(() => menuDialog.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
+
+  await page.keyboard.press("Escape");
+  await expect(menuTrigger).toBeFocused();
+
+  const launcherControl = page.locator(".landing-chat-launcher button");
+  await expect(launcherControl).toHaveAttribute("tabindex", "-1");
+
+  await page.locator("#map").scrollIntoViewIfNeeded();
+  const launcher = page.getByRole("button", { name: "Mở trợ lý sức khỏe MediMate" });
+  await expect(launcher).not.toHaveAttribute("tabindex", "-1");
+  await launcher.click();
+
+  const chatDialog = page.getByRole("dialog", { name: "Trợ lý MediMate AI" });
+  await expect(chatDialog).toHaveAttribute("aria-modal", "true");
+  await expect(chatDialog.getByRole("button", { name: "Đóng trợ lý AI" })).toBeFocused();
+  await expect(chatDialog.getByRole("region", { name: "Hội thoại với MediMate" }))
+    .not.toHaveAttribute("aria-live");
+  await expect(page.locator(".landing-chat-status")).toHaveAttribute("role", "status");
+
+  await page.keyboard.press("Escape");
+  await expect(launcher).toBeFocused();
+});

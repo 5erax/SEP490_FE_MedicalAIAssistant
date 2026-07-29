@@ -1,6 +1,7 @@
 import { Menu, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { createRef, useEffect, useMemo, useRef, useState } from "react";
 import { getStoredAuth } from "../../services/api";
+import { useOverlayFocus } from "../ui";
 import DisplayPreferences from "../preferences/DisplayPreferences";
 
 const NAV_LINKS = [
@@ -26,29 +27,66 @@ export function Navbar({ variant = "default" }) {
     typeof window === "undefined" ? "" : window.location.hash.slice(1)
   ));
   const [auth] = useState(() => getStoredAuth());
+  const headerRef = useRef(null);
   const menuButtonRef = useRef(null);
+  const menuCloseButtonRef = useRef(null);
+  const mobileDialogRef = useRef(null);
   const mobileNavRef = useRef(null);
+  const inertRefs = useMemo(
+    () => Array.from({ length: 8 }, () => createRef()),
+    [],
+  );
+
+  useEffect(() => {
+    const header = headerRef.current;
+    const main = document.querySelector("main");
+    const elements = [];
+
+    if (main?.contains(header)) {
+      elements.push(...Array.from(main.children).filter((element) => element !== header));
+    } else if (main) {
+      elements.push(main);
+    }
+
+    const footer = document.querySelector("footer");
+    const chatbox = document.querySelector(".landing-ai-chatbox");
+    const chatLauncher = document.querySelector(".landing-chat-launcher");
+    if (footer && !elements.includes(footer)) elements.push(footer);
+    if (chatbox) elements.push(chatbox);
+    if (chatLauncher) elements.push(chatLauncher);
+
+    inertRefs.forEach((ref, index) => {
+      ref.current = elements[index] ?? null;
+    });
+  }, [inertRefs]);
 
   useEffect(() => {
     if (!open) return undefined;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    mobileNavRef.current?.querySelector("button, a")?.focus();
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        menuButtonRef.current?.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(max-width: 960px)");
+    function closeMenuOnDesktop(event) {
+      if (!event.matches) setOpen(false);
+    }
+    mobileQuery.addEventListener("change", closeMenuOnDesktop);
+    return () => mobileQuery.removeEventListener("change", closeMenuOnDesktop);
+  }, []);
+
+  useOverlayFocus({
+    active: open,
+    containerRef: mobileDialogRef,
+    initialFocusRef: menuCloseButtonRef,
+    restoreFocusRef: menuButtonRef,
+    inertRefs,
+    onClose: () => setOpen(false),
+  });
 
   useEffect(() => {
     const navSectionIds = new Set(NAV_LINKS.map(({ sectionId }) => sectionId));
@@ -107,7 +145,7 @@ export function Navbar({ variant = "default" }) {
   }, []);
 
   return (
-    <header className={`nav ${variant === "landing" ? "nav-care" : ""}`}>
+    <header ref={headerRef} className={`nav ${variant === "landing" ? "nav-care" : ""}`}>
       <div className="container nav-inner">
         <Logo />
 
@@ -154,39 +192,58 @@ export function Navbar({ variant = "default" }) {
             className="mobile-menu-backdrop"
             type="button"
             aria-label="Đóng menu điều hướng"
+            aria-hidden="true"
+            tabIndex={-1}
             onClick={() => setOpen(false)}
           />
-          <nav
-            ref={mobileNavRef}
-            id="mobile-navigation"
-            className="container mobile-menu"
-            aria-label="Điều hướng di động"
+          <div
+            ref={mobileDialogRef}
+            className="mobile-menu-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu điều hướng"
           >
-            <DisplayPreferences />
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                aria-current={activeSection === link.sectionId ? "location" : undefined}
-                onClick={() => {
-                  setActiveSection(link.sectionId);
-                  setOpen(false);
-                }}
+            <nav
+              ref={mobileNavRef}
+              id="mobile-navigation"
+              className="container mobile-menu"
+              aria-label="Điều hướng di động"
+            >
+              <button
+                ref={menuCloseButtonRef}
+                className="mobile-menu-close"
+                type="button"
+                onClick={() => setOpen(false)}
               >
-                {link.name}
-              </a>
-            ))}
-            {!auth && (
-              <a className="btn care-nav-login" href="/login" onClick={() => setOpen(false)}>
-                Đăng nhập
-              </a>
-            )}
-            {auth && (
-              <a className="btn btn-primary" href="/app" onClick={() => setOpen(false)}>
-                Vào ứng dụng
-              </a>
-            )}
-          </nav>
+                <span>Đóng menu</span>
+                <X size={19} aria-hidden="true" />
+              </button>
+              <DisplayPreferences />
+              {NAV_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  aria-current={activeSection === link.sectionId ? "location" : undefined}
+                  onClick={() => {
+                    setActiveSection(link.sectionId);
+                    setOpen(false);
+                  }}
+                >
+                  {link.name}
+                </a>
+              ))}
+              {!auth && (
+                <a className="btn care-nav-login" href="/login" onClick={() => setOpen(false)}>
+                  Đăng nhập
+                </a>
+              )}
+              {auth && (
+                <a className="btn btn-primary" href="/app" onClick={() => setOpen(false)}>
+                  Vào ứng dụng
+                </a>
+              )}
+            </nav>
+          </div>
         </>
       )}
     </header>

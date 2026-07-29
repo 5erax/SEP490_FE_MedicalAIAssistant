@@ -1,6 +1,8 @@
 import { Building2, ExternalLink, Filter, MapPin, Pencil, Plus, Power, RefreshCw, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services/cloudinaryUploadService";
+import AdminActionDisclosure from "../admin/AdminActionDisclosure";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 function ApiMessage({ message }) {
@@ -201,6 +203,7 @@ export default function AdminFacilitiesSection({
   ];
   const visibleFacilityCount = facilities.length;
   const mappedFacilityCount = facilities.filter(hasValidCoordinatePair).length;
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   return (
     <section
@@ -228,15 +231,15 @@ export default function AdminFacilitiesSection({
       </header>
       <ApiMessage message={message} />
 
-      <section className="ai-config-filter-card facility-filter-card" aria-labelledby="facility-filter-title">
-        <div className="ai-config-filter-card-header facility-filter-heading">
-          <span aria-hidden="true"><Filter size={18} /></span>
-          <div>
-            <h3 id="facility-filter-title">Lọc danh sách cơ sở</h3>
-            <p>Lọc theo tên cơ sở, địa chỉ, chuyên khoa và trạng thái hiển thị.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="ai-config-filter-card facility-filter-card"
+        description="Lọc theo tên cơ sở, địa chỉ, chuyên khoa và trạng thái hiển thị."
+        headingClassName="ai-config-filter-card-header facility-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${activeFilterCount} bộ lọc · ${pageInfo.totalCount} cơ sở`}
+        title="Lọc danh sách cơ sở"
+        titleId="facility-filter-title"
+      >
         <form className="ai-config-toolbar facility-filter-form" onSubmit={onApplyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
             <label className="facility-search-field">
@@ -289,7 +292,7 @@ export default function AdminFacilitiesSection({
             </div>
           </div>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       {!loading && !loadError && (
         <div className="facility-result-summary" role="status" aria-live="polite">
@@ -342,7 +345,16 @@ export default function AdminFacilitiesSection({
                   <header className="facility-admin-card-header">
                     <span className="facility-admin-thumbnail" aria-hidden="true">
                       {getSafeCurrentImageUrl(facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl)
-                        ? <img src={getSafeCurrentImageUrl(facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl)} alt="" />
+                        ? (
+                          <img
+                            src={getSafeCurrentImageUrl(facility.imageUrl ?? facility.thumbnailUrl ?? facility.photoUrl)}
+                            alt=""
+                            width="52"
+                            height="52"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        )
                         : <Building2 size={22} />}
                     </span>
                     <div>
@@ -374,21 +386,23 @@ export default function AdminFacilitiesSection({
 
                   <footer className="facility-admin-actions">
                     <button className="btn btn-ghost btn-small" type="button" onClick={() => openEditForm(facility)}><Pencil size={15} aria-hidden="true" /> Sửa</button>
-                    {hasValidCoordinatePair(facility) && (
-                      <a
-                        className="btn btn-ghost btn-small"
-                        href={`https://www.openstreetmap.org/?mlat=${facility.latitude}&mlon=${facility.longitude}#map=16/${facility.latitude}/${facility.longitude}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`Xem ${facility.facilityName || "cơ sở y tế"} trên OpenStreetMap`}
-                      >
-                        <ExternalLink size={15} aria-hidden="true" /> Bản đồ
-                      </a>
-                    )}
-                    <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(facility)}>
-                      <Power size={15} aria-hidden="true" /> {isFacilityActive(facility) ? "Tắt" : "Bật"}
-                    </button>
-                    <button className="btn btn-dark btn-small facility-delete-button" type="button" onClick={() => onDelete(facility)}><Trash2 size={15} aria-hidden="true" /> Xóa</button>
+                    <AdminActionDisclosure>
+                      {hasValidCoordinatePair(facility) && (
+                        <a
+                          className="btn btn-ghost btn-small"
+                          href={`https://www.openstreetmap.org/?mlat=${facility.latitude}&mlon=${facility.longitude}#map=16/${facility.latitude}/${facility.longitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Xem ${facility.facilityName || "cơ sở y tế"} trên OpenStreetMap`}
+                        >
+                          <ExternalLink size={15} aria-hidden="true" /> Bản đồ
+                        </a>
+                      )}
+                      <button className="btn btn-ghost btn-small" type="button" onClick={() => onToggleStatus(facility)}>
+                        <Power size={15} aria-hidden="true" /> {isFacilityActive(facility) ? "Tắt" : "Bật"}
+                      </button>
+                      <button className="btn btn-dark btn-small facility-delete-button" type="button" onClick={() => onDelete(facility)}><Trash2 size={15} aria-hidden="true" /> Xóa</button>
+                    </AdminActionDisclosure>
                   </footer>
                 </article>
               );
@@ -447,6 +461,7 @@ export default function AdminFacilitiesSection({
                 <div className="facility-form-grid">
                   <Field label="Tên cơ sở y tế" className="facility-form-span-2">
                     <input
+                      name="facilityName"
                       value={form.facilityName}
                       onChange={(event) => onFormChange("facilityName", event.target.value)}
                       placeholder="Ví dụ: Bệnh viện Đa khoa A"
@@ -456,6 +471,7 @@ export default function AdminFacilitiesSection({
                   </Field>
                   <Field label="Loại cơ sở" help="Ví dụ: Bệnh viện, phòng khám chuyên khoa, trung tâm y tế.">
                     <input
+                      name="facilityType"
                       value={form.facilityType}
                       onChange={(event) => onFormChange("facilityType", event.target.value)}
                       placeholder="Bệnh viện"
@@ -472,6 +488,7 @@ export default function AdminFacilitiesSection({
                 <div className="facility-form-grid">
                   <Field label="Địa chỉ" className="facility-form-span-2" help="Nên nhập địa chỉ đầy đủ để hiển thị tốt trên bản đồ và danh sách đề xuất.">
                     <input
+                      name="address"
                       value={form.address}
                       onChange={(event) => onFormChange("address", event.target.value)}
                       autoComplete="street-address"
@@ -480,6 +497,7 @@ export default function AdminFacilitiesSection({
                   </Field>
                   <Field label="Số điện thoại" help="Dùng số tổng đài hoặc số đặt lịch chính thức nếu có.">
                     <input
+                      name="phone"
                       type="tel"
                       value={form.phone}
                       onChange={(event) => onFormChange("phone", event.target.value)}
@@ -489,6 +507,7 @@ export default function AdminFacilitiesSection({
                   </Field>
                   <Field label="Website" help="Nhập URL công khai của cơ sở, bắt đầu bằng https:// nếu có.">
                     <input
+                      name="website"
                       type="url"
                       value={form.website}
                       onChange={(event) => onFormChange("website", event.target.value)}
@@ -497,6 +516,7 @@ export default function AdminFacilitiesSection({
                   </Field>
                   <Field label="Giờ mở cửa" className="facility-form-span-2" help="Ví dụ: Thứ 2 - Thứ 6, 07:00 - 17:00.">
                     <input
+                      name="openingHours"
                       value={form.openingHours}
                       onChange={(event) => onFormChange("openingHours", event.target.value)}
                       placeholder="07:00 - 17:00"
@@ -513,6 +533,7 @@ export default function AdminFacilitiesSection({
                 <div className="facility-form-grid">
                   <Field label="Vĩ độ" help="Giá trị từ -90 đến 90. Ví dụ: 10.8491.">
                     <input
+                      name="latitude"
                       type="text"
                       inputMode="decimal"
                       value={form.latitude}
@@ -522,6 +543,7 @@ export default function AdminFacilitiesSection({
                   </Field>
                   <Field label="Kinh độ" help="Giá trị từ -180 đến 180. Ví dụ: 106.7715.">
                     <input
+                      name="longitude"
                       type="text"
                       inputMode="decimal"
                       value={form.longitude}
@@ -544,6 +566,9 @@ export default function AdminFacilitiesSection({
                         className="facility-image-preview"
                         src={currentImageUrl}
                         alt={`Ảnh xem trước của ${form.facilityName || "cơ sở y tế"}`}
+                        width="640"
+                        height="360"
+                        decoding="async"
                       />
                     ) : (
                       <div className="facility-image-empty" aria-hidden="true">Chưa có ảnh</div>
@@ -552,6 +577,7 @@ export default function AdminFacilitiesSection({
                   <div className="facility-image-controls">
                     <Field label="Ảnh cơ sở y tế" help="Chọn file JPG, PNG hoặc WebP tối đa 5 MB. Ảnh sẽ được tải lên ngay sau khi chọn.">
                       <input
+                        name="facilityImage"
                         type="file"
                         accept="image/*"
                         onChange={handleImageUpload}
@@ -571,6 +597,7 @@ export default function AdminFacilitiesSection({
                     )}
                     <Field label="Đường dẫn ảnh" help="Bạn có thể dán link ảnh đã có hoặc để trống nếu chưa muốn hiển thị ảnh.">
                       <input
+                        name="imageUrl"
                         type="url"
                         value={form.imageUrl}
                         onChange={(event) => handleImageUrlChange(event.target.value)}
@@ -605,6 +632,7 @@ export default function AdminFacilitiesSection({
                       {departments.map((department) => (
                         <label key={department.id}>
                           <input
+                            name="departmentIds"
                             type="checkbox"
                             checked={form.departmentIds.includes(department.id)}
                             onChange={() => onToggleDepartment(department.id)}

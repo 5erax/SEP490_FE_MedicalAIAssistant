@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
-  Bookmark,
   Building2,
   Clock3,
   Globe2,
@@ -30,6 +29,7 @@ import {
   feedbackReviewsApi,
   getStoredAuth,
   medicalFacilitiesApi,
+  symptomAnalysisApi,
 } from "../services/api";
 import "../styles/map-clinical-refresh.css";
 
@@ -49,21 +49,7 @@ const DETAIL_TABS = [
   ["reviews", "Đánh giá"],
 ];
 
-const BUSY_HOURS = {
-  monday: { label: "Thứ Hai", values: [22, 38, 68, 88, 76, 46, 54, 72, 64, 38] },
-  tuesday: { label: "Thứ Ba", values: [18, 34, 62, 82, 70, 42, 50, 68, 60, 34] },
-  wednesday: { label: "Thứ Tư", values: [20, 36, 64, 84, 72, 44, 52, 70, 62, 36] },
-  thursday: { label: "Thứ Năm", values: [18, 32, 58, 78, 68, 40, 48, 66, 58, 32] },
-  friday: { label: "Thứ Sáu", values: [24, 42, 70, 90, 80, 50, 58, 76, 68, 40] },
-};
-const BUSY_HOUR_LABELS = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
 const RATING_LABELS = ["", "Rất tệ", "Không hài lòng", "Bình thường", "Hài lòng", "Rất hài lòng"];
-
-function getBusyLevel(value) {
-  if (value >= 75) return { label: "Đông", tone: "high" };
-  if (value >= 45) return { label: "Vừa", tone: "medium" };
-  return { label: "Ít", tone: "low" };
-}
 
 function getValidTab(value) {
   return DETAIL_TABS.some(([id]) => id === value) ? value : "overview";
@@ -76,20 +62,96 @@ function readMapQuery() {
     doctorId: params.get("doctorId") || "",
     facilityId: params.get("facilityId") || "",
     search: params.get("search") || "",
+    sessionId: params.get("sessionId") || "",
     source: params.get("source") || "",
     tab: getValidTab(params.get("tab")),
   };
 }
 
-function readMapRecommendationContext() {
-  if (typeof sessionStorage === "undefined") return null;
+function sanitizeDepartment(department) {
+  if (!department || typeof department !== "object") return null;
+  const emergencyValue = department.isEmergencySuggested ?? department.IsEmergencySuggested;
+  return {
+    confidenceScore: Number(department.confidenceScore ?? department.ConfidenceScore ?? 0) || 0,
+    departmentId: String(
+      department.departmentId
+      ?? department.DepartmentId
+      ?? department.id
+      ?? "",
+    ).trim(),
+    departmentName: department.departmentName ?? department.DepartmentName ?? department.name ?? "",
+    icdChapterCode: String(
+      department.icdChapterCode
+      ?? department.IcdChapterCode
+      ?? "",
+    ).trim(),
+    priorityRank: Number(department.priorityRank ?? department.PriorityRank ?? 0) || 0,
+    reason: String(department.reason ?? department.Reason ?? "").trim(),
+    isEmergencySuggested: emergencyValue === true
+      || String(emergencyValue ?? "").toLowerCase() === "true",
+  };
+}
 
-  try {
-    const raw = sessionStorage.getItem("medimate.map.recommendation");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+function sanitizeRecommendedFacility(facility) {
+  if (!facility || typeof facility !== "object") return null;
+  const id = String(
+    facility.facilityId
+    ?? facility.FacilityId
+    ?? facility.medicalFacilityId
+    ?? facility.id
+    ?? "",
+  ).trim();
+  if (!id) return null;
+  const departmentItems = facility.departments ?? facility.Departments;
+  return {
+    address: String(facility.address ?? facility.Address ?? "").trim(),
+    departments: (Array.isArray(departmentItems) ? departmentItems : []).map((department) => ({
+      departmentId: String(
+        department?.departmentId ?? department?.DepartmentId ?? department?.id ?? "",
+      ).trim(),
+      departmentName: String(
+        department?.departmentName ?? department?.DepartmentName ?? department?.name ?? "",
+      ).trim(),
+    })).filter((department) => department.departmentId || department.departmentName),
+    facilityId: id,
+    facilityName: String(
+      facility.facilityName ?? facility.FacilityName ?? facility.name ?? "",
+    ).trim(),
+    facilityType: String(facility.facilityType ?? facility.FacilityType ?? "").trim(),
+    imageUrl: String(facility.imageUrl ?? facility.ImageUrl ?? "").trim(),
+    isActive: (facility.isActive ?? facility.IsActive) !== false,
+    latitude: coordinateOrNull(facility.latitude ?? facility.Latitude, -90, 90),
+    longitude: coordinateOrNull(facility.longitude ?? facility.Longitude, -180, 180),
+    openingHours: String(facility.openingHours ?? facility.OpeningHours ?? "").trim(),
+    phone: String(facility.phone ?? facility.Phone ?? "").trim(),
+    website: String(facility.website ?? facility.Website ?? "").trim(),
+  };
+}
+
+function buildClinicalRecommendationContext(analysis) {
+  if (!analysis || typeof analysis !== "object") return null;
+  const departmentItems = analysis.recommendedDepartments ?? analysis.RecommendedDepartments;
+  const recommendedDepartment = sanitizeDepartment(
+    analysis.recommendedDepartment
+    ?? analysis.RecommendedDepartment
+    ?? (Array.isArray(departmentItems) ? departmentItems[0] : null),
+  );
+  const facilityItems = analysis.recommendedFacilities ?? analysis.RecommendedFacilities;
+  const recommendedFacilities = (Array.isArray(facilityItems)
+    ? facilityItems
+    : [])
+    .map(sanitizeRecommendedFacility)
+    .filter(Boolean);
+
+  const context = {
+    recommendedDepartment,
+    recommendedFacilities,
+    sessionId: String(analysis.sessionId ?? "").trim(),
+  };
+
+  return recommendedDepartment || recommendedFacilities.length
+    ? context
+    : null;
 }
 
 function coordinateOrNull(value, minimum, maximum) {
@@ -333,7 +395,8 @@ function normalizeFacility(facility, relationDepartments = [], relationDepartmen
 
 function NearbyClinicPage() {
   const auth = getStoredAuth();
-  const [mapQuery] = useState(readMapQuery);
+  const [mapQuery, setMapQuery] = useState(readMapQuery);
+  const isClinicalFlow = mapQuery.source === "clinical";
   const requestedDepartmentId = mapQuery.departmentId;
   const requestedFacilityId = mapQuery.facilityId;
   const [chatContext] = useState(() => {
@@ -344,7 +407,23 @@ function NearbyClinicPage() {
       return null;
     }
   });
-  const [recommendationContext] = useState(readMapRecommendationContext);
+  const [recommendationContext, setRecommendationContext] = useState(null);
+  const [clinicalStatus, setClinicalStatus] = useState(() => {
+    if (!isClinicalFlow) return "idle";
+    if (!auth?.accessToken) return "locked";
+    if (!mapQuery.sessionId) return "error";
+    return "loading";
+  });
+  const [clinicalNotice, setClinicalNotice] = useState(() => {
+    if (!isClinicalFlow) return "";
+    if (!auth?.accessToken) {
+      return "Đăng nhập để xem lại kết quả gợi ý chuyên khoa của bạn.";
+    }
+    if (!mapQuery.sessionId) {
+      return "Không tìm thấy mã phiên gợi ý để khôi phục kết quả.";
+    }
+    return "";
+  });
   const [facilities, setFacilities] = useState([]);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
   const [apiNotice, setApiNotice] = useState("");
@@ -374,7 +453,6 @@ function NearbyClinicPage() {
   const [editingReview, setEditingReview] = useState(false);
   const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
-  const [busyDay, setBusyDay] = useState("monday");
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState("");
   const [mapStatus, setMapStatus] = useState("loading");
@@ -389,11 +467,47 @@ function NearbyClinicPage() {
   const requestedFacilityOpenedRef = useRef(false);
   const requestedDoctorOpenedRef = useRef(false);
   const lastFittedBoundsRef = useRef("");
+  const initialClinicalSelectionRef = useRef(false);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
     return () => window.clearTimeout(timerId);
   }, [searchText]);
+
+  useEffect(() => {
+    if (!isClinicalFlow) return undefined;
+
+    if (!auth?.accessToken || !mapQuery.sessionId) return undefined;
+
+    const cachedContext = buildClinicalRecommendationContext(
+      symptomAnalysisApi.getCachedClinicalAnalysis(mapQuery.sessionId),
+    );
+    let active = true;
+
+    Promise.resolve().then(() => {
+      if (!active) return;
+      if (cachedContext) {
+        setRecommendationContext(cachedContext);
+        setClinicalStatus("ready");
+        setClinicalNotice("");
+        return;
+      }
+
+      setRecommendationContext(null);
+      setClinicalStatus("error");
+      setClinicalNotice(
+        "Kết quả gợi ý không còn trong phiên hiện tại. Vui lòng quay lại trang chủ và gửi lại triệu chứng.",
+      );
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    auth?.accessToken,
+    isClinicalFlow,
+    mapQuery.sessionId,
+  ]);
 
   useEffect(() => {
     if (mapStatus !== "loading") return undefined;
@@ -501,11 +615,96 @@ function NearbyClinicPage() {
     };
   }, [selectedFacility?.facilityId, selectedFacility?.isMockFacility]);
 
+  const resolvedRecommendationContext = useMemo(() => {
+    if (
+      !recommendationContext
+      || recommendationContext.recommendedDepartment?.departmentName
+      || !requestedDepartmentId
+    ) return recommendationContext;
+
+    const requestedFacility = facilities.find((facility) => (
+      String(facility.facilityId) === String(requestedFacilityId)
+    ));
+    const matchingDepartment = requestedFacility?.consultationDepartments?.find((department) => (
+      String(department.id) === String(requestedDepartmentId)
+    ));
+    if (!matchingDepartment?.name) return recommendationContext;
+
+    return {
+      ...recommendationContext,
+      recommendedDepartment: {
+        ...recommendationContext.recommendedDepartment,
+        departmentName: matchingDepartment.name,
+      },
+    };
+  }, [
+    facilities,
+    recommendationContext,
+    requestedDepartmentId,
+    requestedFacilityId,
+  ]);
+  const recommendedFacilityOrder = useMemo(() => {
+    const entries = resolvedRecommendationContext?.recommendedFacilities ?? [];
+    return new globalThis.Map(entries.map((facility, index) => [
+      String(facility.facilityId),
+      index,
+    ]));
+  }, [resolvedRecommendationContext?.recommendedFacilities]);
+  const clinicalRecommendationFacilities = useMemo(() => {
+    if (!isClinicalFlow || clinicalStatus !== "ready") return [];
+
+    return (resolvedRecommendationContext?.recommendedFacilities ?? [])
+      .filter((facility) => facility.isActive !== false)
+      .map((recommendedFacility) => {
+        const activeFacility = facilities.find((facility) => (
+          String(facility.facilityId) === String(recommendedFacility.facilityId)
+        ));
+        const departmentNames = recommendedFacility.departments
+          .map((department) => department.departmentName)
+          .filter(Boolean);
+        const departmentIds = recommendedFacility.departments
+          .map((department) => department.departmentId)
+          .filter(Boolean);
+        if (activeFacility) {
+          return normalizeFacility({
+            ...activeFacility,
+            address: recommendedFacility.address || activeFacility.address,
+            departments: recommendedFacility.departments.length
+              ? recommendedFacility.departments
+              : activeFacility.consultationDepartments,
+            facilityName: recommendedFacility.facilityName || activeFacility.facilityName,
+            facilityType: recommendedFacility.facilityType || activeFacility.facilityType,
+            imageUrl: recommendedFacility.imageUrl || activeFacility.imageUrl,
+            latitude: recommendedFacility.latitude ?? activeFacility.latitude,
+            longitude: recommendedFacility.longitude ?? activeFacility.longitude,
+            openingHours: recommendedFacility.openingHours || activeFacility.openingHours,
+            phone: recommendedFacility.phone || activeFacility.phone,
+            website: recommendedFacility.website || activeFacility.website,
+          }, activeFacility.departments, activeFacility.departmentIds);
+        }
+
+        return normalizeFacility(recommendedFacility, departmentNames, departmentIds);
+      });
+  }, [
+    clinicalStatus,
+    facilities,
+    isClinicalFlow,
+    resolvedRecommendationContext?.recommendedFacilities,
+  ]);
+  const effectiveDepartmentId = isClinicalFlow
+    ? ""
+    : requestedDepartmentId;
+
   const filteredFacilities = useMemo(() => {
+    if (isClinicalFlow && clinicalStatus !== "ready") return [];
+    if (isClinicalFlow && recommendedFacilityOrder.size === 0) return [];
+
     const normalized = normalizeSearchText(debouncedSearch);
-    const normalizedDepartmentId = String(requestedDepartmentId).trim();
-    const normalizedDepartmentSearch = normalizeSearchText(requestedDepartmentId);
-    return facilities.filter((facility) => {
+    const normalizedDepartmentId = String(effectiveDepartmentId).trim();
+    const normalizedDepartmentSearch = normalizeSearchText(effectiveDepartmentId);
+    const hasRecommendedFacilities = isClinicalFlow;
+    const sourceFacilities = isClinicalFlow ? clinicalRecommendationFacilities : facilities;
+    const matches = sourceFacilities.filter((facility) => {
       const searchable = [
         facility.facilityName,
         facility.address,
@@ -515,12 +714,29 @@ function NearbyClinicPage() {
         ...facility.departments,
       ].map(normalizeSearchText);
       const matchSearch = !normalized || searchable.some((value) => value.includes(normalized));
-      const matchDepartment = !normalizedDepartmentId
+      const matchRecommendation = !hasRecommendedFacilities
+        || recommendedFacilityOrder.has(String(facility.facilityId));
+      const matchDepartment = hasRecommendedFacilities
+        || !normalizedDepartmentId
         || facility.departmentIds?.some((departmentId) => String(departmentId) === normalizedDepartmentId)
         || facility.departments.map(normalizeSearchText).some((value) => value.includes(normalizedDepartmentSearch));
-      return matchSearch && matchDepartment;
+      return matchSearch && matchRecommendation && matchDepartment;
     });
-  }, [debouncedSearch, facilities, requestedDepartmentId]);
+    return hasRecommendedFacilities
+      ? matches.sort((left, right) => (
+        recommendedFacilityOrder.get(String(left.facilityId))
+        - recommendedFacilityOrder.get(String(right.facilityId))
+      ))
+      : matches;
+  }, [
+    debouncedSearch,
+    clinicalStatus,
+    clinicalRecommendationFacilities,
+    effectiveDepartmentId,
+    facilities,
+    isClinicalFlow,
+    recommendedFacilityOrder,
+  ]);
 
   const typedFacilities = useMemo(
     () => filteredFacilities.filter((facility) => selectedType === "all" || facility.facilityTypeKey === selectedType),
@@ -547,6 +763,16 @@ function NearbyClinicPage() {
     [mappableFacilities],
   );
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
+  const unavailableRecommendationCount = isClinicalFlow && recommendedFacilityOrder.size > 0
+    ? (resolvedRecommendationContext?.recommendedFacilities ?? [])
+      .filter((facility) => facility.isActive === false)
+      .length
+    : 0;
+  const effectiveClinicalNotice = clinicalNotice || (
+    isClinicalFlow && !loadingFacilities && unavailableRecommendationCount > 0
+      ? "Cơ sở được gợi ý hiện không còn khả dụng."
+      : ""
+  );
 
   const prefersReducedMotion = useCallback(() => (
     document.documentElement.dataset.motion === "reduce"
@@ -701,7 +927,52 @@ function NearbyClinicPage() {
   }, [activeHospitalTab, handleCardClick, syncMapUrl]);
 
   useEffect(() => {
-    if (loadingFacilities || !requestedFacilityId || requestedFacilityOpenedRef.current) return;
+    const handlePopState = () => {
+      const nextQuery = readMapQuery();
+      const params = new URLSearchParams(window.location.search);
+      const navigationFacilities = nextQuery.source === "clinical"
+        ? clinicalRecommendationFacilities
+        : facilities;
+      const matchedFacility = navigationFacilities.find((facility) => (
+        String(facility.facilityId) === String(nextQuery.facilityId)
+      ));
+      const shouldShowClinicalDetail = nextQuery.source === "clinical"
+        && nextQuery.facilityId
+        && params.has("tab");
+
+      setMapQuery(nextQuery);
+      setSelectedDoctor(null);
+
+      if (!nextQuery.facilityId || (nextQuery.source === "clinical" && !shouldShowClinicalDetail)) {
+        setSidebarView("hospital-list");
+        setDetailPanelOpen(false);
+        setDetailFacility(null);
+        setDetailError("");
+        setDetailDoctors([]);
+        setSelectedFacility(nextQuery.source === "clinical" ? matchedFacility ?? null : null);
+        if (matchedFacility) handleCardClick(matchedFacility);
+        return;
+      }
+
+      if (matchedFacility) {
+        openFacilityDetail(matchedFacility, {
+          syncUrl: false,
+          tab: nextQuery.tab,
+        });
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [clinicalRecommendationFacilities, facilities, handleCardClick, openFacilityDetail]);
+
+  useEffect(() => {
+    if (
+      isClinicalFlow
+      || loadingFacilities
+      || !requestedFacilityId
+      || requestedFacilityOpenedRef.current
+    ) return;
 
     const matchedFacility = facilities.find((facility) => String(facility.facilityId) === String(requestedFacilityId));
     requestedFacilityOpenedRef.current = true;
@@ -715,13 +986,45 @@ function NearbyClinicPage() {
       });
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [facilities, loadingFacilities, mapQuery.tab, openFacilityDetail, requestedFacilityId]);
+  }, [
+    facilities,
+    isClinicalFlow,
+    loadingFacilities,
+    mapQuery.tab,
+    openFacilityDetail,
+    requestedFacilityId,
+  ]);
 
   useEffect(() => {
-    if (mapQuery.source !== "clinical" || requestedFacilityId || selectedFacility || mappableFacilities.length === 0) return;
-    const timeoutId = window.setTimeout(() => handleCardClick(mappableFacilities[0]), 0);
+    if (
+      !isClinicalFlow
+      || clinicalStatus !== "ready"
+      || mapStatus !== "ready"
+      || initialClinicalSelectionRef.current
+      || visibleFacilities.length === 0
+    ) return;
+
+    const matchedFacility = visibleFacilities.find((facility) => (
+      String(facility.facilityId) === String(requestedFacilityId)
+    ));
+    const targetFacility = matchedFacility ?? visibleFacilities[0];
+    initialClinicalSelectionRef.current = true;
+    const timeoutId = window.setTimeout(() => {
+      handleCardClick(targetFacility);
+      if (String(requestedFacilityId) !== String(targetFacility.facilityId)) {
+        syncMapUrl({ facilityId: targetFacility.facilityId }, "replace");
+      }
+    }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [handleCardClick, mapQuery.source, mappableFacilities, requestedFacilityId, selectedFacility]);
+  }, [
+    clinicalStatus,
+    handleCardClick,
+    isClinicalFlow,
+    mapStatus,
+    requestedFacilityId,
+    syncMapUrl,
+    visibleFacilities,
+  ]);
 
   useEffect(() => {
     if (!detailPanelOpen) return undefined;
@@ -750,10 +1053,12 @@ function NearbyClinicPage() {
     setDetailError("");
     setDetailDoctors([]);
     setSelectedDoctor(null);
-    setSelectedFacility(null);
+    setSelectedFacility(isClinicalFlow ? detailFacility : null);
     setSubmittedReview(null);
     setEditingReview(false);
-    syncMapUrl({});
+    syncMapUrl(isClinicalFlow && detailFacility?.facilityId
+      ? { facilityId: detailFacility.facilityId }
+      : {});
     window.setTimeout(() => {
       cardRefs.current[facilityId]?.querySelector?.(".facility-select-button")?.focus();
     }, 0);
@@ -766,6 +1071,32 @@ function NearbyClinicPage() {
     if (detailFacility?.facilityId) {
       syncMapUrl({ facilityId: detailFacility.facilityId, tab: tabId }, "replace");
     }
+  };
+
+  const handleHospitalTabKeyDown = (event, currentTabId) => {
+    const currentIndex = DETAIL_TABS.findIndex(([tabId]) => tabId === currentTabId);
+    if (currentIndex < 0) return;
+
+    let nextIndex;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (currentIndex + 1) % DETAIL_TABS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (currentIndex - 1 + DETAIL_TABS.length) % DETAIL_TABS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = DETAIL_TABS.length - 1;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    const nextTabId = DETAIL_TABS[nextIndex][0];
+    changeHospitalTab(nextTabId);
+    event.currentTarget
+      .closest('[role="tablist"]')
+      ?.querySelector(`#facility-tab-${nextTabId}`)
+      ?.focus();
   };
 
   const openDoctorDetail = (doctor) => {
@@ -1050,6 +1381,14 @@ function NearbyClinicPage() {
         </div>
 
         {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
+        {isClinicalFlow && !loadingFacilities && unavailableRecommendationCount > 0 && (
+          <div className="sidebar-note" role="status">
+            Cơ sở được gợi ý hiện không còn trong danh sách cơ sở đang hoạt động.
+          </div>
+        )}
+        {isClinicalFlow && clinicalStatus === "error" && clinicalNotice && (
+          <div className="sidebar-note" role="alert">{clinicalNotice}</div>
+        )}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
             Cơ sở y tế hiện chưa có tọa độ hợp lệ. Quản trị viên cần cập nhật vĩ độ và kinh độ để bản đồ hiển thị điểm khám.
@@ -1059,7 +1398,7 @@ function NearbyClinicPage() {
         <FacilityList
           cardRefs={cardRefs}
           facilities={visibleFacilities}
-          loading={loadingFacilities}
+          loading={isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
           onCall={callFacility}
           onDirections={openDirections}
@@ -1091,7 +1430,14 @@ function NearbyClinicPage() {
             <div className="facility-detail-body" ref={detailBodyRef}>
               <div className="facility-detail-media">
                 {detailFacility.imageUrl ? (
-                  <img src={detailFacility.imageUrl} alt={`Ảnh ${detailFacility.facilityName}`} />
+                  <img
+                    src={detailFacility.imageUrl}
+                    alt={`Ảnh ${detailFacility.facilityName}`}
+                    width="640"
+                    height="360"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
                   <span aria-hidden="true"><Building2 size={46} /></span>
                 )}
@@ -1109,7 +1455,6 @@ function NearbyClinicPage() {
               <div className="facility-quick-actions" aria-label={`Thao tác nhanh với ${detailFacility.facilityName}`}>
                 <button type="button" className="primary" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}><Route size={18} /><span>Chỉ đường</span></button>
                 <button type="button" disabled={!detailFacility.phone} title={detailFacility.phone ? undefined : "Cơ sở chưa có số điện thoại"} onClick={() => callFacility(detailFacility)}><Phone size={18} /><span>Gọi</span></button>
-                <button type="button" aria-label="Lưu cơ sở y tế"><Bookmark size={18} /><span>Lưu</span></button>
                 <button type="button" onClick={() => shareFacility(detailFacility)}><Share2 size={18} /><span>Chia sẻ</span></button>
                 {detailFacility.website && <a href={detailFacility.website} target="_blank" rel="noreferrer"><Globe2 size={18} /><span>Website</span></a>}
               </div>
@@ -1117,7 +1462,18 @@ function NearbyClinicPage() {
 
               <div className="facility-detail-tabs" role="tablist" aria-label="Thông tin cơ sở y tế">
                 {DETAIL_TABS.map(([tabId, label]) => (
-                  <button key={tabId} type="button" role="tab" aria-selected={activeHospitalTab === tabId} className={activeHospitalTab === tabId ? "active" : ""} onClick={() => changeHospitalTab(tabId)}>
+                  <button
+                    key={tabId}
+                    id={`facility-tab-${tabId}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeHospitalTab === tabId}
+                    aria-controls={`facility-panel-${tabId}`}
+                    tabIndex={activeHospitalTab === tabId ? 0 : -1}
+                    className={activeHospitalTab === tabId ? "active" : ""}
+                    onClick={() => changeHospitalTab(tabId)}
+                    onKeyDown={(event) => handleHospitalTabKeyDown(event, tabId)}
+                  >
                     {label}
                   </button>
                 ))}
@@ -1127,7 +1483,12 @@ function NearbyClinicPage() {
               {detailError && <p className="facility-detail-error">{detailError}</p>}
 
               {activeHospitalTab === "overview" && (
-                <div className="facility-detail-tab-panel" role="tabpanel">
+                <div
+                  id="facility-panel-overview"
+                  className="facility-detail-tab-panel"
+                  role="tabpanel"
+                  aria-labelledby="facility-tab-overview"
+                >
                   <section className="facility-info-group">
                     <h3>Thông tin tổng quan</h3>
                     <p>{detailFacility.description || "Cơ sở y tế này chưa có mô tả chi tiết."}</p>
@@ -1142,35 +1503,8 @@ function NearbyClinicPage() {
                     <div className="facility-detail-tags">{detailFacility.departments.map((department) => <span key={department}>{department}</span>)}</div>
                   </section>
                   <section className="facility-info-group busy-hours-section">
-                    <div className="busy-hours-heading">
-                      <div><h3>Xu hướng đông khách</h3><p>Ước tính theo khung giờ khám, chưa được bệnh viện xác nhận.</p></div>
-                      <label>Chọn ngày
-                        <select value={busyDay} onChange={(event) => setBusyDay(event.target.value)}>
-                          {Object.entries(BUSY_HOURS).map(([day, data]) => <option key={day} value={day}>{data.label}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                    <figure className="busy-hours-chart" aria-labelledby="busy-hours-caption">
-                      <div className="busy-hours-bars" role="img" aria-label={`Biểu đồ xu hướng đông khách ước tính ${BUSY_HOURS[busyDay].label}. Khung 09:00 được ước tính ở mức đông.`}>
-                        {BUSY_HOURS[busyDay].values.map((value, index) => (
-                          <div className="busy-hour-column" key={BUSY_HOUR_LABELS[index]}>
-                            <span className={`busy-hour-value ${getBusyLevel(value).tone}`}>{getBusyLevel(value).label}</span>
-                            <i style={{ height: `${value}%` }} />
-                            <small>{BUSY_HOUR_LABELS[index].replace(":00", "h")}</small>
-                          </div>
-                        ))}
-                      </div>
-                      <figcaption id="busy-hours-caption"><strong>Không phải dữ liệu đo lường.</strong> Biểu đồ chỉ hỗ trợ chọn thời điểm tham khảo. Hãy gọi bệnh viện để xác nhận trước khi đến.</figcaption>
-                    </figure>
-                    <details className="busy-hours-data">
-                      <summary>Xem chi tiết theo giờ</summary>
-                      <table>
-                        <caption>Xu hướng đông khách ước tính {BUSY_HOURS[busyDay].label}</caption>
-                        <thead><tr><th scope="col">Giờ</th><th scope="col">Mức ước tính</th></tr></thead>
-                        <tbody>{BUSY_HOURS[busyDay].values.map((value, index) => <tr key={BUSY_HOUR_LABELS[index]}><td>{BUSY_HOUR_LABELS[index]}</td><td><span className={`busy-level-badge ${getBusyLevel(value).tone}`}>{getBusyLevel(value).label}</span></td></tr>)}</tbody>
-                      </table>
-                      <p>Nguồn: mô hình hiển thị nội bộ dựa trên khung giờ khám; chưa có dữ liệu lượng khách từ bệnh viện.</p>
-                    </details>
+                    <h3>Mức độ đông khách</h3>
+                    <p>Hệ thống chưa có dữ liệu lượng khách theo thời gian thực từ cơ sở này. Vui lòng liên hệ trực tiếp trước khi đến.</p>
                   </section>
                   <section className="facility-info-group">
                     <h3>Tiện ích hiện có dữ liệu</h3>
@@ -1180,7 +1514,12 @@ function NearbyClinicPage() {
               )}
 
               {activeHospitalTab === "doctors" && (
-                <div className="facility-detail-tab-panel" role="tabpanel">
+                <div
+                  id="facility-panel-doctors"
+                  className="facility-detail-tab-panel"
+                  role="tabpanel"
+                  aria-labelledby="facility-tab-doctors"
+                >
                   <section className="facility-info-group">
                     <h3>Danh sách bác sĩ</h3>
                     {detailDoctorsLoading && <p className="facility-detail-status">Đang tải danh sách bác sĩ...</p>}
@@ -1188,7 +1527,7 @@ function NearbyClinicPage() {
                     <div className="facility-detail-list facility-detail-doctor-list">
                       {detailDoctors.map((doctor) => (
                         <article key={doctor.id}>
-                          <span className="facility-detail-doctor-image">{getDoctorImageUrl(doctor) ? <img src={getDoctorImageUrl(doctor)} alt={`Ảnh bác sĩ ${getDoctorName(doctor)}`} /> : <UserRound size={20} aria-hidden="true" />}</span>
+                          <span className="facility-detail-doctor-image">{getDoctorImageUrl(doctor) ? <img src={getDoctorImageUrl(doctor)} alt={`Ảnh bác sĩ ${getDoctorName(doctor)}`} width="42" height="42" loading="lazy" decoding="async" /> : <UserRound size={20} aria-hidden="true" />}</span>
                           <div className="doctor-card-copy">
                             <strong>{getDoctorName(doctor)}</strong>
                             {doctor.academicTitle && <span>{doctor.academicTitle}</span>}
@@ -1203,7 +1542,12 @@ function NearbyClinicPage() {
               )}
 
               {activeHospitalTab === "reviews" && (
-                <div className="facility-detail-tab-panel" role="tabpanel">
+                <div
+                  id="facility-panel-reviews"
+                  className="facility-detail-tab-panel"
+                  role="tabpanel"
+                  aria-labelledby="facility-tab-reviews"
+                >
                   <section className="facility-info-group">
                     <h3>Đánh giá người dùng</h3>
                     <div className="review-overview"><strong>{detailAverageRating ? detailAverageRating.toFixed(1) : "--"}</strong><div className="review-summary-stars" aria-label={detailAverageRating ? `${detailAverageRating.toFixed(1)} trên 5 sao` : "Chưa có điểm đánh giá"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={detailAverageRating >= rating - 0.25 ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{reviewsTotalCount} đánh giá</span></div>
@@ -1216,7 +1560,7 @@ function NearbyClinicPage() {
                         <div className="review-item-stars" aria-label={currentUserReview.rating ? `${currentUserReview.rating} trên 5 sao` : "Đánh giá đã được ghi nhận"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={Number(currentUserReview.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div>
                         <strong>Bạn đã đánh giá cơ sở này</strong>
                         <p>{currentUserReview.isKnownDuplicate ? "Đánh giá hiện tại chưa xuất hiện trong danh sách công khai." : (currentUserReview.comment || "Bạn không để lại nhận xét.")}</p>
-                        {getReviewImageUrls(currentUserReview).length > 0 && <div className="review-photo-grid">{getReviewImageUrls(currentUserReview).map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh minh họa ${index + 1} trong đánh giá của bạn`} />)}</div>}
+                        {getReviewImageUrls(currentUserReview).length > 0 && <div className="review-photo-grid">{getReviewImageUrls(currentUserReview).map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh minh họa ${index + 1} trong đánh giá của bạn`} width="240" height="180" loading="lazy" decoding="async" />)}</div>}
                         {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa vì API chưa trả mã đánh giá.</small>}
                       </div>
                     ) : (
@@ -1225,7 +1569,7 @@ function NearbyClinicPage() {
                         <label><span>Chia sẻ trải nghiệm</span><textarea rows={4} maxLength={1000} value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Điều gì khiến bạn hài lòng hoặc chưa hài lòng?" /><small>{reviewForm.comment.length}/1000 ký tự</small></label>
                         <div className="review-image-upload">
                           <div><strong>Ảnh minh họa</strong><small>Tối đa 5 MB · JPG, PNG, WebP hoặc định dạng ảnh được hỗ trợ.</small></div>
-                          {reviewForm.imageUrls.length > 0 && <div className="review-image-preview-grid">{reviewForm.imageUrls.map((imageUrl, index) => <div className="review-image-preview" key={imageUrl}><img className="review-image" src={imageUrl} alt={`Ảnh minh họa ${index + 1} sẽ đính kèm đánh giá`} /><button type="button" aria-label={`Xóa ảnh ${index + 1}`} onClick={() => setReviewForm((current) => ({ ...current, imageUrls: current.imageUrls.filter((url) => url !== imageUrl) }))}>×</button></div>)}</div>}
+                          {reviewForm.imageUrls.length > 0 && <div className="review-image-preview-grid">{reviewForm.imageUrls.map((imageUrl, index) => <div className="review-image-preview" key={imageUrl}><img className="review-image" src={imageUrl} alt={`Ảnh minh họa ${index + 1} sẽ đính kèm đánh giá`} width="240" height="180" decoding="async" /><button type="button" aria-label={`Xóa ảnh ${index + 1}`} onClick={() => setReviewForm((current) => ({ ...current, imageUrls: current.imageUrls.filter((url) => url !== imageUrl) }))}>×</button></div>)}</div>}
                           {reviewForm.imageUrls.length < 5 && <label className="review-upload-button"><ImagePlus size={17} aria-hidden="true" /><span>{uploadingReviewImage ? "Đang tải ảnh..." : `Thêm ảnh (${reviewForm.imageUrls.length}/5)`}</span><input type="file" accept="image/*" multiple onChange={uploadReviewImage} disabled={uploadingReviewImage || savingReview} /></label>}
                           <p>Không tải ảnh chứa hồ sơ bệnh án, giấy tờ tùy thân hoặc thông tin sức khỏe riêng tư.</p>
                         </div>
@@ -1238,7 +1582,7 @@ function NearbyClinicPage() {
                     <h3>Nhận xét gần đây</h3>
                     {reviewsLoading && <p className="facility-detail-status">Đang tải đánh giá...</p>}
                     {!reviewsLoading && reviews.length === 0 && <p className="facility-empty-state">Chưa có đánh giá công khai cho cơ sở này.</p>}
-                    <div className="facility-detail-list review-list">{reviews.map((review) => { const authorName = isReviewByCurrentUser(review, auth) ? "Bạn" : getReviewAuthorName(review); const reviewDate = getReviewDate(review); const reviewImageUrls = getReviewImageUrls(review); return <article key={review.id}><header><span className="review-author-avatar" aria-hidden="true">{getReviewAuthorInitial(authorName)}</span><div><strong>{authorName}</strong><small>{reviewDate ? `${reviewDate} · ` : ""}{review.rating} sao</small></div></header><div className="review-rating-line"><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={16} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{RATING_LABELS[Number(review.rating)]}</span></div><p className="review-comment">{review.comment || "Không có nhận xét."}</p>{reviewImageUrls.length > 0 && <div className="review-photo-grid">{reviewImageUrls.map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh ${index + 1} trong đánh giá của ${authorName}`} />)}</div>}</article>; })}</div>
+                    <div className="facility-detail-list review-list">{reviews.map((review) => { const authorName = isReviewByCurrentUser(review, auth) ? "Bạn" : getReviewAuthorName(review); const reviewDate = getReviewDate(review); const reviewImageUrls = getReviewImageUrls(review); return <article key={review.id}><header><span className="review-author-avatar" aria-hidden="true">{getReviewAuthorInitial(authorName)}</span><div><strong>{authorName}</strong><small>{reviewDate ? `${reviewDate} · ` : ""}{review.rating} sao</small></div></header><div className="review-rating-line"><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={16} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{RATING_LABELS[Number(review.rating)]}</span></div><p className="review-comment">{review.comment || "Không có nhận xét."}</p>{reviewImageUrls.length > 0 && <div className="review-photo-grid">{reviewImageUrls.map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh ${index + 1} trong đánh giá của ${authorName}`} width="240" height="180" loading="lazy" decoding="async" />)}</div>}</article>; })}</div>
                   </section>
                 </div>
               )}
@@ -1254,7 +1598,7 @@ function NearbyClinicPage() {
             </div>
             <div className="doctor-detail-body">
               <section className="doctor-profile-card">
-                <span className="doctor-profile-image">{getDoctorImageUrl(selectedDoctor) ? <img src={getDoctorImageUrl(selectedDoctor)} alt={`Ảnh bác sĩ ${getDoctorName(selectedDoctor)}`} /> : <UserRound size={34} aria-hidden="true" />}</span>
+                <span className="doctor-profile-image">{getDoctorImageUrl(selectedDoctor) ? <img src={getDoctorImageUrl(selectedDoctor)} alt={`Ảnh bác sĩ ${getDoctorName(selectedDoctor)}`} width="76" height="76" loading="lazy" decoding="async" /> : <UserRound size={34} aria-hidden="true" />}</span>
                 <div><p>Thông tin bác sĩ</p><h2 id="doctor-detail-title" ref={sidebarTitleRef} tabIndex="-1">{getDoctorName(selectedDoctor)}</h2><span>{selectedDoctor.academicTitle || "Chưa cập nhật học hàm/học vị"}</span></div>
               </section>
               <div className="doctor-fact-grid">
@@ -1282,24 +1626,35 @@ function NearbyClinicPage() {
 
       <section className="map-stage">
         <FacilityMap
+          assistantAccessLocked={isClinicalFlow && !auth?.accessToken}
           chatContext={chatContext}
-          consultationFacility={detailPanelOpen && !detailLoading ? detailFacility : null}
-          showConsultationAssistant={Boolean(auth?.accessToken)}
+          clinicalNotice={effectiveClinicalNotice}
+          clinicalStatus={clinicalStatus}
+          consultationFacility={
+            isClinicalFlow
+              ? selectedFacility
+              : detailPanelOpen && !detailLoading ? detailFacility : null
+          }
+          isClinicalFlow={isClinicalFlow}
+          onAssistantLogin={() => navigate(`/login?returnTo=${encodeURIComponent(
+            `${window.location.pathname}${window.location.search}`,
+          )}`)}
+          showConsultationAssistant={isClinicalFlow || Boolean(auth?.accessToken)}
           facilities={mappableFacilities}
           locationError={locationError}
           mapRef={mapRef}
           mapRenderKey={mapRenderKey}
           mapStatus={mapStatus}
           selectedFacility={selectedFacility}
-          recommendationContext={recommendationContext}
+          recommendationContext={resolvedRecommendationContext}
           userLocation={userLocation}
           viewState={viewState}
-          hidePopup={detailPanelOpen}
+          hidePopup={detailPanelOpen || isClinicalFlow}
           onError={handleMapError}
           onLocate={handleLocateMe}
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}
-          onSelect={(facility) => facility ? openFacilityDetail(facility) : setSelectedFacility(null)}
+          onSelect={(facility) => facility ? handleCardClick(facility) : setSelectedFacility(null)}
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}
         />
@@ -1322,7 +1677,7 @@ function NearbyClinicPage() {
               ×
             </button>
             <div className="facility-detail-hero">
-              {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
+              {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" width="640" height="360" loading="lazy" decoding="async" /> : <span aria-hidden="true">+</span>}
               <div>
                 <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
                 <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
@@ -1372,6 +1727,10 @@ function NearbyClinicPage() {
                         className="facility-detail-doctor-image"
                         src={getDoctorImageUrl(doctor)}
                         alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
+                        width="42"
+                        height="42"
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
                     <div>
@@ -1419,11 +1778,11 @@ const styles = `
 .map-skip-link:focus { transform: translateY(0); }
 .clinic-sidebar { width: 320px; flex: 0 0 320px; overflow-y: auto; border-right: 1.5px solid var(--ink); background: var(--paper); padding: 16px; }
 .map-page-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-.map-page-actions button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 900; }
+.map-page-actions button { min-height: 44px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 900; }
 .map-page-actions button:last-child { background: var(--lime); }
 .clinic-search { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; padding: 0 10px; }
 .clinic-search input { min-width: 0; height: 42px; border: 0; outline: none; }
-.clinic-search button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--mint); font-size: 18px; font-weight: 900; }
+.clinic-search button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--mint); font-size: 18px; font-weight: 900; }
 .filter-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 14px 0 8px; }
 .filter-row::-webkit-scrollbar, .department-row::-webkit-scrollbar { display: none; }
 .filter-row button { min-width: 0; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 8px 11px; font-size: 12px; font-weight: 900; }
@@ -1444,7 +1803,7 @@ const styles = `
 .facility-result-card .coordinate-notice { color: #9a3412; font-weight: 850; }
 .department-row { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 2px; }
 .department-row span { flex: 0 0 auto; border-radius: 999px; background: #fff; border: 1px solid var(--line); padding: 5px 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
-.facility-select-button { width: 100%; min-height: 38px; margin-top: 10px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--mint); color: var(--ink); font-size: 12px; font-weight: 900; }
+.facility-select-button { width: 100%; min-height: 44px; margin-top: 10px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--mint); color: var(--ink); font-size: 12px; font-weight: 900; }
 .facility-select-button[aria-pressed="true"] { background: var(--ink); color: #fff; }
 .facility-details { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 2px; }
 .facility-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
@@ -1457,7 +1816,7 @@ const styles = `
 .facility-reviews form, .facility-reviews label { display: grid; gap: 7px; }
 .facility-reviews label span { font-size: 12px; font-weight: 850; }
 .facility-reviews select, .facility-reviews textarea { width: 100%; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; padding: 9px; color: var(--ink); }
-.facility-reviews form > button { min-height: 40px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--lime); color: var(--ink); font-weight: 900; }
+.facility-reviews form > button { min-height: 44px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--lime); color: var(--ink); font-weight: 900; }
 .review-message, .review-list p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .review-list { display: grid; gap: 8px; }
 .review-list article { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 9px; }
@@ -2030,7 +2389,7 @@ const styles = `
 }
 .facility-type-filter button {
   flex: 0 0 auto;
-  min-height: 34px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: #fff;
@@ -2067,7 +2426,7 @@ const styles = `
   backdrop-filter: blur(12px);
 }
 .facility-detail-topbar button {
-  min-height: 38px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2197,7 +2556,7 @@ const styles = `
   font-weight: 900;
 }
 .busy-hours-heading select {
-  min-height: 40px;
+  min-height: 44px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: #fff;
@@ -2251,7 +2610,7 @@ const styles = `
 }
 .busy-hours-data summary {
   width: fit-content;
-  min-height: 32px;
+  min-height: 44px;
   cursor: pointer;
   color: var(--teal);
   font-weight: 900;
@@ -2389,7 +2748,7 @@ const styles = `
   line-height: 1.35;
 }
 .facility-detail-doctor-list button {
-  min-height: 34px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: #fff;
@@ -2503,7 +2862,7 @@ const styles = `
 .current-user-review small { font-size: 11px; font-weight: 800; }
 .review-edit-button {
   width: fit-content;
-  min-height: 40px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2586,8 +2945,8 @@ const styles = `
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   border: 1px solid rgba(255,255,255,.72);
   border-radius: 50%;
   background: rgba(16,20,17,.78);
@@ -2706,7 +3065,7 @@ const styles = `
 }
 .facility-review-form button,
 .doctor-sticky-actions button {
-  min-height: 42px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

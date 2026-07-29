@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowLeft,
   CircleCheck,
   FileText,
   History,
@@ -8,6 +9,7 @@ import {
   ShieldCheck,
   Stethoscope,
 } from "lucide-react";
+import { Navbar } from "../components/landing/Navbar";
 import { Alert, Button, EmptyState, ErrorState, LoadingState, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
@@ -128,9 +130,9 @@ function sessionTypeCopy(sessionType) {
       empty: "Chưa có phiên gợi ý chuyên khoa nào",
     }
     : {
-      title: "Lịch sử chuẩn đoán lâm sàng",
-      description: "Các phiên chuẩn đoán lâm sàng gần đây của tài khoản này.",
-      empty: "Chưa có phiên chuẩn đoán lâm sàng nào",
+      title: "Lịch sử chẩn đoán lâm sàng",
+      description: "Các phiên chẩn đoán lâm sàng gần đây của tài khoản này.",
+      empty: "Chưa có phiên chẩn đoán lâm sàng nào",
     };
 }
 
@@ -152,7 +154,10 @@ function AssessmentShell({
   const opensHistoryPanel = !historyAction.to;
 
   return (
-    <main className={`assessment-page clinical-page assessment-clinical-refresh ${pageClassName}`.trim()}>
+    <section
+      className={`assessment-page clinical-page assessment-clinical-refresh ${pageClassName}`.trim()}
+      aria-labelledby="assessment-title"
+    >
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
         <header className="assessment-header clinical-hero">
           <div className="assessment-heading-main">
@@ -207,7 +212,7 @@ function AssessmentShell({
           }}
         />
       )}
-    </main>
+    </section>
   );
 }
 
@@ -240,6 +245,11 @@ function EntryPage() {
       showStepper={false}
       pageClassName="assessment-entry-page"
     >
+      <a className="clinical-entry-back" href="/">
+        <ArrowLeft size={16} aria-hidden="true" />
+        Về trang chủ MediMate
+      </a>
+
       <section className="clinical-entry-overview" aria-labelledby="clinical-entry-title">
         <div className="clinical-entry-primary">
           <p className="clinical-entry-kicker">Bắt đầu phiên mới</p>
@@ -386,8 +396,7 @@ function IntakePage() {
             onChange={(event) => updateUserInput(event.target.value)}
             disabled={isSubmitting}
             rows={6}
-            placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ..."
-            autoFocus
+            placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ…"
           />
           <small>Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm để gợi ý phù hợp hơn.</small>
         </label>
@@ -400,12 +409,12 @@ function IntakePage() {
             type="submit"
             size="lg"
             loading={isSubmitting}
-            loadingLabel="Đang tạo câu hỏi..."
+            loadingLabel="Đang tạo câu hỏi…"
             disabled={!trimmedInput}
             aria-label="Tiếp tục phân tích lâm sàng"
             title="Tiếp tục phân tích lâm sàng"
           >
-            <Send size={18} />
+            <Send size={18} aria-hidden="true" />
           </Button>
         </div>
       </form>
@@ -658,7 +667,7 @@ function QuestionsPage({ sessionId }) {
             <Button
               type="submit"
               loading={status === "submitting"}
-              loadingLabel="Đang phân tích..."
+              loadingLabel="Đang phân tích…"
               disabled={!canSubmit}
             >
               Xem gợi ý
@@ -734,7 +743,7 @@ function ResultPage({ sessionId }) {
         description="MediMate đang lấy lại kết quả phiên đánh giá."
         activeStep={2}
       >
-        <LoadingState label="Đang tải phiên đánh giá..." />
+        <LoadingState label="Đang tải phiên đánh giá…" />
       </AssessmentShell>
     );
   }
@@ -760,7 +769,7 @@ function ResultPage({ sessionId }) {
     <AssessmentShell
       eyebrow="Bước 3"
       title="Chẩn đoán lâm sàng"
-      description="Tổng hợp kết quả từ mô hình Bayesian, thứ tự khả năng bệnh và xác suất P(A|B) tham khảo."
+      description="Tổng hợp các khả năng cần lưu ý dựa trên thông tin bạn đã cung cấp. Tỷ lệ chỉ thể hiện mức độ phù hợp tham khảo."
       activeStep={2}
     >
       <Alert
@@ -780,7 +789,7 @@ function ResultPage({ sessionId }) {
             {diagnosisReasoning(primaryDiagnosis) && <p>{diagnosisReasoning(primaryDiagnosis)}</p>}
             <div className="diagnosis-meta-row">
               {diagnosisIcd(primaryDiagnosis) && <small>ICD-10: {diagnosisIcd(primaryDiagnosis)}</small>}
-              <strong>{confidencePercent(diagnosisPAGivenB(primaryDiagnosis))}% P(A|B)</strong>
+              <strong>{confidencePercent(diagnosisPAGivenB(primaryDiagnosis))}% phù hợp tham khảo</strong>
               {diagnosisKeyword(primaryDiagnosis) && <small>{diagnosisKeyword(primaryDiagnosis)}</small>}
             </div>
           </article>
@@ -793,18 +802,21 @@ function ResultPage({ sessionId }) {
             </div>
 
             <div className="diagnosis-analytics-grid">
-              <div className="diagnosis-bar-chart" aria-label="Biểu đồ cột xác suất chẩn đoán">
+              <ol className="diagnosis-bar-chart" aria-label="Xếp hạng các khả năng bệnh theo mức độ phù hợp tham khảo">
                 {diagnosisRows.map((diagnosis) => (
-                  <div className="diagnosis-bar-item" key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
-                    <em>{diagnosis.probability}%</em>
-                    <div className="diagnosis-bar-track">
+                  <li className="diagnosis-bar-item" key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
+                    <span className="sr-only">
+                      Hạng {diagnosis.rank}: {diagnosis.diseaseName}, {diagnosis.probability}% phù hợp tham khảo.
+                    </span>
+                    <em aria-hidden="true">{diagnosis.probability}%</em>
+                    <div className="diagnosis-bar-track" aria-hidden="true">
                       <span style={{ height: `${Math.max(6, diagnosis.probability)}%` }} />
                     </div>
-                    <strong>{diagnosis.rank}</strong>
-                    <small>{diagnosis.diseaseName}</small>
-                  </div>
+                    <strong aria-hidden="true">{diagnosis.rank}</strong>
+                    <small aria-hidden="true">{diagnosis.diseaseName}</small>
+                  </li>
                 ))}
-              </div>
+              </ol>
             </div>
           </article>
         )}
@@ -849,11 +861,11 @@ function HistoryPage() {
       historyAction={
         sessionType === "department"
           ? { label: "Tiếp tục tư vấn", to: "/dashboard" }
-          : { label: "Tiếp tục chuẩn đoán", to: "/medical-assistant/intake" }
+          : { label: "Tiếp tục chẩn đoán", to: "/medical-assistant/intake" }
       }
     >
       {status === "loading" && (
-        <LoadingState label="Đang tải lịch sử đánh giá..." />
+        <LoadingState label="Đang tải lịch sử đánh giá…" />
       )}
 
       {error && (
@@ -911,5 +923,10 @@ export default function MedicalAssistantPage({ mode = "entry", sessionId = "" })
   if (activeMode === "result") return <ResultPage sessionId={sessionId} />;
   if (activeMode === "history") return <HistoryPage />;
 
-  return <EntryPage />;
+  return (
+    <main className="landing-page public-medical-assistant-entry">
+      <Navbar variant="landing" />
+      <EntryPage />
+    </main>
+  );
 }

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { navigate as goTo } from "../router/navigation";
 import { webChatbotApi } from "../services/api";
+import { Dialog } from "../components/ui";
 
 const WELCOME_PROMPTS = [
   {
@@ -51,16 +52,22 @@ function ChatbotPage() {
     return prefill || "";
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const messageIdRef = useRef(0);
+  const clearDialogTriggerRef = useRef(null);
+  const clearDialogCancelRef = useRef(null);
 
   useEffect(() => {
-    if (input) window.setTimeout(() => textareaRef.current?.focus(), 80);
+    if (input && window.matchMedia?.("(pointer: fine)")?.matches) {
+      window.setTimeout(() => textareaRef.current?.focus(), 80);
+    }
   }, [input]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    messagesEndRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
   }, [messages, isLoading]);
 
   const handleInput = (event) => {
@@ -128,6 +135,13 @@ function ChatbotPage() {
     goTo("/medication");
   };
 
+  const latestAssistantMessage = [...messages].reverse().find((message) => message.role === "assistant");
+  const conversationAnnouncement = isLoading
+    ? "MediMate AI đang soạn phản hồi."
+    : latestAssistantMessage
+      ? `MediMate AI: ${latestAssistantMessage.content}`
+      : "";
+
   return (
     <div className="chatbot-page">
       <style>{styles}</style>
@@ -161,9 +175,10 @@ function ChatbotPage() {
           </button>
           {messages.length > 0 && (
             <button
+              ref={clearDialogTriggerRef}
               className="chatbot-clear-button"
               type="button"
-              onClick={() => setMessages([])}
+              onClick={() => setClearDialogOpen(true)}
             >
               <Trash2 aria-hidden="true" size={16} />
               <span>Xóa hội thoại</span>
@@ -182,7 +197,6 @@ function ChatbotPage() {
       <section
         className="chatbot-message-area"
         aria-label="Nội dung hội thoại"
-        aria-live="polite"
         aria-busy={isLoading}
       >
         {messages.length === 0 && !isLoading ? (
@@ -266,6 +280,9 @@ function ChatbotPage() {
           </div>
         )}
       </section>
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {conversationAnnouncement}
+      </p>
 
       <footer className="chatbot-composer">
         <div className="chatbot-composer-inner">
@@ -286,7 +303,9 @@ function ChatbotPage() {
               value={input}
               onChange={handleInput}
               onKeyDown={handleKeyDown}
-              placeholder="Mô tả triệu chứng hoặc đặt câu hỏi..."
+              name="message"
+              aria-describedby="chatbot-composer-help"
+              placeholder="Mô tả triệu chứng hoặc đặt câu hỏi…"
             />
           </div>
           <button
@@ -299,8 +318,42 @@ function ChatbotPage() {
             <Send aria-hidden="true" size={20} />
           </button>
         </div>
-        <p>Nhấn Enter để gửi · Shift + Enter để xuống dòng</p>
+        <p id="chatbot-composer-help">Nhấn Enter để gửi · Shift + Enter để xuống dòng</p>
       </footer>
+
+      {clearDialogOpen && (
+        <Dialog
+          backdropClassName="chatbot-clear-dialog-backdrop"
+          className="chatbot-clear-dialog"
+          labelledBy="chatbot-clear-dialog-title"
+          describedBy="chatbot-clear-dialog-description"
+          initialFocusRef={clearDialogCancelRef}
+          restoreFocusRef={clearDialogTriggerRef}
+          onClose={() => setClearDialogOpen(false)}
+        >
+          <div>
+            <span className="chatbot-section-kicker">XÓA HỘI THOẠI</span>
+            <h2 id="chatbot-clear-dialog-title">Xóa toàn bộ nội dung đang hiển thị?</h2>
+            <p id="chatbot-clear-dialog-description">
+              Thao tác này chỉ xóa hội thoại trên màn hình hiện tại và không thể hoàn tác.
+            </p>
+          </div>
+          <div className="chatbot-clear-dialog-actions">
+            <button ref={clearDialogCancelRef} type="button" onClick={() => setClearDialogOpen(false)}>
+              Giữ lại
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMessages([]);
+                setClearDialogOpen(false);
+              }}
+            >
+              Xóa hội thoại
+            </button>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -752,8 +805,71 @@ const styles = `
   text-align: left;
 }
 
+.chatbot-clear-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 45, 54, 0.46);
+  padding: 18px;
+  backdrop-filter: blur(8px);
+}
+
+.chatbot-clear-dialog {
+  width: min(430px, 100%);
+  display: grid;
+  gap: 22px;
+  border: 1px solid var(--chat-line);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--chat-ink);
+  padding: clamp(20px, 4vw, 28px);
+  box-shadow: 0 28px 80px rgba(11, 45, 54, 0.2);
+}
+
+.chatbot-clear-dialog h2,
+.chatbot-clear-dialog p {
+  margin: 0;
+}
+
+.chatbot-clear-dialog h2 {
+  margin-top: 7px;
+  font-size: clamp(21px, 4vw, 27px);
+  line-height: 1.25;
+}
+
+.chatbot-clear-dialog p {
+  margin-top: 9px;
+  color: var(--chat-muted);
+  line-height: 1.6;
+}
+
+.chatbot-clear-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.chatbot-clear-dialog-actions button {
+  min-height: 46px;
+  border: 1px solid var(--chat-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--chat-ink);
+  padding: 0 14px;
+  font-weight: 850;
+}
+
+.chatbot-clear-dialog-actions button:last-child {
+  border-color: #a92f2f;
+  background: #a92f2f;
+  color: #fff;
+}
+
 .chatbot-page button:focus-visible,
-.chatbot-page textarea:focus-visible {
+.chatbot-page textarea:focus-visible,
+.chatbot-clear-dialog button:focus-visible {
   outline: 3px solid #f0a22e;
   outline-offset: 2px;
 }
@@ -893,6 +1009,10 @@ const styles = `
   .chatbot-composer > p {
     display: none;
   }
+
+  .chatbot-clear-dialog-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -913,7 +1033,8 @@ const styles = `
   .chatbot-welcome-prompts button,
   .chatbot-message-bubble,
   .chatbot-composer,
-  .chatbot-input-shell {
+  .chatbot-input-shell,
+  .chatbot-clear-dialog {
     background: Canvas;
     color: CanvasText;
   }

@@ -1,0 +1,399 @@
+/* Canonical Calm Clinical landing refinements */
+.care-hero-grid {
+  padding-bottom: 0;
+}
+
+.care-hero h1 {
+  max-width: 680px;
+  font-size: clamp(48px, 4.25vw, 64px);
+  letter-spacing: -0.05em;
+  line-height: 1.01;
+}
+
+.care-hero h1 .care-hero-title-highlight {
+  display: block;
+  margin-top: 10px;
+  color: var(--care-teal);
+  font-family: var(--font-display);
+  font-size: 0.86em;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: -0.048em;
+  text-wrap: balance;
+}
+
+.care-section {
+  padding: clamp(72px, 7vw, 96px) 0;
+}
+
+.care-support-card {
+  min-height: 250px;
+}
+
+.care-support-card h3 {
+  margin-top: 34px;
+}
+
+.care-cta-section {
+  padding-top: 0;
+}
+
+/* Clinical editorial hierarchy */
+.care-support-grid-core .care-support-card:first-child {
+  border-color: var(--care-navy-deep);
+  background: var(--care-navy-deep);
+}
+
+.care-support-grid-core .care-support-card:first-child .care-support-icon {
+  background: rgba(121, 213, 202, 0.13);
+  color: #9ce1d8;
+}
+
+.care-support-grid-core .care-support-card:first-child .care-support-label {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #b7e5dc;
+}
+
+.care-support-grid-core .care-support-card:first-child h3,
+.care-support-grid-core .care-support-card:first-child > a {
+  color: #fff;
+}
+
+.care-support-grid-core .care-support-card:first-child p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.care-feature-group-secondary .care-support-grid {
+  overflow: hidden;
+  gap: 0;
+  border: 1px solid var(--care-line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.care-feature-group-secondary .care-support-card {
+  min-height: 214px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.care-feature-group-secondary .care-support-card + .care-support-card {
+  border-left: 1px solid var(--care-line);
+}
+
+.care-feature-group-secondary .care-support-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+}
+
+.care-feature-group-secondary .care-support-card h3 {
+  margin-top: 22px;
+  font-size: 18px;
+}
+
+.care-feature-group-secondary .care-support-card p {
+  line-height: 1.6;
+}
+
+.care-feature-group-secondary .care-support-card > a {
+  padding-top: 16px;
+}
+
+/* Product paths */
+.care-path-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 46px;
+}
+
+.care-path-card {
+  display: flex;
+  min-height: 470px;
+  flex-direction: column;
+  border: 1px solid #bfd7d1;
+  border-radius: 18px;
+  background: #f6fbf9;
+  padding: 32px;
+}
+
+.care-path-card-primary {
+  border-color: var(--care-navy-deep);
+  background:
+    radial-gradient(circle at 94% 8%, rgba(121, 213, 202, 0.12), transparent 26%),
+    var(--care-navy-deep);
+  color: #fff;
+}
+
+.care-path-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.care-path-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: #e1f2ed;
+  color: var(--care-teal-dark);
+}
+
+.care-path-card-heading p {
+  margin: 0;
+  color: var(--care-teal-dark);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.care-path-card-primary .care-path-icon {
+  background: rgba(121, 213, 202, 0.14);
+  color: #9ce1d8;
+}
+
+.care-path-card-primary .care-path-card-heading p {
+  color: #a9ddd5;
+}
+
+.care-path-card h3 {
+  max-width: 480px;
+  margin: 30px 0 0;
+  color: var(--care-navy-deep);
+  font-size: clamp(26px, 2.7vw, 36px);
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.care-path-card-primary h3 {
+  color: #fff;
+}
+
+.care-path-description {
+  max-width: 540px;
+  margin: 16px 0 0;
+  color: var(--care-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.care-path-card-primary .care-path-description {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.care-path-card ul {
+  display: grid;
+  gap: 12px;
+  margin: 26px 0 30px;
+  padding: 22px 0 0;
+  border-top: 1px solid var(--care-line);
+  list-style: none;
+}
+
+.care-path-card-primary ul {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.care-path-card li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  color: var(--care-text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.care-path-card li svg {
+  margin-top: 2px;
+  color: var(--care-teal);
+}
+
+.care-path-card-primary li {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.care-path-card-primary li svg {
+  color: #8fdbd1;
+}
+
+.care-path-card > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 48px;
+  margin-top: auto;
+  border: 1px solid #b4d3cb;
+  border-radius: 11px;
+  background: #fff;
+  padding: 0 16px;
+  color: var(--care-teal-dark);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.care-path-card-primary > a {
+  border-color: #fff;
+  color: var(--care-navy-deep);
+}
+
+.care-supporting-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid var(--care-line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.care-supporting-tools article {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 22px;
+}
+
+.care-supporting-tools article + article {
+  border-left: 1px solid var(--care-line);
+}
+
+.care-supporting-tools article > span {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--care-mint);
+  color: var(--care-teal);
+}
+
+.care-supporting-tools h3 {
+  margin: 0;
+  color: var(--care-navy);
+  font-size: 16px;
+}
+
+.care-supporting-tools p {
+  margin: 5px 0 0;
+  color: var(--care-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.care-supporting-tools a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--care-teal-dark);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.care-history-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  color: var(--care-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.care-history-note svg {
+  flex: 0 0 auto;
+  color: var(--care-teal);
+}
+
+html[data-theme="dark"] .care-path-card:not(.care-path-card-primary),
+html[data-theme="dark"] .care-supporting-tools {
+  background: var(--care-paper);
+}
+
+/* Consistent landing section rhythm */
+.landing-page > .care-section {
+  border-top: 1px solid var(--care-line);
+}
+
+.care-section-header {
+  align-items: end;
+  margin-bottom: clamp(36px, 4vw, 48px);
+}
+
+.care-section-header > div:first-child {
+  max-width: 720px;
+}
+
+.care-section-header > p,
+.care-section-summary > p {
+  max-width: 590px;
+  margin: 0;
+  color: var(--care-muted);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.care-section-summary {
+  display: grid;
+  justify-items: start;
+  gap: 24px;
+}
+
+.care-section-summary .care-button {
+  margin: 0;
+}
+
+.care-path-grid,
+.care-pricing-grid {
+  margin-top: 0;
+}
+
+.care-facility-section .care-map-preview {
+  width: 100%;
+}
+
+.care-facility-section .care-section-summary > p {
+  color: #405b60;
+}
+
+.care-safety-principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--care-line);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.care-safety-principles article {
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-content: start;
+  border: 0;
+  padding: 26px;
+}
+
+.care-safety-principles article + article {
+  border-left: 1px solid var(--care-line);
+}
+
+.care-emergency-banner {
+  margin-top: 24px;
+}
+
+html[data-theme="dark"] .care-safety-principles {
+  background: var(--care-paper);
+}
+
+html[data-theme="dark"] .care-facility-section .care-section-summary > p {
+  color: #c2d3d0;
+}

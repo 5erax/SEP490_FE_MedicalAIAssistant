@@ -33,6 +33,7 @@
 
 .assessment-shell {
   width: min(1120px, 100%);
+  min-width: 0;
   display: grid;
   gap: clamp(18px, 2.4vh, 26px);
   margin-inline: auto;
@@ -583,12 +584,14 @@
 
 .result-grid {
   width: min(900px, 100%);
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
 .result-card {
+  min-width: 0;
   display: grid;
   gap: 10px;
 }
@@ -657,6 +660,7 @@
 }
 
 .diagnosis-analytics-card {
+  min-width: 0;
   grid-column: 1 / -1;
 }
 
@@ -665,10 +669,18 @@
 }
 
 .diagnosis-analytics-grid {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   display: block;
 }
 
 .diagnosis-bar-chart {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  list-style: none;
   min-height: 340px;
   display: grid;
   grid-auto-flow: column;
@@ -685,12 +697,17 @@
 }
 
 .diagnosis-bar-item {
+  position: relative;
   min-width: 0;
   display: grid;
   grid-template-rows: auto 1fr auto auto;
   gap: 8px;
   justify-items: center;
   text-align: center;
+}
+
+.diagnosis-bar-item .sr-only {
+  inset: 0 auto auto 0;
 }
 
 .diagnosis-bar-item em {

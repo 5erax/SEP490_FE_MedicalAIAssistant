@@ -1,0 +1,412 @@
+.admin-sidebar-header {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-mobile-context,
+.admin-mobile-nav-toggle {
+  display: none;
+}
+
+.admin-filter-disclosure-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.admin-filter-disclosure-copy {
+  min-width: 0;
+}
+
+.admin-filter-disclosure-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 176px;
+  min-height: 44px;
+  border: 1px solid rgba(16, 20, 17, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #173130;
+  padding: 8px 11px;
+  font: inherit;
+  text-align: left;
+}
+
+.admin-filter-disclosure-toggle > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-filter-disclosure-toggle strong {
+  font-size: 12px;
+}
+
+.admin-filter-disclosure-toggle small {
+  overflow: hidden;
+  color: rgba(16, 20, 17, 0.58);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-filter-disclosure-toggle svg {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.admin-filter-disclosure-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.admin-filter-disclosure-toggle:focus-visible {
+  outline: 2px solid #087f8c;
+  outline-offset: 2px;
+}
+
+.admin-filter-disclosure-body[hidden] {
+  display: none;
+}
+
+.doctor-filter-primary-action {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0;
+}
+
+.admin-action-disclosure {
+  position: relative;
+  min-width: 0;
+}
+
+.admin-action-disclosure > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-action-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-action-disclosure-chevron {
+  transition: transform 160ms ease;
+}
+
+.admin-action-disclosure[open] .admin-action-disclosure-chevron {
+  transform: rotate(180deg);
+}
+
+.admin-action-disclosure-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.admin-operator .admin-action-disclosure-panel :is(.btn, button, a) {
+  min-height: 44px;
+}
+
+.admin-operator .doctor-table-wrap .record-actions .ui-button {
+  min-width: 0;
+}
+
+.subscription-limit-more {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  background: #eaf6f2;
+  color: #0c5f5e;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.admin-operator .facility-clinical-panel .facility-admin-card-header strong {
+  display: block;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: unset;
+}
+
+.icd-keyword-editor,
+.icd-keyword-editor-list {
+  display: grid;
+  gap: 12px;
+}
+
+.icd-keyword-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.icd-keyword-editor-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.icd-keyword-editor-head span,
+.icd-keyword-editor-empty {
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.icd-keyword-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.3fr) auto;
+  align-items: start;
+  gap: 10px;
+  border: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 14px;
+  background: #fbfcf7;
+  padding: 12px;
+}
+
+.icd-keyword-remove {
+  align-self: end;
+  min-height: 44px;
+}
+
+.icd-advanced-json {
+  border-top: 1px solid rgba(16, 20, 17, 0.1);
+  padding-top: 12px;
+}
+
+.icd-advanced-json > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  color: #0c5f5e;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.icd-advanced-json[open] > summary {
+  margin-bottom: 10px;
+}
+
+.icd-field-error input,
+.icd-field-error textarea {
+  border-color: #b42318;
+}
+
+.icd-field-error small {
+  color: #b42318;
+}
+
+@media (max-width: 700px) {
+  .admin-operator .admin-shell {
+    border-width: 6px;
+    border-radius: 20px;
+  }
+
+  .admin-operator .admin-sidebar {
+    padding: 12px;
+  }
+
+  .admin-sidebar-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .admin-sidebar-header .brand {
+    min-width: 0;
+  }
+
+  .admin-sidebar-header .brand > span:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .admin-mobile-context {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .admin-mobile-context span {
+    color: rgba(16, 20, 17, 0.5);
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .admin-mobile-context strong {
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-mobile-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    border: 1px solid rgba(16, 20, 17, 0.15);
+    border-radius: 12px;
+    background: #fff;
+    color: #173130;
+    padding: 0 11px;
+    font: 800 12px/1 "Be Vietnam Pro", system-ui, sans-serif;
+  }
+
+  .admin-operator .admin-nav {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: min(52svh, 480px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-top: 1px solid rgba(16, 20, 17, 0.08);
+    padding: 12px 2px 4px;
+  }
+
+  .admin-operator .admin-nav.is-open {
+    display: grid;
+  }
+
+  .admin-operator .admin-nav button {
+    min-width: 0;
+    width: 100%;
+    white-space: normal;
+  }
+
+  .admin-operator .admin-nav button:hover {
+    transform: none;
+  }
+
+  .admin-operator .admin-session-card {
+    display: none;
+  }
+
+  .admin-operator .admin-sidebar.is-mobile-nav-open .admin-session-card {
+    display: grid;
+  }
+
+  .admin-operator .admin-topbar {
+    display: none;
+  }
+
+  .admin-operator .admin-main {
+    padding: 14px 12px 20px;
+  }
+
+  .admin-operator .admin-filter-disclosure-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .admin-operator .admin-filter-disclosure-toggle {
+    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-action-disclosure {
+    width: 100%;
+  }
+
+  .admin-action-disclosure > summary {
+    width: 100%;
+  }
+
+  .admin-action-disclosure-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-action-disclosure-panel .btn {
+    width: 100%;
+  }
+
+  .doctor-filter-primary-action,
+  .doctor-filter-primary-action .btn {
+    width: 100%;
+  }
+
+  .icd-keyword-editor-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .icd-keyword-editor-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-operator .admin-filter-disclosure-heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-operator .admin-mobile-context strong {
+    overflow: visible;
+    line-height: 1.25;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .admin-operator .admin-filter-disclosure-icon,
+  .admin-operator .doctor-invitation-card-heading > span {
+    display: none;
+  }
+
+  .admin-operator .doctor-card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator :is(
+    .department-clinical-heading-actions,
+    .icd-clinical-heading-actions
+  ) {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator :is(
+    .department-clinical-context,
+    .icd-clinical-context
+  ) {
+    grid-column: 1;
+  }
+
+  .admin-operator .pagination-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .admin-operator .pagination-row > span {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: center;
+  }
+
+  .admin-operator .pagination-row > .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}

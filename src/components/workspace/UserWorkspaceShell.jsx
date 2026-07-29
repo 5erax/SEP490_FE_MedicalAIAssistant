@@ -64,6 +64,11 @@ function getCurrentPath() {
   return window.location.pathname;
 }
 
+function isNavigationItemActive(item, path) {
+  if (path === item.path) return true;
+  return item.path === "/symptom" && path.startsWith("/assessment/");
+}
+
 function getInitials(nameOrEmail = "MediMate") {
   const name = String(nameOrEmail).split("@")[0];
   return name
@@ -286,6 +291,61 @@ export default function UserWorkspaceShell({ children }) {
     };
   }, [accountMenuOpen]);
 
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main) return undefined;
+
+    const mobileViewport = window.matchMedia("(max-width: 860px)");
+    let focusFrame = 0;
+
+    function keepFocusedControlVisible(element) {
+      if (
+        !mobileViewport.matches
+        || !(element instanceof HTMLElement)
+        || !main.contains(element)
+        || !element.matches("button, input, select, textarea, [tabindex]")
+      ) {
+        return;
+      }
+
+      window.cancelAnimationFrame(focusFrame);
+      focusFrame = window.requestAnimationFrame(() => {
+        const shell = main.closest(".user-shell");
+        const topbar = main.querySelector(".user-shell-topbar");
+        if (!shell || !topbar || !element.isConnected) return;
+
+        const safeBottom = Number.parseFloat(
+          window.getComputedStyle(shell).getPropertyValue("--patient-safe-bottom"),
+        ) || 0;
+        const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+        const topBoundary = topbar.getBoundingClientRect().bottom + 8;
+        const bottomBoundary = viewportHeight - safeBottom;
+        const elementRect = element.getBoundingClientRect();
+
+        if (elementRect.top < topBoundary || elementRect.bottom > bottomBoundary) {
+          element.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+        }
+      });
+    }
+
+    function handleFocusIn(event) {
+      keepFocusedControlVisible(event.target);
+    }
+
+    function handleViewportResize() {
+      keepFocusedControlVisible(document.activeElement);
+    }
+
+    main.addEventListener("focusin", handleFocusIn);
+    window.visualViewport?.addEventListener("resize", handleViewportResize);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      main.removeEventListener("focusin", handleFocusIn);
+      window.visualViewport?.removeEventListener("resize", handleViewportResize);
+    };
+  }, []);
+
   return (
     <div className="user-shell">
       {mobileMenuOpen && (
@@ -315,13 +375,13 @@ export default function UserWorkspaceShell({ children }) {
           aria-label="Đóng menu"
           onClick={() => setMobileMenuOpen(false)}
         >
-          <X size={19} />
+          <X size={19} aria-hidden="true" />
         </button>
 
         <nav className="user-shell-nav" data-onboarding="patient-nav">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = path === item.path;
+            const isActive = isNavigationItemActive(item, path);
             const locked = isLocked(item.path);
             const content = (
               <>
@@ -365,7 +425,13 @@ export default function UserWorkspaceShell({ children }) {
             <span>MediMate+</span>
             <strong id="medimate-plan-title">Mở rộng quyền lợi sử dụng</strong>
             <p>Xem các quyền lợi và hạn mức MediMate+ hiện đang được cung cấp.</p>
-            <button type="button" onClick={() => goTo("/pricing")}>Xem gói MediMate+</button>
+            <button
+              type="button"
+              aria-label="Nâng cấp · Xem gói MediMate+"
+              onClick={() => goTo("/pricing")}
+            >
+              Nâng cấp
+            </button>
           </section>
         )}
       </aside>
@@ -381,9 +447,9 @@ export default function UserWorkspaceShell({ children }) {
               ref={mobileMenuButtonRef}
               onClick={() => setMobileMenuOpen(true)}
             >
-              <Menu size={19} />
+              <Menu size={19} aria-hidden="true" />
             </button>
-            <span className="title-icon"><ActiveIcon size={19} strokeWidth={2.2} /></span>
+            <span className="title-icon"><ActiveIcon size={19} strokeWidth={2.2} aria-hidden="true" /></span>
             <div>
               <p>Không gian cá nhân</p>
               <h1>{activeItem.label}</h1>
@@ -391,7 +457,7 @@ export default function UserWorkspaceShell({ children }) {
           </div>
 
           <form className="user-shell-search" role="search" onSubmit={handleSearch} data-onboarding="patient-search">
-            <Search size={17} />
+            <Search size={17} aria-hidden="true" />
             <label className="sr-only" htmlFor="workspace-search">Tìm cơ sở y tế</label>
             <input
               id="workspace-search"
@@ -417,7 +483,7 @@ export default function UserWorkspaceShell({ children }) {
                 onClick={() => setAccountMenuOpen((current) => !current)}
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+                  <img src={avatarUrl} alt="" width="32" height="32" referrerPolicy="no-referrer" />
                 ) : (
                   <span>{getInitials(displayName)}</span>
                 )}
@@ -432,7 +498,7 @@ export default function UserWorkspaceShell({ children }) {
                 >
                   <div className="account-menu-summary">
                     {avatarUrl ? (
-                      <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+                      <img src={avatarUrl} alt="" width="38" height="38" referrerPolicy="no-referrer" />
                     ) : (
                       <span>{getInitials(displayName)}</span>
                     )}
@@ -517,7 +583,7 @@ export default function UserWorkspaceShell({ children }) {
           restoreFocusRef={noticeTriggerRef}
           onClose={closeNotice}
         >
-            <span className="app-notice-icon"><Crown size={20} /></span>
+            <span className="app-notice-icon"><Crown size={20} aria-hidden="true" /></span>
             <div>
               <h2 id="app-notice-title">{notice.title}</h2>
               <p id="app-notice-description">{notice.text}</p>
@@ -534,12 +600,7 @@ export default function UserWorkspaceShell({ children }) {
           onComplete={handlePatientSetupComplete}
         />
       )}
-      <PatientOnboardingAssistant
-        auth={auth}
-        mobileBottomOffset={
-          path === "/chat" ? "170px" : path === "/records" ? "190px" : undefined
-        }
-      />
+      <PatientOnboardingAssistant auth={auth} />
     </div>
   );
 }

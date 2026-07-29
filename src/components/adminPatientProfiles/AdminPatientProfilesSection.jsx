@@ -185,7 +185,7 @@ export default function AdminPatientProfilesSection({
                   autoComplete="off"
                   value={search}
                   onChange={(event) => onSearchChange(event.target.value)}
-                  placeholder="ID người dùng, nhóm máu, dị ứng hoặc bệnh nền"
+                  placeholder="ID hoặc sức khỏe"
                 />
               </span>
             </label>

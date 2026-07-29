@@ -131,11 +131,22 @@
   padding-left: 18px;
 }
 
-.trust-nav > strong {
+.trust-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trust-nav-header > strong {
   color: var(--care-navy);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.trust-nav-cue {
+  display: none;
 }
 
 .trust-nav nav {
@@ -159,6 +170,7 @@
 
 .trust-main-content {
   min-width: 0;
+  max-width: 920px;
 }
 
 .trust-notice {
@@ -263,8 +275,8 @@
 .trust-steps p {
   margin: 8px 0 0;
   color: var(--care-muted);
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .trust-links {
@@ -348,15 +360,15 @@
 
 .trust-services dt {
   color: var(--care-navy);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .trust-services dd {
   margin: 0;
   color: var(--care-muted);
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .trust-bullets {
@@ -374,8 +386,8 @@
   background: #fff;
   padding: 15px 16px 15px 45px;
   color: var(--care-text);
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.65;
 }
 
 .trust-bullets li::before {
@@ -459,17 +471,31 @@ html[data-contrast="more"] .trust-notice {
     padding: 0 0 20px;
   }
 
+  .trust-nav-cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--care-muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
   .trust-nav nav {
     display: flex;
     overflow-x: auto;
     gap: 8px;
-    padding-bottom: 3px;
+    padding: 2px 2px 8px;
+    scrollbar-color: var(--care-teal) var(--care-mint);
+    scrollbar-width: thin;
   }
 
   .trust-nav a {
     flex: 0 0 auto;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
     border: 1px solid var(--care-line);
-    background: #fff;
+    background: var(--care-paper);
   }
 }
 
@@ -501,6 +527,18 @@ html[data-contrast="more"] .trust-notice {
 
   .trust-notice {
     grid-template-columns: 1fr;
+  }
+
+  .trust-card {
+    min-height: 0;
+  }
+
+  .trust-section {
+    padding-bottom: 42px;
+  }
+
+  .trust-section + .trust-section {
+    padding-top: 42px;
   }
 
   .trust-services > div {

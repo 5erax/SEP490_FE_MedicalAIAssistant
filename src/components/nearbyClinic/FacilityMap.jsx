@@ -31,30 +31,6 @@ function confidencePercent(value) {
   return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
 }
 
-function getDiagnosisField(diagnosis, camelKey, pascalKey, fallback = "") {
-  return diagnosis?.[camelKey] ?? diagnosis?.[pascalKey] ?? fallback;
-}
-
-function getDiagnosisName(diagnosis) {
-  return getDiagnosisField(diagnosis, "diseaseName", "DiseaseName", "Chưa xác định");
-}
-
-function getDiagnosisRank(diagnosis, index = 0) {
-  return Number(getDiagnosisField(diagnosis, "rank", "Rank", index + 1)) || index + 1;
-}
-
-function getDiagnosisIcd(diagnosis) {
-  return getDiagnosisField(diagnosis, "icd10Code", "Icd10Code", "");
-}
-
-function getDiagnosisReasoning(diagnosis) {
-  return getDiagnosisField(diagnosis, "clinicalReasoning", "ClinicalReasoning", "");
-}
-
-function getDiagnosisPAGivenB(diagnosis) {
-  return Number(getDiagnosisField(diagnosis, "paGivenB", "PAGivenB", 0)) || 0;
-}
-
 function unwrapData(response) {
   return response?.data ?? response?.Data ?? response;
 }
@@ -125,13 +101,14 @@ function getQuestionText(question, index = 0) {
     ?? `Câu hỏi ${index + 1}`;
 }
 
-function AccessibleFacilityMarker({ facility, selected, onSelect }) {
+function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect }) {
   return (
     <Marker
       longitude={facility.longitude}
       latitude={facility.latitude}
     >
       <button
+        ref={buttonRef}
         className={`clinic-marker ${selected ? "selected" : ""}`}
         type="button"
         aria-label={`Chọn ${facility.facilityName} trên bản đồ`}
@@ -144,14 +121,25 @@ function AccessibleFacilityMarker({ facility, selected, onSelect }) {
   );
 }
 
-function MapConsultationAssistant({ consultationFacility = null }) {
+function MapConsultationAssistant({
+  accessLocked = false,
+  clinicalMode = false,
+  consultationFacility = null,
+  onLogin,
+  recommendedDepartment = null,
+}) {
   const normalizedDepartments = useMemo(() => (
     getFacilityConsultationDepartments(consultationFacility)
   ), [consultationFacility]);
-  const initialDepartmentId = normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "";
-  const [open, setOpen] = useState(true);
+  const recommendedDepartmentId = String(recommendedDepartment?.departmentId ?? "").trim();
+  const matchedRecommendedDepartment = normalizedDepartments.find((department) => (
+    department.id === recommendedDepartmentId
+  ));
+  const initialDepartmentId = matchedRecommendedDepartment?.id
+    ?? (normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "");
+  const [open, setOpen] = useState(!clinicalMode);
   const [activeTab, setActiveTab] = useState("suggest");
-  const [selectedDepartmentId] = useState(initialDepartmentId);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
   const [symptoms, setSymptoms] = useState("");
   const [symptomMessages, setSymptomMessages] = useState([]);
   const [questions, setQuestions] = useState([]);
@@ -161,6 +149,9 @@ function MapConsultationAssistant({ consultationFacility = null }) {
   const [historyStatus, setHistoryStatus] = useState("idle");
   const [message, setMessage] = useState("");
   const threadRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const launcherRef = useRef(null);
+  const previousOpenRef = useRef(open);
 
   const canSubmit = Boolean(selectedDepartmentId && symptoms.trim() && status !== "loading");
 
@@ -169,9 +160,37 @@ function MapConsultationAssistant({ consultationFacility = null }) {
 
     threadRef.current.scrollTo({
       top: threadRef.current.scrollHeight,
-      behavior: "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     });
   }, [activeTab, message, open, questions.length, selectedDepartmentId, status, symptomMessages]);
+
+  useEffect(() => {
+    const wasOpen = previousOpenRef.current;
+    previousOpenRef.current = open;
+    if (!open || wasOpen) return undefined;
+
+    const focusId = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    return () => window.cancelAnimationFrame(focusId);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleEscape = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setOpen(false);
+      window.requestAnimationFrame(() => launcherRef.current?.focus());
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open]);
+
+  function closeAssistant() {
+    setOpen(false);
+    window.requestAnimationFrame(() => launcherRef.current?.focus());
+  }
 
   async function handleGenerate(event) {
     event.preventDefault();
@@ -234,15 +253,15 @@ function MapConsultationAssistant({ consultationFacility = null }) {
     }
   }
 
-  if (!consultationFacility) return null;
+  if (!consultationFacility && !clinicalMode) return null;
 
   return (
     <>
       {open && (
-        <aside className="map-ai-panel" aria-label="AI hỗ trợ trước khám">
+        <aside id="map-ai-panel" className="map-ai-panel" aria-label="AI hỗ trợ trước khám">
           <header className="map-ai-header">
             <div>
-              <span><Bot size={17} /></span>
+              <span><Bot size={17} aria-hidden="true" /></span>
               <div>
                 <strong>MediMate AI</strong>
                 <small>Hỗ trợ trước khi khám</small>
@@ -253,17 +272,33 @@ function MapConsultationAssistant({ consultationFacility = null }) {
                 type="button"
                 className={activeTab === "history" ? "active" : ""}
                 onClick={() => handleTabChange(activeTab === "history" ? "suggest" : "history")}
-                aria-label="Xem lịch sử gợi ý"
+                aria-label={activeTab === "history" ? "Quay lại gợi ý câu hỏi" : "Xem lịch sử gợi ý"}
               >
-                <Clock3 size={16} />
+                <Clock3 size={16} aria-hidden="true" />
               </button>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Đóng AI hỗ trợ"><X size={16} /></button>
+              <button ref={closeButtonRef} type="button" onClick={closeAssistant} aria-label="Đóng AI hỗ trợ"><X size={16} aria-hidden="true" /></button>
             </div>
           </header>
+          <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+            {status === "loading"
+              ? "Đang chuẩn bị câu hỏi."
+              : message || (questions.length ? `Đã chuẩn bị ${questions.length} câu hỏi.` : "")}
+          </p>
 
-          {activeTab === "suggest" ? (
+          {accessLocked ? (
+            <div className="map-ai-unavailable" role="status">
+              <strong>Đăng nhập để tiếp tục</strong>
+              <p>Kết quả gợi ý chỉ được hiển thị cho tài khoản đã tạo phiên.</p>
+              <button type="button" onClick={onLogin}>Đăng nhập</button>
+            </div>
+          ) : !consultationFacility ? (
+            <div className="map-ai-unavailable" role="status">
+              <strong>Chưa có cơ sở phù hợp</strong>
+              <p>AI hỗ trợ theo bệnh viện sẽ sẵn sàng khi hệ thống xác định được cơ sở và chuyên khoa hợp lệ.</p>
+            </div>
+          ) : activeTab === "suggest" ? (
             <form className="map-ai-chat" onSubmit={handleGenerate}>
-              <div className="map-ai-thread" ref={threadRef} aria-live="polite">
+              <div className="map-ai-thread" ref={threadRef}>
                 <article className="map-ai-message-bubble bot">
                   <span><Bot size={15} /></span>
                   <p><strong>Mình có thể giúp gì cho bạn hôm nay?</strong></p>
@@ -279,6 +314,26 @@ function MapConsultationAssistant({ consultationFacility = null }) {
                   <p>Mình sẽ chuẩn bị danh sách câu hỏi để bạn trao đổi với bác sĩ.</p>
                 </article>
 
+                {normalizedDepartments.length > 1 && (
+                  <label className="map-ai-department-field">
+                    <span>Chuyên khoa tại {consultationFacility.facilityName}</span>
+                    <select
+                      value={selectedDepartmentId}
+                      onChange={(event) => setSelectedDepartmentId(event.target.value)}
+                    >
+                      <option value="">Chọn chuyên khoa</option>
+                      {normalizedDepartments.map((department) => (
+                        <option key={department.id} value={department.id}>{department.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {normalizedDepartments.length === 1 && (
+                  <p className="map-ai-department-summary">
+                    Chuyên khoa: <strong>{normalizedDepartments[0].name}</strong>
+                  </p>
+                )}
+
                 {selectedDepartmentId && (
                   <>
                     {symptomMessages.map((symptomMessage, index) => (
@@ -290,7 +345,7 @@ function MapConsultationAssistant({ consultationFacility = null }) {
                       <article className="map-ai-message-bubble bot loading" role="status" aria-live="polite">
                         <span><Bot size={15} /></span>
                         <p>
-                          Đang phân tích triệu chứng
+                          Đang chuẩn bị câu hỏi
                           <i aria-hidden="true" />
                         </p>
                       </article>
@@ -326,6 +381,7 @@ function MapConsultationAssistant({ consultationFacility = null }) {
                   <label className="map-ai-composer-field">
                     <span>Triệu chứng</span>
                     <input
+                      name="symptoms"
                       aria-label="Triệu chứng của bạn"
                       value={symptoms}
                       onChange={(event) => setSymptoms(event.target.value)}
@@ -392,11 +448,19 @@ function MapConsultationAssistant({ consultationFacility = null }) {
 
       {!open && <span className="map-ai-hint">AI hỗ trợ trước khám</span>}
       <button
+        ref={launcherRef}
         className="map-ai-launcher"
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          if (open) {
+            closeAssistant();
+          } else {
+            setOpen(true);
+          }
+        }}
         aria-label={open ? "Thu gọn AI hỗ trợ trước khám" : "Mở AI hỗ trợ trước khám"}
         aria-expanded={open}
+        aria-controls="map-ai-panel"
       >
         <span className="map-ai-bot-icon">AI</span>
       </button>
@@ -405,8 +469,13 @@ function MapConsultationAssistant({ consultationFacility = null }) {
 }
 
 export default function FacilityMap({
+  assistantAccessLocked = false,
   chatContext,
+  clinicalNotice = "",
+  clinicalStatus = "idle",
   consultationFacility = null,
+  isClinicalFlow = false,
+  onAssistantLogin,
   showConsultationAssistant = true,
   facilities,
   hidePopup = false,
@@ -427,32 +496,21 @@ export default function FacilityMap({
   onViewDetail,
 }) {
   const popupActionRef = useRef(null);
-  const primaryDiagnosis = recommendationContext?.primaryDiagnosis;
+  const markerRefs = useRef(new globalThis.Map());
   const recommendedDepartment = recommendationContext?.recommendedDepartment;
-  const diagnoses = Array.isArray(recommendationContext?.diagnoses)
-    ? recommendationContext.diagnoses
-    : [];
-  const diagnosisRows = diagnoses
-    .map((diagnosis, index) => ({
-      rank: getDiagnosisRank(diagnosis, index),
-      name: getDiagnosisName(diagnosis),
-      icd10Code: getDiagnosisIcd(diagnosis),
-      paGivenB: getDiagnosisPAGivenB(diagnosis),
-      probability: confidencePercent(getDiagnosisPAGivenB(diagnosis)),
-    }))
-    .sort((left, right) => left.rank - right.rank);
-  const recommendedFacility = Array.isArray(recommendationContext?.recommendedFacilities)
-    ? recommendationContext.recommendedFacilities.find((facility) => (
-      String(facility.facilityId ?? facility.id) === String(selectedFacility?.facilityId)
-    ))
-    : null;
-  const confidence = confidencePercent(getDiagnosisPAGivenB(primaryDiagnosis) || recommendedDepartment?.confidenceScore);
+  const confidence = confidencePercent(recommendedDepartment?.confidenceScore);
 
   useEffect(() => {
     if (!selectedFacility?.hasValidCoordinates) return undefined;
     const focusId = window.setTimeout(() => popupActionRef.current?.focus(), 0);
     return () => window.clearTimeout(focusId);
   }, [selectedFacility?.facilityId, selectedFacility?.hasValidCoordinates]);
+
+  function closePopup() {
+    const facilityId = selectedFacility?.facilityId;
+    onSelect(null);
+    window.requestAnimationFrame(() => markerRefs.current.get(facilityId)?.focus());
+  }
 
   return (
     <section className="map-panel" aria-labelledby="interactive-map-title" aria-describedby="interactive-map-description">
@@ -465,6 +523,52 @@ export default function FacilityMap({
           <strong>Gợi ý chuyên khoa qua triệu chứng</strong>
           <p>{chatContext.symptom}</p>
           <span>{chatContext.answer}</span>
+        </aside>
+      )}
+      {isClinicalFlow && (
+        <aside className="map-clinical-summary" aria-label="Kết quả gợi ý chuyên khoa" aria-live="polite">
+          {clinicalStatus === "loading" && (
+            <div className="map-clinical-summary-state" role="status">
+              <span className="map-loading-spinner" aria-hidden="true" />
+              <strong>Đang khôi phục gợi ý chuyên khoa…</strong>
+            </div>
+          )}
+          {clinicalStatus !== "loading" && clinicalStatus !== "ready" && clinicalNotice && (
+            <div className="map-clinical-summary-state">
+              <strong>Chưa thể hiển thị gợi ý chuyên khoa</strong>
+              <p>{clinicalNotice}</p>
+            </div>
+          )}
+          {clinicalStatus === "ready" && (
+            <>
+              <header>
+                <small>Chuyên khoa được gợi ý</small>
+                <strong>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</strong>
+              </header>
+              <div className="map-clinical-summary-body">
+                {selectedFacility && (
+                  <div>
+                    <small>Cơ sở được đề xuất</small>
+                    <strong>{selectedFacility.facilityName}</strong>
+                    <span>{selectedFacility.address}</span>
+                  </div>
+                )}
+                {Number.isFinite(confidence) && confidence > 0 && (
+                  <span className="map-clinical-confidence">{confidence}% phù hợp</span>
+                )}
+              </div>
+              {clinicalNotice && <p className="map-clinical-availability" role="status">{clinicalNotice}</p>}
+              {recommendedDepartment?.isEmergencySuggested && (
+                <p className="map-clinical-urgent">Hệ thống ghi nhận dấu hiệu cần được ưu tiên đánh giá y tế.</p>
+              )}
+              <p className="map-clinical-disclaimer">
+                Gợi ý giúp định hướng nơi khám. Cơ sở y tế sẽ xác nhận chuyên khoa phù hợp sau khi đánh giá trực tiếp.
+              </p>
+              {selectedFacility && (
+                <button type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
+              )}
+            </>
+          )}
         </aside>
       )}
 
@@ -488,6 +592,10 @@ export default function FacilityMap({
             {facilities.map((facility) => (
               <AccessibleFacilityMarker
                 key={facility.facilityId}
+                buttonRef={(node) => {
+                  if (node) markerRefs.current.set(facility.facilityId, node);
+                  else markerRefs.current.delete(facility.facilityId);
+                }}
                 facility={facility}
                 selected={selectedFacility?.facilityId === facility.facilityId}
                 onSelect={onSelect}
@@ -497,7 +605,7 @@ export default function FacilityMap({
               <Popup
                 longitude={selectedFacility.longitude}
                 latitude={selectedFacility.latitude}
-                onClose={() => onSelect(null)}
+                onClose={closePopup}
                 closeOnClick={false}
                 offset={28}
                 className="clinic-popup"
@@ -507,49 +615,21 @@ export default function FacilityMap({
                   role="dialog"
                   aria-label={`Thông tin ${selectedFacility.facilityName}`}
                   onKeyDown={(event) => {
-                    if (event.key === "Escape") onSelect(null);
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      closePopup();
+                    }
                   }}
                 >
                   <strong>{selectedFacility.facilityName}</strong>
                   <span>{selectedFacility.address}</span>
                   {recommendationContext && (
                     <div className="popup-ai-summary">
-                      <small>Chẩn đoán lâm sàng</small>
-                      {primaryDiagnosis && <b>{getDiagnosisName(primaryDiagnosis)}</b>}
-                      {Number.isFinite(confidence) && confidence > 0 && <em>{confidence}% phù hợp</em>}
-                      {getDiagnosisReasoning(primaryDiagnosis) && <p>{getDiagnosisReasoning(primaryDiagnosis)}</p>}
-                      {diagnosisRows.length > 0 && (
-                        <>
-                          <div className="popup-diagnosis-chart">
-                            {diagnosisRows.slice(0, 4).map((row) => (
-                              <div key={`${row.rank}-${row.name}`}>
-                                <span>#{row.rank}</span>
-                                <strong>{row.name}</strong>
-                                <i style={{ width: `${row.probability}%` }} />
-                                <em>{row.probability}%</em>
-                              </div>
-                            ))}
-                          </div>
-                          <table className="popup-diagnosis-table">
-                            <caption className="sr-only">Xác suất các chẩn đoán lâm sàng</caption>
-                            <thead>
-                              <tr>
-                                <th scope="col">Bệnh</th>
-                                <th scope="col">PAGivenB</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {diagnosisRows.slice(0, 4).map((row) => (
-                                <tr key={`${row.rank}-${row.name}-popup-table`}>
-                                  <td>{row.name}</td>
-                                  <td>{row.paGivenB.toFixed(4)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </>
+                      <small>Chuyên khoa được gợi ý</small>
+                      {recommendedDepartment?.departmentName && (
+                        <b>{recommendedDepartment.departmentName}</b>
                       )}
-                      {recommendedFacility?.reason && <p>{recommendedFacility.reason}</p>}
+                      {Number.isFinite(confidence) && confidence > 0 && <em>{confidence}% phù hợp</em>}
                     </div>
                   )}
                   <span>{selectedFacility.phoneLabel}</span>
@@ -587,8 +667,15 @@ export default function FacilityMap({
       )}
       {showConsultationAssistant && (
         <MapConsultationAssistant
-          key={consultationFacility?.facilityId || "map-consultation"}
+          key={[
+            consultationFacility?.facilityId || "map-consultation",
+            recommendedDepartment?.departmentId || "no-recommendation",
+          ].join(":")}
+          accessLocked={assistantAccessLocked}
+          clinicalMode={isClinicalFlow}
           consultationFacility={consultationFacility}
+          onLogin={onAssistantLogin}
+          recommendedDepartment={recommendedDepartment}
         />
       )}
       {locationError && <div className="location-error">{locationError}</div>}

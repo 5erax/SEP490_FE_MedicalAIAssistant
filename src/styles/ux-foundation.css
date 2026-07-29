@@ -1,5 +1,5 @@
 *:focus-visible {
-  outline: 3px solid rgba(8, 127, 140, 0.44);
+  outline: 3px solid var(--color-info-strong);
   outline-offset: 3px;
 }
 
@@ -126,6 +126,20 @@ textarea:disabled {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  *:focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    border-color: ButtonBorder;
   }
 }
 

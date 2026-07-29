@@ -459,18 +459,46 @@
 
 .admin-operator button:focus-visible,
 .admin-operator a:focus-visible,
-.admin-operator input:focus,
-.admin-operator select:focus,
-.admin-operator textarea:focus {
-  outline: none;
+.admin-operator input:focus-visible,
+.admin-operator select:focus-visible,
+.admin-operator textarea:focus-visible {
+  outline: 3px solid var(--admin-accent-strong);
+  outline-offset: 2px;
   border-color: var(--admin-accent);
   box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.14);
+}
+
+.admin-operator :is(button, .ui-button, .btn) {
+  min-height: 44px;
+}
+
+.admin-operator :is(input, textarea)::placeholder,
+.doctor-form-modal :is(input, textarea)::placeholder,
+.ai-config-modal :is(input, textarea)::placeholder,
+.clinical-question-modal :is(input, textarea)::placeholder {
+  color: #53625d;
+  opacity: 1;
 }
 
 .admin-operator .ui-badge-success,
 .admin-operator .status-pill.success {
   background: var(--admin-primary-soft);
   color: var(--admin-accent-strong);
+}
+
+@media (forced-colors: active) {
+  .admin-operator :is(button, a[href], input, select, textarea, [tabindex]):focus-visible,
+  .doctor-form-modal :is(button, a[href], input, select, textarea, [tabindex]):focus-visible,
+  .ai-config-modal :is(button, a[href], input, select, textarea, [tabindex]):focus-visible,
+  .clinical-question-modal :is(button, a[href], input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+    box-shadow: none;
+  }
+
+  .admin-operator :is(.ui-badge, .status-pill, [class*="status"]) {
+    border: 1px solid CanvasText;
+  }
 }
 
 .admin-operator .clinical-catalog-heading-actions .clinical-catalog-create,

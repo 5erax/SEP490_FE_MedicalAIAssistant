@@ -1,6 +1,6 @@
 import { BookOpen, Filter, Hash, Pencil, Plus, RefreshCw, RotateCcw, Search, Stethoscope, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CustomSelect, Dialog, EmptyState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import { CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 function Field({ label, children, className = "", help, required = false }) {
   return (
@@ -19,6 +19,7 @@ export default function AdminDepartmentsSection({
   allDepartmentsCount,
   departments,
   editingDepartmentId,
+  error,
   filters,
   form,
   loading,
@@ -122,7 +123,7 @@ export default function AdminDepartmentsSection({
                   autoComplete="off"
                   value={filters.search}
                   onChange={(event) => onFilterChange("search", event.target.value)}
-                  placeholder="Tên chuyên khoa, mô tả hoặc mã ICD"
+                  placeholder="Tên hoặc mã ICD"
                 />
               </span>
             </label>
@@ -151,7 +152,7 @@ export default function AdminDepartmentsSection({
         </form>
       </section>
 
-      {!loading && (
+      {!loading && !error && (
         <div className="department-result-summary" role="status" aria-live="polite">
           <BookOpen size={18} aria-hidden="true" />
           <p>
@@ -166,6 +167,17 @@ export default function AdminDepartmentsSection({
           <LoadingState
             label="Đang tải danh mục chuyên khoa..."
             description="Dữ liệu chuyên khoa và mã chương ICD đang được đồng bộ."
+          />
+        ) : error ? (
+          <ErrorState
+            title="Không thể tải danh mục chuyên khoa"
+            description={error}
+            urgent
+            action={(
+              <button className="btn btn-primary btn-small" type="button" onClick={onReload}>
+                <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
+              </button>
+            )}
           />
         ) : (
           <div className="department-card-list" role="list" aria-label="Danh mục chuyên khoa">
@@ -223,7 +235,7 @@ export default function AdminDepartmentsSection({
         )}
       </div>
 
-      {!loading && (
+      {!loading && !error && (
         <nav className="pagination-row department-pagination" aria-label="Phân trang chuyên khoa">
           <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => onLoadPage(Math.max(1, pageInfo.pageNumber - 1))}>
             Trước

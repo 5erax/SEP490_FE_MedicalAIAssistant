@@ -143,71 +143,73 @@ function PaymentDetailDialog({ paymentId, summary, onClose, restoreFocusRef }) {
         {loading ? "Đang tải chi tiết giao dịch..." : error || "Chi tiết giao dịch đã tải xong."}
       </div>
 
-      {loading ? (
-        <div className="payment-history-state">
-          <RefreshCw className="payment-history-spinner" size={28} aria-hidden="true" />
-          <strong>Đang tải chi tiết</strong>
-        </div>
-      ) : error ? (
-        <div className="payment-history-state payment-history-error">
-          <strong>Không tải được chi tiết</strong>
-          <p>{error}</p>
-          <button
-            type="button"
-            onClick={() => {
-              setLoading(true);
-              setError("");
-              setReloadKey((current) => current + 1);
-            }}
-          >
-            <RefreshCw size={17} aria-hidden="true" />
-            Thử lại
-          </button>
-        </div>
-      ) : payment ? (
-        <dl className="payment-detail-grid">
-          <div className="payment-detail-wide">
-            <dt>Mã thanh toán</dt>
-            <dd>{payment.id || "—"}</dd>
+      <div className="payment-detail-content">
+        {loading ? (
+          <div className="payment-history-state">
+            <RefreshCw className="payment-history-spinner" size={28} aria-hidden="true" />
+            <strong>Đang tải chi tiết</strong>
           </div>
-          <div>
-            <dt>Gói dịch vụ</dt>
-            <dd>{payment.planName || "—"}</dd>
+        ) : error ? (
+          <div className="payment-history-state payment-history-error">
+            <strong>Không tải được chi tiết</strong>
+            <p>{error}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setLoading(true);
+                setError("");
+                setReloadKey((current) => current + 1);
+              }}
+            >
+              <RefreshCw size={17} aria-hidden="true" />
+              Thử lại
+            </button>
           </div>
-          <div>
-            <dt>Trạng thái</dt>
-            <dd><PaymentStatusBadge payment={payment} /></dd>
-          </div>
-          <div>
-            <dt>Số tiền</dt>
-            <dd>{formatMoney(payment.amount, payment.currency)}</dd>
-          </div>
-          <div>
-            <dt>Tiền tệ</dt>
-            <dd>{payment.currency || "VND"}</dd>
-          </div>
-          <div>
-            <dt>Cổng thanh toán</dt>
-            <dd>{payment.provider || "—"}</dd>
-          </div>
-          <div>
-            <dt>Mã giao dịch</dt>
-            <dd>{payment.transactionReference || "—"}</dd>
-          </div>
-          <div>
-            <dt>Ngày tạo</dt>
-            <dd><time dateTime={payment.createdAt || undefined}>{formatDateTime(payment.createdAt)}</time></dd>
-          </div>
-          <div>
-            <dt>Ngày thanh toán</dt>
-            <dd><time dateTime={payment.paidAt || undefined}>{formatDateTime(payment.paidAt)}</time></dd>
-          </div>
-          <div>
-            <dt>Cập nhật lần cuối</dt>
-            <dd><time dateTime={payment.updatedAt || undefined}>{formatDateTime(payment.updatedAt)}</time></dd>
-          </div>
-        </dl>
-      ) : null}
+        ) : payment ? (
+          <dl className="payment-detail-grid">
+            <div className="payment-detail-wide">
+              <dt>Mã thanh toán</dt>
+              <dd>{payment.id || "—"}</dd>
+            </div>
+            <div>
+              <dt>Gói dịch vụ</dt>
+              <dd>{payment.planName || "—"}</dd>
+            </div>
+            <div>
+              <dt>Trạng thái</dt>
+              <dd><PaymentStatusBadge payment={payment} /></dd>
+            </div>
+            <div>
+              <dt>Số tiền</dt>
+              <dd>{formatMoney(payment.amount, payment.currency)}</dd>
+            </div>
+            <div>
+              <dt>Tiền tệ</dt>
+              <dd>{payment.currency || "VND"}</dd>
+            </div>
+            <div>
+              <dt>Cổng thanh toán</dt>
+              <dd>{payment.provider || "—"}</dd>
+            </div>
+            <div>
+              <dt>Mã giao dịch</dt>
+              <dd>{payment.transactionReference || "—"}</dd>
+            </div>
+            <div>
+              <dt>Ngày tạo</dt>
+              <dd><time dateTime={payment.createdAt || undefined}>{formatDateTime(payment.createdAt)}</time></dd>
+            </div>
+            <div>
+              <dt>Ngày thanh toán</dt>
+              <dd><time dateTime={payment.paidAt || undefined}>{formatDateTime(payment.paidAt)}</time></dd>
+            </div>
+            <div>
+              <dt>Cập nhật lần cuối</dt>
+              <dd><time dateTime={payment.updatedAt || undefined}>{formatDateTime(payment.updatedAt)}</time></dd>
+            </div>
+          </dl>
+        ) : null}
+      </div>
     </Dialog>
   );
 }
@@ -276,7 +278,7 @@ export default function PaymentHistoryPanel() {
     <section
       id="profile-panel-transactions"
       role="tabpanel"
-      aria-labelledby="profile-tab-transactions"
+      aria-label="Lịch sử thanh toán"
       className="profile-card payment-history"
       aria-busy={loading}
     >
@@ -341,7 +343,7 @@ export default function PaymentHistoryPanel() {
                 </th>
                 <td data-label="Trạng thái"><PaymentStatusBadge payment={payment} /></td>
                 <td data-label="Số tiền">{formatMoney(payment.amount, payment.currency)}</td>
-                <td data-label="Thanh toán">
+                <td className="payment-history-secondary" data-label="Thanh toán">
                   <strong>{payment.provider || "—"}</strong>
                   <small>{payment.transactionReference || "Chưa có mã giao dịch"}</small>
                 </td>

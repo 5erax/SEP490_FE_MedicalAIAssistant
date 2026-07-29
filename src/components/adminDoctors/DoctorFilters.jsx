@@ -1,4 +1,5 @@
 import { Filter, ListFilter, RotateCcw, Search, Stethoscope, UsersRound } from "lucide-react";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { Button, CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 
 export default function DoctorFilters({
@@ -33,18 +34,27 @@ export default function DoctorFilters({
     { value: "true", label: "Đang hoạt động" },
     { value: "false", label: "Tạm ẩn" },
   ];
+  const activeFilterCount = [
+    filters.search,
+    filters.departmentId,
+    filters.facilityId,
+    filters.isActive,
+  ].filter(Boolean).length;
 
   return (
-    <section className="doctor-filter-card" aria-labelledby="doctor-filter-title">
-      <div className="doctor-filter-card-header">
-        <span aria-hidden="true"><ListFilter size={19} /></span>
-        <div>
-          <h3 id="doctor-filter-title">Tìm và lọc hồ sơ bác sĩ</h3>
-          <p>Thu hẹp danh sách theo chuyên khoa, bệnh viện hoặc trạng thái hiển thị.</p>
-        </div>
+    <AdminFilterDisclosure
+      className="doctor-filter-card"
+      description="Thu hẹp danh sách theo chuyên khoa, bệnh viện hoặc trạng thái hiển thị."
+      headingClassName="doctor-filter-card-header"
+      icon={<ListFilter size={19} />}
+      summary={`${activeFilterCount} bộ lọc · ${totalCount} hồ sơ`}
+      title="Tìm và lọc hồ sơ bác sĩ"
+      titleId="doctor-filter-title"
+    >
+      <div className="doctor-filter-primary-action">
         <Button className="doctor-add-button" type="button" onClick={onCreate}>
           <Stethoscope size={15} aria-hidden="true" />
-          Thêm bác sĩ
+          Tạo hồ sơ bác sĩ
         </Button>
       </div>
 
@@ -119,6 +129,6 @@ export default function DoctorFilters({
           </div>
         </div>
       </form>
-    </section>
+    </AdminFilterDisclosure>
   );
 }

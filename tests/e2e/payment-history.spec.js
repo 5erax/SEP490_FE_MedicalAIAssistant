@@ -185,11 +185,25 @@ test("patient views paged payment history and owned payment detail", async ({ pa
   await expect(dialog).toHaveCount(0);
   await expect(detailButton).toBeFocused();
 
+  await page.setViewportSize({ width: 390, height: 844 });
+  await detailButton.click();
+  await expect(dialog).toBeVisible();
+  const mobileDialogLayout = await dialog.evaluate((element) => {
+    const content = element.querySelector(".payment-detail-content");
+    return {
+      dialogHeight: element.getBoundingClientRect().height,
+      contentOverflowY: content ? getComputedStyle(content).overflowY : "",
+    };
+  });
+  expect(mobileDialogLayout.dialogHeight).toBeLessThanOrEqual(844);
+  expect(mobileDialogLayout.contentOverflowY).toBe("auto");
+  await page.keyboard.press("Escape");
+
   await page.getByRole("button", { name: "Trang sau" }).click();
   await expect(page.getByText("MediMate+ Năm", { exact: true })).toBeVisible();
   await expect(page.getByText("Đang chờ", { exact: true })).toBeVisible();
+  await expect(page.locator('[data-label="Thanh toán"]')).toBeHidden();
 
-  await page.setViewportSize({ width: 390, height: 844 });
   const viewportWidth = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,

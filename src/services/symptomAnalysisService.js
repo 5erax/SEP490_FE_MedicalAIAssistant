@@ -7,6 +7,8 @@ const FALLBACK_ANSWER_OPTIONS = [
 ];
 
 const BOOLEAN_CHOICE_PREFIX = "__medimate_boolean_choice__";
+const CLINICAL_MAP_CACHE_KEY = "medimate.clinical-map.recommendation";
+const clinicalAnalysisCache = new Map();
 
 const CLINICAL_TRANSLATIONS = new Map([
   [
@@ -50,6 +52,160 @@ const CLINICAL_PHRASES = [
 
 function normalizeText(value) {
   return String(value ?? "").trim().replace(/\s+/g, " ");
+}
+
+function normalizeCoordinate(value) {
+  if (value === null || value === undefined || value === "") return null;
+
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : null;
+}
+
+function createDepartmentSnapshot(department) {
+  if (!isPlainObject(department)) return null;
+
+  const departmentId = normalizeText(
+    department.departmentId ?? department.DepartmentId ?? department.id,
+  );
+  const departmentName = normalizeText(
+    department.departmentName ?? department.DepartmentName ?? department.name,
+  );
+  if (!departmentId && !departmentName) return null;
+
+  return {
+    confidenceScore: Number(
+      department.confidenceScore ?? department.ConfidenceScore ?? 0,
+    ) || 0,
+    departmentId,
+    departmentName,
+    icdChapterCode: normalizeText(
+      department.icdChapterCode ?? department.IcdChapterCode,
+    ),
+    isEmergencySuggested: (
+      department.isEmergencySuggested ?? department.IsEmergencySuggested
+    ) === true,
+    priorityRank: Number(department.priorityRank ?? department.PriorityRank ?? 0) || 0,
+    reason: normalizeText(department.reason ?? department.Reason),
+  };
+}
+
+function createFacilitySnapshot(facility) {
+  if (!isPlainObject(facility)) return null;
+
+  const facilityId = normalizeText(
+    facility.facilityId
+    ?? facility.FacilityId
+    ?? facility.medicalFacilityId
+    ?? facility.id,
+  );
+  if (!facilityId) return null;
+
+  const departmentItems = facility.departments ?? facility.Departments;
+  const departments = (Array.isArray(departmentItems) ? departmentItems : [])
+    .map(createDepartmentSnapshot)
+    .filter(Boolean);
+
+  return {
+    address: normalizeText(facility.address ?? facility.Address),
+    departments,
+    facilityId,
+    facilityName: normalizeText(
+      facility.facilityName ?? facility.FacilityName ?? facility.name,
+    ),
+    facilityType: normalizeText(facility.facilityType ?? facility.FacilityType),
+    imageUrl: normalizeText(facility.imageUrl ?? facility.ImageUrl),
+    isActive: (facility.isActive ?? facility.IsActive) !== false,
+    latitude: normalizeCoordinate(facility.latitude ?? facility.Latitude),
+    longitude: normalizeCoordinate(facility.longitude ?? facility.Longitude),
+    openingHours: normalizeText(facility.openingHours ?? facility.OpeningHours),
+    phone: normalizeText(facility.phone ?? facility.Phone),
+    website: normalizeText(facility.website ?? facility.Website),
+  };
+}
+
+function createClinicalMapSnapshot(analysis, fallbackSessionId) {
+  if (!isPlainObject(analysis)) return null;
+
+  const facilityItems = analysis.recommendedFacilities ?? analysis.RecommendedFacilities;
+  const recommendedFacilities = (
+    Array.isArray(facilityItems) ? facilityItems : []
+  )
+    .map(createFacilitySnapshot)
+    .filter(Boolean);
+  const recommendedDepartment = createDepartmentSnapshot(
+    analysis.recommendedDepartment ?? analysis.RecommendedDepartment,
+  )
+    ?? recommendedFacilities[0]?.departments?.[0]
+    ?? null;
+
+  if (!recommendedDepartment && recommendedFacilities.length === 0) {
+    return null;
+  }
+
+  return {
+    recommendedDepartment,
+    recommendedFacilities,
+    sessionId: normalizeText(analysis.sessionId ?? analysis.SessionId ?? fallbackSessionId),
+  };
+}
+
+function createStoredClinicalMapSnapshot(snapshot) {
+  return {
+    sessionId: snapshot.sessionId,
+    recommendedDepartment: snapshot.recommendedDepartment,
+    recommendedFacilities: snapshot.recommendedFacilities.map((facility) => ({
+      ...facility,
+      departments: facility.departments.map((department) => ({
+        departmentId: department.departmentId,
+        departmentName: department.departmentName,
+      })),
+    })),
+  };
+}
+
+function clearStoredClinicalMapSnapshot() {
+  if (typeof sessionStorage === "undefined") return;
+
+  try {
+    sessionStorage.removeItem(CLINICAL_MAP_CACHE_KEY);
+  } catch {
+    // The in-memory cache still supports the current SPA navigation.
+  }
+}
+
+function storeClinicalMapSnapshot(snapshot) {
+  if (typeof sessionStorage === "undefined") return;
+
+  try {
+    sessionStorage.setItem(
+      CLINICAL_MAP_CACHE_KEY,
+      JSON.stringify(createStoredClinicalMapSnapshot(snapshot)),
+    );
+  } catch {
+    // The in-memory cache still supports the current SPA navigation.
+  }
+}
+
+function readStoredClinicalMapSnapshot(sessionId) {
+  if (typeof sessionStorage === "undefined") {
+    return { available: false, snapshot: null };
+  }
+
+  try {
+    const raw = sessionStorage.getItem(CLINICAL_MAP_CACHE_KEY);
+    if (!raw) return { available: true, snapshot: null };
+
+    const parsed = JSON.parse(raw);
+    const snapshot = createClinicalMapSnapshot(parsed, parsed?.sessionId);
+    if (!snapshot || snapshot.sessionId !== sessionId) {
+      return { available: true, snapshot: null };
+    }
+
+    return { available: true, snapshot };
+  } catch {
+    clearStoredClinicalMapSnapshot();
+    return { available: true, snapshot: null };
+  }
 }
 
 function normalizeLookup(value) {
@@ -460,8 +616,8 @@ export const symptomAnalysisApi = {
     });
   },
 
-  submitClinicalQuestionAnswers(sessionId, answers) {
-    return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_CLINICAL_QUESTION_ANSWERS, {
+  async submitClinicalQuestionAnswers(sessionId, answers) {
+    const response = await apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_CLINICAL_QUESTION_ANSWERS, {
       method: "POST",
       body: {
         sessionId,
@@ -469,6 +625,41 @@ export const symptomAnalysisApi = {
       },
       auth: true,
     });
+    const data = unwrapApiData(response) ?? {};
+    const resolvedSessionId = String(data.sessionId ?? sessionId ?? "").trim();
+    const analysis = createClinicalMapSnapshot(
+      data.analysis ?? data.result ?? null,
+      resolvedSessionId,
+    );
+
+    clinicalAnalysisCache.clear();
+    clearStoredClinicalMapSnapshot();
+    if (resolvedSessionId && analysis) {
+      clinicalAnalysisCache.set(resolvedSessionId, analysis);
+      storeClinicalMapSnapshot(analysis);
+    }
+
+    return response;
+  },
+
+  getCachedClinicalAnalysis(sessionId) {
+    const resolvedSessionId = String(sessionId ?? "").trim();
+    const inMemorySnapshot = clinicalAnalysisCache.get(resolvedSessionId);
+    if (inMemorySnapshot) return inMemorySnapshot;
+
+    const stored = readStoredClinicalMapSnapshot(resolvedSessionId);
+
+    if (stored.available && !stored.snapshot) {
+      clinicalAnalysisCache.clear();
+      return null;
+    }
+
+    return stored.snapshot ?? null;
+  },
+
+  clearCachedClinicalAnalysis() {
+    clinicalAnalysisCache.clear();
+    clearStoredClinicalMapSnapshot();
   },
 
   submitDiagnosis(sessionId, answers) {

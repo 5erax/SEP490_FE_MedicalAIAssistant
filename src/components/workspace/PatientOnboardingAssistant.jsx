@@ -89,7 +89,7 @@ function getTargetRect(selector) {
   };
 }
 
-export default function PatientOnboardingAssistant({ auth, mobileBottomOffset }) {
+export default function PatientOnboardingAssistant({ auth }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(() => shouldAutoOpen(auth));
   const [stepIndex, setStepIndex] = useState(0);
@@ -193,7 +193,6 @@ export default function PatientOnboardingAssistant({ auth, mobileBottomOffset })
       <div
         className="patient-help-launcher"
         data-onboarding="patient-help"
-        style={mobileBottomOffset ? { "--patient-help-mobile-bottom": mobileBottomOffset } : undefined}
       >
         {menuOpen && !tourOpen && (
           <section className="patient-help-menu" aria-label="Hướng dẫn sử dụng">

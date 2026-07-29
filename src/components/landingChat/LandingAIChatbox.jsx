@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useOverlayFocus } from "../ui";
 import { sendLandingChatMessage } from "../../services/landingChat";
 import { useChatAutoScroll } from "../../utils/useChatAutoScroll";
 import ChatInput from "./ChatInput";
@@ -12,7 +13,7 @@ const WELCOME_MESSAGE = {
 
 function TypingDots() {
   return (
-    <div className="landing-chat-typing">
+    <div className="landing-chat-typing" aria-hidden="true">
       <span />
       <span />
       <span />
@@ -26,9 +27,35 @@ export default function LandingAIChatbox() {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [loading, setLoading] = useState(false);
   const [suppressLauncher, setSuppressLauncher] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const chatboxRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const launcherButtonRef = useRef(null);
+  const mainContentRef = useRef(null);
+  const navigationRef = useRef(null);
+  const footerRef = useRef(null);
+  const inertRefs = useMemo(
+    () => [mainContentRef, navigationRef, footerRef],
+    [],
+  );
   const { containerRef, endRef, handleScroll } = useChatAutoScroll(`${messages.length}-${loading}-${open}`);
 
   const hasUserMessage = useMemo(() => messages.some((message) => message.from === "user"), [messages]);
+
+  useEffect(() => {
+    mainContentRef.current = document.querySelector("main");
+    navigationRef.current = document.querySelector(".nav");
+    footerRef.current = document.querySelector("footer");
+  }, []);
+
+  useOverlayFocus({
+    active: open,
+    containerRef: chatboxRef,
+    initialFocusRef: closeButtonRef,
+    restoreFocusRef: launcherButtonRef,
+    inertRefs,
+    onClose: () => setOpen(false),
+  });
 
   useEffect(() => {
     const hero = document.querySelector(".care-hero");
@@ -62,6 +89,7 @@ export default function LandingAIChatbox() {
     setMessages((current) => [...current, { from: "user", text: nextText }]);
     setDraft("");
     setLoading(true);
+    setAnnouncement("MediMate đang chuẩn bị phản hồi.");
 
     try {
       const response = await sendLandingChatMessage(nextText);
@@ -70,11 +98,13 @@ export default function LandingAIChatbox() {
         : "";
 
       setMessages((current) => [...current, { from: "assistant", text: `${response.answer}${loginHint}` }]);
+      setAnnouncement("MediMate đã gửi phản hồi mới.");
     } catch {
       setMessages((current) => [...current, {
         from: "assistant",
         text: "Dịch vụ AI chưa phản hồi. Vui lòng thử lại sau.",
       }]);
+      setAnnouncement("Dịch vụ AI chưa phản hồi. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -87,7 +117,17 @@ export default function LandingAIChatbox() {
 
   return (
     <>
-      {open && <div className="landing-ai-chatbox open" role="dialog" aria-label="Trợ lý MediMate AI">
+      <div className="sr-only landing-chat-status" role="status" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </div>
+
+      {open && <div
+        ref={chatboxRef}
+        className="landing-ai-chatbox open"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Trợ lý MediMate AI"
+      >
         <header className="landing-chat-header">
           <div>
             <a className="brand" href="/">
@@ -96,11 +136,24 @@ export default function LandingAIChatbox() {
             </a>
             <small>Thông tin tham khảo • Không thay thế bác sĩ</small>
           </div>
-          <button type="button" onClick={() => setOpen(false)} aria-label="Đóng trợ lý AI">×</button>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Đóng trợ lý AI"
+          >
+            ×
+          </button>
         </header>
 
         <div className="landing-chat-body">
-          <div className="landing-chat-messages" ref={containerRef} onScroll={handleScroll} aria-live="polite">
+          <div
+            className="landing-chat-messages"
+            ref={containerRef}
+            onScroll={handleScroll}
+            role="region"
+            aria-label="Hội thoại với MediMate"
+          >
             {messages.map((message, index) => (
               <ChatMessage key={`${message.from}-${index}`} message={message} />
             ))}
@@ -119,6 +172,7 @@ export default function LandingAIChatbox() {
       </div>}
 
       <FloatingChatButton
+        buttonRef={launcherButtonRef}
         open={open}
         suppressed={suppressLauncher && !open}
         onClick={() => setOpen((current) => !current)}

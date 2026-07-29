@@ -14,7 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CustomSelect, Dialog, EmptyState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import { CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 const DEFAULT_FILTERS = {
   search: "",
@@ -207,9 +207,9 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       await loadItems(targetPage, pageInfo.pageSize);
       setMessageTone("success");
       setMessage(successMessage);
-    } catch (error) {
+    } catch {
       setMessageTone("error");
-      setMessage(error.message || `Không thể lưu ${config.singularLabel}.`);
+      setMessage(`Không thể lưu ${config.singularLabel}. Vui lòng kiểm tra thông tin và thử lại.`);
       setStatus("ready");
       window.requestAnimationFrame(() => formErrorRef.current?.focus());
     }
@@ -271,9 +271,9 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       focusCreateAfterDeleteRef.current = true;
       setDeleteTarget(null);
       setStatus("ready");
-    } catch (error) {
+    } catch {
       setMessageTone("error");
-      setMessage(error.message || `Không thể xóa ${config.singularLabel}.`);
+      setMessage(`Không thể xóa ${config.singularLabel}. Vui lòng thử lại.`);
       setDeleteTarget(null);
       setStatus("ready");
     }
@@ -411,7 +411,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         </div>
       </header>
 
-      {!formOpen && message && (
+      {!formOpen && message && status !== "error" && (
         <div
           className={`api-message ${messageTone}`}
           role={messageTone === "error" ? "alert" : "status"}
@@ -441,7 +441,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                   autoComplete="off"
                   value={filters.search}
                   onChange={(event) => updateFilter("search", event.target.value)}
-                  placeholder="Nội dung tiếng Việt hoặc tiếng Anh"
+                  placeholder="Nội dung câu hỏi"
                 />
               </span>
             </label>
@@ -477,7 +477,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         </form>
       </section>
 
-      {status !== "loading" && status !== "saving" && (
+      {status === "ready" && (
         <div className="clinical-catalog-result-summary" role="status" aria-live="polite">
           <ListChecks size={18} aria-hidden="true" />
           <p>
@@ -493,8 +493,23 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             label="Đang tải câu hỏi lâm sàng..."
             description="Nội dung câu hỏi và liên kết chương ICD đang được đồng bộ."
           />
+        ) : status === "error" ? (
+          <ErrorState
+            title="Không thể tải câu hỏi lâm sàng"
+            description="Dữ liệu chưa khả dụng. Vui lòng thử tải lại."
+            urgent
+            action={(
+              <button className="btn btn-primary btn-small" type="button" onClick={() => loadItems()}>
+                <RefreshCw size={15} aria-hidden="true" /> Thử tải lại
+              </button>
+            )}
+          />
         ) : (
-          <div className="clinical-question-card-list" role="list" aria-label="Danh mục câu hỏi lâm sàng">
+          <div
+            className="clinical-question-card-list"
+            role={items.length > 0 ? "list" : undefined}
+            aria-label={items.length > 0 ? "Danh mục câu hỏi lâm sàng" : undefined}
+          >
             {items.length === 0 && (
               <EmptyState
                 title="Chưa có câu hỏi lâm sàng phù hợp"
@@ -565,7 +580,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         )}
       </div>
 
-      {status !== "loading" && (
+      {status !== "loading" && status !== "error" && (
         <nav className="pagination-row clinical-catalog-pagination" aria-label="Phân trang câu hỏi lâm sàng">
           <button
             className="btn btn-ghost btn-small"

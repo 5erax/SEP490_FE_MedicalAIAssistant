@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { BrainCircuit, MessageSquareText, ShieldAlert, SlidersHorizontal, ToggleLeft } from "lucide-react";
+import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { Dialog } from "../ui";
 
 const EMPTY_FORM = {
@@ -64,6 +65,7 @@ export default function AIConfigFormModal({
   const [errors, setErrors] = useState({});
   const firstFieldRef = useRef(null);
   const errorSummaryRef = useRef(null);
+  const formRef = useRef(null);
   const title = mode === "edit" ? "Cập nhật cấu hình AI" : "Tạo cấu hình AI";
   const hasErrors = Object.values(errors).some(Boolean);
 
@@ -77,7 +79,7 @@ export default function AIConfigFormModal({
     const nextErrors = validate(form);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
-      window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
+      focusFirstInvalidField(formRef, nextErrors);
       return;
     }
     onSubmit(buildPayload(form));
@@ -105,7 +107,7 @@ export default function AIConfigFormModal({
           <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={onClose} disabled={saving}>×</button>
         </header>
 
-        <form className="clean-form ai-config-form" onSubmit={handleSubmit} noValidate>
+        <form ref={formRef} className="clean-form ai-config-form" onSubmit={handleSubmit} noValidate>
           <aside className="ai-config-modal-warning">
             <ShieldAlert size={18} aria-hidden="true" />
             <p><strong>Kiểm tra kỹ trước khi lưu.</strong> Prompt, mô hình và trạng thái mới có thể ảnh hưởng phản hồi AI đang vận hành.</p>
@@ -137,51 +139,47 @@ export default function AIConfigFormModal({
             <label className={`clean-field ${errors.taskType ? "ai-config-field-error" : ""}`}>
               <span>Loại tính năng <small className="ai-config-required-note">(bắt buộc)</small></span>
               <input
+                {...getAdminFieldProps("taskType", errors.taskType, "ai-config-task-help")}
                 ref={firstFieldRef}
                 value={form.taskType}
                 onChange={(event) => update("taskType", event.target.value)}
                 placeholder="Ví dụ: symptom-analysis"
                 required
-                aria-invalid={Boolean(errors.taskType)}
-                aria-describedby="ai-config-task-help"
               />
               <small id="ai-config-task-help">{errors.taskType || "Định danh cấu hình theo tính năng AI của hệ thống."}</small>
             </label>
             <label className={`clean-field ${errors.model ? "ai-config-field-error" : ""}`}>
               <span>Mô hình AI <small className="ai-config-required-note">(bắt buộc)</small></span>
               <input
+                {...getAdminFieldProps("model", errors.model, errors.model ? "ai-config-model-error" : "")}
                 value={form.model}
                 onChange={(event) => update("model", event.target.value)}
                 placeholder="Tên mô hình theo cấu hình backend"
                 required
-                aria-invalid={Boolean(errors.model)}
-                aria-describedby={errors.model ? "ai-config-model-error" : undefined}
               />
               {errors.model && <small id="ai-config-model-error">{errors.model}</small>}
             </label>
             <label className={`clean-field ${errors.temperature ? "ai-config-field-error" : ""}`}>
               <span>Nhiệt độ phản hồi</span>
               <input
+                {...getAdminFieldProps("temperature", errors.temperature, "ai-config-temperature-help")}
                 type="number"
                 step="0.1"
                 min="0"
                 max="2"
                 value={form.temperature}
                 onChange={(event) => update("temperature", event.target.value)}
-                aria-invalid={Boolean(errors.temperature)}
-                aria-describedby="ai-config-temperature-help"
               />
               <small id="ai-config-temperature-help">{errors.temperature || "Giá trị từ 0 đến 2; giá trị thấp cho phản hồi ổn định hơn."}</small>
             </label>
             <label className={`clean-field ${errors.maxTokens ? "ai-config-field-error" : ""}`}>
               <span>Token tối đa</span>
               <input
+                {...getAdminFieldProps("maxTokens", errors.maxTokens, errors.maxTokens ? "ai-config-token-error" : "")}
                 type="number"
                 min="1"
                 value={form.maxTokens}
                 onChange={(event) => update("maxTokens", event.target.value)}
-                aria-invalid={Boolean(errors.maxTokens)}
-                aria-describedby={errors.maxTokens ? "ai-config-token-error" : undefined}
               />
               {errors.maxTokens && <small id="ai-config-token-error">{errors.maxTokens}</small>}
             </label>
@@ -200,13 +198,12 @@ export default function AIConfigFormModal({
           <label className={`clean-field ${errors.systemPrompt ? "ai-config-field-error" : ""}`}>
             <span>Prompt hệ thống <small className="ai-config-required-note">(bắt buộc)</small></span>
             <textarea
+              {...getAdminFieldProps("systemPrompt", errors.systemPrompt, "ai-config-prompt-help")}
               rows={9}
               value={form.systemPrompt}
               onChange={(event) => update("systemPrompt", event.target.value)}
               placeholder="Nhập system instruction định hướng hành vi AI, giới hạn an toàn và cách phản hồi cho bệnh nhân..."
               required
-              aria-invalid={Boolean(errors.systemPrompt)}
-              aria-describedby="ai-config-prompt-help"
             />
             <small id="ai-config-prompt-help">{errors.systemPrompt || "Nêu rõ vai trò, ranh giới y tế, cách phản hồi và điều kiện khuyến nghị gặp người có chuyên môn."}</small>
           </label>
@@ -223,7 +220,7 @@ export default function AIConfigFormModal({
 
           <label className="clean-field ai-config-status-field">
             <span>Trạng thái sau khi lưu</span>
-            <select value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
+            <select name="isActive" value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
               <option value="true">Đang bật</option>
               <option value="false">Đang tắt</option>
             </select>

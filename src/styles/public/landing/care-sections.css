@@ -1,0 +1,550 @@
+.care-section {
+  padding: clamp(82px, 8vw, 112px) 0;
+  scroll-margin-top: 72px;
+}
+
+.care-section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.62fr);
+  align-items: end;
+  gap: clamp(40px, 7vw, 92px);
+}
+
+.care-section-heading-single {
+  grid-template-columns: minmax(0, 820px);
+}
+
+.care-section-heading h2,
+.care-facility-copy h2,
+.care-safety-intro h2,
+.care-faq-heading h2,
+.care-cta-card h2 {
+  margin: 0;
+  color: var(--care-navy-deep);
+  font-size: clamp(34px, 4.2vw, 54px);
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.care-section-heading > p,
+.care-facility-copy > p:not(.care-eyebrow),
+.care-safety-intro > p:not(.care-eyebrow),
+.care-faq-heading > p:not(.care-eyebrow) {
+  margin: 0;
+  color: var(--care-muted);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.care-support-section {
+  border-top: 1px solid var(--care-line);
+  background: #fff;
+}
+
+.care-feature-group {
+  margin-top: 48px;
+}
+
+.care-feature-group-secondary {
+  margin-top: 40px;
+}
+
+.care-feature-group > h3 {
+  margin: 0 0 16px;
+  color: var(--care-navy);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.care-support-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 0;
+}
+
+.care-support-grid-core {
+  grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 0.825fr));
+}
+
+.care-support-card {
+  display: flex;
+  min-height: 286px;
+  flex-direction: column;
+  border: 1px solid var(--care-line);
+  border-radius: 16px;
+  background: #fff;
+  padding: 24px;
+  transition:
+    border-color var(--motion-base),
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
+}
+
+.care-support-card:hover {
+  border-color: #a9cfc7;
+  box-shadow: 0 18px 40px rgba(18, 52, 59, 0.07);
+  transform: translateY(-2px);
+}
+
+.care-support-card-core {
+  border-color: #bfd9d2;
+  background: #f6fbf9;
+}
+
+.care-support-card-core:first-child {
+  background:
+    linear-gradient(145deg, rgba(213, 236, 229, 0.72), transparent 64%),
+    #f7fbfa;
+}
+
+.care-support-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.care-support-icon {
+  width: 50px;
+  height: 50px;
+}
+
+.care-support-number {
+  color: #53736d;
+  font-family: "Lora", Georgia, serif;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.care-support-label {
+  border: 1px solid #c8ddd7;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 6px 9px;
+  color: var(--care-teal-dark);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.care-support-card h3 {
+  margin: 34px 0 12px;
+  color: var(--care-navy);
+  font-size: 21px;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.care-support-card p {
+  margin: 0;
+  color: var(--care-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.care-support-card > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: auto;
+  padding-top: 20px;
+  color: var(--care-teal-dark);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.care-support-card > a svg {
+  transition: transform var(--motion-base);
+}
+
+.care-support-card > a:hover svg {
+  transform: translateX(3px);
+}
+
+.care-account-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  border: 1px solid var(--care-line);
+  border-radius: 16px;
+  background: #f8fbfa;
+  padding: 17px 20px;
+}
+
+.care-account-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.care-account-note > div {
+  display: grid;
+  gap: 3px;
+}
+
+.care-account-note strong {
+  color: var(--care-navy);
+  font-size: 14px;
+}
+
+.care-account-note p {
+  margin: 0;
+  color: var(--care-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.care-account-note > a,
+.care-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--care-teal-dark);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.care-facility-section {
+  background: var(--care-mint);
+}
+
+.care-facility-section .care-eyebrow {
+  color: #0b625e;
+}
+
+.care-facility-shell {
+  display: grid;
+  grid-template-columns: minmax(290px, 0.78fr) minmax(0, 1.22fr);
+  align-items: center;
+  gap: clamp(48px, 8vw, 104px);
+}
+
+.care-facility-copy > p:not(.care-eyebrow) {
+  max-width: 590px;
+  margin-top: 20px;
+  color: #405b60;
+}
+
+.care-facility-copy .care-button {
+  margin-top: 30px;
+}
+
+.care-facility-card {
+  border: 1px solid rgba(20, 125, 120, 0.18);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 24px 64px rgba(18, 52, 59, 0.09);
+  padding: 28px;
+}
+
+.care-facility-card-top > span {
+  width: 48px;
+  height: 48px;
+}
+
+.care-facility-card-top strong {
+  color: var(--care-navy);
+  font-size: 20px;
+}
+
+.care-facility-card ul {
+  display: grid;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.care-facility-card li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-top: 1px solid var(--care-line);
+  padding: 15px 0;
+  color: #465f64;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.care-facility-card li svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--care-teal);
+}
+
+.care-facility-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 13px;
+  background: #edf8f4;
+  padding: 13px 14px;
+  color: #3d615f;
+}
+
+.care-facility-help svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--care-teal);
+}
+
+.care-facility-help p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.care-facility-card .care-text-link {
+  margin-top: 18px;
+}
+
+.care-safety-section {
+  background: #fff;
+}
+
+.care-safety-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.76fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(52px, 8vw, 110px);
+}
+
+.care-safety-intro {
+  position: sticky;
+  top: 112px;
+}
+
+.care-safety-intro > p:not(.care-eyebrow) {
+  margin-top: 20px;
+}
+
+.care-safety-intro > a {
+  display: inline-flex;
+  margin-top: 24px;
+  color: var(--care-teal-dark);
+  min-height: 44px;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.care-safety-principles {
+  border-top: 1px solid var(--care-line);
+}
+
+.care-safety-principles article {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 16px;
+  border-bottom: 1px solid var(--care-line);
+  padding: 22px 0;
+}
+
+.care-safety-principles article > span {
+  width: 48px;
+  height: 48px;
+}
+
+.care-safety-principles h3 {
+  margin: 1px 0 7px;
+  color: var(--care-navy);
+  font-size: 18px;
+}
+
+.care-safety-principles p {
+  margin: 0;
+  color: var(--care-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.care-emergency-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin-top: 48px;
+  border: 1px solid #ecd2c6;
+  border-radius: 16px;
+  background: var(--care-safety-bg);
+  padding: 18px 20px;
+  color: #6e3b29;
+}
+
+.care-emergency-banner > svg {
+  color: var(--care-safety);
+}
+
+.care-emergency-banner div {
+  display: grid;
+  gap: 4px;
+}
+
+.care-emergency-banner strong {
+  font-size: 16px;
+}
+
+.care-emergency-banner p {
+  margin: 0;
+  color: #825744;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.care-faq-section {
+  border-top: 1px solid var(--care-line);
+  background: #f8fbfa;
+}
+
+.care-faq-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.68fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(52px, 8vw, 110px);
+}
+
+.care-faq-heading {
+  position: sticky;
+  top: 112px;
+}
+
+.care-faq-heading > p:not(.care-eyebrow) {
+  margin-top: 18px;
+}
+
+.care-faq-heading .care-text-link {
+  margin-top: 24px;
+}
+
+.care-faq-list {
+  border-top: 1px solid var(--care-line);
+}
+
+.care-faq-list article {
+  border-bottom: 1px solid var(--care-line);
+  padding: 22px 0;
+}
+
+.care-faq-list h3 {
+  margin: 0 0 9px;
+  color: var(--care-navy);
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.care-faq-list p {
+  margin: 0;
+  color: var(--care-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.care-cta-section {
+  background: #f8fbfa;
+  padding-top: 0;
+}
+
+.care-cta-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 44px;
+  overflow: hidden;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 94% 8%, rgba(196, 233, 149, 0.2), transparent 26%),
+    var(--care-navy-deep);
+  padding: clamp(34px, 5.5vw, 62px);
+  color: #fff;
+}
+
+.care-cta-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 22px;
+  background: rgba(214, 242, 231, 0.12);
+  color: #bde2d6;
+}
+
+.care-cta-card .care-eyebrow {
+  color: #9fd0c4;
+}
+
+.care-cta-card h2 {
+  max-width: 720px;
+  color: #fff;
+}
+
+.care-cta-card > div:first-child > p:last-child {
+  max-width: 650px;
+  margin: 18px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.care-cta-actions {
+  display: grid;
+  min-width: 220px;
+  margin-top: 0;
+}
+
+.care-button-light {
+  background: #fff;
+  color: var(--care-navy-deep);
+}
+
+.care-button-outline-light {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: transparent;
+  color: #fff;
+}
+
+.care-footer {
+  background: #0b252c;
+  padding-top: 58px;
+}
+
+.care-footer-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 1.35fr) repeat(4, minmax(130px, 0.65fr));
+  gap: 38px;
+}
+
+.care-footer-brand > p {
+  max-width: 390px;
+  margin: 18px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.care-footer .brand-mark {
+  background: #071a1f;
+}
+
+.care-footer .footer-links a {
+  min-height: 32px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.care-footer .footer-bottom {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.care-button:focus-visible,
+.care-support-card > a:focus-visible,
+.care-text-link:focus-visible,
+.care-account-note > a:focus-visible {
+  outline: 3px solid #f2b84b;
+  outline-offset: 3px;
+}

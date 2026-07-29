@@ -542,9 +542,48 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   padding: 18px;
 }
 
-.studio-result-card.primary,
+.studio-result-card.specialty,
 .studio-result-card.facilities {
   grid-column: 1 / -1;
+}
+
+.specialty-result-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.specialty-result-head > div {
+  min-width: 0;
+}
+
+.specialty-result-head span {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #315d18;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.specialty-confidence-badge {
+  flex: 0 0 auto;
+  border: 1px solid rgba(8, 127, 140, 0.28);
+  border-radius: var(--radius-pill);
+  background: #e8f6f3;
+  color: #05616a;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.specialty-result-disclaimer {
+  display: block;
+  border-top: 1px solid var(--color-line);
+  padding-top: 12px;
+  color: var(--color-muted);
+  line-height: 1.55;
 }
 
 .studio-result-card p {
@@ -1056,7 +1095,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 .studio-question { border-radius: 18px; padding: 20px; }
 .studio-question label { min-height: 48px; padding: 0 20px; cursor: pointer; }
 .studio-question label:has(input:checked) { border-color: #315d18; background: var(--color-primary-soft); box-shadow: inset 0 0 0 1px #315d18; }
-.studio-result-card.primary { background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-soft) 100%); }
+.studio-result-card.specialty { background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-soft) 100%); }
 .studio-result-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .studio-result-meta small, .studio-result-meta strong { border-radius: var(--radius-pill); background: var(--color-surface); padding: 7px 10px; font-size: 12px; }
 .studio-confidence { height: 8px; overflow: hidden; border-radius: 999px; background: var(--color-line); }
@@ -1073,6 +1112,14 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
   .studio-question {
     grid-template-columns: 1fr;
+  }
+
+  .specialty-result-head {
+    display: grid;
+  }
+
+  .specialty-confidence-badge {
+    width: max-content;
   }
 
   .studio-segmented-answer {

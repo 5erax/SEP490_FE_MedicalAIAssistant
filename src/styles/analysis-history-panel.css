@@ -219,6 +219,17 @@
   color: #b42318;
 }
 
+.analysis-history-detail-retry {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.analysis-history-detail-retry .ui-button,
+.analysis-history-state.error .ui-button {
+  min-height: 42px;
+}
+
 .analysis-history-empty,
 .analysis-history-state {
   min-height: 132px;
@@ -325,6 +336,7 @@
     inset: auto 10px 10px;
     width: auto;
     max-height: min(82vh, 720px);
+    max-height: min(82dvh, 720px);
     border-radius: 24px;
     box-shadow: 5px 5px 0 rgba(8, 18, 11, 0.14), 0 22px 56px rgba(8, 18, 11, 0.2);
   }

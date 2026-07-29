@@ -12,7 +12,7 @@ export const Button = forwardRef(function Button(
     size = "md",
     className = "",
     loading = false,
-    loadingLabel = "Đang xử lý...",
+    loadingLabel = "Đang xử lý…",
     children,
     disabled,
     ...props

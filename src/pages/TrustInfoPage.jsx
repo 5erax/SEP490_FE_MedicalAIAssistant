@@ -294,8 +294,14 @@ export default function TrustInfoPage({ page }) {
 
         <div className="container trust-body">
           <aside className="trust-nav" aria-label="Nội dung trên trang">
-            <strong>Trên trang này</strong>
-            <nav>
+            <div className="trust-nav-header">
+              <strong>Trên trang này</strong>
+              <span className="trust-nav-cue">
+                Vuốt hoặc kéo ngang để xem thêm
+                <ArrowRight size={14} aria-hidden="true" />
+              </span>
+            </div>
+            <nav aria-label={`Mục lục ${content.eyebrow.toLowerCase()}`}>
               {content.sections.map((section) => (
                 <a href={`#${section.id}`} key={section.id}>{section.title}</a>
               ))}

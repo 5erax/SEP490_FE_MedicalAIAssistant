@@ -364,7 +364,7 @@ export default function PersonalPatientProfilePage() {
             </div>
             <div className="profile-setup-progress">
               <div>
-                <span>Tiến độ hồ sơ</span>
+                <span>Tiến độ hồ sơ · {completedFields}/7 mục cơ bản</span>
                 <strong>{progress}%</strong>
               </div>
               <div
@@ -388,6 +388,24 @@ export default function PersonalPatientProfilePage() {
                 <p>Hoàn thành các mục bắt buộc trước khi lưu hồ sơ.</p>
               </div>
               <span className="soft-badge">{loading ? "Đang tải" : "Thiết lập ban đầu"}</span>
+            </div>
+
+            <div className="profile-setup-progress profile-setup-mobile-progress">
+              <div>
+                <span>Tiến độ · {completedFields}/7 mục cơ bản</span>
+                <strong>{progress}%</strong>
+              </div>
+              <div
+                className="profile-progress-bar"
+                role="progressbar"
+                aria-label="Tiến độ hoàn thiện hồ sơ trên di động"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={progress}
+              >
+                <span style={{ width: `${progress}%` }} />
+              </div>
+              <small>Các trường có nhãn “bắt buộc” cần được hoàn tất trước khi lưu.</small>
             </div>
 
             <ApiMessage message={message} />
@@ -434,14 +452,14 @@ export default function PersonalPatientProfilePage() {
                   </select>
                 </Field>
                 <Field id="patient-profile-height" label="Chiều cao (cm)" error={errors.height}>
-                  <input name="height" type="number" min="40" max="250" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
+                  <input name="height" type="number" inputMode="decimal" min="40" max="250" step="0.1" value={form.height} onChange={(event) => updateField("height", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field id="patient-profile-weight" label="Cân nặng (kg)" error={errors.weight}>
-                  <input name="weight" type="number" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
+                  <input name="weight" type="number" inputMode="decimal" min="2" max="500" step="0.1" value={form.weight} onChange={(event) => updateField("weight", event.target.value)} disabled={loading || submitting} />
                 </Field>
               </div>
               <Field id="patient-profile-allergyNote" label="Dị ứng" error={errors.allergyNote}>
-                <textarea name="allergyNote" rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa..." disabled={loading || submitting} />
+                <textarea name="allergyNote" rows={4} maxLength={1000} value={form.allergyNote} onChange={(event) => updateField("allergyNote", event.target.value)} placeholder="Ví dụ: thuốc, thức ăn, phấn hoa…" disabled={loading || submitting} />
               </Field>
             </fieldset>
 
@@ -514,7 +532,7 @@ export default function PersonalPatientProfilePage() {
                             maxLength={1000}
                             value={disease.note}
                             onChange={(event) => updateDisease(index, "note", event.target.value)}
-                            placeholder="Ví dụ: đang dùng thuốc hằng ngày..."
+                            placeholder="Ví dụ: đang dùng thuốc hằng ngày…"
                             disabled={loading || submitting}
                           />
                         </Field>
@@ -527,7 +545,7 @@ export default function PersonalPatientProfilePage() {
 
             <div className="profile-setup-actions">
               <button className="btn btn-primary" type="submit" disabled={loading || submitting}>
-                {submitting ? "Đang lưu hồ sơ..." : "Hoàn tất hồ sơ"}
+                {submitting ? "Đang lưu hồ sơ…" : "Hoàn tất hồ sơ"}
               </button>
             </div>
           </form>

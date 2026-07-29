@@ -2,6 +2,7 @@ import { Children, cloneElement, useEffect, useId, useRef, useState } from "reac
 import { AlertTriangle, CreditCard, FileHeart, Plus, ReceiptText, ShieldCheck, Trash2, User } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import PaymentHistoryPanel from "../components/payments/PaymentHistoryPanel";
+import { ErrorState, LoadingState } from "../components/ui";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 import { navigate as go } from "../router/navigation";
 import {
@@ -29,6 +30,27 @@ const tabs = [
   ["security", ShieldCheck, "Bảo mật"],
 ];
 const TAB_IDS = new Set(tabs.map(([id]) => id));
+const SUBSCRIPTION_STATUS_LABELS = {
+  active: "Đang hoạt động",
+  pending: "Đang chờ",
+  expired: "Đã hết hạn",
+  cancelled: "Đã hủy",
+  canceled: "Đã hủy",
+  inactive: "Không hoạt động",
+};
+
+function formatPlanName(planName) {
+  const normalizedName = String(planName ?? "").trim();
+  if (!normalizedName) return "Miễn phí";
+  if (["free", "freemium"].includes(normalizedName.toLowerCase())) return "Miễn phí";
+  return normalizedName;
+}
+
+function formatSubscriptionStatus(statusName) {
+  const normalizedStatus = String(statusName ?? "").trim();
+  if (!normalizedStatus) return "Chưa có gói trả phí";
+  return SUBSCRIPTION_STATUS_LABELS[normalizedStatus.toLowerCase()] ?? normalizedStatus;
+}
 
 function getInitialTab() {
   const requestedTab = new URLSearchParams(window.location.search).get("tab");
@@ -94,6 +116,12 @@ export default function UserProfilePage() {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadWarning, setLoadWarning] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [sectionLoadState, setSectionLoadState] = useState({
+    personal: "loading",
+    medical: "loading",
+    subscription: "loading",
+  });
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingMedical, setSavingMedical] = useState(false);
   const [profileDirty, setProfileDirty] = useState(false);
@@ -126,51 +154,73 @@ export default function UserProfilePage() {
       if (profileResult.status !== "fulfilled") unavailableSections.push("hồ sơ y tế");
       if (subscriptionResult.status !== "fulfilled") unavailableSections.push("gói dịch vụ");
       setLoadWarning(unavailableSections.length
-        ? `Chưa thể tải ${unavailableSections.join(", ")}. Bạn có thể thử tải lại trang.`
+        ? `Chưa thể tải ${unavailableSections.join(", ")}. Bạn có thể thử lại.`
         : "");
 
       const user = userResult.status === "fulfilled" ? userResult.value.data ?? {} : {};
       const resolvedUserId = user.userId ?? user.identityId ?? user.id ?? auth?.userId ?? auth?.identityId ?? "";
       setUserId(resolvedUserId);
-      const nextProfile = {
-        displayName: user.displayName ?? user.name ?? "",
-        email: user.email ?? "",
-        phoneNumber: user.phoneNumber ?? "",
-        address: user.address ?? "",
-        gender: String(user.gender ?? "1"),
-        dateOfBirth: user.dateOfBirth ? String(user.dateOfBirth).slice(0, 10) : "",
-      };
-      setProfileForm(nextProfile);
-      setProfileSnapshot(nextProfile);
-      setProfileDirty(false);
+      if (userResult.status === "fulfilled") {
+        const nextProfile = {
+          displayName: user.displayName ?? user.name ?? "",
+          email: user.email ?? "",
+          phoneNumber: user.phoneNumber ?? "",
+          address: user.address ?? "",
+          gender: String(user.gender ?? "1"),
+          dateOfBirth: user.dateOfBirth ? String(user.dateOfBirth).slice(0, 10) : "",
+        };
+        setProfileForm(nextProfile);
+        setProfileSnapshot(nextProfile);
+        setProfileDirty(false);
+      }
 
       const profiles = profileResult.status === "fulfilled" ? profileResult.value.data?.items ?? [] : [];
       const patientProfile = profiles.find((item) => String(item.userId) === String(resolvedUserId)) ?? null;
-      setPatientProfileId(patientProfile?.id ?? "");
-      const nextMedical = {
-        bloodType: patientProfile?.bloodType ?? "",
-        height: patientProfile?.height ?? "",
-        weight: patientProfile?.weight ?? "",
-        allergyNote: patientProfile?.allergyNote ?? "",
-        chronicDiseases: Array.isArray(patientProfile?.chronicDiseases) && patientProfile.chronicDiseases.length > 0
-          ? patientProfile.chronicDiseases.map(normalizeDiseaseForForm)
-          : normalizeChronicDiseases(getChronicDiseaseText(patientProfile)).map(normalizeDiseaseForForm),
-      };
-      setMedicalForm(nextMedical);
-      setMedicalSnapshot(nextMedical);
-      setMedicalDirty(false);
+      if (profileResult.status === "fulfilled") {
+        setPatientProfileId(patientProfile?.id ?? "");
+        const nextMedical = {
+          bloodType: patientProfile?.bloodType ?? "",
+          height: patientProfile?.height ?? "",
+          weight: patientProfile?.weight ?? "",
+          allergyNote: patientProfile?.allergyNote ?? "",
+          chronicDiseases: Array.isArray(patientProfile?.chronicDiseases) && patientProfile.chronicDiseases.length > 0
+            ? patientProfile.chronicDiseases.map(normalizeDiseaseForForm)
+            : normalizeChronicDiseases(getChronicDiseaseText(patientProfile)).map(normalizeDiseaseForForm),
+        };
+        setMedicalForm(nextMedical);
+        setMedicalSnapshot(nextMedical);
+        setMedicalDirty(false);
+      }
 
       const subscriptions = subscriptionResult.status === "fulfilled"
         ? Array.isArray(subscriptionResult.value.data) ? subscriptionResult.value.data : []
         : [];
-      setSubscription(subscriptions.find((item) => String(item.statusName).toLowerCase() === "active") ?? subscriptions[0] ?? null);
+      if (subscriptionResult.status === "fulfilled") {
+        setSubscription(subscriptions.find((item) => String(item.statusName).toLowerCase() === "active") ?? subscriptions[0] ?? null);
+      }
+      setSectionLoadState({
+        personal: userResult.status === "fulfilled" ? "ready" : "error",
+        medical: profileResult.status === "fulfilled" ? "ready" : "error",
+        subscription: subscriptionResult.status === "fulfilled" ? "ready" : "error",
+      });
       setLoading(false);
     });
 
     return () => {
       active = false;
     };
-  }, [auth?.identityId, auth?.userId]);
+  }, [auth?.identityId, auth?.userId, loadAttempt]);
+
+  function retryProfileData() {
+    setLoading(true);
+    setLoadWarning("");
+    setSectionLoadState({
+      personal: "loading",
+      medical: "loading",
+      subscription: "loading",
+    });
+    setLoadAttempt((current) => current + 1);
+  }
 
   function selectTab(tabId) {
     setActiveTab(tabId);
@@ -279,8 +329,8 @@ export default function UserProfilePage() {
       setProfileDirty(false);
       setToast("Đã lưu thông tin!");
       showToast({ type: "success", title: "Đã lưu thông tin", message: "Hồ sơ cá nhân đã được cập nhật." });
-    } catch (error) {
-      setToast(error.message);
+    } catch {
+      setToast("Không thể lưu thông tin cá nhân lúc này. Vui lòng thử lại.");
     } finally {
       setSavingProfile(false);
     }
@@ -318,8 +368,8 @@ export default function UserProfilePage() {
       setIsMedicalEditing(false);
       setToast("Đã lưu hồ sơ!");
       showToast({ type: "success", title: "Đã lưu hồ sơ", message: "Thông tin sức khỏe đã được cập nhật." });
-    } catch (error) {
-      setToast(error.message);
+    } catch {
+      setToast("Không thể lưu hồ sơ y tế lúc này. Vui lòng thử lại.");
     } finally {
       setSavingMedical(false);
     }
@@ -353,6 +403,9 @@ export default function UserProfilePage() {
     [medicalForm.allergyNote, "dị ứng"],
     [medicalForm.chronicDiseases.some(hasChronicDisease), "bệnh nền"],
   ].filter(([value]) => !value).map(([, label]) => label);
+  const personalReady = sectionLoadState.personal === "ready";
+  const medicalReady = sectionLoadState.medical === "ready";
+  const subscriptionReady = sectionLoadState.subscription === "ready";
 
   return (
     <div className="profile-page">
@@ -360,8 +413,14 @@ export default function UserProfilePage() {
       <aside className="profile-sidebar">
         <div className="profile-identity">
           <span>{initials(profileForm.displayName)}</span>
-          <strong>{profileForm.displayName || (loading ? "Đang tải..." : "Người dùng")}</strong>
-          <small>{profileForm.email}</small>
+          <strong>
+            {sectionLoadState.personal === "loading"
+              ? "Đang tải…"
+              : sectionLoadState.personal === "error"
+                ? "Hồ sơ chưa khả dụng"
+                : profileForm.displayName || "Người dùng"}
+          </strong>
+          <small>{personalReady ? profileForm.email : ""}</small>
         </div>
         <nav role="tablist" aria-label="Các mục hồ sơ">
           {tabs.map(([id, Icon, label]) => (
@@ -379,33 +438,67 @@ export default function UserProfilePage() {
           <button type="button" onClick={() => go("/records")}>Hồ sơ y tế</button>
           <button type="button" onClick={() => go("/map")}>Bản đồ</button>
         </nav>
-        {loadWarning && <div className="profile-load-warning" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span>{loadWarning}</span><button type="button" onClick={() => window.location.reload()}>Tải lại</button></div>}
+        {loadWarning && <div className="profile-load-warning" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span>{loadWarning}</span><button type="button" onClick={retryProfileData}>Thử lại</button></div>}
         <section className="profile-overview" aria-label="Tổng quan hồ sơ cá nhân" aria-busy={loading}>
           <div className="profile-overview-person">
             <span>{initials(profileForm.displayName)}</span>
             <div>
               <p>Không gian cá nhân</p>
-              <h1>{profileForm.displayName || (loading ? "Đang tải hồ sơ..." : "Cập nhật hồ sơ của bạn")}</h1>
-              <small>{profileForm.email || "Chưa có email"}</small>
+              <h1>
+                {sectionLoadState.personal === "loading"
+                  ? "Đang tải hồ sơ…"
+                  : sectionLoadState.personal === "error"
+                    ? "Thông tin hồ sơ chưa khả dụng"
+                    : profileForm.displayName || "Cập nhật hồ sơ của bạn"}
+              </h1>
+              <small>{personalReady ? profileForm.email || "Chưa có email" : "Vui lòng thử tải lại dữ liệu."}</small>
             </div>
           </div>
           <div className="profile-summary-grid">
             <button type="button" className="profile-summary-card" onClick={() => selectTab("info")}>
               <span>Thông tin</span>
-              <strong>{personalCompletion}/5</strong>
-              <small>{personalMissing.length ? `Còn thiếu: ${personalMissing.slice(0, 2).join(", ")}${personalMissing.length > 2 ? "..." : ""}` : "Đã hoàn thiện thông tin cơ bản"}</small>
-              <i role="progressbar" aria-label="Tiến độ thông tin cá nhân" aria-valuemin="0" aria-valuemax="5" aria-valuenow={personalCompletion}><b style={{ width: `${personalCompletion * 20}%` }} /></i>
+              <strong>
+                {sectionLoadState.personal === "loading"
+                  ? "Đang tải"
+                  : personalReady ? `${personalCompletion}/5` : "Không khả dụng"}
+              </strong>
+              <small>
+                {personalReady
+                  ? personalMissing.length
+                    ? `Còn thiếu: ${personalMissing.slice(0, 2).join(", ")}${personalMissing.length > 2 ? "…" : ""}`
+                    : "Đã hoàn thiện thông tin cơ bản"
+                  : "Chưa thể xác định tiến độ hồ sơ."}
+              </small>
+              {personalReady && <i role="progressbar" aria-label="Tiến độ thông tin cá nhân" aria-valuemin="0" aria-valuemax="5" aria-valuenow={personalCompletion}><b style={{ width: `${personalCompletion * 20}%` }} /></i>}
             </button>
             <button type="button" className="profile-summary-card" onClick={() => selectTab("medical")}>
               <span>Y tế</span>
-              <strong>{medicalCompletion}/5</strong>
-              <small>{medicalMissing.length ? `Còn thiếu: ${medicalMissing.slice(0, 2).join(", ")}${medicalMissing.length > 2 ? "..." : ""}` : "Đã hoàn thiện dữ liệu sức khỏe"}</small>
-              <i role="progressbar" aria-label="Tiến độ hồ sơ y tế" aria-valuemin="0" aria-valuemax="5" aria-valuenow={medicalCompletion}><b style={{ width: `${medicalCompletion * 20}%` }} /></i>
+              <strong>
+                {sectionLoadState.medical === "loading"
+                  ? "Đang tải"
+                  : medicalReady ? `${medicalCompletion}/5` : "Không khả dụng"}
+              </strong>
+              <small>
+                {medicalReady
+                  ? medicalMissing.length
+                    ? `Còn thiếu: ${medicalMissing.slice(0, 2).join(", ")}${medicalMissing.length > 2 ? "…" : ""}`
+                    : "Đã hoàn thiện dữ liệu sức khỏe"
+                  : "Chưa thể xác định tiến độ hồ sơ y tế."}
+              </small>
+              {medicalReady && <i role="progressbar" aria-label="Tiến độ hồ sơ y tế" aria-valuemin="0" aria-valuemax="5" aria-valuenow={medicalCompletion}><b style={{ width: `${medicalCompletion * 20}%` }} /></i>}
             </button>
             <article>
               <span>Gói dịch vụ</span>
-              <strong>{subscription?.planName || "Free"}</strong>
-              <small>{subscription?.statusName || "Tiêu chuẩn"}</small>
+              <strong>
+                {sectionLoadState.subscription === "loading"
+                  ? "Đang tải"
+                  : subscriptionReady ? formatPlanName(subscription?.planName) : "Không khả dụng"}
+              </strong>
+              <small>
+                {subscriptionReady
+                  ? formatSubscriptionStatus(subscription?.statusName)
+                  : "Chưa thể xác định gói hiện tại."}
+              </small>
             </article>
           </div>
         </section>
@@ -419,39 +512,78 @@ export default function UserProfilePage() {
         {toast && <div className="toast" role={Object.keys(errors).length ? "alert" : "status"} aria-live={Object.keys(errors).length ? "assertive" : "polite"}>{toast}</div>}
 
         {activeTab === "info" && (
-          <form ref={profileFormRef} id="profile-panel-info" role="tabpanel" aria-labelledby="profile-tab-info" className={`profile-card ${isEditing ? "is-editing" : ""}`} aria-busy={savingProfile} onSubmit={saveProfile} noValidate>
+          sectionLoadState.personal === "loading" ? (
+            <section id="profile-panel-info" role="tabpanel" aria-label="Thông tin cá nhân">
+              <LoadingState
+                className="profile-card"
+                label="Đang tải thông tin cá nhân..."
+                description="Dữ liệu hồ sơ đang được đồng bộ."
+              />
+            </section>
+          ) : sectionLoadState.personal === "error" ? (
+            <section id="profile-panel-info" role="tabpanel" aria-label="Thông tin cá nhân">
+              <ErrorState
+                className="profile-card"
+                title="Không thể tải thông tin cá nhân"
+                description="Dữ liệu hiện chưa khả dụng và chưa bị thay thế bằng thông tin mặc định."
+                urgent
+                action={<button className="lime" type="button" onClick={retryProfileData}>Thử tải lại</button>}
+              />
+            </section>
+          ) : (
+            <form ref={profileFormRef} id="profile-panel-info" role="tabpanel" aria-label="Thông tin cá nhân" className={`profile-card ${isEditing ? "is-editing" : ""}`} aria-busy={savingProfile} onSubmit={saveProfile} noValidate>
             <div className="profile-head">
               <div><h1>Thông tin cá nhân</h1><span>Cơ bản</span></div>
-              {!isEditing ? <button type="button" onClick={() => setIsEditing(true)} disabled={loading}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!profileDirty || savingProfile}>{savingProfile ? "Đang lưu..." : "Lưu thay đổi"}</button><button type="button" onClick={cancelProfileEdit} disabled={savingProfile}>Huỷ</button></div>}
+              {!isEditing ? <button type="button" onClick={() => setIsEditing(true)}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!profileDirty || savingProfile}>{savingProfile ? "Đang lưu…" : "Lưu thay đổi"}</button><button type="button" onClick={cancelProfileEdit} disabled={savingProfile}>Huỷ</button></div>}
             </div>
             <div className="form-grid">
-              <Field label="Họ và tên" error={errors.displayName} wide><input value={profileForm.displayName} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("displayName", e.target.value)} /></Field>
-              <Field label="Email" wide><input value={profileForm.email} disabled /><em>Không thể đổi</em></Field>
-              <Field label="Giới tính" error={errors.gender}><select value={profileForm.gender} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("gender", e.target.value)}><option value="1">Nam</option><option value="2">Nữ</option><option value="0">Khác</option></select></Field>
-              <Field label="Ngày sinh" error={errors.dateOfBirth}><input type="date" value={profileForm.dateOfBirth} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
-              <Field label="Số điện thoại" error={errors.phoneNumber}><input type="tel" inputMode="tel" autoComplete="tel" value={profileForm.phoneNumber} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
-              <Field label="Địa chỉ" error={errors.address} wide><input value={profileForm.address} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
+              <Field label="Họ và tên" error={errors.displayName} wide><input name="displayName" autoComplete="name" value={profileForm.displayName} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("displayName", e.target.value)} /></Field>
+              <Field label="Email" wide><input name="email" type="email" autoComplete="email" value={profileForm.email} disabled /><em>Không thể đổi</em></Field>
+              <Field label="Giới tính" error={errors.gender}><select name="gender" autoComplete="sex" value={profileForm.gender} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("gender", e.target.value)}><option value="1">Nam</option><option value="2">Nữ</option><option value="0">Khác</option></select></Field>
+              <Field label="Ngày sinh" error={errors.dateOfBirth}><input name="dateOfBirth" type="date" autoComplete="bday" value={profileForm.dateOfBirth} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
+              <Field label="Số điện thoại" error={errors.phoneNumber}><input name="phoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={profileForm.phoneNumber} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
+              <Field label="Địa chỉ" error={errors.address} wide><input name="address" autoComplete="street-address" value={profileForm.address} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
             </div>
-          </form>
+            </form>
+          )
         )}
 
         {activeTab === "medical" && (
-          <form ref={medicalFormRef} id="profile-panel-medical" role="tabpanel" aria-labelledby="profile-tab-medical" className={`profile-card ${isMedicalEditing ? "is-editing" : ""}`} aria-busy={savingMedical} onSubmit={saveMedical} noValidate>
-            <div className="profile-head"><div><h1>Hồ sơ y tế</h1><span>{patientProfileId ? "Đã đồng bộ" : "Chưa tạo"}</span></div>{!isMedicalEditing ? <button type="button" onClick={() => setIsMedicalEditing(true)} disabled={loading}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!medicalDirty || savingMedical}>{savingMedical ? "Đang lưu..." : "Lưu hồ sơ"}</button><button type="button" onClick={resetMedicalForm} disabled={savingMedical}>Huỷ</button></div>}</div>
+          sectionLoadState.medical === "loading" ? (
+            <section id="profile-panel-medical" role="tabpanel" aria-label="Hồ sơ y tế">
+              <LoadingState
+                className="profile-card"
+                label="Đang tải hồ sơ y tế..."
+                description="Dữ liệu sức khỏe đang được đồng bộ."
+              />
+            </section>
+          ) : sectionLoadState.medical === "error" ? (
+            <section id="profile-panel-medical" role="tabpanel" aria-label="Hồ sơ y tế">
+              <ErrorState
+                className="profile-card"
+                title="Không thể tải hồ sơ y tế"
+                description="Dữ liệu hiện chưa khả dụng và chưa bị thay thế bằng hồ sơ trống."
+                urgent
+                action={<button className="lime" type="button" onClick={retryProfileData}>Thử tải lại</button>}
+              />
+            </section>
+          ) : (
+            <form ref={medicalFormRef} id="profile-panel-medical" role="tabpanel" aria-label="Hồ sơ y tế" className={`profile-card ${isMedicalEditing ? "is-editing" : ""}`} aria-busy={savingMedical} onSubmit={saveMedical} noValidate>
+            <div className="profile-head"><div><h1>Hồ sơ y tế</h1><span>{patientProfileId ? "Đã đồng bộ" : "Chưa tạo"}</span></div>{!isMedicalEditing ? <button type="button" onClick={() => setIsMedicalEditing(true)}>Chỉnh sửa</button> : <div><button className="lime" type="submit" disabled={!medicalDirty || savingMedical}>{savingMedical ? "Đang lưu…" : "Lưu hồ sơ"}</button><button type="button" onClick={resetMedicalForm} disabled={savingMedical}>Huỷ</button></div>}</div>
             <div className="medical-privacy-note"><ShieldCheck size={19} aria-hidden="true" /><div><strong>Dữ liệu sức khỏe nhạy cảm</strong><p>Thông tin này hỗ trợ cá nhân hóa tư vấn. Chỉ nhập dữ liệu bạn biết chính xác.</p></div></div>
             <div className="form-grid three">
-              <Field label="Nhóm máu"><select value={medicalForm.bloodType} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("bloodType", e.target.value)}><option value="">Chưa rõ</option>{["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((v)=><option key={v}>{v}</option>)}</select></Field>
-              <Field label="Chiều cao (cm)" error={errors.height}><input type="number" min="40" max="250" step="0.1" value={medicalForm.height} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("height", e.target.value)} /></Field>
-              <Field label="Cân nặng (kg)" error={errors.weight}><input type="number" min="2" max="500" step="0.1" value={medicalForm.weight} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("weight", e.target.value)} /></Field>
+              <Field label="Nhóm máu"><select name="bloodType" value={medicalForm.bloodType} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("bloodType", e.target.value)}><option value="">Chưa rõ</option>{["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((v)=><option key={v}>{v}</option>)}</select></Field>
+              <Field label="Chiều cao (cm)" error={errors.height}><input name="height" type="number" inputMode="decimal" min="40" max="250" step="0.1" value={medicalForm.height} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("height", e.target.value)} /></Field>
+              <Field label="Cân nặng (kg)" error={errors.weight}><input name="weight" type="number" inputMode="decimal" min="2" max="500" step="0.1" value={medicalForm.weight} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("weight", e.target.value)} /></Field>
             </div>
-            <Field label="Dị ứng" error={errors.allergyNote}><textarea rows={4} maxLength={1000} placeholder="Ví dụ: thuốc, thực phẩm, phấn hoa..." value={medicalForm.allergyNote} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("allergyNote", e.target.value)} /></Field>
+            <Field label="Dị ứng" error={errors.allergyNote}><textarea name="allergyNote" rows={4} maxLength={1000} placeholder="Ví dụ: thuốc, thực phẩm, phấn hoa…" value={medicalForm.allergyNote} disabled={!isMedicalEditing || savingMedical} onChange={(e) => updateMedical("allergyNote", e.target.value)} /></Field>
             <section className="profile-disease-section" aria-label="Bệnh nền">
               <div className="profile-disease-head">
                 <div>
                   <h2>Bệnh nền</h2>
                   <p>Mỗi bệnh nền gồm tên bệnh, thời gian theo dõi và ghi chú ngắn.</p>
                 </div>
-                <button type="button" onClick={addMedicalDisease} disabled={loading || savingMedical}>
+                <button type="button" onClick={addMedicalDisease} disabled={savingMedical}>
                   <Plus size={17} aria-hidden="true" />
                   Thêm bệnh nền
                 </button>
@@ -476,17 +608,21 @@ export default function UserProfilePage() {
                           <span>Tên bệnh</span>
                           <input
                             data-disease-name
+                            id={`profile-disease-${index}-name`}
+                            name={`chronicDiseases.${index}.diseaseName`}
                             value={disease.diseaseName}
-                            placeholder="Ví dụ: hen suyễn, tăng huyết áp..."
+                            placeholder="Ví dụ: hen suyễn, tăng huyết áp…"
                             disabled={!isMedicalEditing || savingMedical}
                             onChange={(event) => updateMedicalDisease(index, "diseaseName", event.target.value)}
                             aria-invalid={Boolean(errors[`chronicDiseases.${index}.diseaseName`])}
+                            aria-describedby={errors[`chronicDiseases.${index}.diseaseName`] ? `profile-disease-${index}-name-error` : undefined}
                           />
-                          {errors[`chronicDiseases.${index}.diseaseName`] && <small>{errors[`chronicDiseases.${index}.diseaseName`]}</small>}
+                          {errors[`chronicDiseases.${index}.diseaseName`] && <small id={`profile-disease-${index}-name-error`}>{errors[`chronicDiseases.${index}.diseaseName`]}</small>}
                         </label>
                         <label className="field">
                           <span>Từ ngày</span>
                           <input
+                            name={`chronicDiseases.${index}.from`}
                             type="date"
                             value={disease.from}
                             disabled={!isMedicalEditing || savingMedical}
@@ -496,25 +632,29 @@ export default function UserProfilePage() {
                         <label className="field">
                           <span>Đến ngày</span>
                           <input
+                            name={`chronicDiseases.${index}.to`}
                             type="date"
                             value={disease.to}
                             disabled={!isMedicalEditing || savingMedical}
                             onChange={(event) => updateMedicalDisease(index, "to", event.target.value)}
                             aria-invalid={Boolean(errors[`chronicDiseases.${index}.to`])}
+                            aria-describedby={errors[`chronicDiseases.${index}.to`] ? `profile-disease-${index}-to-error` : undefined}
                           />
-                          {errors[`chronicDiseases.${index}.to`] && <small>{errors[`chronicDiseases.${index}.to`]}</small>}
+                          {errors[`chronicDiseases.${index}.to`] && <small id={`profile-disease-${index}-to-error`}>{errors[`chronicDiseases.${index}.to`]}</small>}
                         </label>
                         <label className="field wide">
                           <span>Ghi chú</span>
                           <textarea
+                            name={`chronicDiseases.${index}.note`}
                             rows={3}
                             value={disease.note}
-                            placeholder="Ví dụ: đang dùng thuốc, tái khám định kỳ..."
+                            placeholder="Ví dụ: đang dùng thuốc, tái khám định kỳ…"
                             disabled={!isMedicalEditing || savingMedical}
                             onChange={(event) => updateMedicalDisease(index, "note", event.target.value)}
                             aria-invalid={Boolean(errors[`chronicDiseases.${index}.note`])}
+                            aria-describedby={errors[`chronicDiseases.${index}.note`] ? `profile-disease-${index}-note-error` : undefined}
                           />
-                          {errors[`chronicDiseases.${index}.note`] && <small>{errors[`chronicDiseases.${index}.note`]}</small>}
+                          {errors[`chronicDiseases.${index}.note`] && <small id={`profile-disease-${index}-note-error`}>{errors[`chronicDiseases.${index}.note`]}</small>}
                         </label>
                       </div>
                     </article>
@@ -522,11 +662,12 @@ export default function UserProfilePage() {
                 </div>
               )}
             </section>
-          </form>
+            </form>
+          )
         )}
 
         {activeTab === "security" && (
-          <section id="profile-panel-security" role="tabpanel" aria-labelledby="profile-tab-security" className="profile-card">
+          <section id="profile-panel-security" role="tabpanel" aria-label="Bảo mật" className="profile-card">
             <h1>Bảo mật</h1>
             <p>Mật khẩu được xác nhận bằng mã OTP gửi qua email.</p>
             <button className="lime" type="button" onClick={() => go("/forgot-password")}>Gửi mã đổi mật khẩu</button>
@@ -534,19 +675,39 @@ export default function UserProfilePage() {
         )}
 
         {activeTab === "package" && (
-          <section id="profile-panel-package" role="tabpanel" aria-labelledby="profile-tab-package" className="profile-card">
+          sectionLoadState.subscription === "loading" ? (
+            <section id="profile-panel-package" role="tabpanel" aria-label="Gói dịch vụ">
+              <LoadingState
+                className="profile-card"
+                label="Đang tải gói dịch vụ..."
+                description="Thông tin quyền lợi của tài khoản đang được đồng bộ."
+              />
+            </section>
+          ) : sectionLoadState.subscription === "error" ? (
+            <section id="profile-panel-package" role="tabpanel" aria-label="Gói dịch vụ">
+              <ErrorState
+                className="profile-card"
+                title="Không thể tải gói dịch vụ"
+                description="Chưa thể xác định gói hiện tại. Dữ liệu tài khoản của bạn chưa bị thay đổi."
+                urgent
+                action={<button className="lime" type="button" onClick={retryProfileData}>Thử tải lại</button>}
+              />
+            </section>
+          ) : (
+            <section id="profile-panel-package" role="tabpanel" aria-label="Gói dịch vụ" className="profile-card">
             <h1>Gói dịch vụ</h1>
             <div className="plan-box">
               <span>Gói hiện tại</span>
-              <strong>{subscription?.planName || (loading ? "Đang tải..." : "Free")}</strong>
+              <strong>{formatPlanName(subscription?.planName)}</strong>
               <p>
                 {subscription
-                  ? `${subscription.statusName || "Đang hoạt động"}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
-                  : "Bạn chưa có subscription trả phí đang hoạt động."}
+                  ? `${formatSubscriptionStatus(subscription.statusName)}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
+                  : "Bạn chưa có gói đăng ký trả phí đang hoạt động."}
               </p>
             </div>
             <button className="lime" type="button" onClick={() => go("/pricing")}>Nâng cấp MediMate+</button>
-          </section>
+            </section>
+          )
         )}
 
         {activeTab === "transactions" && (
@@ -852,7 +1013,7 @@ const styles = `
 .profile-form-actions button,
 .lime,
 .danger button{
-  min-height:43px;
+  min-height:44px;
   border:1px solid #b7c9c1;
   border-radius:11px;
   background:#fff;
@@ -898,6 +1059,12 @@ const styles = `
 .field textarea:focus{
   border-color:var(--profile-teal);
   box-shadow:0 0 0 3px rgba(8,127,120,.12);
+}
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible{
+  outline:3px solid var(--profile-teal);
+  outline-offset:2px;
 }
 .field input:disabled,
 .field select:disabled,
@@ -992,25 +1159,25 @@ const styles = `
   .profile-summary-grid article:last-child{grid-column:auto}
   .profile-summary-grid article,.profile-summary-card{min-height:108px}
   .mobile-tabs{
-    display:flex;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
     margin:0 0 12px;
-    padding:2px 1px 7px;
+    padding:2px 1px;
     gap:7px;
-    overflow-x:auto;
-    scroll-snap-type:x proximity;
+    overflow:visible;
   }
   .mobile-tabs button{
     display:grid;
-    flex:0 0 108px;
+    width:100%;
     place-items:center;
     gap:3px;
-    min-height:62px;
+    min-height:58px;
     border:1px solid var(--profile-line);
     border-radius:13px;
     background:#fff;
     color:var(--profile-muted);
-    scroll-snap-align:start;
   }
+  .mobile-tabs button:last-child{grid-column:1/-1}
   .mobile-tabs button.active{
     border-color:#acd0c2;
     background:var(--profile-mint);
@@ -1041,5 +1208,6 @@ const styles = `
   .profile-overview,.profile-card,.profile-summary-card,.profile-summary-grid article,.profile-sidebar,.field input,.field select,.field textarea,.mobile-tabs button{border:1px solid CanvasText}
   .profile-overview::after,.profile-sidebar button.active::before{display:none}
   .profile-sidebar button.active,.mobile-tabs button.active,.lime,.profile-head .lime{background:Highlight;color:HighlightText}
+  .field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline-color:Highlight}
 }
 `;

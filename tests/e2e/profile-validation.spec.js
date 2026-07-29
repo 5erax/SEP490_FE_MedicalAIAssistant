@@ -47,6 +47,10 @@ test("patient profile setup remains accessible at narrow widths", async ({ page 
   await page.goto("/patient/profile/setup", { waitUntil: "domcontentloaded" });
   const displayName = page.locator("#patient-profile-displayName");
   await expect(displayName).toBeVisible();
+  const mobileProgress = page.locator(".profile-setup-mobile-progress");
+  await expect(mobileProgress).toBeVisible();
+  await expect(mobileProgress).toContainText("/7 mục cơ bản");
+  await expect(mobileProgress).toContainText("trường có nhãn “bắt buộc”");
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])

@@ -327,14 +327,28 @@ test("missing token shows an invalid invitation without calling validation", asy
   await page.goto("/register-doctor", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("heading", { name: "Không thể tiếp tục đăng ký." })).toBeFocused();
-  await expect(page.getByText("Link đăng ký thiếu invitation token.")).toBeVisible();
+  await expect(page.getByText(
+    "Liên kết đăng ký không đầy đủ. Vui lòng mở đúng liên kết trong lời mời được gửi cho bạn.",
+  )).toBeVisible();
   expect(validationCalls).toBe(0);
 });
 
 for (const invitationCase of [
-  { token: "invalid-token", message: "Invitation link is invalid." },
-  { token: "expired-token", message: "Invitation link has expired." },
-  { token: "used-token", message: "Invitation link has already been used." },
+  {
+    token: "invalid-token",
+    message: "Invitation link is invalid.",
+    expected: "Liên kết đăng ký không hợp lệ. Vui lòng mở đúng liên kết trong lời mời được gửi cho bạn.",
+  },
+  {
+    token: "expired-token",
+    message: "Invitation link has expired.",
+    expected: "Liên kết đăng ký đã hết hạn. Vui lòng đề nghị quản trị viên gửi lời mời mới.",
+  },
+  {
+    token: "used-token",
+    message: "Invitation link has already been used.",
+    expected: "Liên kết đăng ký này đã được sử dụng. Hãy đăng nhập hoặc đề nghị quản trị viên kiểm tra lại.",
+  },
 ]) {
   test(`${invitationCase.token} is rejected before rendering the form`, async ({ page }) => {
     await page.route(`**/api/doctor-invitations/validate?token=${invitationCase.token}`, (route) => route.fulfill({
@@ -350,7 +364,8 @@ for (const invitationCase of [
 
     await page.goto(`/register-doctor?token=${invitationCase.token}`, { waitUntil: "domcontentloaded" });
 
-    await expect(page.getByText(invitationCase.message, { exact: true })).toBeVisible();
+    await expect(page.getByText(invitationCase.expected, { exact: true })).toBeVisible();
+    await expect(page.getByText(invitationCase.message, { exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Hoàn tất đăng ký" })).toHaveCount(0);
   });
 }
@@ -417,7 +432,7 @@ test("new doctor registration stays blocked without a FacilityDepartment id", as
   await expect(page.getByRole("button", { name: "Hoàn tất đăng ký" })).toBeDisabled();
 });
 
-test("all backend validation errors are displayed", async ({ page }) => {
+test("backend validation errors are presented in plain Vietnamese", async ({ page }) => {
   await mockLinkedInvitation(page, "backend-errors-token");
   await page.route("**/api/doctor-invitations/register", (route) => route.fulfill({
     status: 400,
@@ -440,9 +455,10 @@ test("all backend validation errors are displayed", async ({ page }) => {
   await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
   await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
 
-  await expect(page.getByText("Passwords must be at least 8 characters.")).toBeVisible();
-  await expect(page.getByText("Passwords must have at least one digit.")).toBeVisible();
-  await expect(page.getByText("Phone number is invalid.")).toBeVisible();
+  await expect(page.getByText("Mật khẩu cần có ít nhất 8 ký tự.")).toBeVisible();
+  await expect(page.getByText("Mật khẩu cần có ít nhất một chữ số.")).toBeVisible();
+  await expect(page.getByText("Số điện thoại chưa đúng định dạng. Vui lòng kiểm tra lại.")).toBeVisible();
+  await expect(page.getByText("Passwords must", { exact: false })).toHaveCount(0);
 });
 
 test("expired token during submission switches to the invalid state", async ({ page }) => {
@@ -463,5 +479,7 @@ test("expired token during submission switches to the invalid state", async ({ p
   await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
 
   await expect(page.getByRole("heading", { name: "Không thể tiếp tục đăng ký." })).toBeFocused();
-  await expect(page.getByText("Invitation link has expired.", { exact: true })).toBeVisible();
+  await expect(page.getByText(
+    "Liên kết đăng ký đã hết hạn. Vui lòng đề nghị quản trị viên gửi lời mời mới.",
+  )).toBeVisible();
 });

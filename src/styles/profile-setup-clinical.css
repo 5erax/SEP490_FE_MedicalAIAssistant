@@ -135,6 +135,16 @@
   color: var(--profile-teal-dark);
 }
 
+.profile-setup-clinical .profile-setup-mobile-progress {
+  display: none;
+}
+
+.profile-setup-clinical .profile-setup-mobile-progress small {
+  color: var(--profile-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .profile-setup-clinical .profile-progress-bar {
   background: #dfeae6;
 }
@@ -342,6 +352,21 @@ html[data-theme="dark"] .profile-setup-clinical .profile-setup-actions .btn-prim
   .profile-setup-clinical .profile-setup-form {
     border-radius: 17px;
     padding: 24px 18px;
+  }
+
+  .profile-setup-clinical .profile-setup-mobile-progress {
+    display: grid;
+    gap: 8px;
+    border-radius: 14px;
+    padding: 13px 14px;
+  }
+
+  .profile-setup-clinical .profile-setup-mobile-progress strong {
+    font-size: 20px;
+  }
+
+  .profile-setup-clinical .profile-setup-mobile-progress span {
+    font-size: 10px;
   }
 
   .profile-setup-clinical .profile-form-section {

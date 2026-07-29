@@ -17,6 +17,19 @@ const ADMIN_TOKEN = [
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20ifQ",
   "",
 ].join(".");
+const VISUAL_ASSESSMENT_SESSION_ID = "visual-assessment-session";
+const VISUAL_CLINICAL_SESSION_ID = "visual-clinical-session";
+const VISUAL_CLINICAL_FACILITY_ID = "facility-visual-clinical";
+const VISUAL_CLINICAL_DEPARTMENT_ID = "department-visual-clinical";
+const NEW_VISUAL_ROUTE_NAMES = new Set([
+  "assessment-question",
+  "assessment-result",
+  "assessment-history",
+  "patient-profile-transactions",
+  "patient-profile-security",
+  "clinical-map",
+  "admin-subscriptions",
+]);
 
 test.describe("visual baseline", () => {
   for (const route of VISUAL_ROUTES) {
@@ -24,7 +37,21 @@ test.describe("visual baseline", () => {
       test(`${route.name} at ${viewport.name}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await preparePage(page);
-        if (["profile-setup", "patient-dashboard", "symptom-analysis", "patient-chat", "patient-records", "patient-profile", "patient-recovery", "patient-medication", "patient-map"].includes(route.name)) {
+        if ([
+          "profile-setup",
+          "patient-dashboard",
+          "symptom-analysis",
+          "patient-chat",
+          "patient-records",
+          "patient-profile",
+          "patient-profile-transactions",
+          "patient-profile-security",
+          "assessment-question",
+          "assessment-result",
+          "assessment-history",
+          "clinical-map",
+          "patient-map",
+        ].includes(route.name)) {
           await page.addInitScript(({ accessToken, isProfileSetup }) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -74,8 +101,211 @@ test.describe("visual baseline", () => {
               data: [],
             }),
           }));
+          if (route.name === "assessment-question") {
+            await page.route(
+              "**/api/symptom-analysis/suggest-clinical-questions",
+              (request) => request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    sessionId: VISUAL_ASSESSMENT_SESSION_ID,
+                    questions: [
+                      {
+                        questionId: "question-visual-breathing",
+                        questionVi: "Bạn có khó thở hoặc hụt hơi khi vận động nhẹ không?",
+                        answers: {
+                          "Khó thở khi vận động nhẹ": "",
+                          "Khó thở khi nghỉ": "",
+                          "Đau tức ngực": "",
+                        },
+                      },
+                      {
+                        questionId: "question-visual-duration",
+                        questionVi: "Triệu chứng xuất hiện từ khi nào?",
+                        answers: {
+                          today: "Hôm nay",
+                          days: "Trong vài ngày",
+                          week: "Hơn một tuần",
+                        },
+                      },
+                    ],
+                  },
+                }),
+              }),
+            );
+          }
+          if (route.name === "assessment-result") {
+            await page.route(
+              `**/api/symptom-analysis/${VISUAL_ASSESSMENT_SESSION_ID}`,
+              (request) => request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    sessionId: VISUAL_ASSESSMENT_SESSION_ID,
+                    inputText: "Khó thở nhẹ khi vận động trong hai ngày gần đây",
+                    analysis: {
+                      primaryDiagnosis: {
+                        rank: 1,
+                        diseaseName: "Nhiễm trùng đường hô hấp trên",
+                        icd10Code: "J06.9",
+                        paGivenB: 0.72,
+                        clinicalReasoning: "Các dấu hiệu mô tả phù hợp với nhóm triệu chứng hô hấp thường gặp.",
+                      },
+                      diagnoses: [
+                        {
+                          rank: 1,
+                          diseaseName: "Nhiễm trùng đường hô hấp trên",
+                          icd10Code: "J06.9",
+                          paGivenB: 0.72,
+                          clinicalReasoning: "Các dấu hiệu mô tả phù hợp với nhóm triệu chứng hô hấp thường gặp.",
+                        },
+                        {
+                          rank: 2,
+                          diseaseName: "Viêm phế quản cấp",
+                          icd10Code: "J20.9",
+                          paGivenB: 0.2,
+                        },
+                        {
+                          rank: 3,
+                          diseaseName: "Viêm mũi dị ứng",
+                          icd10Code: "J30.9",
+                          paGivenB: 0.08,
+                        },
+                      ],
+                      recommendedDepartment: {
+                        departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
+                        departmentName: "Khoa Hô hấp",
+                        confidenceScore: 0.72,
+                        isEmergencySuggested: false,
+                      },
+                    },
+                  },
+                }),
+              }),
+            );
+          }
+          if (route.name === "assessment-history") {
+            await page.route(
+              "**/api/symptom-analysis/my-sessions**",
+              (request) => request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: {
+                    pageNumber: 1,
+                    pageSize: 10,
+                    totalCount: 3,
+                    totalPages: 1,
+                    items: [
+                      {
+                        sessionId: "history-visual-01",
+                        inputText: "Khó thở nhẹ khi vận động",
+                        sessionType: "diagnoses",
+                        status: "completed",
+                        createdAt: "2026-07-28T08:30:00Z",
+                      },
+                      {
+                        sessionId: "history-visual-02",
+                        inputText: "Đau đầu và mệt mỏi kéo dài",
+                        sessionType: "diagnoses",
+                        status: "completed",
+                        createdAt: "2026-07-24T03:15:00Z",
+                      },
+                      {
+                        sessionId: "history-visual-03",
+                        inputText: "Đau bụng âm ỉ sau bữa ăn",
+                        sessionType: "diagnoses",
+                        status: "completed",
+                        createdAt: "2026-07-18T10:45:00Z",
+                      },
+                    ],
+                  },
+                }),
+              }),
+            );
+          }
+          if (route.name === "patient-profile-transactions") {
+            await page.route("**/api/payments/me**", (request) => request.fulfill({
+              contentType: "application/json",
+              body: JSON.stringify({
+                success: true,
+                data: {
+                  pageNumber: 1,
+                  pageSize: 10,
+                  totalCount: 3,
+                  totalPages: 1,
+                  items: [
+                    {
+                      id: "payment-visual-01",
+                      planName: "MediMate+ Tháng",
+                      amount: 149000,
+                      currency: "VND",
+                      statusName: "Paid",
+                      provider: "payOS",
+                      transactionReference: "MM-20260728-001",
+                      createdAt: "2026-07-28T08:30:00Z",
+                    },
+                    {
+                      id: "payment-visual-02",
+                      planName: "MediMate+ Tháng",
+                      amount: 149000,
+                      currency: "VND",
+                      statusName: "Pending",
+                      provider: "payOS",
+                      transactionReference: "MM-20260628-002",
+                      createdAt: "2026-06-28T08:30:00Z",
+                    },
+                    {
+                      id: "payment-visual-03",
+                      planName: "MediMate+ Tháng",
+                      amount: 149000,
+                      currency: "VND",
+                      statusName: "Cancelled",
+                      provider: "payOS",
+                      transactionReference: "MM-20260528-003",
+                      createdAt: "2026-05-28T08:30:00Z",
+                    },
+                  ],
+                },
+              }),
+            }));
+          }
+          if (route.name === "clinical-map") {
+            await page.addInitScript((snapshot) => {
+              sessionStorage.setItem(
+                "medimate.clinical-map.recommendation",
+                JSON.stringify(snapshot),
+              );
+            }, {
+              sessionId: VISUAL_CLINICAL_SESSION_ID,
+              recommendedDepartment: {
+                departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
+                departmentName: "Khoa Truyền nhiễm và siêu vi",
+                confidenceScore: 0.86,
+                reason: "Sốt kéo dài kèm mệt mỏi",
+                priorityRank: 1,
+                isEmergencySuggested: false,
+              },
+              recommendedFacilities: [{
+                facilityId: VISUAL_CLINICAL_FACILITY_ID,
+                facilityName: "Bệnh viện Bệnh Nhiệt đới",
+                address: "764 Võ Văn Kiệt, Phường 1, Quận 5",
+                latitude: 10.7529,
+                longitude: 106.6784,
+                phone: "028 3923 5804",
+                facilityType: "hospital",
+                isActive: true,
+                departments: [{
+                  departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
+                  departmentName: "Khoa Truyền nhiễm và siêu vi",
+                }],
+              }],
+            });
+          }
         }
-        if (["admin-overview", "admin-users", "admin-doctors", "admin-ai-configs", "admin-facilities", "admin-departments", "admin-icd-chapters", "admin-clinical-questions", "admin-patient-profiles"].includes(route.name)) {
+        if (["admin-overview", "admin-users", "admin-doctors", "admin-ai-configs", "admin-subscriptions", "admin-facilities", "admin-departments", "admin-icd-chapters", "admin-clinical-questions", "admin-patient-profiles"].includes(route.name)) {
           await page.addInitScript((accessToken) => {
             localStorage.setItem("medimate.auth", JSON.stringify({
               accessToken,
@@ -339,6 +569,50 @@ test.describe("visual baseline", () => {
               },
             ]
             : [];
+          const visualAdminSubscriptions = route.name === "admin-subscriptions"
+            ? [
+              {
+                id: "subscription-visual-01",
+                planName: "MediMate+ Tháng",
+                price: 149000,
+                durationInDays: 30,
+                featureLimitJson: JSON.stringify({
+                  symptomAnalysisPerMonth: 30,
+                  aiChatPerDay: 20,
+                }),
+                isActive: true,
+                createdAt: "2026-06-12T00:00:00Z",
+                updatedAt: "2026-07-28T08:30:00Z",
+              },
+              {
+                id: "subscription-visual-02",
+                planName: "MediMate+ Quý",
+                price: 399000,
+                durationInDays: 90,
+                featureLimitJson: JSON.stringify({
+                  symptomAnalysisPerMonth: 45,
+                  aiChatPerDay: 30,
+                  clinicalQuestionPerMonth: 60,
+                }),
+                isActive: true,
+                createdAt: "2026-06-01T00:00:00Z",
+                updatedAt: "2026-07-20T09:45:00Z",
+              },
+              {
+                id: "subscription-visual-03",
+                planName: "MediMate+ Thử nghiệm",
+                price: 49000,
+                durationInDays: 7,
+                featureLimitJson: JSON.stringify({
+                  symptomAnalysisPerMonth: 5,
+                  aiChatPerDay: 5,
+                }),
+                isActive: false,
+                createdAt: "2026-05-15T00:00:00Z",
+                updatedAt: "2026-07-01T10:15:00Z",
+              },
+            ]
+            : [];
           await page.route("**/api/**", (request) => {
             const url = new URL(request.request().url());
             const pathname = url.pathname;
@@ -437,6 +711,15 @@ test.describe("visual baseline", () => {
                 }),
               });
             }
+            if (pathname === "/api/subscription-plans") {
+              return request.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                  success: true,
+                  data: visualAdminSubscriptions,
+                }),
+              });
+            }
             if (Object.hasOwn(adminTotals, pathname)) {
               const items = pathname === "/api/users"
                 ? visualAdminUsers
@@ -532,6 +815,59 @@ test.describe("visual baseline", () => {
             body: JSON.stringify(LANDING_MAP_STYLE),
           }));
         }
+        if (route.name === "clinical-map") {
+          await page.route("**/api/medical-facilities/active", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: [
+                {
+                  id: VISUAL_CLINICAL_FACILITY_ID,
+                  facilityName: "Bệnh viện Bệnh Nhiệt đới",
+                  address: "764 Võ Văn Kiệt, Phường 1, Quận 5",
+                  latitude: 10.7529,
+                  longitude: 106.6784,
+                  phone: "028 3923 5804",
+                  facilityType: "hospital",
+                  openingHours: "Tiếp nhận 24/7",
+                  departments: [{
+                    departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
+                    departmentName: "Khoa Truyền nhiễm và siêu vi",
+                  }],
+                },
+                {
+                  id: "facility-visual-unrelated",
+                  facilityName: "Bệnh viện Đa khoa không được gợi ý",
+                  address: "Quận 1, TP.HCM",
+                  latitude: 10.7769,
+                  longitude: 106.7009,
+                  facilityType: "hospital",
+                  departments: [{
+                    departmentId: "department-visual-unrelated",
+                    departmentName: "Khoa Nội tổng quát",
+                  }],
+                },
+              ],
+            }),
+          }));
+          await page.route("**/api/facility-departments/active", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              data: [{
+                id: "facility-department-visual-clinical",
+                facilityId: VISUAL_CLINICAL_FACILITY_ID,
+                facilityName: "Bệnh viện Bệnh Nhiệt đới",
+                departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
+                departmentName: "Khoa Truyền nhiễm và siêu vi",
+              }],
+            }),
+          }));
+          await page.route("https://basemaps.cartocdn.com/**", (request) => request.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify(LANDING_MAP_STYLE),
+          }));
+        }
         if (route.name === "doctor-register") {
           await page.route(
             "**/api/doctor-invitations/validate?token=visual-doctor-token",
@@ -562,6 +898,24 @@ test.describe("visual baseline", () => {
           }));
         }
         await openRoute(page, route.path);
+        if (route.name === "assessment-question") {
+          await page.locator("#clinical-user-input").fill(
+            "Khó thở nhẹ khi vận động trong hai ngày gần đây",
+          );
+          await page.getByRole("button", {
+            name: "Tiếp tục phân tích lâm sàng",
+          }).click();
+          await expect(page).toHaveURL(
+            `/assessment/${VISUAL_ASSESSMENT_SESSION_ID}`,
+          );
+          await expect(page.getByRole("heading", {
+            name: "Câu hỏi lâm sàng",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "Bạn có khó thở hoặc hụt hơi khi vận động nhẹ không?",
+            { exact: true },
+          )).toBeVisible();
+        }
         if (route.name === "landing") {
           await expect(page.locator(".maplibregl-canvas")).toBeVisible();
           await expect(page.getByRole("heading", { name: "MediMate+ 30 ngày" })).toBeVisible();
@@ -569,6 +923,25 @@ test.describe("visual baseline", () => {
         if (["nearby-clinic", "patient-map"].includes(route.name)) {
           await expect(page.locator(".maplibregl-canvas")).toBeVisible();
           await expect(page.getByText("Bệnh viện kiểm thử", { exact: true })).toBeVisible();
+        }
+        if (route.name === "clinical-map") {
+          await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+          const clinicalSummary = page.getByRole("complementary", {
+            name: "Kết quả gợi ý chuyên khoa",
+          });
+          await expect(clinicalSummary).toBeVisible();
+          await expect(clinicalSummary.getByText(
+            "Khoa Truyền nhiễm và siêu vi",
+            { exact: true },
+          )).toBeVisible();
+          await expect(page.getByText(
+            "Bệnh viện Bệnh Nhiệt đới",
+            { exact: true },
+          ).first()).toBeVisible();
+          await expect(page.getByText(
+            "Bệnh viện Đa khoa không được gợi ý",
+            { exact: true },
+          )).toHaveCount(0);
         }
         if (route.name === "admin-overview") {
           await expect(page.getByRole("heading", {
@@ -586,10 +959,17 @@ test.describe("visual baseline", () => {
           await expect(page.getByRole("heading", {
             name: "Bác sĩ trong hệ thống",
           })).toBeVisible();
-          await expect(page.getByText(
-            "3 đang hiển thị · 3 hồ sơ phù hợp",
-            { exact: true },
-          )).toBeVisible();
+          if (viewport.width <= 700) {
+            await expect(page.getByText(
+              "3 hồ sơ theo bộ lọc",
+              { exact: true },
+            )).toBeVisible();
+          } else {
+            await expect(page.getByText(
+              "3 đang hiển thị · 3 hồ sơ phù hợp",
+              { exact: true },
+            )).toBeVisible();
+          }
         }
         if (route.name === "admin-ai-configs") {
           await expect(page.getByRole("heading", {
@@ -604,6 +984,17 @@ test.describe("visual baseline", () => {
               .getByText("symptom-analysis-prod", { exact: true }),
           ).toBeVisible();
         }
+        if (route.name === "admin-subscriptions") {
+          await expect(page.getByRole("heading", {
+            name: "Quản lý gói dịch vụ",
+          })).toBeVisible();
+          await expect(page.getByRole("list", {
+            name: "Danh sách gói dịch vụ",
+          })).toBeVisible();
+          await expect(page.getByText("MediMate+ Tháng", {
+            exact: true,
+          })).toBeVisible();
+        }
         if (route.name === "admin-facilities") {
           await expect(page.getByRole("heading", {
             name: "Cơ sở y tế trong hệ thống",
@@ -612,13 +1003,13 @@ test.describe("visual baseline", () => {
             "3 cơ sở đang hiển thị",
             { exact: true },
           )).toBeVisible();
-          await expect(page.getByRole("link", {
-            name: "Xem Bệnh viện Đa khoa Trung tâm trên OpenStreetMap",
-          })).toBeVisible();
+          await expect(page.locator(
+            '.facility-admin-card a[aria-label="Xem Bệnh viện Đa khoa Trung tâm trên OpenStreetMap"]',
+          )).toHaveCount(1);
           await expect(
             page.locator(".facility-admin-card")
               .filter({ hasText: "Phòng khám Chuyên khoa An Bình" })
-              .getByRole("link"),
+              .locator('a[href*="openstreetmap.org"]'),
           ).toHaveCount(0);
         }
         if (route.name === "admin-departments") {
@@ -696,6 +1087,41 @@ test.describe("visual baseline", () => {
           await expect(page.locator("#profile-panel-info")).toBeVisible();
           await expect(page.getByRole("heading", { name: "Nguyễn Minh" })).toBeVisible();
         }
+        if (route.name === "patient-profile-transactions") {
+          await expect(page.getByRole("heading", {
+            name: "Lịch sử thanh toán",
+          })).toBeVisible();
+          await expect(page.getByText("MediMate+ Tháng", {
+            exact: true,
+          }).first()).toBeVisible();
+          await expect(page.getByText("Đã thanh toán", {
+            exact: true,
+          })).toBeVisible();
+        }
+        if (route.name === "patient-profile-security") {
+          await expect(page.locator("#profile-panel-security")).toBeVisible();
+          await expect(page.getByRole("heading", {
+            name: "Bảo mật",
+          })).toBeVisible();
+        }
+        if (route.name === "assessment-result") {
+          await expect(page.getByRole("heading", {
+            name: "Chẩn đoán lâm sàng",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "Nhiễm trùng đường hô hấp trên",
+            { exact: true },
+          ).first()).toBeVisible();
+        }
+        if (route.name === "assessment-history") {
+          await expect(page.getByRole("heading", {
+            name: "Lịch sử chẩn đoán lâm sàng",
+          })).toBeVisible();
+          await expect(page.getByText(
+            "Khó thở nhẹ khi vận động",
+            { exact: true },
+          )).toBeVisible();
+        }
         if (route.name === "patient-recovery") {
           await expect(page.getByRole("heading", { name: "Kế hoạch phục hồi chưa được mở" })).toBeVisible();
           await expect(page.getByText("MediMate hiện chưa tạo, lưu hoặc theo dõi kế hoạch phục hồi cá nhân.")).toBeVisible();
@@ -707,6 +1133,16 @@ test.describe("visual baseline", () => {
         const routeLoading = page.locator("[data-route-loading]");
         if (await routeLoading.count()) {
           await routeLoading.waitFor({ state: "detached" });
+        }
+        if (NEW_VISUAL_ROUTE_NAMES.has(route.name) && viewport.width <= 375) {
+          const pageWidth = await page.evaluate(() => ({
+            clientWidth: document.documentElement.clientWidth,
+            scrollWidth: document.documentElement.scrollWidth,
+          }));
+          expect(
+            pageWidth.scrollWidth,
+            `${route.name} must not overflow the ${viewport.width}px viewport`,
+          ).toBeLessThanOrEqual(pageWidth.clientWidth);
         }
 
         await expect(page).toHaveScreenshot(`${route.name}-${viewport.name}.png`, {
