@@ -1,0 +1,287 @@
+/* The authenticated map keeps its task-specific list beside the live map,
+   while navigation and account controls remain owned by the patient shell. */
+.user-shell .map-clinical-refresh {
+  min-height: 0;
+  background: var(--workspace-card);
+}
+
+.user-shell .map-clinical-refresh .map-page-actions button:first-child {
+  display: none;
+}
+
+.user-shell .map-clinical-refresh .map-skip-link {
+  left: min(438px, 40vw);
+}
+
+@media (max-width: 1180px) {
+  .user-shell {
+    grid-template-columns: 244px minmax(0, 1fr);
+  }
+
+  .user-shell-topbar {
+    grid-template-columns: minmax(200px, 1fr) auto;
+  }
+
+  .user-shell-search {
+    display: none;
+  }
+
+  .logout-btn {
+    font-size: 0;
+    width: 42px;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .user-shell {
+    --patient-mobile-nav-offset: max(10px, env(safe-area-inset-bottom));
+    --patient-mobile-nav-height: 68px;
+    --patient-mobile-inline-edge: 6px;
+    --patient-mobile-help-slot: 52px;
+    --patient-safe-bottom: calc(
+      var(--patient-mobile-nav-offset)
+      + var(--patient-mobile-nav-height)
+      + 16px
+    );
+    --patient-help-bottom: calc(var(--patient-mobile-nav-offset) + 8px);
+    display: block;
+  }
+
+  .user-shell-sidebar {
+    display: none;
+  }
+
+  .user-shell-sidebar.mobile-open {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 70;
+    display: flex;
+    width: min(320px, calc(100vw - 48px));
+    height: 100svh;
+    height: 100dvh;
+    box-shadow: 18px 0 60px rgba(16, 20, 17, 0.22);
+    padding:
+      max(20px, env(safe-area-inset-top))
+      18px
+      max(24px, env(safe-area-inset-bottom));
+  }
+
+  .user-shell-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 69;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: rgba(16, 20, 17, 0.38);
+  }
+
+  .mobile-drawer-close {
+    position: absolute;
+    top: 20px;
+    right: 14px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--workspace-line);
+    border-radius: 11px;
+    background: #fff;
+    color: var(--workspace-ink);
+  }
+
+  .user-shell-topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 12px 14px;
+  }
+
+  .mobile-menu-btn {
+    display: grid;
+  }
+
+  .title-icon {
+    display: none;
+  }
+
+  .user-shell-title h1 {
+    font-size: 19px;
+  }
+
+  .user-shell-actions .icon-btn {
+    display: none;
+  }
+
+  .user-chip {
+    max-width: 48px;
+    min-width: 44px;
+    padding: 4px;
+  }
+
+  .user-chip strong {
+    display: none;
+  }
+
+  .account-menu-panel {
+    position: fixed;
+    top: 62px;
+    right: 14px;
+  }
+
+  .user-shell-content {
+    min-height: calc(100svh - 66px);
+    min-height: calc(100dvh - 66px);
+    padding: 14px 14px var(--patient-safe-bottom);
+    scroll-padding-bottom: var(--patient-safe-bottom);
+  }
+
+  .user-shell .chatbot-page {
+    height: calc(100svh - 176px);
+    height: calc(100dvh - 176px);
+    border-radius: 18px;
+  }
+
+  .user-shell .clinic-page {
+    height: calc(100svh - 150px);
+    height: calc(100dvh - 150px);
+    border-radius: 18px;
+  }
+
+  .user-shell-mobile-nav {
+    position: fixed;
+    right: var(--patient-mobile-inline-edge);
+    bottom: var(--patient-mobile-nav-offset);
+    left: var(--patient-mobile-inline-edge);
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    border: 1px solid rgba(16, 20, 17, 0.16);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 7px var(--patient-mobile-help-slot) 7px 7px;
+    box-shadow: 0 18px 52px rgba(16, 20, 17, 0.16);
+    backdrop-filter: blur(18px);
+  }
+
+  .patient-help-launcher {
+    right: var(--patient-mobile-inline-edge);
+    bottom: var(--patient-help-bottom);
+  }
+
+  .patient-help-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    background: rgba(232, 247, 242, 0.96);
+    box-shadow: none;
+  }
+
+  .patient-help-menu {
+    position: absolute;
+    right: 0;
+    bottom: 58px;
+    width: min(300px, calc(100vw - 32px));
+  }
+
+  .patient-tour-panel,
+  .patient-tour-panel.is-centered {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    transform: none;
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .patient-tour-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .patient-tour-actions button {
+    width: 100%;
+  }
+
+  .patient-tour-actions button:first-child {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .user-shell-mobile-nav button,
+  .user-shell-mobile-nav a {
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    min-height: 52px;
+    min-width: 0;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--workspace-muted);
+    padding: 7px 2px;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .user-shell-content :where(
+    button,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select,
+    textarea
+  ) {
+    min-height: 44px;
+  }
+
+  .user-shell-content :where(input, select, textarea, button, [tabindex]):focus {
+    scroll-margin-bottom: var(--patient-safe-bottom);
+  }
+
+  .user-shell .chatbot-message-area,
+  .user-shell .profile-content,
+  .user-shell .assessment-shell {
+    scroll-padding-bottom: var(--patient-safe-bottom);
+  }
+
+  .user-shell-mobile-nav button.active,
+  .user-shell-mobile-nav a.active {
+    background: var(--workspace-mint);
+    color: var(--color-info-strong);
+  }
+
+  .user-shell-mobile-nav span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .user-shell .profile-page,
+  .user-shell .records-page {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .user-shell .dash-header h1 {
+    font-size: 36px;
+  }
+}
+
+@media (forced-colors: active) {
+  .user-shell-nav button.active,
+  .user-shell-nav a.active,
+  .user-shell-mobile-nav button.active,
+  .user-shell-mobile-nav a.active {
+    border: 2px solid Highlight;
+  }
+
+  .user-shell-search:focus-within {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+}

@@ -14,6 +14,9 @@
   --pricing-danger: #9f2d45;
   --pricing-danger-bg: #fff4f5;
   --pricing-focus: #b96b18;
+  --pricing-on-primary: #ffffff;
+  --pricing-badge-bg: #fbfdfc;
+  --pricing-interactive-hover: rgba(255, 255, 255, 0.7);
   min-height: 100svh;
   padding: 116px 24px 80px;
   background:
@@ -124,7 +127,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #405e63;
+  color: var(--pricing-muted);
   font-size: 13px;
   font-weight: 650;
   line-height: 1.45;
@@ -201,7 +204,7 @@
 
 .billing-toggle button.active {
   background: var(--pricing-teal);
-  color: #ffffff;
+  color: var(--pricing-on-primary);
   box-shadow: 0 7px 18px rgba(20, 125, 120, 0.2);
 }
 
@@ -258,7 +261,7 @@
 }
 
 .pricing-api-message button:hover {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--pricing-interactive-hover);
 }
 
 .plans-grid {
@@ -322,7 +325,7 @@
   min-height: 32px;
   border: 1px solid var(--pricing-line);
   border-radius: 999px;
-  background: #fbfdfc;
+  background: var(--pricing-badge-bg);
   color: var(--pricing-muted);
   padding: 0 12px;
   font-size: 12px;
@@ -493,7 +496,7 @@
 
 .plan-action-primary {
   background: var(--pricing-teal);
-  color: #ffffff;
+  color: var(--pricing-on-primary);
   box-shadow: 0 11px 24px rgba(20, 125, 120, 0.2);
 }
 
@@ -905,6 +908,9 @@ html[data-theme="dark"] .pricing-page {
   --pricing-canvas: #0b2224;
   --pricing-danger: #ffb2bf;
   --pricing-danger-bg: #441f29;
+  --pricing-on-primary: #09201e;
+  --pricing-badge-bg: #152f2d;
+  --pricing-interactive-hover: rgba(255, 255, 255, 0.08);
   background:
     radial-gradient(circle at 8% 8%, rgba(99, 201, 191, 0.08), transparent 24rem),
     var(--pricing-canvas);
@@ -927,44 +933,56 @@ html[data-theme="dark"] .plan-benefits .plan-benefit-unavailable {
   background: rgba(10, 34, 35, 0.68);
 }
 
+html[data-theme="dark"] .checkout-status.success {
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pricing-page *,
   .pricing-page *::before,
   .pricing-page *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
   }
 }
 
 @media (forced-colors: active) {
-  .pricing-page,
-  .pricing-back-link,
-  .billing-panel,
-  .pricing-api-message,
-  .pricing-plan-card,
-  .payment-methods-icon,
-  .current-subscription,
-  .faq-item,
-  .pricing-assurance {
+  html .pricing-page.pricing-page,
+  html .pricing-page.pricing-page :is(
+    .pricing-back-link,
+    .billing-panel,
+    .pricing-api-message,
+    .pricing-plan-card,
+    .payment-methods-icon,
+    .current-subscription,
+    .faq-item,
+    .pricing-assurance
+  ) {
     background: Canvas;
     color: CanvasText;
   }
 
-  .pricing-back-link,
-  .billing-panel,
-  .pricing-api-message,
-  .pricing-plan-card,
-  .current-subscription,
-  .faq-item,
-  .pricing-assurance,
-  .plan-action {
+  html .pricing-page.pricing-page :is(
+    .pricing-back-link,
+    .billing-panel,
+    .pricing-api-message,
+    .pricing-plan-card,
+    .current-subscription,
+    .faq-item,
+    .pricing-assurance,
+    .plan-action
+  ) {
     border: 1px solid CanvasText;
   }
 
-  .billing-toggle button.active,
-  .plan-action-primary {
+  html .pricing-page.pricing-page :is(
+    .billing-toggle button.active,
+    .plan-action-primary
+  ) {
     background: Highlight;
     color: HighlightText;
   }
