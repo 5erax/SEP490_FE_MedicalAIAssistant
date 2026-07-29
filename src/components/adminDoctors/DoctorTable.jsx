@@ -1,5 +1,5 @@
 import { Badge, Button, DataTable, EmptyState } from "../ui";
-import { Pencil, Power, Stethoscope, Trash2, UserRoundPlus } from "lucide-react";
+import { Pencil, Power, Stethoscope, Trash2 } from "lucide-react";
 import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 
 function getInitials(name = "") {
@@ -137,7 +137,7 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
       description="Thử đổi bộ lọc hoặc thêm bác sĩ mới để bắt đầu quản lý danh sách nhân sự y tế."
       action={(
         <Button onClick={onCreate}>
-          <UserRoundPlus size={15} /> Tạo hồ sơ bác sĩ
+          Tạo hồ sơ bác sĩ
         </Button>
       )}
     />
