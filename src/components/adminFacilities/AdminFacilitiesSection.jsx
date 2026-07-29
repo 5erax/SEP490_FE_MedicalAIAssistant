@@ -1,4 +1,4 @@
-import { Building2, ExternalLink, Filter, MapPin, Pencil, Plus, Power, RefreshCw, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { Building2, ClipboardList, ExternalLink, Filter, ImageIcon, MapPin, Pencil, Phone, Plus, Power, RefreshCw, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services/cloudinaryUploadService";
 import AdminActionDisclosure from "../admin/AdminActionDisclosure";
@@ -455,8 +455,11 @@ export default function AdminFacilitiesSection({
             <div className="facility-form-body">
               <section className="facility-form-card" aria-labelledby="facility-basic-section">
                 <div className="facility-form-card-head">
-                  <h3 id="facility-basic-section">Thông tin cơ bản</h3>
-                  <p>Tên và loại hình của cơ sở trong hệ thống.</p>
+                  <span className="facility-form-card-icon" aria-hidden="true"><ClipboardList size={18} /></span>
+                  <div>
+                    <h3 id="facility-basic-section">Thông tin cơ bản</h3>
+                    <p>Tên và loại hình của cơ sở trong hệ thống.</p>
+                  </div>
                 </div>
                 <div className="facility-form-grid">
                   <Field label="Tên cơ sở y tế" className="facility-form-span-2">
@@ -482,8 +485,11 @@ export default function AdminFacilitiesSection({
 
               <section className="facility-form-card" aria-labelledby="facility-contact-section">
                 <div className="facility-form-card-head">
-                  <h3 id="facility-contact-section">Liên hệ và vận hành</h3>
-                  <p>Thông tin giúp bệnh nhân kiểm tra địa chỉ, website và giờ mở cửa trước khi đến khám.</p>
+                  <span className="facility-form-card-icon" aria-hidden="true"><Phone size={18} /></span>
+                  <div>
+                    <h3 id="facility-contact-section">Liên hệ và vận hành</h3>
+                    <p>Thông tin giúp bệnh nhân kiểm tra địa chỉ, website và giờ mở cửa trước khi đến khám.</p>
+                  </div>
                 </div>
                 <div className="facility-form-grid">
                   <Field label="Địa chỉ" className="facility-form-span-2" help="Nên nhập địa chỉ đầy đủ để hiển thị tốt trên bản đồ và danh sách đề xuất.">
@@ -527,8 +533,11 @@ export default function AdminFacilitiesSection({
 
               <section className="facility-form-card" aria-labelledby="facility-location-section">
                 <div className="facility-form-card-head">
-                  <h3 id="facility-location-section">Tọa độ bản đồ</h3>
-                  <p>Tọa độ hợp lệ giúp cơ sở xuất hiện đúng vị trí và bật được chức năng chỉ đường.</p>
+                  <span className="facility-form-card-icon" aria-hidden="true"><MapPin size={18} /></span>
+                  <div>
+                    <h3 id="facility-location-section">Tọa độ bản đồ</h3>
+                    <p>Tọa độ hợp lệ giúp cơ sở xuất hiện đúng vị trí và bật được chức năng chỉ đường.</p>
+                  </div>
                 </div>
                 <div className="facility-form-grid">
                   <Field label="Vĩ độ" help="Giá trị từ -90 đến 90. Ví dụ: 10.8491.">
@@ -556,8 +565,11 @@ export default function AdminFacilitiesSection({
 
               <section className="facility-form-card" aria-labelledby="facility-image-section">
                 <div className="facility-form-card-head">
-                  <h3 id="facility-image-section">Hình ảnh hiển thị</h3>
-                  <p>Chọn ảnh đại diện rõ ràng để người dùng dễ nhận diện cơ sở y tế.</p>
+                  <span className="facility-form-card-icon" aria-hidden="true"><ImageIcon size={18} /></span>
+                  <div>
+                    <h3 id="facility-image-section">Hình ảnh hiển thị</h3>
+                    <p>Chọn ảnh đại diện rõ ràng để người dùng dễ nhận diện cơ sở y tế.</p>
+                  </div>
                 </div>
                 <div className="facility-image-uploader">
                   <div className={`facility-image-preview-shell ${currentImageUrl ? "has-image" : ""}`}>

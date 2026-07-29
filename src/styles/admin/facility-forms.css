@@ -203,19 +203,52 @@
 }
 
 .facility-form-card {
+  position: relative;
   display: grid;
+  overflow: hidden;
   gap: 16px;
   min-width: 0;
-  border: 1px solid rgba(16, 20, 17, 0.1);
+  border: 1px solid rgba(0, 128, 136, 0.16);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.86);
+  background:
+    linear-gradient(135deg, rgba(230, 247, 244, 0.5), rgba(255, 255, 255, 0.92) 44%),
+    #ffffff;
   padding: 18px;
-  box-shadow: 0 14px 34px rgba(16, 20, 17, 0.045);
+  box-shadow: 0 14px 34px rgba(12, 58, 62, 0.06);
+}
+
+.facility-form-card::before {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, #008891, #6fd0c8);
+  content: "";
 }
 
 .facility-form-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-left: 6px;
+}
+
+.facility-form-card-icon {
   display: grid;
-  gap: 5px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(0, 128, 136, 0.14);
+  border-radius: 13px;
+  background: #e6f7f4;
+  color: #087f8c;
+}
+
+.facility-form-card-head > div {
+  min-width: 0;
 }
 
 .facility-form-card-head h3 {

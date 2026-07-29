@@ -1,3 +1,4 @@
+import { Building2, ImageIcon, UserRound } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { uploadImageToCloudinary } from "../../services/cloudinaryUploadService";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
@@ -214,8 +215,11 @@ export default function DoctorFormModal({
           <div className="facility-form-body">
             <section className="facility-form-card" aria-labelledby="doctor-work-section">
               <div className="facility-form-card-head">
-                <h3 id="doctor-work-section">Nơi công tác</h3>
-                <p>Chọn cơ sở và khoa mà bác sĩ đang phụ trách.</p>
+                <span className="facility-form-card-icon" aria-hidden="true"><Building2 size={18} /></span>
+                <div>
+                  <h3 id="doctor-work-section">Nơi công tác</h3>
+                  <p>Chọn cơ sở và khoa mà bác sĩ đang phụ trách.</p>
+                </div>
               </div>
               <label className={`clean-field ${errors.facilityDepartmentId ? "doctor-field-error" : ""}`}>
                 <span>Cơ sở y tế - khoa</span>
@@ -245,8 +249,11 @@ export default function DoctorFormModal({
 
             <section className="facility-form-card" aria-labelledby="doctor-profile-section">
               <div className="facility-form-card-head">
-                <h3 id="doctor-profile-section">Hồ sơ chuyên môn</h3>
-                <p>Thông tin này giúp bệnh nhân nhận diện bác sĩ trong danh sách cơ sở y tế.</p>
+                <span className="facility-form-card-icon" aria-hidden="true"><UserRound size={18} /></span>
+                <div>
+                  <h3 id="doctor-profile-section">Hồ sơ chuyên môn</h3>
+                  <p>Thông tin này giúp bệnh nhân nhận diện bác sĩ trong danh sách cơ sở y tế.</p>
+                </div>
               </div>
               <div className="facility-form-grid">
                 <label className={`clean-field ${errors.fullName ? "doctor-field-error" : ""}`}>
@@ -301,8 +308,11 @@ export default function DoctorFormModal({
 
             <section className="facility-form-card" aria-labelledby="doctor-image-section">
               <div className="facility-form-card-head">
-                <h3 id="doctor-image-section">Ảnh đại diện</h3>
-                <p>Ảnh giúp hồ sơ bác sĩ rõ ràng hơn khi người dùng xem chi tiết cơ sở.</p>
+                <span className="facility-form-card-icon" aria-hidden="true"><ImageIcon size={18} /></span>
+                <div>
+                  <h3 id="doctor-image-section">Ảnh đại diện</h3>
+                  <p>Ảnh giúp hồ sơ bác sĩ rõ ràng hơn khi người dùng xem chi tiết cơ sở.</p>
+                </div>
               </div>
               <div className="facility-image-uploader">
                 <div className={`facility-image-preview-shell ${currentImageUrl ? "has-image" : ""}`}>

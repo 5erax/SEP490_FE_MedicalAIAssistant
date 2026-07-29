@@ -274,8 +274,11 @@ export default function AdminDepartmentsSection({
             <div className="facility-form-body">
               <section className="facility-form-card" aria-labelledby="department-basic-section">
                 <div className="facility-form-card-head">
-                  <h3 id="department-basic-section">Thông tin chuyên khoa</h3>
-                  <p>Thông tin này được dùng khi gán bác sĩ, cơ sở y tế và gợi ý chuyên khoa phù hợp.</p>
+                  <span className="facility-form-card-icon" aria-hidden="true"><Stethoscope size={18} /></span>
+                  <div>
+                    <h3 id="department-basic-section">Thông tin chuyên khoa</h3>
+                    <p>Thông tin này được dùng khi gán bác sĩ, cơ sở y tế và gợi ý chuyên khoa phù hợp.</p>
+                  </div>
                 </div>
 
                 <div className="facility-form-grid department-form-grid">
