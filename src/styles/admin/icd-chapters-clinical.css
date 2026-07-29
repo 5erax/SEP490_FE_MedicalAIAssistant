@@ -369,7 +369,9 @@
 }
 
 .admin-operator .icd-delete-button {
-  background: #17363a;
+  border-color: rgba(185, 48, 54, 0.25);
+  background: #fff7f7;
+  color: #a3262d;
 }
 
 @media (hover: hover) {
@@ -378,8 +380,10 @@
   }
 
   .admin-operator .icd-card-actions .icd-delete-button:hover {
-    background: #0d2326;
-    box-shadow: 0 8px 18px rgba(23, 54, 58, 0.28);
+    border-color: #a3262d;
+    background: #a3262d;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(163, 38, 45, 0.28);
   }
 }
 
