@@ -387,6 +387,18 @@
   color: #007f89;
 }
 
+.patient-profile-form-modal .btn-primary {
+  border-color: #062f35;
+  background: linear-gradient(135deg, #008891, #0a777f);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(0, 128, 136, 0.22);
+}
+
+.patient-profile-form-modal .btn-primary:hover {
+  background: linear-gradient(135deg, #0a777f, #006a72);
+  transform: translateY(-1px);
+}
+
 .admin-operator .patient-profile-required-note {
   color: #8b352c;
   font: inherit;
