@@ -1,22 +1,19 @@
 import {
   Activity,
   AlertTriangle,
-  Droplets,
   Filter,
   HeartPulse,
   Pencil,
   Plus,
   RefreshCw,
   RotateCcw,
-  Ruler,
   Search,
   ShieldCheck,
   Trash2,
   UserRound,
-  Weight,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import { Button, CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 const BLOOD_TYPE_OPTIONS = [
   { value: "", label: "Chưa xác định" },
@@ -236,84 +233,102 @@ export default function AdminPatientProfilesSection({
             description={error}
             action={<Button onClick={onReload}>Thử tải lại</Button>}
           />
-        ) : visibleProfiles.length === 0 ? (
-          <EmptyState
-            title="Không có hồ sơ phù hợp"
-            description={search
-              ? "Hãy điều chỉnh từ khóa hoặc xóa bộ lọc để xem lại danh sách."
-              : "Tạo hồ sơ đầu tiên để bắt đầu quản lý dữ liệu sức khỏe."}
-            action={search
-              ? <button className="btn btn-ghost btn-small" type="button" onClick={() => onSearchChange("")}>Xóa bộ lọc</button>
-              : <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>Tạo hồ sơ</button>}
-          />
         ) : (
-          <div className="patient-profile-card-list" role="list" aria-label="Danh sách hồ sơ bệnh nhân">
-            {visibleProfiles.map((profile) => {
-              const status = getProfileStatus(profile);
-              const displayName = profile.userDisplayName || profile.fullName || `Người dùng ${String(profile.userId).slice(0, 8)}`;
-              return (
-                <article className="patient-profile-card" key={profile.id} role="listitem">
-                  <div className="patient-profile-card-identity">
-                    <span className="patient-profile-avatar" aria-hidden="true"><UserRound size={22} /></span>
-                    <div>
-                      <strong>{displayName}</strong>
-                      <span>ID người dùng · {profile.userId || "Không có dữ liệu"}</span>
-                      <small>ID hồ sơ · {profile.id}</small>
+          <DataTable
+            className="patient-profile-table-wrap"
+            caption="Danh sách hồ sơ bệnh nhân theo bộ lọc hiện tại"
+            rowHeaderKey="profile"
+            getRowKey={(profile) => profile.id}
+            rows={visibleProfiles}
+            emptyState={(
+              <EmptyState
+                title="Không có hồ sơ phù hợp"
+                description={search
+                  ? "Hãy điều chỉnh từ khóa hoặc xóa bộ lọc để xem lại danh sách."
+                  : "Tạo hồ sơ đầu tiên để bắt đầu quản lý dữ liệu sức khỏe."}
+                action={search
+                  ? <button className="btn btn-ghost btn-small" type="button" onClick={() => onSearchChange("")}>Xóa bộ lọc</button>
+                  : <button className="btn btn-primary btn-small" type="button" onClick={openCreateForm}>Tạo hồ sơ</button>}
+              />
+            )}
+            columns={[
+              {
+                key: "profile",
+                header: "Bệnh nhân",
+                render: (profile) => {
+                  const displayName = profile.userDisplayName || profile.fullName || `Người dùng ${String(profile.userId).slice(0, 8)}`;
+                  return (
+                    <div className="patient-profile-primary-cell">
+                      <span className="patient-profile-avatar" aria-hidden="true"><UserRound size={20} /></span>
+                      <div>
+                        <strong>{displayName}</strong>
+                        <small>ID người dùng · {profile.userId || "Không có dữ liệu"}</small>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="patient-profile-card-status">
+                  );
+                },
+              },
+              {
+                key: "status",
+                header: "Trạng thái",
+                render: (profile) => {
+                  const status = getProfileStatus(profile);
+                  return (
                     <div className="admin-badge-stack">
                       <span className={`status-pill ${status.tone}`}>{status.label}</span>
                       <span className="status-pill neutral">{profile.chronicDiseases?.length ?? 0} bệnh nền</span>
                     </div>
-                    <p>
-                      <AlertTriangle size={14} aria-hidden="true" />
-                      <span>{profile.allergyNote || "Chưa ghi nhận dị ứng"}</span>
-                    </p>
+                  );
+                },
+              },
+              {
+                key: "allergy",
+                header: "Dị ứng",
+                render: (profile) => (
+                  <span className="patient-profile-allergy-cell">
+                    <AlertTriangle size={14} aria-hidden="true" /> {profile.allergyNote || "Chưa ghi nhận"}
+                  </span>
+                ),
+              },
+              {
+                key: "metrics",
+                header: "Chỉ số",
+                render: (profile) => (
+                  <div className="table-primary-cell">
+                    <strong>{profile.bloodType || "Chưa xác định"} · {profile.height != null ? `${profile.height} cm` : "—"} · {profile.weight != null ? `${profile.weight} kg` : "—"}</strong>
+                    <small>Cập nhật · {formatDateTime(profile.updatedAt ?? profile.createdAt)}</small>
                   </div>
-
-                  <dl className="patient-profile-card-metrics">
-                    <div>
-                      <dt><Droplets size={14} aria-hidden="true" /> Nhóm máu</dt>
-                      <dd>{profile.bloodType || "Chưa xác định"}</dd>
+                ),
+              },
+              {
+                key: "actions",
+                header: "Thao tác",
+                render: (profile) => {
+                  const displayName = profile.userDisplayName || profile.fullName || `Người dùng ${String(profile.userId).slice(0, 8)}`;
+                  return (
+                    <div className="record-actions" aria-label={`Thao tác với hồ sơ của ${displayName}`}>
+                      <button
+                        className="btn btn-ghost btn-small"
+                        type="button"
+                        aria-label={`Sửa hồ sơ của ${displayName}`}
+                        onClick={() => openEditForm(profile)}
+                      >
+                        <Pencil size={14} aria-hidden="true" /> Sửa
+                      </button>
+                      <button
+                        className="btn btn-dark btn-small patient-profile-delete-button"
+                        type="button"
+                        aria-label={`Xóa hồ sơ của ${displayName}`}
+                        onClick={() => onDelete(profile)}
+                      >
+                        <Trash2 size={14} aria-hidden="true" /> Xóa
+                      </button>
                     </div>
-                    <div>
-                      <dt><Ruler size={14} aria-hidden="true" /> Chiều cao</dt>
-                      <dd>{profile.height != null ? `${profile.height} cm` : "Chưa cập nhật"}</dd>
-                    </div>
-                    <div>
-                      <dt><Weight size={14} aria-hidden="true" /> Cân nặng</dt>
-                      <dd>{profile.weight != null ? `${profile.weight} kg` : "Chưa cập nhật"}</dd>
-                    </div>
-                    <div>
-                      <dt><Activity size={14} aria-hidden="true" /> Cập nhật</dt>
-                      <dd>{formatDateTime(profile.updatedAt ?? profile.createdAt)}</dd>
-                    </div>
-                  </dl>
-
-                  <div className="record-actions patient-profile-card-actions">
-                    <button
-                      className="btn btn-ghost btn-small"
-                      type="button"
-                      aria-label={`Sửa hồ sơ của ${displayName}`}
-                      onClick={() => openEditForm(profile)}
-                    >
-                      <Pencil size={15} aria-hidden="true" /> Sửa
-                    </button>
-                    <button
-                      className="btn btn-dark btn-small patient-profile-delete-button"
-                      type="button"
-                      aria-label={`Xóa hồ sơ của ${displayName}`}
-                      onClick={() => onDelete(profile)}
-                    >
-                      <Trash2 size={15} aria-hidden="true" /> Xóa
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                  );
+                },
+              },
+            ]}
+          />
         )}
       </div>
 
