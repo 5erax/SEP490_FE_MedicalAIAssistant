@@ -1,4 +1,4 @@
-import { BookOpen, Filter, Pencil, Plus, RefreshCw, RotateCcw, Search, Stethoscope, Trash2 } from "lucide-react";
+import { BookOpen, Check, Filter, Pencil, Plus, RefreshCw, RotateCcw, Search, Stethoscope, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
@@ -350,6 +350,7 @@ export default function AdminDepartmentsSection({
             <div className="doctor-modal-actions facility-form-actions">
               <button className="btn btn-ghost" type="button" onClick={closeForm} disabled={saving}>Hủy</button>
               <button className="btn btn-primary" type="submit" disabled={saving}>
+                <Check size={16} aria-hidden="true" />
                 {saving ? "Đang lưu..." : editingDepartmentId ? "Lưu cập nhật" : "Tạo chuyên khoa"}
               </button>
             </div>

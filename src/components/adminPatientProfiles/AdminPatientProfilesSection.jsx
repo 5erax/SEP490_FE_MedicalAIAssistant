@@ -1,6 +1,7 @@
 import {
   Activity,
   AlertTriangle,
+  Check,
   Filter,
   HeartPulse,
   Pencil,
@@ -491,6 +492,7 @@ export default function AdminPatientProfilesSection({
             <div className="doctor-modal-actions facility-form-actions">
               <button className="btn btn-ghost" type="button" onClick={closeForm} disabled={saving}>Hủy</button>
               <button className="btn btn-primary" type="submit" disabled={saving}>
+                <Check size={16} aria-hidden="true" />
                 {saving ? "Đang lưu..." : editingProfileId ? "Lưu cập nhật" : "Tạo hồ sơ"}
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { Building2, ImageIcon, UserRound } from "lucide-react";
+import { Building2, Check, ImageIcon, UserRound } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { uploadImageToCloudinary } from "../../services/cloudinaryUploadService";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
@@ -380,6 +380,7 @@ export default function DoctorFormModal({
           <div className="doctor-modal-actions facility-form-actions">
             <button className="btn btn-ghost" type="button" onClick={onClose} disabled={locked}>Hủy</button>
             <button className="btn btn-primary" type="submit" disabled={locked}>
+              <Check size={16} aria-hidden="true" />
               {imageUploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Tạo hồ sơ bác sĩ"}
             </button>
           </div>

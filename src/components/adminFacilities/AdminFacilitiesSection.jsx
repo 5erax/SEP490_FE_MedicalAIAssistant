@@ -1,4 +1,4 @@
-import { Building2, ClipboardList, ExternalLink, Filter, ImageIcon, MapPin, Pencil, Phone, Plus, Power, RefreshCw, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { Building2, Check, ClipboardList, ExternalLink, Filter, ImageIcon, MapPin, Pencil, Phone, Plus, Power, RefreshCw, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services/cloudinaryUploadService";
 import AdminActionDisclosure from "../admin/AdminActionDisclosure";
@@ -695,6 +695,7 @@ export default function AdminFacilitiesSection({
                 type="submit"
                 disabled={saving || imageUploading || hasUploadError || departments.length === 0}
               >
+                <Check size={16} aria-hidden="true" />
                 {imageUploading ? "Đang tải ảnh..." : hasUploadError ? "Xử lý lỗi upload trước" : saving ? "Đang lưu..." : editingFacilityId ? "Lưu cập nhật" : "Tạo cơ sở"}
               </button>
             </div>
