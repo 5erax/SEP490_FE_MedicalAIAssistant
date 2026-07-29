@@ -267,8 +267,31 @@
 }
 
 .admin-operator .subscription-plan-heading {
-  align-items: center;
-  gap: 18px;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  flex-wrap: nowrap;
+  align-items: end;
+  gap: clamp(24px, 5vw, 72px);
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 22px;
+  background:
+    linear-gradient(120deg, rgba(225, 243, 238, 0.82), rgba(255, 255, 255, 0.96) 62%),
+    #fff;
+  padding: clamp(24px, 3.5vw, 42px);
+}
+
+.admin-operator .subscription-plan-heading::after {
+  position: absolute;
+  right: -88px;
+  bottom: -122px;
+  width: 260px;
+  height: 260px;
+  border: 38px solid rgba(13, 119, 115, 0.055);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
 }
 
 .admin-operator .subscription-plan-heading .muted-text {
@@ -285,7 +308,7 @@
 .subscription-plan-kpis article {
   border: 1px solid rgba(16, 20, 17, 0.1);
   border-radius: 16px;
-  background: linear-gradient(145deg, rgba(230, 248, 217, 0.72), rgba(223, 248, 237, 0.62));
+  background: linear-gradient(145deg, rgba(223, 248, 237, 0.72), rgba(219, 242, 231, 0.62));
   padding: 16px;
 }
 
