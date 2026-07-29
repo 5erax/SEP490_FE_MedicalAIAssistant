@@ -352,13 +352,10 @@
 .admin-operator .clean-field input:focus,
 .admin-operator .clean-field textarea:focus,
 .admin-operator .clean-field select:focus,
-.clinical-question-modal .clean-field input:focus,
-.clinical-question-modal .clean-field textarea:focus,
-.clinical-question-modal .clean-field select:focus,
 .admin-operator .admin-toolbar input:focus,
 .admin-operator .admin-toolbar select:focus {
-  border-color: rgba(16, 20, 17, 0.72);
-  box-shadow: 0 0 0 4px rgba(196, 233, 149, 0.24);
+  border-color: #087f8c;
+  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.18);
 }
 
 .operator-workspace .clean-field input:disabled,
