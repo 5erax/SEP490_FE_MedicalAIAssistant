@@ -341,9 +341,10 @@ export default function AdminPatientProfilesSection({
           initialFocusRef={firstFieldRef}
           restoreFocusRef={dialogTriggerRef}
         >
-          <header className="doctor-modal-header">
+          <header className="doctor-modal-header patient-profile-modal-header">
+            <span className="patient-profile-modal-icon" aria-hidden="true"><HeartPulse size={22} /></span>
             <div>
-              <p className="eyebrow">{editingProfileId ? "Update" : "Create"}</p>
+              <p className="eyebrow">{editingProfileId ? "Cập nhật" : "Tạo mới"}</p>
               <h2 id="patient-profile-modal-title">{editingProfileId ? "Cập nhật hồ sơ bệnh nhân" : "Tạo hồ sơ bệnh nhân"}</h2>
               <p id="patient-profile-modal-description">Chỉ nhập thông tin sức khỏe đã được người dùng cung cấp và xác nhận.</p>
             </div>

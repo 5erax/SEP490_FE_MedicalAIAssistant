@@ -394,6 +394,26 @@
   font: inherit;
 }
 
+.icd-chapter-modal-header.doctor-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.icd-chapter-modal-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(0, 128, 136, 0.16);
+  border-radius: 18px;
+  background: #e6f7f4;
+  color: #087f8c;
+  box-shadow: 0 16px 36px rgba(0, 128, 136, 0.1);
+}
+
 .icd-chapter-modal .doctor-modal-header .eyebrow {
   color: #007f89;
 }

@@ -441,7 +441,8 @@ export default function AdminFacilitiesSection({
           closeOnBackdrop={!saving && !imageUploading}
           closeOnEscape={!saving && !imageUploading}
         >
-          <header className="doctor-modal-header">
+          <header className="doctor-modal-header facility-clinical-modal-header">
+            <span className="facility-clinical-modal-icon" aria-hidden="true"><Building2 size={22} /></span>
             <div>
               <p className="eyebrow">{editingFacilityId ? "Cập nhật" : "Tạo mới"}</p>
               <h2 id="facility-modal-title">{editingFacilityId ? "Cập nhật cơ sở y tế" : "Tạo cơ sở y tế"}</h2>

@@ -374,7 +374,8 @@ export default function AdminICDChaptersSection({
           initialFocusRef={codeInputRef}
           restoreFocusRef={dialogTriggerRef}
         >
-          <header className="doctor-modal-header">
+          <header className="doctor-modal-header icd-chapter-modal-header">
+            <span className="icd-chapter-modal-icon" aria-hidden="true"><BookOpen size={22} /></span>
             <div>
               <p className="eyebrow">{editingChapterId ? "Cập nhật" : "Tạo mới"}</p>
               <h2 id="icd-chapter-modal-title">{editingChapterId ? "Cập nhật chương ICD" : "Tạo chương ICD"}</h2>
