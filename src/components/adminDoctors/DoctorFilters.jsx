@@ -1,4 +1,4 @@
-import { Filter, ListFilter, RotateCcw, Search, Stethoscope, UsersRound } from "lucide-react";
+import { Filter, ListFilter, RotateCcw, Search, UsersRound } from "lucide-react";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { Button, CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 
@@ -53,7 +53,6 @@ export default function DoctorFilters({
     >
       <div className="doctor-filter-primary-action">
         <Button className="doctor-add-button" type="button" onClick={onCreate}>
-          <Stethoscope size={15} aria-hidden="true" />
           Tạo hồ sơ bác sĩ
         </Button>
       </div>
@@ -120,12 +119,12 @@ export default function DoctorFilters({
             </span>
           </div>
           <div className="doctor-filter-actions">
-            <Button type="submit">
+            <button className="btn btn-primary btn-small" type="submit">
               <Filter size={15} aria-hidden="true" /> Áp dụng
-            </Button>
-            <Button tone="secondary" type="button" onClick={onReset}>
+            </button>
+            <button className="btn btn-ghost btn-small" type="button" onClick={onReset}>
               <RotateCcw size={15} aria-hidden="true" /> Xóa lọc
-            </Button>
+            </button>
           </div>
         </div>
       </form>

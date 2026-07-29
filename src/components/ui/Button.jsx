@@ -24,6 +24,7 @@ export const Button = forwardRef(function Button(
     ...props,
     "aria-busy": loading || undefined,
     className: cx("ui-button", styles.root, styles[tone], styles[size], className),
+    "data-tone": tone,
     ref,
   };
 

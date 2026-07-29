@@ -304,7 +304,19 @@ export default function AdminDepartmentsSection({
                       placeholder="Mô tả chức năng, nhóm triệu chứng thường gặp..."
                     />
                   </Field>
+                </div>
+              </section>
 
+              <section className="facility-form-card" aria-labelledby="department-icd-section">
+                <div className="facility-form-card-head">
+                  <span className="facility-form-card-icon" aria-hidden="true"><BookOpen size={18} /></span>
+                  <div>
+                    <h3 id="department-icd-section">Liên kết ICD</h3>
+                    <p>Gắn chuyên khoa với đúng chương ICD để hệ thống định hướng phân tích triệu chứng.</p>
+                  </div>
+                </div>
+
+                <div className="facility-form-grid department-form-grid">
                   <Field
                     label="Mã chương ICD"
                     className="facility-form-span-2"

@@ -794,7 +794,6 @@
     #fff;
   padding: clamp(22px, 2.6vw, 28px);
   box-shadow: 0 18px 44px rgba(8, 47, 53, 0.07);
-  overflow: hidden;
 }
 
 .doctor-form-modal .facility-form-card::before {

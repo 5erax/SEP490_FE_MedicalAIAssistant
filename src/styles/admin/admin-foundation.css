@@ -101,11 +101,22 @@
   border-color: rgba(16, 20, 17, 0.18);
   background: #0c5f5e;
   color: #fff;
-  box-shadow: 0 10px 22px rgba(111, 171, 41, 0.18);
+  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.18);
 }
 
 .admin-operator .btn-primary:hover {
-  box-shadow: 0 14px 28px rgba(111, 171, 41, 0.22);
+  box-shadow: 0 14px 28px rgba(8, 127, 140, 0.22);
+}
+
+.admin-operator .ui-button[data-tone="primary"] {
+  border-color: rgba(16, 20, 17, 0.18);
+  background: #0c5f5e;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.18);
+}
+
+.admin-operator .ui-button[data-tone="primary"]:hover:not(:disabled):not([aria-disabled="true"]) {
+  box-shadow: 0 14px 28px rgba(8, 127, 140, 0.22);
 }
 
 .admin-operator .btn-ghost {
