@@ -10,6 +10,7 @@ import {
   Badge,
   Button,
   CustomSelect,
+  DataTable,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -147,48 +148,67 @@ export default function AdminUsersSection({
           )}
         />
       ) : rows.length ? (
-        <div className="admin-users-card-list" role="list" aria-label="Danh sách tài khoản người dùng">
-          {rows.map((item) => {
-            const userId = item.identityId || item.userId || item.id;
-            const displayName = item.displayName || item.name || item.email || "Người dùng";
-
-            return (
-              <article className="admin-user-card" key={userId} role="listitem">
-                <div className="admin-user-card-main">
-                  <div className="admin-user-avatar" aria-hidden="true">
-                    {displayName.slice(0, 1).toUpperCase()}
+        <DataTable
+          className="admin-users-table"
+          caption="Danh sách tài khoản người dùng theo bộ lọc hiện tại"
+          rowHeaderKey="account"
+          getRowKey={(item) => item.identityId || item.userId || item.id}
+          rows={rows}
+          columns={[
+            {
+              key: "account",
+              header: "Tài khoản",
+              render: (item) => {
+                const userId = item.identityId || item.userId || item.id;
+                const displayName = item.displayName || item.name || item.email || "Người dùng";
+                return (
+                  <div className="admin-user-card-main">
+                    <div className="admin-user-avatar" aria-hidden="true">
+                      {displayName.slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="table-primary-cell">
+                      <strong>{displayName}</strong>
+                      <span>{item.email || "Chưa có email"}</span>
+                      <small title={userId}>Mã: {userId}</small>
+                    </div>
                   </div>
-                  <div className="table-primary-cell">
-                    <strong>{displayName}</strong>
-                    <span>{item.email || "Chưa có email"}</span>
-                    <small title={userId}>Mã: {userId}</small>
+                );
+              },
+            },
+            {
+              key: "status",
+              header: "Trạng thái",
+              render: (item) => (
+                <div className="admin-badge-stack">
+                  <Badge tone={isApproved(item) ? "success" : "warning"}>{statusLabel(item)}</Badge>
+                  <Badge tone={item.isDeleted ? "danger" : "info"}>{item.isDeleted ? "Đã xóa" : "Hoạt động"}</Badge>
+                </div>
+              ),
+            },
+            {
+              key: "actions",
+              header: "Thao tác",
+              render: (item) => {
+                const userId = item.identityId || item.userId || item.id;
+                const displayName = item.displayName || item.name || item.email || "Người dùng";
+                return (
+                  <div className="record-actions">
+                    <Button
+                      tone="danger"
+                      size="sm"
+                      className="admin-user-delete-btn"
+                      aria-label={`Xóa tài khoản ${displayName}`}
+                      onClick={() => onDelete(userId)}
+                    >
+                      <Trash2 size={14} aria-hidden="true" />
+                      Xóa
+                    </Button>
                   </div>
-                </div>
-
-                <div className="admin-user-card-status">
-                  <small>Trạng thái</small>
-                  <div>
-                    <Badge tone={isApproved(item) ? "success" : "warning"}>{statusLabel(item)}</Badge>
-                    <Badge tone={item.isDeleted ? "danger" : "info"}>{item.isDeleted ? "Đã xóa" : "Hoạt động"}</Badge>
-                  </div>
-                </div>
-
-                <div className="record-actions">
-                  <Button
-                    tone="danger"
-                    size="sm"
-                    className="admin-user-delete-btn"
-                    aria-label={`Xóa tài khoản ${displayName}`}
-                    onClick={() => onDelete(userId)}
-                  >
-                    <Trash2 size={14} aria-hidden="true" />
-                    Xóa
-                  </Button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                );
+              },
+            },
+          ]}
+        />
       ) : (
         <EmptyState
           title="Không có tài khoản phù hợp"
