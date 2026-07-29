@@ -544,8 +544,7 @@
 
 .subscription-plan-admin-panel .subscription-plan-actions .btn {
   width: 100%;
-  min-height: 40px;
-  border-radius: 12px;
+  min-height: 36px;
 }
 
 .subscription-plan-admin-panel .ui-table {

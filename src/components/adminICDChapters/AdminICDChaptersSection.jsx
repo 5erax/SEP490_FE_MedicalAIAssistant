@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Check,
   Eye,
   Filter,
   Hash,
@@ -457,6 +458,7 @@ export default function AdminICDChaptersSection({
             <div className="doctor-modal-actions facility-form-actions">
               <button className="btn btn-ghost" type="button" onClick={closeForm} disabled={saving}>Hủy</button>
               <button className="btn btn-primary" type="submit" disabled={saving}>
+                <Check size={16} aria-hidden="true" />
                 {saving ? "Đang lưu..." : editingChapterId ? "Lưu cập nhật" : "Tạo chương ICD"}
               </button>
             </div>

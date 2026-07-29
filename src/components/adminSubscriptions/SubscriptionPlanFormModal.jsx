@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { CreditCard, Gauge, Plus, ShieldAlert, Trash2 } from "lucide-react";
+import { Check, CreditCard, Gauge, Plus, ShieldAlert, Trash2 } from "lucide-react";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { Dialog } from "../ui";
 
@@ -317,6 +317,7 @@ export default function SubscriptionPlanFormModal({
         <div className="doctor-modal-actions">
           <button className="btn btn-ghost" type="button" onClick={onClose}>Hủy</button>
           <button className="btn btn-primary" type="submit" disabled={saving}>
+            <Check size={16} aria-hidden="true" />
             {saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Tạo gói"}
           </button>
         </div>

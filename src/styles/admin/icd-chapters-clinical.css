@@ -713,8 +713,7 @@ html[data-theme="dark"] .admin-operator .icd-keyword {
 }
 
 .admin-operator .icd-table-wrap .record-actions .btn {
-  min-height: 40px;
-  border-radius: 12px;
+  min-height: 36px;
 }
 
 .icd-primary-cell {

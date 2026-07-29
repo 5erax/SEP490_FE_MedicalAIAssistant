@@ -310,7 +310,7 @@
 }
 
 .admin-operator .doctor-table-wrap .ui-table tbody tr:hover {
-  background: rgba(230, 248, 217, 0.34);
+  background: rgba(230, 244, 238, 0.54);
 }
 
 .doctor-card-list {
@@ -578,8 +578,17 @@
   gap: 7px;
 }
 
-.admin-operator .admin-users-panel .record-actions {
-  justify-content: flex-end;
+.admin-operator .admin-users-table .record-actions {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.admin-operator .admin-users-table .record-actions .ui-button {
+  justify-content: center;
+  width: 100%;
+  min-height: 36px;
+  white-space: nowrap;
 }
 
 .admin-operator .admin-users-panel .pagination-row {

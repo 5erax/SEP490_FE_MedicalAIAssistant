@@ -1,4 +1,5 @@
 import {
+  Check,
   CircleHelp,
   FileText,
   Filter,
@@ -730,6 +731,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             <div className="doctor-modal-actions">
               <button className="btn btn-ghost" type="button" onClick={closeForm} disabled={status === "saving"}>Hủy</button>
               <button className="btn btn-primary" type="submit" disabled={status === "saving"}>
+                <Check size={16} aria-hidden="true" />
                 {status === "saving" ? "Đang lưu..." : editingId ? "Lưu cập nhật" : "Tạo câu hỏi"}
               </button>
             </div>

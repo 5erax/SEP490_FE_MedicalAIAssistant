@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { BrainCircuit, MessageSquareText, ShieldAlert, SlidersHorizontal, ToggleLeft } from "lucide-react";
+import { BrainCircuit, Check, MessageSquareText, ShieldAlert, SlidersHorizontal, ToggleLeft } from "lucide-react";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { Dialog } from "../ui";
 
@@ -231,6 +231,7 @@ export default function AIConfigFormModal({
           <div className="doctor-modal-actions">
             <button className="btn btn-ghost" type="button" onClick={onClose} disabled={saving}>Hủy</button>
             <button className="btn btn-primary" type="submit" disabled={saving}>
+              <Check size={16} aria-hidden="true" />
               {saving ? "Đang lưu..." : mode === "edit" ? "Lưu cập nhật" : "Tạo cấu hình"}
             </button>
           </div>
