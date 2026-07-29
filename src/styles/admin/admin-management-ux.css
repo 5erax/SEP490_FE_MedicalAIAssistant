@@ -378,11 +378,17 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-operator .department-clinical-heading-actions {
+  .admin-operator :is(
+    .department-clinical-heading-actions,
+    .icd-clinical-heading-actions
+  ) {
     grid-template-columns: 1fr;
   }
 
-  .admin-operator .department-clinical-context {
+  .admin-operator :is(
+    .department-clinical-context,
+    .icd-clinical-context
+  ) {
     grid-column: 1;
   }
 

@@ -436,7 +436,7 @@ export default function AdminICDChaptersSection({
               <section className="facility-form-card" aria-labelledby="icd-keywords-section">
                 <div className="facility-form-card-head">
                   <h3 id="icd-keywords-section">Từ khóa và trọng số</h3>
-                  <p>Thêm từng từ khóa bằng biểu mẫu; JSON nâng cao vẫn khả dụng khi cần.</p>
+                  <p>Thêm các từ khóa liên quan để hệ thống tự động nhận diện chương bệnh khi phân tích triệu chứng.</p>
                 </div>
                 <KeywordWeightEditor
                   ref={keywordEditorRef}

@@ -141,6 +141,7 @@ async function mockIcdChapterAdmin(page, initialRecords) {
 
 test("admin creates, edits, and deletes an ICD chapter", async ({ page }) => {
   await preparePage(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
   const state = await mockIcdChapterAdmin(page, []);
 
   await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
@@ -164,9 +165,25 @@ test("admin creates, edits, and deletes an ICD chapter", async ({ page }) => {
   await keywordRows.nth(0).getByLabel("Trọng số").fill("5");
   await createDialog.getByRole("button", { name: "Thêm từ khóa" }).click();
   keywordRows = createDialog.locator(".icd-keyword-editor-row");
-  await keywordRows.nth(1).getByRole("textbox", { name: "Từ khóa 2", exact: true }).fill("mạch");
-  await keywordRows.nth(1).getByLabel("Trọng số").fill("3");
-  await expect(createDialog.getByText("JSON nâng cao", { exact: true })).toBeVisible();
+  const secondKeyword = keywordRows.nth(1).locator(
+    'input[name="keywordWeights.1.keyword"]',
+  );
+  const secondWeight = keywordRows.nth(1).locator(
+    'input[name="keywordWeights.1.weight"]',
+  );
+  await secondKeyword.fill("tim");
+  await secondWeight.fill("3.5");
+  await createDialog.getByRole("button", { name: "Tạo chương ICD" }).click();
+  await expect(createDialog.getByText("Từ khóa này đang bị trùng.", { exact: true })).toBeVisible();
+  await expect(createDialog.getByText("Trọng số phải là số nguyên.", { exact: true })).toBeVisible();
+  await expect(secondKeyword).toBeFocused();
+
+  await secondKeyword.fill("mạch");
+  await secondWeight.fill("3");
+  await createDialog.getByText("JSON nâng cao", { exact: true }).click();
+  await expect(createDialog.getByRole("textbox", {
+    name: "Đối tượng JSON từ khóa",
+  })).toBeVisible();
   await createDialog.getByRole("button", { name: "Tạo chương ICD" }).click();
 
   await expect(page.getByText("Đã tạo chương ICD.", { exact: true })).toBeVisible();
@@ -259,6 +276,20 @@ test("ICD filters and actions remain usable on narrow screens", async ({ page })
   await editButton.focus();
   await expect(editButton).toBeFocused();
   await expect(editButton).toBeVisible();
+  await editButton.click();
+
+  const editDialog = page.getByRole("dialog");
+  const keywordRow = editDialog.locator(".icd-keyword-editor-row").first();
+  await expect(keywordRow).toBeVisible();
+  await expect(keywordRow.getByRole("button", { name: /Xóa từ khóa/ })).toBeVisible();
+  await editDialog.getByText("JSON nâng cao", { exact: true }).click();
+  await expect(editDialog.getByRole("textbox", {
+    name: "Đối tượng JSON từ khóa",
+  })).toBeVisible();
+  await expect(editDialog.getByRole("button", { name: "Lưu cập nhật" })).toBeVisible();
+  expect(await editDialog.evaluate(
+    (dialog) => dialog.scrollWidth <= dialog.clientWidth,
+  )).toBe(true);
   expect(await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   )).toBe(true);

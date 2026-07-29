@@ -235,7 +235,7 @@
 
 .admin-operator .icd-card-list {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .admin-operator .icd-card-list .ui-empty .btn {
@@ -258,7 +258,7 @@
 @media (hover: hover) {
   .admin-operator .icd-card:hover {
     border-color: #a8c9bf;
-    box-shadow: 0 14px 34px rgba(25, 65, 60, 0.08);
+    box-shadow: inset 3px 0 0 var(--icd-teal), 0 14px 34px rgba(25, 65, 60, 0.08);
   }
 }
 
@@ -269,12 +269,13 @@
   place-items: center;
   border: 1px solid #cce3dc;
   border-radius: 15px;
-  background: #eaf6f2;
+  background: linear-gradient(135deg, #d9f2ec, #eaf6f2);
   padding: 8px;
   color: #056c69;
   font-size: 16px;
   font-weight: 900;
   overflow-wrap: anywhere;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .admin-operator .icd-card-content {
@@ -371,6 +372,17 @@
   background: #17363a;
 }
 
+@media (hover: hover) {
+  .admin-operator .icd-card-actions .btn:hover {
+    box-shadow: 0 8px 18px rgba(8, 127, 123, 0.16);
+  }
+
+  .admin-operator .icd-card-actions .icd-delete-button:hover {
+    background: #0d2326;
+    box-shadow: 0 8px 18px rgba(23, 54, 58, 0.28);
+  }
+}
+
 .admin-operator .icd-pagination {
   margin-top: 0;
   border-top: 1px solid var(--icd-line);
@@ -382,26 +394,78 @@
   font: inherit;
 }
 
-.admin-operator .icd-chapter-form textarea {
-  resize: vertical;
+.icd-chapter-modal .doctor-modal-header .eyebrow {
+  color: #007f89;
 }
 
-.admin-operator .icd-json-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+.icd-chapter-modal .doctor-modal-header .eyebrow::before {
+  background: currentColor;
+}
+
+.icd-chapter-modal .doctor-modal-actions .btn-primary {
+  border-color: #062f35;
+  background: linear-gradient(135deg, #008891, #0a777f);
+  color: #ffffff;
+  box-shadow: 0 14px 26px rgba(0, 128, 136, 0.22);
+}
+
+.icd-chapter-modal .doctor-modal-actions .btn-primary:hover {
+  background: linear-gradient(135deg, #0a777f, #006a72);
+  transform: translateY(-1px);
+}
+
+.icd-chapter-modal .icd-keyword-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.icd-chapter-modal .icd-keyword-editor-empty {
+  margin: 0;
+  border: 1px dashed var(--line-strong);
   border-radius: 12px;
-  background: #eef7f3;
-  padding: 10px 12px;
-  color: #486365;
-  font-size: 12px;
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 13px;
   font-weight: 650;
-  line-height: 1.45;
 }
 
-.admin-operator .icd-json-note svg {
-  flex: 0 0 auto;
-  color: var(--icd-teal);
+.icd-chapter-modal .icd-keyword-editor-list {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f7fbfa;
+  padding: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.icd-chapter-modal .icd-keyword-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, 0.3fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.icd-chapter-modal .icd-keyword-remove {
+  width: auto;
+  padding: 0 14px;
+  color: var(--danger);
+}
+
+.icd-chapter-modal .icd-keyword-remove:hover {
+  border-color: rgba(180, 35, 24, 0.32);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+@media (max-width: 560px) {
+  .icd-chapter-modal .icd-keyword-editor-row {
+    grid-template-columns: 1fr;
+  }
+
+  .icd-chapter-modal .icd-keyword-remove {
+    width: 100%;
+  }
 }
 
 @media (max-width: 1040px) {
