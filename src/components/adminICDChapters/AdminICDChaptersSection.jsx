@@ -1,6 +1,5 @@
 import {
   BookOpen,
-  Braces,
   Eye,
   Filter,
   Hash,
@@ -42,6 +41,102 @@ function getChapterName(chapter) {
 
 function getKeywords(chapter) {
   return Object.entries(chapter.keywordWeights ?? {});
+}
+
+function parseKeywordWeightRows(rawValue) {
+  try {
+    const parsed = JSON.parse(rawValue || "{}");
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return Object.entries(parsed).map(([keyword, weight]) => ({ keyword, weight: String(weight) }));
+    }
+  } catch {
+    // Malformed value (shouldn't happen in practice): fall back to an empty editor.
+  }
+  return [];
+}
+
+function buildKeywordWeightsValue(rows) {
+  const result = {};
+  rows.forEach(({ keyword, weight }) => {
+    const trimmedKeyword = keyword.trim();
+    if (!trimmedKeyword) return;
+    const numericWeight = Number.parseInt(weight, 10);
+    result[trimmedKeyword] = Number.isFinite(numericWeight) ? numericWeight : 0;
+  });
+  return JSON.stringify(result);
+}
+
+function KeywordWeightEditor({ value, onChange }) {
+  const [rows, setRows] = useState(() =>
+    parseKeywordWeightRows(value).map((row, index) => ({ ...row, id: index + 1 })),
+  );
+  const nextIdRef = useRef(rows.length + 1);
+
+  function commit(nextRows) {
+    setRows(nextRows);
+    onChange(buildKeywordWeightsValue(nextRows));
+  }
+
+  function addRow() {
+    const id = nextIdRef.current;
+    nextIdRef.current += 1;
+    commit([...rows, { id, keyword: "", weight: "1" }]);
+  }
+
+  function updateRow(id, patch) {
+    commit(rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  }
+
+  function removeRow(id) {
+    commit(rows.filter((row) => row.id !== id));
+  }
+
+  return (
+    <div className="icd-keyword-editor">
+      {rows.length === 0 ? (
+        <p className="icd-keyword-editor-empty">Chưa có từ khóa nào. Nhấn "Thêm từ khóa" để bắt đầu.</p>
+      ) : (
+        <div className="icd-keyword-editor-list">
+          <div className="icd-keyword-editor-row-header" aria-hidden="true">
+            <span>Từ khóa</span>
+            <span>Trọng số</span>
+            <span />
+          </div>
+          {rows.map((row) => (
+            <div className="icd-keyword-editor-row" key={row.id}>
+              <input
+                type="text"
+                value={row.keyword}
+                onChange={(event) => updateRow(row.id, { keyword: event.target.value })}
+                placeholder="Ví dụ: sốt"
+                aria-label="Từ khóa"
+              />
+              <input
+                type="number"
+                inputMode="numeric"
+                step="1"
+                value={row.weight}
+                onChange={(event) => updateRow(row.id, { weight: event.target.value })}
+                placeholder="Trọng số"
+                aria-label="Trọng số"
+              />
+              <button
+                className="btn btn-ghost btn-small icd-keyword-remove"
+                type="button"
+                onClick={() => removeRow(row.id)}
+                aria-label={`Xóa từ khóa ${row.keyword || ""}`.trim()}
+              >
+                <Trash2 size={14} aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button className="btn btn-ghost btn-small icd-keyword-add" type="button" onClick={addRow}>
+        <Plus size={14} aria-hidden="true" /> Thêm từ khóa
+      </button>
+    </div>
+  );
 }
 
 export default function AdminICDChaptersSection({
@@ -357,24 +452,17 @@ export default function AdminICDChaptersSection({
               <section className="facility-form-card" aria-labelledby="icd-keywords-section">
                 <div className="facility-form-card-head">
                   <h3 id="icd-keywords-section">Từ khóa và trọng số</h3>
-                  <p>Nhập một đối tượng JSON; mỗi giá trị trọng số phải là số nguyên.</p>
+                  <p>Thêm các từ khóa liên quan để hệ thống tự động nhận diện chương bệnh khi phân tích triệu chứng.</p>
                 </div>
                 <Field
                   label="Danh sách từ khóa"
-                  help='Ví dụ: {"sốt": 5, "ho": 3}. Có thể để {} nếu chưa có từ khóa.'
+                  help="Trọng số càng cao, từ khóa càng ảnh hưởng nhiều đến kết quả gợi ý."
                 >
-                  <textarea
-                    rows={10}
+                  <KeywordWeightEditor
                     value={form.keywordWeights}
-                    onChange={(event) => onFormChange("keywordWeights", event.target.value)}
-                    placeholder='{"sốt": 5, "ho": 3}'
-                    spellCheck="false"
+                    onChange={(next) => onFormChange("keywordWeights", next)}
                   />
                 </Field>
-                <div className="icd-json-note">
-                  <Braces size={16} aria-hidden="true" />
-                  <span>Chỉ hỗ trợ cặp từ khóa và điểm số nguyên theo hợp đồng API hiện tại.</span>
-                </div>
               </section>
             </div>
             <div className="doctor-modal-actions facility-form-actions">

@@ -382,28 +382,6 @@
   font: inherit;
 }
 
-.admin-operator .icd-chapter-form textarea {
-  resize: vertical;
-}
-
-.admin-operator .icd-json-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  border-radius: 12px;
-  background: #eef7f3;
-  padding: 10px 12px;
-  color: #486365;
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.admin-operator .icd-json-note svg {
-  flex: 0 0 auto;
-  color: var(--icd-teal);
-}
-
 .icd-chapter-modal .doctor-modal-header .eyebrow {
   color: #007f89;
 }
@@ -422,6 +400,82 @@
 .icd-chapter-modal .doctor-modal-actions .btn-primary:hover {
   background: linear-gradient(135deg, #0a777f, #006a72);
   transform: translateY(-1px);
+}
+
+.icd-chapter-modal .icd-keyword-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.icd-chapter-modal .icd-keyword-editor-empty {
+  margin: 0;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.icd-chapter-modal .icd-keyword-editor-list {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f7fbfa;
+  padding: 12px;
+}
+
+.icd-chapter-modal .icd-keyword-editor-row-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px 40px;
+  gap: 8px;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.icd-chapter-modal .icd-keyword-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px 40px;
+  align-items: center;
+  gap: 8px;
+}
+
+.icd-chapter-modal .icd-keyword-remove {
+  width: 40px;
+  padding: 0;
+  color: var(--danger);
+}
+
+.icd-chapter-modal .icd-keyword-remove:hover {
+  border-color: rgba(180, 35, 24, 0.32);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.icd-chapter-modal .icd-keyword-add {
+  justify-self: start;
+  color: #007f89;
+}
+
+.icd-chapter-modal .icd-keyword-add:hover {
+  border-color: rgba(0, 128, 136, 0.32);
+  background: #e9fbf8;
+}
+
+@media (max-width: 560px) {
+  .icd-chapter-modal .icd-keyword-editor-row-header,
+  .icd-chapter-modal .icd-keyword-editor-row {
+    grid-template-columns: minmax(0, 1fr) 84px 36px;
+  }
+
+  .icd-chapter-modal .icd-keyword-remove {
+    width: 36px;
+  }
 }
 
 @media (max-width: 1040px) {
