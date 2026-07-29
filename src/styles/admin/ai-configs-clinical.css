@@ -1029,8 +1029,7 @@
 }
 
 .admin-operator .ai-config-table-wrap .record-actions .btn {
-  min-height: 40px;
-  border-radius: 12px;
+  min-height: 36px;
 }
 
 .ai-config-primary-cell {

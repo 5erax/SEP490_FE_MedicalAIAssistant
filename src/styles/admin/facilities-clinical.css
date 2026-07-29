@@ -565,8 +565,7 @@ html[data-theme="dark"] .admin-operator .facility-clinical-panel .facility-admin
 }
 
 .admin-operator .facility-table-wrap .record-actions .btn {
-  min-height: 40px;
-  border-radius: 12px;
+  min-height: 36px;
 }
 
 .facility-primary-cell {

@@ -711,8 +711,7 @@ html[data-theme="dark"] .admin-operator .clinical-question-card-meta dd {
 }
 
 .admin-operator .clinical-question-table-wrap .record-actions .btn {
-  min-height: 40px;
-  border-radius: 12px;
+  min-height: 36px;
 }
 
 .clinical-question-primary-cell {

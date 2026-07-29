@@ -658,8 +658,7 @@
 }
 
 .admin-operator .patient-profile-table-wrap .record-actions .btn {
-  min-height: 40px;
-  border-radius: 12px;
+  min-height: 36px;
 }
 
 .patient-profile-primary-cell {
