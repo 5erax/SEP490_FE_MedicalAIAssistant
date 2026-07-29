@@ -108,14 +108,14 @@
   box-shadow: 0 14px 28px rgba(8, 127, 140, 0.22);
 }
 
-.admin-operator .ui-button[data-tone="primary"] {
+.admin-operator .ui-button[data-tone="primary"]:not(.doctor-add-button):not(.doctor-invitation-submit):not(.clinical-create-button):not(.department-create-button):not(.facility-create-button) {
   border-color: rgba(16, 20, 17, 0.18);
   background: #0c5f5e;
   color: #fff;
   box-shadow: 0 10px 22px rgba(8, 127, 140, 0.18);
 }
 
-.admin-operator .ui-button[data-tone="primary"]:hover:not(:disabled):not([aria-disabled="true"]) {
+.admin-operator .ui-button[data-tone="primary"]:not(.doctor-add-button):not(.doctor-invitation-submit):not(.clinical-create-button):not(.department-create-button):not(.facility-create-button):hover:not(:disabled):not([aria-disabled="true"]) {
   box-shadow: 0 14px 28px rgba(8, 127, 140, 0.22);
 }
 
