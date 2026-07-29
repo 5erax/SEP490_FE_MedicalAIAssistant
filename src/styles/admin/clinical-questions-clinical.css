@@ -54,6 +54,7 @@
 
 .admin-operator .clinical-catalog-heading-copy h2 {
   max-width: 820px;
+  margin-top: 8px;
   color: var(--clinical-ink);
   font-size: clamp(30px, 4vw, 48px);
   font-weight: 900;
@@ -63,7 +64,7 @@
 
 .admin-operator .clinical-catalog-heading-copy > p:last-child {
   max-width: 700px;
-  margin-top: 12px;
+  margin-top: 13px;
   color: var(--clinical-muted);
   font-size: 15px;
   font-weight: 560;
@@ -369,20 +370,6 @@
 
 .admin-operator .clinical-question-card-actions .btn {
   min-height: 44px;
-}
-
-.admin-operator .clinical-question-delete {
-  border-color: rgba(185, 48, 54, 0.25);
-  background: #fff7f7;
-  color: #a3262d;
-}
-
-@media (hover: hover) {
-  .admin-operator .clinical-question-delete:hover {
-    border-color: #a3262d;
-    background: #a3262d;
-    color: #fff;
-  }
 }
 
 .admin-operator .clinical-catalog-pagination {

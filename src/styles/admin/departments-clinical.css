@@ -54,6 +54,7 @@
 
 .admin-operator .department-clinical-heading-copy h2 {
   max-width: 760px;
+  margin-top: 8px;
   color: var(--department-ink);
   font-size: clamp(30px, 4vw, 48px);
   font-weight: 900;
@@ -63,7 +64,7 @@
 
 .admin-operator .department-clinical-heading-copy > p:last-child {
   max-width: 680px;
-  margin-top: 12px;
+  margin-top: 13px;
   color: var(--department-muted);
   font-size: 15px;
   font-weight: 560;
@@ -348,20 +349,6 @@
 
 .admin-operator .department-card-actions .btn {
   min-height: 44px;
-}
-
-.admin-operator .department-delete-button {
-  border-color: rgba(185, 48, 54, 0.25);
-  background: #fff7f7;
-  color: #a3262d;
-}
-
-@media (hover: hover) {
-  .admin-operator .department-delete-button:hover {
-    border-color: #a3262d;
-    background: #a3262d;
-    color: #fff;
-  }
 }
 
 .admin-operator .department-pagination {

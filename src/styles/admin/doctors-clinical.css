@@ -40,6 +40,7 @@
 }
 
 .admin-operator .doctor-clinical-heading-copy h2 {
+  margin-top: 8px;
   color: var(--color-ink);
   font-size: clamp(30px, 4vw, 44px);
   font-weight: 950;
@@ -49,7 +50,7 @@
 
 .admin-operator .doctor-clinical-heading-copy > p:last-child {
   max-width: 620px;
-  margin-top: 12px;
+  margin-top: 13px;
   color: var(--color-muted);
   font-size: 15px;
   line-height: 1.65;
@@ -382,20 +383,6 @@
 .admin-operator .doctor-table-wrap .record-actions .ui-button {
   min-height: 40px;
   border-radius: 10px;
-}
-
-.admin-operator .doctor-table-wrap .record-actions .doctor-danger-action,
-.admin-operator .doctor-card-actions .doctor-danger-action {
-  border-color: rgba(185, 48, 54, 0.25);
-  background: #fff7f7;
-  color: #a3262d;
-}
-
-.admin-operator .doctor-table-wrap .record-actions .doctor-danger-action:hover,
-.admin-operator .doctor-card-actions .doctor-danger-action:hover {
-  border-color: #a3262d;
-  background: #a3262d;
-  color: #fff;
 }
 
 .admin-operator .doctor-responsive-card {

@@ -56,6 +56,7 @@
 
 .admin-operator .ai-config-clinical-heading-copy h2 {
   max-width: 800px;
+  margin-top: 8px;
   color: var(--ai-config-ink);
   font-size: clamp(30px, 4vw, 48px);
   font-weight: 900;
@@ -65,7 +66,7 @@
 
 .admin-operator .ai-config-clinical-heading-copy > p:last-child {
   max-width: 720px;
-  margin-top: 12px;
+  margin-top: 13px;
   color: var(--ai-config-muted);
   font-size: 15px;
   font-weight: 560;
@@ -938,20 +939,6 @@
 
   .ai-config-detail-modal .ai-config-prompt-block {
     margin: 0 18px 18px;
-  }
-}
-
-.admin-operator .ai-config-delete-button {
-  border-color: rgba(185, 48, 54, 0.25);
-  background: #fff7f7;
-  color: #a3262d;
-}
-
-@media (hover: hover) {
-  .admin-operator .ai-config-delete-button:hover {
-    border-color: #a3262d;
-    background: #a3262d;
-    color: #fff;
   }
 }
 

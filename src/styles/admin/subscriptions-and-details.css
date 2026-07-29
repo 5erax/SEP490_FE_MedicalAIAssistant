@@ -294,9 +294,13 @@
   pointer-events: none;
 }
 
+.admin-operator .subscription-plan-heading h2 {
+  margin-top: 8px;
+}
+
 .admin-operator .subscription-plan-heading .muted-text {
   max-width: 680px;
-  margin: 7px 0 0;
+  margin: 13px 0 0;
 }
 
 .subscription-plan-kpis {
@@ -619,20 +623,6 @@
 .subscription-plan-admin-panel .record-actions .btn {
   min-width: 98px;
   justify-content: center;
-}
-
-.subscription-delete-button {
-  border-color: rgba(185, 48, 54, 0.25);
-  background: #fff7f7;
-  color: #a3262d;
-}
-
-@media (hover: hover) {
-  .subscription-delete-button:hover {
-    border-color: #a3262d;
-    background: #a3262d;
-    color: #fff;
-  }
 }
 
 .subscription-plan-empty {

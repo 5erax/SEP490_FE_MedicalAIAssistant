@@ -54,6 +54,7 @@
 
 .admin-operator .patient-profile-clinical-heading-copy h2 {
   max-width: 820px;
+  margin-top: 8px;
   color: var(--profile-ink);
   font-size: clamp(30px, 4vw, 48px);
   font-weight: 900;
@@ -63,7 +64,7 @@
 
 .admin-operator .patient-profile-clinical-heading-copy > p:last-child {
   max-width: 720px;
-  margin-top: 12px;
+  margin-top: 13px;
   color: var(--profile-muted);
   font-size: 15px;
   font-weight: 560;
@@ -359,20 +360,6 @@
 .admin-operator .patient-profile-card-actions .btn {
   width: 100%;
   min-height: 42px;
-}
-
-.admin-operator .patient-profile-delete-button {
-  border-color: rgba(185, 48, 54, 0.25);
-  background: #fff7f7;
-  color: #a3262d;
-}
-
-@media (hover: hover) {
-  .admin-operator .patient-profile-delete-button:hover {
-    border-color: #a3262d;
-    background: #a3262d;
-    color: #fff;
-  }
 }
 
 .admin-operator .patient-profile-pagination {
