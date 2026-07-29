@@ -383,6 +383,26 @@
   box-shadow: 0 34px 90px rgba(12, 58, 62, 0.22);
 }
 
+.clinical-question-modal-header.doctor-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.clinical-question-modal-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(0, 128, 136, 0.16);
+  border-radius: 18px;
+  background: #e6f7f4;
+  color: #087f8c;
+  box-shadow: 0 16px 36px rgba(0, 128, 136, 0.1);
+}
+
 .clinical-question-modal .doctor-modal-header .eyebrow {
   color: #007f89;
 }

@@ -599,13 +599,14 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
           initialFocusRef={chapterSelectRef}
           restoreFocusRef={formTriggerRef}
         >
-          <header className="doctor-modal-header">
+          <header className="doctor-modal-header clinical-question-modal-header">
+            <span className="clinical-question-modal-icon" aria-hidden="true"><CircleHelp size={22} /></span>
             <div>
               <p className="eyebrow">{editingId ? "Cập nhật" : "Tạo mới"}</p>
               <h2 id="clinical-question-modal-title">
                 {editingId ? "Cập nhật câu hỏi lâm sàng" : "Tạo câu hỏi lâm sàng"}
               </h2>
-              <p id="clinical-question-modal-description">Nhập câu hỏi song ngữ, thứ tự và các lựa chọn trả lời theo hợp đồng dữ liệu hiện tại.</p>
+              <p id="clinical-question-modal-description">Nhập câu hỏi song ngữ, thứ tự hiển thị và các lựa chọn trả lời tương ứng.</p>
             </div>
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={status === "saving"}>×</button>
           </header>
