@@ -1,0 +1,41 @@
+/*
+ * Reusable admin record-action buttons.
+ * Canonical style taken from the Facilities section ("Xóa" button).
+ * Add `.admin-danger-btn` to any new delete/destructive action button
+ * so every admin section stays visually consistent — no per-section
+ * color overrides needed.
+ */
+
+.admin-operator .admin-danger-btn,
+.admin-operator .admin-user-delete-btn,
+.admin-operator .department-delete-button,
+.admin-operator .icd-delete-button,
+.admin-operator .facility-delete-button,
+.admin-operator .patient-profile-delete-button,
+.admin-operator .subscription-delete-button,
+.admin-operator .ai-config-delete-button,
+.admin-operator .clinical-question-delete,
+.admin-operator .doctor-table-wrap .record-actions .doctor-danger-action,
+.admin-operator .doctor-card-actions .doctor-danger-action {
+  border-color: rgba(185, 48, 54, 0.32);
+  background: #fff7f7;
+  color: #a3262d;
+  box-shadow: none;
+}
+
+.admin-operator .admin-danger-btn:hover,
+.admin-operator .admin-user-delete-btn:hover,
+.admin-operator .department-delete-button:hover,
+.admin-operator .icd-delete-button:hover,
+.admin-operator .facility-delete-button:hover,
+.admin-operator .patient-profile-delete-button:hover,
+.admin-operator .subscription-delete-button:hover,
+.admin-operator .ai-config-delete-button:hover,
+.admin-operator .clinical-question-delete:hover,
+.admin-operator .doctor-table-wrap .record-actions .doctor-danger-action:hover,
+.admin-operator .doctor-card-actions .doctor-danger-action:hover {
+  border-color: #b93036;
+  background: #b93036;
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(185, 48, 54, 0.16);
+}

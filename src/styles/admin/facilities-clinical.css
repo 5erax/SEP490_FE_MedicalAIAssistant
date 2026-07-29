@@ -54,6 +54,7 @@
 
 .admin-operator .facility-clinical-heading-copy h2 {
   max-width: 760px;
+  margin-top: 8px;
   color: var(--facility-ink);
   font-size: clamp(30px, 4vw, 48px);
   font-weight: 900;
@@ -63,7 +64,7 @@
 
 .admin-operator .facility-clinical-heading-copy > p:last-child {
   max-width: 680px;
-  margin-top: 12px;
+  margin-top: 13px;
   color: var(--facility-muted);
   font-size: 15px;
   font-weight: 560;
@@ -312,20 +313,6 @@
 .admin-operator .facility-clinical-panel .facility-admin-actions .btn {
   min-height: 44px;
   text-decoration: none;
-}
-
-.admin-operator .facility-clinical-panel .facility-delete-button {
-  border-color: rgba(185, 48, 54, 0.25);
-  background: #fff7f7;
-  color: #a3262d;
-}
-
-@media (hover: hover) {
-  .admin-operator .facility-clinical-panel .facility-delete-button:hover {
-    border-color: #a3262d;
-    background: #a3262d;
-    color: #fff;
-  }
 }
 
 .admin-operator .facility-pagination {

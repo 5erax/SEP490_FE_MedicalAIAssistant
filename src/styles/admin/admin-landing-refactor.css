@@ -550,7 +550,6 @@
     0 14px 28px rgba(8, 127, 140, 0.18);
 }
 
-.admin-operator .clinical-question-delete,
 .admin-operator .clinical-delete-confirm {
   border-color: rgba(185, 48, 54, 0.32);
   background: #fff7f7;
@@ -558,94 +557,7 @@
   box-shadow: none;
 }
 
-.admin-operator .clinical-question-delete:hover,
 .admin-operator .clinical-delete-confirm:hover {
-  border-color: #b93036;
-  background: #b93036;
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(185, 48, 54, 0.16);
-}
-
-.admin-operator .department-delete-button {
-  border-color: rgba(185, 48, 54, 0.32);
-  background: #fff7f7;
-  color: #a3262d;
-  box-shadow: none;
-}
-
-.admin-operator .department-delete-button:hover {
-  border-color: #b93036;
-  background: #b93036;
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(185, 48, 54, 0.16);
-}
-
-.admin-operator .icd-delete-button {
-  border-color: rgba(185, 48, 54, 0.32);
-  background: #fff7f7;
-  color: #a3262d;
-  box-shadow: none;
-}
-
-.admin-operator .icd-delete-button:hover {
-  border-color: #b93036;
-  background: #b93036;
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(185, 48, 54, 0.16);
-}
-
-.admin-operator .facility-delete-button,
-.admin-operator .facility-clinical-panel .facility-delete-button {
-  border-color: rgba(185, 48, 54, 0.32);
-  background: #fff7f7;
-  color: #a3262d;
-  box-shadow: none;
-}
-
-.admin-operator .facility-delete-button:hover,
-.admin-operator .facility-clinical-panel .facility-delete-button:hover {
-  border-color: #b93036;
-  background: #b93036;
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(185, 48, 54, 0.16);
-}
-
-.admin-operator .patient-profile-delete-button {
-  border-color: rgba(185, 48, 54, 0.32);
-  background: #fff7f7;
-  color: #a3262d;
-  box-shadow: none;
-}
-
-.admin-operator .patient-profile-delete-button:hover {
-  border-color: #b93036;
-  background: #b93036;
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(185, 48, 54, 0.16);
-}
-
-.admin-operator .subscription-delete-button {
-  border-color: rgba(185, 48, 54, 0.32);
-  background: #fff7f7;
-  color: #a3262d;
-  box-shadow: none;
-}
-
-.admin-operator .subscription-delete-button:hover {
-  border-color: #b93036;
-  background: #b93036;
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(185, 48, 54, 0.16);
-}
-
-.admin-operator .ai-config-delete-button {
-  border-color: rgba(185, 48, 54, 0.32);
-  background: #fff7f7;
-  color: #a3262d;
-  box-shadow: none;
-}
-
-.admin-operator .ai-config-delete-button:hover {
   border-color: #b93036;
   background: #b93036;
   color: #fff;
