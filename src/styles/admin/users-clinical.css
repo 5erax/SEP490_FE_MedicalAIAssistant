@@ -110,6 +110,24 @@
   margin: 0;
 }
 
+.admin-operator .admin-user-delete-btn,
+.admin-operator .admin-user-delete-btn > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-operator .admin-user-delete-btn > span {
+  gap: 8px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-operator .admin-user-delete-btn svg {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
 .admin-operator .admin-users-filter-card {
   display: grid;
   gap: 18px;
