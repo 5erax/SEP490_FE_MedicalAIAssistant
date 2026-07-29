@@ -355,8 +355,11 @@ export default function AdminPatientProfilesSection({
             <div className="facility-form-body">
               <section className="facility-form-card">
                 <div className="facility-form-card-head">
-                  <h3>Thông tin cơ bản</h3>
-                  <p>User ID chỉ cần nhập khi tạo hồ sơ mới.</p>
+                  <span className="facility-form-card-icon" aria-hidden="true"><UserRound size={18} /></span>
+                  <div>
+                    <h3>Thông tin cơ bản</h3>
+                    <p>User ID chỉ cần nhập khi tạo hồ sơ mới.</p>
+                  </div>
                 </div>
                 <div className="facility-form-grid">
                   {!editingProfileId && (
@@ -411,6 +414,7 @@ export default function AdminPatientProfilesSection({
 
               <section className="facility-form-card">
                 <div className="facility-form-card-head patient-profile-disease-head">
+                  <span className="facility-form-card-icon" aria-hidden="true"><Activity size={18} /></span>
                   <div>
                     <h3>Bệnh nền</h3>
                     <p>Chỉ thêm bệnh mạn tính hoặc tình trạng sức khỏe đã được xác nhận.</p>
