@@ -101,13 +101,14 @@ function getQuestionText(question, index = 0) {
     ?? `Câu hỏi ${index + 1}`;
 }
 
-function AccessibleFacilityMarker({ facility, selected, onSelect }) {
+function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect }) {
   return (
     <Marker
       longitude={facility.longitude}
       latitude={facility.latitude}
     >
       <button
+        ref={buttonRef}
         className={`clinic-marker ${selected ? "selected" : ""}`}
         type="button"
         aria-label={`Chọn ${facility.facilityName} trên bản đồ`}
@@ -495,6 +496,7 @@ export default function FacilityMap({
   onViewDetail,
 }) {
   const popupActionRef = useRef(null);
+  const markerRefs = useRef(new globalThis.Map());
   const recommendedDepartment = recommendationContext?.recommendedDepartment;
   const confidence = confidencePercent(recommendedDepartment?.confidenceScore);
 
@@ -503,6 +505,12 @@ export default function FacilityMap({
     const focusId = window.setTimeout(() => popupActionRef.current?.focus(), 0);
     return () => window.clearTimeout(focusId);
   }, [selectedFacility?.facilityId, selectedFacility?.hasValidCoordinates]);
+
+  function closePopup() {
+    const facilityId = selectedFacility?.facilityId;
+    onSelect(null);
+    window.requestAnimationFrame(() => markerRefs.current.get(facilityId)?.focus());
+  }
 
   return (
     <section className="map-panel" aria-labelledby="interactive-map-title" aria-describedby="interactive-map-description">
@@ -584,6 +592,10 @@ export default function FacilityMap({
             {facilities.map((facility) => (
               <AccessibleFacilityMarker
                 key={facility.facilityId}
+                buttonRef={(node) => {
+                  if (node) markerRefs.current.set(facility.facilityId, node);
+                  else markerRefs.current.delete(facility.facilityId);
+                }}
                 facility={facility}
                 selected={selectedFacility?.facilityId === facility.facilityId}
                 onSelect={onSelect}
@@ -593,7 +605,7 @@ export default function FacilityMap({
               <Popup
                 longitude={selectedFacility.longitude}
                 latitude={selectedFacility.latitude}
-                onClose={() => onSelect(null)}
+                onClose={closePopup}
                 closeOnClick={false}
                 offset={28}
                 className="clinic-popup"
@@ -603,7 +615,10 @@ export default function FacilityMap({
                   role="dialog"
                   aria-label={`Thông tin ${selectedFacility.facilityName}`}
                   onKeyDown={(event) => {
-                    if (event.key === "Escape") onSelect(null);
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      closePopup();
+                    }
                   }}
                 >
                   <strong>{selectedFacility.facilityName}</strong>

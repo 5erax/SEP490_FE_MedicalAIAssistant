@@ -669,6 +669,8 @@
 }
 
 .diagnosis-bar-chart {
+  margin: 0;
+  list-style: none;
   min-height: 340px;
   display: grid;
   grid-auto-flow: column;

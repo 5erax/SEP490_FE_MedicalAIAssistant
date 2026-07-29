@@ -154,7 +154,10 @@ function AssessmentShell({
   const opensHistoryPanel = !historyAction.to;
 
   return (
-    <main className={`assessment-page clinical-page assessment-clinical-refresh ${pageClassName}`.trim()}>
+    <section
+      className={`assessment-page clinical-page assessment-clinical-refresh ${pageClassName}`.trim()}
+      aria-labelledby="assessment-title"
+    >
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
         <header className="assessment-header clinical-hero">
           <div className="assessment-heading-main">
@@ -209,7 +212,7 @@ function AssessmentShell({
           }}
         />
       )}
-    </main>
+    </section>
   );
 }
 
@@ -799,18 +802,21 @@ function ResultPage({ sessionId }) {
             </div>
 
             <div className="diagnosis-analytics-grid">
-              <div className="diagnosis-bar-chart" aria-label="Biểu đồ cột xác suất chẩn đoán">
+              <ol className="diagnosis-bar-chart" aria-label="Xếp hạng các khả năng bệnh theo mức độ phù hợp tham khảo">
                 {diagnosisRows.map((diagnosis) => (
-                  <div className="diagnosis-bar-item" key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
-                    <em>{diagnosis.probability}%</em>
-                    <div className="diagnosis-bar-track">
+                  <li className="diagnosis-bar-item" key={`${diagnosis.rank}-${diagnosis.diseaseName}`}>
+                    <span className="sr-only">
+                      Hạng {diagnosis.rank}: {diagnosis.diseaseName}, {diagnosis.probability}% phù hợp tham khảo.
+                    </span>
+                    <em aria-hidden="true">{diagnosis.probability}%</em>
+                    <div className="diagnosis-bar-track" aria-hidden="true">
                       <span style={{ height: `${Math.max(6, diagnosis.probability)}%` }} />
                     </div>
-                    <strong>{diagnosis.rank}</strong>
-                    <small>{diagnosis.diseaseName}</small>
-                  </div>
+                    <strong aria-hidden="true">{diagnosis.rank}</strong>
+                    <small aria-hidden="true">{diagnosis.diseaseName}</small>
+                  </li>
                 ))}
-              </div>
+              </ol>
             </div>
           </article>
         )}
@@ -918,9 +924,9 @@ export default function MedicalAssistantPage({ mode = "entry", sessionId = "" })
   if (activeMode === "history") return <HistoryPage />;
 
   return (
-    <div className="landing-page public-medical-assistant-entry">
+    <main className="landing-page public-medical-assistant-entry">
       <Navbar variant="landing" />
       <EntryPage />
-    </div>
+    </main>
   );
 }

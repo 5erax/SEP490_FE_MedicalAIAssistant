@@ -1430,7 +1430,14 @@ function NearbyClinicPage() {
             <div className="facility-detail-body" ref={detailBodyRef}>
               <div className="facility-detail-media">
                 {detailFacility.imageUrl ? (
-                  <img src={detailFacility.imageUrl} alt={`Ảnh ${detailFacility.facilityName}`} />
+                  <img
+                    src={detailFacility.imageUrl}
+                    alt={`Ảnh ${detailFacility.facilityName}`}
+                    width="640"
+                    height="360"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
                   <span aria-hidden="true"><Building2 size={46} /></span>
                 )}
@@ -1520,7 +1527,7 @@ function NearbyClinicPage() {
                     <div className="facility-detail-list facility-detail-doctor-list">
                       {detailDoctors.map((doctor) => (
                         <article key={doctor.id}>
-                          <span className="facility-detail-doctor-image">{getDoctorImageUrl(doctor) ? <img src={getDoctorImageUrl(doctor)} alt={`Ảnh bác sĩ ${getDoctorName(doctor)}`} /> : <UserRound size={20} aria-hidden="true" />}</span>
+                          <span className="facility-detail-doctor-image">{getDoctorImageUrl(doctor) ? <img src={getDoctorImageUrl(doctor)} alt={`Ảnh bác sĩ ${getDoctorName(doctor)}`} width="42" height="42" loading="lazy" decoding="async" /> : <UserRound size={20} aria-hidden="true" />}</span>
                           <div className="doctor-card-copy">
                             <strong>{getDoctorName(doctor)}</strong>
                             {doctor.academicTitle && <span>{doctor.academicTitle}</span>}
@@ -1553,7 +1560,7 @@ function NearbyClinicPage() {
                         <div className="review-item-stars" aria-label={currentUserReview.rating ? `${currentUserReview.rating} trên 5 sao` : "Đánh giá đã được ghi nhận"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={Number(currentUserReview.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div>
                         <strong>Bạn đã đánh giá cơ sở này</strong>
                         <p>{currentUserReview.isKnownDuplicate ? "Đánh giá hiện tại chưa xuất hiện trong danh sách công khai." : (currentUserReview.comment || "Bạn không để lại nhận xét.")}</p>
-                        {getReviewImageUrls(currentUserReview).length > 0 && <div className="review-photo-grid">{getReviewImageUrls(currentUserReview).map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh minh họa ${index + 1} trong đánh giá của bạn`} />)}</div>}
+                        {getReviewImageUrls(currentUserReview).length > 0 && <div className="review-photo-grid">{getReviewImageUrls(currentUserReview).map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh minh họa ${index + 1} trong đánh giá của bạn`} width="240" height="180" loading="lazy" decoding="async" />)}</div>}
                         {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa vì API chưa trả mã đánh giá.</small>}
                       </div>
                     ) : (
@@ -1562,7 +1569,7 @@ function NearbyClinicPage() {
                         <label><span>Chia sẻ trải nghiệm</span><textarea rows={4} maxLength={1000} value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Điều gì khiến bạn hài lòng hoặc chưa hài lòng?" /><small>{reviewForm.comment.length}/1000 ký tự</small></label>
                         <div className="review-image-upload">
                           <div><strong>Ảnh minh họa</strong><small>Tối đa 5 MB · JPG, PNG, WebP hoặc định dạng ảnh được hỗ trợ.</small></div>
-                          {reviewForm.imageUrls.length > 0 && <div className="review-image-preview-grid">{reviewForm.imageUrls.map((imageUrl, index) => <div className="review-image-preview" key={imageUrl}><img className="review-image" src={imageUrl} alt={`Ảnh minh họa ${index + 1} sẽ đính kèm đánh giá`} /><button type="button" aria-label={`Xóa ảnh ${index + 1}`} onClick={() => setReviewForm((current) => ({ ...current, imageUrls: current.imageUrls.filter((url) => url !== imageUrl) }))}>×</button></div>)}</div>}
+                          {reviewForm.imageUrls.length > 0 && <div className="review-image-preview-grid">{reviewForm.imageUrls.map((imageUrl, index) => <div className="review-image-preview" key={imageUrl}><img className="review-image" src={imageUrl} alt={`Ảnh minh họa ${index + 1} sẽ đính kèm đánh giá`} width="240" height="180" decoding="async" /><button type="button" aria-label={`Xóa ảnh ${index + 1}`} onClick={() => setReviewForm((current) => ({ ...current, imageUrls: current.imageUrls.filter((url) => url !== imageUrl) }))}>×</button></div>)}</div>}
                           {reviewForm.imageUrls.length < 5 && <label className="review-upload-button"><ImagePlus size={17} aria-hidden="true" /><span>{uploadingReviewImage ? "Đang tải ảnh..." : `Thêm ảnh (${reviewForm.imageUrls.length}/5)`}</span><input type="file" accept="image/*" multiple onChange={uploadReviewImage} disabled={uploadingReviewImage || savingReview} /></label>}
                           <p>Không tải ảnh chứa hồ sơ bệnh án, giấy tờ tùy thân hoặc thông tin sức khỏe riêng tư.</p>
                         </div>
@@ -1575,7 +1582,7 @@ function NearbyClinicPage() {
                     <h3>Nhận xét gần đây</h3>
                     {reviewsLoading && <p className="facility-detail-status">Đang tải đánh giá...</p>}
                     {!reviewsLoading && reviews.length === 0 && <p className="facility-empty-state">Chưa có đánh giá công khai cho cơ sở này.</p>}
-                    <div className="facility-detail-list review-list">{reviews.map((review) => { const authorName = isReviewByCurrentUser(review, auth) ? "Bạn" : getReviewAuthorName(review); const reviewDate = getReviewDate(review); const reviewImageUrls = getReviewImageUrls(review); return <article key={review.id}><header><span className="review-author-avatar" aria-hidden="true">{getReviewAuthorInitial(authorName)}</span><div><strong>{authorName}</strong><small>{reviewDate ? `${reviewDate} · ` : ""}{review.rating} sao</small></div></header><div className="review-rating-line"><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={16} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{RATING_LABELS[Number(review.rating)]}</span></div><p className="review-comment">{review.comment || "Không có nhận xét."}</p>{reviewImageUrls.length > 0 && <div className="review-photo-grid">{reviewImageUrls.map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh ${index + 1} trong đánh giá của ${authorName}`} />)}</div>}</article>; })}</div>
+                    <div className="facility-detail-list review-list">{reviews.map((review) => { const authorName = isReviewByCurrentUser(review, auth) ? "Bạn" : getReviewAuthorName(review); const reviewDate = getReviewDate(review); const reviewImageUrls = getReviewImageUrls(review); return <article key={review.id}><header><span className="review-author-avatar" aria-hidden="true">{getReviewAuthorInitial(authorName)}</span><div><strong>{authorName}</strong><small>{reviewDate ? `${reviewDate} · ` : ""}{review.rating} sao</small></div></header><div className="review-rating-line"><div className="review-item-stars" aria-label={`${review.rating} trên 5 sao`}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={16} fill={Number(review.rating) >= rating ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{RATING_LABELS[Number(review.rating)]}</span></div><p className="review-comment">{review.comment || "Không có nhận xét."}</p>{reviewImageUrls.length > 0 && <div className="review-photo-grid">{reviewImageUrls.map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh ${index + 1} trong đánh giá của ${authorName}`} width="240" height="180" loading="lazy" decoding="async" />)}</div>}</article>; })}</div>
                   </section>
                 </div>
               )}
@@ -1591,7 +1598,7 @@ function NearbyClinicPage() {
             </div>
             <div className="doctor-detail-body">
               <section className="doctor-profile-card">
-                <span className="doctor-profile-image">{getDoctorImageUrl(selectedDoctor) ? <img src={getDoctorImageUrl(selectedDoctor)} alt={`Ảnh bác sĩ ${getDoctorName(selectedDoctor)}`} /> : <UserRound size={34} aria-hidden="true" />}</span>
+                <span className="doctor-profile-image">{getDoctorImageUrl(selectedDoctor) ? <img src={getDoctorImageUrl(selectedDoctor)} alt={`Ảnh bác sĩ ${getDoctorName(selectedDoctor)}`} width="76" height="76" loading="lazy" decoding="async" /> : <UserRound size={34} aria-hidden="true" />}</span>
                 <div><p>Thông tin bác sĩ</p><h2 id="doctor-detail-title" ref={sidebarTitleRef} tabIndex="-1">{getDoctorName(selectedDoctor)}</h2><span>{selectedDoctor.academicTitle || "Chưa cập nhật học hàm/học vị"}</span></div>
               </section>
               <div className="doctor-fact-grid">
@@ -1647,7 +1654,7 @@ function NearbyClinicPage() {
           onLocate={handleLocateMe}
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}
-          onSelect={(facility) => facility ? openFacilityDetail(facility) : setSelectedFacility(null)}
+          onSelect={(facility) => facility ? handleCardClick(facility) : setSelectedFacility(null)}
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}
         />
@@ -1670,7 +1677,7 @@ function NearbyClinicPage() {
               ×
             </button>
             <div className="facility-detail-hero">
-              {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" /> : <span aria-hidden="true">+</span>}
+              {detailFacility.imageUrl ? <img src={detailFacility.imageUrl} alt="" width="640" height="360" loading="lazy" decoding="async" /> : <span aria-hidden="true">+</span>}
               <div>
                 <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
                 <h2 id="facility-detail-title">{detailFacility.facilityName}</h2>
@@ -1720,6 +1727,10 @@ function NearbyClinicPage() {
                         className="facility-detail-doctor-image"
                         src={getDoctorImageUrl(doctor)}
                         alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
+                        width="42"
+                        height="42"
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
                     <div>
@@ -1767,11 +1778,11 @@ const styles = `
 .map-skip-link:focus { transform: translateY(0); }
 .clinic-sidebar { width: 320px; flex: 0 0 320px; overflow-y: auto; border-right: 1.5px solid var(--ink); background: var(--paper); padding: 16px; }
 .map-page-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-.map-page-actions button { min-height: 38px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 900; }
+.map-page-actions button { min-height: 44px; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font-weight: 900; }
 .map-page-actions button:last-child { background: var(--lime); }
 .clinic-search { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; padding: 0 10px; }
 .clinic-search input { min-width: 0; height: 42px; border: 0; outline: none; }
-.clinic-search button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--mint); font-size: 18px; font-weight: 900; }
+.clinic-search button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--mint); font-size: 18px; font-weight: 900; }
 .filter-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 14px 0 8px; }
 .filter-row::-webkit-scrollbar, .department-row::-webkit-scrollbar { display: none; }
 .filter-row button { min-width: 0; border: 1.5px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 8px 11px; font-size: 12px; font-weight: 900; }
@@ -1792,7 +1803,7 @@ const styles = `
 .facility-result-card .coordinate-notice { color: #9a3412; font-weight: 850; }
 .department-row { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 2px; }
 .department-row span { flex: 0 0 auto; border-radius: 999px; background: #fff; border: 1px solid var(--line); padding: 5px 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
-.facility-select-button { width: 100%; min-height: 38px; margin-top: 10px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--mint); color: var(--ink); font-size: 12px; font-weight: 900; }
+.facility-select-button { width: 100%; min-height: 44px; margin-top: 10px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--mint); color: var(--ink); font-size: 12px; font-weight: 900; }
 .facility-select-button[aria-pressed="true"] { background: var(--ink); color: #fff; }
 .facility-details { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 2px; }
 .facility-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
@@ -1805,7 +1816,7 @@ const styles = `
 .facility-reviews form, .facility-reviews label { display: grid; gap: 7px; }
 .facility-reviews label span { font-size: 12px; font-weight: 850; }
 .facility-reviews select, .facility-reviews textarea { width: 100%; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; padding: 9px; color: var(--ink); }
-.facility-reviews form > button { min-height: 40px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--lime); color: var(--ink); font-weight: 900; }
+.facility-reviews form > button { min-height: 44px; border: 1.5px solid var(--ink); border-radius: 8px; background: var(--lime); color: var(--ink); font-weight: 900; }
 .review-message, .review-list p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .review-list { display: grid; gap: 8px; }
 .review-list article { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 9px; }
@@ -2378,7 +2389,7 @@ const styles = `
 }
 .facility-type-filter button {
   flex: 0 0 auto;
-  min-height: 34px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: #fff;
@@ -2415,7 +2426,7 @@ const styles = `
   backdrop-filter: blur(12px);
 }
 .facility-detail-topbar button {
-  min-height: 38px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2545,7 +2556,7 @@ const styles = `
   font-weight: 900;
 }
 .busy-hours-heading select {
-  min-height: 40px;
+  min-height: 44px;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: #fff;
@@ -2599,7 +2610,7 @@ const styles = `
 }
 .busy-hours-data summary {
   width: fit-content;
-  min-height: 32px;
+  min-height: 44px;
   cursor: pointer;
   color: var(--teal);
   font-weight: 900;
@@ -2737,7 +2748,7 @@ const styles = `
   line-height: 1.35;
 }
 .facility-detail-doctor-list button {
-  min-height: 34px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: #fff;
@@ -2851,7 +2862,7 @@ const styles = `
 .current-user-review small { font-size: 11px; font-weight: 800; }
 .review-edit-button {
   width: fit-content;
-  min-height: 40px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2934,8 +2945,8 @@ const styles = `
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   border: 1px solid rgba(255,255,255,.72);
   border-radius: 50%;
   background: rgba(16,20,17,.78);
@@ -3054,7 +3065,7 @@ const styles = `
 }
 .facility-review-form button,
 .doctor-sticky-actions button {
-  min-height: 42px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

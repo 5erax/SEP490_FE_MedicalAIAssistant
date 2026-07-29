@@ -194,7 +194,7 @@ function AuthShell({ mode = "login", children }) {
             </a>
             <div>
               <p className="eyebrow">{content.sideEyebrow ?? content.eyebrow}</p>
-              <h1>{content.sideTitle}</h1>
+              <h2 className="auth-side-title">{content.sideTitle}</h2>
               <p>{content.sideCopy}</p>
             </div>
             <div className="auth-step-list">
@@ -225,7 +225,7 @@ function AuthShell({ mode = "login", children }) {
             <div className="auth-card-header auth-card-header-clean">
               <div>
                 <p className="eyebrow">{content.eyebrow}</p>
-                <h2>{content.title}</h2>
+                <h1 className="auth-card-title">{content.title}</h1>
                 <p>{content.copy}</p>
               </div>
             </div>

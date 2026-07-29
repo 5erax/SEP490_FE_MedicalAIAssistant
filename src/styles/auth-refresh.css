@@ -66,7 +66,7 @@
   background: #c4e995;
 }
 
-.auth-shell-page .auth-side-panel h1 {
+.auth-shell-page .auth-side-panel .auth-side-title {
   max-width: 440px;
   margin: 0;
   font-family: var(--display);
@@ -123,7 +123,7 @@
   margin-bottom: 20px;
 }
 
-.auth-shell-page .auth-card-header-clean h2 {
+.auth-shell-page .auth-card-header-clean .auth-card-title {
   max-width: 640px;
   margin: 0;
   font-family: var(--display);
@@ -343,7 +343,7 @@
   background: var(--auth-teal);
 }
 
-.auth-mode-clinical .auth-side-panel h1 {
+.auth-mode-clinical .auth-side-panel .auth-side-title {
   max-width: 470px;
   color: var(--auth-navy-deep);
   font-family: var(--font-display, var(--display));
@@ -421,7 +421,7 @@
   margin-bottom: 26px;
 }
 
-.auth-mode-clinical .auth-card-header-clean h2 {
+.auth-mode-clinical .auth-card-header-clean .auth-card-title {
   max-width: 520px;
   color: var(--auth-navy-deep);
   font-family: var(--font-display, var(--display));
@@ -629,7 +629,7 @@ html[data-theme="dark"] .auth-mode-clinical .auth-provider-note {
     margin-bottom: 22px;
   }
 
-  .auth-mode-clinical .auth-card-header-clean h2 {
+  .auth-mode-clinical .auth-card-header-clean .auth-card-title {
     font-size: clamp(31px, 10vw, 38px);
   }
 
@@ -683,7 +683,7 @@ html[data-theme="dark"] .auth-mode-clinical .auth-provider-note {
   margin-bottom: 24px;
 }
 
-.auth-mode-signup .auth-card-header-clean h2 {
+.auth-mode-signup .auth-card-header-clean .auth-card-title {
   font-size: clamp(34px, 3.6vw, 44px);
 }
 
@@ -882,7 +882,7 @@ html[data-theme="dark"] .auth-mode-forgot .auth-recovery-note svg {
   margin-bottom: 22px;
 }
 
-.auth-mode-reset .auth-card-header-clean h2 {
+.auth-mode-reset .auth-card-header-clean .auth-card-title {
   font-size: clamp(34px, 3.6vw, 44px);
 }
 

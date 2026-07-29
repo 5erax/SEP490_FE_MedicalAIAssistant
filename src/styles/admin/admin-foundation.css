@@ -343,7 +343,7 @@
 .clinical-question-modal .clean-field input::placeholder,
 .clinical-question-modal .clean-field textarea::placeholder,
 .admin-operator .admin-toolbar input::placeholder {
-  color: rgba(16, 20, 17, 0.4);
+  color: #53625d;
   font-weight: 720;
 }
 

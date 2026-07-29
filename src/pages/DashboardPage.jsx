@@ -406,7 +406,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="specialty-page specialty-clinical-page">
+    <section className="specialty-page specialty-clinical-page" aria-labelledby="specialty-intake-title">
       <section className="studio-center" aria-labelledby="specialty-intake-title">
         {showIntakeForm && profilePromptVisible && (
           <section className="profile-nudge" aria-labelledby="profile-nudge-title">
@@ -788,6 +788,6 @@ export default function DashboardPage() {
         sessionType="department"
         onContinue={() => setHistoryPanelOpen(false)}
       />
-    </main>
+    </section>
   );
 }

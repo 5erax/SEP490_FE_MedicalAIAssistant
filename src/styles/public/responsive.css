@@ -790,7 +790,7 @@
     padding: 24px;
   }
 
-  .auth-card-header-clean h2 {
+  .auth-card-header-clean .auth-card-title {
     max-width: calc(100vw - 112px);
     font-size: 24px;
     overflow-wrap: anywhere;
