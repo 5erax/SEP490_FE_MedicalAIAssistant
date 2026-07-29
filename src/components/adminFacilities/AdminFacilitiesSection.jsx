@@ -435,7 +435,7 @@ export default function AdminFacilitiesSection({
       {formOpen && (
         <Dialog
           backdropClassName="doctor-modal-backdrop"
-          className="doctor-modal facility-form-modal"
+          className="doctor-modal facility-form-modal facility-clinical-modal"
           labelledBy="facility-modal-title"
           onClose={closeForm}
           closeOnBackdrop={!saving && !imageUploading}
