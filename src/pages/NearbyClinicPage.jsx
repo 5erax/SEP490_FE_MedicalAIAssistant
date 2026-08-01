@@ -1400,8 +1400,6 @@ function NearbyClinicPage() {
           facilities={visibleFacilities}
           loading={isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
-          onCall={callFacility}
-          onDirections={openDirections}
           onViewDetail={openFacilityDetail}
         />
 

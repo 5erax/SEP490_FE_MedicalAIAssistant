@@ -43,8 +43,8 @@ export function getPostAuthDestination(authOrUser, search = window.location.sear
   const returnTo = getReturnToFromSearch(search);
   const postLoginPath = getPostLoginPath(authOrUser);
 
-  if (postLoginPath === "/app/admin") {
-    return returnTo.startsWith("/app/admin") ? returnTo : postLoginPath;
+  if (["/app/admin", "/app/staff"].includes(postLoginPath)) {
+    return returnTo.startsWith(postLoginPath) ? returnTo : postLoginPath;
   }
 
   if (postLoginPath === "/patient/profile/setup") {

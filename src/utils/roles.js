@@ -56,6 +56,7 @@ export function getWorkspacePath(authOrUser) {
   const roles = normalizeRoles(collectRoleValues(authOrUser));
 
   if (hasRole(roles, "admin")) return "/app/admin";
+  if (hasRole(roles, "doctor") || hasRole(roles, "staff")) return "/app/staff";
   return "/dashboard";
 }
 

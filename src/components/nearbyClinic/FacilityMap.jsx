@@ -2,7 +2,7 @@ import { Component, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Clock3, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { consultationSessionsApi } from "../../services/api";
+import { consultationSessionsApi, webChatbotApi } from "../../services/api";
 
 const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
@@ -140,6 +140,7 @@ function MapConsultationAssistant({
   const [activeTab, setActiveTab] = useState("suggest");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
   const [symptoms, setSymptoms] = useState("");
+  const [generalMessages, setGeneralMessages] = useState([]);
   const [symptomMessages, setSymptomMessages] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -152,7 +153,8 @@ function MapConsultationAssistant({
   const launcherRef = useRef(null);
   const previousOpenRef = useRef(open);
 
-  const canSubmit = Boolean(selectedDepartmentId && symptoms.trim() && status !== "loading");
+  const canSubmit = Boolean(symptoms.trim() && status !== "loading");
+  const canUseConsultationFlow = Boolean(!accessLocked && selectedDepartmentId);
 
   useEffect(() => {
     if (!open || activeTab !== "suggest" || !threadRef.current) return;
@@ -198,16 +200,25 @@ function MapConsultationAssistant({
     const symptomText = symptoms.trim();
     setStatus("loading");
     setMessage("");
-    setQuestions([]);
-    setSymptomMessages((current) => [...current, symptomText]);
     setSymptoms("");
 
     try {
-      const response = await consultationSessionsApi.generateQuestions(selectedDepartmentId, symptomText);
-      setQuestions(getQuestionsFromResponse(response));
-      setMessage("MediMate đã tạo gợi ý câu hỏi cho chuyên khoa đã chọn.");
+      if (canUseConsultationFlow) {
+        setQuestions([]);
+        setSymptomMessages((current) => [...current, symptomText]);
+        const response = await consultationSessionsApi.generateQuestions(selectedDepartmentId, symptomText);
+        setQuestions(getQuestionsFromResponse(response));
+        setMessage("MediMate đã tạo gợi ý câu hỏi cho chuyên khoa đã chọn.");
+      } else {
+        setGeneralMessages((current) => [...current, { role: "user", content: symptomText }]);
+        const response = await webChatbotApi.message(symptomText, { auth: !accessLocked });
+        const answer = response?.data?.answer ?? response?.message ?? "MediMate chưa thể trả lời câu hỏi này.";
+        setGeneralMessages((current) => [...current, { role: "assistant", content: answer }]);
+      }
     } catch (error) {
-      setMessage(error.message || "Không thể tạo gợi ý câu hỏi lúc này.");
+      setMessage(error.message || (canUseConsultationFlow
+        ? "Không thể tạo gợi ý câu hỏi lúc này."
+        : "MediMate chưa thể phản hồi lúc này. Vui lòng thử lại."));
     } finally {
       setStatus("idle");
     }
@@ -278,14 +289,14 @@ function MapConsultationAssistant({
           </header>
           <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
             {status === "loading"
-              ? "Đang chuẩn bị câu hỏi."
+              ? canUseConsultationFlow ? "Đang chuẩn bị câu hỏi." : "MediMate AI đang soạn phản hồi."
               : message || (questions.length ? `Đã chuẩn bị ${questions.length} câu hỏi.` : "")}
           </p>
 
-          {accessLocked ? (
+          {activeTab === "history" && accessLocked ? (
             <div className="map-ai-unavailable" role="status">
-              <strong>Đăng nhập để tiếp tục</strong>
-              <p>Kết quả gợi ý chỉ được hiển thị cho tài khoản đã tạo phiên.</p>
+              <strong>Đăng nhập để xem lịch sử</strong>
+              <p>Bạn vẫn có thể quay lại và hỏi MediMate ngay mà không cần chọn cơ sở.</p>
               <button type="button" onClick={onLogin}>Đăng nhập</button>
             </div>
           ) : activeTab === "history" ? (
@@ -334,11 +345,6 @@ function MapConsultationAssistant({
                 </div>
               )}
             </div>
-          ) : !consultationFacility ? (
-            <div className="map-ai-unavailable" role="status">
-              <strong>Chọn một cơ sở để bắt đầu</strong>
-              <p>MediMate AI luôn sẵn sàng trên bản đồ. Hãy chọn cơ sở y tế và chuyên khoa để chuẩn bị câu hỏi trước khi khám.</p>
-            </div>
           ) : activeTab === "suggest" ? (
             <form className="map-ai-chat" onSubmit={handleGenerate}>
               <div className="map-ai-thread" ref={threadRef}>
@@ -349,12 +355,12 @@ function MapConsultationAssistant({
 
                 <article className="map-ai-message-bubble bot">
                   <span><Bot size={15} /></span>
-                  <p>Hãy mô tả triệu chứng hoặc tình trạng sức khỏe của bạn.</p>
+                  <p>Hãy mô tả triệu chứng hoặc đặt câu hỏi sức khỏe. Bạn không cần chọn cơ sở trước.</p>
                 </article>
 
                 <article className="map-ai-message-bubble bot">
                   <span><Bot size={15} /></span>
-                  <p>Mình sẽ chuẩn bị danh sách câu hỏi để bạn trao đổi với bác sĩ.</p>
+                  <p>Khi bạn chọn cơ sở và chuyên khoa, MediMate sẽ chuẩn bị thêm danh sách câu hỏi để trao đổi với bác sĩ.</p>
                 </article>
 
                 {normalizedDepartments.length > 1 && (
@@ -377,6 +383,26 @@ function MapConsultationAssistant({
                   </p>
                 )}
 
+                {generalMessages.map((chatMessage, index) => (
+                  <article
+                    className={`map-ai-message-bubble ${chatMessage.role === "user" ? "user" : "bot"}`}
+                    key={`${chatMessage.role}-${index}-${chatMessage.content.slice(0, 24)}`}
+                  >
+                    {chatMessage.role !== "user" && <span><Bot size={15} /></span>}
+                    <p>{chatMessage.content}</p>
+                  </article>
+                ))}
+
+                {status === "loading" && !canUseConsultationFlow && (
+                  <article className="map-ai-message-bubble bot loading" role="status" aria-live="polite">
+                    <span><Bot size={15} /></span>
+                    <p>
+                      Đang soạn phản hồi
+                      <i aria-hidden="true" />
+                    </p>
+                  </article>
+                )}
+
                 {selectedDepartmentId && (
                   <>
                     {symptomMessages.map((symptomMessage, index) => (
@@ -384,7 +410,7 @@ function MapConsultationAssistant({
                         <p>{symptomMessage}</p>
                       </article>
                     ))}
-                    {status === "loading" && (
+                    {status === "loading" && canUseConsultationFlow && (
                       <article className="map-ai-message-bubble bot loading" role="status" aria-live="polite">
                         <span><Bot size={15} /></span>
                         <p>
@@ -419,23 +445,21 @@ function MapConsultationAssistant({
                 )}
               </div>
 
-              {selectedDepartmentId && (
-                <div className="map-ai-composer">
-                  <label className="map-ai-composer-field">
-                    <span>Triệu chứng</span>
-                    <input
-                      name="symptoms"
-                      aria-label="Triệu chứng của bạn"
-                      value={symptoms}
-                      onChange={(event) => setSymptoms(event.target.value)}
-                      placeholder="Nhập triệu chứng của bạn..."
-                    />
-                  </label>
-                  <button type="submit" disabled={!canSubmit} aria-label="Tạo gợi ý câu hỏi">
-                    <Send size={16} />
-                  </button>
-                </div>
-              )}
+              <div className="map-ai-composer">
+                <label className="map-ai-composer-field">
+                  <span>Câu hỏi hoặc triệu chứng</span>
+                  <input
+                    name="symptoms"
+                    aria-label="Câu hỏi hoặc triệu chứng của bạn"
+                    value={symptoms}
+                    onChange={(event) => setSymptoms(event.target.value)}
+                    placeholder="Hỏi MediMate ngay…"
+                  />
+                </label>
+                <button type="submit" disabled={!canSubmit} aria-label="Gửi câu hỏi cho MediMate AI">
+                  <Send size={16} />
+                </button>
+              </div>
             </form>
           ) : null}
 
@@ -595,7 +619,7 @@ export default function FacilityMap({
                 }}
                 facility={facility}
                 selected={selectedFacility?.facilityId === facility.facilityId}
-                onSelect={onSelect}
+                onSelect={onViewDetail}
               />
             ))}
             {selectedFacility?.hasValidCoordinates && !hidePopup && (

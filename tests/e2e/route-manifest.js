@@ -22,6 +22,7 @@ export const APP_ROUTES = [
   { path: "/app", expectedPath: "/app", surface: "workspace-gate" },
   { path: "/account", expectedPath: "/login", surface: "auth-gate" },
   { path: "/app/patient", expectedPath: "/login", surface: "auth-gate" },
+  { path: "/app/staff", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin", expectedPath: "/login", surface: "role-gate" },
   { path: "/medical-assistant", expectedPath: "/login", surface: "auth-gate" },
   { path: "/medical-assistant/intake", expectedPath: "/login", surface: "auth-gate" },
@@ -81,6 +82,7 @@ export const ACCESSIBILITY_ROUTES = [
   "/medical-disclaimer",
   "/medical-assistant",
   "/app",
+  "/app/staff",
   "/app/admin",
   "/route-that-does-not-exist",
 ];

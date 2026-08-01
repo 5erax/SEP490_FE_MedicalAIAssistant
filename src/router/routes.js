@@ -122,6 +122,14 @@ const BASE_ROUTES = [
   { id: "payment.cancel", path: "/payment/cancel", title: "Thanh toán đã hủy | MediMate AI", access: "public", returnable: false },
   { id: "workspace.redirect", path: "/app", title: "Không gian làm việc | MediMate AI", access: "public", returnable: false },
   {
+    id: "staff.workspace",
+    path: "/app/staff",
+    title: "Không gian Doctor và Staff | MediMate AI",
+    access: "role",
+    roles: ["doctor", "staff", "admin"],
+    shell: "staff",
+  },
+  {
     id: "assessment.session",
     path: "/assessment/:sessionId",
     title: "Câu hỏi lâm sàng | MediMate AI",

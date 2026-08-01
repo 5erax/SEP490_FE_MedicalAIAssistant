@@ -76,6 +76,22 @@ async function mockMapApis(page, facilities, options = {}) {
       });
     }
 
+    if (url.pathname === "/api/web-chatbot/message" && route.request().method() === "POST") {
+      options.onChat?.(route.request().postDataJSON());
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            answer: "Bạn có thể hỏi MediMate ngay mà không cần chọn cơ sở.",
+            recommendedPlans: [],
+            intent: "health",
+            needsMoreInformation: false,
+          },
+        }),
+      });
+    }
+
     if (url.pathname.startsWith("/api/feedback-reviews/facility/")) {
       return route.fulfill({
         contentType: "application/json",
@@ -111,11 +127,11 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toBeVisible();
   await expect(page.getByText("Đang tải bản đồ…", { exact: true })).toBeHidden();
 
-  const viewDetails = page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" });
-  await viewDetails.focus();
-  await viewDetails.press("Enter");
+  const mapMarker = page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" });
+  await mapMarker.focus();
+  await mapMarker.press("Enter");
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveAttribute("aria-pressed", "true");
+  await expect(mapMarker).toHaveAttribute("aria-pressed", "true");
 
   const overviewTab = page.getByRole("tab", { name: "Tổng quan" });
   await expect(overviewTab).toHaveAttribute("aria-selected", "true");
@@ -136,6 +152,7 @@ test("pre-visit AI stays present on the map and uses the selected facility depar
 
   const requestedApiPaths = [];
   let consultationPayload = null;
+  let chatPayload = null;
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (url.pathname.startsWith("/api/")) requestedApiPaths.push(url.pathname);
@@ -156,6 +173,9 @@ test("pre-visit AI stays present on the map and uses the selected facility depar
     onGenerateQuestions(payload) {
       consultationPayload = payload;
     },
+    onChat(payload) {
+      chatPayload = payload;
+    },
   });
   await mockSuccessfulMapStyle(page);
 
@@ -166,7 +186,10 @@ test("pre-visit AI stays present on the map and uses the selected facility depar
   await expect(initialLauncher).toBeVisible();
   await initialLauncher.click();
   await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
-  await expect(page.getByText("Chọn một cơ sở để bắt đầu", { exact: true })).toBeVisible();
+  await page.getByLabel("Câu hỏi hoặc triệu chứng của bạn").fill("Tôi nên chuẩn bị gì trước khi đi khám?");
+  await page.getByRole("button", { name: "Gửi câu hỏi cho MediMate AI" }).click();
+  await expect(page.getByText("Bạn có thể hỏi MediMate ngay mà không cần chọn cơ sở.", { exact: true })).toBeVisible();
+  expect(chatPayload).toEqual({ message: "Tôi nên chuẩn bị gì trước khi đi khám?" });
   await page.getByRole("button", { name: "Đóng AI hỗ trợ" }).click();
 
   await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
@@ -179,8 +202,8 @@ test("pre-visit AI stays present on the map and uses the selected facility depar
   await expect(departmentSelect).toHaveValue("");
   await expect(departmentSelect.locator("option")).toHaveCount(3);
   await departmentSelect.selectOption(SECOND_FACILITY_DEPARTMENT_ID);
-  await page.getByLabel("Triệu chứng của bạn").fill("Đau ngực nhẹ");
-  await page.getByRole("button", { name: "Tạo gợi ý câu hỏi" }).click();
+  await page.getByLabel("Câu hỏi hoặc triệu chứng của bạn").fill("Đau ngực nhẹ");
+  await page.getByRole("button", { name: "Gửi câu hỏi cho MediMate AI" }).click();
 
   await expect(page.getByText("Cơn đau bắt đầu từ khi nào?", { exact: true })).toBeVisible();
   expect(consultationPayload).toEqual({

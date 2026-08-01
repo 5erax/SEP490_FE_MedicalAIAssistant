@@ -232,37 +232,63 @@ export function LabIndicatorFormDialog({ indicator, saving, restoreFocusRef, onC
         </button>
       </header>
 
-      <form className="clean-form doctor-form lab-dialog-form" onSubmit={submit} noValidate>
+      <form className="clean-form doctor-form lab-dialog-form lab-indicator-dialog-form" onSubmit={submit} noValidate>
         <FormErrorSummary errors={errors} summaryRef={errorSummaryRef} />
-        <div className="lab-form-grid">
-          <Field id="lab-symbol" label="Ký hiệu" required error={errors.symbol} hint="Ví dụ: WBC, HGB hoặc ALT.">
-            <TextInput ref={firstInputRef} name="symbol" value={form.symbol} onChange={(event) => update("symbol", event.target.value)} />
-          </Field>
-          <Field id="lab-fullName" label="Tên đầy đủ" required error={errors.fullName}>
-            <TextInput name="fullName" value={form.fullName} onChange={(event) => update("fullName", event.target.value)} />
-          </Field>
-          <Field id="lab-category" label="Nhóm chỉ số" optional>
-            <TextInput name="category" value={form.category} onChange={(event) => update("category", event.target.value)} />
-          </Field>
-          <Field id="lab-unit" label="Đơn vị mặc định" optional>
-            <TextInput name="unit" value={form.unit} onChange={(event) => update("unit", event.target.value)} />
-          </Field>
-          <Field id="lab-minReference" label="Tham chiếu tối thiểu" optional error={errors.minReference}>
-            <TextInput name="minReference" inputMode="decimal" value={form.minReference} onChange={(event) => update("minReference", event.target.value)} />
-          </Field>
-          <Field id="lab-maxReference" label="Tham chiếu tối đa" optional>
-            <TextInput name="maxReference" inputMode="decimal" value={form.maxReference} onChange={(event) => update("maxReference", event.target.value)} />
-          </Field>
-          <Field id="lab-description" label="Mô tả" optional className="lab-form-span-2">
-            <Textarea name="description" rows="4" value={form.description} onChange={(event) => update("description", event.target.value)} />
-          </Field>
-          <label className="lab-checkbox lab-form-span-2" htmlFor="lab-isActive">
-            <input id="lab-isActive" name="isActive" type="checkbox" checked={form.isActive} onChange={(event) => update("isActive", event.target.checked)} />
-            <span>
-              <strong>Đang sử dụng</strong>
-              <small>Cho phép chỉ số xuất hiện trong các luồng xử lý xét nghiệm.</small>
-            </span>
-          </label>
+        <div className="lab-form-sections">
+          <fieldset className="lab-form-section">
+            <legend>
+              <span>Thông tin định danh</span>
+              <small>Tên và quy ước hiển thị của chỉ số.</small>
+            </legend>
+            <div className="lab-form-grid">
+              <Field id="lab-symbol" label="Ký hiệu" required error={errors.symbol} hint="Ví dụ: WBC, HGB hoặc ALT.">
+                <TextInput ref={firstInputRef} name="symbol" value={form.symbol} onChange={(event) => update("symbol", event.target.value)} />
+              </Field>
+              <Field id="lab-fullName" label="Tên đầy đủ" required error={errors.fullName}>
+                <TextInput name="fullName" value={form.fullName} onChange={(event) => update("fullName", event.target.value)} />
+              </Field>
+              <Field id="lab-category" label="Nhóm chỉ số" optional>
+                <TextInput name="category" value={form.category} onChange={(event) => update("category", event.target.value)} />
+              </Field>
+              <Field id="lab-unit" label="Đơn vị mặc định" optional>
+                <TextInput name="unit" value={form.unit} onChange={(event) => update("unit", event.target.value)} />
+              </Field>
+            </div>
+          </fieldset>
+
+          <fieldset className="lab-form-section">
+            <legend>
+              <span>Khoảng tham chiếu mặc định</span>
+              <small>Có thể để trống nếu chỉ số dùng các range chi tiết riêng.</small>
+            </legend>
+            <div className="lab-form-grid">
+              <Field id="lab-minReference" label="Tham chiếu tối thiểu" optional error={errors.minReference}>
+                <TextInput name="minReference" inputMode="decimal" value={form.minReference} onChange={(event) => update("minReference", event.target.value)} />
+              </Field>
+              <Field id="lab-maxReference" label="Tham chiếu tối đa" optional>
+                <TextInput name="maxReference" inputMode="decimal" value={form.maxReference} onChange={(event) => update("maxReference", event.target.value)} />
+              </Field>
+            </div>
+          </fieldset>
+
+          <fieldset className="lab-form-section">
+            <legend>
+              <span>Hiển thị và trạng thái</span>
+              <small>Bổ sung ngữ cảnh cho người quản trị và các luồng xét nghiệm.</small>
+            </legend>
+            <div className="lab-form-grid">
+              <Field id="lab-description" label="Mô tả" optional className="lab-form-span-2">
+                <Textarea name="description" rows="3" value={form.description} onChange={(event) => update("description", event.target.value)} />
+              </Field>
+              <label className="lab-checkbox lab-form-span-2" htmlFor="lab-isActive">
+                <input id="lab-isActive" name="isActive" type="checkbox" checked={form.isActive} onChange={(event) => update("isActive", event.target.checked)} />
+                <span>
+                  <strong>Đang sử dụng</strong>
+                  <small>Cho phép chỉ số xuất hiện trong các luồng xử lý xét nghiệm.</small>
+                </span>
+              </label>
+            </div>
+          </fieldset>
         </div>
 
         <div className="doctor-modal-actions lab-dialog-actions">

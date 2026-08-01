@@ -489,7 +489,7 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).not.toHaveProperty("address");
   });
 
-  test("doctor first login skips patient onboarding", async ({ page }) => {
+  test("doctor first login opens the Doctor and Staff workspace", async ({ page }) => {
     await preparePage(page);
     await page.route("**/api/authentication/login", (route) => route.fulfill({
       status: 200,
@@ -520,7 +520,8 @@ test.describe("global navigation UX", () => {
     await page.getByLabel("Mật khẩu").fill("Example123!");
     await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/app\/staff$/);
+    await expect(page.getByRole("heading", { name: /Xin chào/ })).toBeVisible();
   });
 
   test("rejects external return intent after login", async ({ page }) => {
