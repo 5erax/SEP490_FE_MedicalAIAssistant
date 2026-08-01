@@ -128,7 +128,7 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   await expect(skipMap).toHaveAttribute("href", "#facility-list");
 });
 
-test("pre-visit AI appears after facility detail and uses its department id", async ({ page }) => {
+test("pre-visit AI stays present on the map and uses the selected facility department id", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
@@ -162,11 +162,16 @@ test("pre-visit AI appears after facility detail and uses its department id", as
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /AI hỗ trợ trước khám/ })).toHaveCount(0);
-  await expect(page.getByText("AI hỗ trợ trước khám", { exact: true })).toHaveCount(0);
+  const initialLauncher = page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" });
+  await expect(initialLauncher).toBeVisible();
+  await initialLauncher.click();
+  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
+  await expect(page.getByText("Chọn một cơ sở để bắt đầu", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Đóng AI hỗ trợ" }).click();
 
   await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
+  await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
+  await page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" }).click();
   await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Thu gọn AI hỗ trợ trước khám" })).toHaveAttribute("aria-expanded", "true");
 

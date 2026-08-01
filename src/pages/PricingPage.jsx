@@ -203,7 +203,7 @@ function PricingPage() {
   }, []);
 
   function startFreePlan() {
-    navigate("/medical-assistant");
+    navigate("/symptom");
   }
 
   async function pollPayment(paymentId) {

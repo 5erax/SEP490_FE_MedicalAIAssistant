@@ -122,8 +122,6 @@ function App() {
       return lazyPage(<PaymentResultPage expectedResult="cancel" />);
     case "workspace.redirect":
       return <WorkspaceRedirect />;
-    case "assistant.main":
-      return lazyPage(<MedicalAssistantPage mode="entry" />);
     case "assessment.session":
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="questions" sessionId={route.params?.sessionId} />));
     case "assessment.result":
@@ -134,7 +132,7 @@ function App() {
       return lazyPage(<PersonalPatientProfilePage />);
     default:
       if (route.id.startsWith("admin.")) {
-        return lazyPage(<AdminWorkspacePage initialSection={route.section} />);
+        return lazyPage(<AdminWorkspacePage initialSection={route.section} routeParams={route.params} />);
       }
       return <StaticPage path={path} />;
   }

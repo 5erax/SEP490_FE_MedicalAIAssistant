@@ -20,6 +20,10 @@ const PAYMENTS_BASE = "/api/payments";
 const AI_CONFIGS_BASE = "/api/ai-configs";
 const WEB_CHATBOT_BASE = "/api/web-chatbot";
 const CONSULTATION_SESSIONS_BASE = "/api/consultation-sessions";
+const LAB_INDICATORS_BASE = "/api/lab-indicators";
+
+const encodedById = (base, id) => `${base}/${encodeURIComponent(id)}`;
+const labIndicatorChild = (indicatorId, child) => `${encodedById(LAB_INDICATORS_BASE, indicatorId)}/${child}`;
 
 export const ENDPOINTS = {
   AUTH: {
@@ -125,5 +129,16 @@ export const ENDPOINTS = {
     GENERATE_QUESTIONS: `${CONSULTATION_SESSIONS_BASE}/generate-questions-for-consultant-session`,
     MY_SESSIONS: `${CONSULTATION_SESSIONS_BASE}/my-sessions`,
     BY_ID: (sessionId) => byId(CONSULTATION_SESSIONS_BASE, sessionId),
+  },
+  LAB_INDICATORS: {
+    BASE: LAB_INDICATORS_BASE,
+    BY_ID: (indicatorId) => encodedById(LAB_INDICATORS_BASE, indicatorId),
+    BULK: `${LAB_INDICATORS_BASE}/bulk`,
+    ALIASES: (indicatorId) => labIndicatorChild(indicatorId, "aliases"),
+    ALIAS_BY_ID: (indicatorId, aliasId) => `${labIndicatorChild(indicatorId, "aliases")}/${encodeURIComponent(aliasId)}`,
+    REFERENCE_RANGES: (indicatorId) => labIndicatorChild(indicatorId, "reference-ranges"),
+    REFERENCE_RANGE_BY_ID: (indicatorId, rangeId) => `${labIndicatorChild(indicatorId, "reference-ranges")}/${encodeURIComponent(rangeId)}`,
+    ADVICE: (indicatorId) => labIndicatorChild(indicatorId, "advice"),
+    ADVICE_BY_ID: (indicatorId, cacheId) => `${labIndicatorChild(indicatorId, "advice")}/${encodeURIComponent(cacheId)}`,
   },
 };

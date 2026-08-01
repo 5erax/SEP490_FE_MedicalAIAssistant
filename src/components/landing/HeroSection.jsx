@@ -30,7 +30,7 @@ export function HeroSection() {
           </p>
 
           <div className="care-hero-actions">
-            <a className="care-button care-button-primary" href="/medical-assistant">
+            <a className="care-button care-button-primary" href="/symptom">
               <Stethoscope size={19} aria-hidden="true" />
               Phân tích triệu chứng
             </a>
@@ -57,7 +57,7 @@ export function HeroSection() {
             </div>
           </div>
 
-          <a className="care-dossier-start" href="/medical-assistant">
+          <a className="care-dossier-start" href="/symptom">
             <span className="care-option-icon"><Stethoscope size={21} aria-hidden="true" /></span>
             <span>
               <small>Bắt đầu một phiên mới</small>

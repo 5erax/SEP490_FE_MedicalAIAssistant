@@ -1626,7 +1626,7 @@ function NearbyClinicPage() {
 
       <section className="map-stage">
         <FacilityMap
-          assistantAccessLocked={isClinicalFlow && !auth?.accessToken}
+          assistantAccessLocked={!auth?.accessToken}
           chatContext={chatContext}
           clinicalNotice={effectiveClinicalNotice}
           clinicalStatus={clinicalStatus}
@@ -1639,7 +1639,7 @@ function NearbyClinicPage() {
           onAssistantLogin={() => navigate(`/login?returnTo=${encodeURIComponent(
             `${window.location.pathname}${window.location.search}`,
           )}`)}
-          showConsultationAssistant={isClinicalFlow || Boolean(auth?.accessToken)}
+          showConsultationAssistant
           facilities={mappableFacilities}
           locationError={locationError}
           mapRef={mapRef}

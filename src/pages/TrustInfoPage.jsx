@@ -44,7 +44,7 @@ const TRUST_PAGES = {
         cards: [
           { icon: KeyRound, title: "Tài khoản và đăng nhập", body: "Đăng nhập lại hoặc đặt lại mật khẩu khi bạn không thể vào tài khoản.", links: [["Mở trang đăng nhập", "/login"], ["Đặt lại mật khẩu", "/forgot-password"]] },
           { icon: CreditCard, title: "Gói dịch vụ và thanh toán", body: "Xem gói đang cung cấp, hạn mức và trạng thái được hệ thống trả về.", links: [["Xem bảng giá", "/pricing"], ["Mở hồ sơ cá nhân", "/profile"]] },
-          { icon: Stethoscope, title: "Tính năng trước khi đi khám", body: "Mở hướng dẫn mô tả triệu chứng hoặc tìm cơ sở y tế trên bản đồ.", links: [["Mở trợ lý y tế", "/medical-assistant"], ["Tìm cơ sở y tế", "/map"]] },
+          { icon: Stethoscope, title: "Tính năng trước khi đi khám", body: "Mở hướng dẫn mô tả triệu chứng hoặc tìm cơ sở y tế trên bản đồ.", links: [["Mở trợ lý y tế", "/symptom"], ["Tìm cơ sở y tế", "/map"]] },
         ],
       },
       {

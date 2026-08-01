@@ -266,7 +266,7 @@ function EntryPage() {
           </ul>
 
           <div className="clinical-entry-actions">
-            <Button size="lg" onClick={() => navigate("/medical-assistant/intake")}>
+            <Button size="lg" onClick={() => navigate("/symptom")}>
               Bắt đầu mô tả triệu chứng
             </Button>
             <Button tone="secondary" size="lg" onClick={() => navigate("/map")}>
@@ -523,7 +523,7 @@ function QuestionsPage({ sessionId }) {
         <ErrorState
           title="Phiên đánh giá chưa sẵn sàng"
           description="Hãy bắt đầu lại từ form nhập triệu chứng để tạo phiên đánh giá và danh sách câu hỏi."
-          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Nhập triệu chứng</Button>}
+          action={<Button onClick={() => navigate("/symptom")}>Nhập triệu chứng</Button>}
         />
       </AssessmentShell>
     );
@@ -540,7 +540,7 @@ function QuestionsPage({ sessionId }) {
         <EmptyState
           title="Chưa tạo được câu hỏi lâm sàng"
           description="Hãy mô tả triệu chứng rõ hơn để hệ thống có đủ dữ liệu tạo câu hỏi."
-          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Quay lại nhập lại</Button>}
+          action={<Button onClick={() => navigate("/symptom")}>Quay lại nhập lại</Button>}
         />
       </AssessmentShell>
     );
@@ -642,7 +642,7 @@ function QuestionsPage({ sessionId }) {
           <Button
             type="button"
             tone="ghost"
-            onClick={() => navigate("/medical-assistant/intake")}
+            onClick={() => navigate("/symptom")}
           >
             Quay lại biểu mẫu
           </Button>
@@ -759,7 +759,7 @@ function ResultPage({ sessionId }) {
         <ErrorState
           title="Phiên đánh giá không tồn tại"
           description={remoteError || "Hãy bắt đầu phiên đánh giá mới hoặc mở lại từ lịch sử nếu phiên đã được lưu."}
-          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Bắt đầu đánh giá mới</Button>}
+          action={<Button onClick={() => navigate("/symptom")}>Bắt đầu đánh giá mới</Button>}
         />
       </AssessmentShell>
     );
@@ -861,7 +861,7 @@ function HistoryPage() {
       historyAction={
         sessionType === "department"
           ? { label: "Tiếp tục tư vấn", to: "/dashboard" }
-          : { label: "Tiếp tục chẩn đoán", to: "/medical-assistant/intake" }
+          : { label: "Tiếp tục chẩn đoán", to: "/symptom" }
       }
     >
       {status === "loading" && (
@@ -880,7 +880,7 @@ function HistoryPage() {
         <EmptyState
           title={copy.empty}
           description="Bắt đầu phiên mới để MediMate tạo câu hỏi lâm sàng và lưu lịch sử."
-          action={<Button onClick={() => navigate("/medical-assistant/intake")}>Đánh giá mới</Button>}
+          action={<Button onClick={() => navigate("/symptom")}>Đánh giá mới</Button>}
         />
       )}
 

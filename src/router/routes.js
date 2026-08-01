@@ -7,6 +7,7 @@ export const ADMIN_SECTIONS = [
   "departments",
   "icd-chapters",
   "clinical-questions",
+  "lab-indicators",
   "facilities",
   "patient-profiles",
 ];
@@ -20,6 +21,7 @@ const ADMIN_SECTION_TITLES = {
   departments: "Quản lý chuyên khoa",
   "icd-chapters": "Quản lý chương ICD",
   "clinical-questions": "Quản lý câu hỏi lâm sàng",
+  "lab-indicators": "Quản lý chỉ số xét nghiệm",
   facilities: "Quản lý cơ sở y tế",
   "patient-profiles": "Quản lý hồ sơ bệnh nhân",
 };
@@ -33,6 +35,7 @@ const ADMIN_SECTION_NAVIGATION = {
   departments: { label: "Chuyên khoa", icon: "departments" },
   "icd-chapters": { label: "Chương ICD", icon: "icd" },
   "clinical-questions": { label: "Câu hỏi lâm sàng", icon: "question" },
+  "lab-indicators": { label: "Chỉ số xét nghiệm", icon: "lab-indicator" },
   facilities: { label: "Cơ sở y tế", icon: "facility" },
   "patient-profiles": { label: "Hồ sơ bệnh nhân", icon: "patient-profile" },
 };
@@ -70,7 +73,7 @@ const BASE_ROUTES = [
     access: "auth",
     shell: "patient",
     navigation: { shell: "patient", label: "Chẩn đoán lâm sàng", hint: "Làm rõ triệu chứng", icon: "symptom", order: 30 },
-    aliases: ["/medical-assistant/intake"],
+    aliases: ["/medical-assistant", "/medical-assistant/intake", "/symptom-chat"],
   },
   {
     id: "patient.chat",
@@ -118,13 +121,6 @@ const BASE_ROUTES = [
   { id: "payment.return", path: "/payment/return", title: "Thanh toán thành công | MediMate AI", access: "public", returnable: false },
   { id: "payment.cancel", path: "/payment/cancel", title: "Thanh toán đã hủy | MediMate AI", access: "public", returnable: false },
   { id: "workspace.redirect", path: "/app", title: "Không gian làm việc | MediMate AI", access: "public", returnable: false },
-  {
-    id: "assistant.main",
-    path: "/medical-assistant",
-    title: "Trợ lý y tế | MediMate AI",
-    access: "public",
-    aliases: ["/symptom-chat"],
-  },
   {
     id: "assessment.session",
     path: "/assessment/:sessionId",
@@ -180,7 +176,18 @@ const ADMIN_ROUTES = ADMIN_SECTIONS.map((section) => ({
       : [],
 }));
 
-export const ROUTES = [...BASE_ROUTES, ...ADMIN_ROUTES];
+const ADMIN_DETAIL_ROUTES = [
+  {
+    id: "admin.lab-indicator-detail",
+    path: "/app/admin/lab-indicators/:indicatorId",
+    title: "Chi tiết chỉ số xét nghiệm | MediMate AI",
+    access: "role",
+    roles: ["admin"],
+    section: "lab-indicators",
+  },
+];
+
+export const ROUTES = [...BASE_ROUTES, ...ADMIN_ROUTES, ...ADMIN_DETAIL_ROUTES];
 
 const ROUTES_BY_PATH = new Map();
 

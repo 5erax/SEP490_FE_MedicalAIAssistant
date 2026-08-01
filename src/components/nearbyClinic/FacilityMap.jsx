@@ -123,7 +123,6 @@ function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect }) {
 
 function MapConsultationAssistant({
   accessLocked = false,
-  clinicalMode = false,
   consultationFacility = null,
   onLogin,
   recommendedDepartment = null,
@@ -137,7 +136,7 @@ function MapConsultationAssistant({
   ));
   const initialDepartmentId = matchedRecommendedDepartment?.id
     ?? (normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "");
-  const [open, setOpen] = useState(!clinicalMode);
+  const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("suggest");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
   const [symptoms, setSymptoms] = useState("");
@@ -253,8 +252,6 @@ function MapConsultationAssistant({
     }
   }
 
-  if (!consultationFacility && !clinicalMode) return null;
-
   return (
     <>
       {open && (
@@ -291,10 +288,56 @@ function MapConsultationAssistant({
               <p>Kết quả gợi ý chỉ được hiển thị cho tài khoản đã tạo phiên.</p>
               <button type="button" onClick={onLogin}>Đăng nhập</button>
             </div>
+          ) : activeTab === "history" ? (
+            <div className="map-ai-history" aria-live="polite">
+              <div className="map-ai-history-title">
+                <Clock3 size={16} />
+                <div>
+                  <strong>Lịch sử gợi ý</strong>
+                  <small>Tất cả phiên hỗ trợ trước khám của bạn</small>
+                </div>
+                <span>{sessions.length}</span>
+              </div>
+              {historyStatus === "loading" && <p>Đang tải lịch sử...</p>}
+              {historyStatus !== "loading" && sessions.length === 0 && <p>Chưa có lịch sử gợi ý.</p>}
+              <div className="map-ai-history-list">
+                {sessions.map((session) => {
+                  const sessionId = getSessionId(session);
+                  const isSelected = sessionId && sessionId === getSessionId(selectedSession);
+                  return (
+                    <article className={isSelected ? "active" : ""} key={sessionId || getSessionTitle(session)}>
+                      <div>
+                        <Clock3 size={15} />
+                        <span>
+                          <strong>{getSessionTitle(session)}</strong>
+                          <small>{getSessionDate(session)}</small>
+                        </span>
+                      </div>
+                      <button type="button" onClick={() => handleViewSession(session)}>Xem</button>
+                    </article>
+                  );
+                })}
+              </div>
+              {selectedSession && (
+                <div className="map-ai-session-detail">
+                  <strong>Chi tiết phiên gợi ý</strong>
+                  <p>{getSessionTitle(selectedSession)}</p>
+                  {getQuestionsFromResponse(selectedSession).length > 0 && (
+                    <ul>
+                      {getQuestionsFromResponse(selectedSession).slice(0, 5).map((question, index) => (
+                        <li key={`${getQuestionText(question, index)}-${index}`}>
+                          {getQuestionText(question, index)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           ) : !consultationFacility ? (
             <div className="map-ai-unavailable" role="status">
-              <strong>Chưa có cơ sở phù hợp</strong>
-              <p>AI hỗ trợ theo bệnh viện sẽ sẵn sàng khi hệ thống xác định được cơ sở và chuyên khoa hợp lệ.</p>
+              <strong>Chọn một cơ sở để bắt đầu</strong>
+              <p>MediMate AI luôn sẵn sàng trên bản đồ. Hãy chọn cơ sở y tế và chuyên khoa để chuẩn bị câu hỏi trước khi khám.</p>
             </div>
           ) : activeTab === "suggest" ? (
             <form className="map-ai-chat" onSubmit={handleGenerate}>
@@ -394,53 +437,7 @@ function MapConsultationAssistant({
                 </div>
               )}
             </form>
-          ) : (
-            <div className="map-ai-history" aria-live="polite">
-              <div className="map-ai-history-title">
-                <Clock3 size={16} />
-                <div>
-                  <strong>Lịch sử gợi ý</strong>
-                  <small>Tất cả phiên hỗ trợ trước khám của bạn</small>
-                </div>
-                <span>{sessions.length}</span>
-              </div>
-              {historyStatus === "loading" && <p>Đang tải lịch sử...</p>}
-              {historyStatus !== "loading" && sessions.length === 0 && <p>Chưa có lịch sử gợi ý.</p>}
-              <div className="map-ai-history-list">
-                {sessions.map((session) => {
-                  const sessionId = getSessionId(session);
-                  const isSelected = sessionId && sessionId === getSessionId(selectedSession);
-                  return (
-                    <article className={isSelected ? "active" : ""} key={sessionId || getSessionTitle(session)}>
-                      <div>
-                        <Clock3 size={15} />
-                        <span>
-                          <strong>{getSessionTitle(session)}</strong>
-                          <small>{getSessionDate(session)}</small>
-                        </span>
-                      </div>
-                      <button type="button" onClick={() => handleViewSession(session)}>Xem</button>
-                    </article>
-                  );
-                })}
-              </div>
-              {selectedSession && (
-                <div className="map-ai-session-detail">
-                  <strong>Chi tiết phiên gợi ý</strong>
-                  <p>{getSessionTitle(selectedSession)}</p>
-                  {getQuestionsFromResponse(selectedSession).length > 0 && (
-                    <ul>
-                      {getQuestionsFromResponse(selectedSession).slice(0, 5).map((question, index) => (
-                        <li key={`${getQuestionText(question, index)}-${index}`}>
-                          {getQuestionText(question, index)}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          ) : null}
 
           {message && <p className="map-ai-message">{message}</p>}
         </aside>
@@ -672,7 +669,6 @@ export default function FacilityMap({
             recommendedDepartment?.departmentId || "no-recommendation",
           ].join(":")}
           accessLocked={assistantAccessLocked}
-          clinicalMode={isClinicalFlow}
           consultationFacility={consultationFacility}
           onLogin={onAssistantLogin}
           recommendedDepartment={recommendedDepartment}

@@ -32,3 +32,4 @@ export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subsc
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
 export { consultationSessionsApi } from "./consultationSessionService";
+export { labIndicatorsApi } from "./labIndicatorService";
