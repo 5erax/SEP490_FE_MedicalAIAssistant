@@ -150,7 +150,7 @@ function profileProblem(profile, profileStatus) {
   if (profileStatus === "error") return "Không thể tải hồ sơ cá nhân để chuẩn bị dữ liệu phân tích.";
   if (profileStatus !== "ready") return "Đang tải hồ sơ cá nhân.";
   if (!profile?.dateOfBirth) return "Hồ sơ cá nhân chưa có ngày sinh.";
-  if (!normalizeGender(profile?.gender)) return "Giới tính trong hồ sơ chưa phù hợp với dữ liệu API hiện hỗ trợ.";
+  if (!normalizeGender(profile?.gender)) return "Giới tính trong hồ sơ chưa phù hợp với biểu mẫu phân tích hiện tại.";
   return "";
 }
 
@@ -273,7 +273,7 @@ function SessionDetail({ session, status, error, onRetry, headingRef }) {
       {session.status === "processing" && (
         <div className="records-processing-note" role="status" aria-live="polite">
           <RefreshCw size={18} aria-hidden="true" />
-          <div><strong>Hệ thống đang đọc phiếu xét nghiệm</strong><p>Trang sẽ tự làm mới chi tiết khi backend xử lý xong.</p></div>
+          <div><strong>Hệ thống đang đọc phiếu xét nghiệm</strong><p>Trang sẽ tự làm mới khi có kết quả.</p></div>
         </div>
       )}
       {session.status === "failed" && (
@@ -283,7 +283,7 @@ function SessionDetail({ session, status, error, onRetry, headingRef }) {
         </div>
       )}
       {session.status === "completed" && results.length === 0 && (
-        <EmptyState title="Chưa nhận được chỉ số" description="Backend đã hoàn tất phiên nhưng chưa trả về chỉ số xét nghiệm nào." />
+        <EmptyState title="Chưa nhận được chỉ số" description="Phiên đã hoàn tất nhưng chưa có chỉ số xét nghiệm để hiển thị." />
       )}
       {results.length > 0 && (
         <div className="records-result-list">
@@ -505,7 +505,7 @@ export default function MedicalRecordPage() {
         <div>
           <p className="records-eyebrow"><FlaskConical size={16} aria-hidden="true" /> PHÂN TÍCH XÉT NGHIỆM</p>
           <h1>Đọc phiếu xét nghiệm rõ ràng hơn</h1>
-          <p>Tải ảnh hoặc PDF phiếu xét nghiệm. MediMate đối chiếu các chỉ số và trả về thông tin tham khảo theo dữ liệu backend.</p>
+          <p>Tải ảnh hoặc PDF phiếu xét nghiệm. MediMate đối chiếu các chỉ số và cung cấp thông tin tham khảo.</p>
         </div>
         <div className="records-hero-note">
           <ShieldCheck size={21} aria-hidden="true" />

@@ -288,7 +288,7 @@ function getReviewMessageText(message, fallback = "Không thể xử lý đánh 
     return "Bạn cần đăng nhập để gửi đánh giá.";
   }
   if (normalized.includes("network") || normalized.includes("failed to fetch")) {
-    return "Không thể kết nối máy chủ. Vui lòng thử lại.";
+    return "Không thể tải thông tin. Vui lòng thử lại.";
   }
 
   return source;
@@ -1512,7 +1512,7 @@ function NearbyClinicPage() {
                   </section>
                   <section className="facility-info-group">
                     <h3>Tiện ích hiện có dữ liệu</h3>
-                    <div className="facility-detail-services">{detailServices.length ? detailServices.map((service) => <span key={service}>{service}</span>) : <p>Backend chưa cung cấp tiện ích hoặc dịch vụ nổi bật cho cơ sở này.</p>}</div>
+                    <div className="facility-detail-services">{detailServices.length ? detailServices.map((service) => <span key={service}>{service}</span>) : <p>Chưa có thông tin về tiện ích hoặc dịch vụ nổi bật của cơ sở này.</p>}</div>
                   </section>
                 </div>
               )}
@@ -1565,7 +1565,7 @@ function NearbyClinicPage() {
                         <strong>Bạn đã đánh giá cơ sở này</strong>
                         <p>{currentUserReview.isKnownDuplicate ? "Đánh giá hiện tại chưa xuất hiện trong danh sách công khai." : (currentUserReview.comment || "Bạn không để lại nhận xét.")}</p>
                         {getReviewImageUrls(currentUserReview).length > 0 && <div className="review-photo-grid">{getReviewImageUrls(currentUserReview).map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh minh họa ${index + 1} trong đánh giá của bạn`} width="240" height="180" loading="lazy" decoding="async" />)}</div>}
-                        {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa vì API chưa trả mã đánh giá.</small>}
+                        {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa. Vui lòng thử lại sau.</small>}
                       </div>
                     ) : (
                       <form className="facility-review-form" onSubmit={submitReview}>

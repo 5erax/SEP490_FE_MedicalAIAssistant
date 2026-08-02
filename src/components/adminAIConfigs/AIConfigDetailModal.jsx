@@ -28,7 +28,7 @@ export default function AIConfigDetailModal({ config, restoreFocusRef, onClose }
           <Badge tone={config.isActive ? "success" : "warning"}>
             {config.isActive ? "Đang bật" : "Đang tắt"}
           </Badge>
-          <span><ShieldCheck size={15} aria-hidden="true" /> Chỉ hiển thị dữ liệu cấu hình backend cung cấp</span>
+          <span><ShieldCheck size={15} aria-hidden="true" /> Chỉ hiển thị thông tin cấu hình hiện có</span>
         </div>
 
         <div className="ai-config-detail-grid">

@@ -673,7 +673,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                         <FileText size={18} aria-hidden="true" />
                         <strong id="clinical-answer-title">Danh sách đáp án</strong>
                       </div>
-                      <p>Các lựa chọn song ngữ được gửi đúng theo cấu trúc đáp án của API.</p>
+                      <p>Các lựa chọn song ngữ sẽ được lưu cùng câu hỏi.</p>
                     </div>
                     <button className="clinical-answer-add" type="button" onClick={addAnswerRow}>
                       <Plus size={16} aria-hidden="true" />

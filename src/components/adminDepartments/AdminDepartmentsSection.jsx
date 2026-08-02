@@ -335,7 +335,7 @@ export default function AdminDepartmentsSection({
                   <Field
                     label="Mã chương ICD"
                     className="facility-form-span-2"
-                    help="Nhập mã chương ICD đã được backend sử dụng cho chuyên khoa này, nếu có."
+                    help="Nhập mã chương ICD đang áp dụng cho chuyên khoa này, nếu có."
                   >
                     <input
                       value={form.chapterCode}

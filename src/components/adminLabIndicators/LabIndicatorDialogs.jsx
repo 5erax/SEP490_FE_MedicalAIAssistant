@@ -225,7 +225,7 @@ export function LabIndicatorFormDialog({ indicator, saving, restoreFocusRef, onC
         <div>
           <p>{editing ? "Cập nhật danh mục" : "Thêm vào danh mục"}</p>
           <h2 id="lab-indicator-dialog-title">{editing ? "Sửa chỉ số xét nghiệm" : "Tạo chỉ số xét nghiệm"}</h2>
-          <small id="lab-indicator-dialog-description">Dữ liệu sẽ được gửi đúng schema LabIndicators của backend.</small>
+          <small id="lab-indicator-dialog-description">Thông tin sẽ được lưu vào danh mục chỉ số xét nghiệm.</small>
         </div>
         <button className="doctor-modal-close" type="button" aria-label="Đóng form chỉ số" onClick={onClose} disabled={saving}>
           <X size={18} aria-hidden="true" />

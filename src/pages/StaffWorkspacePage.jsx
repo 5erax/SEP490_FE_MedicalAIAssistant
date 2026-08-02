@@ -111,7 +111,7 @@ export default function StaffWorkspacePage() {
             <p className="eyebrow">Không gian Doctor và Staff</p>
             <h1 id="staff-workspace-title">Xin chào, {displayName}.</h1>
             <p>
-              Tài khoản đã được chuyển đến đúng khu vực vận hành theo vai trò do backend xác nhận.
+              Tài khoản đã được chuyển đến đúng khu vực làm việc theo vai trò đã xác nhận.
             </p>
           </div>
           <span className="staff-hero-icon" aria-hidden="true"><Stethoscope size={34} /></span>
@@ -128,7 +128,7 @@ export default function StaffWorkspacePage() {
             className="staff-account-state"
             urgent
             title="Tài khoản không có quyền Doctor hoặc Staff"
-            description="Vai trò từ backend không khớp với khu vực này. Hãy đăng xuất và liên hệ quản trị viên nếu bạn cho rằng đây là nhầm lẫn."
+            description="Tài khoản của bạn không có quyền truy cập khu vực này. Hãy đăng xuất và liên hệ quản trị viên nếu bạn cho rằng đây là nhầm lẫn."
             action={<Button onClick={handleLogout}>Đăng xuất an toàn</Button>}
           />
         ) : (
@@ -158,7 +158,7 @@ export default function StaffWorkspacePage() {
               </dl>
 
               <Alert tone="info" title="Dữ liệu được bảo vệ">
-                MediMate chỉ hiển thị thông tin tài khoản do backend cung cấp và không suy đoán dữ liệu chuyên môn hoặc bệnh nhân.
+                MediMate chỉ hiển thị thông tin hiện có của tài khoản và không suy đoán dữ liệu chuyên môn hoặc bệnh nhân.
               </Alert>
             </section>
 

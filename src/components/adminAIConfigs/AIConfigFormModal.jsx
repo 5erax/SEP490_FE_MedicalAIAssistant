@@ -154,7 +154,7 @@ export default function AIConfigFormModal({
                 {...getAdminFieldProps("model", errors.model, errors.model ? "ai-config-model-error" : "")}
                 value={form.model}
                 onChange={(event) => update("model", event.target.value)}
-                placeholder="Tên mô hình theo cấu hình backend"
+                placeholder="Nhập tên mô hình"
                 required
               />
               {errors.model && <small id="ai-config-model-error">{errors.model}</small>}

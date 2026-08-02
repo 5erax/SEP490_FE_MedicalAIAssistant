@@ -176,6 +176,27 @@ test("free patient can open the temporarily unlocked lab analysis", async ({ pag
   await expect(page.locator('.user-shell-nav button[aria-label^="Phân tích xét nghiệm"]')).toHaveCount(0);
 });
 
+test("patient-facing lab states avoid technical implementation terms", async ({ page }) => {
+  await openPatientRecords(page, {
+    summaries: [{
+      sessionId: SESSION_ID,
+      status: "processing",
+      testDate: "2026-08-01",
+      patientGenderAtTest: "male",
+      patientAgeAtTest: 35,
+      createdAt: "2026-08-01T08:00:00Z",
+    }],
+    detailOverrides: { status: "processing", results: [] },
+  });
+
+  await expect(page.getByText("Kết quả phân tích và thông tin tham khảo sẽ hiển thị tại đây.")).toBeVisible();
+  await expect(page.getByText(/backend|schema|API trả về/i)).toHaveCount(0);
+
+  await page.getByRole("button", { name: /1\/8\/2026/ }).click();
+  await expect(page.getByText("Trang sẽ tự làm mới khi có kết quả.")).toBeVisible();
+  await expect(page.getByText(/backend|schema|API trả về/i)).toHaveCount(0);
+});
+
 test("patient opens a session detail through the account-owned history endpoint", async ({ page }) => {
   const state = await openPatientRecords(page, {
     summaries: [{

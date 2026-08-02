@@ -481,7 +481,7 @@ function IndicatorDetailView({ indicatorId }) {
   async function deleteIndicator() {
     const confirmed = await confirmAction({
       title: "Xóa chỉ số xét nghiệm?",
-      message: `${indicator?.fullName || indicator?.symbol || "Chỉ số này"} sẽ bị xóa khỏi danh mục. Backend có thể từ chối nếu còn dữ liệu liên quan.`,
+      message: `${indicator?.fullName || indicator?.symbol || "Chỉ số này"} sẽ bị xóa khỏi danh mục. Chỉ số có thể không xóa được nếu đang được sử dụng.`,
       confirmLabel: "Xóa chỉ số",
       tone: "danger",
     });

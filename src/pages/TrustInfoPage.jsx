@@ -98,7 +98,7 @@ const TRUST_PAGES = {
         title: "Dịch vụ liên quan khi bạn dùng MediMate",
         intro: "Một số yêu cầu đi qua dịch vụ khác để hoàn thành đúng chức năng.",
         services: [
-          ["Máy chủ MediMate", "Nhận yêu cầu API cho tài khoản, hồ sơ, trợ lý y tế, cơ sở y tế và gói dịch vụ."],
+          ["Hệ thống MediMate", "Xử lý yêu cầu về tài khoản, hồ sơ, trợ lý y tế, cơ sở y tế và gói dịch vụ."],
           ["Google", "Chỉ tham gia khi đăng nhập Google được bật và bạn chọn cách đăng nhập này."],
           ["PayOS", "Nhận thông tin cần thiết khi bạn chủ động bắt đầu thanh toán gói đăng ký."],
           ["CARTO và OpenStreetMap", "Cung cấp kiểu bản đồ và dữ liệu nền; trình duyệt cần gửi yêu cầu tải bản đồ đến các dịch vụ này."],
@@ -118,7 +118,7 @@ const TRUST_PAGES = {
       {
         id: "open-items",
         title: "Thông tin cần được công bố thêm trước khi phát hành chính thức",
-        intro: "Website hiện chưa công bố đầu mối yêu cầu dữ liệu, thời hạn lưu trữ chi tiết hoặc quy trình yêu cầu xóa tài khoản. MediMate không nên khẳng định các quyền này đã có cho đến khi backend và quy trình vận hành hỗ trợ đầy đủ.",
+        intro: "Website hiện chưa công bố đầu mối yêu cầu dữ liệu, thời hạn lưu trữ chi tiết hoặc quy trình yêu cầu xóa tài khoản. MediMate không nên khẳng định các quyền này cho đến khi có thông tin và quy trình hỗ trợ đầy đủ.",
       },
     ],
   },

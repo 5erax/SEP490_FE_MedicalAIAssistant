@@ -5,7 +5,7 @@ export async function sendLandingChatMessage(message) {
   const answer = response.data?.answer || response.message || "";
 
   if (!answer.trim()) {
-    throw new Error("Backend AI chua tra ve noi dung phan hoi.");
+    throw new Error("Trợ lý AI chưa thể phản hồi. Vui lòng thử lại.");
   }
 
   return {
