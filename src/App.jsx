@@ -30,6 +30,7 @@ const PricingPage = lazy(() => import("./pages/PricingPage"));
 const RecoveryPlanPage = lazy(() => import("./pages/RecoveryPlanPage"));
 const StaffWorkspacePage = lazy(() => import("./pages/StaffWorkspacePage"));
 const TrustInfoPage = lazy(() => import("./pages/TrustInfoPage"));
+const UserMedicationsPage = lazy(() => import("./pages/UserMedicationsPage"));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
 
 if (window.location.pathname.startsWith("/app/admin")) {
@@ -109,6 +110,8 @@ function App() {
       return userWorkspace(lazyPage(<RecoveryPlanPage />));
     case "patient.medication":
       return userWorkspace(lazyPage(<MedicationScanPage />));
+    case "patient.medications":
+      return userWorkspace(lazyPage(<UserMedicationsPage />));
     case "public.pricing":
       return lazyPage(<PricingPage />);
     case "public.support":

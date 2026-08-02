@@ -39,10 +39,11 @@ const PATIENT_ICONS = {
   profile: UserRound,
   records: ClipboardList,
   recovery: CalendarDays,
+  medications: Pill,
 };
 
 const NAV_ITEMS = getNavigationModel("patient")
-  .filter((item) => !["patient.profile", "patient.medication"].includes(item.id))
+  .filter((item) => !["patient.profile", "patient.medication", "patient.medications"].includes(item.id))
   .map((item) => ({
     ...item,
     icon: PATIENT_ICONS[item.icon],
@@ -53,6 +54,7 @@ const SECONDARY_ACTIVE_ITEMS = {
   "/chat": { label: "Trợ lý AI", icon: MessageSquare },
   "/profile": { label: "Hồ sơ", icon: UserRound },
   "/medication": { label: "Kiểm tra thuốc", icon: Pill },
+  "/my-medications": { label: "Thuốc & lịch nhắc", icon: Pill },
   "/assessment/history": { label: "Lịch sử phân tích", icon: ClipboardList },
 };
 const EMPTY_ACCOUNT_CACHE = { accessToken: "", user: null };
@@ -513,6 +515,10 @@ export default function UserWorkspaceShell({ children }) {
                       <button type="button" onClick={() => navigateFromAccount("/profile")}>
                         <UserRound size={17} aria-hidden="true" />
                         Hồ sơ
+                      </button>
+                      <button type="button" onClick={() => navigateFromAccount("/my-medications")}>
+                        <Pill size={17} aria-hidden="true" />
+                        Thuốc & lịch nhắc
                       </button>
                       <div className="account-menu-preferences">
                         <Settings2 size={17} aria-hidden="true" />
