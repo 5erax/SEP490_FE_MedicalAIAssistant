@@ -4,12 +4,20 @@
   min-width: 0;
 }
 
-/* .ui-button shrinks with its flex container (see the "actions" flex-1
-   rule below); without nowrap its icon+label content wraps onto two
-   lines instead of staying inline. */
+/* The global `img, svg { display: block; }` reset (base.css) makes any
+   icon inside .ui-button's plain content <span> force a line break
+   before the label, since that span isn't a flex container itself.
+   Turning it into one neutralizes the reset for the icon+label pair. */
 .user-medications-page .ui-button,
 .user-medication-modal .ui-button {
   white-space: nowrap;
+}
+
+.user-medications-page .ui-button > span,
+.user-medication-modal .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Retint the shared Button component via its stable data-tone attribute

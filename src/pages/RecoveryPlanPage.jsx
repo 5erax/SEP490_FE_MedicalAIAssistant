@@ -253,6 +253,12 @@ const styles = `
   white-space: nowrap;
 }
 
+.recovery-actions .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .recovery-actions [data-tone="primary"] {
   border-color: var(--recovery-teal-dark);
   background: linear-gradient(135deg, var(--recovery-teal), var(--recovery-teal-dark));
