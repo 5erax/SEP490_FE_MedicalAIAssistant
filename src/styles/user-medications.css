@@ -1,0 +1,355 @@
+.user-medications-page {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* .ui-button shrinks with its flex container (see the "actions" flex-1
+   rule below); without nowrap its icon+label content wraps onto two
+   lines instead of staying inline. */
+.user-medications-page .ui-button,
+.user-medication-modal .ui-button {
+  white-space: nowrap;
+}
+
+/* Retint the shared Button component via its stable data-tone attribute
+   (its CSS module classes are hashed) to match the teal palette used on
+   the Map page instead of the default lime/hard-shadow brand button. */
+.user-medications-page [data-tone="primary"],
+.user-medication-modal [data-tone="primary"] {
+  border-color: #09625f;
+  background: linear-gradient(135deg, #0c7c78, #09625f);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(12, 124, 120, 0.22);
+}
+
+.user-medications-page [data-tone="primary"]:hover:not(:disabled),
+.user-medication-modal [data-tone="primary"]:hover:not(:disabled) {
+  background: linear-gradient(135deg, #09625f, #074d4a);
+}
+
+.user-medications-page [data-tone="secondary"],
+.user-medication-modal [data-tone="secondary"] {
+  border-color: #ceded9;
+  background: #ffffff;
+  color: #0b2d35;
+  box-shadow: none;
+}
+
+.user-medications-page [data-tone="secondary"]:hover:not(:disabled),
+.user-medication-modal [data-tone="secondary"]:hover:not(:disabled) {
+  border-color: #a9c4bd;
+  background: #f6faf8;
+}
+
+.user-medications-page [data-tone="danger"] {
+  border-color: rgba(162, 58, 50, 0.28);
+  background: #fff2ef;
+  color: #a23a32;
+  box-shadow: none;
+}
+
+.user-medications-page [data-tone="danger"]:hover:not(:disabled) {
+  border-color: #a23a32;
+  background: #a23a32;
+  color: #ffffff;
+}
+
+.user-medications-page [data-tone="primary"],
+.user-medications-page [data-tone="secondary"],
+.user-medications-page [data-tone="danger"],
+.user-medication-modal [data-tone="primary"],
+.user-medication-modal [data-tone="secondary"] {
+  border-radius: var(--radius-md);
+}
+
+.user-medications-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.user-medications-heading h1,
+.user-medications-heading p {
+  margin: 0;
+}
+
+.user-medications-eyebrow {
+  color: #09625f;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.user-medications-heading h1 {
+  margin-top: 4px;
+  font-size: clamp(24px, 3vw, 30px);
+}
+
+.user-medications-heading > div > p:last-child {
+  margin-top: 6px;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.user-medications-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.user-medications-disclaimer {
+  font-size: 13px;
+}
+
+.user-medications-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.user-medication-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.user-medication-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.user-medication-card-head > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.user-medication-card-head strong {
+  display: block;
+  color: var(--color-ink);
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.user-medication-card-head p {
+  margin: 2px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.user-medication-card-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: #e6f5f1;
+  color: #0c7c78;
+}
+
+.user-medication-card-dosage {
+  margin: 0;
+  color: var(--color-subtle);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.user-medication-card-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.user-medication-time-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-medication-time-empty {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.user-medication-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Form dialog */
+
+.user-medication-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.55);
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+
+.user-medication-modal {
+  width: min(560px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.user-medication-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 14px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 22px 24px 18px;
+}
+
+.user-medication-modal-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: #e6f5f1;
+  color: #0c7c78;
+}
+
+.user-medication-eyebrow {
+  margin: 0;
+  color: #09625f;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.user-medication-modal-header h2 {
+  margin: 2px 0 0;
+  font-size: 20px;
+}
+
+.user-medication-modal-close {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.user-medication-form {
+  display: grid;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+
+.user-medication-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.user-medication-reminder-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.user-medication-reminder-editor {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  padding: 14px;
+}
+
+.user-medication-reminder-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-medication-reminder-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user-medication-reminder-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  padding: 5px 6px 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-medication-reminder-list button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.user-medication-reminder-error {
+  color: var(--color-danger);
+}
+
+.user-medication-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+@media (max-width: 560px) {
+  .user-medications-heading {
+    flex-direction: column;
+  }
+
+  .user-medications-actions {
+    width: 100%;
+  }
+
+  .user-medications-actions .ui-button {
+    flex: 1 1 auto;
+  }
+
+  .user-medication-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
