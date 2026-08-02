@@ -23,6 +23,7 @@ const CONSULTATION_SESSIONS_BASE = "/api/consultation-sessions";
 const LAB_INDICATORS_BASE = "/api/lab-indicators";
 const LAB_TESTS_BASE = "/api/lab-tests";
 const USER_MEDICATIONS_BASE = "/api/user-medications";
+const SUBSCRIPTION_USAGE_BASE = "/api/me/subscription-usage";
 
 const encodedById = (base, id) => `${base}/${encodeURIComponent(id)}`;
 const labIndicatorChild = (indicatorId, child) => `${encodedById(LAB_INDICATORS_BASE, indicatorId)}/${child}`;
@@ -152,5 +153,8 @@ export const ENDPOINTS = {
     BASE: USER_MEDICATIONS_BASE,
     BY_ID: (medicationId) => encodedById(USER_MEDICATIONS_BASE, medicationId),
     REMINDERS: (medicationId) => `${encodedById(USER_MEDICATIONS_BASE, medicationId)}/reminders`,
+  },
+  SUBSCRIPTION_USAGE: {
+    ME: SUBSCRIPTION_USAGE_BASE,
   },
 };
