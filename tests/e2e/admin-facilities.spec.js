@@ -11,6 +11,129 @@ const ADMIN_TOKEN = [
 
 const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
 
+test("admin imports the verified Ho Chi Minh City hospital catalog without duplicates", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      email: "admin@example.com",
+      roles: ["Admin"],
+    }));
+  }, ADMIN_TOKEN);
+
+  const generalDepartmentId = "11111111-1111-4111-8111-111111111111";
+  const respiratoryDepartmentId = "33333333-3333-4333-8333-333333333333";
+  const existingImageUrl = "https://res.cloudinary.com/demo/image/upload/cho-ray.jpg";
+  const createdPayloads = [];
+  let updatedPayload = null;
+  let facilities = [{
+    id: "existing-cho-ray",
+    facilityName: "Bệnh viện Chợ Rẫy",
+    address: "Địa chỉ cũ",
+    latitude: 10,
+    longitude: 105,
+    imageUrl: existingImageUrl,
+    isActive: true,
+    departmentIds: [generalDepartmentId],
+  }];
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    const pathname = url.pathname;
+
+    if (pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (pathname === "/api/medical-departments") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: [
+            { id: generalDepartmentId, departmentName: "Khoa Tổng Quát", chapterCode: "R" },
+            { id: respiratoryDepartmentId, departmentName: "Khoa Hô Hấp", chapterCode: "J" },
+          ],
+        }),
+      });
+    }
+
+    if (pathname === "/api/facility-departments/active") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    }
+
+    if (pathname === "/api/medical-facilities" && method === "GET") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: { items: facilities, pageNumber: 1, pageSize: 100, totalCount: facilities.length, totalPages: 1 },
+        }),
+      });
+    }
+
+    if (pathname === "/api/medical-facilities/existing-cho-ray" && method === "PUT") {
+      updatedPayload = route.request().postDataJSON();
+      facilities = facilities.map((facility) => (
+        facility.id === "existing-cho-ray" ? { ...facility, ...updatedPayload } : facility
+      ));
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: facilities[0] }),
+      });
+    }
+
+    if (pathname === "/api/medical-facilities" && method === "POST") {
+      const payload = route.request().postDataJSON();
+      createdPayloads.push(payload);
+      const created = { id: `created-${createdPayloads.length}`, ...payload };
+      facilities.push(created);
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: created }),
+      });
+    }
+
+    const pagedPaths = ["/api/users", "/api/doctors", "/api/ai-configs"];
+    const data = pagedPaths.includes(pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto("/app/admin/facilities", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Thêm 39 bệnh viện TP.HCM" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Bắt đầu thêm" }).click();
+
+  await expect(page.getByText("Đã thêm 38 bệnh viện mới và cập nhật 1 bệnh viện hiện có.", { exact: true }).first()).toBeVisible();
+  expect(createdPayloads).toHaveLength(38);
+  expect(updatedPayload).toMatchObject({
+    facilityName: "Bệnh viện Chợ Rẫy",
+    latitude: 10.7566964,
+    longitude: 106.6597263,
+    imageUrl: existingImageUrl,
+    facilityType: "hospital",
+    isActive: true,
+  });
+  expect(updatedPayload.departmentIds).toEqual(expect.arrayContaining([generalDepartmentId, respiratoryDepartmentId]));
+  expect(createdPayloads.find((payload) => payload.facilityName.includes("Vinmec Central Park"))).toMatchObject({
+    latitude: 10.794,
+    longitude: 106.7219,
+    facilityType: "hospital",
+  });
+});
+
 test("admin creates a medical facility linked to an existing department", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
@@ -306,9 +429,9 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
 
   await page.goto("/app/admin/facilities", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("Có tọa độ bản đồ", { exact: true })).toBeVisible();
+  await expect(page.getByText("Có tọa độ", { exact: true })).toBeVisible();
   await expect(page.getByText("1 cơ sở đang hiển thị", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Thao tác khác" }).click();
+  await page.getByRole("button", { name: "Mở rộng" }).click();
   const mapLink = page.getByRole("link", { name: "Xem Bệnh viện Đa khoa A trên OpenStreetMap" });
   await expect(mapLink).toHaveAttribute(
     "href",
@@ -357,12 +480,12 @@ test("admin updates, toggles, and deletes a medical facility", async ({ page }) 
     departmentIds: [DEPARTMENT_ID],
   });
 
-  await page.getByRole("button", { name: "Thao tác khác" }).click();
+  await page.getByRole("button", { name: "Mở rộng" }).click();
   await page.getByRole("button", { name: "Tắt" }).click();
   await expect(page.getByText("Đang tắt", { exact: true })).toBeVisible();
   expect(statusPayload).toEqual({ isActive: false });
 
-  await page.getByRole("button", { name: "Thao tác khác" }).click();
+  await page.getByRole("button", { name: "Mở rộng" }).click();
   await page.getByRole("button", { name: "Xóa", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xóa cơ sở" }).click();
   await expect(page.getByText("Chưa có cơ sở y tế", { exact: true })).toBeVisible();

@@ -73,7 +73,7 @@
 
 .admin-operator .facility-clinical-heading-actions {
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: repeat(3, auto);
   justify-content: end;
   gap: 10px;
 }
@@ -94,8 +94,69 @@
 }
 
 .admin-operator .facility-reload-button,
+.admin-operator .facility-catalog-button,
 .admin-operator .facility-create-button {
   min-height: 44px;
+}
+
+.admin-operator .facility-catalog-button {
+  border-color: rgba(8, 127, 123, 0.28);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--facility-teal);
+}
+
+.admin-operator .facility-catalog-button:disabled {
+  cursor: wait;
+}
+
+.admin-operator .facility-catalog-progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  border: 1px solid var(--facility-line);
+  border-radius: 16px;
+  background: #f7fbf9;
+  padding: 14px 16px 12px;
+}
+
+.admin-operator .facility-catalog-progress::after,
+.admin-operator .facility-catalog-progress-bar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  content: "";
+}
+
+.admin-operator .facility-catalog-progress::after {
+  background: #dfe9e4;
+}
+
+.admin-operator .facility-catalog-progress-bar {
+  z-index: 1;
+  right: auto;
+  width: var(--facility-catalog-progress);
+  background: var(--facility-teal);
+  transition: width 180ms ease;
+}
+
+.admin-operator .facility-catalog-progress p {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+}
+
+.admin-operator .facility-catalog-progress strong {
+  color: var(--facility-ink);
+  font-size: 14px;
+}
+
+.admin-operator .facility-catalog-progress span:not(.facility-catalog-progress-bar) {
+  color: var(--facility-muted);
+  font-size: 12px;
 }
 
 .admin-operator .facility-filter-card {
@@ -361,6 +422,11 @@
     grid-template-columns: 1fr 1fr;
   }
 
+  .admin-operator .facility-catalog-button {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
   .admin-operator .facility-clinical-context {
     align-items: flex-start;
   }
@@ -412,6 +478,8 @@ html[data-theme="dark"] .admin-operator :is(
   .facility-search-control,
   .facility-filter-card .custom-select-trigger,
   .facility-result-summary,
+  .facility-catalog-button,
+  .facility-catalog-progress,
   .facility-clinical-panel .facility-admin-card,
   .facility-clinical-panel .facility-admin-actions
 ) {
@@ -558,7 +626,7 @@ html[data-theme="dark"] .admin-operator .facility-clinical-panel .facility-admin
 }
 
 .admin-operator .facility-table-wrap .record-actions .btn {
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .facility-primary-cell {
@@ -600,7 +668,7 @@ html[data-theme="dark"] .admin-operator .facility-clinical-panel .facility-admin
   border-radius: 999px;
   background: #e6f7f4;
   padding: 3px 9px;
-  color: #087f8c;
+  color: #006771;
   font-size: 11px;
   font-weight: 700;
 }

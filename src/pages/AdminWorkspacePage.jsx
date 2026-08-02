@@ -50,6 +50,12 @@ import {
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
 import { doctorManagementApi } from "../services/doctors";
 import { logoutUser } from "../services/logoutService";
+import { HCMC_HOSPITAL_CATALOG, HCMC_HOSPITAL_CATALOG_SIZE } from "../data/hcmcHospitalCatalog";
+import {
+  buildCatalogFacilityPayload,
+  findCatalogFacilityMatch,
+  resolveCatalogDepartmentIds,
+} from "../utils/hospitalCatalogImport";
 import { hasRole, normalizeRoles } from "../utils/roles";
 import "../styles/operator-workspace.css";
 
@@ -411,6 +417,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [savingDepartment, setSavingDepartment] = useState(false);
   const [savingIcdChapter, setSavingIcdChapter] = useState(false);
   const [savingFacility, setSavingFacility] = useState(false);
+  const [importingFacilityCatalog, setImportingFacilityCatalog] = useState(false);
+  const [facilityCatalogProgress, setFacilityCatalogProgress] = useState(null);
   const [savingPatientProfile, setSavingPatientProfile] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
   const [savingInvitation, setSavingInvitation] = useState(false);
@@ -1826,6 +1834,103 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     }
   }
 
+  async function getAllFacilitiesForCatalogImport() {
+    const pageSize = 100;
+    const firstResponse = await medicalFacilitiesApi.list(1, pageSize, EMPTY_FACILITY_FILTERS);
+    const firstPage = getPagedPayload(firstResponse);
+    const allFacilities = [...firstPage.items];
+
+    for (let pageNumber = 2; pageNumber <= firstPage.totalPages; pageNumber += 1) {
+      const response = await medicalFacilitiesApi.list(pageNumber, pageSize, EMPTY_FACILITY_FILTERS);
+      allFacilities.push(...getPagedPayload(response).items);
+    }
+
+    return allFacilities;
+  }
+
+  async function handleImportHcmcHospitalCatalog() {
+    if (departments.length === 0) {
+      const text = "Hãy tạo ít nhất một chuyên khoa trước khi thêm danh mục bệnh viện.";
+      setFacilityMessage({ type: "error", text });
+      showToast({ type: "error", title: "Chưa thể thêm danh mục", message: text });
+      return;
+    }
+
+    const confirmed = await confirmAction({
+      title: `Thêm ${HCMC_HOSPITAL_CATALOG_SIZE} bệnh viện TP.HCM?`,
+      message: "Hệ thống sẽ tạo bệnh viện còn thiếu và cập nhật các bản ghi trùng tên bằng địa chỉ, tọa độ, liên hệ, website và giờ tiếp nhận trong danh mục đã kiểm chứng. Ảnh hiện có sẽ được giữ nguyên.",
+      confirmLabel: "Bắt đầu thêm",
+    });
+    if (!confirmed) return;
+
+    setImportingFacilityCatalog(true);
+    setFacilityMessage(null);
+    setFacilityCatalogProgress({ completed: 0, total: HCMC_HOSPITAL_CATALOG_SIZE, created: 0, updated: 0, failed: 0 });
+
+    try {
+      const knownFacilities = await getAllFacilitiesForCatalogImport();
+      const progress = { completed: 0, total: HCMC_HOSPITAL_CATALOG_SIZE, created: 0, updated: 0, failed: 0 };
+
+      for (const catalogEntry of HCMC_HOSPITAL_CATALOG) {
+        const existingFacility = findCatalogFacilityMatch(catalogEntry, knownFacilities);
+        const catalogDepartmentIds = resolveCatalogDepartmentIds(catalogEntry, departments);
+        const existingDepartmentIds = existingFacility
+          ? getFacilityDepartmentIds(existingFacility, facilityDepartments)
+          : [];
+        const departmentIds = Array.from(new Set([...existingDepartmentIds, ...catalogDepartmentIds]));
+
+        if (departmentIds.length === 0) {
+          progress.failed += 1;
+          progress.completed += 1;
+          setFacilityCatalogProgress({ ...progress });
+          continue;
+        }
+
+        const payload = buildCatalogFacilityPayload(catalogEntry, departmentIds, existingFacility);
+
+        try {
+          const response = existingFacility
+            ? await medicalFacilitiesApi.update(existingFacility.id, payload)
+            : await medicalFacilitiesApi.create(payload);
+          const savedFacility = response.data ?? { ...existingFacility, ...payload };
+
+          if (existingFacility) {
+            Object.assign(existingFacility, savedFacility, payload);
+            progress.updated += 1;
+          } else {
+            knownFacilities.push(savedFacility);
+            progress.created += 1;
+          }
+        } catch {
+          progress.failed += 1;
+        }
+
+        progress.completed += 1;
+        setFacilityCatalogProgress({ ...progress });
+      }
+
+      await loadFacilities(1, facilityPageInfo.pageSize, EMPTY_FACILITY_FILTERS);
+      setFacilityFilters(EMPTY_FACILITY_FILTERS);
+      setAppliedFacilityFilters(EMPTY_FACILITY_FILTERS);
+
+      const successText = `Đã thêm ${progress.created} bệnh viện mới và cập nhật ${progress.updated} bệnh viện hiện có.`;
+      if (progress.failed > 0) {
+        const text = `${successText} ${progress.failed} bệnh viện chưa được lưu; bạn có thể chạy lại để thử tiếp.`;
+        setFacilityMessage({ type: "warning", text });
+        showToast({ type: "warning", title: "Danh mục được thêm một phần", message: text });
+      } else {
+        setFacilityMessage({ type: "success", text: successText });
+        showToast({ type: "success", title: "Đã thêm danh mục bệnh viện TP.HCM", message: successText });
+      }
+    } catch (error) {
+      const text = error.message || "Không thể thêm danh mục bệnh viện lúc này.";
+      setFacilityMessage({ type: "error", text });
+      showToast({ type: "error", title: "Không thêm được danh mục bệnh viện", message: text });
+    } finally {
+      setImportingFacilityCatalog(false);
+    }
+  }
+
   async function handleToggleFacilityStatus(facility) {
     setFacilityMessage(null);
     try {
@@ -2161,8 +2266,12 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 message={facilityMessage}
                 pageInfo={facilityPageInfo}
                 saving={savingFacility}
+                catalogImportProgress={facilityCatalogProgress}
+                catalogSize={HCMC_HOSPITAL_CATALOG_SIZE}
+                importingCatalog={importingFacilityCatalog}
                 onDelete={handleDeleteFacility}
                 onEdit={startEditFacility}
+                onImportCatalog={handleImportHcmcHospitalCatalog}
                 onFilterChange={updateFacilityFilter}
                 onApplyFilters={applyFacilityFilters}
                 onClearFilters={clearFacilityFilters}

@@ -87,8 +87,12 @@ export default function AdminFacilitiesSection({
   message,
   pageInfo,
   saving,
+  catalogImportProgress,
+  catalogSize,
+  importingCatalog,
   onDelete,
   onEdit,
+  onImportCatalog,
   onApplyFilters,
   onClearFilters,
   onFilterChange,
@@ -224,12 +228,39 @@ export default function AdminFacilitiesSection({
           <button className="btn btn-ghost btn-small facility-reload-button" type="button" onClick={onReload}>
             <RefreshCw size={15} aria-hidden="true" /> Tải lại
           </button>
+          <button
+            className="btn btn-ghost btn-small facility-catalog-button"
+            type="button"
+            onClick={onImportCatalog}
+            disabled={importingCatalog || loading}
+          >
+            <Building2 size={15} aria-hidden="true" />
+            {importingCatalog
+              ? `Đang thêm ${catalogImportProgress?.completed ?? 0}/${catalogImportProgress?.total ?? catalogSize}`
+              : `Thêm ${catalogSize} bệnh viện TP.HCM`}
+          </button>
           <button className="btn btn-primary btn-small facility-create-button" type="button" onClick={openCreateForm}>
             <Plus size={15} /> Tạo cơ sở
           </button>
         </div>
       </header>
       <ApiMessage message={message} />
+      {catalogImportProgress && (
+        <div className="facility-catalog-progress" role="status" aria-live="polite">
+          <span
+            className="facility-catalog-progress-bar"
+            style={{ "--facility-catalog-progress": `${Math.round((catalogImportProgress.completed / catalogImportProgress.total) * 100)}%` }}
+            aria-hidden="true"
+          />
+          <p>
+            <strong>{importingCatalog ? "Đang cập nhật danh mục TP.HCM" : "Kết quả cập nhật danh mục TP.HCM"}</strong>
+            <span>
+              {catalogImportProgress.completed}/{catalogImportProgress.total} bệnh viện · {catalogImportProgress.created} thêm mới · {catalogImportProgress.updated} cập nhật
+              {catalogImportProgress.failed > 0 ? ` · ${catalogImportProgress.failed} chưa lưu` : ""}
+            </span>
+          </p>
+        </div>
+      )}
 
       <AdminFilterDisclosure
         className="ai-config-filter-card facility-filter-card"
