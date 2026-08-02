@@ -201,6 +201,8 @@ test("admin creates, opens, edits, and deletes a lab indicator", async ({ page }
   await dialog.getByRole("button", { name: "Tạo chỉ số", exact: true }).click();
 
   await expect(page.getByRole("link", { name: /WBC Bạch cầu/ })).toBeVisible();
+  await expect(page.locator(".lab-indicator-table tbody th").first()).toHaveCSS("position", "static");
+  await expect(page.locator(".lab-indicator-table tbody th").first()).toHaveCSS("background-color", "rgb(255, 255, 255)");
   expect(requestFor(state, "POST", "/api/lab-indicators")?.body).toMatchObject({
     symbol: "WBC",
     fullName: "Bạch cầu",

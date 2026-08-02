@@ -136,9 +136,13 @@ function MapConsultationAssistant({
   ));
   const initialDepartmentId = matchedRecommendedDepartment?.id
     ?? (normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "");
+  const departmentScopeKey = [
+    consultationFacility?.facilityId || "general",
+    recommendedDepartmentId || "no-recommendation",
+  ].join(":");
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("suggest");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
+  const [departmentSelection, setDepartmentSelection] = useState({ scopeKey: "", departmentId: "" });
   const [symptoms, setSymptoms] = useState("");
   const [generalMessages, setGeneralMessages] = useState([]);
   const [symptomMessages, setSymptomMessages] = useState([]);
@@ -153,6 +157,9 @@ function MapConsultationAssistant({
   const launcherRef = useRef(null);
   const previousOpenRef = useRef(open);
 
+  const selectedDepartmentId = departmentSelection.scopeKey === departmentScopeKey
+    ? departmentSelection.departmentId
+    : initialDepartmentId;
   const canSubmit = Boolean(symptoms.trim() && status !== "loading");
   const canUseConsultationFlow = Boolean(!accessLocked && selectedDepartmentId);
 
@@ -368,7 +375,10 @@ function MapConsultationAssistant({
                     <span>Chuyên khoa tại {consultationFacility.facilityName}</span>
                     <select
                       value={selectedDepartmentId}
-                      onChange={(event) => setSelectedDepartmentId(event.target.value)}
+                      onChange={(event) => setDepartmentSelection({
+                        scopeKey: departmentScopeKey,
+                        departmentId: event.target.value,
+                      })}
                     >
                       <option value="">Chọn chuyên khoa</option>
                       {normalizedDepartments.map((department) => (
@@ -688,10 +698,6 @@ export default function FacilityMap({
       )}
       {showConsultationAssistant && (
         <MapConsultationAssistant
-          key={[
-            consultationFacility?.facilityId || "map-consultation",
-            recommendedDepartment?.departmentId || "no-recommendation",
-          ].join(":")}
           accessLocked={assistantAccessLocked}
           consultationFacility={consultationFacility}
           onLogin={onAssistantLogin}

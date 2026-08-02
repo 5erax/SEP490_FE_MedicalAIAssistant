@@ -21,6 +21,7 @@ const AI_CONFIGS_BASE = "/api/ai-configs";
 const WEB_CHATBOT_BASE = "/api/web-chatbot";
 const CONSULTATION_SESSIONS_BASE = "/api/consultation-sessions";
 const LAB_INDICATORS_BASE = "/api/lab-indicators";
+const LAB_TESTS_BASE = "/api/lab-tests";
 
 const encodedById = (base, id) => `${base}/${encodeURIComponent(id)}`;
 const labIndicatorChild = (indicatorId, child) => `${encodedById(LAB_INDICATORS_BASE, indicatorId)}/${child}`;
@@ -140,5 +141,10 @@ export const ENDPOINTS = {
     REFERENCE_RANGE_BY_ID: (indicatorId, rangeId) => `${labIndicatorChild(indicatorId, "reference-ranges")}/${encodeURIComponent(rangeId)}`,
     ADVICE: (indicatorId) => labIndicatorChild(indicatorId, "advice"),
     ADVICE_BY_ID: (indicatorId, cacheId) => `${labIndicatorChild(indicatorId, "advice")}/${encodeURIComponent(cacheId)}`,
+  },
+  LAB_TESTS: {
+    ANALYZE: `${LAB_TESTS_BASE}/analyze`,
+    MY_SESSIONS: `${LAB_TESTS_BASE}/my-sessions`,
+    BY_SESSION: (sessionId) => encodedById(LAB_TESTS_BASE, sessionId),
   },
 };

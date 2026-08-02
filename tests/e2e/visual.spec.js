@@ -74,8 +74,8 @@ test.describe("visual baseline", () => {
                 displayName: "Nguyễn Minh",
                 email: "patient@example.com",
                 address: "",
-                gender: 1,
-                dateOfBirth: null,
+                gender: route.name === "patient-records" ? "male" : 1,
+                dateOfBirth: route.name === "patient-records" ? "1990-08-10" : null,
                 isFirstLogin: route.name === "profile-setup",
                 isProfileCompleted: route.name !== "profile-setup",
               },
@@ -101,6 +101,21 @@ test.describe("visual baseline", () => {
               data: [],
             }),
           }));
+          if (route.name === "patient-records") {
+            await page.route("**/api/lab-tests/my-sessions**", (request) => request.fulfill({
+              contentType: "application/json",
+              body: JSON.stringify({
+                success: true,
+                data: {
+                  items: [],
+                  pageNumber: 1,
+                  pageSize: 8,
+                  totalCount: 0,
+                  totalPages: 0,
+                },
+              }),
+            }));
+          }
           if (route.name === "assessment-question") {
             await page.route(
               "**/api/symptom-analysis/suggest-clinical-questions",
@@ -1080,8 +1095,8 @@ test.describe("visual baseline", () => {
           await expect(page.getByLabel("Nội dung cần hỏi")).toBeVisible();
         }
         if (route.name === "patient-records") {
-          await expect(page.getByRole("heading", { name: "Hồ sơ y tế chưa được mở trên MediMate" })).toBeVisible();
-          await expect(page.getByText("Không có hồ sơ nào được tạo hoặc lưu từ màn hình này.")).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Đọc phiếu xét nghiệm rõ ràng hơn" })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Tải phiếu xét nghiệm sinh hóa" })).toBeVisible();
         }
         if (route.name === "patient-profile") {
           await expect(page.locator("#profile-panel-info")).toBeVisible();

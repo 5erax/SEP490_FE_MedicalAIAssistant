@@ -11,6 +11,7 @@ hợp; đồng thời cung cấp workspace vận hành cho Admin.
 - Đăng ký, đăng nhập bằng tài khoản hoặc Google OAuth.
 - Phân tích triệu chứng và trò chuyện với trợ lý AI.
 - Tìm kiếm cơ sở y tế, chuyên khoa và bác sĩ phù hợp.
+- Tải phiếu xét nghiệm, phân tích chỉ số và xem lại các phiên của tài khoản.
 - Quản lý hồ sơ cá nhân phục vụ onboarding và định hướng.
 - Đăng ký gói dịch vụ và xử lý kết quả thanh toán PayOS.
 - Phân quyền không gian làm việc cho người dùng và quản trị viên.
@@ -18,8 +19,9 @@ hợp; đồng thời cung cấp workspace vận hành cho Admin.
 - Đăng ký bác sĩ qua liên kết mời.
 - Hỗ trợ tùy chỉnh hiển thị và kiểm thử accessibility.
 
-Các màn hình hồ sơ y tế và quản lý thuốc hiện chỉ là demo, chưa có backend
-production và không được xem là capability sản phẩm chính.
+Màn hình quản lý thuốc hiện chỉ là demo, chưa có backend production và không
+được xem là capability sản phẩm chính. Phân tích xét nghiệm sử dụng các API
+`/api/lab-tests/*` và dữ liệu hồ sơ của tài khoản đang đăng nhập.
 
 ## Công nghệ
 
@@ -65,6 +67,9 @@ VITE_API_BASE_URL=http://52.77.210.243
 API_BASE_URL=http://52.77.210.243
 VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
 VITE_GOOGLE_AUTHORIZED_ORIGINS=http://localhost:3000
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
+VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
+VITE_CLOUDINARY_UPLOAD_FOLDER=medimate
 ```
 
 | Biến | Bắt buộc | Mô tả |
@@ -73,6 +78,9 @@ VITE_GOOGLE_AUTHORIZED_ORIGINS=http://localhost:3000
 | `VITE_GOOGLE_CLIENT_ID` | Khi dùng Google OAuth | Client ID được cấu hình cho domain chạy frontend. |
 | `VITE_GOOGLE_AUTHORIZED_ORIGINS` | Khi dùng Google OAuth | Danh sách origin được phép render Google login, phân tách bằng dấu phẩy. Origin hiện tại phải khớp Google Cloud Console để tránh lỗi `origin_mismatch`. |
 | `API_BASE_URL` | Khi deploy Vercel | Backend origin `http://52.77.210.243` cho serverless proxy `api/proxy.js`; cấu hình cùng giá trị trong Vercel Environment Variables. |
+| `VITE_CLOUDINARY_CLOUD_NAME` | Khi tải tài liệu/ảnh | Cloud name dùng cho upload trực tiếp từ frontend; không phải API secret. |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | Khi tải tài liệu/ảnh | Unsigned upload preset đã giới hạn định dạng và dung lượng phù hợp. |
+| `VITE_CLOUDINARY_UPLOAD_FOLDER` | Không | Thư mục gốc; phiếu xét nghiệm được đặt trong thư mục con `lab-tests`. |
 
 Không commit khóa API, token, mật khẩu hoặc thông tin xác thực thật vào repository.
 
