@@ -75,7 +75,7 @@ test("linked doctor profile submits only account fields", async ({ page }) => {
     phoneNumber: "0900000000",
   });
   await page.getByRole("button", { name: "Đăng nhập ngay" }).click();
-  await expect(page).toHaveURL(/\/login\?returnTo=%2Fdashboard$/);
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fstaff$/);
   await expect(page.getByLabel("Email")).toHaveValue("linked.doctor@example.com");
   await expect.poll(() => page.evaluate(() => JSON.stringify(localStorage))).not.toContain(
     "linked.doctor@example.com",
@@ -140,8 +140,8 @@ test("invited doctor can register, log in, and open the doctor workspace", async
   await page.getByLabel("Mật khẩu").fill("Password123!");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: "Tư vấn chuyên khoa" })).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/staff$/);
+  await expect(page.getByRole("heading", { name: /Xin chào/ })).toBeVisible();
   await expect(page.evaluate(() => window.history.state)).resolves.toBeNull();
 });
 
@@ -180,7 +180,7 @@ test("invitation login rejects an account without a doctor role", async ({ page 
   await page.getByLabel("Mật khẩu").fill("Password123!");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-  await expect(page).toHaveURL(/\/login\?returnTo=%2Fdashboard$/);
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fapp%2Fstaff$/);
   await expect(page.getByRole("alert")).toContainText("chưa được cấp quyền Bác sĩ");
   await expect(page.evaluate(() => localStorage.getItem("medimate.auth"))).resolves.toBeNull();
   await expect(page.evaluate(() => window.history.state)).resolves.toBeNull();

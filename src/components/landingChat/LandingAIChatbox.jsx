@@ -166,7 +166,7 @@ export default function LandingAIChatbox() {
           <ChatInput value={draft} loading={loading} onChange={setDraft} onSubmit={handleSubmit} />
           <div className="landing-chat-links">
             <a href="/login">Đăng nhập</a>
-            <a href="/medical-assistant">Mô tả triệu chứng</a>
+            <a href="/symptom">Mô tả triệu chứng</a>
           </div>
         </footer>
       </div>}

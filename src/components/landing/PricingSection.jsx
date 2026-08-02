@@ -7,7 +7,7 @@ const FOOTER_COLUMNS = [
   {
     title: "Bắt đầu",
     links: [
-      ["Phân tích triệu chứng", "/medical-assistant"],
+      ["Phân tích triệu chứng", "/symptom"],
       ["Tìm cơ sở y tế", "/map"],
       ["Xem gói dịch vụ", "/pricing"],
     ],
@@ -133,7 +133,7 @@ export function PricingPreviewSection() {
                 ))}
               </ul>
             </div>
-            <a className="care-price-cta" href="/medical-assistant">
+            <a className="care-price-cta" href="/symptom">
               Bắt đầu miễn phí
               <ArrowRight size={16} aria-hidden="true" />
             </a>
@@ -241,7 +241,7 @@ export function CtaSection() {
           <p>Phân tích triệu chứng, hỏi trợ lý AI hoặc tìm cơ sở y tế để chuẩn bị cho buổi khám.</p>
         </div>
         <div className="care-cta-actions">
-          <a className="care-button care-button-light" href="/medical-assistant">
+          <a className="care-button care-button-light" href="/symptom">
             <Stethoscope size={19} aria-hidden="true" />
             Phân tích triệu chứng
           </a>

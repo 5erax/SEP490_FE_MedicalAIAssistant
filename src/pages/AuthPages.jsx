@@ -284,7 +284,7 @@ export function LoginPage() {
     setMessage(null);
     try {
       const response = await authApi.login(form);
-      const authData = response.data ?? response;
+      const authData = await refreshAuthRoles(response.data ?? response);
       if (invitationContext && !hasAuthRole(authData, "doctor")) {
         rejectDoctorInvitationLogin(setMessage);
         return;

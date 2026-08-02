@@ -62,7 +62,7 @@ test.describe("global navigation UX", () => {
     await expect(page.locator(".google-login-wrap")).toHaveCount(0);
   });
 
-  test("free users get a keyboard-safe premium explanation", async ({ page }) => {
+  test("free users can open lab analysis while other premium routes stay gated", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -72,23 +72,14 @@ test.describe("global navigation UX", () => {
     }, ACCESS_TOKEN);
     await openRoute(page, "/dashboard");
 
-    const lockedFeature = page.locator('.user-shell-nav button[aria-label*="MediMate+"]').first();
-    await lockedFeature.click();
+    const recordsLink = page.locator('.user-shell-nav a[href="/records"]');
+    await expect(recordsLink).toBeVisible();
+    await recordsLink.click();
+    await expect(page).toHaveURL(/\/records$/);
+    await expect(page.getByRole("heading", { name: "Đọc phiếu xét nghiệm rõ ràng hơn" })).toBeVisible();
 
-    const dialog = page.getByRole("dialog", { name: "Cần nâng cấp MediMate+" });
-    await expect(dialog).toBeVisible();
-    await expect(page.getByRole("button", { name: "Để sau" })).toBeFocused();
-    await expect(page.locator("#root")).toHaveJSProperty("inert", true);
-
-    await page.keyboard.press("Shift+Tab");
-    await expect(page.getByRole("button", { name: "Xem bảng giá" })).toBeFocused();
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("button", { name: "Để sau" })).toBeFocused();
-
-    await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
-    await expect(page.locator("#root")).toHaveJSProperty("inert", false);
-    await expect(lockedFeature).toBeFocused();
+    await page.goto("/chat", { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(/\/pricing\?returnTo=%2Fchat$/);
   });
 
   test("free users can open profile from the account menu", async ({ page }) => {
@@ -489,7 +480,7 @@ test.describe("global navigation UX", () => {
     expect(storedAuth).not.toHaveProperty("address");
   });
 
-  test("doctor first login skips patient onboarding", async ({ page }) => {
+  test("doctor first login opens the Doctor and Staff workspace", async ({ page }) => {
     await preparePage(page);
     await page.route("**/api/authentication/login", (route) => route.fulfill({
       status: 200,
@@ -520,7 +511,8 @@ test.describe("global navigation UX", () => {
     await page.getByLabel("Mật khẩu").fill("Example123!");
     await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/app\/staff$/);
+    await expect(page.getByRole("heading", { name: /Xin chào/ })).toBeVisible();
   });
 
   test("rejects external return intent after login", async ({ page }) => {

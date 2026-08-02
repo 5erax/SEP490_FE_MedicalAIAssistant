@@ -2,67 +2,55 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { preparePage } from "./helpers.js";
 
-async function openMedicalAssistant(page) {
+const PATIENT_TOKEN = [
+  "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
+  "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwiZW1haWwiOiJwYXRpZW50QGV4YW1wbGUuY29tIn0",
+  "",
+].join(".");
+
+test("landing symptom CTA sends guests through login and preserves the clinical return path", async ({ page }) => {
+  await preparePage(page);
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const primaryAction = page.getByRole("link", { name: "Phân tích triệu chứng", exact: true }).first();
+  await expect(primaryAction).toHaveAttribute("href", "/symptom");
+  await primaryAction.click();
+
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/login");
+  expect(new URL(page.url()).searchParams.get("returnTo")).toBe("/symptom");
+  await expect(page.getByRole("link", { name: "Tạo tài khoản miễn phí" })).toHaveAttribute("href", "/signup?returnTo=%2Fsymptom");
+});
+
+test("legacy medical assistant links use the same authentication gate", async ({ page }) => {
   await preparePage(page);
   await page.goto("/medical-assistant", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", {
-    name: "Làm rõ triệu chứng trước khi đi khám",
-  })).toBeVisible();
-}
 
-test("medical assistant entry explains the supported outcome without technical workflow copy", async ({ page }) => {
-  await openMedicalAssistant(page);
-
-  await expect(page.locator(".nav-care").getByRole("link", { name: "MediMate AI" })).toHaveAttribute("href", "/");
-  await expect(page.getByRole("link", { name: "Về trang chủ MediMate" })).toHaveAttribute("href", "/");
-  await expect(page.getByRole("heading", {
-    name: "Điều gì đang khiến bạn lo lắng?",
-  })).toBeVisible();
-  await expect(page.getByText("Nhận định tham khảo", { exact: true })).toBeVisible();
-  await expect(page.getByText("Chuyên khoa phù hợp", { exact: true })).toBeVisible();
-  await expect(page.getByText("Cơ sở y tế liên quan", { exact: true })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Tiến trình phân tích lâm sàng" })).toHaveCount(0);
-  await expect(page.getByText("Một ô nhập duy nhất")).toHaveCount(0);
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/login");
+  expect(new URL(page.url()).searchParams.get("returnTo")).toBe("/symptom");
 });
 
-test("medical assistant entry keeps actions usable at 320 pixels and by keyboard", async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 800 });
-  await openMedicalAssistant(page);
+test("authenticated users reach the real clinical intake from the legacy route", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      email: "patient@example.com",
+      roles: ["Patient"],
+    }));
+  }, PATIENT_TOKEN);
 
-  const dimensions = await page.evaluate(() => ({
-    viewport: document.documentElement.clientWidth,
-    content: document.documentElement.scrollWidth,
-  }));
-  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  await page.goto("/medical-assistant", { waitUntil: "domcontentloaded" });
 
-  const primaryAction = page.getByRole("button", { name: "Bắt đầu mô tả triệu chứng" });
-  await primaryAction.focus();
-  await expect(primaryAction).toBeFocused();
-  await expect(primaryAction).toHaveCSS("outline-style", "solid");
-  await expect(page.getByRole("button", { name: "Tìm cơ sở y tế" })).toBeVisible();
-});
-
-test("medical assistant entry has no serious automated accessibility violations", async ({ page }) => {
-  await openMedicalAssistant(page);
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/symptom");
+  await expect(page.getByRole("heading", { name: "Phân tích lâm sàng qua triệu chứng" })).toBeVisible();
+  await expect(page.locator("#clinical-user-input")).toBeVisible();
 
   const results = await new AxeBuilder({ page })
-    .include(".assessment-entry-page")
+    .include(".assessment-page")
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
   const seriousViolations = results.violations
     .filter((violation) => ["critical", "serious"].includes(violation.impact))
     .map((violation) => violation.id);
-
   expect(seriousViolations).toEqual([]);
-});
-
-test("medical assistant entry preserves card boundaries in dark and forced-colors modes", async ({ page }) => {
-  await openMedicalAssistant(page);
-
-  await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
-  await expect(page.locator(".assessment-entry-page")).toHaveCSS("color", "rgb(245, 248, 246)");
-
-  await page.emulateMedia({ forcedColors: "active" });
-  await expect(page.locator(".clinical-entry-overview")).toHaveCSS("border-top-style", "solid");
-  await expect(page.getByRole("button", { name: "Bắt đầu mô tả triệu chứng" })).toBeVisible();
 });

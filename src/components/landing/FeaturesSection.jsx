@@ -20,7 +20,7 @@ const STARTING_PATHS = [
       "Gợi ý câu hỏi để chuẩn bị trao đổi với bác sĩ",
     ],
     action: "Bắt đầu phân tích triệu chứng",
-    href: "/medical-assistant",
+    href: "/symptom",
     primary: true,
   },
   {
@@ -44,7 +44,7 @@ const SUPPORTING_TOOLS = [
     title: "Trợ lý sức khỏe AI",
     body: "Hỏi thông tin sức khỏe ở mức tham khảo hoặc chuyển sang phân tích triệu chứng khi cần.",
     action: "Hỏi MediMate AI",
-    href: "/medical-assistant",
+    href: "/symptom",
   },
   {
     icon: FolderHeart,

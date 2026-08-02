@@ -2,7 +2,7 @@ import { Component, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Clock3, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { consultationSessionsApi } from "../../services/api";
+import { consultationSessionsApi, webChatbotApi } from "../../services/api";
 
 const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
@@ -123,7 +123,7 @@ function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect }) {
 
 function MapConsultationAssistant({
   accessLocked = false,
-  clinicalMode = false,
+  autoOpenRequestKey = 0,
   consultationFacility = null,
   onLogin,
   recommendedDepartment = null,
@@ -137,10 +137,15 @@ function MapConsultationAssistant({
   ));
   const initialDepartmentId = matchedRecommendedDepartment?.id
     ?? (normalizedDepartments.length === 1 ? normalizedDepartments[0].id : "");
-  const [open, setOpen] = useState(!clinicalMode);
+  const departmentScopeKey = [
+    consultationFacility?.facilityId || "general",
+    recommendedDepartmentId || "no-recommendation",
+  ].join(":");
+  const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("suggest");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState(initialDepartmentId);
+  const [departmentSelection, setDepartmentSelection] = useState({ scopeKey: "", departmentId: "" });
   const [symptoms, setSymptoms] = useState("");
+  const [generalMessages, setGeneralMessages] = useState([]);
   const [symptomMessages, setSymptomMessages] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [sessions, setSessions] = useState([]);
@@ -152,8 +157,20 @@ function MapConsultationAssistant({
   const closeButtonRef = useRef(null);
   const launcherRef = useRef(null);
   const previousOpenRef = useRef(open);
+  const handledAutoOpenRequestRef = useRef(autoOpenRequestKey);
 
-  const canSubmit = Boolean(selectedDepartmentId && symptoms.trim() && status !== "loading");
+  const selectedDepartmentId = departmentSelection.scopeKey === departmentScopeKey
+    ? departmentSelection.departmentId
+    : initialDepartmentId;
+  const canSubmit = Boolean(symptoms.trim() && status !== "loading");
+  const canUseConsultationFlow = Boolean(!accessLocked && selectedDepartmentId);
+
+  useEffect(() => {
+    if (!autoOpenRequestKey || autoOpenRequestKey === handledAutoOpenRequestRef.current) return;
+    handledAutoOpenRequestRef.current = autoOpenRequestKey;
+    setActiveTab("suggest");
+    setOpen(true);
+  }, [autoOpenRequestKey]);
 
   useEffect(() => {
     if (!open || activeTab !== "suggest" || !threadRef.current) return;
@@ -199,16 +216,25 @@ function MapConsultationAssistant({
     const symptomText = symptoms.trim();
     setStatus("loading");
     setMessage("");
-    setQuestions([]);
-    setSymptomMessages((current) => [...current, symptomText]);
     setSymptoms("");
 
     try {
-      const response = await consultationSessionsApi.generateQuestions(selectedDepartmentId, symptomText);
-      setQuestions(getQuestionsFromResponse(response));
-      setMessage("MediMate đã tạo gợi ý câu hỏi cho chuyên khoa đã chọn.");
+      if (canUseConsultationFlow) {
+        setQuestions([]);
+        setSymptomMessages((current) => [...current, symptomText]);
+        const response = await consultationSessionsApi.generateQuestions(selectedDepartmentId, symptomText);
+        setQuestions(getQuestionsFromResponse(response));
+        setMessage("MediMate đã tạo gợi ý câu hỏi cho chuyên khoa đã chọn.");
+      } else {
+        setGeneralMessages((current) => [...current, { role: "user", content: symptomText }]);
+        const response = await webChatbotApi.message(symptomText, { auth: !accessLocked });
+        const answer = response?.data?.answer ?? response?.message ?? "MediMate chưa thể trả lời câu hỏi này.";
+        setGeneralMessages((current) => [...current, { role: "assistant", content: answer }]);
+      }
     } catch (error) {
-      setMessage(error.message || "Không thể tạo gợi ý câu hỏi lúc này.");
+      setMessage(error.message || (canUseConsultationFlow
+        ? "Không thể tạo gợi ý câu hỏi lúc này."
+        : "MediMate chưa thể phản hồi lúc này. Vui lòng thử lại."));
     } finally {
       setStatus("idle");
     }
@@ -253,8 +279,6 @@ function MapConsultationAssistant({
     }
   }
 
-  if (!consultationFacility && !clinicalMode) return null;
-
   return (
     <>
       {open && (
@@ -281,120 +305,17 @@ function MapConsultationAssistant({
           </header>
           <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
             {status === "loading"
-              ? "Đang chuẩn bị câu hỏi."
+              ? canUseConsultationFlow ? "Đang chuẩn bị câu hỏi." : "MediMate AI đang soạn phản hồi."
               : message || (questions.length ? `Đã chuẩn bị ${questions.length} câu hỏi.` : "")}
           </p>
 
-          {accessLocked ? (
+          {activeTab === "history" && accessLocked ? (
             <div className="map-ai-unavailable" role="status">
-              <strong>Đăng nhập để tiếp tục</strong>
-              <p>Kết quả gợi ý chỉ được hiển thị cho tài khoản đã tạo phiên.</p>
+              <strong>Đăng nhập để xem lịch sử</strong>
+              <p>Bạn vẫn có thể quay lại và hỏi MediMate ngay mà không cần chọn cơ sở.</p>
               <button type="button" onClick={onLogin}>Đăng nhập</button>
             </div>
-          ) : !consultationFacility ? (
-            <div className="map-ai-unavailable" role="status">
-              <strong>Chưa có cơ sở phù hợp</strong>
-              <p>AI hỗ trợ theo bệnh viện sẽ sẵn sàng khi hệ thống xác định được cơ sở và chuyên khoa hợp lệ.</p>
-            </div>
-          ) : activeTab === "suggest" ? (
-            <form className="map-ai-chat" onSubmit={handleGenerate}>
-              <div className="map-ai-thread" ref={threadRef}>
-                <article className="map-ai-message-bubble bot">
-                  <span><Bot size={15} /></span>
-                  <p><strong>Mình có thể giúp gì cho bạn hôm nay?</strong></p>
-                </article>
-
-                <article className="map-ai-message-bubble bot">
-                  <span><Bot size={15} /></span>
-                  <p>Hãy mô tả triệu chứng hoặc tình trạng sức khỏe của bạn.</p>
-                </article>
-
-                <article className="map-ai-message-bubble bot">
-                  <span><Bot size={15} /></span>
-                  <p>Mình sẽ chuẩn bị danh sách câu hỏi để bạn trao đổi với bác sĩ.</p>
-                </article>
-
-                {normalizedDepartments.length > 1 && (
-                  <label className="map-ai-department-field">
-                    <span>Chuyên khoa tại {consultationFacility.facilityName}</span>
-                    <select
-                      value={selectedDepartmentId}
-                      onChange={(event) => setSelectedDepartmentId(event.target.value)}
-                    >
-                      <option value="">Chọn chuyên khoa</option>
-                      {normalizedDepartments.map((department) => (
-                        <option key={department.id} value={department.id}>{department.name}</option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-                {normalizedDepartments.length === 1 && (
-                  <p className="map-ai-department-summary">
-                    Chuyên khoa: <strong>{normalizedDepartments[0].name}</strong>
-                  </p>
-                )}
-
-                {selectedDepartmentId && (
-                  <>
-                    {symptomMessages.map((symptomMessage, index) => (
-                      <article className="map-ai-message-bubble user symptom" key={`${symptomMessage}-${index}`}>
-                        <p>{symptomMessage}</p>
-                      </article>
-                    ))}
-                    {status === "loading" && (
-                      <article className="map-ai-message-bubble bot loading" role="status" aria-live="polite">
-                        <span><Bot size={15} /></span>
-                        <p>
-                          Đang chuẩn bị câu hỏi
-                          <i aria-hidden="true" />
-                        </p>
-                      </article>
-                    )}
-                  </>
-                )}
-
-                {questions.length > 0 && (
-                  <>
-                    <article className="map-ai-message-bubble bot">
-                      <span><Bot size={15} /></span>
-                      <p>Dưới đây là những câu hỏi bạn nên trao đổi với bác sĩ.</p>
-                    </article>
-
-                    <div className="map-ai-question-stack">
-                      {questions.slice(0, 5).map((question, index) => (
-                        <article
-                          className="map-ai-question-card"
-                          key={`${getQuestionText(question, index)}-${index}`}
-                          style={{ "--question-index": index }}
-                        >
-                          <span>?</span>
-                          <p>{getQuestionText(question, index)}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {selectedDepartmentId && (
-                <div className="map-ai-composer">
-                  <label className="map-ai-composer-field">
-                    <span>Triệu chứng</span>
-                    <input
-                      name="symptoms"
-                      aria-label="Triệu chứng của bạn"
-                      value={symptoms}
-                      onChange={(event) => setSymptoms(event.target.value)}
-                      placeholder="Nhập triệu chứng của bạn..."
-                    />
-                  </label>
-                  <button type="submit" disabled={!canSubmit} aria-label="Tạo gợi ý câu hỏi">
-                    <Send size={16} />
-                  </button>
-                </div>
-              )}
-            </form>
-          ) : (
+          ) : activeTab === "history" ? (
             <div className="map-ai-history" aria-live="polite">
               <div className="map-ai-history-title">
                 <Clock3 size={16} />
@@ -440,7 +361,126 @@ function MapConsultationAssistant({
                 </div>
               )}
             </div>
-          )}
+          ) : activeTab === "suggest" ? (
+            <form className="map-ai-chat" onSubmit={handleGenerate}>
+              <div className="map-ai-thread" ref={threadRef}>
+                <article className="map-ai-message-bubble bot">
+                  <span><Bot size={15} /></span>
+                  <p><strong>Mình có thể giúp gì cho bạn hôm nay?</strong></p>
+                </article>
+
+                <article className="map-ai-message-bubble bot">
+                  <span><Bot size={15} /></span>
+                  <p>Hãy mô tả triệu chứng hoặc đặt câu hỏi sức khỏe. Bạn không cần chọn cơ sở trước.</p>
+                </article>
+
+                <article className="map-ai-message-bubble bot">
+                  <span><Bot size={15} /></span>
+                  <p>Khi bạn chọn cơ sở và chuyên khoa, MediMate sẽ chuẩn bị thêm danh sách câu hỏi để trao đổi với bác sĩ.</p>
+                </article>
+
+                {normalizedDepartments.length > 1 && (
+                  <label className="map-ai-department-field">
+                    <span>Chuyên khoa tại {consultationFacility.facilityName}</span>
+                    <select
+                      value={selectedDepartmentId}
+                      onChange={(event) => setDepartmentSelection({
+                        scopeKey: departmentScopeKey,
+                        departmentId: event.target.value,
+                      })}
+                    >
+                      <option value="">Chọn chuyên khoa</option>
+                      {normalizedDepartments.map((department) => (
+                        <option key={department.id} value={department.id}>{department.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {normalizedDepartments.length === 1 && (
+                  <p className="map-ai-department-summary">
+                    Chuyên khoa: <strong>{normalizedDepartments[0].name}</strong>
+                  </p>
+                )}
+
+                {generalMessages.map((chatMessage, index) => (
+                  <article
+                    className={`map-ai-message-bubble ${chatMessage.role === "user" ? "user" : "bot"}`}
+                    key={`${chatMessage.role}-${index}-${chatMessage.content.slice(0, 24)}`}
+                  >
+                    {chatMessage.role !== "user" && <span><Bot size={15} /></span>}
+                    <p>{chatMessage.content}</p>
+                  </article>
+                ))}
+
+                {status === "loading" && !canUseConsultationFlow && (
+                  <article className="map-ai-message-bubble bot loading" role="status" aria-live="polite">
+                    <span><Bot size={15} /></span>
+                    <p>
+                      Đang soạn phản hồi
+                      <i aria-hidden="true" />
+                    </p>
+                  </article>
+                )}
+
+                {selectedDepartmentId && (
+                  <>
+                    {symptomMessages.map((symptomMessage, index) => (
+                      <article className="map-ai-message-bubble user symptom" key={`${symptomMessage}-${index}`}>
+                        <p>{symptomMessage}</p>
+                      </article>
+                    ))}
+                    {status === "loading" && canUseConsultationFlow && (
+                      <article className="map-ai-message-bubble bot loading" role="status" aria-live="polite">
+                        <span><Bot size={15} /></span>
+                        <p>
+                          Đang chuẩn bị câu hỏi
+                          <i aria-hidden="true" />
+                        </p>
+                      </article>
+                    )}
+                  </>
+                )}
+
+                {questions.length > 0 && (
+                  <>
+                    <article className="map-ai-message-bubble bot">
+                      <span><Bot size={15} /></span>
+                      <p>Dưới đây là những câu hỏi bạn nên trao đổi với bác sĩ.</p>
+                    </article>
+
+                    <div className="map-ai-question-stack">
+                      {questions.slice(0, 5).map((question, index) => (
+                        <article
+                          className="map-ai-question-card"
+                          key={`${getQuestionText(question, index)}-${index}`}
+                          style={{ "--question-index": index }}
+                        >
+                          <span>?</span>
+                          <p>{getQuestionText(question, index)}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="map-ai-composer">
+                <label className="map-ai-composer-field">
+                  <span>Câu hỏi hoặc triệu chứng</span>
+                  <input
+                    name="symptoms"
+                    aria-label="Câu hỏi hoặc triệu chứng của bạn"
+                    value={symptoms}
+                    onChange={(event) => setSymptoms(event.target.value)}
+                    placeholder="Hỏi MediMate ngay…"
+                  />
+                </label>
+                <button type="submit" disabled={!canSubmit} aria-label="Gửi câu hỏi cho MediMate AI">
+                  <Send size={16} />
+                </button>
+              </div>
+            </form>
+          ) : null}
 
           {message && <p className="map-ai-message">{message}</p>}
         </aside>
@@ -470,6 +510,7 @@ function MapConsultationAssistant({
 
 export default function FacilityMap({
   assistantAccessLocked = false,
+  assistantOpenRequestKey = 0,
   chatContext,
   clinicalNotice = "",
   clinicalStatus = "idle",
@@ -598,7 +639,7 @@ export default function FacilityMap({
                 }}
                 facility={facility}
                 selected={selectedFacility?.facilityId === facility.facilityId}
-                onSelect={onSelect}
+                onSelect={onViewDetail}
               />
             ))}
             {selectedFacility?.hasValidCoordinates && !hidePopup && (
@@ -667,12 +708,8 @@ export default function FacilityMap({
       )}
       {showConsultationAssistant && (
         <MapConsultationAssistant
-          key={[
-            consultationFacility?.facilityId || "map-consultation",
-            recommendedDepartment?.departmentId || "no-recommendation",
-          ].join(":")}
           accessLocked={assistantAccessLocked}
-          clinicalMode={isClinicalFlow}
+          autoOpenRequestKey={assistantOpenRequestKey}
           consultationFacility={consultationFacility}
           onLogin={onAssistantLogin}
           recommendedDepartment={recommendedDepartment}

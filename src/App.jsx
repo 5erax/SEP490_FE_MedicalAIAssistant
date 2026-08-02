@@ -28,6 +28,7 @@ const PaymentResultPage = lazy(() => import("./pages/PaymentResultPage"));
 const PersonalPatientProfilePage = lazy(() => import("./pages/PersonalPatientProfilePage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const RecoveryPlanPage = lazy(() => import("./pages/RecoveryPlanPage"));
+const StaffWorkspacePage = lazy(() => import("./pages/StaffWorkspacePage"));
 const TrustInfoPage = lazy(() => import("./pages/TrustInfoPage"));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
 
@@ -122,8 +123,8 @@ function App() {
       return lazyPage(<PaymentResultPage expectedResult="cancel" />);
     case "workspace.redirect":
       return <WorkspaceRedirect />;
-    case "assistant.main":
-      return lazyPage(<MedicalAssistantPage mode="entry" />);
+    case "staff.workspace":
+      return lazyPage(<StaffWorkspacePage />);
     case "assessment.session":
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="questions" sessionId={route.params?.sessionId} />));
     case "assessment.result":
@@ -134,7 +135,7 @@ function App() {
       return lazyPage(<PersonalPatientProfilePage />);
     default:
       if (route.id.startsWith("admin.")) {
-        return lazyPage(<AdminWorkspacePage initialSection={route.section} />);
+        return lazyPage(<AdminWorkspacePage initialSection={route.section} routeParams={route.params} />);
       }
       return <StaticPage path={path} />;
   }

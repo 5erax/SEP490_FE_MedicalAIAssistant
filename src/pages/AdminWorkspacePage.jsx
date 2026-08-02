@@ -6,6 +6,7 @@ import {
   CircleHelp,
   CreditCard,
   FileHeart,
+  FlaskConical,
   LayoutDashboard,
   Layers3,
   Menu,
@@ -33,6 +34,7 @@ import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChap
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
 import AdminPatientProfilesSection from "../components/adminPatientProfiles/AdminPatientProfilesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
+import AdminLabIndicatorsSection from "../components/adminLabIndicators/AdminLabIndicatorsSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -135,6 +137,7 @@ const ADMIN_NAV_ICONS = {
   departments: Layers3,
   icd: BookOpen,
   question: CircleHelp,
+  "lab-indicator": FlaskConical,
   "patient-profile": FileHeart,
 };
 const QUESTION_CATALOG_CONFIG = {
@@ -338,7 +341,7 @@ function EmptyAuth() {
   );
 }
 
-export default function AdminWorkspacePage({ initialSection = "overview" }) {
+export default function AdminWorkspacePage({ initialSection = "overview", routeParams = {} }) {
   const { confirmAction, showToast } = useFeedback();
   const [initialDoctorView] = useState(readDoctorViewState);
   const currentDoctorSearch = window.location.search;
@@ -2205,6 +2208,10 @@ export default function AdminWorkspacePage({ initialSection = "overview" }) {
             )}
             {activeSection === "clinical-questions" && (
               <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} icdChapters={icdChapters} service={clinicalQuestionsApi} />
+            )}
+
+            {activeSection === "lab-indicators" && (
+              <AdminLabIndicatorsSection indicatorId={routeParams.indicatorId} />
             )}
 
             {activeSection === "patient-profiles" && (

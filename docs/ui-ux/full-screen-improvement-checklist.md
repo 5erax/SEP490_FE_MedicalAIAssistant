@@ -222,11 +222,13 @@ Mỗi màn hình chỉ được đánh dấu hoàn tất khi đáp ứng đủ c
 - [ ] Hoàn thiện responsive, accessibility và state matrix sau khi contract rõ.
 - [-] Cần product/backend decision cho dữ liệu kế hoạch phục hồi.
 
-### `/records` - bị chặn
+### `/records` - đã có contract backend
 
-- [x] Có cảnh báo rõ dữ liệu hiện tại là demo và không được lưu.
-- [ ] Rà master/detail mobile, tab, file state và data-table semantics ở chế độ demo.
-- [-] Không nâng thành capability production trước khi có backend record/file/analysis API.
+- [x] Dùng đúng `POST /api/lab-tests/analyze`, `GET /api/lab-tests/my-sessions` và `GET /api/lab-tests/{sessionId}`.
+- [x] Lấy giới tính/ngày sinh từ hồ sơ tài khoản, tính tuổi tại ngày xét nghiệm và chỉ yêu cầu người dùng nhập ngày xét nghiệm.
+- [x] Có upload JPG/PNG/PDF, validation, trạng thái xử lý, lịch sử và master/detail responsive.
+- [x] Có error summary, keyboard flow, forced-colors và kiểm tra accessibility tự động.
+- [~] Cần tiếp tục rà chính sách lưu trữ tài liệu y tế và kiểm thử screen reader thủ công trước production.
 
 ### `/medication` - bị chặn
 

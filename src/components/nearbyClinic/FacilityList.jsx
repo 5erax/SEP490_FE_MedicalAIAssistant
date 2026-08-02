@@ -2,8 +2,6 @@ export default function FacilityList({
   cardRefs,
   facilities,
   loading,
-  onCall,
-  onDirections,
   onViewDetail,
   selectedFacilityId,
 }) {
@@ -59,26 +57,6 @@ export default function FacilityList({
             {!facility.hasValidCoordinates && <p className="coordinate-notice">Chưa có vị trí chính xác trên bản đồ.</p>}
             <div className="department-row">
               {facility.departments.map((department) => <span key={department}>{department}</span>)}
-            </div>
-            <div className="facility-actions">
-            <button
-              type="button"
-              disabled={!facility.phone}
-              aria-label={`Gọi ${facility.facilityName}`}
-              title={facility.phone ? undefined : "Cơ sở chưa có số điện thoại"}
-              onClick={(event) => { event.stopPropagation(); onCall(facility); }}
-            >
-              Gọi ngay
-            </button>
-            <button
-              type="button"
-              disabled={!facility.hasValidCoordinates}
-              aria-label={`Chỉ đường đến ${facility.facilityName}`}
-              title={facility.hasValidCoordinates ? undefined : "Cơ sở chưa có tọa độ chính xác"}
-              onClick={(event) => { event.stopPropagation(); onDirections(facility); }}
-            >
-              Chỉ đường
-            </button>
             </div>
           </div>}
         </article>

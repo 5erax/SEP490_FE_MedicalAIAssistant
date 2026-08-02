@@ -288,7 +288,7 @@ function getReviewMessageText(message, fallback = "Không thể xử lý đánh 
     return "Bạn cần đăng nhập để gửi đánh giá.";
   }
   if (normalized.includes("network") || normalized.includes("failed to fetch")) {
-    return "Không thể kết nối máy chủ. Vui lòng thử lại.";
+    return "Không thể tải thông tin. Vui lòng thử lại.";
   }
 
   return source;
@@ -433,6 +433,7 @@ function NearbyClinicPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedFacility, setSelectedFacility] = useState(null);
+  const [assistantOpenRequestKey, setAssistantOpenRequestKey] = useState(0);
   const [sidebarView, setSidebarView] = useState("hospital-list");
   const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -811,7 +812,7 @@ function NearbyClinicPage() {
     window.history[mode === "replace" ? "replaceState" : "pushState"]({}, "", nextUrl);
   }, []);
 
-  const handleCardClick = useCallback((facility) => {
+  const handleCardClick = useCallback((facility, options = {}) => {
     setReviewMessage("");
     setSubmittedReview(null);
     setEditingReview(false);
@@ -823,6 +824,9 @@ function NearbyClinicPage() {
       setReviewsLoading(true);
     }
     setSelectedFacility(facility);
+    if (options.openAssistant) {
+      setAssistantOpenRequestKey((current) => current + 1);
+    }
     if (facility.hasValidCoordinates && mapStatus === "ready") {
       mapRef.current?.flyTo?.({
         center: [facility.longitude, facility.latitude],
@@ -879,7 +883,7 @@ function NearbyClinicPage() {
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
-    handleCardClick(facility);
+    handleCardClick(facility, { openAssistant: options.openAssistant !== false });
     setSidebarView("hospital-detail");
     setSelectedDoctor(null);
     setDetailPanelOpen(true);
@@ -956,6 +960,7 @@ function NearbyClinicPage() {
 
       if (matchedFacility) {
         openFacilityDetail(matchedFacility, {
+          openAssistant: false,
           syncUrl: false,
           tab: nextQuery.tab,
         });
@@ -981,6 +986,7 @@ function NearbyClinicPage() {
 
     const timeoutId = window.setTimeout(() => {
       openFacilityDetail(matchedFacility, {
+        openAssistant: false,
         syncUrl: false,
         tab: mapQuery.tab,
       });
@@ -1400,8 +1406,6 @@ function NearbyClinicPage() {
           facilities={visibleFacilities}
           loading={isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
-          onCall={callFacility}
-          onDirections={openDirections}
           onViewDetail={openFacilityDetail}
         />
 
@@ -1508,7 +1512,7 @@ function NearbyClinicPage() {
                   </section>
                   <section className="facility-info-group">
                     <h3>Tiện ích hiện có dữ liệu</h3>
-                    <div className="facility-detail-services">{detailServices.length ? detailServices.map((service) => <span key={service}>{service}</span>) : <p>Backend chưa cung cấp tiện ích hoặc dịch vụ nổi bật cho cơ sở này.</p>}</div>
+                    <div className="facility-detail-services">{detailServices.length ? detailServices.map((service) => <span key={service}>{service}</span>) : <p>Chưa có thông tin về tiện ích hoặc dịch vụ nổi bật của cơ sở này.</p>}</div>
                   </section>
                 </div>
               )}
@@ -1561,7 +1565,7 @@ function NearbyClinicPage() {
                         <strong>Bạn đã đánh giá cơ sở này</strong>
                         <p>{currentUserReview.isKnownDuplicate ? "Đánh giá hiện tại chưa xuất hiện trong danh sách công khai." : (currentUserReview.comment || "Bạn không để lại nhận xét.")}</p>
                         {getReviewImageUrls(currentUserReview).length > 0 && <div className="review-photo-grid">{getReviewImageUrls(currentUserReview).map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh minh họa ${index + 1} trong đánh giá của bạn`} width="240" height="180" loading="lazy" decoding="async" />)}</div>}
-                        {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa vì API chưa trả mã đánh giá.</small>}
+                        {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa. Vui lòng thử lại sau.</small>}
                       </div>
                     ) : (
                       <form className="facility-review-form" onSubmit={submitReview}>
@@ -1626,7 +1630,8 @@ function NearbyClinicPage() {
 
       <section className="map-stage">
         <FacilityMap
-          assistantAccessLocked={isClinicalFlow && !auth?.accessToken}
+          assistantAccessLocked={!auth?.accessToken}
+          assistantOpenRequestKey={assistantOpenRequestKey}
           chatContext={chatContext}
           clinicalNotice={effectiveClinicalNotice}
           clinicalStatus={clinicalStatus}
@@ -1639,7 +1644,7 @@ function NearbyClinicPage() {
           onAssistantLogin={() => navigate(`/login?returnTo=${encodeURIComponent(
             `${window.location.pathname}${window.location.search}`,
           )}`)}
-          showConsultationAssistant={isClinicalFlow || Boolean(auth?.accessToken)}
+          showConsultationAssistant
           facilities={mappableFacilities}
           locationError={locationError}
           mapRef={mapRef}
@@ -1654,7 +1659,9 @@ function NearbyClinicPage() {
           onLocate={handleLocateMe}
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}
-          onSelect={(facility) => facility ? handleCardClick(facility) : setSelectedFacility(null)}
+          onSelect={(facility) => facility
+            ? handleCardClick(facility, { openAssistant: true })
+            : setSelectedFacility(null)}
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}
         />

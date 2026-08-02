@@ -83,7 +83,7 @@ export default function AdminOverviewSection({
           </span>
           <span>
             <small>Nguồn dữ liệu</small>
-            <strong>API quản trị</strong>
+            <strong>Dữ liệu quản trị</strong>
           </span>
         </div>
       </header>
@@ -143,7 +143,7 @@ export default function AdminOverviewSection({
         <div>
           <strong>Chỉ hiển thị dữ liệu đã có</strong>
           <p>
-            Các con số trên được lấy từ tổng số bản ghi API trả về. MediMate không tự suy
+            Các con số trên phản ánh dữ liệu hiện có trong hệ thống. MediMate không tự suy
             đoán hiệu suất, xu hướng hoặc cảnh báo vận hành.
           </p>
         </div>
