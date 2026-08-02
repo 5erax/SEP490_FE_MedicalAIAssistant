@@ -261,7 +261,7 @@ test.describe("global navigation UX", () => {
     expect(storedAfterFinish).toMatchObject({ status: "completed", tourVersion: "patient-v1" });
   });
 
-  test("patient sidebar keeps diagnosis in consultation and profile in account menu", async ({ page }) => {
+  test("patient sidebar hides clinical diagnosis and keeps profile in account menu", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -278,7 +278,7 @@ test.describe("global navigation UX", () => {
     await expect(page.locator('.user-shell-mobile-nav a[href="/profile"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-nav a[href="/medication"], .user-shell-nav button[data-onboarding="patient-nav-patient.medication"]')).toHaveCount(1);
     await expect(page.locator('.user-shell-mobile-nav a[href="/medication"]')).toHaveCount(0);
-    await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(1);
+    await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-mobile-nav a[href="/symptom"]')).toHaveCount(0);
     await page.locator(".account-menu-trigger").click();
     await expect(page.getByRole("button", { name: "Hồ sơ" })).toBeVisible();

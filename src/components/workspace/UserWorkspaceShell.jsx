@@ -43,7 +43,7 @@ const PATIENT_ICONS = {
 };
 
 const NAV_ITEMS = getNavigationModel("patient")
-  .filter((item) => item.id !== "patient.profile")
+  .filter((item) => !["patient.profile", "assistant.intake"].includes(item.id))
   .map((item) => ({
     ...item,
     icon: PATIENT_ICONS[item.icon],
@@ -51,6 +51,7 @@ const NAV_ITEMS = getNavigationModel("patient")
 
 const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
 const SECONDARY_ACTIVE_ITEMS = {
+  "/symptom": { label: "Chẩn đoán lâm sàng", icon: Activity },
   "/chat": { label: "Trợ lý AI", icon: MessageSquare },
   "/profile": { label: "Hồ sơ", icon: UserRound },
   "/medication": { label: "Thuốc & lịch nhắc", icon: Pill },

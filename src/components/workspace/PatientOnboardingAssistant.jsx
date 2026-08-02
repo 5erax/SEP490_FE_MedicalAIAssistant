@@ -18,7 +18,7 @@ const TOUR_STEPS = [
   },
   {
     title: "Các chức năng chính",
-    body: "Dùng thanh điều hướng để mở chẩn đoán lâm sàng, bản đồ cơ sở y tế, hồ sơ và các công cụ theo dõi.",
+    body: "Dùng thanh điều hướng để mở tư vấn chuyên khoa, bản đồ cơ sở y tế, phân tích xét nghiệm và các công cụ theo dõi.",
     target: '[data-onboarding="patient-nav"]',
   },
   {
