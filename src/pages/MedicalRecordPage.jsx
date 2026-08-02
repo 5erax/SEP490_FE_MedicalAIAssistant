@@ -245,7 +245,7 @@ function SessionDetail({ session, status, error, onRetry, headingRef }) {
       <EmptyState
         icon={<FileCheck2 size={22} />}
         title="Chọn một phiên để xem chi tiết"
-        description="Kết quả chỉ hiển thị dữ liệu backend trả về cho tài khoản của bạn."
+        description="Kết quả phân tích và thông tin tham khảo sẽ hiển thị tại đây."
       />
     );
   }
