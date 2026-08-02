@@ -101,7 +101,8 @@ const BASE_ROUTES = [
     id: "patient.records",
     path: "/records",
     title: "Kết quả xét nghiệm | MediMate AI",
-    access: "premium",
+    // Temporary product-test access; restore "premium" after user validation.
+    access: "auth",
     shell: "patient",
     navigation: { shell: "patient", label: "Phân tích xét nghiệm", hint: "Đọc chỉ số xét nghiệm", icon: "records", order: 50 },
   },

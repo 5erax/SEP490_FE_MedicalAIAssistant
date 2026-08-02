@@ -10,7 +10,7 @@ export const APP_ROUTES = [
   { path: "/symptom", expectedPath: "/login", surface: "auth-gate" },
   { path: "/chat", expectedPath: "/login", surface: "premium-gate" },
   { path: "/map", expectedPath: "/map", surface: "public" },
-  { path: "/records", expectedPath: "/login", surface: "premium-gate" },
+  { path: "/records", expectedPath: "/login", surface: "auth-gate" },
   { path: "/recovery-plan", expectedPath: "/login", surface: "auth-gate" },
   { path: "/medication", expectedPath: "/login", surface: "premium-gate" },
   { path: "/pricing", expectedPath: "/pricing", surface: "public" },

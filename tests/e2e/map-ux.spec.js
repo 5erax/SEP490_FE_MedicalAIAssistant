@@ -194,9 +194,6 @@ test("pre-visit AI stays present on the map and uses the selected facility depar
 
   await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khi khám" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveAttribute("aria-expanded", "false");
-  await page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" }).click();
   await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Thu gọn AI hỗ trợ trước khám" })).toHaveAttribute("aria-expanded", "true");
 

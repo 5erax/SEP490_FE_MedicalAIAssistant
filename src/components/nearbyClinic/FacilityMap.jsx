@@ -123,6 +123,7 @@ function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect }) {
 
 function MapConsultationAssistant({
   accessLocked = false,
+  autoOpenRequestKey = 0,
   consultationFacility = null,
   onLogin,
   recommendedDepartment = null,
@@ -156,12 +157,20 @@ function MapConsultationAssistant({
   const closeButtonRef = useRef(null);
   const launcherRef = useRef(null);
   const previousOpenRef = useRef(open);
+  const handledAutoOpenRequestRef = useRef(autoOpenRequestKey);
 
   const selectedDepartmentId = departmentSelection.scopeKey === departmentScopeKey
     ? departmentSelection.departmentId
     : initialDepartmentId;
   const canSubmit = Boolean(symptoms.trim() && status !== "loading");
   const canUseConsultationFlow = Boolean(!accessLocked && selectedDepartmentId);
+
+  useEffect(() => {
+    if (!autoOpenRequestKey || autoOpenRequestKey === handledAutoOpenRequestRef.current) return;
+    handledAutoOpenRequestRef.current = autoOpenRequestKey;
+    setActiveTab("suggest");
+    setOpen(true);
+  }, [autoOpenRequestKey]);
 
   useEffect(() => {
     if (!open || activeTab !== "suggest" || !threadRef.current) return;
@@ -501,6 +510,7 @@ function MapConsultationAssistant({
 
 export default function FacilityMap({
   assistantAccessLocked = false,
+  assistantOpenRequestKey = 0,
   chatContext,
   clinicalNotice = "",
   clinicalStatus = "idle",
@@ -699,6 +709,7 @@ export default function FacilityMap({
       {showConsultationAssistant && (
         <MapConsultationAssistant
           accessLocked={assistantAccessLocked}
+          autoOpenRequestKey={assistantOpenRequestKey}
           consultationFacility={consultationFacility}
           onLogin={onAssistantLogin}
           recommendedDepartment={recommendedDepartment}

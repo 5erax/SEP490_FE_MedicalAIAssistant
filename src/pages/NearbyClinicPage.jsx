@@ -433,6 +433,7 @@ function NearbyClinicPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedFacility, setSelectedFacility] = useState(null);
+  const [assistantOpenRequestKey, setAssistantOpenRequestKey] = useState(0);
   const [sidebarView, setSidebarView] = useState("hospital-list");
   const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -811,7 +812,7 @@ function NearbyClinicPage() {
     window.history[mode === "replace" ? "replaceState" : "pushState"]({}, "", nextUrl);
   }, []);
 
-  const handleCardClick = useCallback((facility) => {
+  const handleCardClick = useCallback((facility, options = {}) => {
     setReviewMessage("");
     setSubmittedReview(null);
     setEditingReview(false);
@@ -823,6 +824,9 @@ function NearbyClinicPage() {
       setReviewsLoading(true);
     }
     setSelectedFacility(facility);
+    if (options.openAssistant) {
+      setAssistantOpenRequestKey((current) => current + 1);
+    }
     if (facility.hasValidCoordinates && mapStatus === "ready") {
       mapRef.current?.flyTo?.({
         center: [facility.longitude, facility.latitude],
@@ -879,7 +883,7 @@ function NearbyClinicPage() {
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
-    handleCardClick(facility);
+    handleCardClick(facility, { openAssistant: options.openAssistant !== false });
     setSidebarView("hospital-detail");
     setSelectedDoctor(null);
     setDetailPanelOpen(true);
@@ -956,6 +960,7 @@ function NearbyClinicPage() {
 
       if (matchedFacility) {
         openFacilityDetail(matchedFacility, {
+          openAssistant: false,
           syncUrl: false,
           tab: nextQuery.tab,
         });
@@ -981,6 +986,7 @@ function NearbyClinicPage() {
 
     const timeoutId = window.setTimeout(() => {
       openFacilityDetail(matchedFacility, {
+        openAssistant: false,
         syncUrl: false,
         tab: mapQuery.tab,
       });
@@ -1625,6 +1631,7 @@ function NearbyClinicPage() {
       <section className="map-stage">
         <FacilityMap
           assistantAccessLocked={!auth?.accessToken}
+          assistantOpenRequestKey={assistantOpenRequestKey}
           chatContext={chatContext}
           clinicalNotice={effectiveClinicalNotice}
           clinicalStatus={clinicalStatus}
@@ -1652,7 +1659,9 @@ function NearbyClinicPage() {
           onLocate={handleLocateMe}
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}
-          onSelect={(facility) => facility ? handleCardClick(facility) : setSelectedFacility(null)}
+          onSelect={(facility) => facility
+            ? handleCardClick(facility, { openAssistant: true })
+            : setSelectedFacility(null)}
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}
         />

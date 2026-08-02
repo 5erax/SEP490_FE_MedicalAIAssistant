@@ -53,15 +53,15 @@ function detailSession(overrides = {}) {
 async function openPatientRecords(page, options = {}) {
   await page.emulateMedia({ forcedColors: options.forcedColors ?? "none" });
   await preparePage(page);
-  await page.addInitScript((accessToken) => {
+  await page.addInitScript(({ accessToken, isPremium }) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
       accessToken,
       userId: "55555555-5555-4555-8555-555555555555",
       roles: ["Patient"],
-      isPremium: true,
+      isPremium,
       isProfileCompleted: true,
     }));
-  }, PATIENT_TOKEN);
+  }, { accessToken: PATIENT_TOKEN, isPremium: options.isPremium ?? true });
 
   const state = { requests: [], analyzePayload: null };
   const session = detailSession(options.detailOverrides);
@@ -166,6 +166,14 @@ test("patient submits the backend lab analysis payload from profile data", async
   await expect(page.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeVisible();
   await expect(page.getByText("Hemoglobin", { exact: true })).toBeVisible();
   await expect(page.getByText("13,8 g/dL", { exact: true })).toBeVisible();
+});
+
+test("free patient can open the temporarily unlocked lab analysis", async ({ page }) => {
+  await openPatientRecords(page, { isPremium: false });
+
+  await expect(page).toHaveURL(/\/records$/);
+  await expect(page.locator('.user-shell-nav a[href="/records"]')).toBeVisible();
+  await expect(page.locator('.user-shell-nav button[aria-label^="Phân tích xét nghiệm"]')).toHaveCount(0);
 });
 
 test("patient opens a session detail through the account-owned history endpoint", async ({ page }) => {
