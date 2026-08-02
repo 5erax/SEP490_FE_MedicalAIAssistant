@@ -34,3 +34,4 @@ export { webChatbotApi } from "./chatbotService";
 export { consultationSessionsApi } from "./consultationSessionService";
 export { labIndicatorsApi } from "./labIndicatorService";
 export { labTestsApi } from "./labTestService";
+export { userMedicationsApi } from "./userMedicationService";
