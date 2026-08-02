@@ -39,10 +39,11 @@ const PATIENT_ICONS = {
   profile: UserRound,
   records: ClipboardList,
   recovery: CalendarDays,
+  medication: Pill,
 };
 
 const NAV_ITEMS = getNavigationModel("patient")
-  .filter((item) => !["patient.profile", "patient.medication"].includes(item.id))
+  .filter((item) => item.id !== "patient.profile")
   .map((item) => ({
     ...item,
     icon: PATIENT_ICONS[item.icon],
@@ -52,7 +53,7 @@ const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
 const SECONDARY_ACTIVE_ITEMS = {
   "/chat": { label: "Trợ lý AI", icon: MessageSquare },
   "/profile": { label: "Hồ sơ", icon: UserRound },
-  "/medication": { label: "Kiểm tra thuốc", icon: Pill },
+  "/medication": { label: "Thuốc & lịch nhắc", icon: Pill },
   "/assessment/history": { label: "Lịch sử phân tích", icon: ClipboardList },
 };
 const EMPTY_ACCOUNT_CACHE = { accessToken: "", user: null };

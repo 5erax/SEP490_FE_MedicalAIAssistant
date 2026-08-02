@@ -36,13 +36,14 @@ không được đặt sau paywall.
 - Danh mục chuyên khoa, cơ sở y tế, khoa tại cơ sở và bác sĩ.
 - Tìm cơ sở y tế, xem đánh giá và gửi đánh giá.
 - Gói đăng ký, thanh toán PayOS, xem và hủy subscription.
+- Quản lý thuốc tự khai báo và lịch nhắc tại `/medication`.
+- Gửi yêu cầu, theo dõi và bắt đầu kế hoạch phục hồi tại `/recovery-plan`.
 - Đăng ký Staff chờ duyệt và đăng ký Doctor bằng invitation.
 - Workspace quản trị người dùng, dữ liệu y tế, AI config và gói dịch vụ.
 
 ### Thử nghiệm, chưa phải cam kết sản phẩm
 
 - Hồ sơ y tế tại `/records` đang dùng dữ liệu mẫu.
-- Quản lý thuốc tại `/medication` đang dùng dữ liệu và kết quả phân tích mẫu.
 - Một phần gợi ý bệnh viện trong trợ lý y tế đang dùng dữ liệu mẫu.
 - Chat độc lập tại `/chat` chưa đi qua service backend thống nhất.
 
@@ -51,7 +52,7 @@ không được đặt sau paywall.
 - Đặt lịch khám và quản lý lượt khám.
 - Hồ sơ bệnh án, xét nghiệm, toa thuốc có lưu trữ thật.
 - Kiểm tra tương tác thuốc có nguồn dữ liệu lâm sàng được kiểm chứng.
-- Theo dõi điều trị, phục hồi, lịch nhắc và chia sẻ dữ liệu với bác sĩ.
+- Chia sẻ trực tiếp dữ liệu thuốc và kế hoạch phục hồi với bác sĩ.
 
 ## Nguyên tắc phát triển
 
@@ -82,5 +83,5 @@ Các quyết định sau phải được Product Owner xác nhận trước khi 
 3. Staff được tự ứng tuyển hay chỉ được Admin mời.
 4. Đánh giá cơ sở y tế có bắt buộc xác minh lượt khám hay không.
 5. Đặt lịch khám có thuộc phạm vi sản phẩm hay chỉ điều hướng ra bên ngoài.
-6. Hồ sơ y tế và quản lý thuốc có thuộc MVP tiếp theo hay không.
+6. Hồ sơ y tế và chia sẻ dữ liệu thuốc/phục hồi có thuộc MVP tiếp theo hay không.
 7. Ai chịu trách nhiệm kiểm duyệt dữ liệu cơ sở, bác sĩ và nội dung AI.

@@ -276,7 +276,7 @@ test.describe("global navigation UX", () => {
     await expect(page.locator('.user-shell-nav a[href="/dashboard"]')).toBeVisible();
     await expect(page.locator('.user-shell-nav a[href="/profile"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-mobile-nav a[href="/profile"]')).toHaveCount(0);
-    await expect(page.locator('.user-shell-nav a[href="/medication"], .user-shell-nav button[data-onboarding="patient-nav-patient.medication"]')).toHaveCount(0);
+    await expect(page.locator('.user-shell-nav a[href="/medication"], .user-shell-nav button[data-onboarding="patient-nav-patient.medication"]')).toHaveCount(1);
     await expect(page.locator('.user-shell-mobile-nav a[href="/medication"]')).toHaveCount(0);
     await expect(page.locator('.user-shell-nav a[href="/symptom"]')).toHaveCount(1);
     await expect(page.locator('.user-shell-mobile-nav a[href="/symptom"]')).toHaveCount(0);
@@ -562,7 +562,7 @@ test.describe("global navigation UX", () => {
     await expect(page.getByRole("heading", { name: "Tài khoản chờ duyệt" })).toBeVisible();
   });
 
-  test("admin dialogs restore focus to their trigger", async ({ page }) => {
+  test("admin subscription catalog keeps unsafe mutations unavailable", async ({ page }) => {
     await preparePage(page);
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
@@ -573,18 +573,13 @@ test.describe("global navigation UX", () => {
     }, ADMIN_ACCESS_TOKEN);
 
     await openRoute(page, "/app/admin/subscriptions");
-    const createButton = page.getByRole("button", { name: "Tạo gói", exact: true });
-    await createButton.click();
-
-    const dialog = page.getByRole("dialog", { name: "Tạo gói dịch vụ" });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Đóng form" })).toBeFocused();
-    await expect(page.locator("#root")).toHaveJSProperty("inert", true);
-
-    await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
+    await expect(page.getByText("Trang đang ở chế độ chỉ xem.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tạo gói", exact: true })).toHaveCount(0);
+    const reloadButton = page.getByRole("button", { name: "Đồng bộ" });
+    await reloadButton.focus();
+    await page.keyboard.press("Enter");
+    await expect(reloadButton).toBeFocused();
     await expect(page.locator("#root")).toHaveJSProperty("inert", false);
-    await expect(createButton).toBeFocused();
   });
 
 

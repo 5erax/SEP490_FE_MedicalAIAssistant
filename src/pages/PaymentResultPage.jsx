@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, CircleX, Clock3, CreditCard, LoaderCircle, RefreshCw } from "lucide-react";
-import { authApi, getStoredAuth, paymentsApi, userSubscriptionsApi } from "../services/api";
+import {
+  authApi,
+  getStoredAuth,
+  paymentsApi,
+  subscriptionUsageApi,
+  userSubscriptionsApi,
+} from "../services/api";
 import { navigate } from "../router/navigation";
 import {
   clearRememberedReturnTo,
@@ -13,10 +19,6 @@ const MAX_STATUS_CHECKS = 12;
 const STATUS_CHECK_DELAY = 2500;
 function getOrderCode() {
   return new URLSearchParams(window.location.search).get("orderCode")?.trim() || "";
-}
-
-function getCallbackParams() {
-  return Object.fromEntries(new URLSearchParams(window.location.search).entries());
 }
 
 function classifyPayment(data) {
@@ -124,19 +126,16 @@ export default function PaymentResultPage({ expectedResult }) {
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
-  const [callbackParams] = useState(getCallbackParams);
   const view = getView(status);
   const Icon = view.icon;
-  const isCancelFlow = expectedResult === "cancel";
 
   const refreshPremiumState = useCallback(async () => {
     if (!hasAuth) return;
-    await userSubscriptionsApi.me();
-    try {
-      await authApi.refresh();
-    } catch {
-      // Subscription state is already refreshed even if token refresh is delayed.
-    }
+    await Promise.allSettled([
+      userSubscriptionsApi.me(),
+      subscriptionUsageApi.me(),
+      authApi.refresh(),
+    ]);
   }, [hasAuth]);
 
   const checkStatus = useCallback(async () => {
@@ -145,11 +144,7 @@ export default function PaymentResultPage({ expectedResult }) {
       return "missing";
     }
 
-    const response = expectedResult === "return"
-      ? await paymentsApi.payOsReturn(callbackParams)
-      : expectedResult === "cancel"
-        ? await paymentsApi.payOsCancel(callbackParams)
-        : await paymentsApi.payOsStatus(orderCode);
+    const response = await paymentsApi.payOsStatus(orderCode);
 
     const data = response.data ?? {};
     const nextStatus = classifyPayment(data);
@@ -158,7 +153,7 @@ export default function PaymentResultPage({ expectedResult }) {
 
     if (nextStatus === "success") await refreshPremiumState();
     return nextStatus;
-  }, [callbackParams, expectedResult, orderCode, refreshPremiumState]);
+  }, [orderCode, refreshPremiumState]);
 
   useEffect(() => {
     if (!orderCode) return undefined;
@@ -191,7 +186,7 @@ export default function PaymentResultPage({ expectedResult }) {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [checkStatus, isCancelFlow, orderCode]);
+  }, [checkStatus, orderCode]);
 
   async function handleCheckAgain() {
     if (!orderCode) {
@@ -284,7 +279,7 @@ export default function PaymentResultPage({ expectedResult }) {
           ) : (
             <>
               <button className="payment-result-primary" type="button" onClick={() => navigate("/pricing")}>
-                {isCancelFlow && status === "cancelled" ? "Quay lại bảng giá" : settled ? "Chọn lại gói" : "Về bảng giá"} <ArrowRight size={17} />
+                {expectedResult === "cancel" && status === "cancelled" ? "Quay lại bảng giá" : settled ? "Chọn lại gói" : "Về bảng giá"} <ArrowRight size={17} />
               </button>
               <button type="button" onClick={() => navigate("/dashboard")}>
                 {hasAuth ? "Mở không gian cá nhân" : "Đăng nhập để kiểm tra"}

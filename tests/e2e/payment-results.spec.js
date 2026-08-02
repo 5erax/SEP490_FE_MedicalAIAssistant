@@ -35,10 +35,14 @@ async function mockRefreshPremium(page) {
       },
     }),
   }));
+  await page.route("**/api/me/subscription-usage", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { limitValue: 3, usedCount: 0, reservedCount: 0, remainingCount: 3 } }),
+  }));
 }
 
 test("payment return verifies the order and opens the activated experience", async ({ page }) => {
-  await page.route("**/api/payments/payos-return**", (route) => route.fulfill({
+  await page.route("**/api/payments/payos-status/987654321", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
@@ -64,9 +68,9 @@ test("payment return verifies the order and opens the activated experience", asy
   await expect(page).toHaveURL(/\/map\?search=tim%20mach#results$/);
 });
 
-test("payment cancel calls the backend cancel callback before showing retry actions", async ({ page }) => {
+test("payment cancel verifies the public order status before showing retry actions", async ({ page }) => {
   let cancelRequests = 0;
-  await page.route("**/api/payments/payos-cancel**", (route) => {
+  await page.route("**/api/payments/payos-status/123456789", (route) => {
     cancelRequests += 1;
     return route.fulfill({
       contentType: "application/json",
@@ -95,7 +99,7 @@ test("payment cancel calls the backend cancel callback before showing retry acti
 
 test("payment cancel remains unverified when backend verification is unavailable", async ({ page }) => {
   let cancelRequests = 0;
-  await page.route("**/api/payments/payos-cancel**", (route) => {
+  await page.route("**/api/payments/payos-status/123456789", (route) => {
     cancelRequests += 1;
     return route.fulfill({
       status: 503,
@@ -114,7 +118,7 @@ test("payment cancel remains unverified when backend verification is unavailable
 });
 
 test("payment cancel trusts backend success over the cancel URL", async ({ page }) => {
-  await page.route("**/api/payments/payos-cancel**", (route) => route.fulfill({
+  await page.route("**/api/payments/payos-status/123456789", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,

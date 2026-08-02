@@ -1,4 +1,5 @@
 import { authApi, clearStoredAuth, symptomAnalysisApi } from "./api";
+import { stopRecoveryPlanConnection } from "./recoveryPlanRealtime";
 
 function clearMedimateSessionCache() {
   if (typeof sessionStorage === "undefined") return;
@@ -16,6 +17,7 @@ export async function logoutUser({ redirectTo = "/", onClear, redirect } = {}) {
   } catch (error) {
     apiError = error;
   } finally {
+    await stopRecoveryPlanConnection();
     symptomAnalysisApi.clearCachedClinicalAnalysis();
     clearStoredAuth();
     clearMedimateSessionCache();

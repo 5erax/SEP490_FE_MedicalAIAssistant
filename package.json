@@ -17,6 +17,7 @@
     "test:e2e:visual:update": "playwright test tests/e2e/visual.spec.js --update-snapshots"
   },
   "dependencies": {
+    "@microsoft/signalr": "^10.0.0",
     "@react-oauth/google": "^0.13.5",
     "@vercel/speed-insights": "^2.0.0",
     "lucide-react": "^1.16.0",

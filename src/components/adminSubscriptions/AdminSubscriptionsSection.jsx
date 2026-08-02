@@ -1,6 +1,7 @@
-import { CreditCard, RefreshCw } from "lucide-react";
+import { Info, RefreshCw } from "lucide-react";
 import { Button, ErrorState, LoadingState } from "../ui";
 import SubscriptionPlanTable from "./SubscriptionPlanTable";
+import AdminPaymentsPanel from "./AdminPaymentsPanel";
 
 export default function AdminSubscriptionsSection({
   activeCount,
@@ -8,11 +9,7 @@ export default function AdminSubscriptionsSection({
   loading,
   message,
   plans,
-  onCreate,
-  onDelete,
-  onEdit,
   onReload,
-  onToggleStatus,
 }) {
   return (
     <section className="admin-panel subscription-plan-admin-panel">
@@ -20,16 +17,18 @@ export default function AdminSubscriptionsSection({
         <div>
           <p className="eyebrow">Gói đăng ký</p>
           <h2>Quản lý gói dịch vụ</h2>
-          <p className="muted-text">Tạo và kích hoạt các gói xuất hiện trên trang bảng giá để người dùng đăng ký qua PayOS.</p>
+          <p className="muted-text">Theo dõi các gói đang hiển thị trên trang bảng giá và trạng thái mở bán hiện tại.</p>
         </div>
         <div className="record-actions">
           <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>
             <RefreshCw size={15} /> Đồng bộ
           </button>
-          <button className="btn btn-primary btn-small" type="button" onClick={onCreate}>
-            <CreditCard size={15} /> Tạo gói
-          </button>
         </div>
+      </div>
+
+      <div className="subscription-contract-notice" role="note">
+        <Info size={18} aria-hidden="true" />
+        <p><strong>Trang đang ở chế độ chỉ xem.</strong> Việc tạo, sửa, xóa gói và cấu hình lượt sử dụng sẽ được mở sau khi cơ chế phân quyền hoàn tất.</p>
       </div>
 
       {!loading && !error && (
@@ -78,12 +77,10 @@ export default function AdminSubscriptionsSection({
       ) : (
         <SubscriptionPlanTable
           plans={plans}
-          onEdit={onEdit}
-          onToggleStatus={onToggleStatus}
-          onDelete={onDelete}
-          onCreate={onCreate}
         />
       )}
+
+      <AdminPaymentsPanel />
     </section>
   );
 }

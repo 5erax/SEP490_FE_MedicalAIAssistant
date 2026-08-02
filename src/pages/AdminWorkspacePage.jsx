@@ -25,7 +25,6 @@ import { getAdminSectionPath, getNavigationModel } from "../router/routes";
 import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
 import AdminAIConfigsSection from "../components/adminAIConfigs/AdminAIConfigsSection";
 import { getEnvironment } from "../components/adminAIConfigs/aiConfigUtils";
-import SubscriptionPlanFormModal from "../components/adminSubscriptions/SubscriptionPlanFormModal";
 import AdminSubscriptionsSection from "../components/adminSubscriptions/AdminSubscriptionsSection";
 import AdminOverviewSection from "../components/adminOverview/AdminOverviewSection";
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
@@ -397,7 +396,6 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
   const [lastInvitation, setLastInvitation] = useState(null);
   const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
-  const [subscriptionPlanModal, setSubscriptionPlanModal] = useState({ open: false, mode: "create", plan: null });
   const [aiConfigDetail, setAIConfigDetail] = useState(null);
   const operatorDialogTriggerRef = useRef(null);
   const [loading, setLoading] = useState(Boolean(auth));
@@ -417,7 +415,6 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [savingDoctor, setSavingDoctor] = useState(false);
   const [savingInvitation, setSavingInvitation] = useState(false);
   const [savingAIConfig, setSavingAIConfig] = useState(false);
-  const [savingSubscriptionPlan, setSavingSubscriptionPlan] = useState(false);
   const [globalMessage, setGlobalMessage] = useState(null);
   const [usersMessage, setUsersMessage] = useState(null);
   const [usersLoadError, setUsersLoadError] = useState("");
@@ -1375,92 +1372,6 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     }
   }
 
-  function openCreateSubscriptionPlan() {
-    operatorDialogTriggerRef.current = document.activeElement;
-    setSubscriptionPlanModal({ open: true, mode: "create", plan: null });
-  }
-
-  function openEditSubscriptionPlan(plan) {
-    operatorDialogTriggerRef.current = document.activeElement;
-    setSubscriptionPlanModal({ open: true, mode: "edit", plan });
-  }
-
-  function closeSubscriptionPlanModal() {
-    if (savingSubscriptionPlan) return;
-    setSubscriptionPlanModal({ open: false, mode: "create", plan: null });
-  }
-
-  async function handleSaveSubscriptionPlan(payload) {
-    setSavingSubscriptionPlan(true);
-    setSubscriptionPlanMessage(null);
-    try {
-      const response = subscriptionPlanModal.mode === "edit"
-        ? await subscriptionPlansApi.update(subscriptionPlanModal.plan.id, payload)
-        : await subscriptionPlansApi.create(payload);
-      const savedPlan = response.data;
-      setSubscriptionPlanModal({ open: false, mode: "create", plan: null });
-      setSubscriptionPlanMessage({
-        type: "success",
-        text: response.message || (subscriptionPlanModal.mode === "edit" ? "Đã cập nhật gói dịch vụ." : "Đã tạo gói dịch vụ."),
-      });
-      showToast({
-        type: "success",
-        title: subscriptionPlanModal.mode === "edit" ? "Đã cập nhật gói" : "Đã tạo gói",
-        message: response.message || "Danh sách gói dịch vụ đã được đồng bộ.",
-      });
-      if (savedPlan?.id && subscriptionPlanModal.mode === "edit") {
-        setSubscriptionPlans((current) => current.map((plan) => (plan.id === savedPlan.id ? savedPlan : plan)));
-      } else {
-        await loadSubscriptionPlans();
-      }
-    } catch {
-      const message = "Không thể lưu gói dịch vụ lúc này. Vui lòng thử lại.";
-      setSubscriptionPlanMessage({ type: "error", text: message });
-      showToast({ type: "error", title: "Không lưu được gói dịch vụ", message });
-    } finally {
-      setSavingSubscriptionPlan(false);
-    }
-  }
-
-  async function handleToggleSubscriptionPlanStatus(plan) {
-    setSubscriptionPlanMessage(null);
-    try {
-      const response = await subscriptionPlansApi.setStatus(plan.id, !plan.isActive);
-      const updatedPlan = response.data ?? { ...plan, isActive: !plan.isActive };
-      setSubscriptionPlans((current) => current.map((item) => (item.id === plan.id ? updatedPlan : item)));
-      showToast({
-        type: "success",
-        title: updatedPlan.isActive ? "Đã mở bán gói" : "Đã tạm ẩn gói",
-        message: response.message || "Trạng thái gói dịch vụ đã được cập nhật.",
-      });
-    } catch {
-      const message = "Không thể cập nhật trạng thái gói lúc này. Vui lòng thử lại.";
-      setSubscriptionPlanMessage({ type: "error", text: message });
-      showToast({ type: "error", title: "Không đổi được trạng thái gói", message });
-    }
-  }
-
-  async function handleDeleteSubscriptionPlan(plan) {
-    const confirmed = await confirmAction({
-      title: "Xóa gói dịch vụ?",
-      message: `${plan.planName || "Gói này"} sẽ bị xóa khỏi danh sách quản trị. Nếu gói đang có người dùng, hệ thống có thể từ chối thao tác này.`,
-      confirmLabel: "Xóa gói",
-      tone: "danger",
-    });
-    if (!confirmed) return;
-
-    setSubscriptionPlanMessage(null);
-    try {
-      const response = await subscriptionPlansApi.remove(plan.id);
-      setSubscriptionPlans((current) => current.filter((item) => item.id !== plan.id));
-      showToast({ type: "success", title: "Đã xóa gói dịch vụ", message: response.message || "Danh sách gói đã được cập nhật." });
-    } catch {
-      const message = "Không thể xóa gói dịch vụ lúc này. Vui lòng thử lại.";
-      setSubscriptionPlanMessage({ type: "error", text: message });
-      showToast({ type: "error", title: "Không xóa được gói dịch vụ", message });
-    }
-  }
-
   function updateDoctorFilter(key, value) {
     setDoctorFilters((current) => ({ ...current, [key]: value }));
   }
@@ -2144,11 +2055,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 loading={subscriptionPlansLoading}
                 message={subscriptionPlanMessage}
                 plans={subscriptionPlans}
-                onCreate={openCreateSubscriptionPlan}
-                onDelete={handleDeleteSubscriptionPlan}
-                onEdit={openEditSubscriptionPlan}
                 onReload={loadSubscriptionPlans}
-                onToggleStatus={handleToggleSubscriptionPlanStatus}
               />
             )}
 
@@ -2294,17 +2201,6 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
           restoreFocusRef={operatorDialogTriggerRef}
           onClose={closeAIConfigModal}
           onSubmit={handleSaveAIConfig}
-        />
-      )}
-      {subscriptionPlanModal.open && (
-        <SubscriptionPlanFormModal
-          key={subscriptionPlanModal.plan?.id ?? "create"}
-          mode={subscriptionPlanModal.mode}
-          plan={subscriptionPlanModal.plan}
-          saving={savingSubscriptionPlan}
-          restoreFocusRef={operatorDialogTriggerRef}
-          onClose={closeSubscriptionPlanModal}
-          onSubmit={handleSaveSubscriptionPlan}
         />
       )}
       {aiConfigDetail && (

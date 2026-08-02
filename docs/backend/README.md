@@ -9,6 +9,8 @@
    đăng ký Doctor bằng invitation.
 4. [PayOS](./integrations/payos.md): checkout, callback, webhook và tiêu chí
    nghiệm thu thanh toán.
+5. [Luồng FE1 cho người dùng](./integrations/fe1-user-workflows.md): thuốc và lịch
+   nhắc, quota, yêu cầu/kế hoạch phục hồi, realtime và phạm vi admin chỉ đọc.
 
 ## Nguồn contract
 

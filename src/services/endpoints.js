@@ -22,6 +22,10 @@ const WEB_CHATBOT_BASE = "/api/web-chatbot";
 const CONSULTATION_SESSIONS_BASE = "/api/consultation-sessions";
 const LAB_INDICATORS_BASE = "/api/lab-indicators";
 const LAB_TESTS_BASE = "/api/lab-tests";
+const USER_MEDICATIONS_BASE = "/api/user-medications";
+const SUBSCRIPTION_USAGE_BASE = "/api/me/subscription-usage";
+const RECOVERY_PLAN_REQUESTS_BASE = "/api/recovery-plan-requests";
+const RECOVERY_PLANS_BASE = "/api/recovery-plans";
 
 const encodedById = (base, id) => `${base}/${encodeURIComponent(id)}`;
 const labIndicatorChild = (indicatorId, child) => `${encodedById(LAB_INDICATORS_BASE, indicatorId)}/${child}`;
@@ -98,22 +102,21 @@ export const ENDPOINTS = {
     BASE: SUBSCRIPTION_PLANS_BASE,
     ACTIVE: `${SUBSCRIPTION_PLANS_BASE}/active`,
     BY_ID: (id) => byId(SUBSCRIPTION_PLANS_BASE, id),
-    STATUS: (id) => status(SUBSCRIPTION_PLANS_BASE, id),
   },
   USER_SUBSCRIPTIONS: {
     CHECKOUT: `${USER_SUBSCRIPTIONS_BASE}/checkout`,
     ME: `${USER_SUBSCRIPTIONS_BASE}/me`,
-    BY_ID: (id) => byId(USER_SUBSCRIPTIONS_BASE, id),
     CANCEL: (id) => `${byId(USER_SUBSCRIPTIONS_BASE, id)}/cancel`,
   },
+  SUBSCRIPTION_USAGE: {
+    ME: SUBSCRIPTION_USAGE_BASE,
+  },
   PAYMENTS: {
+    LIST: PAYMENTS_BASE,
     ME: `${PAYMENTS_BASE}/me`,
     MY_PAYMENT: (id) => `${PAYMENTS_BASE}/me/${encodeURIComponent(id)}`,
     BY_ID: (id) => byId(PAYMENTS_BASE, id),
     BY_USER: (userId) => `${PAYMENTS_BASE}/user/${encodeURIComponent(userId)}`,
-    PAYOS_RETURN: `${PAYMENTS_BASE}/payos-return`,
-    PAYOS_CANCEL: `${PAYMENTS_BASE}/payos-cancel`,
-    PAYOS_WEBHOOK: `${PAYMENTS_BASE}/payos-webhook`,
     PAYOS_STATUS: (orderCode) => `${PAYMENTS_BASE}/payos-status/${encodeURIComponent(orderCode)}`,
   },
   AI_CONFIGS: {
@@ -146,5 +149,22 @@ export const ENDPOINTS = {
     ANALYZE: `${LAB_TESTS_BASE}/analyze`,
     MY_SESSIONS: `${LAB_TESTS_BASE}/my-sessions`,
     BY_SESSION: (sessionId) => encodedById(LAB_TESTS_BASE, sessionId),
+  },
+  USER_MEDICATIONS: {
+    BASE: USER_MEDICATIONS_BASE,
+    BY_ID: (medicationId) => encodedById(USER_MEDICATIONS_BASE, medicationId),
+    REMINDERS: (medicationId) => `${encodedById(USER_MEDICATIONS_BASE, medicationId)}/reminders`,
+  },
+  RECOVERY_PLAN_REQUESTS: {
+    BASE: RECOVERY_PLAN_REQUESTS_BASE,
+    ME: `${RECOVERY_PLAN_REQUESTS_BASE}/me`,
+    BY_ID: (requestId) => encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId),
+    CANCEL: (requestId) => `${encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId)}/cancel`,
+    PROVIDE_INFORMATION: (requestId) => `${encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId)}/provide-more-information`,
+  },
+  RECOVERY_PLANS: {
+    ME: `${RECOVERY_PLANS_BASE}/me`,
+    BY_ID: (planId) => encodedById(RECOVERY_PLANS_BASE, planId),
+    START: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/start`,
   },
 };

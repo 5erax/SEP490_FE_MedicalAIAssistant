@@ -1096,3 +1096,136 @@
   padding: 16px;
   line-height: 1.65;
 }
+.subscription-contract-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+}
+
+.subscription-contract-notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-info-strong);
+}
+
+.subscription-contract-notice p {
+  margin: 0;
+}
+
+.subscription-contract-notice strong {
+  color: var(--color-ink);
+}
+
+.admin-payment-panel {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid var(--color-line);
+}
+
+.admin-payment-panel .panel-title-row {
+  margin-bottom: 18px;
+}
+
+.admin-payment-table td,
+.admin-payment-table th {
+  vertical-align: middle;
+}
+
+.admin-payment-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  color: var(--color-muted);
+}
+
+.admin-payment-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  padding: 20px;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.56);
+}
+
+.admin-payment-dialog {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--color-surface);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
+}
+
+.admin-payment-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.admin-payment-dialog h2 {
+  margin: 5px 0 0;
+}
+
+.admin-payment-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 0;
+}
+
+.admin-payment-detail-grid > div {
+  padding: 13px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+}
+
+.admin-payment-detail-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-payment-detail-grid dt {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-payment-detail-grid dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-payment-detail-error {
+  margin: 16px 0 0;
+  color: var(--color-danger);
+}
+
+@media (max-width: 640px) {
+  .admin-payment-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-payment-dialog-backdrop {
+    padding: 0;
+    place-items: end center;
+  }
+
+  .admin-payment-dialog {
+    max-height: 94vh;
+    border-radius: 20px 20px 0 0;
+  }
+}

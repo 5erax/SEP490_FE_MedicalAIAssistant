@@ -7,7 +7,7 @@ const ACCESS_TOKEN = [
   "",
 ].join(".");
 
-test("authenticated user can create and complete a PayOS checkout", async ({ page, context }) => {
+test("authenticated user is redirected to PayOS and verifies the callback order", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -19,7 +19,6 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
   }, ACCESS_TOKEN);
 
   let checkoutBody = null;
-  let checkoutCreated = false;
 
   await page.route("**/api/subscription-plans/active", (route) => route.fulfill({
     contentType: "application/json",
@@ -42,24 +41,13 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        data: checkoutCreated
-          ? [{
-              id: "22222222-2222-2222-2222-222222222222",
-              planId: "11111111-1111-1111-1111-111111111111",
-              planName: "MediMate+ Monthly",
-              status: 1,
-              statusName: "Active",
-              autoRenew: false,
-              endDate: "2026-07-12T00:00:00Z",
-            }]
-          : [],
+        data: [],
       }),
     });
   });
 
   await page.route("**/api/user-subscriptions/checkout", async (route) => {
     checkoutBody = route.request().postDataJSON();
-    checkoutCreated = true;
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -67,22 +55,22 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
         data: {
           subscriptionId: "22222222-2222-2222-2222-222222222222",
           paymentId: "33333333-3333-3333-3333-333333333333",
-          paymentUrl: "http://localhost:3000/payment-stub",
+          paymentUrl: "http://127.0.0.1:3000/payment/return?orderCode=987654321",
           paymentProvider: "PayOS",
         },
       }),
     });
   });
 
-  await page.route("**/api/payments/me/33333333-3333-3333-3333-333333333333", (route) => route.fulfill({
+  await page.route("**/api/payments/payos-status/987654321", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
       data: {
-        id: "33333333-3333-3333-3333-333333333333",
-        status: 1,
-        statusName: "Paid",
-        paidAt: "2026-06-12T00:00:00Z",
+        orderCode: "987654321",
+        isPaid: true,
+        isActive: true,
+        isCancelled: false,
       },
     }),
   }));
@@ -101,6 +89,11 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
     }),
   }));
 
+  await page.route("**/api/me/subscription-usage", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { limitValue: 3, usedCount: 0, reservedCount: 0, remainingCount: 3 } }),
+  }));
+
   await page.goto("/pricing", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("149.000 ₫", { exact: true })).toBeVisible();
 
@@ -108,21 +101,11 @@ test("authenticated user can create and complete a PayOS checkout", async ({ pag
   await expect(checkoutButton).toBeEnabled();
   await page.getByLabel("Tự động gia hạn").check();
 
-  const popupPromise = context.waitForEvent("page");
   await checkoutButton.click();
-  const popup = await popupPromise;
-  await popup.waitForLoadState("domcontentloaded");
-
-  await expect(
-    page.locator("#main-content").getByText("Thanh toán thành công", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.locator("#current-subscription").getByRole("heading", { name: "MediMate+ Monthly" }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/payment\/return\?orderCode=987654321$/);
+  await expect(page.getByRole("heading", { name: "MediMate+ đã sẵn sàng." })).toBeVisible();
   expect(checkoutBody).toEqual({
     planId: "11111111-1111-1111-1111-111111111111",
     autoRenew: true,
   });
-
-  await popup.close();
 });

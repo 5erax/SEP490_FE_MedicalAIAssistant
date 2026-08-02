@@ -110,10 +110,10 @@ const BASE_ROUTES = [
   {
     id: "patient.medication",
     path: "/medication",
-    title: "Kiểm tra thuốc | MediMate AI",
-    access: "premium",
+    title: "Thuốc và lịch nhắc | MediMate AI",
+    access: "auth",
     shell: "patient",
-    navigation: { shell: "patient", label: "Kiểm tra thuốc", hint: "Nhận diện nhãn thuốc", icon: "medication", order: 70 },
+    navigation: { shell: "patient", label: "Thuốc & lịch nhắc", hint: "Thông tin bạn tự khai báo", icon: "medication", order: 70 },
   },
   { id: "public.pricing", path: "/pricing", title: "Bảng giá | MediMate AI", access: "public" },
   { id: "public.support", path: "/support", title: "Hỗ trợ | MediMate AI", access: "public" },
