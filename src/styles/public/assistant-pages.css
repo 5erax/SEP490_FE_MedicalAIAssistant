@@ -207,9 +207,9 @@
 .assistant-hospital-card:hover,
 .assistant-hospital-card.active {
   transform: translateY(-2px);
-  border-color: var(--ink);
+  border-color: var(--teal);
   background: #fff;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 0 12px 28px rgba(8, 127, 140, 0.14);
 }
 
 .assistant-hospital-card strong,
@@ -544,9 +544,9 @@
 .assistant-hospital-card:hover,
 .assistant-hospital-card.active {
   transform: translateY(-2px);
-  border-color: var(--ink);
+  border-color: var(--teal);
   background: #fff;
-  box-shadow: 4px 4px 0 var(--ink), 0 16px 30px rgba(17, 20, 18, 0.08);
+  box-shadow: 0 16px 32px rgba(8, 127, 140, 0.16);
 }
 
 .assistant-hospital-main {
@@ -665,18 +665,18 @@
   place-items: center;
   width: 42px;
   height: 42px;
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--teal);
   border-radius: 14px;
-  background: var(--lime);
-  color: var(--ink);
+  background: linear-gradient(135deg, var(--teal), #05616a);
+  color: #fff;
   font-weight: 900;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.2);
   transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
 }
 
 .assistant-send-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 0 14px 28px rgba(8, 127, 140, 0.24);
 }
 
 .assistant-send-button:disabled {

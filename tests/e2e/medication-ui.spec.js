@@ -126,7 +126,22 @@ test("user creates a patient-reported medication with minute reminders", async (
 
 test("medication form rejects duplicate reminder times and keeps input", async ({ page }) => {
   await prepareMedicationPage(page, []);
-  await page.getByRole("button", { name: "Thêm thuốc đầu tiên" }).click();
+  const addMedicationButton = page.getByRole("button", { name: "Thêm thuốc đầu tiên" });
+  const primaryButtonStyle = await addMedicationButton.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      backgroundImage: style.backgroundImage,
+      boxShadow: style.boxShadow,
+      color: style.color,
+      height: element.getBoundingClientRect().height,
+    };
+  });
+  expect(primaryButtonStyle.backgroundImage).toContain("linear-gradient");
+  expect(primaryButtonStyle.boxShadow).not.toContain("3px 3px");
+  expect(primaryButtonStyle.color).toBe("rgb(255, 255, 255)");
+  expect(primaryButtonStyle.height).toBeGreaterThanOrEqual(44);
+
+  await addMedicationButton.click();
   const dialog = page.getByRole("dialog", { name: "Thêm thuốc đang sử dụng" });
   await dialog.getByLabel(/Tên thuốc/).fill("Vitamin C");
   await dialog.getByLabel(/Ngày bắt đầu/).fill("2026-08-02");

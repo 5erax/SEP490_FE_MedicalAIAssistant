@@ -189,6 +189,27 @@ test("admin creates, opens, edits, and deletes a lab indicator", async ({ page }
   await page.getByRole("button", { name: "Tạo chỉ số", exact: true }).first().click();
 
   let dialog = page.getByRole("dialog");
+  const indicatorFormLayout = await dialog.evaluate((element) => {
+    const section = element.querySelector(".lab-form-section");
+    const legend = section?.querySelector("legend");
+    const grid = section?.querySelector(".lab-form-grid");
+    const symbol = element.querySelector("#lab-symbol");
+    const fullName = element.querySelector("#lab-fullName");
+    const rect = (node) => node?.getBoundingClientRect();
+    return {
+      section: rect(section),
+      legend: rect(legend),
+      grid: rect(grid),
+      symbol: rect(symbol),
+      fullName: rect(fullName),
+    };
+  });
+  expect(indicatorFormLayout.legend.y).toBeGreaterThan(indicatorFormLayout.section.y + 10);
+  expect(indicatorFormLayout.grid.y).toBeGreaterThanOrEqual(
+    indicatorFormLayout.legend.y + indicatorFormLayout.legend.height + 10,
+  );
+  expect(Math.abs(indicatorFormLayout.symbol.y - indicatorFormLayout.fullName.y)).toBeLessThanOrEqual(1);
+
   await dialog.getByRole("button", { name: "Tạo chỉ số", exact: true }).click();
   await expect(dialog.locator(".lab-form-error-summary")).toBeFocused();
   await expect(dialog.getByLabel(/Ký hiệu/)).toHaveAttribute("aria-invalid", "true");

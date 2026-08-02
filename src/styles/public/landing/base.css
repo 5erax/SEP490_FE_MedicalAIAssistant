@@ -73,10 +73,10 @@
   justify-content: center;
   gap: 10px;
   min-height: 48px;
-  border: 1.5px solid var(--ink);
-  border-radius: 10px;
-  padding: 0 20px;
-  font-weight: 850;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0 18px;
+  font-weight: 800;
   line-height: 1.2;
   transition:
     transform var(--motion-base),
@@ -85,7 +85,7 @@
 }
 
 .btn:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .btn:active {
@@ -93,21 +93,45 @@
 }
 
 .btn-primary {
-  border-color: var(--ink);
-  background: var(--lime);
-  color: var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
+  border-color: var(--color-info-strong);
+  background: linear-gradient(135deg, var(--color-info), var(--color-info-strong));
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.2);
+}
+
+.btn-primary:hover {
+  border-color: #044f57;
+  background: linear-gradient(135deg, #0a909d, #055a64);
+  box-shadow: 0 14px 28px rgba(8, 127, 140, 0.24);
 }
 
 .btn-dark {
   border-color: var(--ink);
   background: var(--ink);
   color: #fff;
+  box-shadow: 0 10px 22px rgba(17, 20, 18, 0.16);
 }
 
+.btn-secondary,
 .btn-ghost {
+  border-color: var(--line-strong);
   background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
+  box-shadow: none;
+}
+
+.btn-secondary:hover,
+.btn-ghost:hover {
+  border-color: rgba(8, 127, 140, 0.48);
+  background: var(--mint);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.56;
+  transform: none;
+  box-shadow: none;
 }
 
 .nav {

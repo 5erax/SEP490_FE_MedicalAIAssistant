@@ -4,12 +4,18 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  border: 1.5px solid var(--color-ink);
-  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  border-radius: 12px;
   padding: 0 16px;
   color: var(--color-ink);
-  font-weight: 900;
-  transition: transform var(--motion-base), box-shadow var(--motion-base), background var(--motion-base);
+  font-weight: 850;
+  line-height: 1.2;
+  box-shadow: none;
+  transition:
+    transform var(--motion-base),
+    box-shadow var(--motion-base),
+    background var(--motion-base),
+    border-color var(--motion-base);
 }
 
 .root:hover:not(:disabled):not([aria-disabled="true"]) {
@@ -17,27 +23,47 @@
 }
 
 .primary {
-  background: var(--color-primary);
-  box-shadow: 3px 3px 0 var(--color-ink);
+  border-color: var(--color-info-strong);
+  background: linear-gradient(135deg, var(--color-info), var(--color-info-strong));
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.2);
+}
+
+.primary:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #044f57;
+  background: linear-gradient(135deg, #0a909d, #055a64);
+  box-shadow: 0 14px 28px rgba(8, 127, 140, 0.24);
 }
 
 .secondary {
   background: var(--color-surface);
+  border-color: var(--color-line-strong);
+  color: var(--color-ink);
+}
+
+.secondary:hover:not(:disabled):not([aria-disabled="true"]),
+.ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: rgba(8, 127, 140, 0.48);
+  background: var(--color-info-bg);
 }
 
 .dark {
+  border-color: var(--color-ink);
   background: var(--color-ink);
   color: #fff;
+  box-shadow: 0 10px 22px rgba(17, 20, 18, 0.16);
 }
 
 .danger {
+  border-color: var(--color-danger);
   background: var(--color-danger);
   color: #fff;
+  box-shadow: 0 10px 22px rgba(180, 35, 24, 0.16);
 }
 
 .ghost {
   border-color: var(--color-line-strong);
-  background: transparent;
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
   box-shadow: none;
 }
 
@@ -48,9 +74,14 @@
 }
 
 .sm {
-  min-height: 36px;
+  min-height: 44px;
   padding-inline: 12px;
   font-size: 13px;
+}
+
+.root:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .root:disabled,
@@ -59,6 +90,12 @@
   opacity: 0.52;
   transform: none;
   box-shadow: none;
+}
+
+@media (forced-colors: active) {
+  .root {
+    border-color: ButtonBorder;
+  }
 }
 
 .spinner {

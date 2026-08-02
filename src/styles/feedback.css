@@ -137,12 +137,13 @@
 }
 
 .confirm-actions button {
-  min-height: 42px;
-  border: 1.5px solid var(--ink);
-  border-radius: 10px;
+  min-height: 44px;
+  border: 1px solid rgba(17, 20, 18, 0.16);
+  border-radius: 12px;
   color: var(--ink);
   padding: 0 15px;
   font-weight: 900;
+  box-shadow: 0 8px 18px rgba(17, 20, 18, 0.06);
 }
 
 .confirm-actions button:first-child {
@@ -150,9 +151,10 @@
 }
 
 .confirm-actions button:last-child {
+  border-color: rgba(180, 35, 24, 0.34);
   background: var(--danger);
   color: #fff;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 0 10px 22px rgba(180, 35, 24, 0.18);
 }
 
 @media (max-width: 640px) {

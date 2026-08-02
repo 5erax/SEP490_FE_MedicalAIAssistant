@@ -229,19 +229,19 @@
 
 .profile-setup-add-disease,
 .profile-setup-remove-disease {
-  min-height: 40px;
+  min-height: 44px;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1.5px solid var(--ink);
-  border-radius: 10px;
-  background: var(--lime);
-  color: var(--ink);
+  border: 1px solid var(--teal);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--teal), #05616a);
+  color: #fff;
   padding: 0 13px;
   font-weight: 900;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.2);
 }
 
 .profile-setup-add-disease:disabled,

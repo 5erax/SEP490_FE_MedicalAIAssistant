@@ -356,9 +356,9 @@
 
 .recovery-item-button.is-selected,
 .recovery-plan-tabs > button.is-selected {
-  border-color: var(--color-ink);
-  background: var(--color-surface);
-  box-shadow: 3px 3px 0 var(--color-ink);
+  border-color: var(--color-info);
+  background: linear-gradient(135deg, var(--color-info-bg), var(--color-surface));
+  box-shadow: 0 12px 26px rgba(8, 127, 140, 0.14);
 }
 
 .recovery-item-button strong,

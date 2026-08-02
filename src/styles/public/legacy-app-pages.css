@@ -146,9 +146,10 @@
 
 .actor-switcher button:hover:not(:disabled),
 .actor-switcher button.active {
-  transform: translateY(-3px);
-  background: var(--mint);
-  box-shadow: 4px 4px 0 var(--ink);
+  transform: translateY(-2px);
+  border-color: var(--teal);
+  background: rgba(8, 127, 140, 0.08);
+  box-shadow: 0 14px 30px rgba(8, 127, 140, 0.14);
 }
 
 .actor-switcher button:disabled {
@@ -453,12 +454,12 @@
   width: 34px;
   height: 34px;
   transform: translate(-50%, -50%);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--teal);
   border-radius: 999px 999px 999px 4px;
-  background: var(--lime);
-  color: var(--ink);
+  background: var(--teal);
+  color: #fff;
   font-weight: 900;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.24);
 }
 
 .map-pin:hover {
