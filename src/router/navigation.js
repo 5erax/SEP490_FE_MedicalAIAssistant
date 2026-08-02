@@ -8,6 +8,7 @@ const WORKSPACE_PATHS = new Set([
   "/chat",
   "/map",
   "/records",
+  "/recovery-plan",
   "/medication",
 ]);
 

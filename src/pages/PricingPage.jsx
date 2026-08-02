@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
   Check,
-  CheckCircle2,
   ChevronDown,
   CircleDollarSign,
   Clock3,
@@ -17,10 +16,8 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import {
-  authApi,
   getStoredAuth,
   hasPremiumAccess,
-  paymentsApi,
   subscriptionPlansApi,
   userSubscriptionsApi,
 } from "../services/api";
@@ -69,16 +66,6 @@ function isActiveSubscription(subscription) {
   return status === "active" || Number(subscription?.status) === 1;
 }
 
-function isSuccessfulPayment(payment) {
-  const status = String(payment?.statusName ?? "").toLowerCase();
-  return Boolean(payment?.paidAt) || ["paid", "completed", "success", "succeeded"].includes(status);
-}
-
-function isTerminalPayment(payment) {
-  const status = String(payment?.statusName ?? "").toLowerCase();
-  return ["failed", "cancelled", "canceled", "expired", "refunded"].includes(status);
-}
-
 function PricingPage() {
   const { confirmAction, showToast } = useFeedback();
   const [auth] = useState(() => getStoredAuth());
@@ -93,7 +80,6 @@ function PricingPage() {
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(Boolean(auth));
   const [subscriptionsError, setSubscriptionsError] = useState("");
   const [checkoutState, setCheckoutState] = useState({ status: "idle", message: "", paymentId: "" });
-  const pollingRef = useRef(null);
   const isPremium = hasPremiumAccess(auth);
   const paidPlans = useMemo(() => apiPlans.filter((plan) => Number(plan.price) > 0), [apiPlans]);
   const availableCycles = useMemo(
@@ -198,77 +184,8 @@ function PricingPage() {
     };
   }, [auth, showToast]);
 
-  useEffect(() => () => {
-    if (pollingRef.current) window.clearInterval(pollingRef.current);
-  }, []);
-
   function startFreePlan() {
     navigate("/symptom");
-  }
-
-  async function pollPayment(paymentId) {
-    if (pollingRef.current) window.clearInterval(pollingRef.current);
-
-    let attempts = 0;
-    const check = async () => {
-      attempts += 1;
-      try {
-        const response = await paymentsApi.getMyPayment(paymentId);
-        const payment = response.data;
-
-        if (isSuccessfulPayment(payment)) {
-          window.clearInterval(pollingRef.current);
-          pollingRef.current = null;
-          setCheckoutState({
-            status: "success",
-            paymentId,
-            message: "Thanh toán thành công. Gói MediMate Plus đang được kích hoạt.",
-          });
-          await loadSubscriptions();
-          try {
-            await authApi.refresh();
-          } catch {
-            // Subscription state is still refreshed from /user-subscriptions/me.
-          }
-          showToast({
-            type: "success",
-            title: "Thanh toán thành công",
-            message: "Quyền lợi MediMate Plus đã được cập nhật.",
-          });
-          return true;
-        }
-
-        if (isTerminalPayment(payment) || attempts >= 100) {
-          window.clearInterval(pollingRef.current);
-          pollingRef.current = null;
-          setCheckoutState({
-            status: "error",
-            paymentId,
-            message: isTerminalPayment(payment)
-              ? `Giao dịch ${payment?.statusName || "không thành công"}.`
-              : "Chưa nhận được xác nhận thanh toán. Bạn có thể kiểm tra lại gói đăng ký sau.",
-          });
-          return true;
-        }
-      } catch {
-        if (attempts >= 5) {
-          window.clearInterval(pollingRef.current);
-          pollingRef.current = null;
-          setCheckoutState({
-            status: "error",
-            paymentId,
-            message: "Chưa thể xác minh giao dịch lúc này. Bạn có thể kiểm tra lại lịch sử thanh toán sau.",
-          });
-          return true;
-        }
-      }
-      return false;
-    };
-
-    const completed = await check();
-    if (!completed) {
-      pollingRef.current = window.setInterval(check, 3000);
-    }
   }
 
   async function startPremiumUpgrade() {
@@ -301,38 +218,26 @@ function PricingPage() {
       return;
     }
 
-    const paymentWindow = window.open("about:blank", "medimate-payos");
-    if (paymentWindow) paymentWindow.opener = null;
     setCheckoutState({
       status: "creating",
-      message: "Đang tạo liên kết thanh toán PayOS...",
+      message: "Đang tạo liên kết và chuyển bạn đến PayOS...",
       paymentId: "",
     });
 
     try {
       const response = await userSubscriptionsApi.checkout(paidPlan.id, autoRenew);
       const checkout = response.data;
-      if (!checkout?.paymentUrl || !checkout?.paymentId) {
-        paymentWindow?.close();
+      if (!checkout?.paymentUrl) {
         throw new Error("Chưa tạo được liên kết thanh toán hợp lệ. Vui lòng thử lại.");
       }
 
       setCheckoutState({
         status: "pending",
-        paymentId: checkout.paymentId,
-        message: "Trang PayOS đã được mở. Hoàn tất thanh toán ở tab mới; trang này sẽ tự cập nhật.",
+        paymentId: checkout.paymentId || "",
+        message: "Đang chuyển đến trang thanh toán PayOS.",
       });
-
-      if (paymentWindow) {
-        paymentWindow.location.replace(checkout.paymentUrl);
-      } else {
-        window.location.href = checkout.paymentUrl;
-        return;
-      }
-
-      pollPayment(checkout.paymentId);
+      window.location.assign(checkout.paymentUrl);
     } catch {
-      paymentWindow?.close();
       setCheckoutState({
         status: "error",
         paymentId: "",
@@ -595,15 +500,12 @@ function PricingPage() {
               {["creating", "pending"].includes(checkoutState.status) && (
                 <LoaderCircle className="spin" size={22} aria-hidden="true" />
               )}
-              {checkoutState.status === "success" && <CheckCircle2 size={22} aria-hidden="true" />}
               {checkoutState.status === "error" && <XCircle size={22} aria-hidden="true" />}
               <div>
                 <strong>
-                  {checkoutState.status === "success"
-                    ? "Thanh toán thành công"
-                    : checkoutState.status === "error"
+                  {checkoutState.status === "error"
                       ? "Chưa thể hoàn tất thanh toán"
-                      : "Đang chờ thanh toán"}
+                      : "Đang chuyển đến PayOS"}
                 </strong>
                 <p>{checkoutState.message}</p>
               </div>

@@ -1,560 +1,859 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Activity,
   ArrowRight,
   CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   FileText,
   HeartPulse,
-  MapPin,
+  Info,
+  ListChecks,
+  RefreshCw,
+  Send,
   ShieldCheck,
-  Stethoscope,
+  Sparkles,
 } from "lucide-react";
-import { Button } from "../components/ui";
+import { useFeedback } from "../components/feedback/feedbackContext";
+import { Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { navigate } from "../router/navigation";
+import { getApiErrorCode } from "../services/apiError";
+import {
+  recoveryPlanRequestsApi,
+  recoveryPlansApi,
+  subscriptionUsageApi,
+} from "../services/api";
+import {
+  ensureRecoveryPlanConnection,
+  subscribeToRecoveryPlanEvents,
+} from "../services/recoveryPlanRealtime";
+import "../styles/recovery-plan.css";
 
-const preparationItems = [
-  {
-    icon: FileText,
-    title: "Mang theo hướng dẫn sau khám",
-    text: "Giữ lại đơn thuốc, giấy hẹn và các chỉ dẫn được cơ sở y tế cung cấp.",
-  },
-  {
-    icon: HeartPulse,
-    title: "Ghi nhận thay đổi đáng chú ý",
-    text: "Theo dõi thời điểm xuất hiện, mức độ và diễn biến để trao đổi rõ hơn khi tái khám.",
-  },
-  {
-    icon: CalendarCheck,
-    title: "Chuẩn bị cho lần tái khám",
-    text: "Ghi lại mốc tái khám và những câu hỏi bạn muốn trao đổi trực tiếp với nhân viên y tế.",
-  },
+const PAGE_SIZE = 10;
+const CANCELLABLE_REQUEST_STATUSES = new Set(["waitingForDoctor", "assigned", "inReview", "needMoreInformation"]);
+const DISEASE_GROUPS = [
+  { value: "respiratory", label: "Hô hấp" },
+  { value: "musculoskeletal", label: "Cơ xương khớp" },
+  { value: "infectiousDisease", label: "Bệnh truyền nhiễm" },
 ];
+const REQUEST_STATUS = {
+  waitingForDoctor: { label: "Đang chờ bác sĩ", tone: "waiting" },
+  assigned: { label: "Bác sĩ đã tiếp nhận", tone: "progress" },
+  inReview: { label: "Đang xem xét", tone: "progress" },
+  needMoreInformation: { label: "Cần bổ sung thông tin", tone: "attention" },
+  published: { label: "Đã có kế hoạch", tone: "success" },
+  rejected: { label: "Không thể tiếp nhận", tone: "danger" },
+  cancelled: { label: "Đã hủy", tone: "muted" },
+  expired: { label: "Đã hết hạn", tone: "muted" },
+};
+const PLAN_STATUS = {
+  readyToStart: { label: "Sẵn sàng bắt đầu", tone: "attention" },
+  active: { label: "Đang thực hiện", tone: "progress" },
+  completed: { label: "Đã hoàn thành", tone: "success" },
+  cancelled: { label: "Đã hủy", tone: "muted" },
+  superseded: { label: "Đã thay thế", tone: "muted" },
+};
+
+function normalizePaged(response, pageNumber) {
+  const data = response?.data ?? {};
+  if (Array.isArray(data)) {
+    return {
+      items: data,
+      pageNumber,
+      pageSize: data.length || PAGE_SIZE,
+      totalCount: data.length,
+      totalPages: 1,
+    };
+  }
+
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    pageNumber: Number(data.pageNumber) || pageNumber,
+    pageSize: Number(data.pageSize) || PAGE_SIZE,
+    totalCount: Number(data.totalCount) || 0,
+    totalPages: Math.max(1, Number(data.totalPages) || 1),
+  };
+}
+
+function normalizeQuota(response) {
+  const data = response?.data;
+  if (Array.isArray(data)) {
+    return data.find((item) => String(item.quotaCode).toLowerCase().includes("recovery")) ?? data[0] ?? null;
+  }
+  return data ?? null;
+}
+
+function getDiseaseLabel(value) {
+  return DISEASE_GROUPS.find((item) => item.value === value)?.label ?? "Chưa phân loại";
+}
+
+function formatDate(value, includeTime = false) {
+  if (!value) return "Chưa cập nhật";
+  const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+  return includeTime
+    ? date.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })
+    : date.toLocaleDateString("vi-VN");
+}
+
+function getStatusDefinition(map, value) {
+  return map[value] ?? { label: value || "Chưa cập nhật", tone: "muted" };
+}
+
+function StatusBadge({ map, value }) {
+  const definition = getStatusDefinition(map, value);
+  return <span className={`recovery-status-badge is-${definition.tone}`}>{definition.label}</span>;
+}
+
+function createIdempotencyKey() {
+  return crypto.randomUUID?.() ?? `recovery-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function getRecoveryError(error, fallback) {
+  const code = getApiErrorCode(error);
+  if (code === "NO_ACTIVE_SUBSCRIPTION") {
+    return { code, message: "Bạn cần một gói đang hoạt động để yêu cầu kế hoạch phục hồi." };
+  }
+  if (code === "RECOVERY_PLAN_QUOTA_NOT_CONFIGURED") {
+    return { code, message: "Hạn mức kế hoạch phục hồi của gói hiện chưa sẵn sàng. Vui lòng thử lại sau." };
+  }
+  if (code === "RECOVERY_PLAN_QUOTA_EXHAUSTED") {
+    return { code, message: "Bạn đã dùng hết lượt yêu cầu kế hoạch trong chu kỳ hiện tại." };
+  }
+  if (code === "INVALID_USER_TIME_ZONE") {
+    return { code, message: "Múi giờ trong tài khoản chưa hợp lệ. Hãy cập nhật hồ sơ rồi thử lại." };
+  }
+  if (code === "INVALID_REQUEST_STATE") {
+    return { code, message: "Thao tác này không còn phù hợp với trạng thái hiện tại. Dữ liệu sẽ được tải lại." };
+  }
+  if (code === "QUOTA_MUTATION_FAILED") {
+    return { code, message: "Hạn mức chưa được cập nhật. Hãy tải lại trạng thái trước khi thử tiếp." };
+  }
+  return { code, message: fallback };
+}
+
+function Pagination({ label, page, onChange, loading }) {
+  if (page.totalPages <= 1) return null;
+  return (
+    <nav className="recovery-pagination" aria-label={label}>
+      <Button
+        tone="ghost"
+        size="sm"
+        disabled={loading || page.pageNumber <= 1}
+        onClick={() => onChange(page.pageNumber - 1)}
+      >
+        <ChevronLeft size={16} aria-hidden="true" /> Trang trước
+      </Button>
+      <span>Trang {page.pageNumber}/{page.totalPages}</span>
+      <Button
+        tone="ghost"
+        size="sm"
+        disabled={loading || page.pageNumber >= page.totalPages}
+        onClick={() => onChange(page.pageNumber + 1)}
+      >
+        Trang sau <ChevronRight size={16} aria-hidden="true" />
+      </Button>
+    </nav>
+  );
+}
+
+function QuotaCard({ quota, error, loading, onRetry }) {
+  if (loading) {
+    return <LoadingState label="Đang kiểm tra lượt kế hoạch…" />;
+  }
+
+  if (error) {
+    const needsPlan = error.code === "NO_ACTIVE_SUBSCRIPTION" || error.code === "RECOVERY_PLAN_QUOTA_EXHAUSTED";
+    return (
+      <section className="recovery-quota-card is-error" aria-labelledby="recovery-quota-title">
+        <div className="recovery-card-icon"><ShieldCheck size={22} aria-hidden="true" /></div>
+        <div>
+          <p className="recovery-eyebrow">Lượt kế hoạch</p>
+          <h2 id="recovery-quota-title">{needsPlan ? "Chưa thể tạo yêu cầu mới" : "Chưa tải được hạn mức"}</h2>
+          <p>{error.message}</p>
+          <div className="recovery-inline-actions">
+            {needsPlan && <Button onClick={() => navigate("/pricing?returnTo=%2Frecovery-plan")}>Xem gói dịch vụ</Button>}
+            <Button tone="secondary" onClick={onRetry}><RefreshCw size={16} aria-hidden="true" /> Thử lại</Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!quota) return null;
+  const limit = Math.max(0, Number(quota.limitValue) || 0);
+  const remaining = Math.max(0, Number(quota.remainingCount) || 0);
+  const used = Math.max(0, Number(quota.usedCount) || 0);
+  const reserved = Math.max(0, Number(quota.reservedCount) || 0);
+  const percentage = limit ? Math.min(100, ((used + reserved) / limit) * 100) : 100;
+
+  return (
+    <section className="recovery-quota-card" aria-labelledby="recovery-quota-title">
+      <div className="recovery-card-icon"><Sparkles size={22} aria-hidden="true" /></div>
+      <div className="recovery-quota-content">
+        <div className="recovery-quota-heading">
+          <div>
+            <p className="recovery-eyebrow">Lượt kế hoạch trong chu kỳ</p>
+            <h2 id="recovery-quota-title">Còn {remaining} lượt có thể yêu cầu</h2>
+          </div>
+          <strong>{remaining}/{limit}</strong>
+        </div>
+        <div
+          className="recovery-quota-track"
+          role="progressbar"
+          aria-label="Lượt kế hoạch đã dùng hoặc đang chờ xử lý"
+          aria-valuemin="0"
+          aria-valuemax={limit}
+          aria-valuenow={used + reserved}
+        >
+          <span style={{ width: `${percentage}%` }} />
+        </div>
+        <dl className="recovery-quota-stats">
+          <div><dt>Đã dùng</dt><dd>{used}</dd></div>
+          <div><dt>Đang chờ xử lý</dt><dd>{reserved}</dd></div>
+          <div><dt>Chu kỳ</dt><dd>{formatDate(quota.cycleStart)} – {formatDate(quota.cycleEnd)}</dd></div>
+        </dl>
+      </div>
+    </section>
+  );
+}
+
+function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
+  const [diseaseGroup, setDiseaseGroup] = useState("");
+  const [requestNote, setRequestNote] = useState("");
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const submissionRef = useRef(null);
+  const errorSummaryRef = useRef(null);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const nextErrors = {};
+    const trimmedNote = requestNote.trim();
+    if (!diseaseGroup) nextErrors.diseaseGroup = "Chọn nhóm bệnh cần hỗ trợ.";
+    if (trimmedNote.length > 2000) nextErrors.requestNote = "Nội dung không được vượt quá 2.000 ký tự.";
+    setErrors(nextErrors);
+    setSubmitError(null);
+    if (Object.keys(nextErrors).length) {
+      window.setTimeout(() => errorSummaryRef.current?.focus(), 0);
+      return;
+    }
+
+    const payload = {
+      diseaseGroup,
+      treatmentJourneyId: null,
+      primaryLabTestSessionId: null,
+      requestNote: trimmedNote || null,
+    };
+    const signature = JSON.stringify(payload);
+    if (!submissionRef.current || submissionRef.current.signature !== signature) {
+      submissionRef.current = { signature, key: createIdempotencyKey() };
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await recoveryPlanRequestsApi.create(payload, submissionRef.current.key);
+      submissionRef.current = null;
+      setDiseaseGroup("");
+      setRequestNote("");
+      await onCreated(response?.data);
+    } catch (error) {
+      setSubmitError(getRecoveryError(error, "Chưa thể gửi yêu cầu. Bạn có thể thử lại mà không tạo yêu cầu trùng."));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="recovery-create-card" aria-labelledby="recovery-create-title">
+      <div className="recovery-section-heading">
+        <div>
+          <p className="recovery-eyebrow">Yêu cầu mới</p>
+          <h2 id="recovery-create-title">Bạn muốn phục hồi sau nhóm bệnh nào?</h2>
+          <p>Mô tả ngắn mục tiêu hoặc điều bạn muốn bác sĩ lưu ý khi xây dựng kế hoạch.</p>
+        </div>
+        <div className="recovery-card-icon"><FileText size={22} aria-hidden="true" /></div>
+      </div>
+
+      {disabled && <div className="recovery-form-blocked"><Info size={18} aria-hidden="true" /><span>{disabledMessage}</span></div>}
+
+      <form onSubmit={handleSubmit} noValidate>
+        {Object.keys(errors).length > 0 && (
+          <div ref={errorSummaryRef} className="recovery-error-summary" role="alert" tabIndex="-1">
+            <strong>Kiểm tra lại thông tin yêu cầu:</strong>
+            <ul>
+              {Object.entries(errors).map(([field, message]) => <li key={field}><a href={`#recovery-${field}`}>{message}</a></li>)}
+            </ul>
+          </div>
+        )}
+        <label className="recovery-field" htmlFor="recovery-diseaseGroup">
+          <span>Nhóm bệnh <small>(bắt buộc)</small></span>
+          <select
+            id="recovery-diseaseGroup"
+            value={diseaseGroup}
+            required
+            disabled={disabled}
+            aria-invalid={Boolean(errors.diseaseGroup) || undefined}
+            aria-describedby={errors.diseaseGroup ? "recovery-diseaseGroup-error" : undefined}
+            onChange={(event) => {
+              setDiseaseGroup(event.target.value);
+              setErrors((current) => ({ ...current, diseaseGroup: "" }));
+            }}
+          >
+            <option value="">Chọn nhóm bệnh</option>
+            {DISEASE_GROUPS.map((group) => <option key={group.value} value={group.value}>{group.label}</option>)}
+          </select>
+          {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
+        </label>
+        <label className="recovery-field" htmlFor="recovery-requestNote">
+          <span>Điều bạn muốn bác sĩ lưu ý</span>
+          <textarea
+            id="recovery-requestNote"
+            rows="5"
+            maxLength="2000"
+            value={requestNote}
+            disabled={disabled}
+            aria-invalid={Boolean(errors.requestNote) || undefined}
+            aria-describedby="recovery-requestNote-help"
+            onChange={(event) => {
+              setRequestNote(event.target.value);
+              setErrors((current) => ({ ...current, requestNote: "" }));
+            }}
+          />
+          <small id="recovery-requestNote-help" className={errors.requestNote ? "recovery-field-error" : ""}>
+            {errors.requestNote || `${requestNote.length}/2.000 ký tự`}
+          </small>
+        </label>
+        <div className="recovery-submit-row">
+          <p role="status" aria-atomic="true">{submitError?.message ?? ""}</p>
+          <Button type="submit" disabled={disabled} loading={submitting} loadingLabel="Đang gửi…">
+            <Send size={17} aria-hidden="true" /> Gửi yêu cầu
+          </Button>
+        </div>
+        {submitError?.code === "NO_ACTIVE_SUBSCRIPTION" && (
+          <Button tone="secondary" onClick={() => navigate("/pricing?returnTo=%2Frecovery-plan")}>Xem gói dịch vụ</Button>
+        )}
+      </form>
+    </section>
+  );
+}
+
+function RequestDetail({ request, loading, onCancel, onProvideInformation, busy }) {
+  const [additionalInformation, setAdditionalInformation] = useState(() => request?.requestNote ?? "");
+  const [informationError, setInformationError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  if (loading) return <LoadingState label="Đang tải chi tiết yêu cầu…" />;
+  if (!request) return null;
+  const canCancel = CANCELLABLE_REQUEST_STATUSES.has(request.status);
+  const needsInformation = request.status === "needMoreInformation";
+
+  async function submitInformation(event) {
+    event.preventDefault();
+    const trimmed = additionalInformation.trim();
+    if (!trimmed) {
+      setInformationError("Nhập thông tin bạn muốn gửi bổ sung.");
+      return;
+    }
+    if (trimmed.length > 2000) {
+      setInformationError("Nội dung không được vượt quá 2.000 ký tự.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await onProvideInformation(request.id, trimmed);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <article className="recovery-detail-card">
+      <header className="recovery-detail-header">
+        <div>
+          <p className="recovery-eyebrow">Chi tiết yêu cầu</p>
+          <h3>{getDiseaseLabel(request.diseaseGroup)}</h3>
+        </div>
+        <StatusBadge map={REQUEST_STATUS} value={request.status} />
+      </header>
+      <dl className="recovery-detail-grid">
+        <div><dt>Ngày gửi</dt><dd>{formatDate(request.requestedAt, true)}</dd></div>
+        <div><dt>Cập nhật gần nhất</dt><dd>{formatDate(request.reviewStartedAt || request.acceptedAt || request.requestedAt, true)}</dd></div>
+        <div className="recovery-detail-wide"><dt>Nội dung hiện tại</dt><dd>{request.requestNote || "Bạn chưa thêm ghi chú."}</dd></div>
+        {request.rejectionReason && <div className="recovery-detail-wide is-danger"><dt>Lý do không thể tiếp nhận</dt><dd>{request.rejectionReason}</dd></div>}
+      </dl>
+
+      {needsInformation && (
+        <form className="recovery-information-form" onSubmit={submitInformation} noValidate>
+          <div className="recovery-form-warning">
+            <Info size={18} aria-hidden="true" />
+            <span>Nội dung gửi đi sẽ thay thế phần ghi chú hiện tại, không tạo thành chuỗi trò chuyện.</span>
+          </div>
+          <label className="recovery-field" htmlFor={`recovery-information-${request.id}`}>
+            <span>Thông tin bổ sung <small>(bắt buộc)</small></span>
+            <textarea
+              id={`recovery-information-${request.id}`}
+              rows="4"
+              maxLength="2000"
+              required
+              value={additionalInformation}
+              aria-invalid={Boolean(informationError) || undefined}
+              aria-describedby={informationError ? `recovery-information-error-${request.id}` : undefined}
+              onChange={(event) => {
+                setAdditionalInformation(event.target.value);
+                setInformationError("");
+              }}
+            />
+            {informationError && <small id={`recovery-information-error-${request.id}`} className="recovery-field-error">{informationError}</small>}
+          </label>
+          <Button type="submit" loading={submitting} loadingLabel="Đang gửi…">Gửi thông tin bổ sung</Button>
+        </form>
+      )}
+
+      {canCancel && (
+        <footer className="recovery-detail-actions">
+          <Button tone="danger" disabled={busy} onClick={() => onCancel(request)}>Hủy yêu cầu</Button>
+        </footer>
+      )}
+    </article>
+  );
+}
+
+function PlanDetail({ plan, loading, onStart, busy }) {
+  if (loading) return <LoadingState label="Đang tải nội dung kế hoạch…" />;
+  if (!plan) return null;
+  const phases = [...(plan.phases ?? [])].sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder));
+  const canStart = plan.status === "readyToStart";
+
+  return (
+    <article className="recovery-plan-detail">
+      <header className="recovery-detail-header">
+        <div>
+          <p className="recovery-eyebrow">Kế hoạch của bạn</p>
+          <h3>{plan.planName || "Kế hoạch phục hồi"}</h3>
+        </div>
+        <StatusBadge map={PLAN_STATUS} value={plan.status} />
+      </header>
+
+      <p className="recovery-plan-summary">{plan.summary || "Nội dung tổng quan sẽ được cập nhật trong kế hoạch."}</p>
+      <dl className="recovery-detail-grid">
+        <div><dt>Thời lượng</dt><dd>{plan.durationDays || 0} ngày</dd></div>
+        <div><dt>Thời gian thực hiện</dt><dd>{plan.startDate ? `${formatDate(plan.startDate)} – ${formatDate(plan.endDate)}` : "Bắt đầu khi bạn sẵn sàng"}</dd></div>
+        {plan.recheckInstruction && <div className="recovery-detail-wide"><dt>Hướng dẫn tái khám</dt><dd>{plan.recheckInstruction}</dd></div>}
+      </dl>
+
+      {canStart && (
+        <div className="recovery-start-card">
+          <CalendarCheck size={22} aria-hidden="true" />
+          <div><strong>Sẵn sàng bắt đầu?</strong><p>Ngày bắt đầu và kết thúc sẽ được tính theo múi giờ trong tài khoản của bạn.</p></div>
+          <Button loading={busy} loadingLabel="Đang bắt đầu…" onClick={() => onStart(plan.id)}>Bắt đầu kế hoạch</Button>
+        </div>
+      )}
+
+      {phases.length > 0 && (
+        <section className="recovery-phases" aria-labelledby="recovery-phases-title">
+          <div className="recovery-section-heading">
+            <div><p className="recovery-eyebrow">Lộ trình</p><h4 id="recovery-phases-title">Các giai đoạn thực hiện</h4></div>
+            <span>{phases.length} giai đoạn</span>
+          </div>
+          <div className="recovery-phase-list">
+            {phases.map((phase) => (
+              <article className="recovery-phase-card" key={phase.id}>
+                <header>
+                  <span>Ngày {phase.startDay}–{phase.endDay}</span>
+                  <h5>{phase.phaseName}</h5>
+                </header>
+                {phase.instruction && <p>{phase.instruction}</p>}
+                <dl className="recovery-phase-rest">
+                  {phase.sleepHoursPerDay != null && <div><dt>Ngủ</dt><dd>{phase.sleepHoursPerDay} giờ/ngày</dd></div>}
+                  {phase.restHoursPerDay != null && <div><dt>Nghỉ ngơi</dt><dd>{phase.restHoursPerDay} giờ/ngày</dd></div>}
+                </dl>
+                {(phase.nutrientTargets ?? []).length > 0 && (
+                  <div className="recovery-nutrients">
+                    <strong>Dinh dưỡng gợi ý</strong>
+                    {(phase.nutrientTargets ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((nutrient) => (
+                      <div className="recovery-nutrient" key={nutrient.id}>
+                        <div><span>{nutrient.nutrientName}</span><b>{nutrient.amountPerDay} {nutrient.unit}/ngày</b></div>
+                        {nutrient.instruction && <p>{nutrient.instruction}</p>}
+                        {(nutrient.foodSources ?? []).length > 0 && (
+                          <ul>
+                            {(nutrient.foodSources ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
+                              <li key={food.id}><strong>{food.foodName}</strong>{food.suggestedServing ? ` · ${food.suggestedServing}` : ""}{food.note ? ` — ${food.note}` : ""}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+    </article>
+  );
+}
 
 export default function RecoveryPlanPage() {
+  const { confirmAction, showToast } = useFeedback();
+  const [quota, setQuota] = useState(null);
+  const [quotaError, setQuotaError] = useState(null);
+  const [quotaLoading, setQuotaLoading] = useState(true);
+  const [requestPageNumber, setRequestPageNumber] = useState(1);
+  const [requestPage, setRequestPage] = useState(() => normalizePaged(null, 1));
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [requestsError, setRequestsError] = useState("");
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [requestDetailLoading, setRequestDetailLoading] = useState(false);
+  const [planPageNumber, setPlanPageNumber] = useState(1);
+  const [planPage, setPlanPage] = useState(() => normalizePaged(null, 1));
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [plansError, setPlansError] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [planDetailLoading, setPlanDetailLoading] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [statusMessage, setStatusMessage] = useState("");
+  const refetchTimerRef = useRef(null);
+
+  const loadQuota = useCallback(async () => {
+    setQuotaLoading(true);
+    setQuotaError(null);
+    try {
+      const response = await subscriptionUsageApi.me();
+      setQuota(normalizeQuota(response));
+    } catch (error) {
+      setQuota(null);
+      setQuotaError(getRecoveryError(error, "Chưa thể kiểm tra lượt kế hoạch. Vui lòng thử lại."));
+    } finally {
+      setQuotaLoading(false);
+    }
+  }, []);
+
+  const loadRequests = useCallback(async (pageNumber = requestPageNumber, preferredId = "") => {
+    setRequestsLoading(true);
+    setRequestsError("");
+    try {
+      const response = await recoveryPlanRequestsApi.listMine({ pageNumber, pageSize: PAGE_SIZE });
+      const nextPage = normalizePaged(response, pageNumber);
+      setRequestPage(nextPage);
+      const nextSelected = nextPage.items.find((item) => item.id === preferredId)
+        ?? nextPage.items.find((item) => item.id === selectedRequest?.id)
+        ?? nextPage.items[0]
+        ?? null;
+      setSelectedRequest(nextSelected);
+      setStatusMessage(`Đã tải ${nextPage.items.length} yêu cầu phục hồi.`);
+    } catch {
+      setRequestPage(normalizePaged(null, pageNumber));
+      setSelectedRequest(null);
+      setRequestsError("Chưa thể tải các yêu cầu của bạn.");
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, [requestPageNumber, selectedRequest?.id]);
+
+  const loadPlans = useCallback(async (pageNumber = planPageNumber, preferredId = "") => {
+    setPlansLoading(true);
+    setPlansError("");
+    try {
+      const response = await recoveryPlansApi.listMine({ pageNumber, pageSize: PAGE_SIZE });
+      const nextPage = normalizePaged(response, pageNumber);
+      setPlanPage(nextPage);
+      const nextSelected = nextPage.items.find((item) => item.id === preferredId)
+        ?? nextPage.items.find((item) => item.id === selectedPlan?.id)
+        ?? nextPage.items[0]
+        ?? null;
+      if (nextSelected?.id) {
+        await loadPlanDetail(nextSelected.id, nextSelected);
+      } else {
+        setSelectedPlan(null);
+      }
+    } catch {
+      setPlanPage(normalizePaged(null, pageNumber));
+      setSelectedPlan(null);
+      setPlansError("Chưa thể tải các kế hoạch của bạn.");
+    } finally {
+      setPlansLoading(false);
+    }
+  }, [planPageNumber, selectedPlan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadRequestDetail(requestId, fallback) {
+    setSelectedRequest(fallback ?? selectedRequest);
+    setRequestDetailLoading(true);
+    try {
+      const response = await recoveryPlanRequestsApi.get(requestId);
+      setSelectedRequest(response?.data ?? fallback);
+    } catch (error) {
+      if (error?.status === 404 || getApiErrorCode(error) === "NOT_FOUND") {
+        await loadRequests(requestPageNumber);
+      } else {
+        showToast({ type: "error", title: "Không tải được yêu cầu", message: "Vui lòng thử lại sau." });
+      }
+    } finally {
+      setRequestDetailLoading(false);
+    }
+  }
+
+  async function loadPlanDetail(planId, fallback) {
+    setSelectedPlan(fallback ?? selectedPlan);
+    setPlanDetailLoading(true);
+    try {
+      const response = await recoveryPlansApi.get(planId);
+      setSelectedPlan(response?.data ?? fallback);
+    } catch (error) {
+      if (error?.status === 404 || getApiErrorCode(error) === "NOT_FOUND") {
+        setSelectedPlan(null);
+      } else {
+        showToast({ type: "error", title: "Không tải được kế hoạch", message: "Vui lòng thử lại sau." });
+      }
+    } finally {
+      setPlanDetailLoading(false);
+    }
+  }
+
+  const refetchAll = useCallback(async () => {
+    await Promise.allSettled([
+      loadQuota(),
+      loadRequests(requestPageNumber, selectedRequest?.id),
+      loadPlans(planPageNumber, selectedPlan?.id),
+    ]);
+  }, [loadPlans, loadQuota, loadRequests, planPageNumber, requestPageNumber, selectedPlan?.id, selectedRequest?.id]);
+
+  useEffect(() => {
+    queueMicrotask(() => void Promise.allSettled([loadQuota(), loadRequests(1), loadPlans(1)]));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
+      if (event.type === "connection") {
+        setConnectionStatus(event.status);
+      }
+      if (event.type === "request" || event.type === "plan" || event.refetch) {
+        window.clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = window.setTimeout(() => {
+          void refetchAll();
+        }, 250);
+      }
+    });
+
+    ensureRecoveryPlanConnection().then(setConnectionStatus);
+    return () => {
+      unsubscribe();
+      window.clearTimeout(refetchTimerRef.current);
+    };
+  }, [refetchAll]);
+
+  async function handleCreated(createdRequest) {
+    showToast({ type: "success", title: "Đã gửi yêu cầu", message: "Bạn có thể theo dõi trạng thái ngay trên trang này." });
+    await Promise.allSettled([
+      loadQuota(),
+      loadRequests(1, createdRequest?.id),
+    ]);
+    setRequestPageNumber(1);
+  }
+
+  async function handleCancel(request) {
+    const confirmed = await confirmAction({
+      title: "Hủy yêu cầu kế hoạch?",
+      message: "Lượt đang giữ chỗ sẽ được trả lại nếu yêu cầu chưa được xuất bản.",
+      confirmLabel: "Hủy yêu cầu",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+    setActionBusy(true);
+    try {
+      await recoveryPlanRequestsApi.cancel(request.id);
+      showToast({ type: "success", title: "Đã hủy yêu cầu", message: "Hạn mức đang được cập nhật lại." });
+      await Promise.allSettled([loadQuota(), loadRequests(requestPageNumber, request.id)]);
+    } catch (error) {
+      const mapped = getRecoveryError(error, "Chưa thể hủy yêu cầu. Vui lòng thử lại.");
+      showToast({ type: "error", title: "Không thể hủy yêu cầu", message: mapped.message });
+      if (["INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) await loadRequests(requestPageNumber);
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleProvideInformation(requestId, additionalInformation) {
+    setActionBusy(true);
+    try {
+      const response = await recoveryPlanRequestsApi.provideInformation(requestId, additionalInformation);
+      setSelectedRequest(response?.data ?? selectedRequest);
+      showToast({ type: "success", title: "Đã gửi thông tin", message: "Yêu cầu đã được chuyển lại để xem xét." });
+      await loadRequests(requestPageNumber, requestId);
+    } catch (error) {
+      const mapped = getRecoveryError(error, "Chưa thể gửi thông tin bổ sung. Vui lòng thử lại.");
+      showToast({ type: "error", title: "Không thể gửi thông tin", message: mapped.message });
+      if (["INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) await loadRequests(requestPageNumber);
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleStart(planId) {
+    setActionBusy(true);
+    try {
+      await recoveryPlansApi.start(planId);
+      showToast({ type: "success", title: "Kế hoạch đã bắt đầu", message: "Ngày thực hiện đã được tính theo múi giờ tài khoản của bạn." });
+      await Promise.allSettled([loadPlans(planPageNumber, planId), loadQuota()]);
+    } catch (error) {
+      const mapped = getRecoveryError(error, "Chưa thể bắt đầu kế hoạch. Vui lòng thử lại.");
+      showToast({ type: "error", title: "Không thể bắt đầu kế hoạch", message: mapped.message });
+      if (mapped.code === "INVALID_REQUEST_STATE") await loadPlans(planPageNumber, planId);
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  const requestCreationDisabled = quotaLoading || Boolean(quotaError) || !quota || Number(quota.remainingCount) <= 0;
+  const requestDisabledMessage = quotaLoading
+    ? "Đang kiểm tra lượt kế hoạch của bạn."
+    : quotaError?.message
+      ?? (!quota ? "Chưa có thông tin lượt kế hoạch." : "Bạn đã dùng hết lượt trong chu kỳ hiện tại.");
+  const realtimeLabel = connectionStatus === "connected"
+    ? "Cập nhật tự động đang bật"
+    : connectionStatus === "reconnecting"
+      ? "Đang nối lại cập nhật tự động"
+      : "Bạn có thể dùng nút tải lại để xem thay đổi mới";
+
+  const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
+  const planItems = useMemo(() => planPage.items, [planPage.items]);
+
   return (
-    <div className="recovery-plan-page">
-      <style>{styles}</style>
-
-      <section className="recovery-availability" aria-labelledby="recovery-plan-title">
-        <div className="recovery-availability-copy">
-          <div className="recovery-status">
-            <ShieldCheck size={16} aria-hidden="true" />
-            Chưa khả dụng trên MediMate
-          </div>
-          <p className="recovery-eyebrow">Theo dõi sau khám</p>
-          <h1 id="recovery-plan-title">Kế hoạch phục hồi chưa được mở</h1>
-          <p className="recovery-lead">
-            MediMate hiện chưa tạo, lưu hoặc theo dõi kế hoạch phục hồi cá nhân.
-            Kế hoạch chăm sóc cần dựa trên hướng dẫn trực tiếp từ bác sĩ hoặc cơ sở y tế của bạn.
-          </p>
-
-          <div className="recovery-actions" aria-label="Hành động hiện có">
-            <Button type="button" onClick={() => navigate("/symptom")}>
-              <Stethoscope size={18} aria-hidden="true" />
-              Phân tích triệu chứng
-            </Button>
-            <Button type="button" tone="secondary" onClick={() => navigate("/map")}>
-              <MapPin size={18} aria-hidden="true" />
-              Tìm cơ sở y tế
-            </Button>
-          </div>
-
-          <p className="recovery-boundary">
-            Trang này không yêu cầu và không lưu thông tin sức khỏe của bạn.
-          </p>
+    <div className="recovery-page">
+      <header className="recovery-page-header">
+        <div>
+          <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Đồng hành sau điều trị</p>
+          <h1>Kế hoạch phục hồi của bạn</h1>
+          <p>Gửi yêu cầu, theo dõi quá trình xây dựng kế hoạch và bắt đầu khi nội dung đã sẵn sàng.</p>
         </div>
+        <div className={`recovery-realtime-status is-${connectionStatus}`}>
+          <span aria-hidden="true" />
+          <p role="status" aria-atomic="true">{realtimeLabel}</p>
+        </div>
+      </header>
 
-        <aside className="recovery-now" aria-labelledby="recovery-now-title">
-          <span className="recovery-now-icon" aria-hidden="true">
-            <ClipboardCheck size={24} />
-          </span>
-          <div>
-            <p className="recovery-eyebrow">Bạn có thể làm ngay</p>
-            <h2 id="recovery-now-title">Chuẩn bị bước tiếp theo</h2>
-          </div>
+      <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
+      <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
+
+      <div className="recovery-top-grid">
+        <CreateRequestForm
+          disabled={requestCreationDisabled}
+          disabledMessage={requestDisabledMessage}
+          onCreated={handleCreated}
+        />
+        <aside className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
+          <p className="recovery-eyebrow">Trong thời gian chờ</p>
+          <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>
           <ul>
-            <li>
-              <span>01</span>
-              <p>Làm rõ triệu chứng trước khi chọn chuyên khoa.</p>
-            </li>
-            <li>
-              <span>02</span>
-              <p>Tìm cơ sở y tế đang có trên hệ thống.</p>
-            </li>
-            <li>
-              <span>03</span>
-              <p>Làm theo kế hoạch được nhân viên y tế hướng dẫn sau khi khám.</p>
-            </li>
+            <li><ClipboardCheck size={19} aria-hidden="true" /><span><strong>Giữ lại hướng dẫn sau khám</strong><small>Đơn thuốc, lịch hẹn và các chỉ dẫn đã nhận.</small></span></li>
+            <li><Activity size={19} aria-hidden="true" /><span><strong>Ghi nhận thay đổi đáng chú ý</strong><small>Thời điểm, mức độ và diễn biến gần đây.</small></span></li>
+            <li><CalendarCheck size={19} aria-hidden="true" /><span><strong>Theo dõi mốc tái khám</strong><small>Chuẩn bị câu hỏi cho lần trao đổi tiếp theo.</small></span></li>
           </ul>
         </aside>
+      </div>
+
+      <section className="recovery-management-section" aria-labelledby="recovery-requests-title">
+        <div className="recovery-section-heading">
+          <div><p className="recovery-eyebrow">Yêu cầu của bạn</p><h2 id="recovery-requests-title">Theo dõi quá trình chuẩn bị</h2></div>
+          <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
+            <RefreshCw size={16} aria-hidden="true" /> Tải lại
+          </Button>
+        </div>
+        {requestsLoading && requestItems.length === 0 ? (
+          <LoadingState label="Đang tải yêu cầu…" />
+        ) : requestsError ? (
+          <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(requestPageNumber)}>Thử lại</Button>} />
+        ) : requestItems.length === 0 ? (
+          <EmptyState icon={<ListChecks size={26} aria-hidden="true" />} title="Chưa có yêu cầu phục hồi" description="Yêu cầu mới của bạn sẽ xuất hiện tại đây." />
+        ) : (
+          <div className="recovery-split-view">
+            <div className="recovery-item-list" role="group" aria-label="Danh sách yêu cầu phục hồi">
+              {requestItems.map((request) => (
+                <button
+                  type="button"
+                  key={request.id}
+                  className={`recovery-item-button ${selectedRequest?.id === request.id ? "is-selected" : ""}`}
+                  aria-pressed={selectedRequest?.id === request.id}
+                  onClick={() => loadRequestDetail(request.id, request)}
+                >
+                  <span><strong>{getDiseaseLabel(request.diseaseGroup)}</strong><small>{formatDate(request.requestedAt, true)}</small></span>
+                  <StatusBadge map={REQUEST_STATUS} value={request.status} />
+                </button>
+              ))}
+              <Pagination
+                label="Phân trang yêu cầu phục hồi"
+                page={requestPage}
+                loading={requestsLoading}
+                onChange={(nextPage) => {
+                  setRequestPageNumber(nextPage);
+                  void loadRequests(nextPage);
+                }}
+              />
+            </div>
+            <RequestDetail
+              key={selectedRequest?.id || "empty-request"}
+              request={selectedRequest}
+              loading={requestDetailLoading}
+              busy={actionBusy}
+              onCancel={handleCancel}
+              onProvideInformation={handleProvideInformation}
+            />
+          </div>
+        )}
       </section>
 
-      <section className="recovery-preparation" aria-labelledby="recovery-preparation-title">
-        <header>
-          <p className="recovery-eyebrow">Trước lần tái khám</p>
-          <h2 id="recovery-preparation-title">Những thông tin nên chuẩn bị</h2>
-          <p>
-            Đây là gợi ý chuẩn bị chung, không phải kế hoạch điều trị và không thay thế
-            hướng dẫn từ người có chuyên môn.
-          </p>
-        </header>
-
-        <div className="recovery-preparation-list">
-          {preparationItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <article key={item.title}>
-                <span aria-hidden="true"><Icon size={20} /></span>
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
-                </div>
-              </article>
-            );
-          })}
+      <section className="recovery-management-section" aria-labelledby="recovery-plans-title">
+        <div className="recovery-section-heading">
+          <div><p className="recovery-eyebrow">Kế hoạch đã nhận</p><h2 id="recovery-plans-title">Lộ trình phục hồi</h2></div>
+          <Button tone="secondary" size="sm" onClick={() => loadPlans(planPageNumber, selectedPlan?.id)} disabled={plansLoading}>
+            <RefreshCw size={16} aria-hidden="true" /> Tải lại
+          </Button>
         </div>
+        {plansLoading && planItems.length === 0 ? (
+          <LoadingState label="Đang tải kế hoạch…" />
+        ) : plansError ? (
+          <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
+        ) : planItems.length === 0 ? (
+          <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
+        ) : (
+          <div className="recovery-plan-layout">
+            <div className="recovery-plan-tabs" role="group" aria-label="Danh sách kế hoạch">
+              {planItems.map((plan) => (
+                <button
+                  type="button"
+                  key={plan.id}
+                  className={selectedPlan?.id === plan.id ? "is-selected" : ""}
+                  aria-pressed={selectedPlan?.id === plan.id}
+                  onClick={() => loadPlanDetail(plan.id, plan)}
+                >
+                  <span><strong>{plan.planName || "Kế hoạch phục hồi"}</strong><small>{plan.durationDays || 0} ngày</small></span>
+                  <StatusBadge map={PLAN_STATUS} value={plan.status} />
+                  <ArrowRight size={17} aria-hidden="true" />
+                </button>
+              ))}
+              <Pagination
+                label="Phân trang kế hoạch phục hồi"
+                page={planPage}
+                loading={plansLoading}
+                onChange={(nextPage) => {
+                  setPlanPageNumber(nextPage);
+                  void loadPlans(nextPage);
+                }}
+              />
+            </div>
+            <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} />
+          </div>
+        )}
       </section>
 
-      <section className="recovery-care-note" aria-labelledby="recovery-care-note-title">
-        <span aria-hidden="true"><HeartPulse size={22} /></span>
-        <div>
-          <p className="recovery-eyebrow">Khi cần hỗ trợ</p>
-          <h2 id="recovery-care-note-title">Ưu tiên hướng dẫn từ cơ sở y tế</h2>
-          <p>
-            Nếu tình trạng thay đổi hoặc bạn lo lắng về dấu hiệu đang gặp, hãy liên hệ
-            cơ sở y tế phù hợp. Trong tình huống khẩn cấp, hãy tìm trợ giúp y tế ngay.
-          </p>
-        </div>
-        <button type="button" onClick={() => navigate("/map")}>
-          Xem cơ sở y tế
-          <ArrowRight size={17} aria-hidden="true" />
-        </button>
+      <section className="recovery-medical-note">
+        <ShieldCheck size={21} aria-hidden="true" />
+        <div><strong>Thông tin hỗ trợ, không thay thế chăm sóc y tế</strong><p>Nếu có dấu hiệu nghiêm trọng hoặc diễn biến bất thường, hãy liên hệ cơ sở y tế hoặc dịch vụ cấp cứu phù hợp.</p></div>
       </section>
     </div>
   );
 }
-
-const styles = `
-.recovery-plan-page {
-  --recovery-navy: #0c2d35;
-  --recovery-teal: #087f78;
-  --recovery-teal-dark: #05665f;
-  --recovery-mint: #eaf6f1;
-  --recovery-mint-strong: #d7eee5;
-  --recovery-paper: #ffffff;
-  --recovery-soft: #f6faf8;
-  --recovery-line: #d5e3dd;
-  --recovery-muted: #5f706a;
-  display: grid;
-  gap: 18px;
-  width: min(100%, 1120px);
-  margin: 0 auto;
-  color: var(--recovery-navy);
-}
-
-.recovery-plan-page h1,
-.recovery-plan-page h2,
-.recovery-plan-page h3,
-.recovery-plan-page p {
-  margin: 0;
-}
-
-.recovery-availability,
-.recovery-preparation,
-.recovery-care-note {
-  border: 1px solid var(--recovery-line);
-  background: var(--recovery-paper);
-}
-
-.recovery-availability {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(300px, .7fr);
-  overflow: hidden;
-  border-radius: 24px;
-  box-shadow: 0 22px 60px rgba(12, 45, 53, .08);
-}
-
-.recovery-availability-copy {
-  position: relative;
-  display: grid;
-  align-content: center;
-  gap: 15px;
-  min-height: 470px;
-  padding: clamp(28px, 5vw, 58px);
-  background:
-    radial-gradient(circle at 0 0, rgba(8, 127, 120, .1), transparent 31%),
-    linear-gradient(145deg, #fff 0%, #f3faf7 100%);
-}
-
-.recovery-availability-copy::after {
-  position: absolute;
-  right: -92px;
-  bottom: -118px;
-  width: 260px;
-  height: 260px;
-  border: 34px solid rgba(8, 127, 120, .045);
-  border-radius: 50%;
-  content: "";
-  pointer-events: none;
-}
-
-.recovery-status {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-self: start;
-  gap: 7px;
-  border: 1px solid #b8d8cc;
-  border-radius: 999px;
-  background: #f8fcfa;
-  color: var(--recovery-teal-dark);
-  padding: 7px 11px;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .035em;
-}
-
-.recovery-eyebrow {
-  color: var(--recovery-teal-dark);
-  font-size: 11px;
-  font-weight: 950;
-  letter-spacing: .11em;
-  text-transform: uppercase;
-}
-
-.recovery-availability h1 {
-  position: relative;
-  z-index: 1;
-  max-width: 650px;
-  font-size: clamp(38px, 5vw, 62px);
-  line-height: 1.01;
-  letter-spacing: -.045em;
-}
-
-.recovery-lead {
-  position: relative;
-  z-index: 1;
-  max-width: 680px;
-  color: var(--recovery-muted);
-  font-size: 16px;
-  line-height: 1.7;
-}
-
-.recovery-actions {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding-top: 5px;
-}
-
-.recovery-boundary {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: #64736e;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.recovery-boundary::before {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--recovery-teal);
-  content: "";
-}
-
-.recovery-now {
-  display: grid;
-  align-content: center;
-  gap: 18px;
-  border-left: 1px solid var(--recovery-line);
-  background: #fbfdfc;
-  padding: clamp(24px, 4vw, 38px);
-}
-
-.recovery-now-icon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border: 1px solid #b9dbce;
-  border-radius: 16px;
-  background: var(--recovery-mint);
-  color: var(--recovery-teal-dark);
-}
-
-.recovery-now h2 {
-  margin-top: 5px;
-  font-size: 25px;
-  letter-spacing: -.025em;
-}
-
-.recovery-now ul {
-  display: grid;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recovery-now li {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  gap: 12px;
-  padding: 16px 0;
-  border-top: 1px solid var(--recovery-line);
-}
-
-.recovery-now li span {
-  color: var(--recovery-teal-dark);
-  font-size: 11px;
-  font-weight: 950;
-  letter-spacing: .08em;
-}
-
-.recovery-now li p {
-  color: #40534d;
-  font-size: 13px;
-  font-weight: 720;
-  line-height: 1.55;
-}
-
-.recovery-preparation {
-  display: grid;
-  grid-template-columns: minmax(240px, .75fr) minmax(0, 1.5fr);
-  gap: clamp(24px, 4vw, 44px);
-  border-radius: 22px;
-  padding: clamp(24px, 4vw, 38px);
-}
-
-.recovery-preparation > header {
-  align-self: start;
-}
-
-.recovery-preparation h2,
-.recovery-care-note h2 {
-  margin-top: 7px;
-  font-size: clamp(24px, 3vw, 32px);
-  line-height: 1.12;
-  letter-spacing: -.03em;
-}
-
-.recovery-preparation > header > p:last-child,
-.recovery-preparation article p,
-.recovery-care-note > div > p:last-child {
-  color: var(--recovery-muted);
-  line-height: 1.65;
-}
-
-.recovery-preparation > header > p:last-child {
-  margin-top: 12px;
-  font-size: 13px;
-}
-
-.recovery-preparation-list {
-  display: grid;
-  gap: 0;
-}
-
-.recovery-preparation article {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 15px;
-  padding: 17px 0;
-  border-top: 1px solid var(--recovery-line);
-}
-
-.recovery-preparation article:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.recovery-preparation article:last-child {
-  padding-bottom: 0;
-}
-
-.recovery-preparation article > span {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
-  background: var(--recovery-mint);
-  color: var(--recovery-teal-dark);
-}
-
-.recovery-preparation h3 {
-  margin-bottom: 5px;
-  font-size: 15px;
-}
-
-.recovery-preparation article p {
-  font-size: 13px;
-}
-
-.recovery-care-note {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 17px;
-  border-radius: 20px;
-  background: var(--recovery-navy);
-  color: #fff;
-  padding: clamp(20px, 3vw, 28px);
-}
-
-.recovery-care-note > span {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border: 1px solid rgba(255, 255, 255, .2);
-  border-radius: 15px;
-  background: rgba(255, 255, 255, .08);
-  color: #a9ddd2;
-}
-
-.recovery-care-note .recovery-eyebrow {
-  color: #a9ddd2;
-}
-
-.recovery-care-note h2 {
-  color: #fff;
-  font-size: 22px;
-}
-
-.recovery-care-note > div > p:last-child {
-  max-width: 720px;
-  margin-top: 7px;
-  color: rgba(255, 255, 255, .72);
-  font-size: 13px;
-}
-
-.recovery-care-note button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  border: 1px solid rgba(255, 255, 255, .45);
-  border-radius: 11px;
-  background: transparent;
-  color: #fff;
-  padding: 0 15px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 850;
-}
-
-.recovery-care-note button:hover {
-  border-color: #fff;
-  background: rgba(255, 255, 255, .08);
-}
-
-.recovery-plan-page button:focus-visible {
-  outline: 3px solid #53b9af;
-  outline-offset: 3px;
-}
-
-@media (max-width: 920px) {
-  .recovery-availability,
-  .recovery-preparation {
-    grid-template-columns: 1fr;
-  }
-
-  .recovery-availability-copy {
-    min-height: auto;
-  }
-
-  .recovery-now {
-    border-top: 1px solid var(--recovery-line);
-    border-left: 0;
-  }
-}
-
-@media (max-width: 640px) {
-  .recovery-plan-page {
-    gap: 12px;
-  }
-
-  .recovery-availability,
-  .recovery-preparation,
-  .recovery-care-note {
-    border-radius: 18px;
-  }
-
-  .recovery-availability-copy,
-  .recovery-now,
-  .recovery-preparation {
-    padding: 21px;
-  }
-
-  .recovery-availability h1 {
-    font-size: clamp(34px, 12vw, 46px);
-  }
-
-  .recovery-actions,
-  .recovery-actions .ui-button {
-    width: 100%;
-  }
-
-  .recovery-care-note {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .recovery-care-note button {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-}
-
-@media (max-width: 380px) {
-  .recovery-availability-copy,
-  .recovery-now,
-  .recovery-preparation {
-    padding: 18px;
-  }
-
-  .recovery-care-note {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .recovery-plan-page *,
-  .recovery-plan-page *::before,
-  .recovery-plan-page *::after {
-    scroll-behavior: auto;
-  }
-}
-
-@media (forced-colors: active) {
-  .recovery-availability,
-  .recovery-preparation,
-  .recovery-care-note,
-  .recovery-now,
-  .recovery-availability-copy,
-  .recovery-status,
-  .recovery-now-icon,
-  .recovery-preparation article > span {
-    border-color: CanvasText;
-    background: Canvas;
-    color: CanvasText;
-  }
-
-  .recovery-care-note h2,
-  .recovery-care-note .recovery-eyebrow,
-  .recovery-care-note > div > p:last-child {
-    color: CanvasText;
-  }
-
-  .recovery-availability-copy::after {
-    display: none;
-  }
-}
-`;

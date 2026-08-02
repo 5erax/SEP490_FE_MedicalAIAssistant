@@ -1,13 +1,13 @@
 # Tích hợp PayOS subscription
 
-Ngày đối chiếu contract: **2026-06-13**
+Ngày đối chiếu contract: **2026-08-02**
 
 ## Mục đích
 
 Patient chọn plan trên `/pricing`, thanh toán qua PayOS và nhận entitlement sau
 khi backend xác minh giao dịch.
 
-## API hiện có
+## API frontend sử dụng
 
 ```http
 GET  /api/subscription-plans/active
@@ -15,10 +15,10 @@ POST /api/user-subscriptions/checkout
 GET  /api/user-subscriptions/me
 POST /api/user-subscriptions/{id}/cancel
 GET  /api/payments/payos-status/{orderCode}
-GET  /api/payments/payos-return
-GET  /api/payments/payos-cancel
-POST /api/payments/payos-webhook
 ```
+
+`payos-return`, `payos-cancel` và `payos-webhook` là bề mặt callback do backend
+và PayOS xử lý. Frontend không gọi trực tiếp các endpoint này.
 
 Tại lần kiểm tra, active plans đã có dữ liệu.
 

@@ -1138,12 +1138,12 @@ test.describe("visual baseline", () => {
           )).toBeVisible();
         }
         if (route.name === "patient-recovery") {
-          await expect(page.getByRole("heading", { name: "Kế hoạch phục hồi chưa được mở" })).toBeVisible();
-          await expect(page.getByText("MediMate hiện chưa tạo, lưu hoặc theo dõi kế hoạch phục hồi cá nhân.")).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Kế hoạch phục hồi của bạn" })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toBeVisible();
         }
         if (route.name === "patient-medication") {
-          await expect(page.getByRole("heading", { name: "Xem trước ảnh trước khi trao đổi với người có chuyên môn" })).toBeVisible();
-          await expect(page.getByText("MediMate hiện chưa nhận diện thuốc hoặc kiểm tra tương tác từ ảnh.")).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Thuốc và lịch nhắc của bạn" })).toBeVisible();
+          await expect(page.getByText("Bạn chưa thêm thuốc nào", { exact: true })).toBeVisible();
         }
         const routeLoading = page.locator("[data-route-loading]");
         if (await routeLoading.count()) {

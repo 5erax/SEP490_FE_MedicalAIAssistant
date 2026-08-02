@@ -464,15 +464,9 @@ test("admin mobile navigation, empty state and modal pass the release gate", asy
   await expect(page.locator("main")).toHaveCount(1);
   await expectNoReleaseBlockingAxeViolations(page, ".subscription-plan-admin-panel");
 
-  const createTrigger = page.getByRole("button", { name: "Tạo gói dịch vụ", exact: true });
-  await createTrigger.click();
-  const createDialog = page.getByRole("dialog", { name: "Tạo gói dịch vụ" });
-  await expect(createDialog).toBeVisible();
-  await expect(createDialog.getByRole("button", { name: "Đóng form" })).toBeFocused();
-  await expectNoReleaseBlockingAxeViolations(page, ".subscription-modal");
-  await page.keyboard.press("Escape");
-  await expect(createDialog).toHaveCount(0);
-  await expect(createTrigger).toBeFocused();
+  await expect(page.getByText("Trang đang ở chế độ chỉ xem.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tạo gói dịch vụ", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Sửa", exact: true })).toHaveCount(0);
 
   const navigationToggle = page.locator(".admin-mobile-nav-toggle");
   await navigationToggle.click();

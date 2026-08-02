@@ -29,6 +29,8 @@ export {
   symptomAnalysisApi,
 } from "./symptomAnalysisService";
 export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
+export { subscriptionUsageApi, recoveryPlanRequestsApi, recoveryPlansApi } from "./recoveryPlanService";
+export { userMedicationsApi } from "./userMedicationService";
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
 export { consultationSessionsApi } from "./consultationSessionService";

@@ -41,13 +41,13 @@ const PATIENT_SURFACES = [
   },
   {
     path: "/recovery-plan",
-    focusTarget: ".recovery-actions button",
-    primaryAction: ".recovery-actions button",
+    focusTarget: ".recovery-create-card select",
+    primaryAction: ".recovery-create-card button[type=\"submit\"]",
   },
   {
     path: "/medication",
-    focusTarget: ".facility-action",
-    primaryAction: ".facility-action",
+    focusTarget: ".medication-page-header .ui-button",
+    primaryAction: ".medication-page-header .ui-button",
   },
 ];
 
@@ -105,6 +105,34 @@ async function preparePatientWorkspace(page) {
           },
         }),
       });
+    }
+    if (pathname === "/api/me/subscription-usage") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            quotaCode: "recoveryPlan",
+            quotaName: "Kế hoạch phục hồi",
+            limitValue: 3,
+            usedCount: 0,
+            reservedCount: 0,
+            remainingCount: 3,
+            cycleStart: "2026-08-01",
+            cycleEnd: "2026-08-31",
+            resetPeriod: "subscriptionCycle",
+          },
+        }),
+      });
+    }
+    if (pathname === "/api/recovery-plan-requests/me" || pathname === "/api/recovery-plans/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 } }),
+      });
+    }
+    if (pathname === "/api/user-medications") {
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: [] }) });
     }
 
     return route.fulfill({

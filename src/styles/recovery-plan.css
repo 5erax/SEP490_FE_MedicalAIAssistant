@@ -1,0 +1,683 @@
+.recovery-page {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 52px);
+  color: var(--color-ink);
+}
+
+.recovery-page h1,
+.recovery-page h2,
+.recovery-page h3,
+.recovery-page h4,
+.recovery-page h5,
+.recovery-page p {
+  margin: 0;
+}
+
+.recovery-page-header,
+.recovery-section-heading,
+.recovery-detail-header,
+.recovery-quota-heading,
+.recovery-submit-row,
+.recovery-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.recovery-page-header {
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.recovery-page-header h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(32px, 4vw, 48px);
+  letter-spacing: -0.05em;
+}
+
+.recovery-page-header > div > p:last-child,
+.recovery-section-heading > div > p:last-child,
+.recovery-create-card > form > .recovery-field > small,
+.recovery-guidance-card small,
+.recovery-plan-summary,
+.recovery-phase-card > p {
+  color: var(--color-muted);
+}
+
+.recovery-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-info-strong);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recovery-realtime-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recovery-realtime-status > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-warning);
+}
+
+.recovery-realtime-status.is-connected > span {
+  background: var(--color-success);
+}
+
+.recovery-quota-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 22px;
+  border: 1px solid #b8d7cd;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--color-info-bg), var(--color-surface));
+}
+
+.recovery-quota-card.is-error {
+  border-color: var(--color-line-strong);
+  background: var(--color-surface-soft);
+}
+
+.recovery-card-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  box-shadow: 0 8px 24px rgba(8, 127, 140, 0.1);
+}
+
+.recovery-quota-content {
+  min-width: 0;
+}
+
+.recovery-quota-heading h2,
+.recovery-quota-card h2 {
+  margin-top: 5px;
+  font-size: clamp(21px, 3vw, 28px);
+}
+
+.recovery-quota-heading > strong {
+  font-size: 24px;
+}
+
+.recovery-quota-track {
+  height: 10px;
+  margin: 18px 0;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: rgba(17, 20, 18, 0.1);
+}
+
+.recovery-quota-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-info);
+}
+
+.recovery-quota-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.recovery-quota-stats div {
+  padding: 10px 12px;
+  border: 1px solid rgba(8, 127, 140, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.recovery-quota-stats dt {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.recovery-quota-stats dd {
+  margin: 4px 0 0;
+  font-weight: 800;
+}
+
+.recovery-inline-actions,
+.recovery-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  justify-content: flex-start;
+}
+
+.recovery-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.8fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.recovery-create-card,
+.recovery-guidance-card,
+.recovery-management-section,
+.recovery-detail-card,
+.recovery-plan-detail {
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  background: var(--color-surface);
+}
+
+.recovery-create-card,
+.recovery-guidance-card {
+  padding: 24px;
+}
+
+.recovery-section-heading {
+  align-items: flex-start;
+}
+
+.recovery-section-heading h2,
+.recovery-guidance-card h2 {
+  margin: 5px 0 7px;
+  font-size: clamp(20px, 2.5vw, 26px);
+}
+
+.recovery-guidance-card {
+  background: var(--color-surface-soft);
+}
+
+.recovery-guidance-card ul {
+  display: grid;
+  gap: 16px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recovery-guidance-card li {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.recovery-guidance-card li > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-info-strong);
+}
+
+.recovery-guidance-card strong,
+.recovery-guidance-card small {
+  display: block;
+}
+
+.recovery-guidance-card small {
+  margin-top: 3px;
+}
+
+.recovery-form-blocked,
+.recovery-form-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 18px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+}
+
+.recovery-field {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  font-weight: 700;
+}
+
+.recovery-field > span small {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.recovery-field select,
+.recovery-field textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  border: 1px solid var(--color-control-border);
+  border-radius: 11px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.recovery-field textarea {
+  resize: vertical;
+}
+
+.recovery-field [aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.recovery-field-error,
+.recovery-submit-row > p {
+  color: var(--color-danger);
+}
+
+.recovery-error-summary {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid #f1b7b0;
+  border-radius: 12px;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.recovery-error-summary ul {
+  margin: 7px 0 0;
+  padding-left: 20px;
+}
+
+.recovery-error-summary a {
+  color: inherit;
+}
+
+.recovery-submit-row {
+  align-items: flex-end;
+  margin-top: 18px;
+}
+
+.recovery-submit-row > p {
+  min-height: 22px;
+}
+
+.recovery-management-section {
+  margin-top: 24px;
+  padding: clamp(20px, 3vw, 28px);
+  box-shadow: var(--shadow-card);
+}
+
+.recovery-management-section > .recovery-section-heading {
+  margin-bottom: 20px;
+}
+
+.recovery-split-view,
+.recovery-plan-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.45fr);
+  gap: 18px;
+}
+
+.recovery-item-list,
+.recovery-plan-tabs {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.recovery-item-button,
+.recovery-plan-tabs > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.recovery-item-button.is-selected,
+.recovery-plan-tabs > button.is-selected {
+  border-color: var(--color-ink);
+  background: var(--color-surface);
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+.recovery-item-button strong,
+.recovery-item-button small,
+.recovery-plan-tabs strong,
+.recovery-plan-tabs small {
+  display: block;
+}
+
+.recovery-item-button small,
+.recovery-plan-tabs small {
+  margin-top: 4px;
+  color: var(--color-muted);
+}
+
+.recovery-plan-tabs > button {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.recovery-status-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.recovery-status-badge.is-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.recovery-status-badge.is-progress {
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.recovery-status-badge.is-attention,
+.recovery-status-badge.is-waiting {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.recovery-status-badge.is-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.recovery-detail-card,
+.recovery-plan-detail {
+  padding: 22px;
+}
+
+.recovery-detail-header {
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.recovery-detail-header h3 {
+  margin-top: 5px;
+  font-size: 24px;
+}
+
+.recovery-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 0;
+}
+
+.recovery-detail-grid > div {
+  padding: 13px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+}
+
+.recovery-detail-grid > div.is-danger {
+  border-color: #f1b7b0;
+  background: var(--color-danger-bg);
+}
+
+.recovery-detail-wide {
+  grid-column: 1 / -1;
+}
+
+.recovery-detail-grid dt {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.recovery-detail-grid dd {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
+.recovery-information-form {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-line);
+}
+
+.recovery-plan-summary {
+  margin-top: 18px;
+  font-size: 16px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.recovery-start-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #a9d0c9;
+  border-radius: 14px;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.recovery-start-card p {
+  margin-top: 3px;
+}
+
+.recovery-phases {
+  margin-top: 26px;
+}
+
+.recovery-phases .recovery-section-heading h4 {
+  margin-top: 4px;
+  font-size: 21px;
+}
+
+.recovery-phase-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.recovery-phase-card {
+  padding: 18px;
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: var(--color-surface-soft);
+}
+
+.recovery-phase-card header > span {
+  color: var(--color-info-strong);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.recovery-phase-card h5 {
+  margin-top: 4px;
+  font-size: 19px;
+}
+
+.recovery-phase-card > p {
+  margin-top: 9px;
+  line-height: 1.55;
+}
+
+.recovery-phase-rest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+.recovery-phase-rest div {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.recovery-phase-rest dt,
+.recovery-phase-rest dd {
+  display: inline;
+  margin: 0;
+}
+
+.recovery-phase-rest dt {
+  color: var(--color-muted);
+}
+
+.recovery-phase-rest dd {
+  margin-left: 5px;
+  font-weight: 800;
+}
+
+.recovery-nutrients {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-line);
+}
+
+.recovery-nutrient {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.recovery-nutrient > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.recovery-nutrient p {
+  margin-top: 6px;
+  color: var(--color-muted);
+}
+
+.recovery-nutrient ul {
+  margin: 8px 0 0;
+  padding-left: 19px;
+  color: var(--color-muted);
+}
+
+.recovery-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.recovery-medical-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: var(--color-surface-soft);
+}
+
+.recovery-medical-note svg {
+  flex: 0 0 auto;
+  color: var(--color-info-strong);
+}
+
+.recovery-medical-note p {
+  margin-top: 3px;
+  color: var(--color-muted);
+}
+
+@media (max-width: 900px) {
+  .recovery-top-grid,
+  .recovery-split-view,
+  .recovery-plan-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-item-list,
+  .recovery-plan-tabs {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .recovery-pagination {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .recovery-page {
+    padding: 20px 14px 92px;
+  }
+
+  .recovery-page-header,
+  .recovery-quota-heading,
+  .recovery-section-heading,
+  .recovery-submit-row,
+  .recovery-detail-header,
+  .recovery-start-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recovery-realtime-status {
+    width: fit-content;
+  }
+
+  .recovery-quota-stats,
+  .recovery-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-start-card {
+    display: flex;
+  }
+
+  .recovery-item-list,
+  .recovery-plan-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-status-badge {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recovery-page * {
+    scroll-behavior: auto;
+  }
+}

@@ -25,36 +25,6 @@ export const subscriptionPlansApi = {
     return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id));
   },
 
-  create(payload) {
-    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BASE, {
-      method: "POST",
-      body: payload,
-      auth: true,
-    });
-  },
-
-  update(id, payload) {
-    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id), {
-      method: "PUT",
-      body: payload,
-      auth: true,
-    });
-  },
-
-  setStatus(id, isActive) {
-    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.STATUS(id), {
-      method: "PATCH",
-      body: { isActive },
-      auth: true,
-    });
-  },
-
-  remove(id) {
-    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id), {
-      method: "DELETE",
-      auth: true,
-    });
-  },
 };
 
 export const userSubscriptionsApi = {
@@ -70,10 +40,6 @@ export const userSubscriptionsApi = {
     return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.ME, { auth: true });
   },
 
-  get(id) {
-    return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.BY_ID(id), { auth: true });
-  },
-
   cancel(id) {
     return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.CANCEL(id), {
       method: "POST",
@@ -83,6 +49,13 @@ export const userSubscriptionsApi = {
 };
 
 export const paymentsApi = {
+  list(pageNumber = 1, pageSize = 10) {
+    return apiRequest(withQuery(ENDPOINTS.PAYMENTS.LIST, {
+      PageNumber: pageNumber,
+      PageSize: pageSize,
+    }), { auth: true });
+  },
+
   getMyPayments(pageNumber = 1, pageSize = 10) {
     return apiRequest(withQuery(ENDPOINTS.PAYMENTS.ME, {
       PageNumber: pageNumber,
@@ -100,21 +73,6 @@ export const paymentsApi = {
 
   byUser(userId) {
     return apiRequest(ENDPOINTS.PAYMENTS.BY_USER(userId), { auth: true });
-  },
-
-  payOsReturn(params = {}) {
-    return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_RETURN, params));
-  },
-
-  payOsCancel(params = {}) {
-    return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_CANCEL, params));
-  },
-
-  payOsWebhook(payload = {}) {
-    return apiRequest(ENDPOINTS.PAYMENTS.PAYOS_WEBHOOK, {
-      method: "POST",
-      body: payload,
-    });
   },
 
   payOsStatus(orderCode) {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { preparePage } from "./helpers";
+import { preparePage } from "./helpers.js";
 
 const ADMIN_TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
@@ -7,161 +7,100 @@ const ADMIN_TOKEN = [
   "",
 ].join(".");
 
-test("admin can create a subscription plan from the workspace", async ({ page }) => {
+async function prepareAdminSubscriptions(page, plans = [], payments = []) {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
-    localStorage.setItem("medimate.auth", JSON.stringify({
-      accessToken,
-      email: "admin@example.com",
-      roles: ["Admin"],
-    }));
+    localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, email: "admin@example.com", roles: ["Admin"] }));
   }, ADMIN_TOKEN);
 
-  let createdPlan = null;
-
+  const mutationCalls = [];
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
     const method = route.request().method();
-    const pathname = url.pathname;
-
-    if (pathname === "/api/users/me") {
+    const path = url.pathname;
+    if (path === "/api/users/me") {
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }) });
+    }
+    if (path === "/api/subscription-plans") {
+      if (method !== "GET") mutationCalls.push(method);
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: plans }) });
+    }
+    if (path === "/api/payments" && method === "GET") {
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+        body: JSON.stringify({ success: true, data: { items: payments, pageNumber: 1, pageSize: 10, totalCount: payments.length, totalPages: 1 } }),
       });
     }
-
-    if (pathname === "/api/subscription-plans" && method === "POST") {
-      createdPlan = route.request().postDataJSON();
+    const paymentMatch = path.match(/^\/api\/payments\/([^/]+)$/);
+    if (paymentMatch && method === "GET") {
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: {
-            id: "11111111-1111-1111-1111-111111111111",
-            ...createdPlan,
-            createdAt: "2026-06-12T00:00:00Z",
-          },
-        }),
+        body: JSON.stringify({ success: true, data: payments.find((payment) => payment.id === paymentMatch[1]) }),
       });
     }
-
-    if (pathname === "/api/subscription-plans") {
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({
-          success: true,
-          data: createdPlan
-            ? [{ id: "11111111-1111-1111-1111-111111111111", ...createdPlan }]
-            : [],
-        }),
-      });
-    }
-
     const pagedPaths = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
-    const data = pagedPaths.includes(pathname)
-      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
-      : [];
-
-    return route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ success: true, data }),
-    });
-  });
-
-  await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Gói dịch vụ", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Quản lý gói dịch vụ" })).toBeVisible();
-
-  await page.locator(".subscription-plan-heading")
-    .getByRole("button", { name: "Tạo gói", exact: true })
-    .click();
-  await page.getByLabel("Tên gói").fill("MediMate+ Tháng");
-  await page.getByLabel("Giá gói (VND)").fill("149000");
-  await page.getByLabel("Thời hạn (ngày)").fill("30");
-  const createDialog = page.getByRole("dialog", { name: "Tạo gói dịch vụ" });
-  await createDialog.getByRole("button", { name: "Xóa hạn mức 1" }).click();
-  await createDialog.getByRole("button", { name: "Tạo gói", exact: true }).click();
-
-  await expect(page.getByText("MediMate+ Tháng", { exact: true })).toBeVisible();
-  expect(createdPlan).toEqual({
-    planName: "MediMate+ Tháng",
-    price: 149000,
-    durationInDays: 30,
-    featureLimitJson: '{"aiChatPerDay":20}',
-    isActive: true,
-  });
-});
-
-test("admin retries a failed subscription plan list and receives an empty state", async ({ page }) => {
-  await preparePage(page);
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript((accessToken) => {
-    localStorage.setItem("medimate.auth", JSON.stringify({
-      accessToken,
-      email: "admin@example.com",
-      roles: ["Admin"],
-    }));
-  }, ADMIN_TOKEN);
-
-  let subscriptionPlanRequestCount = 0;
-
-  await page.route("**/api/**", async (route) => {
-    const url = new URL(route.request().url());
-    const pathname = url.pathname;
-
-    if (pathname === "/api/users/me") {
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
-      });
-    }
-
-    if (pathname === "/api/subscription-plans") {
-      subscriptionPlanRequestCount += 1;
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      if (subscriptionPlanRequestCount <= 2) {
-        return route.fulfill({
-          status: 503,
-          contentType: "application/json",
-          body: JSON.stringify({ success: false, message: "Sensitive payment platform detail" }),
-        });
-      }
-
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ success: true, data: [] }),
-      });
-    }
-
-    const pagedPaths = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
-    const data = pagedPaths.includes(pathname)
-      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
-      : [];
-
-    return route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ success: true, data }),
-    });
+    const data = pagedPaths.includes(path) ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 } : [];
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data }) });
   });
 
   await page.goto("/app/admin/subscriptions", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "Quản lý gói dịch vụ" })).toBeVisible();
+  return mutationCalls;
+}
 
-  const errorState = page.getByRole("alert").filter({ hasText: "Không thể tải danh sách gói dịch vụ" });
-  await expect(errorState).toBeVisible();
-  await expect(errorState).toContainText("Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.");
-  await expect(errorState).not.toContainText("Sensitive payment platform detail");
+test("admin subscription catalog is read-only until permissions are secured", async ({ page }) => {
+  const mutationCalls = await prepareAdminSubscriptions(page, [{
+    id: "11111111-1111-1111-1111-111111111111",
+    planName: "MediMate+ Tháng",
+    price: 149000,
+    durationInDays: 30,
+    featureLimitJson: "{\"recoveryPlanPerMonth\":3}",
+    isActive: true,
+    createdAt: "2026-08-01T00:00:00Z",
+  }]);
 
-  const retryButton = errorState.getByRole("button", { name: "Thử tải lại" });
-  await expect(retryButton).toHaveCSS("min-height", "44px");
-  await retryButton.focus();
-  await page.keyboard.press("Enter");
+  await expect(page.getByText("Trang đang ở chế độ chỉ xem.")).toBeVisible();
+  await expect(page.getByText("MediMate+ Tháng", { exact: true })).toBeVisible();
+  await expect(page.getByText("Chưa có dữ liệu hạn mức đã xác nhận", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tạo gói", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Sửa", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Xóa", exact: true })).toHaveCount(0);
+  expect(mutationCalls).toEqual([]);
+});
+
+test("admin can review paged payments and open account transaction details", async ({ page }) => {
+  await prepareAdminSubscriptions(page, [], [{
+    id: "33333333-3333-4333-8333-333333333333",
+    userId: "55555555-5555-4555-8555-555555555555",
+    userSubscriptionId: "22222222-2222-4222-8222-222222222222",
+    planId: "11111111-1111-4111-8111-111111111111",
+    planName: "MediMate+ Tháng",
+    amount: 149000,
+    currency: "VND",
+    status: "paid",
+    statusName: "Paid",
+    paidAt: "2026-08-02T08:00:00Z",
+    createdAt: "2026-08-02T07:55:00Z",
+    paymentProvider: "PayOS",
+    transactionReference: "987654321",
+  }]);
+
+  await expect(page.getByRole("heading", { name: "Lịch sử thanh toán" })).toBeVisible();
+  await expect(page.getByText("149.000 ₫", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Xem chi tiết" }).click();
+  const dialog = page.getByRole("dialog", { name: "MediMate+ Tháng" });
+  await expect(dialog).toContainText("987654321");
+  await expect(dialog).toContainText("Đã thanh toán");
+});
+
+test("empty admin catalog remains responsive and offers retry synchronization", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await prepareAdminSubscriptions(page, []);
 
   await expect(page.getByText("Chưa có gói dịch vụ", { exact: true })).toBeVisible();
-  const createButton = page.getByRole("button", { name: "Tạo gói dịch vụ", exact: true });
-  await expect(createButton).toBeVisible();
-  await expect(createButton).toHaveCSS("min-height", "44px");
+  const reloadButton = page.getByRole("button", { name: "Đồng bộ" });
+  await expect(reloadButton).toHaveCSS("min-height", "44px");
+  await reloadButton.focus();
+  await page.keyboard.press("Enter");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  expect(subscriptionPlanRequestCount).toBe(3);
 });
