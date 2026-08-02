@@ -88,11 +88,9 @@ export default function AdminFacilitiesSection({
   pageInfo,
   saving,
   catalogImportProgress,
-  catalogSize,
   importingCatalog,
   onDelete,
   onEdit,
-  onImportCatalog,
   onApplyFilters,
   onClearFilters,
   onFilterChange,
@@ -227,17 +225,6 @@ export default function AdminFacilitiesSection({
           </div>
           <button className="btn btn-ghost btn-small facility-reload-button" type="button" onClick={onReload}>
             <RefreshCw size={15} aria-hidden="true" /> Tải lại
-          </button>
-          <button
-            className="btn btn-ghost btn-small facility-catalog-button"
-            type="button"
-            onClick={onImportCatalog}
-            disabled={importingCatalog || loading}
-          >
-            <Building2 size={15} aria-hidden="true" />
-            {importingCatalog
-              ? `Đang thêm ${catalogImportProgress?.completed ?? 0}/${catalogImportProgress?.total ?? catalogSize}`
-              : `Thêm ${catalogSize} bệnh viện TP.HCM`}
           </button>
           <button className="btn btn-primary btn-small facility-create-button" type="button" onClick={openCreateForm}>
             <Plus size={15} /> Tạo cơ sở

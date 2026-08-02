@@ -11,7 +11,7 @@ const ADMIN_TOKEN = [
 
 const DEPARTMENT_ID = "22222222-2222-4222-8222-222222222222";
 
-test("admin imports the verified Ho Chi Minh City hospital catalog without duplicates", async ({ page }) => {
+test("admin does not expose the temporary hospital catalog import action", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -113,25 +113,10 @@ test("admin imports the verified Ho Chi Minh City hospital catalog without dupli
   });
 
   await page.goto("/app/admin/facilities", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Thêm 39 bệnh viện TP.HCM" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Bắt đầu thêm" }).click();
-
-  await expect(page.getByText("Đã thêm 38 bệnh viện mới và cập nhật 1 bệnh viện hiện có.", { exact: true }).first()).toBeVisible();
-  expect(createdPayloads).toHaveLength(38);
-  expect(updatedPayload).toMatchObject({
-    facilityName: "Bệnh viện Chợ Rẫy",
-    latitude: 10.7566964,
-    longitude: 106.6597263,
-    imageUrl: existingImageUrl,
-    facilityType: "hospital",
-    isActive: true,
-  });
-  expect(updatedPayload.departmentIds).toEqual(expect.arrayContaining([generalDepartmentId, respiratoryDepartmentId]));
-  expect(createdPayloads.find((payload) => payload.facilityName.includes("Vinmec Central Park"))).toMatchObject({
-    latitude: 10.794,
-    longitude: 106.7219,
-    facilityType: "hospital",
-  });
+  await expect(page.getByRole("button", { name: "Thêm 39 bệnh viện TP.HCM" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Tạo cơ sở" })).toBeVisible();
+  expect(createdPayloads).toHaveLength(0);
+  expect(updatedPayload).toBeNull();
 });
 
 test("admin creates a medical facility linked to an existing department", async ({ page }) => {
