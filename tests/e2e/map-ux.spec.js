@@ -144,15 +144,13 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   await expect(skipMap).toHaveAttribute("href", "#facility-list");
 });
 
-test("pre-visit AI stays present on the map and uses the selected facility department id", async ({ page }) => {
+test("map omits the consultation assistant while preserving facility department data", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
   }, TOKEN);
 
   const requestedApiPaths = [];
-  let consultationPayload = null;
-  let chatPayload = null;
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (url.pathname.startsWith("/api/")) requestedApiPaths.push(url.pathname);
@@ -170,56 +168,21 @@ test("pre-visit AI stays present on the map and uses the selected facility depar
         departmentName: "Hô hấp",
       },
     ],
-    onGenerateQuestions(payload) {
-      consultationPayload = payload;
-    },
-    onChat(payload) {
-      chatPayload = payload;
-    },
   });
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
-  const initialLauncher = page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" });
-  await expect(initialLauncher).toBeVisible();
-  await initialLauncher.click();
-  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
-  await page.getByLabel("Câu hỏi hoặc triệu chứng của bạn").fill("Tôi nên chuẩn bị gì trước khi đi khám?");
-  await page.getByRole("button", { name: "Gửi câu hỏi cho MediMate AI" }).click();
-  await expect(page.getByText("Bạn có thể hỏi MediMate ngay mà không cần chọn cơ sở.", { exact: true })).toBeVisible();
-  expect(chatPayload).toEqual({ message: "Tôi nên chuẩn bị gì trước khi đi khám?" });
-  await page.getByRole("button", { name: "Đóng AI hỗ trợ" }).click();
+  await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
+  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Thu gọn AI hỗ trợ trước khám" })).toHaveAttribute("aria-expanded", "true");
-
-  const departmentSelect = page.getByLabel("Chọn chuyên khoa");
-  await expect(departmentSelect).toHaveValue("");
-  await expect(departmentSelect.locator("option")).toHaveCount(3);
-  await departmentSelect.selectOption(SECOND_FACILITY_DEPARTMENT_ID);
-  await page.getByLabel("Câu hỏi hoặc triệu chứng của bạn").fill("Đau ngực nhẹ");
-  await page.getByRole("button", { name: "Gửi câu hỏi cho MediMate AI" }).click();
-
-  await expect(page.getByText("Cơn đau bắt đầu từ khi nào?", { exact: true })).toBeVisible();
-  expect(consultationPayload).toEqual({
-    departmentId: SECOND_FACILITY_DEPARTMENT_ID,
-    symptoms: "Đau ngực nhẹ",
-  });
+  await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
+  await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
   expect(requestedApiPaths).not.toContain("/api/medical-departments");
   expect(requestedApiPaths).toContain("/api/facility-departments/active");
-
-  const closeAssistant = page.getByRole("button", { name: "Đóng AI hỗ trợ" });
-  await closeAssistant.click();
-  const assistantLauncher = page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" });
-  await expect(assistantLauncher).toBeFocused();
-  await assistantLauncher.click();
-  await expect(page.getByRole("button", { name: "Đóng AI hỗ trợ" })).toBeFocused();
-  await page.keyboard.press("Escape");
-  await expect(assistantLauncher).toBeFocused();
 });
 
 test("facility without coordinates stays in the list without a false marker", async ({ page }) => {

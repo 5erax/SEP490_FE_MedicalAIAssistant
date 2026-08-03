@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CircleAlert, ClipboardPlus, History, MapPin, Send, ShieldCheck, UserRound } from "lucide-react";
+import { CircleAlert, ClipboardPlus, History, LocateFixed, MapPinned, Send, ShieldCheck, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -133,6 +133,9 @@ function getRecommendedDepartment(result) {
       ) || 0,
       departmentId,
       departmentName,
+      description: String(
+        department.description ?? department.Description ?? "",
+      ).trim(),
       isEmergencySuggested: (
         department.isEmergencySuggested ?? department.IsEmergencySuggested
       ) === true,
@@ -699,9 +702,10 @@ export default function DashboardPage() {
                 )}
               </div>
               <p>
-                {recommendedDepartment?.departmentName
-                  ? "Đây là chuyên khoa được hệ thống đề xuất để bạn tham khảo khi chọn nơi thăm khám."
-                  : "Hệ thống chưa trả về chuyên khoa cụ thể. Bạn vẫn có thể xem các cơ sở y tế được gợi ý bên dưới."}
+                {recommendedDepartment?.description
+                  || (recommendedDepartment?.departmentName
+                    ? "Đây là chuyên khoa được hệ thống đề xuất để bạn tham khảo khi chọn nơi thăm khám."
+                    : "Hệ thống chưa trả về chuyên khoa cụ thể. Bạn vẫn có thể xem các cơ sở y tế được gợi ý bên dưới.")}
               </p>
               {Number(recommendedDepartment?.priorityRank) > 0 && (
                 <div className="studio-result-meta">
@@ -734,11 +738,11 @@ export default function DashboardPage() {
                     onClick={requestUserLocation}
                     disabled={locationStatus === "ready"}
                   >
-                    <MapPin size={18} />
+                    <LocateFixed size={18} aria-hidden="true" />
                     {locationStatus === "ready" ? "Đã có vị trí" : "Dùng vị trí của tôi"}
                   </Button>
                   <Button type="button" onClick={openFacilities}>
-                    <MapPin size={18} />
+                    <MapPinned size={18} aria-hidden="true" />
                     Mở bản đồ
                   </Button>
                 </div>

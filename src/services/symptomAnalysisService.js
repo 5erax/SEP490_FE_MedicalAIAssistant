@@ -80,9 +80,7 @@ function createDepartmentSnapshot(department) {
     departmentName,
     description: normalizeText(
       department.description
-      ?? department.Description
-      ?? department.reason
-      ?? department.Reason,
+      ?? department.Description,
     ),
     icdChapterCode: normalizeText(
       department.icdChapterCode ?? department.IcdChapterCode,

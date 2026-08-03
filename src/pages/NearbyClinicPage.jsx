@@ -84,8 +84,6 @@ function sanitizeDepartment(department) {
     description: String(
       department.description
       ?? department.Description
-      ?? department.reason
-      ?? department.Reason
       ?? "",
     ).trim(),
     icdChapterCode: String(
@@ -473,7 +471,6 @@ function NearbyClinicPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedFacility, setSelectedFacility] = useState(null);
-  const [assistantOpenRequestKey, setAssistantOpenRequestKey] = useState(0);
   const [sidebarView, setSidebarView] = useState("hospital-list");
   const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -873,7 +870,7 @@ function NearbyClinicPage() {
     window.history[mode === "replace" ? "replaceState" : "pushState"]({}, "", nextUrl);
   }, []);
 
-  const handleCardClick = useCallback((facility, options = {}) => {
+  const handleCardClick = useCallback((facility) => {
     setReviewMessage("");
     setSubmittedReview(null);
     setEditingReview(false);
@@ -885,9 +882,6 @@ function NearbyClinicPage() {
       setReviewsLoading(true);
     }
     setSelectedFacility(facility);
-    if (options.openAssistant) {
-      setAssistantOpenRequestKey((current) => current + 1);
-    }
     if (facility.hasValidCoordinates && mapStatus === "ready") {
       mapRef.current?.flyTo?.({
         center: [facility.longitude, facility.latitude],
@@ -944,7 +938,7 @@ function NearbyClinicPage() {
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
-    handleCardClick(facility, { openAssistant: options.openAssistant !== false });
+    handleCardClick(facility);
     setSidebarView("hospital-detail");
     setSelectedDoctor(null);
     setDetailPanelOpen(true);
@@ -1021,7 +1015,6 @@ function NearbyClinicPage() {
 
       if (matchedFacility) {
         openFacilityDetail(matchedFacility, {
-          openAssistant: false,
           syncUrl: false,
           tab: nextQuery.tab,
         });
@@ -1047,7 +1040,6 @@ function NearbyClinicPage() {
 
     const timeoutId = window.setTimeout(() => {
       openFacilityDetail(matchedFacility, {
-        openAssistant: false,
         syncUrl: false,
         tab: mapQuery.tab,
       });
@@ -1691,21 +1683,10 @@ function NearbyClinicPage() {
 
       <section className="map-stage">
         <FacilityMap
-          assistantAccessLocked={!auth?.accessToken}
-          assistantOpenRequestKey={assistantOpenRequestKey}
           chatContext={chatContext}
           clinicalNotice={effectiveClinicalNotice}
           clinicalStatus={clinicalStatus}
-          consultationFacility={
-            isClinicalFlow
-              ? selectedFacility
-              : detailPanelOpen && !detailLoading ? detailFacility : null
-          }
           isClinicalFlow={isClinicalFlow}
-          onAssistantLogin={() => navigate(`/login?returnTo=${encodeURIComponent(
-            `${window.location.pathname}${window.location.search}`,
-          )}`)}
-          showConsultationAssistant
           facilities={mappableFacilities}
           locationError={locationError}
           mapRef={mapRef}
@@ -1721,7 +1702,7 @@ function NearbyClinicPage() {
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}
           onSelect={(facility) => facility
-            ? handleCardClick(facility, { openAssistant: true })
+            ? handleCardClick(facility)
             : setSelectedFacility(null)}
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}

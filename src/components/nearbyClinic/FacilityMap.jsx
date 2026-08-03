@@ -580,7 +580,7 @@ export default function FacilityMap({
   consultationFacility = null,
   isClinicalFlow = false,
   onAssistantLogin,
-  showConsultationAssistant = true,
+  showConsultationAssistant = false,
   facilities,
   hidePopup = false,
   locationError,
@@ -651,7 +651,6 @@ export default function FacilityMap({
               </header>
               <p className="map-clinical-description">
                 {recommendedDepartment?.description
-                  || recommendedDepartment?.reason
                   || "Chưa có mô tả cho chuyên khoa được gợi ý."}
               </p>
             </>

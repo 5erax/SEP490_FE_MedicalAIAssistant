@@ -125,6 +125,7 @@ test.describe("patient specialty intake", () => {
                 clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
               }],
               recommendedDepartment: {
+                description: "Tiếp nhận và đánh giá các bệnh lý tai, mũi và họng.",
                 departmentId: DEPARTMENT_ID,
                 departmentName: "Tai Mũi Họng",
                 confidenceScore: 0.86,
@@ -153,6 +154,7 @@ test.describe("patient specialty intake", () => {
                 clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
               }],
               recommendedDepartment: {
+                description: "Tiếp nhận và đánh giá các bệnh lý tai, mũi và họng.",
                 departmentId: DEPARTMENT_ID,
                 departmentName: "Tai Mũi Họng",
                 confidenceScore: 0.86,
@@ -252,7 +254,8 @@ test.describe("patient specialty intake", () => {
     const mapRecommendation = page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" });
     await expect(mapRecommendation).toContainText("Tai Mũi Họng");
     await expect(mapRecommendation).toContainText("Chuyên khoa được gợi ý");
-    await expect(mapRecommendation).toContainText("Nên khám chuyên khoa tai mũi họng.");
+    await expect(mapRecommendation).toContainText("Tiếp nhận và đánh giá các bệnh lý tai, mũi và họng.");
+    await expect(mapRecommendation).not.toContainText("Nên khám chuyên khoa tai mũi họng.");
     await expect(mapRecommendation).not.toContainText("Bệnh viện Tai Mũi Họng");
     const diagnosisCrossbar = page.getByRole("region", { name: "Các chẩn đoán được cân nhắc" });
     await expect(diagnosisCrossbar).toContainText("Viêm họng cấp");
@@ -286,20 +289,11 @@ test.describe("patient specialty intake", () => {
     expect(cachedRecommendation).not.toHaveProperty("primaryDiagnosis");
     expect(cachedRecommendation).not.toHaveProperty("diagnoses");
 
-    await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
+    await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
+    expect(consultationPayload).toBeNull();
     await expect(page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ })).toBeVisible();
 
-    await page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" }).click();
-    await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
-    await page.getByLabel("Triệu chứng của bạn").fill("Đau họng và sốt nhẹ");
-    await page.getByRole("button", { name: "Gửi câu hỏi cho MediMate AI" }).click();
-    await expect(page.getByText("Bạn muốn hỏi bác sĩ điều gì?")).toBeVisible();
-    expect(consultationPayload).toEqual({
-      departmentId: DEPARTMENT_ID,
-      symptoms: "Đau họng và sốt nhẹ",
-    });
-
-    await page.getByRole("button", { name: "Đóng AI hỗ trợ" }).click();
     await page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ }).click();
     await expect(page).toHaveURL(/tab=overview/);
     await expect(page.locator(".facility-detail-sidebar")).toBeVisible();

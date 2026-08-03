@@ -387,7 +387,7 @@ test("clinical map renders only cached recommendations with deterministic map da
   await expect(facilityCards.first()).toContainText("Bệnh viện Tim kiểm thử");
   await expect(page.getByText("Cơ sở không được gợi ý", { exact: true })).toHaveCount(0);
   await expect(page.locator(".clinic-marker")).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
 
   const marker = page.locator(".clinic-marker");
   await marker.focus();

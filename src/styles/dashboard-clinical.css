@@ -475,6 +475,37 @@
   background: linear-gradient(140deg, var(--color-surface) 0%, var(--clinical-mint-soft) 100%);
 }
 
+.specialty-clinical-page .studio-result-card.facilities .studio-panel-head.compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 360px);
+  align-items: start;
+  gap: 24px;
+}
+
+.specialty-clinical-page .facility-panel-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  justify-self: end;
+}
+
+.specialty-clinical-page .facility-panel-actions .ui-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding-inline: 14px;
+  border-radius: 12px;
+}
+
+.specialty-clinical-page .facility-panel-actions .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .specialty-clinical-page .specialty-result-head span {
   color: var(--clinical-teal);
 }
@@ -571,6 +602,11 @@
     width: 100%;
     justify-self: stretch;
   }
+
+  .specialty-clinical-page .studio-result-card.facilities .studio-panel-head.compact {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -607,6 +643,10 @@
     .clinical-question-submit
   ) {
     grid-column: auto;
+  }
+
+  .specialty-clinical-page .facility-panel-actions {
+    grid-template-columns: 1fr;
   }
 }
 

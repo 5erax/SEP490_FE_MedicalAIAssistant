@@ -190,6 +190,7 @@ test.describe("visual baseline", () => {
                         },
                       ],
                       recommendedDepartment: {
+                        description: "Tiếp nhận và đánh giá các bệnh lý hô hấp.",
                         departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
                         departmentName: "Khoa Hô hấp",
                         confidenceScore: 0.72,
@@ -307,6 +308,7 @@ test.describe("visual baseline", () => {
                 clinicalReasoning: "Cúm có thể gây sốt và mệt mỏi trong giai đoạn đầu.",
               }],
               recommendedDepartment: {
+                description: "Tiếp nhận và đánh giá các bệnh lý truyền nhiễm và siêu vi.",
                 departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
                 departmentName: "Khoa Truyền nhiễm và siêu vi",
                 confidenceScore: 0.86,
