@@ -115,7 +115,7 @@ export default function UserProfilePage() {
   const [userId, setUserId] = useState("");
   const [patientProfileId, setPatientProfileId] = useState("");
   const [subscription, setSubscription] = useState(null);
-  const [usage, setUsage] = useState(null);
+  const [usageList, setUsageList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadWarning, setLoadWarning] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -203,8 +203,9 @@ export default function UserProfilePage() {
       }
       // NO_ACTIVE_SUBSCRIPTION / RECOVERY_PLAN_QUOTA_NOT_CONFIGURED are
       // expected states (no plan yet), not a load failure worth warning
-      // about - the quota box just doesn't render in that case.
-      setUsage(usageResult.status === "fulfilled" ? usageResult.value?.data ?? null : null);
+      // about - the quota list just stays empty in that case.
+      const usageItems = usageResult.status === "fulfilled" ? usageResult.value?.data ?? [] : [];
+      setUsageList(Array.isArray(usageItems) ? usageItems : []);
       setSectionLoadState({
         personal: userResult.status === "fulfilled" ? "ready" : "error",
         medical: profileResult.status === "fulfilled" ? "ready" : "error",
@@ -712,15 +713,19 @@ export default function UserProfilePage() {
                   : "Bạn chưa có gói đăng ký trả phí đang hoạt động."}
               </p>
             </div>
-            {usage && (
-              <div className="plan-box quota-box">
-                <span>{usage.quotaName || "Hạn mức sử dụng"}</span>
-                <strong>{usage.remainingCount ?? "—"}/{usage.limitValue ?? "—"}</strong>
-                <p>
-                  Đã dùng {usage.usedCount ?? 0}
-                  {Number(usage.reservedCount) > 0 ? ` · đang giữ chỗ ${usage.reservedCount}` : ""}
-                  {usage.cycleEnd ? ` · làm mới vào ${new Date(usage.cycleEnd).toLocaleDateString("vi-VN")}` : ""}
-                </p>
+            {usageList.length > 0 && (
+              <div className="quota-list">
+                {usageList.map((item) => (
+                  <div className="plan-box quota-box" key={item.quotaCode}>
+                    <span>{item.quotaName || "Hạn mức sử dụng"}</span>
+                    <strong>{item.remainingCount ?? "—"}/{item.limitValue ?? "—"}</strong>
+                    <p>
+                      Đã dùng {item.usedCount ?? 0}
+                      {Number(item.reservedCount) > 0 ? ` · đang giữ chỗ ${item.reservedCount}` : ""}
+                      {item.cycleEnd ? ` · làm mới vào ${new Date(item.cycleEnd).toLocaleDateString("vi-VN")}` : ""}
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
             <button className="lime" type="button" onClick={() => go("/pricing")}>Nâng cấp MediMate+</button>
@@ -1137,6 +1142,7 @@ const styles = `
   padding:22px;
 }
 .plan-box strong{color:var(--profile-navy)}
+.quota-list{display:grid;gap:14px}
 .toast{
   border:1px solid #a9cbbb;
   border-radius:12px;
