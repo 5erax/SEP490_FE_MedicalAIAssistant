@@ -139,6 +139,14 @@ const BASE_ROUTES = [
     shell: "staff",
   },
   {
+    id: "doctor.recovery-plan-queue",
+    path: "/app/staff/recovery-plans/queue",
+    title: "Hàng đợi Kế hoạch phục hồi | MediMate AI",
+    access: "role",
+    roles: ["doctor"],
+    shell: "staff",
+  },
+  {
     id: "assessment.session",
     path: "/assessment/:sessionId",
     title: "Câu hỏi lâm sàng | MediMate AI",
