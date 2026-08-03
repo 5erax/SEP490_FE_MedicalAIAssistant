@@ -3,6 +3,17 @@ import { ENDPOINTS } from "./endpoints";
 
 const authenticatedRequest = (path, options = {}) => apiRequest(path, { ...options, auth: true });
 
+function referenceRangePayload(payload = {}) {
+  return {
+    gender: payload.gender,
+    ageGroup: payload.ageGroup,
+    comparisonType: payload.comparisonType,
+    minValue: payload.minValue ?? null,
+    maxValue: payload.maxValue ?? null,
+    unit: payload.unit ?? null,
+  };
+}
+
 export const labIndicatorsApi = {
   list(pageNumber = 1, pageSize = 10, filters = {}) {
     const params = new URLSearchParams(withPagination(pageNumber, pageSize));
@@ -47,11 +58,17 @@ export const labIndicatorsApi = {
   },
 
   createReferenceRange(indicatorId, payload) {
-    return authenticatedRequest(ENDPOINTS.LAB_INDICATORS.REFERENCE_RANGES(indicatorId), { method: "POST", body: payload });
+    return authenticatedRequest(ENDPOINTS.LAB_INDICATORS.REFERENCE_RANGES(indicatorId), {
+      method: "POST",
+      body: referenceRangePayload(payload),
+    });
   },
 
   updateReferenceRange(indicatorId, rangeId, payload) {
-    return authenticatedRequest(ENDPOINTS.LAB_INDICATORS.REFERENCE_RANGE_BY_ID(indicatorId, rangeId), { method: "PUT", body: payload });
+    return authenticatedRequest(ENDPOINTS.LAB_INDICATORS.REFERENCE_RANGE_BY_ID(indicatorId, rangeId), {
+      method: "PUT",
+      body: referenceRangePayload(payload),
+    });
   },
 
   removeReferenceRange(indicatorId, rangeId) {
