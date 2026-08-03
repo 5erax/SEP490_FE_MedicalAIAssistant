@@ -78,6 +78,12 @@ function createDepartmentSnapshot(department) {
     ) || 0,
     departmentId,
     departmentName,
+    description: normalizeText(
+      department.description
+      ?? department.Description
+      ?? department.reason
+      ?? department.Reason,
+    ),
     icdChapterCode: normalizeText(
       department.icdChapterCode ?? department.IcdChapterCode,
     ),
@@ -86,6 +92,27 @@ function createDepartmentSnapshot(department) {
     ) === true,
     priorityRank: Number(department.priorityRank ?? department.PriorityRank ?? 0) || 0,
     reason: normalizeText(department.reason ?? department.Reason),
+  };
+}
+
+function createDiagnosisSnapshot(diagnosis, index = 0) {
+  if (!isPlainObject(diagnosis)) return null;
+
+  const diseaseName = normalizeText(
+    diagnosis.diseaseName ?? diagnosis.DiseaseName ?? diagnosis.name,
+  );
+  const icd10Code = normalizeText(
+    diagnosis.icd10Code ?? diagnosis.Icd10Code ?? diagnosis.icdCode,
+  );
+  if (!diseaseName && !icd10Code) return null;
+
+  return {
+    clinicalReasoning: normalizeText(
+      diagnosis.clinicalReasoning ?? diagnosis.ClinicalReasoning,
+    ),
+    diseaseName,
+    icd10Code,
+    rank: Number(diagnosis.rank ?? diagnosis.Rank ?? index + 1) || index + 1,
   };
 }
 
@@ -126,6 +153,16 @@ function createFacilitySnapshot(facility) {
 function createClinicalMapSnapshot(analysis, fallbackSessionId) {
   if (!isPlainObject(analysis)) return null;
 
+  const diagnosisItems = analysis.diagnoses ?? analysis.Diagnoses;
+  const primaryDiagnosis = analysis.primaryDiagnosis ?? analysis.PrimaryDiagnosis;
+  const diagnoses = (
+    Array.isArray(diagnosisItems) && diagnosisItems.length > 0
+      ? diagnosisItems
+      : primaryDiagnosis ? [primaryDiagnosis] : []
+  )
+    .map(createDiagnosisSnapshot)
+    .filter(Boolean)
+    .sort((left, right) => left.rank - right.rank);
   const facilityItems = analysis.recommendedFacilities ?? analysis.RecommendedFacilities;
   const recommendedFacilities = (
     Array.isArray(facilityItems) ? facilityItems : []
@@ -138,11 +175,12 @@ function createClinicalMapSnapshot(analysis, fallbackSessionId) {
     ?? recommendedFacilities[0]?.departments?.[0]
     ?? null;
 
-  if (!recommendedDepartment && recommendedFacilities.length === 0) {
+  if (!recommendedDepartment && recommendedFacilities.length === 0 && diagnoses.length === 0) {
     return null;
   }
 
   return {
+    diagnoses,
     recommendedDepartment,
     recommendedFacilities,
     sessionId: normalizeText(analysis.sessionId ?? analysis.SessionId ?? fallbackSessionId),

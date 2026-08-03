@@ -719,7 +719,7 @@
   top: 18px;
   left: 18px;
   z-index: 6;
-  width: min(360px, calc(100% - 118px));
+  width: min(320px, calc(100% - 118px));
   display: grid;
   gap: 12px;
   overflow: hidden;
@@ -751,6 +751,154 @@
 .map-clinical-refresh .map-clinical-summary header > strong {
   font-size: 18px;
   line-height: 1.25;
+}
+
+.map-clinical-refresh .map-clinical-description {
+  margin: 0;
+  border-top: 1px solid var(--map-line);
+  padding-top: 11px;
+  color: var(--map-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.map-clinical-refresh .map-diagnosis-crossbar {
+  position: absolute;
+  top: 18px;
+  left: 356px;
+  z-index: 6;
+  width: min(680px, calc(100% - 440px));
+  max-height: min(320px, calc(100% - 36px));
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+  border: 1px solid var(--map-line-strong);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.97);
+  padding: 13px;
+  color: var(--map-ink);
+  box-shadow: 0 18px 46px rgba(15, 61, 58, 0.18);
+  backdrop-filter: blur(14px);
+  transform: none;
+}
+
+.map-clinical-refresh .map-diagnosis-crossbar > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.map-clinical-refresh .map-diagnosis-crossbar > header div {
+  display: grid;
+  gap: 2px;
+}
+
+.map-clinical-refresh .map-diagnosis-crossbar > header small {
+  color: var(--map-teal-strong);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.map-clinical-refresh .map-diagnosis-crossbar > header h3 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.map-clinical-refresh .map-diagnosis-crossbar > header > span {
+  color: var(--map-muted);
+  font-size: 10px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.map-clinical-refresh .map-diagnosis-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0;
+  padding: 0 0 4px;
+  list-style: none;
+  scrollbar-color: var(--map-line-strong) transparent;
+  scroll-snap-type: x proximity;
+}
+
+.map-clinical-refresh .map-diagnosis-list li {
+  flex: 0 0 min(168px, 58vw);
+  scroll-snap-align: start;
+}
+
+.map-clinical-refresh .map-diagnosis-list button {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--map-line);
+  border-radius: 12px;
+  background: var(--map-surface-soft);
+  padding: 9px 10px;
+  color: var(--map-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-clinical-refresh .map-diagnosis-list button:hover,
+.map-clinical-refresh .map-diagnosis-list button.is-expanded {
+  border-color: var(--map-teal);
+  background: var(--map-teal-soft);
+}
+
+.map-clinical-refresh .map-diagnosis-list button > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.map-clinical-refresh .map-diagnosis-list button strong {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-clinical-refresh .map-diagnosis-list button small {
+  color: var(--map-teal-strong);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.map-clinical-refresh .map-diagnosis-list button svg {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.map-clinical-refresh .map-diagnosis-list button.is-expanded svg {
+  transform: rotate(180deg);
+}
+
+.map-clinical-refresh .map-diagnosis-reasoning {
+  overflow-y: auto;
+  border-top: 1px solid var(--map-line);
+  padding: 10px 2px 1px;
+}
+
+.map-clinical-refresh .map-diagnosis-reasoning strong {
+  color: var(--map-teal-strong);
+  font-size: 11px;
+}
+
+.map-clinical-refresh .map-diagnosis-reasoning p {
+  margin: 5px 0 0;
+  color: var(--map-muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .map-clinical-refresh .map-clinical-summary header > span,
@@ -880,7 +1028,24 @@
   line-height: 1.45;
 }
 
+@media (max-width: 1280px) {
+  .map-clinical-refresh .map-diagnosis-crossbar {
+    top: auto;
+    right: 84px;
+    bottom: 18px;
+    left: 18px;
+    width: auto;
+    max-height: min(220px, calc(100% - 158px));
+    transform: none;
+  }
+}
+
 @media (max-width: 760px) {
+  .map-clinical-refresh.is-clinical-map-flow .map-stage {
+    flex: 0 0 540px;
+    min-height: 540px;
+  }
+
   .map-clinical-refresh .map-clinical-summary {
     top: 12px;
     right: 84px;
@@ -896,6 +1061,23 @@
     grid-template-columns: 1fr;
   }
 
+  .map-clinical-refresh .map-diagnosis-crossbar {
+    top: auto;
+    right: 12px;
+    bottom: 18px;
+    left: 12px;
+    max-height: 300px;
+    padding: 11px;
+  }
+
+  .map-clinical-refresh .map-diagnosis-crossbar > header {
+    align-items: start;
+  }
+
+  .map-clinical-refresh .map-diagnosis-crossbar > header > span {
+    display: none;
+  }
+
   .map-clinical-refresh .map-ai-hint {
     display: none;
   }
@@ -903,6 +1085,9 @@
 
 @media (forced-colors: active) {
   .map-clinical-refresh .map-clinical-summary,
+  .map-clinical-refresh .map-diagnosis-crossbar,
+  .map-clinical-refresh .map-diagnosis-list button,
+  .map-clinical-refresh .map-diagnosis-reasoning,
   .map-clinical-refresh .map-ai-department-field,
   .map-clinical-refresh .map-ai-department-field select,
   .map-clinical-refresh .map-ai-department-summary {

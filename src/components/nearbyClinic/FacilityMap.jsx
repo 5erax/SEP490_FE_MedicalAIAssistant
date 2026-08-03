@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Clock3, LocateFixed, Send, X } from "lucide-react";
+import { Bot, ChevronDown, Clock3, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi, webChatbotApi } from "../../services/api";
@@ -118,6 +118,69 @@ function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect }) {
         <span aria-hidden="true">+</span>
       </button>
     </Marker>
+  );
+}
+
+function diagnosisKey(diagnosis, index) {
+  return [diagnosis?.rank ?? index + 1, diagnosis?.icd10Code, diagnosis?.diseaseName]
+    .filter(Boolean)
+    .join("-");
+}
+
+function DiagnosisCrossbar({ diagnoses = [] }) {
+  const [expandedKey, setExpandedKey] = useState("");
+  const expandedDiagnosis = diagnoses.find((diagnosis, index) => (
+    diagnosisKey(diagnosis, index) === expandedKey
+  ));
+
+  return (
+    <section className="map-diagnosis-crossbar" aria-labelledby="map-diagnoses-title">
+      <header>
+        <div>
+          <small>Kết quả tham khảo</small>
+          <h3 id="map-diagnoses-title">Các chẩn đoán được cân nhắc</h3>
+        </div>
+        <span>Chọn từng bệnh để xem giải thích</span>
+      </header>
+      <ol className="map-diagnosis-list">
+        {diagnoses.map((diagnosis, index) => {
+          const key = diagnosisKey(diagnosis, index);
+          const expanded = key === expandedKey;
+          const reasoningId = `map-diagnosis-reasoning-${index}`;
+          const diseaseName = diagnosis.diseaseName || "Chưa xác định tên bệnh";
+          const icd10Code = diagnosis.icd10Code || "Chưa có mã ICD";
+
+          return (
+            <li key={key}>
+              <button
+                type="button"
+                className={expanded ? "is-expanded" : ""}
+                aria-expanded={expanded}
+                aria-controls={expanded ? reasoningId : undefined}
+                onClick={() => setExpandedKey((current) => current === key ? "" : key)}
+              >
+                <span>
+                  <strong>{diseaseName}</strong>
+                  <small>ICD-10: {icd10Code}</small>
+                </span>
+                <ChevronDown size={16} aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      {expandedDiagnosis && (
+        <div
+          className="map-diagnosis-reasoning"
+          id={`map-diagnosis-reasoning-${diagnoses.indexOf(expandedDiagnosis)}`}
+          role="region"
+          aria-live="polite"
+        >
+          <strong>Giải thích lâm sàng</strong>
+          <p>{expandedDiagnosis.clinicalReasoning || "Chưa có giải thích lâm sàng cho chẩn đoán này."}</p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -586,31 +649,18 @@ export default function FacilityMap({
                 <small>Chuyên khoa được gợi ý</small>
                 <strong>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</strong>
               </header>
-              <div className="map-clinical-summary-body">
-                {selectedFacility && (
-                  <div>
-                    <small>Cơ sở được đề xuất</small>
-                    <strong>{selectedFacility.facilityName}</strong>
-                    <span>{selectedFacility.address}</span>
-                  </div>
-                )}
-                {Number.isFinite(confidence) && confidence > 0 && (
-                  <span className="map-clinical-confidence">{confidence}% phù hợp</span>
-                )}
-              </div>
-              {clinicalNotice && <p className="map-clinical-availability" role="status">{clinicalNotice}</p>}
-              {recommendedDepartment?.isEmergencySuggested && (
-                <p className="map-clinical-urgent">Hệ thống ghi nhận dấu hiệu cần được ưu tiên đánh giá y tế.</p>
-              )}
-              <p className="map-clinical-disclaimer">
-                Gợi ý giúp định hướng nơi khám. Cơ sở y tế sẽ xác nhận chuyên khoa phù hợp sau khi đánh giá trực tiếp.
+              <p className="map-clinical-description">
+                {recommendedDepartment?.description
+                  || recommendedDepartment?.reason
+                  || "Chưa có mô tả cho chuyên khoa được gợi ý."}
               </p>
-              {selectedFacility && (
-                <button type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
-              )}
             </>
           )}
         </aside>
+      )}
+
+      {isClinicalFlow && clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
+        <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} />
       )}
 
       {mapStatus !== "error" && (
