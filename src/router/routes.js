@@ -127,8 +127,8 @@ const BASE_ROUTES = [
   { id: "public.support", path: "/support", title: "Hỗ trợ | MediMate AI", access: "public" },
   { id: "public.privacy", path: "/privacy", title: "Quyền riêng tư | MediMate AI", access: "public" },
   { id: "public.medical-disclaimer", path: "/medical-disclaimer", title: "Tuyên bố miễn trừ y tế | MediMate AI", access: "public" },
-  { id: "payment.return", path: "/payment/return", title: "Thanh toán thành công | MediMate AI", access: "public", returnable: false },
-  { id: "payment.cancel", path: "/payment/cancel", title: "Thanh toán đã hủy | MediMate AI", access: "public", returnable: false },
+  { id: "payment.return", path: "/payment/return", title: "Thanh toán thành công | MediMate AI", access: "public" },
+  { id: "payment.cancel", path: "/payment/cancel", title: "Thanh toán đã hủy | MediMate AI", access: "public" },
   { id: "workspace.redirect", path: "/app", title: "Không gian làm việc | MediMate AI", access: "public", returnable: false },
   {
     id: "staff.workspace",
