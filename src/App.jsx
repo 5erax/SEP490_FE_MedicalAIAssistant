@@ -22,6 +22,7 @@ const AdminWorkspacePage = lazy(loadAdminWorkspacePage);
 const ChatbotPage = lazy(() => import("./pages/ChatbotPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const DoctorRegisterInvitationPage = lazy(() => import("./pages/DoctorRegisterInvitationPage"));
+const DoctorRecoveryPlanQueuePage = lazy(() => import("./pages/DoctorRecoveryPlanQueuePage"));
 const MedicalRecordPage = lazy(() => import("./pages/MedicalRecordPage"));
 const MedicationScanPage = lazy(() => import("./pages/MedicationScanPage"));
 const PaymentResultPage = lazy(() => import("./pages/PaymentResultPage"));
@@ -128,6 +129,8 @@ function App() {
       return <WorkspaceRedirect />;
     case "staff.workspace":
       return lazyPage(<StaffWorkspacePage />);
+    case "doctor.recovery-plan-queue":
+      return lazyPage(<DoctorRecoveryPlanQueuePage />);
     case "assessment.session":
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="questions" sessionId={route.params?.sessionId} />));
     case "assessment.result":
