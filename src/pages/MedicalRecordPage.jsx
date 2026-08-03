@@ -330,10 +330,15 @@ export default function MedicalRecordPage() {
   const detailHeadingRef = useRef(null);
 
   const gender = normalizeGender(profile?.gender);
+  const currentAge = useMemo(
+    () => calculateAgeAtTest(profile?.dateOfBirth, todayInputValue()),
+    [profile?.dateOfBirth],
+  );
   const ageAtTest = useMemo(
     () => calculateAgeAtTest(profile?.dateOfBirth, testDate),
     [profile?.dateOfBirth, testDate],
   );
+  const displayedAge = testDate ? ageAtTest : currentAge;
   const currentProfileProblem = profileProblem(profile, profileStatus);
   const isSubmitting = ["uploading", "analyzing"].includes(submissionStatus);
 
@@ -590,7 +595,10 @@ export default function MedicalRecordPage() {
                       <div><dt>Họ và tên</dt><dd>{profile?.displayName || profile?.name || "Chưa cập nhật"}</dd></div>
                       <div><dt>Giới tính</dt><dd>{GENDER_LABELS[gender] || "Chưa hỗ trợ"}</dd></div>
                       <div><dt>Ngày sinh</dt><dd>{formatDate(profile?.dateOfBirth)}</dd></div>
-                      <div><dt>Tuổi tại ngày xét nghiệm</dt><dd>{ageAtTest === null ? "Chọn ngày xét nghiệm" : `${ageAtTest} tuổi`}</dd></div>
+                      <div>
+                        <dt>{testDate ? "Tuổi tại ngày xét nghiệm" : "Tuổi hiện tại"}</dt>
+                        <dd aria-live="polite">{displayedAge === null ? "Chưa thể tính" : `${displayedAge} tuổi`}</dd>
+                      </div>
                     </dl>
                     {currentProfileProblem && (
                       <div className="records-profile-warning" role="alert">

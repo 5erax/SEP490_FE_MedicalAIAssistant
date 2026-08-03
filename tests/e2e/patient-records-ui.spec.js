@@ -95,6 +95,7 @@ async function openPatientRecords(page, options = {}) {
             dateOfBirth: "1990-08-10",
             roles: ["Patient"],
             isProfileCompleted: true,
+            ...options.profileOverrides,
           },
         }),
       });
@@ -166,6 +167,24 @@ test("patient submits the backend lab analysis payload from profile data", async
   await expect(page.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeVisible();
   await expect(page.getByText("Hemoglobin", { exact: true })).toBeVisible();
   await expect(page.getByText("13,8 g/dL", { exact: true })).toBeVisible();
+});
+
+test("patient age is derived from the profile birth date and selected test date", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-08-03T09:00:00+07:00"));
+  await openPatientRecords(page, {
+    profileOverrides: { dateOfBirth: "2003-10-17" },
+  });
+
+  await expect(page.getByText("Tuổi hiện tại", { exact: true })).toBeVisible();
+  await expect(page.getByText("22 tuổi", { exact: true })).toBeVisible();
+
+  const testDateInput = page.getByLabel(/Ngày xét nghiệm/);
+  await testDateInput.fill("2025-10-16");
+  await expect(page.getByText("Tuổi tại ngày xét nghiệm", { exact: true })).toBeVisible();
+  await expect(page.getByText("21 tuổi", { exact: true })).toBeVisible();
+
+  await testDateInput.fill("2025-10-17");
+  await expect(page.getByText("22 tuổi", { exact: true })).toBeVisible();
 });
 
 test("free patient can open the temporarily unlocked lab analysis", async ({ page }) => {
