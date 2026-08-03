@@ -7,6 +7,9 @@ import { getStoredAuth } from "./apiClient";
 
 const REQUEST_EVENT = "RecoveryPlanRequestChanged";
 const PLAN_EVENT = "RecoveryPlanChanged";
+const QUEUE_EVENT = "RecoveryPlanQueueChanged";
+const ACCESS_CHANGED_EVENT = "RecoveryPlanRealtimeAccessChanged";
+const REFRESH_DOCTOR_MEMBERSHIP_METHOD = "RefreshDoctorMembershipAsync";
 const HUB_PATH = "/hubs/recovery-plans";
 
 const listeners = new Set();
@@ -47,6 +50,12 @@ function buildConnection(accessToken) {
   });
   nextConnection.on(PLAN_EVENT, (payload) => {
     emit({ type: "plan", payload });
+  });
+  nextConnection.on(QUEUE_EVENT, (payload) => {
+    emit({ type: "queue", payload });
+  });
+  nextConnection.on(ACCESS_CHANGED_EVENT, (payload) => {
+    emit({ type: "access", payload });
   });
   nextConnection.onreconnecting(() => {
     emit({ type: "connection", status: "reconnecting" });
@@ -101,6 +110,20 @@ export async function ensureRecoveryPlanConnection() {
     });
 
   return startPromise;
+}
+
+// Doctor-only: joins the private doctor group and, if accepting requests,
+// the shared queue group. Must be invoked after every connect/reconnect
+// (the hub does not know the caller's role until this is called) -
+// patient pages never call this.
+export async function refreshDoctorMembership() {
+  if (!connection || connection.state !== HubConnectionState.Connected) return false;
+  try {
+    await connection.invoke(REFRESH_DOCTOR_MEMBERSHIP_METHOD);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function stopRecoveryPlanConnection() {

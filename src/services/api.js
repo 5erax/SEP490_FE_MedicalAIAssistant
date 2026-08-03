@@ -30,6 +30,11 @@ export {
 } from "./symptomAnalysisService";
 export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
 export { recoveryPlanRequestsApi, recoveryPlansApi } from "./recoveryPlanService";
+export {
+  doctorRecoveryPlanRequestsApi,
+  doctorRecoveryPlansApi,
+  normalizeDoctorPlanDetail,
+} from "./doctorRecoveryPlanService";
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
 export { consultationSessionsApi } from "./consultationSessionService";
