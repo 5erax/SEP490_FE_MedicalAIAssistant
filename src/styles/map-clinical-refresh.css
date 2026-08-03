@@ -782,6 +782,17 @@
   transform: none;
 }
 
+@media (min-width: 761px) {
+  .map-clinical-refresh .map-clinical-summary,
+  .map-clinical-refresh .map-diagnosis-crossbar {
+    min-height: 160px;
+  }
+
+  .map-clinical-refresh .map-clinical-summary {
+    align-content: start;
+  }
+}
+
 .map-clinical-refresh .map-diagnosis-crossbar > header {
   display: flex;
   align-items: end;
