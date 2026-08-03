@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, CircleX, Clock3, CreditCard, LoaderCircle, RefreshCw } from "lucide-react";
-import { authApi, getStoredAuth, paymentsApi, userSubscriptionsApi } from "../services/api";
+import { authApi, getStoredAuth, paymentsApi, subscriptionUsageApi, userSubscriptionsApi } from "../services/api";
 import { navigate } from "../router/navigation";
 import {
   clearRememberedReturnTo,
@@ -125,6 +125,7 @@ export default function PaymentResultPage({ expectedResult }) {
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
   const [callbackParams] = useState(getCallbackParams);
+  const [usage, setUsage] = useState(null);
   const view = getView(status);
   const Icon = view.icon;
   const isCancelFlow = expectedResult === "cancel";
@@ -136,6 +137,14 @@ export default function PaymentResultPage({ expectedResult }) {
       await authApi.refresh();
     } catch {
       // Subscription state is already refreshed even if token refresh is delayed.
+    }
+    try {
+      const usageResponse = await subscriptionUsageApi.getUsage();
+      setUsage(usageResponse?.data ?? null);
+    } catch {
+      // Quota card is optional context here; NO_ACTIVE_SUBSCRIPTION or
+      // RECOVERY_PLAN_QUOTA_NOT_CONFIGURED just means nothing to show.
+      setUsage(null);
     }
   }, [hasAuth]);
 
@@ -267,6 +276,15 @@ export default function PaymentResultPage({ expectedResult }) {
             <div>
               <dt>Trạng thái</dt>
               <dd>{getStatusLabel(status)}</dd>
+            </div>
+          </dl>
+        )}
+
+        {success && usage && (
+          <dl className="payment-result-reference payment-result-usage">
+            <div>
+              <dt>{usage.quotaName || "Hạn mức sử dụng"}</dt>
+              <dd>{usage.remainingCount ?? "—"}/{usage.limitValue ?? "—"} lượt còn lại</dd>
             </div>
           </dl>
         )}
