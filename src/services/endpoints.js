@@ -113,9 +113,11 @@ export const ENDPOINTS = {
     MY_PAYMENT: (id) => `${PAYMENTS_BASE}/me/${encodeURIComponent(id)}`,
     BY_ID: (id) => byId(PAYMENTS_BASE, id),
     BY_USER: (userId) => `${PAYMENTS_BASE}/user/${encodeURIComponent(userId)}`,
+    PAYOS_RECONCILE: (orderCode) => `${PAYMENTS_BASE}/payos-reconcile/${encodeURIComponent(orderCode)}`,
+    // Legacy: kept for backward compatibility only, not used by the new
+    // reconciliation flow (BE still exposes these endpoints).
     PAYOS_RETURN: `${PAYMENTS_BASE}/payos-return`,
     PAYOS_CANCEL: `${PAYMENTS_BASE}/payos-cancel`,
-    PAYOS_WEBHOOK: `${PAYMENTS_BASE}/payos-webhook`,
     PAYOS_STATUS: (orderCode) => `${PAYMENTS_BASE}/payos-status/${encodeURIComponent(orderCode)}`,
   },
   AI_CONFIGS: {

@@ -102,6 +102,8 @@ export const paymentsApi = {
     return apiRequest(ENDPOINTS.PAYMENTS.BY_USER(userId), { auth: true });
   },
 
+  // Legacy: not called by the reconciliation flow, kept only for
+  // backward compatibility while BE still exposes these endpoints.
   payOsReturn(params = {}) {
     return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_RETURN, params));
   },
@@ -110,14 +112,18 @@ export const paymentsApi = {
     return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_CANCEL, params));
   },
 
-  payOsWebhook(payload = {}) {
-    return apiRequest(ENDPOINTS.PAYMENTS.PAYOS_WEBHOOK, {
-      method: "POST",
-      body: payload,
-    });
-  },
-
   payOsStatus(orderCode) {
     return apiRequest(ENDPOINTS.PAYMENTS.PAYOS_STATUS(orderCode));
+  },
+
+  reconcilePayOs(orderCode) {
+    const normalizedOrderCode = String(orderCode ?? "").trim();
+    if (!normalizedOrderCode) {
+      return Promise.reject(new Error("Thiếu mã giao dịch PayOS."));
+    }
+    return apiRequest(ENDPOINTS.PAYMENTS.PAYOS_RECONCILE(normalizedOrderCode), {
+      method: "POST",
+      auth: true,
+    });
   },
 };
