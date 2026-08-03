@@ -14,7 +14,6 @@ import {
   MessageSquare,
   Pill,
   Search,
-  Settings2,
   UserRound,
   X,
 } from "lucide-react";
@@ -25,7 +24,6 @@ import { getNavigationModel } from "../../router/routes";
 import { authApi, getStoredAuth, hasPremiumAccess, setStoredAuth } from "../../services/api";
 import { logoutUser } from "../../services/logoutService";
 import "../../styles/user-workspace.css";
-import DisplayPreferences from "../preferences/DisplayPreferences";
 import { Dialog, useOverlayFocus } from "../ui";
 import PatientOnboardingAssistant from "./PatientOnboardingAssistant";
 import PatientProfileSetupModal from "./PatientProfileSetupModal";
@@ -39,11 +37,11 @@ const PATIENT_ICONS = {
   profile: UserRound,
   records: ClipboardList,
   recovery: CalendarDays,
-  medication: Pill,
+  medications: Pill,
 };
 
 const NAV_ITEMS = getNavigationModel("patient")
-  .filter((item) => !["patient.profile", "assistant.intake"].includes(item.id))
+  .filter((item) => !["patient.profile", "patient.medication", "patient.medications", "assistant.intake"].includes(item.id))
   .map((item) => ({
     ...item,
     icon: PATIENT_ICONS[item.icon],
@@ -51,10 +49,10 @@ const NAV_ITEMS = getNavigationModel("patient")
 
 const MOBILE_ITEMS = NAV_ITEMS.filter((item) => item.mobile);
 const SECONDARY_ACTIVE_ITEMS = {
-  "/symptom": { label: "Chẩn đoán lâm sàng", icon: Activity },
   "/chat": { label: "Trợ lý AI", icon: MessageSquare },
   "/profile": { label: "Hồ sơ", icon: UserRound },
-  "/medication": { label: "Thuốc & lịch nhắc", icon: Pill },
+  "/medication": { label: "Kiểm tra thuốc", icon: Pill },
+  "/my-medications": { label: "Thuốc & lịch nhắc", icon: Pill },
   "/assessment/history": { label: "Lịch sử phân tích", icon: ClipboardList },
 };
 const EMPTY_ACCOUNT_CACHE = { accessToken: "", user: null };
@@ -516,10 +514,10 @@ export default function UserWorkspaceShell({ children }) {
                         <UserRound size={17} aria-hidden="true" />
                         Hồ sơ
                       </button>
-                      <div className="account-menu-preferences">
-                        <Settings2 size={17} aria-hidden="true" />
-                        <DisplayPreferences compact />
-                      </div>
+                      <button type="button" onClick={() => navigateFromAccount("/my-medications")}>
+                        <Pill size={17} aria-hidden="true" />
+                        Thuốc & lịch nhắc
+                      </button>
                       <button type="button" onClick={() => navigateFromAccount("/profile?tab=transactions")}>
                         <CreditCard size={17} aria-hidden="true" />
                         Lịch sử giao dịch

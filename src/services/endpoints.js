@@ -102,14 +102,13 @@ export const ENDPOINTS = {
     BASE: SUBSCRIPTION_PLANS_BASE,
     ACTIVE: `${SUBSCRIPTION_PLANS_BASE}/active`,
     BY_ID: (id) => byId(SUBSCRIPTION_PLANS_BASE, id),
+    STATUS: (id) => status(SUBSCRIPTION_PLANS_BASE, id),
   },
   USER_SUBSCRIPTIONS: {
     CHECKOUT: `${USER_SUBSCRIPTIONS_BASE}/checkout`,
     ME: `${USER_SUBSCRIPTIONS_BASE}/me`,
+    BY_ID: (id) => byId(USER_SUBSCRIPTIONS_BASE, id),
     CANCEL: (id) => `${byId(USER_SUBSCRIPTIONS_BASE, id)}/cancel`,
-  },
-  SUBSCRIPTION_USAGE: {
-    ME: SUBSCRIPTION_USAGE_BASE,
   },
   PAYMENTS: {
     LIST: PAYMENTS_BASE,
@@ -117,6 +116,11 @@ export const ENDPOINTS = {
     MY_PAYMENT: (id) => `${PAYMENTS_BASE}/me/${encodeURIComponent(id)}`,
     BY_ID: (id) => byId(PAYMENTS_BASE, id),
     BY_USER: (userId) => `${PAYMENTS_BASE}/user/${encodeURIComponent(userId)}`,
+    PAYOS_RECONCILE: (orderCode) => `${PAYMENTS_BASE}/payos-reconcile/${encodeURIComponent(orderCode)}`,
+    // Legacy: kept for backward compatibility only, not used by the new
+    // reconciliation flow (BE still exposes these endpoints).
+    PAYOS_RETURN: `${PAYMENTS_BASE}/payos-return`,
+    PAYOS_CANCEL: `${PAYMENTS_BASE}/payos-cancel`,
     PAYOS_STATUS: (orderCode) => `${PAYMENTS_BASE}/payos-status/${encodeURIComponent(orderCode)}`,
   },
   AI_CONFIGS: {
@@ -154,6 +158,9 @@ export const ENDPOINTS = {
     BASE: USER_MEDICATIONS_BASE,
     BY_ID: (medicationId) => encodedById(USER_MEDICATIONS_BASE, medicationId),
     REMINDERS: (medicationId) => `${encodedById(USER_MEDICATIONS_BASE, medicationId)}/reminders`,
+  },
+  SUBSCRIPTION_USAGE: {
+    ME: SUBSCRIPTION_USAGE_BASE,
   },
   RECOVERY_PLAN_REQUESTS: {
     BASE: RECOVERY_PLAN_REQUESTS_BASE,

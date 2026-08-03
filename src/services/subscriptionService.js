@@ -25,6 +25,36 @@ export const subscriptionPlansApi = {
     return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id));
   },
 
+  create(payload) {
+    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BASE, {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  update(id, payload) {
+    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id), {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  setStatus(id, isActive) {
+    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.STATUS(id), {
+      method: "PATCH",
+      body: { isActive },
+      auth: true,
+    });
+  },
+
+  remove(id) {
+    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id), {
+      method: "DELETE",
+      auth: true,
+    });
+  },
 };
 
 export const userSubscriptionsApi = {
@@ -38,6 +68,10 @@ export const userSubscriptionsApi = {
 
   me() {
     return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.ME, { auth: true });
+  },
+
+  get(id) {
+    return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.BY_ID(id), { auth: true });
   },
 
   cancel(id) {
@@ -75,7 +109,28 @@ export const paymentsApi = {
     return apiRequest(ENDPOINTS.PAYMENTS.BY_USER(userId), { auth: true });
   },
 
+  // Legacy: not called by the reconciliation flow, kept only for
+  // backward compatibility while BE still exposes these endpoints.
+  payOsReturn(params = {}) {
+    return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_RETURN, params));
+  },
+
+  payOsCancel(params = {}) {
+    return apiRequest(withQuery(ENDPOINTS.PAYMENTS.PAYOS_CANCEL, params));
+  },
+
   payOsStatus(orderCode) {
     return apiRequest(ENDPOINTS.PAYMENTS.PAYOS_STATUS(orderCode));
+  },
+
+  reconcilePayOs(orderCode) {
+    const normalizedOrderCode = String(orderCode ?? "").trim();
+    if (!normalizedOrderCode) {
+      return Promise.reject(new Error("Thiếu mã giao dịch PayOS."));
+    }
+    return apiRequest(ENDPOINTS.PAYMENTS.PAYOS_RECONCILE(normalizedOrderCode), {
+      method: "POST",
+      auth: true,
+    });
   },
 };

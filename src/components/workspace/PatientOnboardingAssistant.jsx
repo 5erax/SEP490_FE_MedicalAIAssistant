@@ -28,7 +28,7 @@ const TOUR_STEPS = [
   },
   {
     title: "Tài khoản và hồ sơ",
-    body: "Mở menu tài khoản để cập nhật hồ sơ cá nhân, xem giao dịch hoặc đổi tùy chọn hiển thị.",
+    body: "Mở menu tài khoản để cập nhật hồ sơ cá nhân, quản lý thuốc hoặc xem lịch sử giao dịch.",
     target: '[data-onboarding="patient-account"]',
   },
   {

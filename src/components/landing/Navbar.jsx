@@ -2,7 +2,6 @@ import { Menu, X } from "lucide-react";
 import { createRef, useEffect, useMemo, useRef, useState } from "react";
 import { getStoredAuth } from "../../services/api";
 import { useOverlayFocus } from "../ui";
-import DisplayPreferences from "../preferences/DisplayPreferences";
 
 const NAV_LINKS = [
   { name: "Tính năng", href: "/#support", sectionId: "support" },
@@ -163,7 +162,6 @@ export function Navbar({ variant = "default" }) {
         </nav>
 
         <div className="nav-actions">
-          <DisplayPreferences compact />
           {auth ? (
             <a href="/app" className="btn btn-dark">
               Vào ứng dụng
@@ -218,7 +216,6 @@ export function Navbar({ variant = "default" }) {
                 <span>Đóng menu</span>
                 <X size={19} aria-hidden="true" />
               </button>
-              <DisplayPreferences />
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.href}

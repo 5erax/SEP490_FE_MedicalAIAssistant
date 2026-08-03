@@ -14,12 +14,6 @@ function withQuery(path, params = {}) {
 
 const authenticatedRequest = (path, options = {}) => apiRequest(path, { ...options, auth: true });
 
-export const subscriptionUsageApi = {
-  me() {
-    return authenticatedRequest(ENDPOINTS.SUBSCRIPTION_USAGE.ME);
-  },
-};
-
 export const recoveryPlanRequestsApi = {
   create(payload, idempotencyKey) {
     return authenticatedRequest(ENDPOINTS.RECOVERY_PLAN_REQUESTS.BASE, {

@@ -1,54 +1,118 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, CircleX, Clock3, CreditCard, LoaderCircle, RefreshCw } from "lucide-react";
 import {
-  authApi,
-  getStoredAuth,
-  paymentsApi,
-  subscriptionUsageApi,
-  userSubscriptionsApi,
-} from "../services/api";
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  CircleX,
+  Clock3,
+  CreditCard,
+  LoaderCircle,
+  LogIn,
+  RefreshCw,
+} from "lucide-react";
+import { authApi, getStoredAuth, paymentsApi, subscriptionUsageApi, userSubscriptionsApi } from "../services/api";
 import { navigate } from "../router/navigation";
 import {
   clearRememberedReturnTo,
   getRememberedReturnTo,
   getReturnToFromSearch,
+  withReturnTo,
 } from "../router/returnIntent";
 import "../styles/payment-result.css";
 
-const MAX_STATUS_CHECKS = 12;
-const STATUS_CHECK_DELAY = 2500;
+const MAX_RECONCILE_ATTEMPTS = 6;
+const RECONCILE_DELAY_MS = 10_000;
+const AUTO_RETRY_STATUSES = new Set(["pending", "processing", "activation-pending"]);
+const TERMINAL_STATUSES = new Set(["success", "cancelled", "expired", "failed"]);
+
 function getOrderCode() {
   return new URLSearchParams(window.location.search).get("orderCode")?.trim() || "";
 }
 
+function normalizeUpper(value) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+function normalizeLower(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+// Mirrors the reconciliation contract exactly: providerStatus is the
+// primary source of truth, then isPaid/isActive/isCancelled, then the
+// local paymentStatus string. subscriptionStatus is intentionally never
+// used to decide "cancelled" - backend can set it to Cancelled for a
+// FAILED or EXPIRED transaction too.
 function classifyPayment(data) {
+  const providerStatus = normalizeUpper(data?.providerStatus);
+  const paymentStatus = normalizeLower(data?.paymentStatus);
+
   if (data?.isPaid && data?.isActive) return "success";
-  if (data?.isCancelled || data?.cancelled) return "cancelled";
 
-  const paymentStatus = String(data?.paymentStatus ?? data?.status ?? "").toLowerCase();
-  const subscriptionStatus = String(data?.subscriptionStatus ?? data?.subscription?.status ?? "").toLowerCase();
+  if (providerStatus === "CANCELLED" || data?.isCancelled) return "cancelled";
+  if (providerStatus === "EXPIRED") return "expired";
+  if (providerStatus === "FAILED") return "failed";
+  if (providerStatus === "UNDERPAID") return "underpaid";
+  if (providerStatus === "PROCESSING") return "processing";
 
-  if (["paid", "completed", "success", "succeeded"].includes(paymentStatus)) return "success";
-  if (["cancelled", "canceled", "cancel"].includes(paymentStatus)) return "cancelled";
-  if (["failed", "fail", "error"].includes(paymentStatus)) return "failed";
-  if (["expired", "expire"].includes(paymentStatus)) return "expired";
-  if (["active", "paid", "completed"].includes(subscriptionStatus)) return "success";
-  if (["cancelled", "canceled", "cancel"].includes(subscriptionStatus)) return "cancelled";
-  if (["failed", "fail", "error"].includes(subscriptionStatus)) return "failed";
-  if (["expired", "expire"].includes(subscriptionStatus)) return "expired";
+  if (providerStatus === "PAID" || data?.isPaid || paymentStatus === "paid") {
+    return data?.isActive ? "success" : "activation-pending";
+  }
+
+  if (["cancelled", "canceled"].includes(paymentStatus)) return "cancelled";
+  if (paymentStatus === "failed") return "failed";
 
   return "pending";
 }
 
-function getView(status) {
+function getReconcileErrorState(error) {
+  const codes = Array.isArray(error?.payload?.errors) ? error.payload.errors : [];
+  if (error?.status === 401) return "unauthenticated";
+  if (error?.status === 429 || codes.includes("PAYOS_RATE_LIMITED")) return "rate-limited";
+  if (error?.status === 502) return "provider-unavailable";
+  return "error";
+}
+
+function getView(status, paymentDetail) {
   if (status === "cancelled") {
     return {
       eyebrow: "Trạng thái đã được xác nhận",
-      title: "Giao dịch đã được xác nhận là đã hủy.",
-      description:
-        "MediMate đã nhận trạng thái hủy từ cổng thanh toán. Bạn có thể kiểm tra lại gói đang dùng trong không gian cá nhân.",
+      title: "Giao dịch đã hủy",
+      description: "PayOS xác nhận giao dịch đã bị hủy.",
       icon: CircleX,
       tone: "cancelled",
+    };
+  }
+
+  if (status === "expired") {
+    return {
+      eyebrow: "Giao dịch đã hết hạn",
+      title: "Liên kết thanh toán đã hết hạn.",
+      description: "Tạo giao dịch mới nếu vẫn muốn đăng ký gói.",
+      icon: CircleX,
+      tone: "error",
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      eyebrow: "Giao dịch không thành công",
+      title: "Thanh toán chưa hoàn tất.",
+      description: "Giao dịch đã kết thúc nhưng không được PayOS xác nhận thành công.",
+      icon: CircleX,
+      tone: "error",
+    };
+  }
+
+  if (status === "underpaid") {
+    const amountRemaining = paymentDetail?.amountRemaining;
+    return {
+      eyebrow: "Số tiền nhận chưa đủ",
+      title: "Số tiền nhận chưa đủ.",
+      description: Number.isFinite(amountRemaining) && amountRemaining > 0
+        ? `PayOS chưa ghi nhận đủ số tiền. Còn thiếu ${amountRemaining.toLocaleString("vi-VN")} đ trước khi gói được kích hoạt.`
+        : "PayOS chưa ghi nhận đủ số tiền. Kiểm tra số tiền còn thiếu trước khi thử lại.",
+      icon: AlertTriangle,
+      tone: "pending",
     };
   }
 
@@ -56,30 +120,67 @@ function getView(status) {
     return {
       eyebrow: "Thanh toán hoàn tất",
       title: "MediMate+ đã sẵn sàng.",
-      description:
-        "Thanh toán đã được xác nhận và quyền lợi nâng cao đã được kích hoạt cho tài khoản của bạn.",
+      description: "Thanh toán đã xác nhận và gói đã được kích hoạt.",
       icon: CheckCircle2,
       tone: "success",
     };
   }
 
-  if (status === "failed" || status === "expired") {
+  if (status === "activation-pending") {
     return {
-      eyebrow: status === "expired" ? "Giao dịch đã hết hạn" : "Giao dịch không thành công",
-      title: status === "expired" ? "Liên kết thanh toán đã hết hạn." : "Thanh toán chưa hoàn tất.",
-      description:
-        "Giao dịch đã kết thúc nhưng không thành công. Hãy chọn lại gói nếu bạn muốn thử thanh toán mới.",
-      icon: CircleX,
-      tone: "error",
+      eyebrow: "Đã nhận thanh toán",
+      title: "Đã nhận thanh toán.",
+      description: "MediMate đang hoàn tất kích hoạt quyền lợi cho tài khoản.",
+      icon: LoaderCircle,
+      tone: "pending",
+    };
+  }
+
+  if (status === "processing") {
+    return {
+      eyebrow: "PayOS đang xử lý",
+      title: "PayOS đang xử lý giao dịch.",
+      description: "Giao dịch chưa có kết quả cuối cùng. Trang sẽ kiểm tra lại sau.",
+      icon: LoaderCircle,
+      tone: "pending",
+    };
+  }
+
+  if (status === "unauthenticated") {
+    return {
+      eyebrow: "Cần đăng nhập lại",
+      title: "Phiên đăng nhập đã hết hạn.",
+      description: "Đăng nhập lại để MediMate xác minh giao dịch này.",
+      icon: LogIn,
+      tone: "pending",
+    };
+  }
+
+  if (status === "rate-limited") {
+    return {
+      eyebrow: "Kiểm tra quá thường xuyên",
+      title: "Kiểm tra quá thường xuyên.",
+      description: "Chờ một lúc rồi bấm \"Kiểm tra lại\".",
+      icon: Clock3,
+      tone: "pending",
+    };
+  }
+
+  if (status === "provider-unavailable") {
+    return {
+      eyebrow: "Chưa kết nối được PayOS",
+      title: "Chưa kết nối được PayOS.",
+      description: "Không tạo giao dịch mới; hãy kiểm tra lại giao dịch hiện tại sau.",
+      icon: Clock3,
+      tone: "pending",
     };
   }
 
   if (status === "pending" || status === "checking") {
     return {
-      eyebrow: "Đang kiểm tra trạng thái",
-      title: "Giao dịch chưa được xác nhận.",
-      description:
-        "MediMate đang chờ trạng thái chính thức từ cổng thanh toán. Trang sẽ tự kiểm tra lại trong ít phút.",
+      eyebrow: "Đang xác minh giao dịch",
+      title: "Đang xác minh giao dịch.",
+      description: "MediMate đang đối chiếu trạng thái trực tiếp với PayOS.",
       icon: LoaderCircle,
       tone: "pending",
     };
@@ -99,19 +200,23 @@ function getView(status) {
   return {
     eyebrow: "Chưa xác minh được",
     title: "Không thể kiểm tra giao dịch lúc này.",
-    description:
-      "Kết nối xác minh đang gián đoạn. Hãy kiểm tra lại trạng thái gói trước khi thực hiện giao dịch khác.",
+    description: "Kết nối xác minh đang gián đoạn. Hãy kiểm tra lại trạng thái gói trước khi thực hiện giao dịch khác.",
     icon: Clock3,
     tone: "pending",
   };
 }
 
 function getStatusLabel(status) {
-  if (status === "cancelled") return "Đã hủy";
   if (status === "success") return "Đã kích hoạt";
-  if (status === "failed") return "Thất bại";
+  if (status === "activation-pending") return "Đang kích hoạt";
+  if (status === "processing") return "PayOS đang xử lý";
+  if (status === "underpaid") return "Thiếu tiền";
+  if (status === "cancelled") return "Đã hủy";
   if (status === "expired") return "Hết hạn";
-  if (status === "missing" || status === "error") return "Chưa xác minh";
+  if (status === "failed") return "Thất bại";
+  if (status === "unauthenticated") return "Cần đăng nhập lại";
+  if (status === "rate-limited") return "Kiểm tra quá nhanh";
+  if (status === "provider-unavailable" || status === "error") return "Chưa xác minh";
   return "Đang xác minh";
 }
 
@@ -123,37 +228,60 @@ export default function PaymentResultPage({ expectedResult }) {
   const [orderCode] = useState(getOrderCode);
   const [status, setStatus] = useState(() => getInitialStatus(orderCode));
   const [message, setMessage] = useState("");
+  const [paymentDetail, setPaymentDetail] = useState(null);
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
-  const view = getView(status);
+  const [usage, setUsage] = useState(null);
+  const view = getView(status, paymentDetail);
   const Icon = view.icon;
+  const isCancelFlow = expectedResult === "cancel";
 
   const refreshPremiumState = useCallback(async () => {
     if (!hasAuth) return;
-    await Promise.allSettled([
-      userSubscriptionsApi.me(),
-      subscriptionUsageApi.me(),
-      authApi.refresh(),
-    ]);
+    await userSubscriptionsApi.me();
+    try {
+      await authApi.refresh();
+    } catch {
+      // Subscription state is already refreshed even if token refresh is delayed.
+    }
+    try {
+      const usageResponse = await subscriptionUsageApi.getUsage();
+      setUsage(usageResponse?.data ?? null);
+    } catch {
+      // Quota card is optional context here; NO_ACTIVE_SUBSCRIPTION or
+      // RECOVERY_PLAN_QUOTA_NOT_CONFIGURED just means nothing to show.
+      setUsage(null);
+    }
   }, [hasAuth]);
 
+  // Reconciliation replaces the old webhook-dependent flow: the backend
+  // actively asks PayOS for the real status instead of only reading its
+  // local database, so this is the single source of truth for both
+  // /payment/return and /payment/cancel. expectedResult only affects
+  // copy/CTAs below, never which status gets shown.
   const checkStatus = useCallback(async () => {
     if (!orderCode) {
       setStatus("missing");
       return "missing";
     }
 
-    const response = await paymentsApi.payOsStatus(orderCode);
+    if (!hasAuth) {
+      setStatus("unauthenticated");
+      setMessage("Vui lòng đăng nhập lại để xác minh giao dịch này.");
+      return "unauthenticated";
+    }
 
+    const response = await paymentsApi.reconcilePayOs(orderCode);
     const data = response.data ?? {};
     const nextStatus = classifyPayment(data);
     setStatus(nextStatus);
-    setMessage("");
+    setMessage(data.message || response.message || "");
+    setPaymentDetail(data);
 
     if (nextStatus === "success") await refreshPremiumState();
     return nextStatus;
-  }, [orderCode, refreshPremiumState]);
+  }, [hasAuth, orderCode, refreshPremiumState]);
 
   useEffect(() => {
     if (!orderCode) return undefined;
@@ -166,17 +294,17 @@ export default function PaymentResultPage({ expectedResult }) {
       attempts += 1;
       try {
         const nextStatus = await checkStatus();
-        if (!active || nextStatus !== "pending") return;
-        if (attempts >= MAX_STATUS_CHECKS) {
+        if (!active || !AUTO_RETRY_STATUSES.has(nextStatus)) return;
+        if (attempts >= MAX_RECONCILE_ATTEMPTS) {
           setStatus("error");
-          setMessage("Giao dịch vẫn đang chờ xử lý. Hãy kiểm tra lại gói đăng ký sau ít phút.");
+          setMessage("Giao dịch vẫn chưa có kết quả cuối cùng. Hãy kiểm tra lại sau ít phút.");
           return;
         }
-        timer = window.setTimeout(verify, STATUS_CHECK_DELAY);
-      } catch {
+        timer = window.setTimeout(verify, RECONCILE_DELAY_MS);
+      } catch (error) {
         if (!active) return;
-        setStatus("error");
-        setMessage("MediMate chưa nhận được trạng thái chính thức từ cổng thanh toán. Vui lòng kiểm tra lại sau ít phút.");
+        setStatus(getReconcileErrorState(error));
+        setMessage(error?.message || "MediMate chưa thể xác minh giao dịch lúc này.");
       }
     };
 
@@ -199,17 +327,17 @@ export default function PaymentResultPage({ expectedResult }) {
 
     try {
       await checkStatus();
-    } catch {
-      setStatus("error");
-      setMessage("MediMate chưa nhận được trạng thái chính thức từ cổng thanh toán. Vui lòng kiểm tra lại sau ít phút.");
+    } catch (error) {
+      setStatus(getReconcileErrorState(error));
+      setMessage(error?.message || "MediMate chưa thể xác minh giao dịch lúc này.");
     } finally {
       setCheckingAgain(false);
     }
   }
 
   const success = status === "success";
-  const settled = success || status === "cancelled" || status === "failed" || status === "expired";
-  const verifying = status === "checking" || status === "pending";
+  const settled = TERMINAL_STATUSES.has(status);
+  const verifying = ["checking", "pending", "processing", "activation-pending"].includes(status);
 
   useEffect(() => {
     document.title = success
@@ -227,6 +355,10 @@ export default function PaymentResultPage({ expectedResult }) {
     }
 
     navigate("/dashboard");
+  }
+
+  function loginAgain() {
+    navigate(withReturnTo("/login", `${window.location.pathname}${window.location.search}`));
   }
 
   return (
@@ -266,8 +398,21 @@ export default function PaymentResultPage({ expectedResult }) {
           </dl>
         )}
 
+        {success && usage && (
+          <dl className="payment-result-reference payment-result-usage">
+            <div>
+              <dt>{usage.quotaName || "Hạn mức sử dụng"}</dt>
+              <dd>{usage.remainingCount ?? "—"}/{usage.limitValue ?? "—"} lượt còn lại</dd>
+            </div>
+          </dl>
+        )}
+
         <div className="payment-result-actions">
-          {success ? (
+          {status === "unauthenticated" ? (
+            <button className="payment-result-primary" type="button" onClick={loginAgain}>
+              Đăng nhập lại <ArrowRight size={17} />
+            </button>
+          ) : success ? (
             <>
               <button className="payment-result-primary" type="button" onClick={continueAfterPayment}>
                 {returnTo ? "Tiếp tục tác vụ" : "Bắt đầu sử dụng"} <ArrowRight size={17} />
@@ -279,7 +424,7 @@ export default function PaymentResultPage({ expectedResult }) {
           ) : (
             <>
               <button className="payment-result-primary" type="button" onClick={() => navigate("/pricing")}>
-                {expectedResult === "cancel" && status === "cancelled" ? "Quay lại bảng giá" : settled ? "Chọn lại gói" : "Về bảng giá"} <ArrowRight size={17} />
+                {isCancelFlow && status === "cancelled" ? "Quay lại bảng giá" : settled ? "Chọn lại gói" : "Về bảng giá"} <ArrowRight size={17} />
               </button>
               <button type="button" onClick={() => navigate("/dashboard")}>
                 {hasAuth ? "Mở không gian cá nhân" : "Đăng nhập để kiểm tra"}
@@ -288,7 +433,7 @@ export default function PaymentResultPage({ expectedResult }) {
           )}
         </div>
 
-        {!settled && orderCode && (
+        {!settled && orderCode && status !== "unauthenticated" && (
           <button className="payment-result-retry" type="button" onClick={handleCheckAgain} disabled={checkingAgain}>
             <RefreshCw className={checkingAgain ? "is-spinning" : ""} size={16} />
             {checkingAgain ? "Đang kiểm tra..." : "Kiểm tra lại trạng thái"}
@@ -298,7 +443,7 @@ export default function PaymentResultPage({ expectedResult }) {
 
       <p className="payment-result-support">
         {status === "cancelled"
-          ? "Trạng thái hủy chỉ được hiển thị sau khi cổng thanh toán phản hồi. Hãy kiểm tra không gian cá nhân nếu bạn cần xác nhận gói đang dùng."
+          ? "Trạng thái hủy chỉ được hiển thị sau khi PayOS xác nhận. Hãy kiểm tra không gian cá nhân nếu bạn cần xác nhận gói đang dùng."
           : "Không thực hiện lại thanh toán khi trạng thái còn đang được xác minh. Hãy giữ mã giao dịch để đối chiếu khi cần."}
         {" "}
         <a href="/support">Xem hướng dẫn thanh toán</a>

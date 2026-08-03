@@ -274,8 +274,7 @@
   font-weight: 800;
 }
 
-.account-menu-panel > button,
-.account-menu-preferences {
+.account-menu-panel > button {
   width: 100%;
   min-height: 44px;
   display: grid;
@@ -293,33 +292,12 @@
 }
 
 .account-menu-panel > button:hover,
-.account-menu-panel > button:focus-visible,
-.account-menu-preferences:focus-within {
+.account-menu-panel > button:focus-visible {
   background: var(--workspace-mint);
 }
 
 .account-menu-panel > button.account-menu-danger {
   color: var(--color-danger);
-}
-
-.account-menu-preferences .display-preferences {
-  min-width: 0;
-}
-
-.account-menu-preferences .display-preferences-trigger {
-  width: 100%;
-  min-height: auto;
-  justify-content: flex-start;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: inherit;
-  font-size: 13px;
-  font-weight: 950;
-}
-
-.account-menu-preferences .display-preferences-trigger svg {
-  display: none;
 }
 
 .logout-btn {

@@ -90,7 +90,7 @@ const TRUST_PAGES = {
           { icon: UserRoundCheck, title: "Tài khoản", body: "Thông tin đăng ký, đăng nhập và vai trò tài khoản. Phiên đăng nhập được lưu trong trình duyệt để duy trì truy cập." },
           { icon: HeartPulse, title: "Thông tin sức khỏe", body: "Triệu chứng, câu trả lời lâm sàng, hồ sơ bệnh nhân hoặc nội dung trò chuyện khi bạn chủ động nhập." },
           { icon: ClipboardCheck, title: "Gói dịch vụ", body: "Gói đã chọn, trạng thái đăng ký và thông tin giao dịch cần thiết để theo dõi thanh toán." },
-          { icon: BadgeInfo, title: "Dữ liệu kỹ thuật", body: "Tùy chọn hiển thị, thông tin phiên tạm thời và dữ liệu hiệu năng cần để vận hành, sửa lỗi giao diện." },
+          { icon: BadgeInfo, title: "Dữ liệu kỹ thuật", body: "Thông tin phiên tạm thời và dữ liệu hiệu năng cần để vận hành, sửa lỗi giao diện." },
         ],
       },
       {

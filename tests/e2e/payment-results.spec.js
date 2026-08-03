@@ -41,8 +41,8 @@ async function mockRefreshPremium(page) {
   }));
 }
 
-test("payment return verifies the order and opens the activated experience", async ({ page }) => {
-  await page.route("**/api/payments/payos-status/987654321", (route) => route.fulfill({
+test("payment return reconciles the order and opens the activated experience", async ({ page }) => {
+  await page.route("**/api/payments/payos-reconcile/987654321", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
@@ -68,9 +68,9 @@ test("payment return verifies the order and opens the activated experience", asy
   await expect(page).toHaveURL(/\/map\?search=tim%20mach#results$/);
 });
 
-test("payment cancel verifies the public order status before showing retry actions", async ({ page }) => {
+test("payment cancel reconciles the order before showing retry actions", async ({ page }) => {
   let cancelRequests = 0;
-  await page.route("**/api/payments/payos-status/123456789", (route) => {
+  await page.route("**/api/payments/payos-reconcile/123456789", (route) => {
     cancelRequests += 1;
     return route.fulfill({
       contentType: "application/json",
@@ -90,7 +90,7 @@ test("payment cancel verifies the public order status before showing retry actio
 
   await page.goto("/payment/cancel?orderCode=123456789", { waitUntil: "domcontentloaded" });
   await expect.poll(() => cancelRequests).toBeGreaterThan(0);
-  await expect(page.getByRole("heading", { name: "Giao dịch đã được xác nhận là đã hủy." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Giao dịch đã hủy" })).toBeVisible();
   await expect(page.getByText("Đã hủy", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Kiểm tra lại trạng thái" })).toHaveCount(0);
   await page.getByRole("button", { name: "Quay lại bảng giá" }).click();
@@ -99,7 +99,7 @@ test("payment cancel verifies the public order status before showing retry actio
 
 test("payment cancel remains unverified when backend verification is unavailable", async ({ page }) => {
   let cancelRequests = 0;
-  await page.route("**/api/payments/payos-status/123456789", (route) => {
+  await page.route("**/api/payments/payos-reconcile/123456789", (route) => {
     cancelRequests += 1;
     return route.fulfill({
       status: 503,
@@ -118,7 +118,7 @@ test("payment cancel remains unverified when backend verification is unavailable
 });
 
 test("payment cancel trusts backend success over the cancel URL", async ({ page }) => {
-  await page.route("**/api/payments/payos-status/123456789", (route) => route.fulfill({
+  await page.route("**/api/payments/payos-reconcile/123456789", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,

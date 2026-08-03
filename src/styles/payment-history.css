@@ -160,6 +160,7 @@
 }
 
 .payment-history-detail-button,
+.payment-history-reconcile-button,
 .payment-history-state button,
 .payment-history-pagination button,
 .payment-detail-header button {
@@ -172,9 +173,17 @@
   font-weight: 900;
 }
 
-.payment-history-detail-button {
+.payment-history-detail-button,
+.payment-history-reconcile-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
   padding: 0 15px;
+}
+
+.payment-history-reconcile-button {
+  margin-left: 8px;
 }
 
 .payment-history-table td.payment-history-table-action {
@@ -187,7 +196,13 @@
   background: var(--color-primary-soft);
 }
 
+.payment-history-reconcile-button:hover:not(:disabled) {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
 .payment-history-detail-button:focus-visible,
+.payment-history-reconcile-button:focus-visible,
 .payment-history-state button:focus-visible,
 .payment-history-pagination button:focus-visible,
 .payment-detail-header button:focus-visible {
@@ -196,9 +211,17 @@
 }
 
 .payment-history-detail-button:disabled,
+.payment-history-reconcile-button:disabled,
 .payment-history-pagination button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.payment-history-reconcile-status {
+  margin: 4px 0 0;
+  color: var(--color-info-strong);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .payment-history-state {

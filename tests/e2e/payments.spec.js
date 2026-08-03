@@ -7,7 +7,7 @@ const ACCESS_TOKEN = [
   "",
 ].join(".");
 
-test("authenticated user is redirected to PayOS and verifies the callback order", async ({ page }) => {
+test("authenticated user opens PayOS and reconciles the checkout", async ({ page, context }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -20,7 +20,7 @@ test("authenticated user is redirected to PayOS and verifies the callback order"
 
   let checkoutBody = null;
 
-  await page.route("**/api/subscription-plans/active", (route) => route.fulfill({
+  await context.route("**/api/subscription-plans/active", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
@@ -36,7 +36,7 @@ test("authenticated user is redirected to PayOS and verifies the callback order"
     }),
   }));
 
-  await page.route("**/api/user-subscriptions/me", (route) => {
+  await context.route("**/api/user-subscriptions/me", (route) => {
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -46,7 +46,7 @@ test("authenticated user is redirected to PayOS and verifies the callback order"
     });
   });
 
-  await page.route("**/api/user-subscriptions/checkout", async (route) => {
+  await context.route("**/api/user-subscriptions/checkout", async (route) => {
     checkoutBody = route.request().postDataJSON();
     return route.fulfill({
       contentType: "application/json",
@@ -55,6 +55,7 @@ test("authenticated user is redirected to PayOS and verifies the callback order"
         data: {
           subscriptionId: "22222222-2222-2222-2222-222222222222",
           paymentId: "33333333-3333-3333-3333-333333333333",
+          orderCode: "987654321",
           paymentUrl: "http://127.0.0.1:3000/payment/return?orderCode=987654321",
           paymentProvider: "PayOS",
         },
@@ -62,7 +63,7 @@ test("authenticated user is redirected to PayOS and verifies the callback order"
     });
   });
 
-  await page.route("**/api/payments/payos-status/987654321", (route) => route.fulfill({
+  await context.route("**/api/payments/payos-reconcile/987654321", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
@@ -75,7 +76,19 @@ test("authenticated user is redirected to PayOS and verifies the callback order"
     }),
   }));
 
-  await page.route("**/api/authentication/refresh", (route) => route.fulfill({
+  await context.route("**/api/payments/me/33333333-3333-3333-3333-333333333333", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        id: "33333333-3333-3333-3333-333333333333",
+        statusName: "Paid",
+        paidAt: "2026-08-03T00:00:00Z",
+      },
+    }),
+  }));
+
+  await context.route("**/api/authentication/refresh", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
@@ -89,7 +102,7 @@ test("authenticated user is redirected to PayOS and verifies the callback order"
     }),
   }));
 
-  await page.route("**/api/me/subscription-usage", (route) => route.fulfill({
+  await context.route("**/api/me/subscription-usage", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({ success: true, data: { limitValue: 3, usedCount: 0, reservedCount: 0, remainingCount: 3 } }),
   }));
@@ -101,11 +114,18 @@ test("authenticated user is redirected to PayOS and verifies the callback order"
   await expect(checkoutButton).toBeEnabled();
   await page.getByLabel("Tự động gia hạn").check();
 
+  const popupPromise = context.waitForEvent("page");
   await checkoutButton.click();
-  await expect(page).toHaveURL(/\/payment\/return\?orderCode=987654321$/);
-  await expect(page.getByRole("heading", { name: "MediMate+ đã sẵn sàng." })).toBeVisible();
+  const popup = await popupPromise;
+  await popup.waitForLoadState("domcontentloaded");
+
+  await expect(page.locator("#main-content").getByText("Thanh toán thành công", { exact: true })).toBeVisible();
+  await expect(popup).toHaveURL(/\/payment\/return\?orderCode=987654321$/);
+  await expect(popup.getByRole("heading", { name: "MediMate+ đã sẵn sàng." })).toBeVisible();
   expect(checkoutBody).toEqual({
     planId: "11111111-1111-1111-1111-111111111111",
     autoRenew: true,
   });
+
+  await popup.close();
 });

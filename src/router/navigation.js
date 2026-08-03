@@ -10,6 +10,7 @@ const WORKSPACE_PATHS = new Set([
   "/records",
   "/recovery-plan",
   "/medication",
+  "/my-medications",
 ]);
 
 export function getLocationSnapshot() {

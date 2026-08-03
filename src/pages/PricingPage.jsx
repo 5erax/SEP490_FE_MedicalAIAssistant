@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
   Check,
+  CheckCircle2,
   ChevronDown,
   CircleDollarSign,
   Clock3,
@@ -16,9 +17,12 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import {
+  authApi,
   getStoredAuth,
   hasPremiumAccess,
+  paymentsApi,
   subscriptionPlansApi,
+  subscriptionUsageApi,
   userSubscriptionsApi,
 } from "../services/api";
 import { navigate } from "../router/navigation";
@@ -66,6 +70,16 @@ function isActiveSubscription(subscription) {
   return status === "active" || Number(subscription?.status) === 1;
 }
 
+function isSuccessfulPayment(payment) {
+  const status = String(payment?.statusName ?? "").toLowerCase();
+  return Boolean(payment?.paidAt) || ["paid", "completed", "success", "succeeded"].includes(status);
+}
+
+function isTerminalPayment(payment) {
+  const status = String(payment?.statusName ?? "").toLowerCase();
+  return ["failed", "cancelled", "canceled", "expired", "refunded"].includes(status);
+}
+
 function PricingPage() {
   const { confirmAction, showToast } = useFeedback();
   const [auth] = useState(() => getStoredAuth());
@@ -79,7 +93,8 @@ function PricingPage() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(Boolean(auth));
   const [subscriptionsError, setSubscriptionsError] = useState("");
-  const [checkoutState, setCheckoutState] = useState({ status: "idle", message: "", paymentId: "" });
+  const [checkoutState, setCheckoutState] = useState({ status: "idle", message: "", paymentId: "", orderCode: "" });
+  const pollingRef = useRef(null);
   const isPremium = hasPremiumAccess(auth);
   const paidPlans = useMemo(() => apiPlans.filter((plan) => Number(plan.price) > 0), [apiPlans]);
   const availableCycles = useMemo(
@@ -184,8 +199,122 @@ function PricingPage() {
     };
   }, [auth, showToast]);
 
+  useEffect(() => () => {
+    if (pollingRef.current) window.clearInterval(pollingRef.current);
+  }, []);
+
   function startFreePlan() {
     navigate("/symptom");
+  }
+
+  async function pollPayment(paymentId, orderCode) {
+    if (pollingRef.current) window.clearInterval(pollingRef.current);
+
+    let attempts = 0;
+    let networkErrorAttempts = 0;
+    let checking = false;
+
+    // Local GET /payments/me/{id} is a cheap DB read so it can poll every
+    // 3s; the reconcile call asks PayOS directly, so it only runs on the
+    // first tick and roughly every ~12s after that to avoid hammering the
+    // provider (see the PayOS reconciliation integration guide, mục 8.3).
+    const check = async () => {
+      if (checking) return false;
+      checking = true;
+      attempts += 1;
+
+      try {
+        if (orderCode && (attempts === 1 || attempts % 4 === 0)) {
+          try {
+            await paymentsApi.reconcilePayOs(orderCode);
+          } catch (error) {
+            if ([400, 403, 404, 409].includes(error?.status)) {
+              window.clearInterval(pollingRef.current);
+              pollingRef.current = null;
+              setCheckoutState({
+                status: "error",
+                paymentId,
+                orderCode,
+                message: "Giao dịch không hợp lệ hoặc không thuộc tài khoản này. Vui lòng kiểm tra lại lịch sử thanh toán.",
+              });
+              return true;
+            }
+            // 429/502: giữ trạng thái Pending hiện tại và thử lại ở lượt
+            // sau, không spam PayOS.
+          }
+        }
+
+        const response = await paymentsApi.getMyPayment(paymentId);
+        const payment = response.data;
+
+        if (isSuccessfulPayment(payment)) {
+          window.clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setCheckoutState({
+            status: "success",
+            paymentId,
+            orderCode,
+            message: "Thanh toán thành công. Gói MediMate Plus đang được kích hoạt.",
+          });
+          await loadSubscriptions();
+          try {
+            await authApi.refresh();
+          } catch {
+            // Subscription state is still refreshed from /user-subscriptions/me.
+          }
+          try {
+            await subscriptionUsageApi.getUsage();
+          } catch {
+            // Quota is optional context here; a missing/unconfigured quota
+            // shouldn't block the success screen.
+          }
+          showToast({
+            type: "success",
+            title: "Thanh toán thành công",
+            message: "Quyền lợi MediMate Plus đã được cập nhật.",
+          });
+          return true;
+        }
+
+        if (isTerminalPayment(payment) || attempts >= 100) {
+          window.clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setCheckoutState({
+            status: "error",
+            paymentId,
+            orderCode,
+            message: isTerminalPayment(payment)
+              ? `Giao dịch ${payment?.statusName || "không thành công"}.`
+              : "Chưa nhận được xác nhận thanh toán. Bạn có thể kiểm tra lại gói đăng ký sau.",
+          });
+          return true;
+        }
+
+        networkErrorAttempts = 0;
+        return false;
+      } catch {
+        networkErrorAttempts += 1;
+        if (networkErrorAttempts >= 5) {
+          window.clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          setCheckoutState({
+            status: "error",
+            paymentId,
+            orderCode,
+            message: "Chưa thể xác minh giao dịch lúc này. Bạn có thể kiểm tra lại lịch sử thanh toán sau.",
+          });
+          return true;
+        }
+        return false;
+      } finally {
+        checking = false;
+      }
+    };
+
+    const completed = await check();
+    if (!completed) {
+      pollingRef.current = window.setInterval(check, 3000);
+    }
   }
 
   async function startPremiumUpgrade() {
@@ -211,6 +340,7 @@ function PricingPage() {
       setCheckoutState({
         status: "error",
         paymentId: "",
+        orderCode: "",
         message: plansLoading
           ? "Danh sách gói đang được tải."
           : "Chưa có gói trả phí khả dụng để tạo thanh toán.",
@@ -218,29 +348,44 @@ function PricingPage() {
       return;
     }
 
+    const paymentWindow = window.open("about:blank", "medimate-payos");
+    if (paymentWindow) paymentWindow.opener = null;
     setCheckoutState({
       status: "creating",
-      message: "Đang tạo liên kết và chuyển bạn đến PayOS...",
+      message: "Đang tạo liên kết thanh toán PayOS...",
       paymentId: "",
+      orderCode: "",
     });
 
     try {
       const response = await userSubscriptionsApi.checkout(paidPlan.id, autoRenew);
       const checkout = response.data;
-      if (!checkout?.paymentUrl) {
-        throw new Error("Chưa tạo được liên kết thanh toán hợp lệ. Vui lòng thử lại.");
+      if (!checkout?.paymentUrl || !checkout?.paymentId || !checkout?.orderCode) {
+        paymentWindow?.close();
+        throw new Error("Backend chưa trả đủ paymentUrl, paymentId và orderCode. Vui lòng thử lại.");
       }
 
       setCheckoutState({
         status: "pending",
-        paymentId: checkout.paymentId || "",
-        message: "Đang chuyển đến trang thanh toán PayOS.",
+        paymentId: checkout.paymentId,
+        orderCode: checkout.orderCode,
+        message: "Trang PayOS đã được mở. Hoàn tất thanh toán ở tab mới; trang này sẽ tự cập nhật.",
       });
-      window.location.assign(checkout.paymentUrl);
+
+      if (paymentWindow) {
+        paymentWindow.location.replace(checkout.paymentUrl);
+      } else {
+        window.location.href = checkout.paymentUrl;
+        return;
+      }
+
+      pollPayment(checkout.paymentId, checkout.orderCode);
     } catch {
+      paymentWindow?.close();
       setCheckoutState({
         status: "error",
         paymentId: "",
+        orderCode: "",
         message: "Chưa thể tạo liên kết thanh toán lúc này. Vui lòng thử lại sau.",
       });
     }
@@ -500,12 +645,15 @@ function PricingPage() {
               {["creating", "pending"].includes(checkoutState.status) && (
                 <LoaderCircle className="spin" size={22} aria-hidden="true" />
               )}
+              {checkoutState.status === "success" && <CheckCircle2 size={22} aria-hidden="true" />}
               {checkoutState.status === "error" && <XCircle size={22} aria-hidden="true" />}
               <div>
                 <strong>
-                  {checkoutState.status === "error"
+                  {checkoutState.status === "success"
+                    ? "Thanh toán thành công"
+                    : checkoutState.status === "error"
                       ? "Chưa thể hoàn tất thanh toán"
-                      : "Đang chuyển đến PayOS"}
+                      : "Đang chờ thanh toán"}
                 </strong>
                 <p>{checkoutState.message}</p>
               </div>

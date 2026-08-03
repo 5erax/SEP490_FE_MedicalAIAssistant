@@ -29,10 +29,11 @@ export {
   symptomAnalysisApi,
 } from "./symptomAnalysisService";
 export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
-export { subscriptionUsageApi, recoveryPlanRequestsApi, recoveryPlansApi } from "./recoveryPlanService";
-export { userMedicationsApi } from "./userMedicationService";
+export { recoveryPlanRequestsApi, recoveryPlansApi } from "./recoveryPlanService";
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
 export { consultationSessionsApi } from "./consultationSessionService";
 export { labIndicatorsApi } from "./labIndicatorService";
 export { labTestsApi } from "./labTestService";
+export { userMedicationsApi } from "./userMedicationService";
+export { subscriptionUsageApi } from "./subscriptionUsageService";
