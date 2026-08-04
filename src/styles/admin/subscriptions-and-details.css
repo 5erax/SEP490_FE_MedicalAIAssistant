@@ -495,11 +495,13 @@
 
 .subscription-plan-edit-button {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-width: 132px;
+  min-width: 136px;
   white-space: nowrap;
+  line-height: 1;
   color: #073f45;
   border-color: rgba(0, 128, 137, 0.24);
   background: linear-gradient(135deg, rgba(231, 250, 247, 0.92), rgba(255, 255, 255, 0.96));
@@ -634,14 +636,13 @@
 
 .subscription-plan-card .subscription-plan-actions {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(136px, 1fr);
   justify-content: stretch;
   gap: 8px;
 }
 
 .subscription-plan-card .subscription-plan-actions .btn {
   width: 100%;
-  min-width: 0;
   justify-content: center;
   min-height: 38px;
 }
