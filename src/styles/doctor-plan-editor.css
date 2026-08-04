@@ -504,6 +504,16 @@
   padding: 18px 22px 22px;
 }
 
+.doctor-plan-modal-note {
+  margin: -6px 0 0;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  padding: 10px 12px;
+  color: var(--color-info-strong);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .doctor-plan-modal-actions {
   display: flex;
   justify-content: flex-end;

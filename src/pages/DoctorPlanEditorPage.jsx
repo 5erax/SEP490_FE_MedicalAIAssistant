@@ -606,19 +606,24 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
             autoFocus
           />
         </Field>
+        <p className="doctor-plan-modal-note">
+          Ngày bắt đầu/kết thúc là <strong>ngày thứ mấy trong kế hoạch</strong> (ví dụ 1 = ngày đầu tiên), không phải ngày dương lịch.
+        </p>
         <div className="doctor-plan-modal-row">
-          <Field label="Ngày bắt đầu" required error={errors.startDay}>
+          <Field label="Ngày bắt đầu" required error={errors.startDay} hint={!errors.startDay && plan?.durationDays ? `Trong khoảng 1–${plan.durationDays}` : undefined}>
             <TextInput
               type="number"
               min="1"
+              max={plan?.durationDays || undefined}
               value={startDay}
               onChange={(event) => { setStartDay(event.target.value); setErrors((current) => ({ ...current, startDay: "" })); }}
             />
           </Field>
-          <Field label="Ngày kết thúc" required error={errors.endDay}>
+          <Field label="Ngày kết thúc" required error={errors.endDay} hint={!errors.endDay && plan?.durationDays ? `Trong khoảng 1–${plan.durationDays}` : undefined}>
             <TextInput
               type="number"
               min="1"
+              max={plan?.durationDays || undefined}
               value={endDay}
               onChange={(event) => { setEndDay(event.target.value); setErrors((current) => ({ ...current, endDay: "" })); }}
             />
