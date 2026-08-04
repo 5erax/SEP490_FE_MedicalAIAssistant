@@ -157,6 +157,29 @@ export default function DoctorPlanEditorPage({ planId }) {
     }
   }
 
+  async function handleDeletePhase(phase) {
+    const confirmed = await confirmAction({
+      title: `Xóa giai đoạn "${phase.phaseName || "này"}"?`,
+      message: "Toàn bộ dưỡng chất và thực phẩm thuộc giai đoạn này (nếu có) sẽ bị xóa theo. Không thể hoàn tác.",
+      confirmLabel: "Xóa giai đoạn",
+    });
+    if (!confirmed) return;
+
+    setPhaseBusy(`delete-${phase.id}`);
+    try {
+      await doctorRecoveryPlansApi.removePhase(planId, phase.id);
+      setState((current) => ({
+        ...current,
+        plan: { ...current.plan, phases: toArray(current.plan?.phases).filter((item) => item.id !== phase.id) },
+      }));
+      showToast({ type: "success", title: "Đã xóa giai đoạn" });
+    } catch (requestError) {
+      showToast({ type: "error", title: "Không thể xóa giai đoạn", message: getActionMessage(requestError) });
+    } finally {
+      setPhaseBusy("");
+    }
+  }
+
   async function handleDelete() {
     const confirmed = await confirmAction({
       title: "Xóa bản nháp kế hoạch này?",
@@ -208,6 +231,8 @@ export default function DoctorPlanEditorPage({ planId }) {
           onReload={load}
           onAddPhase={() => setCreatePhaseOpen(true)}
           onEditPhase={setEditingPhase}
+          onDeletePhase={handleDeletePhase}
+          phaseBusy={phaseBusy}
         />
       )}
 
@@ -242,7 +267,7 @@ export default function DoctorPlanEditorPage({ planId }) {
   );
 }
 
-function PlanContent({ state, busy, onEdit, onDelete, onReload, onAddPhase, onEditPhase }) {
+function PlanContent({ state, busy, onEdit, onDelete, onReload, onAddPhase, onEditPhase, onDeletePhase, phaseBusy }) {
   const { plan, requestId, diseaseGroup } = state;
   const disease = getDiseaseInfo(diseaseGroup);
   const DiseaseIcon = disease.icon;
@@ -328,6 +353,15 @@ function PlanContent({ state, busy, onEdit, onDelete, onReload, onAddPhase, onEd
                       <div className="doctor-plan-phase-actions">
                         <button type="button" aria-label="Chỉnh sửa giai đoạn" onClick={() => onEditPhase(phase)}>
                           <Edit3 size={15} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Xóa giai đoạn"
+                          className="is-danger"
+                          disabled={phaseBusy === `delete-${phase.id}`}
+                          onClick={() => onDeletePhase(phase)}
+                        >
+                          <Trash2 size={15} aria-hidden="true" />
                         </button>
                       </div>
                     )}

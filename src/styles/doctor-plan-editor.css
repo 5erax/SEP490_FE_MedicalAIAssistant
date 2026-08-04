@@ -224,9 +224,23 @@
   cursor: pointer;
 }
 
-.doctor-plan-phase-actions button:hover {
+.doctor-plan-phase-actions button:hover:not(:disabled) {
   border-color: var(--color-info);
   background: var(--color-info-bg);
+}
+
+.doctor-plan-phase-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.doctor-plan-phase-actions button.is-danger {
+  color: var(--color-danger);
+}
+
+.doctor-plan-phase-actions button.is-danger:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
 }
 
 .doctor-plan-phase-info strong {
