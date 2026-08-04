@@ -160,13 +160,14 @@
   padding: 20px 22px;
 }
 
-.doctor-plan-phases-card {
+.doctor-plan-phases-empty {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  border-style: dashed;
-  border-color: var(--color-line-strong);
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-md);
   background: var(--color-surface-soft);
+  padding: 16px;
 }
 
 .doctor-plan-phases-icon {
@@ -180,19 +181,53 @@
   color: var(--color-muted);
 }
 
-.doctor-plan-soon-badge {
-  display: inline-block;
-  margin-left: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--color-line);
-  padding: 2px 8px;
+.doctor-plan-phase-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-plan-phase-row {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  padding: 14px 16px;
+}
+
+.doctor-plan-phase-info {
+  display: grid;
+  gap: 3px;
+}
+
+.doctor-plan-phase-info strong {
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.doctor-plan-phase-days {
+  color: var(--color-info-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.doctor-plan-phase-meta {
   color: var(--color-muted);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  vertical-align: middle;
+  font-size: 12px;
+}
+
+.doctor-plan-phase-instruction {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.doctor-plan-modal-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .doctor-plan-card-head {
@@ -334,6 +369,10 @@
   .doctor-plan-card-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .doctor-plan-modal-row {
+    grid-template-columns: 1fr;
   }
 }
 
