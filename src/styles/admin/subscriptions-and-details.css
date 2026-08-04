@@ -484,16 +484,24 @@
 
 .subscription-plan-edit-button {
   display: inline-flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-width: 136px;
+  width: 150px;
+  min-width: 150px;
   white-space: nowrap;
   line-height: 1;
   color: #073f45;
   border-color: rgba(0, 128, 137, 0.24);
   background: linear-gradient(135deg, rgba(231, 250, 247, 0.92), rgba(255, 255, 255, 0.96));
+}
+
+.subscription-plan-edit-button > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .subscription-plan-edit-button svg {
@@ -1064,6 +1072,35 @@
 .subscription-real-quota-list {
   display: grid;
   gap: 12px;
+}
+
+.subscription-real-quota-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid rgba(8, 127, 140, 0.16);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(230, 247, 244, 0.72), rgba(255, 255, 255, 0.96));
+  padding: 12px;
+}
+
+.subscription-real-quota-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(8, 127, 140, 0.16);
+  border-radius: 999px;
+  background: #ffffff;
+  color: rgba(16, 47, 53, 0.72);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  padding: 9px 12px;
+}
+
+.subscription-real-quota-summary strong {
+  color: #073f45;
+  font-weight: 900;
 }
 
 .subscription-real-quota-row {

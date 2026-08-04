@@ -390,6 +390,16 @@ export default function SubscriptionPlanFormModal({
                 aria-invalid={errors.quotaRows ? "true" : undefined}
                 aria-describedby="subscription-quota-help"
               >
+                {quotaRows.length > 0 && (
+                  <div className="subscription-real-quota-summary" aria-label="Hạn mức đang áp dụng">
+                    {quotaRows.map((row, index) => (
+                      <span key={`${row.quotaCode || row.quotaId}-summary-${index}`}>
+                        <strong>{row.name}</strong>
+                        {row.limitValue || 0} {row.unit || "lượt"} / chu kỳ
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {quotaRows.length ? quotaRows.map((row, index) => (
                   <article className="subscription-real-quota-row" key={`${row.quotaCode || row.quotaId}-${index}`}>
                     <div className="subscription-real-quota-name">
