@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   Bone,
   ClipboardList,
   Edit3,
+  Info,
+  Layers,
   RefreshCw,
   Send,
   Thermometer,
@@ -40,6 +43,10 @@ function getDiseaseInfo(value) {
 
 function getPlanStatusMeta(value) {
   return PLAN_STATUS_META[value] ?? { label: value || "—", tone: "info" };
+}
+
+function formatShortId(id) {
+  return id ? `#${String(id).slice(0, 8).toUpperCase()}` : "—";
 }
 
 function getActionMessage(error) {
@@ -164,7 +171,7 @@ export default function DoctorPlanEditorPage({ planId }) {
 }
 
 function PlanContent({ state, busy, onEdit, onDelete, onReload }) {
-  const { plan, diseaseGroup } = state;
+  const { plan, requestId, diseaseGroup } = state;
   const disease = getDiseaseInfo(diseaseGroup);
   const DiseaseIcon = disease.icon;
   const statusMeta = getPlanStatusMeta(plan.status);
@@ -184,56 +191,96 @@ function PlanContent({ state, busy, onEdit, onDelete, onReload }) {
         </button>
       </header>
 
-      <section className="doctor-plan-card">
-        <div className="doctor-plan-card-head">
-          <p className="doctor-plan-card-heading">Thông tin kế hoạch</p>
+      <div className="doctor-plan-layout">
+        <div className="doctor-plan-main">
+          <section className="doctor-plan-card">
+            <div className="doctor-plan-card-head">
+              <p className="doctor-plan-card-heading">Thông tin kế hoạch</p>
+              {isDraft && (
+                <Button tone="ghost" size="sm" onClick={onEdit}>
+                  <Edit3 size={15} aria-hidden="true" /> Chỉnh sửa
+                </Button>
+              )}
+            </div>
+            <dl className="doctor-plan-grid">
+              <div>
+                <dt>Số ngày thực hiện</dt>
+                <dd>{plan.durationDays ? `${plan.durationDays} ngày` : "Chưa cập nhật"}</dd>
+              </div>
+              <div className="doctor-plan-grid-wide">
+                <dt>Tóm tắt</dt>
+                <dd>{plan.summary || "Chưa có tóm tắt."}</dd>
+              </div>
+              <div className="doctor-plan-grid-wide">
+                <dt>Hướng dẫn tái khám</dt>
+                <dd>{plan.recheckInstruction || "Chưa có hướng dẫn."}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="doctor-plan-card doctor-plan-phases-card">
+            <span className="doctor-plan-phases-icon" aria-hidden="true"><Layers size={22} /></span>
+            <div>
+              <p className="doctor-plan-card-heading">
+                Giai đoạn điều trị <em className="doctor-plan-soon-badge">Sắp ra mắt</em>
+              </p>
+              <p className="doctor-plan-empty-note">
+                Trình soạn giai đoạn, dưỡng chất và thực phẩm cho kế hoạch này sẽ có mặt tại đây trong bản cập nhật tiếp theo.
+              </p>
+            </div>
+          </section>
+
           {isDraft && (
-            <Button tone="ghost" size="sm" onClick={onEdit}>
-              <Edit3 size={15} aria-hidden="true" /> Chỉnh sửa
-            </Button>
+            <div className="doctor-plan-danger-zone">
+              <div className="doctor-plan-danger-header">
+                <AlertTriangle size={15} aria-hidden="true" />
+                <div>
+                  <p className="doctor-plan-danger-title">Vùng nguy hiểm</p>
+                  <p className="doctor-plan-danger-desc">Xóa bản nháp sẽ xóa vĩnh viễn toàn bộ nội dung đã soạn cho kế hoạch này.</p>
+                </div>
+              </div>
+              <button type="button" className="doctor-plan-danger-action" disabled={Boolean(busy)} onClick={onDelete}>
+                <span className="doctor-plan-danger-action-icon" aria-hidden="true"><Trash2 size={18} /></span>
+                <span className="doctor-plan-danger-action-body">
+                  <strong>Xóa bản nháp kế hoạch</strong>
+                  <p>Không thể hoàn tác sau khi xóa.</p>
+                </span>
+              </button>
+            </div>
           )}
         </div>
-        <dl className="doctor-plan-grid">
-          <div>
-            <dt>Số ngày thực hiện</dt>
-            <dd>{plan.durationDays ? `${plan.durationDays} ngày` : "Chưa cập nhật"}</dd>
-          </div>
-          <div className="doctor-plan-grid-wide">
-            <dt>Tóm tắt</dt>
-            <dd>{plan.summary || "Chưa có tóm tắt."}</dd>
-          </div>
-          <div className="doctor-plan-grid-wide">
-            <dt>Hướng dẫn tái khám</dt>
-            <dd>{plan.recheckInstruction || "Chưa có hướng dẫn."}</dd>
-          </div>
-        </dl>
-      </section>
 
-      <section className="doctor-plan-card">
-        <p className="doctor-plan-card-heading">Giai đoạn điều trị</p>
-        <p className="doctor-plan-empty-note">
-          Trình soạn giai đoạn, dưỡng chất và thực phẩm cho kế hoạch này sẽ sớm ra mắt tại đây.
-        </p>
-      </section>
+        <aside className="doctor-plan-sidebar">
+          <section className="doctor-plan-side-card">
+            <p className="doctor-plan-side-heading">
+              <Activity size={13} aria-hidden="true" /> Trạng thái
+            </p>
+            <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+          </section>
 
-      {isDraft && (
-        <div className="doctor-plan-danger-zone">
-          <div className="doctor-plan-danger-header">
-            <AlertTriangle size={15} aria-hidden="true" />
-            <div>
-              <p className="doctor-plan-danger-title">Vùng nguy hiểm</p>
-              <p className="doctor-plan-danger-desc">Xóa bản nháp sẽ xóa vĩnh viễn toàn bộ nội dung đã soạn cho kế hoạch này.</p>
-            </div>
-          </div>
-          <button type="button" className="doctor-plan-danger-action" disabled={Boolean(busy)} onClick={onDelete}>
-            <span className="doctor-plan-danger-action-icon" aria-hidden="true"><Trash2 size={18} /></span>
-            <span className="doctor-plan-danger-action-body">
-              <strong>Xóa bản nháp kế hoạch</strong>
-              <p>Không thể hoàn tác sau khi xóa.</p>
-            </span>
-          </button>
-        </div>
-      )}
+          <section className="doctor-plan-side-card">
+            <p className="doctor-plan-side-heading">
+              <Info size={13} aria-hidden="true" /> Thông tin nhanh
+            </p>
+            <dl className="doctor-plan-quick-info">
+              <div>
+                <dt>Mã kế hoạch</dt>
+                <dd>{formatShortId(plan.id)}</dd>
+              </div>
+              <div>
+                <dt>Nhóm bệnh</dt>
+                <dd>{disease.label}</dd>
+              </div>
+              {requestId && (
+                <div>
+                  <dt>Yêu cầu gốc</dt>
+                  <dd>{formatShortId(requestId)}</dd>
+                </div>
+              )}
+            </dl>
+          </section>
+        </aside>
+      </div>
     </>
   );
 }
