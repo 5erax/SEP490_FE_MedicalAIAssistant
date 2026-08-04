@@ -1067,6 +1067,71 @@
   gap: 7px;
 }
 
+.subscription-real-quota-card {
+  border-color: rgba(8, 127, 140, 0.18);
+}
+
+.subscription-real-quota-list {
+  display: grid;
+  gap: 12px;
+}
+
+.subscription-real-quota-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(8, 127, 140, 0.14);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(246, 252, 250, 0.92)),
+    #ffffff;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(12, 58, 62, 0.05);
+}
+
+.subscription-real-quota-name {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.subscription-real-quota-name span {
+  color: rgba(16, 47, 53, 0.56);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subscription-real-quota-name strong {
+  color: #102f35;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.subscription-real-quota-name small {
+  color: rgba(16, 47, 53, 0.58);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.subscription-real-quota-row .clean-field {
+  gap: 7px;
+}
+
+.subscription-quota-modal-empty {
+  margin: 0;
+  border: 1px dashed rgba(8, 127, 140, 0.2);
+  border-radius: 16px;
+  background: rgba(230, 247, 244, 0.45);
+  padding: 14px;
+  color: rgba(16, 47, 53, 0.68);
+  font-weight: 800;
+}
+
 .subscription-modal .doctor-modal-actions {
   position: sticky;
   right: 0;
@@ -1126,6 +1191,10 @@
   }
 
   .subscription-limit-editor-row {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-real-quota-row {
     grid-template-columns: 1fr;
   }
 

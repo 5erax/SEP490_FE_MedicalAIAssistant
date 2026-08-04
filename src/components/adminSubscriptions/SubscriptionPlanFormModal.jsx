@@ -21,6 +21,9 @@ const FEATURE_LIMIT_LABELS = {
   aiChatPerDay: "Chat AI / ngày",
 };
 
+const DEFAULT_QUOTA_LIMIT = "3";
+const DEFAULT_QUOTA_RESET_PERIOD = "subscriptionCycle";
+
 function formatFeatureLimits(value) {
   if (!value) return DEFAULT_FEATURE_LIMITS;
   try {
@@ -111,15 +114,76 @@ function getFeatureLimitLabel(key) {
   return FEATURE_LIMIT_LABELS[key] || key;
 }
 
+function getQuotaCode(quota) {
+  return quota?.quotaCode || quota?.code || "";
+}
+
+function getQuotaTitle(quota) {
+  return quota?.quotaName || quota?.name || getQuotaCode(quota) || "Hạn mức sử dụng";
+}
+
+function getQuotaUnit(quota) {
+  return quota?.unit || "lượt";
+}
+
+function findCatalogQuota(row, quotaCatalog) {
+  const rowCode = String(row.quotaCode || "").toUpperCase();
+  return quotaCatalog.find((quota) => String(getQuotaCode(quota)).toUpperCase() === rowCode);
+}
+
+function getQuotaRows(plan, defaultQuota) {
+  const planQuotas = Array.isArray(plan?.quotas) ? plan.quotas : [];
+  const rows = planQuotas.map((quota) => ({
+    quotaId: quota.quotaId || quota.quotaDefinitionId || "",
+    quotaCode: getQuotaCode(quota),
+    name: getQuotaTitle(quota),
+    unit: getQuotaUnit(quota),
+    limitValue: String(quota.limitValue ?? ""),
+    resetPeriod: quota.resetPeriod || DEFAULT_QUOTA_RESET_PERIOD,
+    isActive: quota.isActive !== false,
+  }));
+
+  if (!rows.length && defaultQuota?.id) {
+    rows.push({
+      quotaId: defaultQuota.id,
+      quotaCode: defaultQuota.code || "",
+      name: getQuotaTitle(defaultQuota),
+      unit: getQuotaUnit(defaultQuota),
+      limitValue: DEFAULT_QUOTA_LIMIT,
+      resetPeriod: DEFAULT_QUOTA_RESET_PERIOD,
+      isActive: true,
+    });
+  }
+
+  return rows;
+}
+
+function buildQuotaUpdates(rows, quotaCatalog) {
+  return rows
+    .map((row) => {
+      const catalogQuota = findCatalogQuota(row, quotaCatalog);
+      return {
+        quotaId: catalogQuota?.id || row.quotaId,
+        limitValue: Number(row.limitValue),
+        resetPeriod: row.resetPeriod || DEFAULT_QUOTA_RESET_PERIOD,
+        isActive: row.isActive !== false,
+      };
+    })
+    .filter((row) => row.quotaId && Number.isFinite(row.limitValue) && row.limitValue >= 0);
+}
+
 export default function SubscriptionPlanFormModal({
   mode,
   plan,
   saving,
+  quotaCatalog = [],
+  defaultQuota,
   restoreFocusRef,
   onClose,
   onSubmit,
 }) {
   const [form, setForm] = useState(() => toFormValue(plan));
+  const [quotaRows, setQuotaRows] = useState(() => getQuotaRows(plan, defaultQuota));
   const [errors, setErrors] = useState({});
   const closeButtonRef = useRef(null);
   const formRef = useRef(null);
@@ -138,15 +202,30 @@ export default function SubscriptionPlanFormModal({
     update("featureLimitJson", stringifyFeatureLimitEntries(nextEntries));
   }
 
+  function updateQuotaRow(index, key, value) {
+    setQuotaRows((current) => current.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, [key]: value } : item
+    )));
+    setErrors((current) => ({ ...current, quotaRows: "" }));
+  }
+
   function handleSubmit(event) {
     event.preventDefault();
     const nextErrors = validate(form);
+    if (mode === "edit" && quotaRows.some((row) => {
+      const limit = Number(row.limitValue);
+      return row.limitValue === "" || !Number.isFinite(limit) || limit < 0;
+    })) {
+      nextErrors.quotaRows = "Số lượt hạn mức phải là số không âm.";
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       focusFirstInvalidField(formRef, nextErrors);
       return;
     }
-    onSubmit(buildPayload(form));
+    onSubmit(buildPayload(form), {
+      quotaUpdates: mode === "edit" ? buildQuotaUpdates(quotaRows, quotaCatalog) : [],
+    });
   }
 
   return (
@@ -293,6 +372,53 @@ export default function SubscriptionPlanFormModal({
               </small>
             </div>
           </section>
+
+          {mode === "edit" && (
+            <section className="subscription-form-card subscription-real-quota-card">
+              <div className="subscription-form-card-head">
+                <span aria-hidden="true"><Gauge size={20} /></span>
+                <div>
+                  <h3>Lượt sử dụng thực tế</h3>
+                  <p>Số lượt hệ thống ghi nhận cho gói này.</p>
+                </div>
+              </div>
+
+              <div
+                className={`subscription-real-quota-list ${errors.quotaRows ? "subscription-field-error" : ""}`}
+                data-error-field="quotaRows"
+                tabIndex={errors.quotaRows ? -1 : undefined}
+                aria-invalid={errors.quotaRows ? "true" : undefined}
+                aria-describedby="subscription-quota-help"
+              >
+                {quotaRows.length ? quotaRows.map((row, index) => (
+                  <article className="subscription-real-quota-row" key={`${row.quotaCode || row.quotaId}-${index}`}>
+                    <div className="subscription-real-quota-name">
+                      <span>Hạn mức</span>
+                      <strong>{row.name}</strong>
+                      <small>{row.unit} - mỗi chu kỳ gói</small>
+                    </div>
+                    <label className="clean-field">
+                      <span>Số lượt</span>
+                      <input
+                        name={`quota.${index}.limitValue`}
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={row.limitValue}
+                        onChange={(event) => updateQuotaRow(index, "limitValue", event.target.value)}
+                        placeholder="Ví dụ: 3"
+                      />
+                    </label>
+                  </article>
+                )) : (
+                  <p className="subscription-quota-modal-empty">Chưa có hạn mức khả dụng cho gói này.</p>
+                )}
+                <small id="subscription-quota-help" role={errors.quotaRows ? "alert" : undefined}>
+                  {errors.quotaRows || "Hạn mức sẽ được lưu cùng lần cập nhật gói."}
+                </small>
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="doctor-modal-actions">

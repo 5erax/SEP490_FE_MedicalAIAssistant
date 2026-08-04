@@ -106,7 +106,7 @@ export default function AdminSubscriptionsSection({
     setPlanModal({ open: false, mode: "edit", plan: null });
   }
 
-  async function handleSavePlan(payload) {
+  async function handleSavePlan(payload, options = {}) {
     if (!planModal.plan?.id) return;
 
     setSavingPlan(true);
@@ -114,7 +114,20 @@ export default function AdminSubscriptionsSection({
 
     try {
       await subscriptionPlansApi.update(planModal.plan.id, payload);
-      setQuotaMessage({ type: "success", text: "Đã cập nhật gói dịch vụ." });
+      const quotaUpdates = Array.isArray(options.quotaUpdates) ? options.quotaUpdates : [];
+      if (quotaUpdates.length) {
+        await Promise.all(quotaUpdates.map((quota) => (
+          adminSubscriptionPlanQuotasApi.upsert(planModal.plan.id, quota.quotaId, {
+            limitValue: quota.limitValue,
+            resetPeriod: quota.resetPeriod,
+            isActive: quota.isActive,
+          })
+        )));
+      }
+      setQuotaMessage({
+        type: "success",
+        text: quotaUpdates.length ? "Đã cập nhật gói dịch vụ và hạn mức sử dụng." : "Đã cập nhật gói dịch vụ.",
+      });
       setPlanModal({ open: false, mode: "edit", plan: null });
       await onReload?.();
     } catch (err) {
@@ -133,7 +146,7 @@ export default function AdminSubscriptionsSection({
         <div>
           <p className="eyebrow">Gói đăng ký</p>
           <h2>Quản lý gói dịch vụ</h2>
-          <p className="muted-text">Theo dõi gói đang mở bán và gán quota sử dụng thật cho từng gói.</p>
+          <p className="muted-text">Theo dõi gói đang mở bán và hạn mức sử dụng thật cho từng gói.</p>
         </div>
         <div className="record-actions">
           <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>
@@ -145,7 +158,7 @@ export default function AdminSubscriptionsSection({
       <div className="subscription-contract-notice" role="note">
         <Info size={18} aria-hidden="true" />
         <p>
-          <strong>Quota backend đã sẵn sàng.</strong> Gán hạn mức thật cho từng gói khi cần.
+          <strong>Hạn mức sử dụng đã sẵn sàng.</strong> Gán số lượt thật cho từng gói khi cần.
         </p>
       </div>
 
@@ -207,6 +220,8 @@ export default function AdminSubscriptionsSection({
           mode={planModal.mode}
           plan={planModal.plan}
           saving={savingPlan}
+          quotaCatalog={quotaCatalog}
+          defaultQuota={defaultRecoveryQuota}
           restoreFocusRef={planModalTriggerRef}
           onClose={closePlanModal}
           onSubmit={handleSavePlan}
