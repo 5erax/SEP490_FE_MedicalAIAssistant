@@ -3,8 +3,8 @@ import {
   localizeApiPayload,
 } from "./apiMessageTranslator";
 
-// Production uses same-origin /api so Vercel rewrites can avoid
-// mixed-content and CORS issues.
+// Ở môi trường production, frontend gọi API cùng origin thông qua
+// /api/proxy.js để tránh mixed-content và giảm vấn đề CORS.
 const API_BASE_URL = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
   : "";
@@ -13,34 +13,61 @@ const API_PROXY_PATH = "/api/proxy.js";
 const AUTH_STORAGE_KEY = "medimate.auth";
 
 function buildUrl(path) {
-  if (path.startsWith("http")) {
-    return path;
+  const normalizedPath = String(path ?? "").trim();
+
+  if (!normalizedPath) {
+    throw new TypeError("Đường dẫn API không được để trống.");
+  }
+
+  if (/^https?:\/\//i.test(normalizedPath)) {
+    return normalizedPath;
   }
 
   if (!import.meta.env.DEV) {
-    const [pathname, query = ""] = path.split("?");
+    const queryIndex = normalizedPath.indexOf("?");
+
+    const pathname =
+      queryIndex >= 0
+        ? normalizedPath.slice(0, queryIndex)
+        : normalizedPath;
+
+    const query =
+      queryIndex >= 0
+        ? normalizedPath.slice(queryIndex + 1)
+        : "";
 
     const targetPath = pathname
       .replace(/^\/api\/?/, "")
       .replace(/^\/+/, "");
 
-    const queryPrefix = query ? `&${query}` : "";
+    const querySuffix = query ? `&${query}` : "";
 
     return `${API_PROXY_PATH}?path=${encodeURIComponent(
       targetPath,
-    )}${queryPrefix}`;
+    )}${querySuffix}`;
   }
 
-  return `${API_BASE_URL}${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
+function canUseLocalStorage() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.localStorage !== "undefined"
+  );
 }
 
 function parseStoredAuth() {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!canUseLocalStorage()) {
+    return null;
+  }
 
-    return raw
-      ? JSON.parse(raw)
-      : null;
+  try {
+    const raw = window.localStorage.getItem(
+      AUTH_STORAGE_KEY,
+    );
+
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
@@ -72,14 +99,17 @@ function selectStoredAuth(auth) {
     firstLogin: auth.firstLogin,
     isFirstLogin: auth.isFirstLogin,
     isProfileCompleted: auth.isProfileCompleted,
-    patientOnboardingPending: auth.patientOnboardingPending,
+    patientOnboardingPending:
+      auth.patientOnboardingPending,
     isPremium: auth.isPremium,
     isSubscribed: auth.isSubscribed,
     hasPremiumAccess: auth.hasPremiumAccess,
     planName: auth.planName,
     subscriptionPlan: auth.subscriptionPlan,
     plan: auth.plan,
-    subscriptionStatus: auth.subscriptionStatus,
+    subscriptionStatus:
+      auth.subscriptionStatus ??
+      auth.subscription?.status,
   };
 }
 
@@ -124,9 +154,6 @@ function isUsableAuth(auth) {
   );
 }
 
-/**
- * Chuẩn hóa nội dung để hiển thị.
- */
 function normalizeApiText(value) {
   return String(value ?? "")
     .normalize("NFKC")
@@ -134,14 +161,6 @@ function normalizeApiText(value) {
     .trim();
 }
 
-/**
- * Chuẩn hóa nội dung để so sánh trùng lặp.
- *
- * Không phân biệt:
- * - Hoa/thường
- * - Dấu câu ở cuối
- * - Khoảng trắng thừa
- */
 function getMessageComparisonKey(value) {
   return normalizeApiText(value)
     .toLocaleLowerCase("vi-VN")
@@ -150,17 +169,8 @@ function getMessageComparisonKey(value) {
 }
 
 /**
- * Xử lý trường hợp chính một chuỗi đã bị lặp liên tiếp.
- *
- * Ví dụ:
- * "Email đã tồn tại Email đã tồn tại"
- * trở thành:
- * "Email đã tồn tại"
- *
- * "Mã OTP không hợp lệ hoặc đã hết hạn
- *  Mã OTP không hợp lệ hoặc đã hết hạn"
- * trở thành:
- * "Mã OTP không hợp lệ hoặc đã hết hạn"
+ * Thu gọn trường hợp backend hoặc tầng xử lý phía trước đã lặp nguyên
+ * một thông báo nhiều lần liên tiếp.
  */
 function collapseRepeatedMessage(value) {
   const text = normalizeApiText(value);
@@ -171,9 +181,13 @@ function collapseRepeatedMessage(value) {
 
   const words = text.split(" ");
 
-  // Kiểm tra chuỗi bị lặp từ 4 lần xuống 2 lần.
+  const maximumRepeatCount = Math.min(
+    4,
+    words.length,
+  );
+
   for (
-    let repeatCount = Math.min(4, words.length);
+    let repeatCount = maximumRepeatCount;
     repeatCount >= 2;
     repeatCount -= 1
   ) {
@@ -183,7 +197,7 @@ function collapseRepeatedMessage(value) {
 
     const partLength = words.length / repeatCount;
 
-    if (partLength === 0) {
+    if (partLength <= 0) {
       continue;
     }
 
@@ -198,19 +212,17 @@ function collapseRepeatedMessage(value) {
           .join(" "),
     );
 
-    const firstPartKey =
-      getMessageComparisonKey(parts[0]);
-
-    if (!firstPartKey) {
-      continue;
-    }
-
-    const allPartsAreEqual = parts.every(
-      (part) =>
-        getMessageComparisonKey(part) === firstPartKey,
+    const firstKey = getMessageComparisonKey(
+      parts[0],
     );
 
-    if (allPartsAreEqual) {
+    if (
+      firstKey &&
+      parts.every(
+        (part) =>
+          getMessageComparisonKey(part) === firstKey,
+      )
+    ) {
       return normalizeApiText(parts[0]);
     }
   }
@@ -219,51 +231,45 @@ function collapseRepeatedMessage(value) {
 }
 
 /**
- * Chuyển errors từ backend thành mảng phẳng.
+ * Chuyển mọi cấu trúc lỗi từ backend thành một mảng thông báo phẳng.
  *
  * Hỗ trợ:
- * - string
- * - string[]
- * - object
- * - object lồng nhau
+ * - Chuỗi.
+ * - Mảng lồng nhau.
+ * - Object validation theo tên trường.
  */
-function flattenApiErrors(errors) {
-  if (!errors) {
+function flattenApiMessages(value) {
+  if (value === null || value === undefined) {
     return [];
   }
 
-  if (Array.isArray(errors)) {
-    return errors.flatMap((item) =>
-      flattenApiErrors(item),
+  if (Array.isArray(value)) {
+    return value.flatMap((item) =>
+      flattenApiMessages(item),
     );
   }
 
-  if (typeof errors === "object") {
-    return Object.values(errors).flatMap((item) =>
-      flattenApiErrors(item),
+  if (typeof value === "object") {
+    return Object.values(value).flatMap((item) =>
+      flattenApiMessages(item),
     );
   }
 
-  const message = collapseRepeatedMessage(errors);
+  const message = collapseRepeatedMessage(value);
 
-  return message
-    ? [message]
-    : [];
+  return message ? [message] : [];
 }
 
-/**
- * Xóa các thông báo trùng nhau.
- */
 function getUniqueMessages(messages) {
   const uniqueMessages = [];
   const seenKeys = new Set();
 
   for (const rawMessage of messages) {
-    const message =
-      collapseRepeatedMessage(rawMessage);
+    const message = collapseRepeatedMessage(
+      rawMessage,
+    );
 
-    const key =
-      getMessageComparisonKey(message);
+    const key = getMessageComparisonKey(message);
 
     if (!message || !key || seenKeys.has(key)) {
       continue;
@@ -277,47 +283,172 @@ function getUniqueMessages(messages) {
 }
 
 /**
- * Tạo thông báo lỗi cuối cùng.
+ * Ưu tiên lỗi cụ thể thay vì nối thêm thông báo nghiệp vụ chung.
  *
- * Tránh các trường hợp:
+ * Ví dụ backend trả:
+ * - message: "Đặt lại mật khẩu thất bại."
+ * - errors: [
+ *     "Mật khẩu phải có ít nhất một ký tự đặc biệt.",
+ *     "Mật khẩu phải có ít nhất một chữ cái viết hoa."
+ *   ]
  *
- * message: "Email đã tồn tại"
- * errors: ["Email đã tồn tại"]
- *
- * hoặc:
- *
- * message:
- * "Mã OTP không hợp lệ hoặc đã hết hạn
- *  Mã OTP không hợp lệ hoặc đã hết hạn"
+ * Giao diện chỉ hiển thị hai lỗi cụ thể để người dùng biết cần sửa gì.
  */
 function getApiErrorMessage(payload, status) {
-  const message =
-    collapseRepeatedMessage(payload?.message);
-
-  const errors =
-    flattenApiErrors(payload?.errors);
-
-  const uniqueMessages = getUniqueMessages([
-    message,
-    ...errors,
+  const detailedMessages = getUniqueMessages([
+    ...flattenApiMessages(payload?.errors),
+    ...flattenApiMessages(payload?.error),
+    ...flattenApiMessages(payload?.detail),
   ]);
 
-  if (uniqueMessages.length > 0) {
-    return uniqueMessages.join(" ");
+  if (detailedMessages.length > 0) {
+    return detailedMessages.join(" ");
   }
 
-  const title =
-    collapseRepeatedMessage(payload?.title);
+  const primaryMessages = getUniqueMessages([
+    ...flattenApiMessages(payload?.message),
+    ...flattenApiMessages(payload?.title),
+  ]);
+
+  if (primaryMessages.length > 0) {
+    return primaryMessages[0];
+  }
 
   return (
-    title ||
     getApiStatusMessage(status) ||
     `Yêu cầu thất bại với mã ${status}`
   );
 }
 
+function hasHeader(headers, name) {
+  return headers.has(name);
+}
+
+function isFormData(value) {
+  return (
+    typeof FormData !== "undefined" &&
+    value instanceof FormData
+  );
+}
+
+function isUrlSearchParams(value) {
+  return (
+    typeof URLSearchParams !== "undefined" &&
+    value instanceof URLSearchParams
+  );
+}
+
+function isBlob(value) {
+  return (
+    typeof Blob !== "undefined" &&
+    value instanceof Blob
+  );
+}
+
+function isArrayBuffer(value) {
+  return (
+    typeof ArrayBuffer !== "undefined" &&
+    value instanceof ArrayBuffer
+  );
+}
+
+function prepareRequestBody(body, requestHeaders) {
+  if (body === undefined) {
+    return undefined;
+  }
+
+  if (
+    typeof body === "string" ||
+    isFormData(body) ||
+    isUrlSearchParams(body) ||
+    isBlob(body) ||
+    isArrayBuffer(body)
+  ) {
+    return body;
+  }
+
+  if (!hasHeader(requestHeaders, "Content-Type")) {
+    requestHeaders.set(
+      "Content-Type",
+      "application/json",
+    );
+  }
+
+  return JSON.stringify(body);
+}
+
+function createApiError({
+  message,
+  status,
+  payload,
+  originalPayload,
+  cause,
+}) {
+  const error = new Error(message);
+
+  error.name = "ApiError";
+  error.status = status;
+  error.payload = payload;
+
+  /*
+   * Không đưa payload thô từ backend vào lỗi production vì payload
+   * có thể chứa dữ liệu tài khoản hoặc dữ liệu sức khỏe nhạy cảm.
+   */
+  if (import.meta.env.DEV) {
+    error.originalPayload = originalPayload;
+  }
+
+  if (cause) {
+    error.cause = cause;
+  }
+
+  return error;
+}
+
+function parseResponsePayload(text, responseOk) {
+  if (!text) {
+    return {
+      success: responseOk,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(text);
+
+    if (
+      parsed !== null &&
+      typeof parsed === "object"
+    ) {
+      return parsed;
+    }
+
+    return responseOk
+      ? {
+          success: true,
+          data: parsed,
+        }
+      : {
+          success: false,
+          message: normalizeApiText(parsed),
+        };
+  } catch {
+    if (responseOk) {
+      return {
+        success: true,
+        data: text,
+      };
+    }
+
+    return {
+      success: false,
+      message:
+        "Dịch vụ đang phản hồi không ổn định. Vui lòng thử lại sau.",
+    };
+  }
+}
+
 export function getStoredAuth() {
-  if (typeof window === "undefined") {
+  if (!canUseLocalStorage()) {
     return null;
   }
 
@@ -332,10 +463,10 @@ export function getStoredAuth() {
   const serializedAuth = JSON.stringify(storedAuth);
 
   if (
-    localStorage.getItem(AUTH_STORAGE_KEY) !==
+    window.localStorage.getItem(AUTH_STORAGE_KEY) !==
     serializedAuth
   ) {
-    localStorage.setItem(
+    window.localStorage.setItem(
       AUTH_STORAGE_KEY,
       serializedAuth,
     );
@@ -345,18 +476,28 @@ export function getStoredAuth() {
 }
 
 export function setStoredAuth(auth) {
-  if (!auth) {
+  if (!canUseLocalStorage() || !auth) {
     return;
   }
 
-  localStorage.setItem(
+  const storedAuth = selectStoredAuth(auth);
+
+  if (!storedAuth) {
+    return;
+  }
+
+  window.localStorage.setItem(
     AUTH_STORAGE_KEY,
-    JSON.stringify(selectStoredAuth(auth)),
+    JSON.stringify(storedAuth),
   );
 }
 
 export function clearStoredAuth() {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
+  if (!canUseLocalStorage()) {
+    return;
+  }
+
+  window.localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
 export function isAuthenticated() {
@@ -371,13 +512,13 @@ export function hasPremiumAccess(
       auth?.subscriptionPlan ??
       auth?.plan ??
       "",
-  ).toLowerCase();
+  ).toLocaleLowerCase("vi-VN");
 
   const subscriptionStatus = String(
     auth?.subscriptionStatus ??
       auth?.subscription?.status ??
       "",
-  ).toLowerCase();
+  ).toLocaleLowerCase("vi-VN");
 
   return Boolean(
     auth?.isPremium ||
@@ -397,9 +538,19 @@ export function withPagination(
   pageNumber = 1,
   pageSize = 10,
 ) {
+  const normalizedPageNumber = Math.max(
+    1,
+    Number(pageNumber) || 1,
+  );
+
+  const normalizedPageSize = Math.max(
+    1,
+    Number(pageSize) || 10,
+  );
+
   return new URLSearchParams({
-    PageNumber: String(pageNumber),
-    PageSize: String(pageSize),
+    PageNumber: String(normalizedPageNumber),
+    PageSize: String(normalizedPageSize),
   }).toString();
 }
 
@@ -413,82 +564,100 @@ export async function apiRequest(
     auth = false,
     headers = {},
     credentials = "include",
+    signal,
+    cache,
+    redirect,
   } = options;
 
-  const requestHeaders = {
-    ...headers,
-  };
-
-  if (body !== undefined) {
-    requestHeaders["Content-Type"] =
-      "application/json";
-  }
+  const requestHeaders = new Headers(headers);
 
   if (auth) {
     const token = getAccessToken();
 
     if (token) {
-      requestHeaders.Authorization =
-        `Bearer ${token}`;
+      requestHeaders.set(
+        "Authorization",
+        `Bearer ${token}`,
+      );
     }
   }
 
-  const response = await fetch(buildUrl(path), {
-    method,
-    headers: requestHeaders,
-    credentials,
-    body:
-      body === undefined
-        ? undefined
-        : JSON.stringify(body),
-  });
+  const requestBody = prepareRequestBody(
+    body,
+    requestHeaders,
+  );
+
+  let response;
+
+  try {
+    response = await fetch(buildUrl(path), {
+      method,
+      headers: requestHeaders,
+      credentials,
+      body: requestBody,
+      signal,
+      cache,
+      redirect,
+    });
+  } catch (cause) {
+    const wasAborted = cause?.name === "AbortError";
+
+    const message = wasAborted
+      ? "Yêu cầu đã bị hủy."
+      : getApiStatusMessage(0);
+
+    const payload = {
+      success: false,
+      message,
+    };
+
+    throw createApiError({
+      message,
+      status: 0,
+      payload,
+      originalPayload: null,
+      cause,
+    });
+  }
 
   const text = await response.text();
 
-  let rawPayload = {
-    success: response.ok,
-  };
+  const rawPayload = parseResponsePayload(
+    text,
+    response.ok,
+  );
 
-  if (text) {
-    try {
-      rawPayload = JSON.parse(text);
-    } catch {
-      rawPayload = {
-        success: false,
-        message:
-          "Dịch vụ đang phản hồi không ổn định. Vui lòng thử lại sau.",
-      };
-    }
-  }
-
-  // Chỉ dịch message, title và errors.
-  // Dữ liệu nghiệp vụ trong data vẫn được giữ nguyên.
+  /*
+   * Chỉ Việt hóa các trường thông báo.
+   *
+   * Không dịch hoặc biến đổi `data` vì trường này có thể chứa:
+   * - Hồ sơ sức khỏe.
+   * - Triệu chứng do người dùng nhập.
+   * - Kết quả xét nghiệm.
+   * - Kết quả phân tích y tế.
+   * - Nội dung tư vấn hoặc cảnh báo.
+   */
   const payload = localizeApiPayload(
     rawPayload,
     response.status,
   );
 
-  const ok =
+  const requestSucceeded =
     response.ok &&
     payload?.success !== false;
 
-  if (!ok) {
-    const error = new Error(
-      getApiErrorMessage(
-        payload,
-        response.status,
-      ),
+  if (!requestSucceeded) {
+    const message = getApiErrorMessage(
+      payload,
+      response.status,
     );
 
-    error.status = response.status;
-
-    // Payload tiếng Việt cho component sử dụng.
-    error.payload = payload;
-
-    // Payload gốc từ backend để debug khi cần.
-    error.originalPayload = rawPayload;
-
-    throw error;
+    throw createApiError({
+      message,
+      status: response.status,
+      payload,
+      originalPayload: rawPayload,
+    });
   }
 
   return payload;
