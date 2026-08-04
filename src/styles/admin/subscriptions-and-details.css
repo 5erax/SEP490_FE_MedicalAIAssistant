@@ -402,77 +402,66 @@
 
 .subscription-quota-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
 .subscription-quota-item {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) minmax(76px, auto);
+  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
   border: 1px solid rgba(0, 128, 137, 0.18);
-  border-radius: 16px;
+  border-radius: 999px;
   background: linear-gradient(135deg, rgba(231, 250, 247, 0.82), rgba(255, 255, 255, 0.92));
-  padding: 10px;
+  padding: 8px 10px;
 }
 
 .subscription-quota-icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   background: rgba(0, 128, 137, 0.1);
   color: #008089;
 }
 
-.subscription-quota-main,
-.subscription-quota-value {
+.subscription-quota-main {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
-.subscription-quota-main strong,
-.subscription-quota-value strong {
+.subscription-quota-main strong {
   color: #10353a;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.2;
-}
-
-.subscription-quota-main strong {
-  font-size: 14px;
-}
-
-.subscription-quota-main span,
-.subscription-quota-value span {
-  color: rgba(16, 53, 58, 0.64);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.subscription-quota-main span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.subscription-quota-value {
-  justify-items: end;
-  min-width: 76px;
-  text-align: right;
-}
-
-.subscription-quota-value strong {
-  font-size: 20px;
-}
-
-.subscription-quota-value span {
+.subscription-quota-main span {
+  color: rgba(16, 53, 58, 0.64);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.subscription-quota-more {
+  width: max-content;
+  border-radius: 999px;
+  background: rgba(0, 128, 137, 0.08);
+  color: #007782;
+  font-size: 12px;
+  font-weight: 850;
+  padding: 6px 10px;
 }
 
 .subscription-quota-empty {

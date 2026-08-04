@@ -30,8 +30,13 @@ function getQuotaTitle(quota) {
 
 function getQuotaSummary(quota) {
   const code = quota.quotaCode || quota.code;
-  if (code === "RECOVERY_PLAN_REQUEST") return "Yêu cầu phục hồi";
-  return quota.unit ? `Theo ${quota.unit}` : "Quota gói";
+  if (code === "RECOVERY_PLAN_REQUEST") return "mỗi chu kỳ gói";
+  return getResetPeriodLabel(quota.resetPeriod);
+}
+
+function getQuotaAmount(quota) {
+  const limit = Number(quota.limitValue || 0).toLocaleString("vi-VN");
+  return `${limit} ${quota.unit || "lượt"}`;
 }
 
 export default function SubscriptionPlanTable({
@@ -91,20 +96,19 @@ export default function SubscriptionPlanTable({
 
             <div className="subscription-plan-card-limits" role="cell">
               {quotas.length ? (
-                <div className="subscription-quota-list">
-                  {quotas.map((quota) => (
+                <div className="subscription-quota-list" aria-label="Danh sách hạn mức">
+                  {quotas.slice(0, 3).map((quota) => (
                     <div className="subscription-quota-item" key={quota.id || quota.quotaId || quota.quotaCode}>
                       <span className="subscription-quota-icon"><Gauge size={15} /></span>
                       <div className="subscription-quota-main">
                         <strong>{getQuotaTitle(quota)}</strong>
-                        <span>{getQuotaSummary(quota)}</span>
-                      </div>
-                      <div className="subscription-quota-value">
-                        <strong>{Number(quota.limitValue || 0).toLocaleString("vi-VN")}</strong>
-                        <span>{quota.unit || "lượt"} · {getResetPeriodLabel(quota.resetPeriod)}</span>
+                        <span>{getQuotaAmount(quota)} · {getQuotaSummary(quota)}</span>
                       </div>
                     </div>
                   ))}
+                  {quotas.length > 3 && (
+                    <span className="subscription-quota-more">+{quotas.length - 3} hạn mức khác</span>
+                  )}
                 </div>
               ) : (
                 <div className="subscription-quota-empty">
