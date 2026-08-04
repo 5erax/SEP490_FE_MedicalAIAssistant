@@ -15,6 +15,8 @@ const ICD_CHAPTERS_BASE = "/api/icd-chapters";
 const CLINICAL_QUESTIONS_BASE = "/api/clinical-questions";
 const SYMPTOM_ANALYSIS_BASE = "/api/symptom-analysis";
 const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
+const ADMIN_QUOTAS_BASE = "/api/admin/quotas";
+const ADMIN_SUBSCRIPTION_PLANS_BASE = "/api/admin/subscription-plans";
 const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
 const PAYMENTS_BASE = "/api/payments";
 const AI_CONFIGS_BASE = "/api/ai-configs";
@@ -26,6 +28,8 @@ const USER_MEDICATIONS_BASE = "/api/user-medications";
 const SUBSCRIPTION_USAGE_BASE = "/api/me/subscription-usage";
 const RECOVERY_PLAN_REQUESTS_BASE = "/api/recovery-plan-requests";
 const RECOVERY_PLANS_BASE = "/api/recovery-plans";
+const DOCTOR_RECOVERY_PLAN_REQUESTS_BASE = "/api/doctor/recovery-plan-requests";
+const DOCTOR_RECOVERY_PLANS_BASE = "/api/doctor/recovery-plans";
 
 const encodedById = (base, id) => `${base}/${encodeURIComponent(id)}`;
 const labIndicatorChild = (indicatorId, child) => `${encodedById(LAB_INDICATORS_BASE, indicatorId)}/${child}`;
@@ -104,6 +108,14 @@ export const ENDPOINTS = {
     BY_ID: (id) => byId(SUBSCRIPTION_PLANS_BASE, id),
     STATUS: (id) => status(SUBSCRIPTION_PLANS_BASE, id),
   },
+  ADMIN_QUOTAS: {
+    BASE: ADMIN_QUOTAS_BASE,
+  },
+  ADMIN_SUBSCRIPTION_PLAN_QUOTAS: {
+    BY_PLAN: (planId) => `${encodedById(ADMIN_SUBSCRIPTION_PLANS_BASE, planId)}/quotas`,
+    BY_PLAN_QUOTA: (planId, quotaId) =>
+      `${encodedById(ADMIN_SUBSCRIPTION_PLANS_BASE, planId)}/quotas/${encodeURIComponent(quotaId)}`,
+  },
   USER_SUBSCRIPTIONS: {
     CHECKOUT: `${USER_SUBSCRIPTIONS_BASE}/checkout`,
     ME: `${USER_SUBSCRIPTIONS_BASE}/me`,
@@ -173,5 +185,27 @@ export const ENDPOINTS = {
     ME: `${RECOVERY_PLANS_BASE}/me`,
     BY_ID: (planId) => encodedById(RECOVERY_PLANS_BASE, planId),
     START: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/start`,
+  },
+  DOCTOR_RECOVERY_PLAN_REQUESTS: {
+    OPEN: `${DOCTOR_RECOVERY_PLAN_REQUESTS_BASE}/open`,
+    MINE: `${DOCTOR_RECOVERY_PLAN_REQUESTS_BASE}/mine`,
+    BY_ID: (requestId) => encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId),
+    CLINICAL_CONTEXT: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/clinical-context`,
+    ACCEPT: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/accept`,
+    START_REVIEW: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/start-review`,
+    RELEASE: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/release`,
+    REQUEST_MORE_INFORMATION: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/request-more-information`,
+    REJECT: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/reject`,
+    CREATE_PLAN: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/plan`,
+  },
+  DOCTOR_RECOVERY_PLANS: {
+    BY_ID: (planId) => encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId),
+    PHASES: (planId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases`,
+    PHASE_BY_ID: (planId, phaseId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}`,
+    NUTRIENTS: (planId, phaseId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}/nutrients`,
+    NUTRIENT_BY_ID: (planId, phaseId, nutrientId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}/nutrients/${encodeURIComponent(nutrientId)}`,
+    FOODS: (planId, phaseId, nutrientId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}/nutrients/${encodeURIComponent(nutrientId)}/foods`,
+    FOOD_BY_ID: (planId, phaseId, nutrientId, foodSourceId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}/nutrients/${encodeURIComponent(nutrientId)}/foods/${encodeURIComponent(foodSourceId)}`,
+    PUBLISH: (planId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/publish`,
   },
 };

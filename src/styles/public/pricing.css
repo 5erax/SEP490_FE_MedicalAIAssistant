@@ -36,6 +36,57 @@
   margin: 0 auto;
 }
 
+.pricing-page-focused {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100svh;
+  padding-top: 72px;
+  padding-bottom: 64px;
+}
+
+.pricing-page-focused .pricing-shell {
+  width: min(760px, 100%);
+}
+
+.pricing-page-focused .pricing-back-link {
+  margin-bottom: 24px;
+}
+
+.pricing-page-focused .pricing-hero {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.pricing-page-focused .pricing-hero-copy {
+  max-width: 700px;
+}
+
+.pricing-page-focused .pricing-hero h1 {
+  max-width: 680px;
+  font-size: clamp(36px, 5vw, 54px);
+}
+
+.pricing-page-focused .pricing-hero-description {
+  max-width: 620px;
+  margin-top: 16px;
+}
+
+.pricing-page-focused .plans-grid {
+  grid-template-columns: minmax(0, 640px);
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.pricing-page-focused .pricing-plan-card-premium {
+  min-height: auto;
+}
+
+.pricing-page-focused .payment-methods,
+.pricing-page-focused .current-subscription,
+.pricing-page-focused .checkout-status {
+  margin-top: 22px;
+}
+
 .pricing-back-link {
   display: inline-flex;
   align-items: center;

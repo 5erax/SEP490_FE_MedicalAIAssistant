@@ -232,7 +232,7 @@ export default function PaymentResultPage({ expectedResult }) {
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
-  const [usage, setUsage] = useState(null);
+  const [usageList, setUsageList] = useState([]);
   const view = getView(status, paymentDetail);
   const Icon = view.icon;
   const isCancelFlow = expectedResult === "cancel";
@@ -247,11 +247,12 @@ export default function PaymentResultPage({ expectedResult }) {
     }
     try {
       const usageResponse = await subscriptionUsageApi.getUsage();
-      setUsage(usageResponse?.data ?? null);
+      const usageItems = usageResponse?.data ?? [];
+      setUsageList(Array.isArray(usageItems) ? usageItems : []);
     } catch {
       // Quota card is optional context here; NO_ACTIVE_SUBSCRIPTION or
       // RECOVERY_PLAN_QUOTA_NOT_CONFIGURED just means nothing to show.
-      setUsage(null);
+      setUsageList([]);
     }
   }, [hasAuth]);
 
@@ -398,12 +399,14 @@ export default function PaymentResultPage({ expectedResult }) {
           </dl>
         )}
 
-        {success && usage && (
+        {success && usageList.length > 0 && (
           <dl className="payment-result-reference payment-result-usage">
-            <div>
-              <dt>{usage.quotaName || "Hạn mức sử dụng"}</dt>
-              <dd>{usage.remainingCount ?? "—"}/{usage.limitValue ?? "—"} lượt còn lại</dd>
-            </div>
+            {usageList.map((item) => (
+              <div key={item.quotaCode}>
+                <dt>{item.quotaName || "Hạn mức sử dụng"}</dt>
+                <dd>{item.remainingCount ?? "—"}/{item.limitValue ?? "—"} lượt còn lại</dd>
+              </div>
+            ))}
           </dl>
         )}
 

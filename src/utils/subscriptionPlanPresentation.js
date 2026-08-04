@@ -22,11 +22,32 @@ const FEATURE_LIMIT_LABELS = {
   clinicalQuestionPerMonth: (limit) => `${limit} bộ câu hỏi lâm sàng mỗi tháng`,
 };
 
+const QUOTA_CODE_LABELS = {
+  RECOVERY_PLAN_REQUEST: "yêu cầu kế hoạch phục hồi",
+};
+
+function getQuotaBenefits(plan) {
+  const quotas = Array.isArray(plan?.quotas) ? plan.quotas.filter((quota) => quota?.isActive !== false) : [];
+  if (!quotas.length) return [];
+
+  return quotas.flatMap((quota) => {
+    if (quota.limitValue === null || quota.limitValue === undefined || quota.limitValue === "") return [];
+    const label = quota.quotaName || QUOTA_CODE_LABELS[quota.quotaCode] || quota.quotaCode || "hạn mức sử dụng";
+    const unit = quota.unit || "lượt";
+    const resetLabel = quota.resetPeriod === "subscriptionCycle" ? "mỗi chu kỳ gói" : "theo chu kỳ";
+    return [`${Number(quota.limitValue).toLocaleString("vi-VN")} ${unit} ${label} ${resetLabel}`];
+  });
+}
+
 export function getPlanBenefits(value) {
   if (!value) return [];
 
   try {
-    const limits = typeof value === "string" ? JSON.parse(value) : value;
+    const quotaBenefits = typeof value === "object" ? getQuotaBenefits(value) : [];
+    if (quotaBenefits.length) return quotaBenefits;
+
+    const rawLimits = typeof value === "object" ? value.featureLimitJson : value;
+    const limits = typeof rawLimits === "string" ? JSON.parse(rawLimits) : rawLimits;
     if (!limits || Array.isArray(limits) || typeof limits !== "object") return [];
 
     return Object.entries(limits).flatMap(([key, limit]) => {

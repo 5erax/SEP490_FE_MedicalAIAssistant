@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Check, CreditCard, Gauge, Plus, ShieldAlert, Trash2 } from "lucide-react";
+import { Check, CreditCard, Gauge, ShieldAlert } from "lucide-react";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { Dialog } from "../ui";
 
@@ -15,6 +15,14 @@ const EMPTY_FORM = {
   featureLimitJson: DEFAULT_FEATURE_LIMITS,
   isActive: "true",
 };
+
+const FEATURE_LIMIT_LABELS = {
+  symptomAnalysisPerMonth: "Phân tích triệu chứng / tháng",
+  aiChatPerDay: "Chat AI / ngày",
+};
+
+const DEFAULT_QUOTA_LIMIT = "3";
+const DEFAULT_QUOTA_RESET_PERIOD = "subscriptionCycle";
 
 function formatFeatureLimits(value) {
   if (!value) return DEFAULT_FEATURE_LIMITS;
@@ -102,15 +110,80 @@ function stringifyFeatureLimitEntries(entries) {
   return JSON.stringify(payload, null, 2);
 }
 
+function getFeatureLimitLabel(key) {
+  return FEATURE_LIMIT_LABELS[key] || key;
+}
+
+function getQuotaCode(quota) {
+  return quota?.quotaCode || quota?.code || "";
+}
+
+function getQuotaTitle(quota) {
+  return quota?.quotaName || quota?.name || getQuotaCode(quota) || "Hạn mức sử dụng";
+}
+
+function getQuotaUnit(quota) {
+  return quota?.unit || "lượt";
+}
+
+function findCatalogQuota(row, quotaCatalog) {
+  const rowCode = String(row.quotaCode || "").toUpperCase();
+  return quotaCatalog.find((quota) => String(getQuotaCode(quota)).toUpperCase() === rowCode);
+}
+
+function getQuotaRows(plan, defaultQuota) {
+  const planQuotas = Array.isArray(plan?.quotas) ? plan.quotas : [];
+  const rows = planQuotas.map((quota) => ({
+    quotaId: quota.quotaId || quota.quotaDefinitionId || "",
+    quotaCode: getQuotaCode(quota),
+    name: getQuotaTitle(quota),
+    unit: getQuotaUnit(quota),
+    limitValue: String(quota.limitValue ?? ""),
+    resetPeriod: quota.resetPeriod || DEFAULT_QUOTA_RESET_PERIOD,
+    isActive: quota.isActive !== false,
+  }));
+
+  if (!rows.length && defaultQuota?.id) {
+    rows.push({
+      quotaId: defaultQuota.id,
+      quotaCode: defaultQuota.code || "",
+      name: getQuotaTitle(defaultQuota),
+      unit: getQuotaUnit(defaultQuota),
+      limitValue: DEFAULT_QUOTA_LIMIT,
+      resetPeriod: DEFAULT_QUOTA_RESET_PERIOD,
+      isActive: true,
+    });
+  }
+
+  return rows;
+}
+
+function buildQuotaUpdates(rows, quotaCatalog) {
+  return rows
+    .map((row) => {
+      const catalogQuota = findCatalogQuota(row, quotaCatalog);
+      return {
+        quotaId: catalogQuota?.id || row.quotaId,
+        limitValue: Number(row.limitValue),
+        resetPeriod: row.resetPeriod || DEFAULT_QUOTA_RESET_PERIOD,
+        isActive: row.isActive !== false,
+      };
+    })
+    .filter((row) => row.quotaId && Number.isFinite(row.limitValue) && row.limitValue >= 0);
+}
+
 export default function SubscriptionPlanFormModal({
   mode,
   plan,
   saving,
+  quotaCatalog = [],
+  defaultQuota,
   restoreFocusRef,
   onClose,
   onSubmit,
 }) {
   const [form, setForm] = useState(() => toFormValue(plan));
+  const [quotaRows, setQuotaRows] = useState(() => getQuotaRows(plan, defaultQuota));
   const [errors, setErrors] = useState({});
   const closeButtonRef = useRef(null);
   const formRef = useRef(null);
@@ -129,27 +202,30 @@ export default function SubscriptionPlanFormModal({
     update("featureLimitJson", stringifyFeatureLimitEntries(nextEntries));
   }
 
-  function addFeatureLimit() {
-    update("featureLimitJson", stringifyFeatureLimitEntries([
-      ...featureLimitEntries,
-      { key: "", limit: "" },
-    ]));
-  }
-
-  function removeFeatureLimit(index) {
-    const nextEntries = featureLimitEntries.filter((_, itemIndex) => itemIndex !== index);
-    update("featureLimitJson", stringifyFeatureLimitEntries(nextEntries));
+  function updateQuotaRow(index, key, value) {
+    setQuotaRows((current) => current.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, [key]: value } : item
+    )));
+    setErrors((current) => ({ ...current, quotaRows: "" }));
   }
 
   function handleSubmit(event) {
     event.preventDefault();
     const nextErrors = validate(form);
+    if (mode === "edit" && quotaRows.some((row) => {
+      const limit = Number(row.limitValue);
+      return row.limitValue === "" || !Number.isFinite(limit) || limit < 0;
+    })) {
+      nextErrors.quotaRows = "Số lượt hạn mức phải là số không âm.";
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       focusFirstInvalidField(formRef, nextErrors);
       return;
     }
-    onSubmit(buildPayload(form));
+    onSubmit(buildPayload(form), {
+      quotaUpdates: mode === "edit" ? buildQuotaUpdates(quotaRows, quotaCatalog) : [],
+    });
   }
 
   return (
@@ -168,7 +244,7 @@ export default function SubscriptionPlanFormModal({
           <CreditCard size={22} />
         </span>
         <div>
-          <p className="eyebrow">Quản lý doanh thu</p>
+          <p className="eyebrow">Quản lý gói dịch vụ</p>
           <h2 id="subscription-modal-title">{title}</h2>
           <p>Cấu hình giá, thời hạn và giới hạn quyền lợi hiển thị trên trang đăng ký gói.</p>
         </div>
@@ -255,8 +331,8 @@ export default function SubscriptionPlanFormModal({
             <div className="subscription-form-card-head">
               <span aria-hidden="true"><Gauge size={20} /></span>
               <div>
-                <h3>Giới hạn tính năng</h3>
-                <p>Thiết lập từng hạn mức sử dụng thay vì nhập JSON thủ công.</p>
+                <h3>Hạn mức sử dụng</h3>
+                <p>Quyền lợi chính được hiển thị cho người dùng khi xem gói.</p>
               </div>
             </div>
 
@@ -268,26 +344,18 @@ export default function SubscriptionPlanFormModal({
               aria-describedby="subscription-feature-help"
             >
               <div className="subscription-limit-editor-head">
-                <span>Danh sách hạn mức</span>
-                <button className="btn btn-secondary" type="button" onClick={addFeatureLimit}>
-                  <Plus size={16} /> Thêm hạn mức
-                </button>
+                <span>Quyền lợi trong gói</span>
               </div>
 
               <div className="subscription-limit-editor-list">
                 {featureLimitEntries.map((item, index) => (
                   <article className="subscription-limit-editor-row" key={`${item.key}-${index}`}>
+                    <div className="subscription-limit-name">
+                      <span>Quyền lợi</span>
+                      <strong>{getFeatureLimitLabel(item.key)}</strong>
+                    </div>
                     <label className="clean-field">
-                      <span>Tính năng</span>
-                      <input
-                        name={`featureLimit.${index}.key`}
-                        value={item.key}
-                        onChange={(event) => updateFeatureLimit(index, "key", event.target.value)}
-                        placeholder="Ví dụ: symptomAnalysisPerMonth"
-                      />
-                    </label>
-                    <label className="clean-field">
-                      <span>Hạn mức</span>
+                      <span>Số lượt</span>
                       <input
                         name={`featureLimit.${index}.limit`}
                         value={item.limit}
@@ -295,23 +363,72 @@ export default function SubscriptionPlanFormModal({
                         placeholder="Ví dụ: 30"
                       />
                     </label>
-                    <button
-                      className="btn subscription-limit-remove"
-                      type="button"
-                      onClick={() => removeFeatureLimit(index)}
-                      aria-label={`Xóa hạn mức ${index + 1}`}
-                    >
-                      <Trash2 size={15} /> Xóa
-                    </button>
                   </article>
                 ))}
               </div>
 
               <small id="subscription-feature-help" role={errors.featureLimitJson ? "alert" : undefined}>
-                {errors.featureLimitJson || "Mỗi dòng là một quyền lợi và số lượt được dùng trong gói."}
+                {errors.featureLimitJson || "Các thay đổi sẽ được lưu cùng gói khi bấm nút lưu bên dưới."}
               </small>
             </div>
           </section>
+
+          {mode === "edit" && (
+            <section className="subscription-form-card subscription-real-quota-card">
+              <div className="subscription-form-card-head">
+                <span aria-hidden="true"><Gauge size={20} /></span>
+                <div>
+                  <h3>Lượt sử dụng thực tế</h3>
+                  <p>Số lượt hệ thống ghi nhận cho gói này.</p>
+                </div>
+              </div>
+
+              <div
+                className={`subscription-real-quota-list ${errors.quotaRows ? "subscription-field-error" : ""}`}
+                data-error-field="quotaRows"
+                tabIndex={errors.quotaRows ? -1 : undefined}
+                aria-invalid={errors.quotaRows ? "true" : undefined}
+                aria-describedby="subscription-quota-help"
+              >
+                {quotaRows.length > 0 && (
+                  <div className="subscription-real-quota-summary" aria-label="Hạn mức đang áp dụng">
+                    {quotaRows.map((row, index) => (
+                      <span key={`${row.quotaCode || row.quotaId}-summary-${index}`}>
+                        <strong>{row.name}</strong>
+                        {row.limitValue || 0} {row.unit || "lượt"} / chu kỳ
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {quotaRows.length ? quotaRows.map((row, index) => (
+                  <article className="subscription-real-quota-row" key={`${row.quotaCode || row.quotaId}-${index}`}>
+                    <div className="subscription-real-quota-name">
+                      <span>Hạn mức</span>
+                      <strong>{row.name}</strong>
+                      <small>{row.unit} - mỗi chu kỳ gói</small>
+                    </div>
+                    <label className="clean-field">
+                      <span>Số lượt</span>
+                      <input
+                        name={`quota.${index}.limitValue`}
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={row.limitValue}
+                        onChange={(event) => updateQuotaRow(index, "limitValue", event.target.value)}
+                        placeholder="Ví dụ: 3"
+                      />
+                    </label>
+                  </article>
+                )) : (
+                  <p className="subscription-quota-modal-empty">Chưa có hạn mức khả dụng cho gói này.</p>
+                )}
+                <small id="subscription-quota-help" role={errors.quotaRows ? "alert" : undefined}>
+                  {errors.quotaRows || "Hạn mức sẽ được lưu cùng lần cập nhật gói."}
+                </small>
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="doctor-modal-actions">
