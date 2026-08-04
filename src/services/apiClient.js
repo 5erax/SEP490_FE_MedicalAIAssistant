@@ -1,3 +1,8 @@
+import {
+  getApiStatusMessage,
+  localizeApiPayload,
+} from "./apiMessageTranslator";
+
 // Production uses same-origin /api so Vercel rewrites can avoid
 // mixed-content and CORS issues.
 const API_BASE_URL = import.meta.env.DEV
@@ -32,7 +37,10 @@ function buildUrl(path) {
 function parseStoredAuth() {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+
+    return raw
+      ? JSON.parse(raw)
+      : null;
   } catch {
     return null;
   }
@@ -89,7 +97,7 @@ function decodeJwtPayload(token) {
 
     const padded = normalized.padEnd(
       normalized.length +
-      ((4 - (normalized.length % 4)) % 4),
+        ((4 - (normalized.length % 4)) % 4),
       "=",
     );
 
@@ -117,110 +125,193 @@ function isUsableAuth(auth) {
 }
 
 /**
- * Chuyển các dạng errors từ backend thành một chuỗi có thể hiển thị.
- *
- * Hỗ trợ:
- * - string
- * - string[]
- * - object chứa string hoặc string[]
+ * Chuẩn hóa nội dung để hiển thị.
  */
-function formatApiErrors(errors) {
-  if (!errors) {
-    return "";
-  }
-
-  if (Array.isArray(errors)) {
-    return errors
-      .map((value) => normalizeErrorText(value))
-      .filter(Boolean)
-      .join(", ");
-  }
-
-  if (typeof errors === "string") {
-    return normalizeErrorText(errors);
-  }
-
-  if (typeof errors === "object") {
-    return Object.values(errors)
-      .flatMap((value) =>
-        Array.isArray(value) ? value : [value],
-      )
-      .map((value) => normalizeErrorText(value))
-      .filter(Boolean)
-      .join(", ");
-  }
-
-  return "";
-}
-
-/**
- * Chuẩn hóa khoảng trắng để việc so sánh thông báo ổn định hơn.
- */
-function normalizeErrorText(value) {
+function normalizeApiText(value) {
   return String(value ?? "")
+    .normalize("NFKC")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 /**
- * So sánh hai thông báo mà không phân biệt hoa thường.
+ * Chuẩn hóa nội dung để so sánh trùng lặp.
+ *
+ * Không phân biệt:
+ * - Hoa/thường
+ * - Dấu câu ở cuối
+ * - Khoảng trắng thừa
  */
-function normalizeErrorForComparison(value) {
-  return normalizeErrorText(value)
+function getMessageComparisonKey(value) {
+  return normalizeApiText(value)
     .toLocaleLowerCase("vi-VN")
     .replace(/[.!?,;:]+$/g, "")
     .trim();
 }
 
 /**
- * Tạo thông báo lỗi cuối cùng mà không lặp message và errors.
+ * Xử lý trường hợp chính một chuỗi đã bị lặp liên tiếp.
  *
- * Ví dụ backend trả:
- *
- * {
- *   message: "Email đã tồn tại",
- *   errors: ["Email đã tồn tại"]
- * }
- *
- * Kết quả chỉ còn:
- *
+ * Ví dụ:
+ * "Email đã tồn tại Email đã tồn tại"
+ * trở thành:
  * "Email đã tồn tại"
+ *
+ * "Mã OTP không hợp lệ hoặc đã hết hạn
+ *  Mã OTP không hợp lệ hoặc đã hết hạn"
+ * trở thành:
+ * "Mã OTP không hợp lệ hoặc đã hết hạn"
  */
-function getApiErrorMessage(payload, status) {
-  const message = normalizeErrorText(payload?.message);
-  const errors = formatApiErrors(payload?.errors);
-  const title = normalizeErrorText(payload?.title);
+function collapseRepeatedMessage(value) {
+  const text = normalizeApiText(value);
 
-  if (message && errors) {
-    const normalizedMessage =
-      normalizeErrorForComparison(message);
-
-    const normalizedErrors =
-      normalizeErrorForComparison(errors);
-
-    // Hai nội dung giống hoàn toàn.
-    if (normalizedMessage === normalizedErrors) {
-      return message;
-    }
-
-    // errors đã chứa toàn bộ message.
-    if (normalizedErrors.includes(normalizedMessage)) {
-      return errors;
-    }
-
-    // message đã chứa toàn bộ errors.
-    if (normalizedMessage.includes(normalizedErrors)) {
-      return message;
-    }
-
-    // Hai nội dung thực sự khác nhau thì vẫn hiển thị cả hai.
-    return `${message} ${errors}`;
+  if (!text) {
+    return "";
   }
 
+  const words = text.split(" ");
+
+  // Kiểm tra chuỗi bị lặp từ 4 lần xuống 2 lần.
+  for (
+    let repeatCount = Math.min(4, words.length);
+    repeatCount >= 2;
+    repeatCount -= 1
+  ) {
+    if (words.length % repeatCount !== 0) {
+      continue;
+    }
+
+    const partLength = words.length / repeatCount;
+
+    if (partLength === 0) {
+      continue;
+    }
+
+    const parts = Array.from(
+      { length: repeatCount },
+      (_, index) =>
+        words
+          .slice(
+            index * partLength,
+            (index + 1) * partLength,
+          )
+          .join(" "),
+    );
+
+    const firstPartKey =
+      getMessageComparisonKey(parts[0]);
+
+    if (!firstPartKey) {
+      continue;
+    }
+
+    const allPartsAreEqual = parts.every(
+      (part) =>
+        getMessageComparisonKey(part) === firstPartKey,
+    );
+
+    if (allPartsAreEqual) {
+      return normalizeApiText(parts[0]);
+    }
+  }
+
+  return text;
+}
+
+/**
+ * Chuyển errors từ backend thành mảng phẳng.
+ *
+ * Hỗ trợ:
+ * - string
+ * - string[]
+ * - object
+ * - object lồng nhau
+ */
+function flattenApiErrors(errors) {
+  if (!errors) {
+    return [];
+  }
+
+  if (Array.isArray(errors)) {
+    return errors.flatMap((item) =>
+      flattenApiErrors(item),
+    );
+  }
+
+  if (typeof errors === "object") {
+    return Object.values(errors).flatMap((item) =>
+      flattenApiErrors(item),
+    );
+  }
+
+  const message = collapseRepeatedMessage(errors);
+
+  return message
+    ? [message]
+    : [];
+}
+
+/**
+ * Xóa các thông báo trùng nhau.
+ */
+function getUniqueMessages(messages) {
+  const uniqueMessages = [];
+  const seenKeys = new Set();
+
+  for (const rawMessage of messages) {
+    const message =
+      collapseRepeatedMessage(rawMessage);
+
+    const key =
+      getMessageComparisonKey(message);
+
+    if (!message || !key || seenKeys.has(key)) {
+      continue;
+    }
+
+    seenKeys.add(key);
+    uniqueMessages.push(message);
+  }
+
+  return uniqueMessages;
+}
+
+/**
+ * Tạo thông báo lỗi cuối cùng.
+ *
+ * Tránh các trường hợp:
+ *
+ * message: "Email đã tồn tại"
+ * errors: ["Email đã tồn tại"]
+ *
+ * hoặc:
+ *
+ * message:
+ * "Mã OTP không hợp lệ hoặc đã hết hạn
+ *  Mã OTP không hợp lệ hoặc đã hết hạn"
+ */
+function getApiErrorMessage(payload, status) {
+  const message =
+    collapseRepeatedMessage(payload?.message);
+
+  const errors =
+    flattenApiErrors(payload?.errors);
+
+  const uniqueMessages = getUniqueMessages([
+    message,
+    ...errors,
+  ]);
+
+  if (uniqueMessages.length > 0) {
+    return uniqueMessages.join(" ");
+  }
+
+  const title =
+    collapseRepeatedMessage(payload?.title);
+
   return (
-    message ||
-    errors ||
     title ||
+    getApiStatusMessage(status) ||
     `Yêu cầu thất bại với mã ${status}`
   );
 }
@@ -277,24 +368,24 @@ export function hasPremiumAccess(
 ) {
   const planName = String(
     auth?.planName ??
-    auth?.subscriptionPlan ??
-    auth?.plan ??
-    "",
+      auth?.subscriptionPlan ??
+      auth?.plan ??
+      "",
   ).toLowerCase();
 
   const subscriptionStatus = String(
     auth?.subscriptionStatus ??
-    auth?.subscription?.status ??
-    "",
+      auth?.subscription?.status ??
+      "",
   ).toLowerCase();
 
   return Boolean(
     auth?.isPremium ||
-    auth?.isSubscribed ||
-    auth?.hasPremiumAccess ||
-    planName.includes("premium") ||
-    planName.includes("medimate+") ||
-    subscriptionStatus === "active",
+      auth?.isSubscribed ||
+      auth?.hasPremiumAccess ||
+      planName.includes("premium") ||
+      planName.includes("medimate+") ||
+      subscriptionStatus === "active",
   );
 }
 
@@ -329,14 +420,16 @@ export async function apiRequest(
   };
 
   if (body !== undefined) {
-    requestHeaders["Content-Type"] = "application/json";
+    requestHeaders["Content-Type"] =
+      "application/json";
   }
 
   if (auth) {
     const token = getAccessToken();
 
     if (token) {
-      requestHeaders.Authorization = `Bearer ${token}`;
+      requestHeaders.Authorization =
+        `Bearer ${token}`;
     }
   }
 
@@ -352,21 +445,28 @@ export async function apiRequest(
 
   const text = await response.text();
 
-  let payload = {
+  let rawPayload = {
     success: response.ok,
   };
 
   if (text) {
     try {
-      payload = JSON.parse(text);
+      rawPayload = JSON.parse(text);
     } catch {
-      payload = {
+      rawPayload = {
         success: false,
         message:
           "Dịch vụ đang phản hồi không ổn định. Vui lòng thử lại sau.",
       };
     }
   }
+
+  // Chỉ dịch message, title và errors.
+  // Dữ liệu nghiệp vụ trong data vẫn được giữ nguyên.
+  const payload = localizeApiPayload(
+    rawPayload,
+    response.status,
+  );
 
   const ok =
     response.ok &&
@@ -381,7 +481,12 @@ export async function apiRequest(
     );
 
     error.status = response.status;
+
+    // Payload tiếng Việt cho component sử dụng.
     error.payload = payload;
+
+    // Payload gốc từ backend để debug khi cần.
+    error.originalPayload = rawPayload;
 
     throw error;
   }
