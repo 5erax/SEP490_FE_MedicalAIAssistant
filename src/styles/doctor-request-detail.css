@@ -1,9 +1,9 @@
 .doctor-detail-page {
   display: grid;
-  gap: 18px;
-  width: min(880px, 100%);
+  gap: 20px;
+  width: min(1180px, 100%);
   margin-inline: auto;
-  padding: 24px clamp(16px, 4vw, 56px) 56px;
+  padding: 24px clamp(16px, 3vw, 48px) 56px;
 }
 
 .doctor-detail-back {
@@ -96,48 +96,6 @@
   color: var(--color-danger);
 }
 
-.doctor-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 24px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  padding: 22px;
-  margin: 0;
-}
-
-.doctor-detail-grid dt {
-  color: var(--color-muted);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.doctor-detail-grid dd {
-  margin: 5px 0 0;
-  color: var(--color-ink);
-  font-size: 14px;
-  font-weight: 650;
-  line-height: 1.5;
-}
-
-.doctor-detail-wide {
-  grid-column: 1 / -1;
-}
-
-.doctor-detail-danger dt {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-danger);
-}
-
-.doctor-detail-danger dd {
-  color: var(--color-danger);
-}
-
 .doctor-detail-reason-code {
   display: inline-block;
   margin-right: 8px;
@@ -146,6 +104,183 @@
   padding: 2px 9px;
   font-size: 11px;
   font-weight: 800;
+}
+
+/* Two-column dashboard layout: main content + meta sidebar */
+
+.doctor-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 24px;
+}
+
+.doctor-detail-main {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.doctor-detail-card {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: 22px 24px;
+}
+
+.doctor-detail-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-detail-note-text {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.doctor-detail-card-danger {
+  border-color: rgba(180, 35, 24, 0.25);
+  background: var(--color-danger-bg);
+}
+
+.doctor-detail-card-danger .doctor-detail-card-heading,
+.doctor-detail-card-danger .doctor-detail-note-text {
+  color: var(--color-danger);
+}
+
+.doctor-detail-sidebar {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  position: sticky;
+  top: 24px;
+}
+
+.doctor-detail-side-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: 18px 20px;
+}
+
+.doctor-detail-side-heading {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-detail-side-card .doctor-detail-countdown {
+  margin-top: 2px;
+}
+
+.doctor-detail-quick-info {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.doctor-detail-quick-info dt {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.doctor-detail-quick-info dd {
+  margin: 2px 0 0;
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.doctor-detail-timeline {
+  display: grid;
+  gap: 0;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-detail-timeline li {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 18px;
+  padding-left: 2px;
+}
+
+.doctor-detail-timeline li:last-child {
+  padding-bottom: 0;
+}
+
+.doctor-detail-timeline li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 5px;
+  width: 1px;
+  height: calc(100% - 6px);
+  background: var(--color-line);
+}
+
+.doctor-detail-timeline-dot {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--color-line-strong);
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.doctor-detail-timeline li.is-done .doctor-detail-timeline-dot {
+  border-color: var(--color-info-strong);
+  background: var(--color-info-strong);
+}
+
+.doctor-detail-timeline li.is-final .doctor-detail-timeline-dot {
+  border-color: var(--color-info-strong);
+  background: var(--color-info-strong);
+}
+
+.doctor-detail-timeline li.is-final.tone-danger .doctor-detail-timeline-dot {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+}
+
+.doctor-detail-timeline li.is-final.tone-success .doctor-detail-timeline-dot {
+  border-color: var(--color-success);
+  background: var(--color-success);
+}
+
+.doctor-detail-timeline strong {
+  display: block;
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.doctor-detail-timeline li.is-pending strong {
+  color: var(--color-muted);
+}
+
+.doctor-detail-timeline p {
+  margin: 2px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
 }
 
 /* Action area — primary hero card, secondary tiles, danger zone */
@@ -375,11 +510,17 @@
   color: var(--color-muted);
 }
 
-@media (max-width: 560px) {
-  .doctor-detail-grid {
+@media (max-width: 980px) {
+  .doctor-detail-layout {
     grid-template-columns: 1fr;
   }
 
+  .doctor-detail-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
   .doctor-action-area {
     padding: 20px;
   }

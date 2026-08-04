@@ -69,6 +69,10 @@ function formatDate(value) {
   return date.toLocaleString("vi-VN", { dateStyle: "medium", timeStyle: "short" });
 }
 
+function formatShortId(id) {
+  return id ? `#${String(id).slice(0, 8).toUpperCase()}` : "—";
+}
+
 function formatRemaining(msRemaining) {
   if (msRemaining <= 0) return "Đã hết hạn";
   const totalMinutes = Math.floor(msRemaining / 60000);
@@ -200,6 +204,21 @@ function DetailContent({ request, onReload }) {
     onReload,
   );
 
+  const timelineSteps = [
+    { label: "Gửi yêu cầu", timestamp: request.requestedAt },
+    { label: "Đã nhận", timestamp: request.acceptedAt },
+    { label: "Bắt đầu xem xét", timestamp: request.reviewStartedAt },
+  ];
+  const finalStepLabel = {
+    published: "Đã xuất bản",
+    rejected: "Đã từ chối",
+    cancelled: "Đã hủy",
+    expired: "Hết hạn",
+  }[request.status];
+  if (finalStepLabel) {
+    timelineSteps.push({ label: finalStepLabel, timestamp: null, tone: statusMeta.tone, isFinal: true });
+  }
+
   async function handleStartReview() {
     setActionBusy("startReview");
     try {
@@ -286,44 +305,80 @@ function DetailContent({ request, onReload }) {
         </button>
       </header>
 
-      {isAssignmentActive && countdown && (
-        <div className={`doctor-detail-countdown ${countdown.remaining <= 0 ? "is-expired" : ""}`}>
-          <Clock3 size={16} aria-hidden="true" />
-          <span>Thời hạn xử lý: <strong>{countdown.label}</strong></span>
-        </div>
-      )}
+      <div className="doctor-detail-layout">
+        <div className="doctor-detail-main">
+          <section className="doctor-detail-card">
+            <p className="doctor-detail-card-heading">Ghi chú từ bệnh nhân</p>
+            <p className="doctor-detail-note-text">{request.requestNote || "Không có ghi chú."}</p>
+          </section>
 
-      <dl className="doctor-detail-grid">
-        <div>
-          <dt>Ngày gửi yêu cầu</dt>
-          <dd>{formatDate(request.requestedAt) || "Chưa cập nhật"}</dd>
+          {request.status === "rejected" && (
+            <section className="doctor-detail-card doctor-detail-card-danger">
+              <p className="doctor-detail-card-heading">
+                <AlertTriangle size={14} aria-hidden="true" /> Lý do từ chối
+              </p>
+              <p className="doctor-detail-note-text">
+                {request.rejectionReasonCode && (
+                  <span className="doctor-detail-reason-code">{request.rejectionReasonCode}</span>
+                )}
+                {request.rejectionReason || "Không có mô tả."}
+              </p>
+            </section>
+          )}
+
+          {request.status === "published" && (
+            <section className="doctor-detail-plan-note">
+              <FileText size={16} aria-hidden="true" />
+              <span>
+                Kế hoạch liên kết đang ở trạng thái <strong>{request.recoveryPlanStatus}</strong>. Trang xem kế hoạch sẽ sớm ra mắt.
+              </span>
+            </section>
+          )}
+
+          {["cancelled", "expired"].includes(request.status) && (
+            <section className="doctor-detail-plan-note is-muted">
+              <CalendarClock size={16} aria-hidden="true" />
+              <span>Yêu cầu này đã kết thúc và không còn thao tác nào khả dụng.</span>
+            </section>
+          )}
         </div>
-        <div>
-          <dt>Ngày nhận</dt>
-          <dd>{formatDate(request.acceptedAt) || "Chưa cập nhật"}</dd>
-        </div>
-        <div>
-          <dt>Bắt đầu xem xét</dt>
-          <dd>{formatDate(request.reviewStartedAt) || "Chưa bắt đầu"}</dd>
-        </div>
-        <div>
-          <dt>Phiên bản dữ liệu</dt>
-          <dd>#{request.version ?? 1}</dd>
-        </div>
-        <div className="doctor-detail-wide">
-          <dt>Ghi chú từ bệnh nhân</dt>
-          <dd>{request.requestNote || "Không có ghi chú."}</dd>
-        </div>
-        {request.status === "rejected" && (
-          <div className="doctor-detail-wide doctor-detail-danger">
-            <dt><AlertTriangle size={14} aria-hidden="true" /> Lý do từ chối</dt>
-            <dd>
-              {request.rejectionReasonCode && <span className="doctor-detail-reason-code">{request.rejectionReasonCode}</span>}
-              {request.rejectionReason || "Không có mô tả."}
-            </dd>
-          </div>
-        )}
-      </dl>
+
+        <aside className="doctor-detail-sidebar">
+          <section className="doctor-detail-side-card">
+            <p className="doctor-detail-side-heading">Trạng thái</p>
+            <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+            {isAssignmentActive && countdown && (
+              <div className={`doctor-detail-countdown ${countdown.remaining <= 0 ? "is-expired" : ""}`}>
+                <Clock3 size={16} aria-hidden="true" />
+                <span>Thời hạn xử lý: <strong>{countdown.label}</strong></span>
+              </div>
+            )}
+          </section>
+
+          <section className="doctor-detail-side-card">
+            <p className="doctor-detail-side-heading">Dòng thời gian</p>
+            <Timeline steps={timelineSteps} />
+          </section>
+
+          <section className="doctor-detail-side-card">
+            <p className="doctor-detail-side-heading">Thông tin nhanh</p>
+            <dl className="doctor-detail-quick-info">
+              <div>
+                <dt>Mã yêu cầu</dt>
+                <dd>{formatShortId(request.id)}</dd>
+              </div>
+              <div>
+                <dt>Nhóm bệnh</dt>
+                <dd>{disease.label}</dd>
+              </div>
+              <div>
+                <dt>Phiên bản dữ liệu</dt>
+                <dd>#{request.version ?? 1}</dd>
+              </div>
+            </dl>
+          </section>
+        </aside>
+      </div>
 
       {request.status === "assigned" && (
         <ActionArea>
@@ -426,22 +481,6 @@ function DetailContent({ request, onReload }) {
         </>
       )}
 
-      {request.status === "published" && (
-        <section className="doctor-detail-plan-note">
-          <FileText size={16} aria-hidden="true" />
-          <span>
-            Kế hoạch liên kết đang ở trạng thái <strong>{request.recoveryPlanStatus}</strong>. Trang xem kế hoạch sẽ sớm ra mắt.
-          </span>
-        </section>
-      )}
-
-      {["cancelled", "expired"].includes(request.status) && (
-        <section className="doctor-detail-plan-note is-muted">
-          <CalendarClock size={16} aria-hidden="true" />
-          <span>Yêu cầu này đã kết thúc và không còn thao tác nào khả dụng.</span>
-        </section>
-      )}
-
       {moreInfoOpen && (
         <ReasonDialog
           title="Yêu cầu bổ sung thông tin"
@@ -478,6 +517,25 @@ function DetailContent({ request, onReload }) {
         />
       )}
     </>
+  );
+}
+
+function Timeline({ steps }) {
+  return (
+    <ol className="doctor-detail-timeline">
+      {steps.map((step) => (
+        <li
+          key={step.label}
+          className={step.isFinal ? `is-final tone-${step.tone}` : step.timestamp ? "is-done" : "is-pending"}
+        >
+          <span className="doctor-detail-timeline-dot" aria-hidden="true" />
+          <div>
+            <strong>{step.label}</strong>
+            {!step.isFinal && <p>{step.timestamp ? formatDate(step.timestamp) : "Chưa diễn ra"}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
