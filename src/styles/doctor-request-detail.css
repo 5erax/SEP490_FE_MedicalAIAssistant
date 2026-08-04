@@ -386,6 +386,172 @@
   font-size: 12px;
 }
 
+/* Clinical context — BMI, allergy, chronic diseases, medications, labs, journey */
+
+.doctor-clinical-section {
+  display: grid;
+  gap: 12px;
+}
+
+.doctor-clinical-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.doctor-clinical-block {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  padding: 16px 18px;
+}
+
+.doctor-clinical-block-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.doctor-clinical-block-heading svg {
+  color: var(--color-info-strong);
+}
+
+.doctor-clinical-metrics {
+  display: flex;
+  gap: 16px;
+}
+
+.doctor-clinical-metrics span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.doctor-clinical-metrics strong {
+  color: var(--color-ink);
+  font-size: 18px;
+}
+
+.doctor-clinical-bmi {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 12px;
+}
+
+.doctor-clinical-bmi strong {
+  font-size: 15px;
+}
+
+.doctor-clinical-meta {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.doctor-clinical-meta strong {
+  color: var(--color-ink);
+}
+
+.doctor-clinical-text {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.doctor-clinical-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-clinical-list li {
+  border-top: 1px solid var(--color-line);
+  padding-top: 8px;
+}
+
+.doctor-clinical-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.doctor-clinical-list strong {
+  display: block;
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.doctor-clinical-list span {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.doctor-clinical-list p {
+  margin: 3px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.doctor-clinical-empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.doctor-clinical-journey {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-clinical-journey li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.doctor-clinical-journey-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.doctor-clinical-journey strong {
+  display: block;
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.doctor-clinical-journey p {
+  margin: 2px 0 0;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
 /* Action area — primary hero card, secondary list, danger zone */
 
 .doctor-action-area {
