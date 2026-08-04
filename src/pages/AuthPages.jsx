@@ -451,7 +451,15 @@ export function SignupPage() {
           <div className="form-two-cols">
             <Field label="Email" name="email" type="email" value={form.email} onChange={(event) => update("email", event.target.value)} autoComplete="email" spellCheck={false} required />
             <Field label="Tên đăng nhập" name="userName" value={form.userName} onChange={(event) => update("userName", event.target.value)} autoComplete="username" spellCheck={false} required />
-            <Field label="Tên hiển thị" name="displayName" value={form.displayName} onChange={(event) => update("displayName", event.target.value)} autoComplete="name" required />
+            <Field
+              label="Tên hiển thị"
+              name="displayName"
+              value={form.displayName}
+              onChange={(event) =>
+                update("displayName", event.target.value)
+              }
+              autoComplete="name"
+            />
             <Field label="Địa chỉ" name="address" value={form.address} onChange={(event) => update("address", event.target.value)} autoComplete="street-address" />
           </div>
         </fieldset>
