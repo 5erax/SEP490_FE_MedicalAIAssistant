@@ -244,7 +244,7 @@ export default function SubscriptionPlanFormModal({
           <CreditCard size={22} />
         </span>
         <div>
-          <p className="eyebrow">Quản lý doanh thu</p>
+          <p className="eyebrow">Quản lý gói dịch vụ</p>
           <h2 id="subscription-modal-title">{title}</h2>
           <p>Cấu hình giá, thời hạn và giới hạn quyền lợi hiển thị trên trang đăng ký gói.</p>
         </div>
