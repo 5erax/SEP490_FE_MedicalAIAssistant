@@ -272,6 +272,24 @@
   gap: 14px;
 }
 
+.doctor-plan-phase-gaps {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--color-warning-bg);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  padding: 10px 14px;
+  color: var(--color-warning);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.doctor-plan-phase-gaps svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
 .doctor-plan-card-head {
   display: flex;
   align-items: center;

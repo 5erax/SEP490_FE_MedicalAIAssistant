@@ -65,6 +65,27 @@ function formatDayRange(startDay, endDay) {
   return startDay === endDay ? `Ngày ${startDay}` : `Ngày ${startDay} – ${endDay}`;
 }
 
+function findCoverageGaps(phases, durationDays) {
+  if (!durationDays) return [];
+  const sorted = phases
+    .filter((item) => item.startDay != null && item.endDay != null)
+    .slice()
+    .sort((a, b) => a.startDay - b.startDay);
+
+  const gaps = [];
+  let cursor = 1;
+  for (const phase of sorted) {
+    if (phase.startDay > cursor) {
+      gaps.push({ start: cursor, end: phase.startDay - 1 });
+    }
+    cursor = Math.max(cursor, phase.endDay + 1);
+  }
+  if (cursor <= durationDays) {
+    gaps.push({ start: cursor, end: durationDays });
+  }
+  return gaps;
+}
+
 function findOverlappingPhase(phases, start, end, excludeId) {
   return phases.find((item) => {
     if (excludeId && item.id === excludeId) return false;
@@ -282,6 +303,7 @@ function PlanContent({ state, busy, onEdit, onDelete, onReload, onAddPhase, onEd
   const statusMeta = getPlanStatusMeta(plan.status);
   const isDraft = plan.status === "draft";
   const phases = getSortedPhases(plan);
+  const gaps = findCoverageGaps(phases, plan.durationDays);
 
   return (
     <>
@@ -376,6 +398,16 @@ function PlanContent({ state, busy, onEdit, onDelete, onReload, onAddPhase, onEd
                   </li>
                 ))}
               </ul>
+            )}
+
+            {phases.length > 0 && gaps.length > 0 && (
+              <div className="doctor-plan-phase-gaps">
+                <AlertTriangle size={14} aria-hidden="true" />
+                <span>
+                  Chưa phủ hết {plan.durationDays} ngày của kế hoạch — còn thiếu:{" "}
+                  {gaps.map((gap) => (gap.start === gap.end ? `ngày ${gap.start}` : `ngày ${gap.start}–${gap.end}`)).join(", ")}.
+                </span>
+              </div>
             )}
           </section>
 
