@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Check, CreditCard, Gauge, Plus, ShieldAlert, Trash2 } from "lucide-react";
+import { Check, CreditCard, Gauge, ShieldAlert } from "lucide-react";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { Dialog } from "../ui";
 
@@ -14,6 +14,11 @@ const EMPTY_FORM = {
   durationInDays: "30",
   featureLimitJson: DEFAULT_FEATURE_LIMITS,
   isActive: "true",
+};
+
+const FEATURE_LIMIT_LABELS = {
+  symptomAnalysisPerMonth: "Phân tích triệu chứng / tháng",
+  aiChatPerDay: "Chat AI / ngày",
 };
 
 function formatFeatureLimits(value) {
@@ -102,6 +107,10 @@ function stringifyFeatureLimitEntries(entries) {
   return JSON.stringify(payload, null, 2);
 }
 
+function getFeatureLimitLabel(key) {
+  return FEATURE_LIMIT_LABELS[key] || key;
+}
+
 export default function SubscriptionPlanFormModal({
   mode,
   plan,
@@ -126,18 +135,6 @@ export default function SubscriptionPlanFormModal({
     const nextEntries = featureLimitEntries.map((item, itemIndex) => (
       itemIndex === index ? { ...item, [key]: value } : item
     ));
-    update("featureLimitJson", stringifyFeatureLimitEntries(nextEntries));
-  }
-
-  function addFeatureLimit() {
-    update("featureLimitJson", stringifyFeatureLimitEntries([
-      ...featureLimitEntries,
-      { key: "", limit: "" },
-    ]));
-  }
-
-  function removeFeatureLimit(index) {
-    const nextEntries = featureLimitEntries.filter((_, itemIndex) => itemIndex !== index);
     update("featureLimitJson", stringifyFeatureLimitEntries(nextEntries));
   }
 
@@ -255,8 +252,8 @@ export default function SubscriptionPlanFormModal({
             <div className="subscription-form-card-head">
               <span aria-hidden="true"><Gauge size={20} /></span>
               <div>
-                <h3>Giới hạn tính năng</h3>
-                <p>Thiết lập từng hạn mức sử dụng thay vì nhập JSON thủ công.</p>
+                <h3>Hạn mức sử dụng</h3>
+                <p>Quyền lợi chính được hiển thị cho người dùng khi xem gói.</p>
               </div>
             </div>
 
@@ -268,26 +265,18 @@ export default function SubscriptionPlanFormModal({
               aria-describedby="subscription-feature-help"
             >
               <div className="subscription-limit-editor-head">
-                <span>Danh sách hạn mức</span>
-                <button className="btn btn-secondary" type="button" onClick={addFeatureLimit}>
-                  <Plus size={16} /> Thêm hạn mức
-                </button>
+                <span>Quyền lợi trong gói</span>
               </div>
 
               <div className="subscription-limit-editor-list">
                 {featureLimitEntries.map((item, index) => (
                   <article className="subscription-limit-editor-row" key={`${item.key}-${index}`}>
+                    <div className="subscription-limit-name">
+                      <span>Quyền lợi</span>
+                      <strong>{getFeatureLimitLabel(item.key)}</strong>
+                    </div>
                     <label className="clean-field">
-                      <span>Tính năng</span>
-                      <input
-                        name={`featureLimit.${index}.key`}
-                        value={item.key}
-                        onChange={(event) => updateFeatureLimit(index, "key", event.target.value)}
-                        placeholder="Ví dụ: symptomAnalysisPerMonth"
-                      />
-                    </label>
-                    <label className="clean-field">
-                      <span>Hạn mức</span>
+                      <span>Số lượt</span>
                       <input
                         name={`featureLimit.${index}.limit`}
                         value={item.limit}
@@ -295,20 +284,12 @@ export default function SubscriptionPlanFormModal({
                         placeholder="Ví dụ: 30"
                       />
                     </label>
-                    <button
-                      className="btn subscription-limit-remove"
-                      type="button"
-                      onClick={() => removeFeatureLimit(index)}
-                      aria-label={`Xóa hạn mức ${index + 1}`}
-                    >
-                      <Trash2 size={15} /> Xóa
-                    </button>
                   </article>
                 ))}
               </div>
 
               <small id="subscription-feature-help" role={errors.featureLimitJson ? "alert" : undefined}>
-                {errors.featureLimitJson || "Mỗi dòng là một quyền lợi và số lượt được dùng trong gói."}
+                {errors.featureLimitJson || "Các thay đổi sẽ được lưu cùng gói khi bấm nút lưu bên dưới."}
               </small>
             </div>
           </section>

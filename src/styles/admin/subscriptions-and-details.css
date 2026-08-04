@@ -1029,8 +1029,8 @@
 
 .subscription-limit-editor-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(150px, 0.7fr) auto;
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px);
+  align-items: center;
   gap: 12px;
   border: 1px solid rgba(8, 127, 140, 0.14);
   border-radius: 18px;
@@ -1041,22 +1041,30 @@
   box-shadow: 0 10px 24px rgba(12, 58, 62, 0.05);
 }
 
+.subscription-limit-name {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.subscription-limit-name span {
+  color: rgba(16, 47, 53, 0.56);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subscription-limit-name strong {
+  color: #102f35;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
 .subscription-limit-editor-row .clean-field {
   gap: 7px;
-}
-
-.subscription-limit-remove {
-  min-height: 44px;
-  border-color: rgba(196, 42, 42, 0.28);
-  background: rgba(255, 245, 245, 0.92);
-  color: #be2323;
-  box-shadow: none;
-}
-
-.subscription-limit-remove:hover {
-  border-color: rgba(196, 42, 42, 0.38);
-  background: #fff0f0;
-  color: #a61d1d;
 }
 
 .subscription-modal .doctor-modal-actions {
