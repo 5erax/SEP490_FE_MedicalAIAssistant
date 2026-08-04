@@ -22,6 +22,7 @@ import "../../styles/doctor-workspace-shell.css";
 const NAV_ITEMS = [
   { key: "overview", path: "/app/staff", label: "Tổng quan", icon: LayoutDashboard },
   { key: "queue", path: "/app/staff/recovery-plans/queue", label: "Hàng đợi", icon: ClipboardList, countKey: "open" },
+  { key: "mine", path: "/app/staff/recovery-plans/mine", label: "Yêu cầu của tôi", icon: ListChecks, countKey: "mine" },
 ];
 
 function getInitials(name) {
@@ -32,6 +33,7 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [profile, setProfile] = useState(null);
   const [openCount, setOpenCount] = useState(null);
+  const [mineCount, setMineCount] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -41,6 +43,15 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
       setOpenCount(Number(response?.data?.totalCount) || 0);
     } catch {
       setOpenCount(null);
+    }
+  }, []);
+
+  const loadMineCount = useCallback(async () => {
+    try {
+      const response = await doctorRecoveryPlanRequestsApi.listMine({ pageNumber: 1, pageSize: 1 });
+      setMineCount(Number(response?.data?.totalCount) || 0);
+    } catch {
+      setMineCount(null);
     }
   }, []);
 
@@ -57,8 +68,11 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => void loadOpenCount());
-  }, [loadOpenCount]);
+    queueMicrotask(() => {
+      void loadOpenCount();
+      void loadMineCount();
+    });
+  }, [loadOpenCount, loadMineCount]);
 
   useEffect(() => {
     const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
@@ -69,6 +83,9 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
       if (event.type === "queue" || event.refetch) {
         void loadOpenCount();
       }
+      if (event.type === "request" || event.refetch) {
+        void loadMineCount();
+      }
     });
 
     ensureRecoveryPlanConnection().then((status) => {
@@ -77,12 +94,12 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
     });
 
     return unsubscribe;
-  }, [loadOpenCount]);
+  }, [loadOpenCount, loadMineCount]);
 
   const displayName = profile?.displayName || profile?.fullName || profile?.name
     || auth?.displayName || auth?.fullName || auth?.name || "Bác sĩ";
 
-  const counts = useMemo(() => ({ open: openCount }), [openCount]);
+  const counts = useMemo(() => ({ open: openCount, mine: mineCount }), [openCount, mineCount]);
 
   const realtimeLabel = connectionStatus === "connected"
     ? "Cập nhật trực tiếp đang bật"
@@ -134,11 +151,6 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
               </a>
             );
           })}
-          <span className="doctor-shell-nav-soon">
-            <ListChecks size={19} aria-hidden="true" />
-            <span>Yêu cầu của tôi</span>
-            <em>Sắp ra mắt</em>
-          </span>
         </nav>
 
         <div className="doctor-shell-realtime" data-status={connectionStatus}>

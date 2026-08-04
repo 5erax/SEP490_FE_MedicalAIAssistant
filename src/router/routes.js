@@ -147,6 +147,22 @@ const BASE_ROUTES = [
     shell: "staff",
   },
   {
+    id: "doctor.recovery-plan-mine",
+    path: "/app/staff/recovery-plans/mine",
+    title: "Yêu cầu của tôi | MediMate AI",
+    access: "role",
+    roles: ["doctor"],
+    shell: "staff",
+  },
+  {
+    id: "doctor.recovery-plan-request-detail",
+    path: "/app/staff/recovery-plan-requests/:requestId",
+    title: "Chi tiết yêu cầu | MediMate AI",
+    access: "role",
+    roles: ["doctor"],
+    shell: "staff",
+  },
+  {
     id: "assessment.session",
     path: "/assessment/:sessionId",
     title: "Câu hỏi lâm sàng | MediMate AI",

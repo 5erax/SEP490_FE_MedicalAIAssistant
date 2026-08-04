@@ -26,6 +26,8 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const DoctorOverviewPage = lazy(() => import("./pages/DoctorOverviewPage"));
 const DoctorRegisterInvitationPage = lazy(() => import("./pages/DoctorRegisterInvitationPage"));
 const DoctorRecoveryPlanQueuePage = lazy(() => import("./pages/DoctorRecoveryPlanQueuePage"));
+const DoctorMyRequestsPage = lazy(() => import("./pages/DoctorMyRequestsPage"));
+const DoctorRequestDetailPage = lazy(() => import("./pages/DoctorRequestDetailPage"));
 const MedicalRecordPage = lazy(() => import("./pages/MedicalRecordPage"));
 const MedicationScanPage = lazy(() => import("./pages/MedicationScanPage"));
 const PaymentResultPage = lazy(() => import("./pages/PaymentResultPage"));
@@ -140,6 +142,10 @@ function App() {
         : lazyPage(<StaffWorkspacePage />);
     case "doctor.recovery-plan-queue":
       return doctorWorkspace("queue", lazyPage(<DoctorRecoveryPlanQueuePage />));
+    case "doctor.recovery-plan-mine":
+      return doctorWorkspace("mine", lazyPage(<DoctorMyRequestsPage />));
+    case "doctor.recovery-plan-request-detail":
+      return doctorWorkspace("mine", lazyPage(<DoctorRequestDetailPage requestId={route.params?.requestId} />));
     case "assessment.session":
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="questions" sessionId={route.params?.sessionId} />));
     case "assessment.result":
