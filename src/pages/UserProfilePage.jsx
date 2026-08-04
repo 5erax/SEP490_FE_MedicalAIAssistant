@@ -728,7 +728,7 @@ export default function UserProfilePage() {
                 ))}
               </div>
             )}
-            <button className="lime" type="button" onClick={() => go("/pricing")}>Nâng cấp MediMate+</button>
+            <button className="lime" type="button" onClick={() => go("/pricing?view=upgrade&returnTo=%2Fprofile")}>Nâng cấp MediMate+</button>
             </section>
           )
         )}
