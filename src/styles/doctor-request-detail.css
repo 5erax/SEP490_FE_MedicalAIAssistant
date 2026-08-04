@@ -148,10 +148,89 @@
   font-weight: 800;
 }
 
+.doctor-detail-action-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: 18px 20px;
+}
+
+.doctor-detail-action-heading {
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .doctor-detail-actions {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.doctor-detail-actions-primary {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.doctor-detail-action-soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px dashed var(--color-line-strong);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  padding: 0 14px;
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 750;
+  cursor: not-allowed;
+}
+
+.doctor-detail-action-soon em {
+  border-radius: var(--radius-pill);
+  background: var(--color-line);
+  padding: 2px 8px;
+  color: var(--color-muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.doctor-detail-action-reject {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid var(--color-danger-bg);
+  border-radius: 12px;
+  background: transparent;
+  padding: 0 14px;
+  color: var(--color-danger);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background var(--motion-fast), border-color var(--motion-fast);
+}
+
+.doctor-detail-action-reject:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.doctor-detail-action-reject:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .doctor-detail-plan-note {
@@ -187,6 +266,16 @@
   .doctor-detail-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .doctor-detail-actions-primary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .doctor-detail-action-reject,
+  .doctor-detail-action-soon {
+    justify-content: center;
   }
 }
 

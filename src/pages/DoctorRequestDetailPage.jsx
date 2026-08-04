@@ -325,34 +325,38 @@ function DetailContent({ request, onReload }) {
       </dl>
 
       {request.status === "assigned" && (
-        <section className="doctor-detail-actions">
-          <Button loading={actionBusy === "startReview"} loadingLabel="Đang bắt đầu…" onClick={handleStartReview}>
-            <ClipboardCheck size={17} aria-hidden="true" /> Bắt đầu xem xét
-          </Button>
-          <Button tone="secondary" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
-            <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
-          </Button>
-          <Button tone="danger" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
-            <XCircle size={17} aria-hidden="true" /> Từ chối
-          </Button>
-        </section>
+        <ActionPanel>
+          <div className="doctor-detail-actions-primary">
+            <Button loading={actionBusy === "startReview"} loadingLabel="Đang bắt đầu…" onClick={handleStartReview}>
+              <ClipboardCheck size={17} aria-hidden="true" /> Bắt đầu xem xét
+            </Button>
+            <Button tone="ghost" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
+              <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
+            </Button>
+          </div>
+          <button type="button" className="doctor-detail-action-reject" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
+            <XCircle size={16} aria-hidden="true" /> Từ chối yêu cầu
+          </button>
+        </ActionPanel>
       )}
 
       {request.status === "inReview" && (
-        <section className="doctor-detail-actions">
-          <Button disabled title="Soạn kế hoạch phục hồi sẽ sớm ra mắt (FE2-06)">
-            <FileText size={17} aria-hidden="true" /> Tạo kế hoạch · sắp ra mắt
-          </Button>
-          <Button tone="secondary" disabled={Boolean(actionBusy)} onClick={() => setMoreInfoOpen(true)}>
-            <MessageSquarePlus size={17} aria-hidden="true" /> Yêu cầu bổ sung thông tin
-          </Button>
-          <Button tone="secondary" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
-            <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
-          </Button>
-          <Button tone="danger" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
-            <XCircle size={17} aria-hidden="true" /> Từ chối
-          </Button>
-        </section>
+        <ActionPanel>
+          <div className="doctor-detail-actions-primary">
+            <span className="doctor-detail-action-soon" title="Soạn kế hoạch phục hồi sẽ sớm ra mắt (FE2-06)">
+              <FileText size={17} aria-hidden="true" /> Tạo kế hoạch <em>Sắp ra mắt</em>
+            </span>
+            <Button tone="ghost" disabled={Boolean(actionBusy)} onClick={() => setMoreInfoOpen(true)}>
+              <MessageSquarePlus size={17} aria-hidden="true" /> Yêu cầu bổ sung thông tin
+            </Button>
+            <Button tone="ghost" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
+              <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
+            </Button>
+          </div>
+          <button type="button" className="doctor-detail-action-reject" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
+            <XCircle size={16} aria-hidden="true" /> Từ chối yêu cầu
+          </button>
+        </ActionPanel>
       )}
 
       {request.status === "needMoreInformation" && (
@@ -361,14 +365,16 @@ function DetailContent({ request, onReload }) {
             <MessageSquarePlus size={16} aria-hidden="true" />
             <span>Đang chờ bệnh nhân bổ sung thông tin. Khi bệnh nhân cập nhật, yêu cầu sẽ tự quay lại "Đang xem xét".</span>
           </section>
-          <section className="doctor-detail-actions">
-            <Button tone="secondary" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
-              <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
-            </Button>
-            <Button tone="danger" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
-              <XCircle size={17} aria-hidden="true" /> Từ chối
-            </Button>
-          </section>
+          <ActionPanel>
+            <div className="doctor-detail-actions-primary">
+              <Button tone="ghost" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
+                <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
+              </Button>
+            </div>
+            <button type="button" className="doctor-detail-action-reject" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
+              <XCircle size={16} aria-hidden="true" /> Từ chối yêu cầu
+            </button>
+          </ActionPanel>
         </>
       )}
 
@@ -424,6 +430,15 @@ function DetailContent({ request, onReload }) {
         />
       )}
     </>
+  );
+}
+
+function ActionPanel({ children }) {
+  return (
+    <section className="doctor-detail-action-panel">
+      <p className="doctor-detail-action-heading">Hành động</p>
+      <div className="doctor-detail-actions">{children}</div>
+    </section>
   );
 }
 
