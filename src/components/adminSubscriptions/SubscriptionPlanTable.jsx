@@ -1,5 +1,9 @@
 import { Badge, Button, EmptyState } from "../ui";
-import { CreditCard, Gauge, Plus } from "lucide-react";
+import { CreditCard, Gauge, Pencil, Plus } from "lucide-react";
+
+const QUOTA_LABELS = {
+  RECOVERY_PLAN_REQUEST: "Kế hoạch phục hồi",
+};
 
 function formatPrice(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
@@ -15,17 +19,25 @@ function getPlanQuotas(plan) {
 }
 
 function getResetPeriodLabel(value) {
-  if (value === "subscriptionCycle") return "mỗi chu kỳ gói";
+  if (value === "subscriptionCycle") return "mỗi chu kỳ";
   return value || "theo chu kỳ";
 }
 
 function getQuotaTitle(quota) {
-  return quota.quotaName || quota.quotaCode || "Hạn mức sử dụng";
+  const code = quota.quotaCode || quota.code;
+  return QUOTA_LABELS[code] || quota.quotaName || quota.name || code || "Hạn mức";
+}
+
+function getQuotaSummary(quota) {
+  const code = quota.quotaCode || quota.code;
+  if (code === "RECOVERY_PLAN_REQUEST") return "Yêu cầu phục hồi";
+  return quota.unit ? `Theo ${quota.unit}` : "Quota gói";
 }
 
 export default function SubscriptionPlanTable({
   assigningQuotaPlanId,
   defaultQuota,
+  onEdit,
   onAssignDefaultQuota,
   plans,
 }) {
@@ -85,7 +97,7 @@ export default function SubscriptionPlanTable({
                       <span className="subscription-quota-icon"><Gauge size={15} /></span>
                       <div className="subscription-quota-main">
                         <strong>{getQuotaTitle(quota)}</strong>
-                        <span>{quota.quotaDescription || quota.quotaCode || "Quota đã được gán cho gói này."}</span>
+                        <span>{getQuotaSummary(quota)}</span>
                       </div>
                       <div className="subscription-quota-value">
                         <strong>{Number(quota.limitValue || 0).toLocaleString("vi-VN")}</strong>
@@ -119,7 +131,15 @@ export default function SubscriptionPlanTable({
             </div>
 
             <div className="subscription-plan-actions" role="cell">
-              <span className="subscription-readonly-note">Quản trị quota</span>
+              <Button
+                className="btn-small subscription-plan-edit-button"
+                onClick={() => onEdit?.(plan)}
+                type="button"
+              >
+                <Pencil size={14} aria-hidden="true" />
+                Sửa gói
+              </Button>
+              <span className="subscription-readonly-note">Quota</span>
             </div>
           </article>
         );
