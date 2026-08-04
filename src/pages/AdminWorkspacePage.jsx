@@ -118,6 +118,8 @@ function createEmptyDisease() {
 const USER_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách tài khoản.";
 const DOCTOR_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách.";
 const AI_CONFIG_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cấu hình.";
+const AI_CONFIG_CREATE_SUCCESS_MESSAGE = "Tạo AI config thành công";
+const AI_CONFIG_UPDATE_SUCCESS_MESSAGE = "Cập nhật AI config thành công";
 const SUBSCRIPTION_PLAN_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách gói dịch vụ.";
 const FACILITY_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách cơ sở y tế.";
 const PATIENT_PROFILE_LOAD_ERROR_MESSAGE = "Vui lòng kiểm tra kết nối và thử tải lại danh sách hồ sơ bệnh nhân.";
@@ -1229,13 +1231,21 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     }
   }
 
-  async function loadAIConfigs(pageNumber = aiConfigPageInfo.pageNumber, pageSize = aiConfigPageInfo.pageSize) {
+  async function loadAIConfigs(
+    pageNumber = aiConfigPageInfo.pageNumber,
+    pageSize = aiConfigPageInfo.pageSize,
+  ) {
     setAIConfigsLoading(true);
     setAIConfigMessage(null);
     setAIConfigLoadError("");
+
     try {
-      const response = await aiConfigManagementApi.list(pageNumber, pageSize);
+      const response = await aiConfigManagementApi.list(
+        pageNumber,
+        pageSize,
+      );
       const data = response.data ?? {};
+
       setAIConfigs(data.items ?? []);
       setAIConfigPageInfo({
         pageNumber: data.pageNumber ?? pageNumber,
@@ -1244,10 +1254,12 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         totalPages: data.totalPages ?? 1,
       });
     } catch {
-      setAIConfigLoadError(AI_CONFIG_LOAD_ERROR_MESSAGE);
+      setAIConfigLoadError(
+        AI_CONFIG_LOAD_ERROR_MESSAGE,
+      );
       showToast({
         type: "error",
-        title: "Không tải được AI configs",
+        title: "Không tải được danh sách cấu hình AI",
         message: AI_CONFIG_LOAD_ERROR_MESSAGE,
       });
     } finally {
@@ -1256,7 +1268,10 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   }
 
   function updateAIConfigFilter(key, value) {
-    setAIConfigFilters((current) => ({ ...current, [key]: value }));
+    setAIConfigFilters((current) => ({
+      ...current,
+      [key]: value,
+    }));
   }
 
   function handleAIConfigFilterSubmit(event) {
@@ -1268,96 +1283,308 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   }
 
   function handleAIConfigPageSizeChange(pageSize) {
-    setAIConfigPageInfo((current) => ({ ...current, pageSize }));
+    setAIConfigPageInfo((current) => ({
+      ...current,
+      pageNumber: 1,
+      pageSize,
+    }));
     loadAIConfigs(1, pageSize);
   }
 
   function openCreateAIConfig() {
-    operatorDialogTriggerRef.current = document.activeElement;
-    setAIConfigModal({ open: true, mode: "create", config: null });
+    operatorDialogTriggerRef.current =
+      document.activeElement;
+    setAIConfigMessage(null);
+    setAIConfigModal({
+      open: true,
+      mode: "create",
+      config: null,
+    });
   }
 
   function openEditAIConfig(config) {
-    operatorDialogTriggerRef.current = document.activeElement;
-    setAIConfigModal({ open: true, mode: "edit", config });
+    operatorDialogTriggerRef.current =
+      document.activeElement;
+    setAIConfigMessage(null);
+    setAIConfigModal({
+      open: true,
+      mode: "edit",
+      config,
+    });
   }
 
   function openAIConfigDetail(config) {
-    operatorDialogTriggerRef.current = document.activeElement;
+    operatorDialogTriggerRef.current =
+      document.activeElement;
     setAIConfigDetail(config);
   }
 
   function closeAIConfigModal() {
     if (savingAIConfig) return;
-    setAIConfigModal({ open: false, mode: "create", config: null });
+
+    setAIConfigModal({
+      open: false,
+      mode: "create",
+      config: null,
+    });
   }
 
   async function handleSaveAIConfig(payload) {
+    const isEditMode =
+      aiConfigModal.mode === "edit";
+    const editingConfigId =
+      aiConfigModal.config?.id ?? "";
+    const successMessage = isEditMode
+      ? AI_CONFIG_UPDATE_SUCCESS_MESSAGE
+      : AI_CONFIG_CREATE_SUCCESS_MESSAGE;
+
     setSavingAIConfig(true);
     setAIConfigMessage(null);
+
     try {
-      const response = aiConfigModal.mode === "edit"
-        ? await aiConfigManagementApi.update(aiConfigModal.config.id, payload)
-        : await aiConfigManagementApi.create(payload);
+      const response = isEditMode
+        ? await aiConfigManagementApi.update(
+            editingConfigId,
+            payload,
+          )
+        : await aiConfigManagementApi.create(
+            payload,
+          );
+
       const savedConfig = response.data;
+
+      setAIConfigModal({
+        open: false,
+        mode: "create",
+        config: null,
+      });
+
+      if (isEditMode) {
+        setAIConfigs((current) =>
+          current.map((config) => {
+            if (config.id !== editingConfigId) {
+              return config;
+            }
+
+            return {
+              ...config,
+              ...payload,
+              ...(savedConfig ?? {}),
+              id:
+                savedConfig?.id ??
+                config.id,
+            };
+          }),
+        );
+
+        setAIConfigDetail((current) => {
+          if (
+            !current ||
+            current.id !== editingConfigId
+          ) {
+            return current;
+          }
+
+          return {
+            ...current,
+            ...payload,
+            ...(savedConfig ?? {}),
+            id:
+              savedConfig?.id ??
+              current.id,
+          };
+        });
+      } else {
+        await loadAIConfigs(
+          1,
+          aiConfigPageInfo.pageSize,
+        );
+      }
+
+      const displayedMessage =
+        response.message || successMessage;
+
       setAIConfigMessage({
         type: "success",
-        text: response.message || (aiConfigModal.mode === "edit" ? "Đã cập nhật cấu hình AI." : "Đã tạo cấu hình AI."),
+        text: displayedMessage,
       });
+
       showToast({
         type: "success",
-        title: aiConfigModal.mode === "edit" ? "Đã cập nhật cấu hình AI" : "Đã tạo cấu hình AI",
-        message: response.message || "AI configuration đã được đồng bộ.",
+        title: successMessage,
+        message: displayedMessage,
       });
-      setAIConfigModal({ open: false, mode: "create", config: null });
-      if (savedConfig?.id && aiConfigModal.mode === "edit") {
-        setAIConfigs((current) => current.map((config) => (config.id === savedConfig.id ? savedConfig : config)));
-      } else {
-        await loadAIConfigs(1);
-      }
     } catch (error) {
-      setAIConfigMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không lưu được AI config", message: error.message });
+      const errorMessage =
+        error?.message ||
+        "Không thể lưu cấu hình AI lúc này. Vui lòng thử lại.";
+
+      setAIConfigMessage({
+        type: "error",
+        text: errorMessage,
+      });
+
+      showToast({
+        type: "error",
+        title: "Không lưu được cấu hình AI",
+        message: errorMessage,
+      });
     } finally {
       setSavingAIConfig(false);
     }
   }
 
-  async function handleToggleAIConfigStatus(config) {
+  async function handleToggleAIConfigStatus(
+    config,
+  ) {
+    const nextStatus = !config.isActive;
+
     setAIConfigMessage(null);
+
     try {
-      const response = await aiConfigManagementApi.setStatus(config.id, !config.isActive);
+      const response =
+        await aiConfigManagementApi.setStatus(
+          config.id,
+          nextStatus,
+        );
       const updatedConfig = response.data;
-      setAIConfigs((current) => current.map((item) => (item.id === config.id ? (updatedConfig ?? { ...item, isActive: !item.isActive }) : item)));
+      const finalStatus =
+        updatedConfig?.isActive ?? nextStatus;
+
+      setAIConfigs((current) =>
+        current.map((item) =>
+          item.id === config.id
+            ? {
+                ...item,
+                ...(updatedConfig ?? {}),
+                isActive: finalStatus,
+              }
+            : item,
+        ),
+      );
+
+      setAIConfigDetail((current) =>
+        current?.id === config.id
+          ? {
+              ...current,
+              ...(updatedConfig ?? {}),
+              isActive: finalStatus,
+            }
+          : current,
+      );
+
       showToast({
         type: "success",
-        title: (updatedConfig?.isActive ?? !config.isActive) ? "Đã bật AI config" : "Đã tắt AI config",
-        message: response.message || "Trạng thái AI config đã được cập nhật.",
+        title: finalStatus
+          ? "Đã bật cấu hình AI"
+          : "Đã tắt cấu hình AI",
+        message:
+          response.message ||
+          "Trạng thái cấu hình AI đã được cập nhật.",
       });
     } catch (error) {
-      setAIConfigMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không đổi được trạng thái AI config", message: error.message });
+      const errorMessage =
+        error?.message ||
+        "Không thể cập nhật trạng thái cấu hình AI lúc này.";
+
+      setAIConfigMessage({
+        type: "error",
+        text: errorMessage,
+      });
+
+      showToast({
+        type: "error",
+        title:
+          "Không cập nhật được trạng thái cấu hình AI",
+        message: errorMessage,
+      });
     }
   }
 
   async function handleDeleteAIConfig(config) {
+    const taskType =
+      config.taskType || "Cấu hình này";
+
     const confirmed = await confirmAction({
-      title: "Xóa AI config?",
-      message: `${config.taskType || "Config này"} sẽ bị xóa khỏi AI platform console. Hãy chắc chắn trước khi tiếp tục.`,
-      confirmLabel: "Xóa AI config",
+      title: "Xóa cấu hình AI?",
+      message: `${taskType} sẽ bị xóa khỏi hệ thống. Việc này có thể làm tác vụ AI tương ứng không còn cấu hình vận hành. Hãy kiểm tra cấu hình thay thế trước khi tiếp tục.`,
+      confirmLabel: "Xóa cấu hình AI",
       tone: "danger",
     });
+
     if (!confirmed) return;
 
     setAIConfigMessage(null);
+
     try {
-      const response = await aiConfigManagementApi.remove(config.id);
-      setAIConfigs((current) => current.filter((item) => item.id !== config.id));
-      setAIConfigPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
-      showToast({ type: "success", title: "Đã xóa AI config", message: response.message || "Danh sách AI config đã được cập nhật." });
+      const response =
+        await aiConfigManagementApi.remove(
+          config.id,
+        );
+
+      const shouldLoadPreviousPage =
+        aiConfigs.length === 1 &&
+        aiConfigPageInfo.pageNumber > 1;
+
+      if (shouldLoadPreviousPage) {
+        await loadAIConfigs(
+          aiConfigPageInfo.pageNumber - 1,
+          aiConfigPageInfo.pageSize,
+        );
+      } else {
+        setAIConfigs((current) =>
+          current.filter(
+            (item) => item.id !== config.id,
+          ),
+        );
+
+        setAIConfigPageInfo((current) => {
+          const totalCount = Math.max(
+            0,
+            current.totalCount - 1,
+          );
+
+          return {
+            ...current,
+            totalCount,
+            totalPages: Math.max(
+              1,
+              Math.ceil(
+                totalCount / current.pageSize,
+              ),
+            ),
+          };
+        });
+      }
+
+      setAIConfigDetail((current) =>
+        current?.id === config.id
+          ? null
+          : current,
+      );
+
+      showToast({
+        type: "success",
+        title: "Đã xóa cấu hình AI",
+        message:
+          response.message ||
+          "Danh sách cấu hình AI đã được cập nhật.",
+      });
     } catch (error) {
-      setAIConfigMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không xóa được AI config", message: error.message });
+      const errorMessage =
+        error?.message ||
+        "Không thể xóa cấu hình AI lúc này.";
+
+      setAIConfigMessage({
+        type: "error",
+        text: errorMessage,
+      });
+
+      showToast({
+        type: "error",
+        title: "Không xóa được cấu hình AI",
+        message: errorMessage,
+      });
     }
   }
 
