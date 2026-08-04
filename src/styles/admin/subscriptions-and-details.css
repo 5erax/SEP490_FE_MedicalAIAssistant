@@ -493,19 +493,20 @@
   width: max-content;
 }
 
-.subscription-readonly-note {
-  color: rgba(16, 53, 58, 0.56);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .subscription-plan-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-width: 132px;
+  white-space: nowrap;
   color: #073f45;
   border-color: rgba(0, 128, 137, 0.24);
   background: linear-gradient(135deg, rgba(231, 250, 247, 0.92), rgba(255, 255, 255, 0.96));
+}
+
+.subscription-plan-edit-button svg {
+  flex: 0 0 auto;
 }
 
 .subscription-plan-edit-button:hover {
@@ -525,7 +526,7 @@
     minmax(220px, 0.9fr)
     minmax(320px, 1.2fr)
     minmax(96px, 0.35fr)
-    minmax(132px, 0.45fr);
+    minmax(150px, 0.45fr);
   align-items: center;
   gap: 18px;
   border: 1px solid rgba(16, 20, 17, 0.08);
@@ -550,7 +551,7 @@
     minmax(220px, 0.9fr)
     minmax(320px, 1.2fr)
     minmax(96px, 0.35fr)
-    minmax(132px, 0.45fr);
+    minmax(150px, 0.45fr);
   align-items: center;
   gap: 18px;
   min-width: 0;

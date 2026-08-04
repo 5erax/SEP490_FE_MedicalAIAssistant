@@ -139,7 +139,6 @@ export default function SubscriptionPlanTable({
                 <Pencil size={14} aria-hidden="true" />
                 Sửa gói
               </Button>
-              <span className="subscription-readonly-note">Quota</span>
             </div>
           </article>
         );
