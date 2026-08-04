@@ -15,6 +15,8 @@ const ICD_CHAPTERS_BASE = "/api/icd-chapters";
 const CLINICAL_QUESTIONS_BASE = "/api/clinical-questions";
 const SYMPTOM_ANALYSIS_BASE = "/api/symptom-analysis";
 const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
+const ADMIN_QUOTAS_BASE = "/api/admin/quotas";
+const ADMIN_SUBSCRIPTION_PLANS_BASE = "/api/admin/subscription-plans";
 const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
 const PAYMENTS_BASE = "/api/payments";
 const AI_CONFIGS_BASE = "/api/ai-configs";
@@ -105,6 +107,14 @@ export const ENDPOINTS = {
     ACTIVE: `${SUBSCRIPTION_PLANS_BASE}/active`,
     BY_ID: (id) => byId(SUBSCRIPTION_PLANS_BASE, id),
     STATUS: (id) => status(SUBSCRIPTION_PLANS_BASE, id),
+  },
+  ADMIN_QUOTAS: {
+    BASE: ADMIN_QUOTAS_BASE,
+  },
+  ADMIN_SUBSCRIPTION_PLAN_QUOTAS: {
+    BY_PLAN: (planId) => `${encodedById(ADMIN_SUBSCRIPTION_PLANS_BASE, planId)}/quotas`,
+    BY_PLAN_QUOTA: (planId, quotaId) =>
+      `${encodedById(ADMIN_SUBSCRIPTION_PLANS_BASE, planId)}/quotas/${encodeURIComponent(quotaId)}`,
   },
   USER_SUBSCRIPTIONS: {
     CHECKOUT: `${USER_SUBSCRIPTIONS_BASE}/checkout`,

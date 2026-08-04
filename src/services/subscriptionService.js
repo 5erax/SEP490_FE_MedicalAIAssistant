@@ -57,6 +57,33 @@ export const subscriptionPlansApi = {
   },
 };
 
+export const adminQuotasApi = {
+  list() {
+    return apiRequest(ENDPOINTS.ADMIN_QUOTAS.BASE, { auth: true });
+  },
+};
+
+export const adminSubscriptionPlanQuotasApi = {
+  list(planId) {
+    return apiRequest(ENDPOINTS.ADMIN_SUBSCRIPTION_PLAN_QUOTAS.BY_PLAN(planId), { auth: true });
+  },
+
+  upsert(planId, quotaId, payload) {
+    return apiRequest(ENDPOINTS.ADMIN_SUBSCRIPTION_PLAN_QUOTAS.BY_PLAN_QUOTA(planId, quotaId), {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  remove(planId, quotaId) {
+    return apiRequest(ENDPOINTS.ADMIN_SUBSCRIPTION_PLAN_QUOTAS.BY_PLAN_QUOTA(planId, quotaId), {
+      method: "DELETE",
+      auth: true,
+    });
+  },
+};
+
 export const userSubscriptionsApi = {
   checkout(planId, autoRenew = false) {
     return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.CHECKOUT, {

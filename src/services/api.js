@@ -28,7 +28,13 @@ export {
   readAnalysisPayload,
   symptomAnalysisApi,
 } from "./symptomAnalysisService";
-export { paymentsApi, subscriptionPlansApi, userSubscriptionsApi } from "./subscriptionService";
+export {
+  adminQuotasApi,
+  adminSubscriptionPlanQuotasApi,
+  paymentsApi,
+  subscriptionPlansApi,
+  userSubscriptionsApi,
+} from "./subscriptionService";
 export { recoveryPlanRequestsApi, recoveryPlansApi } from "./recoveryPlanService";
 export {
   doctorRecoveryPlanRequestsApi,
