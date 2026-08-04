@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Info, RefreshCw } from "lucide-react";
-import { adminQuotasApi, adminSubscriptionPlanQuotasApi } from "../../services/api";
+import { adminQuotasApi, adminSubscriptionPlanQuotasApi, subscriptionPlansApi } from "../../services/api";
 import { Button, ErrorState, LoadingState } from "../ui";
 import SubscriptionPlanTable from "./SubscriptionPlanTable";
+import SubscriptionPlanFormModal from "./SubscriptionPlanFormModal";
 import AdminPaymentsPanel from "./AdminPaymentsPanel";
 
 const RECOVERY_PLAN_QUOTA_CODE = "RECOVERY_PLAN_REQUEST";
@@ -29,9 +30,12 @@ export default function AdminSubscriptionsSection({
   plans,
   onReload,
 }) {
+  const planModalTriggerRef = useRef(null);
   const [quotaCatalog, setQuotaCatalog] = useState([]);
   const [quotaMessage, setQuotaMessage] = useState(null);
   const [assigningQuotaPlanId, setAssigningQuotaPlanId] = useState("");
+  const [planModal, setPlanModal] = useState({ open: false, mode: "edit", plan: null });
+  const [savingPlan, setSavingPlan] = useState(false);
 
   const defaultRecoveryQuota = useMemo(() => findRecoveryPlanQuota(quotaCatalog), [quotaCatalog]);
   const visibleMessage = quotaMessage || message;
@@ -92,6 +96,37 @@ export default function AdminSubscriptionsSection({
     }
   }
 
+  function openEditPlan(plan) {
+    planModalTriggerRef.current = document.activeElement;
+    setPlanModal({ open: true, mode: "edit", plan });
+  }
+
+  function closePlanModal() {
+    if (savingPlan) return;
+    setPlanModal({ open: false, mode: "edit", plan: null });
+  }
+
+  async function handleSavePlan(payload) {
+    if (!planModal.plan?.id) return;
+
+    setSavingPlan(true);
+    setQuotaMessage(null);
+
+    try {
+      await subscriptionPlansApi.update(planModal.plan.id, payload);
+      setQuotaMessage({ type: "success", text: "Đã cập nhật gói dịch vụ." });
+      setPlanModal({ open: false, mode: "edit", plan: null });
+      await onReload?.();
+    } catch (err) {
+      setQuotaMessage({
+        type: "error",
+        text: err?.message || "Không thể cập nhật gói dịch vụ.",
+      });
+    } finally {
+      setSavingPlan(false);
+    }
+  }
+
   return (
     <section className="admin-panel subscription-plan-admin-panel">
       <div className="panel-title-row subscription-plan-heading">
@@ -110,8 +145,7 @@ export default function AdminSubscriptionsSection({
       <div className="subscription-contract-notice" role="note">
         <Info size={18} aria-hidden="true" />
         <p>
-          <strong>Quota đã dùng API quản trị từ backend.</strong> Nếu gói chưa có hạn mức,
-          hãy gán quota kế hoạch phục hồi để trang hồ sơ và kết quả thanh toán có dữ liệu thật để hiển thị.
+          <strong>Quota backend đã sẵn sàng.</strong> Gán hạn mức thật cho từng gói khi cần.
         </p>
       </div>
 
@@ -162,8 +196,20 @@ export default function AdminSubscriptionsSection({
         <SubscriptionPlanTable
           assigningQuotaPlanId={assigningQuotaPlanId}
           defaultQuota={defaultRecoveryQuota}
+          onEdit={openEditPlan}
           onAssignDefaultQuota={handleAssignRecoveryQuota}
           plans={plans}
+        />
+      )}
+
+      {planModal.open && (
+        <SubscriptionPlanFormModal
+          mode={planModal.mode}
+          plan={planModal.plan}
+          saving={savingPlan}
+          restoreFocusRef={planModalTriggerRef}
+          onClose={closePlanModal}
+          onSubmit={handleSavePlan}
         />
       )}
 
