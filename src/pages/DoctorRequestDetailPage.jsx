@@ -356,6 +356,107 @@ function DetailContent({ request, onReload }) {
               <span>Yêu cầu này đã kết thúc và không còn thao tác nào khả dụng.</span>
             </section>
           )}
+
+          {request.status === "assigned" && (
+            <ActionArea>
+              <PrimaryActionCard
+                icon={ClipboardCheck}
+                title="Bắt đầu xem xét"
+                subtitle="Mở hồ sơ lâm sàng của bệnh nhân và bắt đầu tính thời hạn xử lý cho yêu cầu này."
+                buttonLabel="Bắt đầu xem xét"
+                loading={actionBusy === "startReview"}
+                loadingLabel="Đang bắt đầu…"
+                disabled={Boolean(actionBusy)}
+                onClick={handleStartReview}
+              />
+              <div className="doctor-action-tiles">
+                <ActionTile
+                  icon={UndoDot}
+                  title="Trả lại hàng đợi"
+                  subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
+                  disabled={Boolean(actionBusy)}
+                  onClick={() => setReleaseOpen(true)}
+                />
+              </div>
+              <DangerZone>
+                <ActionTile
+                  tone="danger"
+                  icon={XCircle}
+                  title="Từ chối yêu cầu"
+                  subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
+                  disabled={Boolean(actionBusy)}
+                  onClick={() => setRejectOpen(true)}
+                />
+              </DangerZone>
+            </ActionArea>
+          )}
+
+          {request.status === "inReview" && (
+            <ActionArea>
+              <PrimaryActionCard
+                icon={MessageSquarePlus}
+                title="Yêu cầu bổ sung thông tin"
+                subtitle="Gửi yêu cầu để bệnh nhân cung cấp thêm thông tin trước khi bạn tiếp tục xử lý."
+                buttonLabel="Yêu cầu bổ sung"
+                disabled={Boolean(actionBusy)}
+                onClick={() => setMoreInfoOpen(true)}
+              />
+              <div className="doctor-action-tiles">
+                <ActionTile
+                  icon={UndoDot}
+                  title="Trả lại hàng đợi"
+                  subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
+                  disabled={Boolean(actionBusy)}
+                  onClick={() => setReleaseOpen(true)}
+                />
+                <ComingSoonTile
+                  icon={FileText}
+                  title="Tạo kế hoạch"
+                  subtitle="Soạn kế hoạch phục hồi dinh dưỡng cho bệnh nhân."
+                />
+              </div>
+              <DangerZone>
+                <ActionTile
+                  tone="danger"
+                  icon={XCircle}
+                  title="Từ chối yêu cầu"
+                  subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
+                  disabled={Boolean(actionBusy)}
+                  onClick={() => setRejectOpen(true)}
+                />
+              </DangerZone>
+            </ActionArea>
+          )}
+
+          {request.status === "needMoreInformation" && (
+            <>
+              <section className="doctor-detail-plan-note">
+                <MessageSquarePlus size={16} aria-hidden="true" />
+                <span>Đang chờ bệnh nhân bổ sung thông tin. Khi bệnh nhân cập nhật, yêu cầu sẽ tự quay lại "Đang xem xét".</span>
+              </section>
+              <ActionArea>
+                <div className="doctor-action-tiles">
+                  <ActionTile
+                    icon={UndoDot}
+                    title="Trả lại hàng đợi"
+                    subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
+                    disabled={Boolean(actionBusy)}
+                    onClick={() => setReleaseOpen(true)}
+                  />
+                </div>
+                <DangerZone>
+                  <ActionTile
+                    tone="danger"
+                    icon={XCircle}
+                    title="Từ chối yêu cầu"
+                    subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
+                    disabled={Boolean(actionBusy)}
+                    onClick={() => setRejectOpen(true)}
+                  />
+                </DangerZone>
+              </ActionArea>
+            </>
+          )}
         </div>
 
         <aside className="doctor-detail-sidebar">
@@ -400,107 +501,6 @@ function DetailContent({ request, onReload }) {
           </section>
         </aside>
       </div>
-
-      {request.status === "assigned" && (
-        <ActionArea>
-          <PrimaryActionCard
-            icon={ClipboardCheck}
-            title="Bắt đầu xem xét"
-            subtitle="Mở hồ sơ lâm sàng của bệnh nhân và bắt đầu tính thời hạn xử lý cho yêu cầu này."
-            buttonLabel="Bắt đầu xem xét"
-            loading={actionBusy === "startReview"}
-            loadingLabel="Đang bắt đầu…"
-            disabled={Boolean(actionBusy)}
-            onClick={handleStartReview}
-          />
-          <div className="doctor-action-tiles">
-            <ActionTile
-              icon={UndoDot}
-              title="Trả lại hàng đợi"
-              subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
-              disabled={Boolean(actionBusy)}
-              onClick={() => setReleaseOpen(true)}
-            />
-          </div>
-          <DangerZone>
-            <ActionTile
-              tone="danger"
-              icon={XCircle}
-              title="Từ chối yêu cầu"
-              subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
-              disabled={Boolean(actionBusy)}
-              onClick={() => setRejectOpen(true)}
-            />
-          </DangerZone>
-        </ActionArea>
-      )}
-
-      {request.status === "inReview" && (
-        <ActionArea>
-          <PrimaryActionCard
-            icon={MessageSquarePlus}
-            title="Yêu cầu bổ sung thông tin"
-            subtitle="Gửi yêu cầu để bệnh nhân cung cấp thêm thông tin trước khi bạn tiếp tục xử lý."
-            buttonLabel="Yêu cầu bổ sung"
-            disabled={Boolean(actionBusy)}
-            onClick={() => setMoreInfoOpen(true)}
-          />
-          <div className="doctor-action-tiles">
-            <ActionTile
-              icon={UndoDot}
-              title="Trả lại hàng đợi"
-              subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
-              disabled={Boolean(actionBusy)}
-              onClick={() => setReleaseOpen(true)}
-            />
-            <ComingSoonTile
-              icon={FileText}
-              title="Tạo kế hoạch"
-              subtitle="Soạn kế hoạch phục hồi dinh dưỡng cho bệnh nhân."
-            />
-          </div>
-          <DangerZone>
-            <ActionTile
-              tone="danger"
-              icon={XCircle}
-              title="Từ chối yêu cầu"
-              subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
-              disabled={Boolean(actionBusy)}
-              onClick={() => setRejectOpen(true)}
-            />
-          </DangerZone>
-        </ActionArea>
-      )}
-
-      {request.status === "needMoreInformation" && (
-        <>
-          <section className="doctor-detail-plan-note">
-            <MessageSquarePlus size={16} aria-hidden="true" />
-            <span>Đang chờ bệnh nhân bổ sung thông tin. Khi bệnh nhân cập nhật, yêu cầu sẽ tự quay lại "Đang xem xét".</span>
-          </section>
-          <ActionArea>
-            <div className="doctor-action-tiles">
-              <ActionTile
-                icon={UndoDot}
-                title="Trả lại hàng đợi"
-                subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
-                disabled={Boolean(actionBusy)}
-                onClick={() => setReleaseOpen(true)}
-              />
-            </div>
-            <DangerZone>
-              <ActionTile
-                tone="danger"
-                icon={XCircle}
-                title="Từ chối yêu cầu"
-                subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
-                disabled={Boolean(actionBusy)}
-                onClick={() => setRejectOpen(true)}
-              />
-            </DangerZone>
-          </ActionArea>
-        </>
-      )}
 
       {moreInfoOpen && (
         <ReasonDialog
