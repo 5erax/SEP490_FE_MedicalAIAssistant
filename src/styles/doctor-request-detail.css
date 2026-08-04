@@ -90,6 +90,12 @@
   color: var(--color-ink);
 }
 
+.doctor-detail-countdown.is-expired {
+  border-color: var(--color-danger-bg);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
 .doctor-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -142,38 +148,10 @@
   font-weight: 800;
 }
 
-.doctor-detail-next {
+.doctor-detail-actions {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  border: 1px dashed var(--color-info);
-  border-radius: var(--radius-lg);
-  background: var(--color-info-bg);
-  padding: 20px;
-}
-
-.doctor-detail-next > span {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-info-strong);
-}
-
-.doctor-detail-next h2 {
-  margin: 3px 0 5px;
-  color: var(--color-ink);
-  font-size: 17px;
-}
-
-.doctor-detail-next p {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 13px;
-  line-height: 1.55;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .doctor-detail-plan-note {
@@ -205,4 +183,87 @@
   .doctor-detail-grid {
     grid-template-columns: 1fr;
   }
+
+  .doctor-detail-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Release / reject / more-info action dialogs */
+
+.doctor-action-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.55);
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+
+.doctor-action-modal {
+  width: min(480px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.doctor-action-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 20px 22px 16px;
+}
+
+.doctor-action-modal-header > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.doctor-action-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.doctor-action-modal-header button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.doctor-action-modal form {
+  display: grid;
+  gap: 16px;
+  padding: 18px 22px 22px;
+}
+
+.doctor-action-select {
+  width: 100%;
+}
+
+.doctor-action-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
