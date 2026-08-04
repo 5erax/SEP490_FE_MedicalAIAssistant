@@ -18,11 +18,6 @@ import "../styles/doctor-overview.css";
 
 const ROADMAP = [
   {
-    icon: ListChecks,
-    title: "Yêu cầu của tôi",
-    description: "Xem lại các yêu cầu đã nhận, lọc theo trạng thái xử lý.",
-  },
-  {
     icon: HeartPulse,
     title: "Hồ sơ lâm sàng",
     description: "Đọc chiều cao/cân nặng, bệnh nền, xét nghiệm và thuốc đang dùng của bệnh nhân.",
@@ -105,7 +100,9 @@ export default function DoctorOverviewPage() {
                 <strong>{mineCount ?? "—"}</strong>
                 <p>Yêu cầu bạn đã nhận từ trước tới nay</p>
               </div>
-              <span className="doctor-overview-stat-soon">Trang xem chi tiết sắp ra mắt</span>
+              <button type="button" className="doctor-overview-stat-secondary" onClick={() => navigate("/app/staff/recovery-plans/mine")}>
+                Xem yêu cầu của tôi <ArrowRight size={16} aria-hidden="true" />
+              </button>
             </article>
           </div>
         )}

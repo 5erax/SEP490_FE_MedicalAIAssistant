@@ -108,11 +108,13 @@
   background: linear-gradient(135deg, var(--ov-teal-dark), #044046);
 }
 
-.doctor-overview-stat-soon {
-  grid-column: 1 / -1;
-  color: var(--ov-muted);
-  font-size: 12px;
-  font-style: italic;
+.doctor-overview-stat-secondary {
+  background: var(--ov-mint);
+  color: var(--ov-teal-dark);
+}
+
+.doctor-overview-stat-secondary:hover {
+  background: #d9efe6;
 }
 
 .doctor-overview-roadmap {

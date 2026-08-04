@@ -49,8 +49,7 @@
   gap: 4px;
 }
 
-.doctor-shell-nav a,
-.doctor-shell-nav-soon {
+.doctor-shell-nav a {
   position: relative;
   display: flex;
   align-items: center;
@@ -89,24 +88,6 @@
 
 .doctor-shell-nav a.is-active .doctor-shell-badge {
   background: var(--shell-mint);
-}
-
-.doctor-shell-nav-soon {
-  color: rgba(255, 255, 255, 0.45);
-  cursor: default;
-}
-
-.doctor-shell-nav-soon em {
-  margin-left: auto;
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.12);
-  padding: 2px 8px;
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
 }
 
 .doctor-shell-realtime {
