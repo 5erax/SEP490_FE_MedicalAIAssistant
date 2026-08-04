@@ -384,7 +384,6 @@ export default function PaymentResultPage({ expectedResult }) {
 
         <p className="payment-result-eyebrow">{view.eyebrow}</p>
         <h1>{view.title}</h1>
-        <p className="payment-result-description">{message || view.description}</p>
 
         {orderCode && (
           <dl className="payment-result-reference">
