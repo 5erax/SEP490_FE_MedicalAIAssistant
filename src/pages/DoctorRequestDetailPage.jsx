@@ -777,25 +777,25 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
             <EmptyBlockNote text="Chưa có phiếu xét nghiệm nào được ghi nhận." />
           )}
         </ClinicalBlock>
-      </div>
 
-      <ClinicalBlock icon={Milestone} title="Hành trình điều trị">
-        {journeyEvents.length > 0 ? (
-          <ol className="doctor-clinical-journey">
-            {journeyEvents.map((event, index) => (
-              <li key={index}>
-                <span className="doctor-clinical-journey-icon" aria-hidden="true"><event.icon size={14} /></span>
-                <div>
-                  <strong>{event.label}</strong>
-                  <p>{formatDateOnly(event.date)}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <EmptyBlockNote text="Chưa có đủ dữ liệu để dựng hành trình điều trị." />
-        )}
-      </ClinicalBlock>
+        <ClinicalBlock icon={Milestone} title="Hành trình điều trị">
+          {journeyEvents.length > 0 ? (
+            <ol className="doctor-clinical-journey">
+              {journeyEvents.map((event, index) => (
+                <li key={index}>
+                  <span className="doctor-clinical-journey-icon" aria-hidden="true"><event.icon size={14} /></span>
+                  <div>
+                    <strong>{event.label}</strong>
+                    <p>{formatDateOnly(event.date)}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <EmptyBlockNote text="Chưa có đủ dữ liệu để dựng hành trình điều trị." />
+          )}
+        </ClinicalBlock>
+      </div>
     </section>
   );
 }
