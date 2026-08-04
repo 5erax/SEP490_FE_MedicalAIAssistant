@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
 import LandingPage from "./pages/LandingPage";
 import UserWorkspaceShell from "./components/workspace/UserWorkspaceShell";
+import DoctorWorkspaceShell from "./components/workspace/DoctorWorkspaceShell";
 import StaticPage from "./pages/StaticPage";
 import WorkspaceRedirect from "./pages/WorkspaceRedirect";
 import { getStoredAuth } from "./services/api";
@@ -13,6 +14,7 @@ import {
 import { getCanonicalPath, resolveRoute } from "./router/routes";
 import { replaceRoute } from "./router/navigation";
 import { resolveRouteAccess } from "./router/access";
+import { hasAuthRole } from "./utils/roles";
 import { AppLoading } from "./components/ui";
 
 const NearbyClinicPage = lazy(() => import("./pages/NearbyClinicPage"));
@@ -21,6 +23,7 @@ const loadAdminWorkspacePage = () => import("./pages/AdminWorkspacePage");
 const AdminWorkspacePage = lazy(loadAdminWorkspacePage);
 const ChatbotPage = lazy(() => import("./pages/ChatbotPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const DoctorOverviewPage = lazy(() => import("./pages/DoctorOverviewPage"));
 const DoctorRegisterInvitationPage = lazy(() => import("./pages/DoctorRegisterInvitationPage"));
 const DoctorRecoveryPlanQueuePage = lazy(() => import("./pages/DoctorRecoveryPlanQueuePage"));
 const MedicalRecordPage = lazy(() => import("./pages/MedicalRecordPage"));
@@ -40,6 +43,10 @@ if (window.location.pathname.startsWith("/app/admin")) {
 
 function userWorkspace(page) {
   return <UserWorkspaceShell>{page}</UserWorkspaceShell>;
+}
+
+function doctorWorkspace(activeKey, page) {
+  return <DoctorWorkspaceShell activeKey={activeKey}>{page}</DoctorWorkspaceShell>;
 }
 
 function lazyPage(page) {
@@ -128,9 +135,11 @@ function App() {
     case "workspace.redirect":
       return <WorkspaceRedirect />;
     case "staff.workspace":
-      return lazyPage(<StaffWorkspacePage />);
+      return hasAuthRole(auth, "doctor")
+        ? doctorWorkspace("overview", lazyPage(<DoctorOverviewPage />))
+        : lazyPage(<StaffWorkspacePage />);
     case "doctor.recovery-plan-queue":
-      return lazyPage(<DoctorRecoveryPlanQueuePage />);
+      return doctorWorkspace("queue", lazyPage(<DoctorRecoveryPlanQueuePage />));
     case "assessment.session":
       return userWorkspace(lazyPage(<MedicalAssistantPage mode="questions" sessionId={route.params?.sessionId} />));
     case "assessment.result":
