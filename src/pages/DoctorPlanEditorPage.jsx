@@ -65,6 +65,14 @@ function formatDayRange(startDay, endDay) {
   return startDay === endDay ? `Ngày ${startDay}` : `Ngày ${startDay} – ${endDay}`;
 }
 
+function findOverlappingPhase(phases, start, end, excludeId) {
+  return phases.find((item) => {
+    if (excludeId && item.id === excludeId) return false;
+    if (item.startDay == null || item.endDay == null) return false;
+    return start <= item.endDay && item.startDay <= end;
+  });
+}
+
 function getActionMessage(error) {
   const code = getApiErrorCode(error);
   if (code === "NOT_FOUND") return "Kế hoạch không tồn tại hoặc đã bị xóa.";
@@ -522,6 +530,12 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
     }
     if (!nextErrors.endDay && plan?.durationDays && end > plan.durationDays) {
       nextErrors.endDay = `Kế hoạch chỉ dài ${plan.durationDays} ngày.`;
+    }
+    if (!nextErrors.startDay && !nextErrors.endDay) {
+      const overlapping = findOverlappingPhase(getSortedPhases(plan), start, end, phase?.id);
+      if (overlapping) {
+        nextErrors.endDay = `Trùng ngày với giai đoạn "${overlapping.phaseName || "khác"}" (${formatDayRange(overlapping.startDay, overlapping.endDay)}).`;
+      }
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
