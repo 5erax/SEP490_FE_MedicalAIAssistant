@@ -81,6 +81,7 @@ export default function DoctorPlanEditorPage({ planId }) {
   const [editOpen, setEditOpen] = useState(false);
   const [busy, setBusy] = useState("");
   const [createPhaseOpen, setCreatePhaseOpen] = useState(false);
+  const [editingPhase, setEditingPhase] = useState(null);
   const [phaseBusy, setPhaseBusy] = useState("");
 
   async function load() {
@@ -138,6 +139,24 @@ export default function DoctorPlanEditorPage({ planId }) {
     }
   }
 
+  async function handleUpdatePhase(payload) {
+    setPhaseBusy("update");
+    try {
+      const response = await doctorRecoveryPlansApi.updatePhase(planId, editingPhase.id, payload);
+      setState((current) => ({ ...current, plan: normalizeDoctorPlanDetail(response).plan }));
+      showToast({ type: "success", title: "Đã cập nhật giai đoạn" });
+      setEditingPhase(null);
+    } catch (requestError) {
+      showToast({ type: "error", title: "Không thể cập nhật giai đoạn", message: getActionMessage(requestError) });
+      if (getApiErrorCode(requestError) === "NOT_FOUND") {
+        setEditingPhase(null);
+        await load();
+      }
+    } finally {
+      setPhaseBusy("");
+    }
+  }
+
   async function handleDelete() {
     const confirmed = await confirmAction({
       title: "Xóa bản nháp kế hoạch này?",
@@ -188,6 +207,7 @@ export default function DoctorPlanEditorPage({ planId }) {
           onDelete={handleDelete}
           onReload={load}
           onAddPhase={() => setCreatePhaseOpen(true)}
+          onEditPhase={setEditingPhase}
         />
       )}
 
@@ -208,11 +228,21 @@ export default function DoctorPlanEditorPage({ planId }) {
           onSubmit={handleCreatePhase}
         />
       )}
+
+      {editingPhase && (
+        <PhaseFormDialog
+          plan={state.plan}
+          phase={editingPhase}
+          submitting={phaseBusy === "update"}
+          onClose={() => setEditingPhase(null)}
+          onSubmit={handleUpdatePhase}
+        />
+      )}
     </div>
   );
 }
 
-function PlanContent({ state, busy, onEdit, onDelete, onReload, onAddPhase }) {
+function PlanContent({ state, busy, onEdit, onDelete, onReload, onAddPhase, onEditPhase }) {
   const { plan, requestId, diseaseGroup } = state;
   const disease = getDiseaseInfo(diseaseGroup);
   const DiseaseIcon = disease.icon;
@@ -294,6 +324,13 @@ function PlanContent({ state, busy, onEdit, onDelete, onReload, onAddPhase }) {
                       )}
                       {phase.instruction && <p className="doctor-plan-phase-instruction">{phase.instruction}</p>}
                     </div>
+                    {isDraft && (
+                      <div className="doctor-plan-phase-actions">
+                        <button type="button" aria-label="Chỉnh sửa giai đoạn" onClick={() => onEditPhase(phase)}>
+                          <Edit3 size={15} aria-hidden="true" />
+                        </button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

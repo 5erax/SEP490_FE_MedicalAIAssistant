@@ -190,6 +190,9 @@
 }
 
 .doctor-plan-phase-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
   background: var(--color-surface-soft);
@@ -198,7 +201,32 @@
 
 .doctor-plan-phase-info {
   display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
   gap: 3px;
+}
+
+.doctor-plan-phase-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.doctor-plan-phase-actions button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  cursor: pointer;
+}
+
+.doctor-plan-phase-actions button:hover {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
 }
 
 .doctor-plan-phase-info strong {
