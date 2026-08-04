@@ -26,11 +26,24 @@
 }
 
 .doctor-recovery-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: var(--color-info-strong);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.doctor-recovery-eyebrow-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
 }
 
 .doctor-recovery-header .ui-button > span {
@@ -39,8 +52,134 @@
   gap: 8px;
 }
 
-.doctor-recovery-filters {
+.doctor-recovery-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: 16px 20px;
+}
+
+.doctor-recovery-select {
   max-width: 280px;
+}
+
+.doctor-recovery-toolbar-count {
+  color: var(--color-info-strong);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* CustomSelect is unstyled by default (per-page convention) - scope a
+   teal-themed skin here instead of the lime/blue admin styling. */
+.doctor-recovery-page .custom-select-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.doctor-recovery-page .custom-select-field > span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.doctor-recovery-page .custom-select-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.doctor-recovery-page .custom-select {
+  position: relative;
+  min-width: 0;
+}
+
+.doctor-recovery-page .custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 10px 12px;
+  color: var(--color-ink);
+  font: 800 14px/1.3 var(--font-body);
+  text-align: left;
+  outline: none;
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.doctor-recovery-page .custom-select-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doctor-recovery-page .custom-select-trigger svg {
+  flex: 0 0 auto;
+  color: var(--color-info-strong);
+  transition: transform var(--motion-fast);
+}
+
+.doctor-recovery-page .custom-select.is-open .custom-select-trigger,
+.doctor-recovery-page .custom-select-trigger:focus-visible {
+  border-color: var(--color-info);
+  box-shadow: 0 0 0 4px var(--color-info-bg);
+}
+
+.doctor-recovery-page .custom-select.is-open .custom-select-trigger svg {
+  transform: rotate(180deg);
+}
+
+.doctor-recovery-page .custom-select-popover {
+  position: absolute;
+  z-index: var(--z-overlay);
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: min(260px, 46vh);
+  overflow-y: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.doctor-recovery-page .custom-select-option {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.doctor-recovery-page .custom-select-option.is-active {
+  background: var(--color-info-bg);
+}
+
+.doctor-recovery-page .custom-select-option.is-selected {
+  background: var(--color-info);
+  color: #fff;
+}
+
+.doctor-recovery-page .custom-select-option.is-selected.is-active {
+  background: var(--color-info-strong);
 }
 
 .doctor-recovery-queue-list {
@@ -58,6 +197,24 @@
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: 16px 20px;
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast);
+}
+
+.doctor-recovery-queue-card:hover {
+  border-color: var(--color-info);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+.doctor-recovery-queue-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
 }
 
 .doctor-recovery-queue-card .ui-button > span {
