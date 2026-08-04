@@ -1,3 +1,7 @@
+import {
+  getApiStatusMessage,
+  localizeApiPayload,
+} from "./apiMessageTranslator";
 // Production uses same-origin /api so Vercel rewrites can avoid mixed-content and CORS issues.
 const API_BASE_URL = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "")
@@ -170,34 +174,59 @@ export async function apiRequest(path, options = {}) {
   });
 
   const text = await response.text();
-  let payload = { success: response.ok };
+
+  let rawPayload = {
+    success: response.ok,
+  };
 
   if (text) {
     try {
-      payload = JSON.parse(text);
+      rawPayload = JSON.parse(text);
     } catch {
-      payload = {
+      rawPayload = {
         success: false,
         message:
           "Dịch vụ đang phản hồi không ổn định. Vui lòng thử lại sau.",
       };
     }
   }
-  const ok = response.ok && payload.success !== false;
+
+  // Chỉ dịch message, title và errors.
+  // Dữ liệu nghiệp vụ trong data vẫn được giữ nguyên.
+  const payload = localizeApiPayload(
+    rawPayload,
+    response.status,
+  );
+
+  const ok =
+    response.ok &&
+    payload?.success !== false;
 
   if (!ok) {
+    const translatedErrors = formatApiErrors(
+      payload?.errors,
+    );
+
     const message =
       (
-        payload?.message && formatApiErrors(payload?.errors)
-          ? `${payload.message} ${formatApiErrors(payload.errors)}`
+        payload?.message && translatedErrors
+          ? `${payload.message} ${translatedErrors}`
           : payload?.message
       ) ||
-      formatApiErrors(payload?.errors) ||
+      translatedErrors ||
       payload?.title ||
-      `Yêu cầu thất bại với mã ${response.status}`;
+      getApiStatusMessage(response.status);
+
     const error = new Error(message);
+
     error.status = response.status;
+
+    // Payload tiếng Việt cho component sử dụng.
     error.payload = payload;
+
+    // Payload gốc từ BE để debug khi cần.
+    error.originalPayload = rawPayload;
+
     throw error;
   }
 
