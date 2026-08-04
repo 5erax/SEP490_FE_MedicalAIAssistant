@@ -10,11 +10,17 @@ import {
   ClipboardCheck,
   Clock3,
   FileText,
+  FlaskConical,
+  HeartPulse,
   History,
   Info,
   MessageSquarePlus,
+  Milestone,
+  Pill,
   RefreshCw,
+  Ruler,
   Send,
+  ShieldAlert,
   Thermometer,
   UndoDot,
   Wind,
@@ -84,6 +90,72 @@ function formatDate(value) {
 
 function formatShortId(id) {
   return id ? `#${String(id).slice(0, 8).toUpperCase()}` : "—";
+}
+
+function formatDateOnly(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+// The doctor clinical-context endpoint has no published response schema yet,
+// so this accepts a few plausible key-name variants defensively instead of
+// assuming one exact shape. Any block whose data is missing/misnamed simply
+// falls back to its own empty state rather than breaking the page.
+function normalizeClinicalContext(data) {
+  if (!data || typeof data !== "object") {
+    return { profile: null, medications: [], labSessions: [], chronicDiseases: [] };
+  }
+  const profile = data.patientProfile ?? data.profile ?? data.patient ?? null;
+  return {
+    profile,
+    medications: toArray(data.medications ?? data.currentMedications ?? data.userMedications ?? profile?.medications),
+    labSessions: toArray(data.labSessions ?? data.labTests ?? data.labResults ?? data.labTestSessions),
+    chronicDiseases: toArray(profile?.chronicDiseases ?? data.chronicDiseases),
+  };
+}
+
+function getBmi(height, weight) {
+  if (!height || !weight) return null;
+  const heightMeters = height / 100;
+  if (!heightMeters) return null;
+  return weight / (heightMeters * heightMeters);
+}
+
+function getBmiCategory(bmi) {
+  if (bmi == null) return null;
+  if (bmi < 18.5) return { label: "Thiếu cân", tone: "warning" };
+  if (bmi < 23) return { label: "Bình thường", tone: "success" };
+  if (bmi < 25) return { label: "Thừa cân", tone: "warning" };
+  return { label: "Béo phì", tone: "danger" };
+}
+
+function buildJourneyEvents({ profile, medications, labSessions }) {
+  const events = [];
+  toArray(profile?.chronicDiseases).forEach((item) => {
+    if (item.from) {
+      events.push({ date: item.from, icon: HeartPulse, label: `Bắt đầu bệnh nền: ${item.diseaseName || "không rõ tên"}` });
+    }
+  });
+  toArray(labSessions).forEach((session) => {
+    const date = session.testDate ?? session.createdAt;
+    if (date) {
+      events.push({ date, icon: FlaskConical, label: `Xét nghiệm${session.facilityName ? ` tại ${session.facilityName}` : ""}` });
+    }
+  });
+  toArray(medications).forEach((item) => {
+    if (item.startDate) {
+      events.push({ date: item.startDate, icon: Pill, label: `Bắt đầu dùng thuốc: ${item.medicineName || "không rõ tên"}` });
+    }
+  });
+  return events
+    .filter((event) => !Number.isNaN(new Date(event.date).getTime()))
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
 function formatRemaining(msRemaining) {
@@ -211,6 +283,28 @@ function DetailContent({ request, onReload }) {
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
 
+  const [clinicalContext, setClinicalContext] = useState(null);
+  const [clinicalLoading, setClinicalLoading] = useState(true);
+  const [clinicalError, setClinicalError] = useState("");
+
+  async function loadClinicalContext() {
+    setClinicalLoading(true);
+    setClinicalError("");
+    try {
+      const response = await doctorRecoveryPlanRequestsApi.getClinicalContext(request.id);
+      setClinicalContext(normalizeClinicalContext(response?.data));
+    } catch {
+      setClinicalError("Chưa thể tải bối cảnh lâm sàng của bệnh nhân.");
+    } finally {
+      setClinicalLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    queueMicrotask(() => void loadClinicalContext());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request.id]);
+
   const isAssignmentActive = ASSIGNMENT_ACTIVE_STATUSES.has(request.status);
   const countdown = useCountdown(
     isAssignmentActive ? request.assignmentExpiresAt : null,
@@ -326,6 +420,13 @@ function DetailContent({ request, onReload }) {
             <p className="doctor-detail-card-heading">Ghi chú từ bệnh nhân</p>
             <p className="doctor-detail-note-text">{request.requestNote || "Không có ghi chú."}</p>
           </section>
+
+          <ClinicalContextSection
+            loading={clinicalLoading}
+            error={clinicalError}
+            data={clinicalContext}
+            onRetry={loadClinicalContext}
+          />
 
           {request.status === "rejected" && (
             <section className="doctor-detail-card doctor-detail-card-danger">
@@ -567,6 +668,151 @@ function ProgressSteps({ status }) {
       })}
     </ol>
   );
+}
+
+function ClinicalContextSection({ loading, error, data, onRetry }) {
+  if (loading) {
+    return (
+      <section className="doctor-clinical-section">
+        <p className="doctor-detail-card-heading">Bối cảnh lâm sàng</p>
+        <LoadingState label="Đang tải bối cảnh lâm sàng…" />
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="doctor-clinical-section">
+        <p className="doctor-detail-card-heading">Bối cảnh lâm sàng</p>
+        <ErrorState
+          title="Không thể tải bối cảnh lâm sàng"
+          description={error}
+          action={<Button onClick={onRetry}><RefreshCw size={16} aria-hidden="true" /> Thử lại</Button>}
+        />
+      </section>
+    );
+  }
+
+  const { profile, medications, labSessions, chronicDiseases } = data;
+  const bmi = getBmi(profile?.height, profile?.weight);
+  const bmiCategory = getBmiCategory(bmi);
+  const journeyEvents = buildJourneyEvents({ profile, medications, labSessions });
+
+  return (
+    <section className="doctor-clinical-section">
+      <p className="doctor-detail-card-heading">Bối cảnh lâm sàng</p>
+
+      <div className="doctor-clinical-grid">
+        <ClinicalBlock icon={Ruler} title="Chỉ số cơ thể">
+          {profile?.height || profile?.weight ? (
+            <>
+              <div className="doctor-clinical-metrics">
+                {profile?.height && <span><strong>{profile.height}</strong> cm</span>}
+                {profile?.weight && <span><strong>{profile.weight}</strong> kg</span>}
+              </div>
+              {bmi != null && (
+                <p className="doctor-clinical-bmi">
+                  BMI <strong>{bmi.toFixed(1)}</strong>
+                  <Badge tone={bmiCategory.tone}>{bmiCategory.label}</Badge>
+                </p>
+              )}
+              {profile?.bloodType && <p className="doctor-clinical-meta">Nhóm máu: <strong>{profile.bloodType}</strong></p>}
+            </>
+          ) : (
+            <EmptyBlockNote text="Bệnh nhân chưa cập nhật chiều cao/cân nặng." />
+          )}
+        </ClinicalBlock>
+
+        <ClinicalBlock icon={ShieldAlert} title="Dị ứng">
+          {profile?.allergyNote ? (
+            <p className="doctor-clinical-text">{profile.allergyNote}</p>
+          ) : (
+            <EmptyBlockNote text="Không ghi nhận dị ứng." />
+          )}
+        </ClinicalBlock>
+
+        <ClinicalBlock icon={HeartPulse} title="Bệnh nền">
+          {chronicDiseases.length > 0 ? (
+            <ul className="doctor-clinical-list">
+              {chronicDiseases.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.diseaseName || "Không rõ tên bệnh"}</strong>
+                  <span>{formatDateOnly(item.from) || "?"} – {item.to ? formatDateOnly(item.to) : "hiện tại"}</span>
+                  {item.note && <p>{item.note}</p>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyBlockNote text="Không có bệnh nền được ghi nhận." />
+          )}
+        </ClinicalBlock>
+
+        <ClinicalBlock icon={Pill} title="Thuốc đang sử dụng">
+          {medications.length > 0 ? (
+            <ul className="doctor-clinical-list">
+              {medications.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.medicineName || "Không rõ tên thuốc"}</strong>
+                  {item.dosageInstruction && <p>{item.dosageInstruction}</p>}
+                  <span>{formatDateOnly(item.startDate) || "?"}{item.endDate ? ` – ${formatDateOnly(item.endDate)}` : ""}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyBlockNote text="Bệnh nhân chưa khai báo thuốc đang dùng." />
+          )}
+        </ClinicalBlock>
+
+        <ClinicalBlock icon={FlaskConical} title="Xét nghiệm gần đây">
+          {labSessions.length > 0 ? (
+            <ul className="doctor-clinical-list">
+              {labSessions.slice(0, 5).map((session) => (
+                <li key={session.sessionId}>
+                  <strong>{formatDateOnly(session.testDate) || formatDateOnly(session.createdAt) || "Chưa rõ ngày"}</strong>
+                  <span>{session.facilityName || "Không rõ cơ sở"}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyBlockNote text="Chưa có phiếu xét nghiệm nào được ghi nhận." />
+          )}
+        </ClinicalBlock>
+      </div>
+
+      <ClinicalBlock icon={Milestone} title="Hành trình điều trị">
+        {journeyEvents.length > 0 ? (
+          <ol className="doctor-clinical-journey">
+            {journeyEvents.map((event, index) => (
+              <li key={index}>
+                <span className="doctor-clinical-journey-icon" aria-hidden="true"><event.icon size={14} /></span>
+                <div>
+                  <strong>{event.label}</strong>
+                  <p>{formatDateOnly(event.date)}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <EmptyBlockNote text="Chưa có đủ dữ liệu để dựng hành trình điều trị." />
+        )}
+      </ClinicalBlock>
+    </section>
+  );
+}
+
+function ClinicalBlock({ icon: Icon, title, children }) {
+  return (
+    <div className="doctor-clinical-block">
+      <p className="doctor-clinical-block-heading">
+        <Icon size={14} aria-hidden="true" /> {title}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function EmptyBlockNote({ text }) {
+  return <p className="doctor-clinical-empty">{text}</p>;
 }
 
 function Timeline({ steps }) {
