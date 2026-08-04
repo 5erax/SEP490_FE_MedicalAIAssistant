@@ -1,10 +1,12 @@
 import {
   ArrowRight,
   CalendarClock,
+  CircleCheckBig,
   ClipboardList,
   FileEdit,
   HeartPulse,
   ListChecks,
+  ShieldCheck,
   Sparkles,
   Stethoscope,
 } from "lucide-react";
@@ -81,31 +83,56 @@ export default function DoctorOverviewPage() {
         </div>
       </header>
 
-      {loading ? (
-        <LoadingState label="Đang tải số liệu..." />
-      ) : (
-        <div className="doctor-overview-stats">
-          <article className="doctor-overview-stat-card is-accent">
-            <span className="doctor-overview-stat-icon"><ClipboardList size={22} aria-hidden="true" /></span>
-            <div>
-              <strong>{openCount ?? "—"}</strong>
-              <p>Yêu cầu đang chờ trong hàng đợi</p>
-            </div>
-            <button type="button" onClick={() => navigate("/app/staff/recovery-plans/queue")}>
-              Vào hàng đợi <ArrowRight size={16} aria-hidden="true" />
-            </button>
-          </article>
+      <div className="doctor-overview-top-grid">
+        {loading ? (
+          <LoadingState label="Đang tải số liệu..." />
+        ) : (
+          <div className="doctor-overview-stats">
+            <article className="doctor-overview-stat-card is-accent">
+              <span className="doctor-overview-stat-icon"><ClipboardList size={22} aria-hidden="true" /></span>
+              <div>
+                <strong>{openCount ?? "—"}</strong>
+                <p>Yêu cầu đang chờ trong hàng đợi</p>
+              </div>
+              <button type="button" onClick={() => navigate("/app/staff/recovery-plans/queue")}>
+                Vào hàng đợi <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </article>
 
-          <article className="doctor-overview-stat-card">
-            <span className="doctor-overview-stat-icon"><ListChecks size={22} aria-hidden="true" /></span>
-            <div>
-              <strong>{mineCount ?? "—"}</strong>
-              <p>Yêu cầu bạn đã nhận từ trước tới nay</p>
-            </div>
-            <span className="doctor-overview-stat-soon">Trang xem chi tiết sắp ra mắt</span>
-          </article>
-        </div>
-      )}
+            <article className="doctor-overview-stat-card">
+              <span className="doctor-overview-stat-icon"><ListChecks size={22} aria-hidden="true" /></span>
+              <div>
+                <strong>{mineCount ?? "—"}</strong>
+                <p>Yêu cầu bạn đã nhận từ trước tới nay</p>
+              </div>
+              <span className="doctor-overview-stat-soon">Trang xem chi tiết sắp ra mắt</span>
+            </article>
+          </div>
+        )}
+
+        <aside className="doctor-overview-tips" aria-labelledby="doctor-tips-title">
+          <p className="doctor-overview-eyebrow">Trước khi bắt đầu</p>
+          <h2 id="doctor-tips-title">Quy trình xử lý 1 yêu cầu</h2>
+          <ul>
+            <li>
+              <CircleCheckBig size={18} aria-hidden="true" />
+              <span>Nhận yêu cầu ở Hàng đợi trước khi bác sĩ khác nhận.</span>
+            </li>
+            <li>
+              <CircleCheckBig size={18} aria-hidden="true" />
+              <span>Bắt đầu xem xét trong thời hạn được cấp, tránh bị thu hồi tự động.</span>
+            </li>
+            <li>
+              <CircleCheckBig size={18} aria-hidden="true" />
+              <span>Đọc kỹ hồ sơ lâm sàng trước khi soạn kế hoạch phục hồi.</span>
+            </li>
+          </ul>
+          <div className="doctor-overview-tips-note">
+            <ShieldCheck size={16} aria-hidden="true" />
+            <span>Kế hoạch phục hồi chỉ gồm dinh dưỡng, thực phẩm gợi ý, ngủ và nghỉ — không kê thuốc.</span>
+          </div>
+        </aside>
+      </div>
 
       <section className="doctor-overview-roadmap" aria-labelledby="doctor-roadmap-title">
         <div className="doctor-overview-roadmap-heading">
