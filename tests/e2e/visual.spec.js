@@ -190,6 +190,7 @@ test.describe("visual baseline", () => {
                         },
                       ],
                       recommendedDepartment: {
+                        description: "Tiếp nhận và đánh giá các bệnh lý hô hấp.",
                         departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
                         departmentName: "Khoa Hô hấp",
                         confidenceScore: 0.72,
@@ -295,7 +296,19 @@ test.describe("visual baseline", () => {
               );
             }, {
               sessionId: VISUAL_CLINICAL_SESSION_ID,
+              diagnoses: [{
+                rank: 1,
+                diseaseName: "Sốt chưa rõ nguyên nhân",
+                icd10Code: "R50.9",
+                clinicalReasoning: "Sốt kéo dài là dấu hiệu chính cần được bác sĩ đánh giá thêm.",
+              }, {
+                rank: 2,
+                diseaseName: "Cúm",
+                icd10Code: "J11",
+                clinicalReasoning: "Cúm có thể gây sốt và mệt mỏi trong giai đoạn đầu.",
+              }],
               recommendedDepartment: {
+                description: "Tiếp nhận và đánh giá các bệnh lý truyền nhiễm và siêu vi.",
                 departmentId: VISUAL_CLINICAL_DEPARTMENT_ID,
                 departmentName: "Khoa Truyền nhiễm và siêu vi",
                 confidenceScore: 0.86,
@@ -949,6 +962,14 @@ test.describe("visual baseline", () => {
             "Khoa Truyền nhiễm và siêu vi",
             { exact: true },
           )).toBeVisible();
+          const diagnosisCrossbar = page.getByRole("region", {
+            name: "Các chẩn đoán được cân nhắc",
+          });
+          await expect(diagnosisCrossbar).toContainText("Sốt chưa rõ nguyên nhân");
+          await expect(diagnosisCrossbar).toContainText("ICD-10: R50.9");
+          await expect(diagnosisCrossbar).not.toContainText(
+            "Sốt kéo dài là dấu hiệu chính cần được bác sĩ đánh giá thêm.",
+          );
           await expect(page.getByText(
             "Bệnh viện Bệnh Nhiệt đới",
             { exact: true },

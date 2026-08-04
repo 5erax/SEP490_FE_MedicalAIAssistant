@@ -29,6 +29,7 @@ import {
   feedbackReviewsApi,
   getStoredAuth,
   medicalFacilitiesApi,
+  readAnalysisPayload,
   symptomAnalysisApi,
 } from "../services/api";
 import "../styles/map-clinical-refresh.css";
@@ -80,6 +81,11 @@ function sanitizeDepartment(department) {
       ?? "",
     ).trim(),
     departmentName: department.departmentName ?? department.DepartmentName ?? department.name ?? "",
+    description: String(
+      department.description
+      ?? department.Description
+      ?? "",
+    ).trim(),
     icdChapterCode: String(
       department.icdChapterCode
       ?? department.IcdChapterCode
@@ -89,6 +95,27 @@ function sanitizeDepartment(department) {
     reason: String(department.reason ?? department.Reason ?? "").trim(),
     isEmergencySuggested: emergencyValue === true
       || String(emergencyValue ?? "").toLowerCase() === "true",
+  };
+}
+
+function sanitizeDiagnosis(diagnosis, index = 0) {
+  if (!diagnosis || typeof diagnosis !== "object") return null;
+
+  const diseaseName = String(
+    diagnosis.diseaseName ?? diagnosis.DiseaseName ?? diagnosis.name ?? "",
+  ).trim();
+  const icd10Code = String(
+    diagnosis.icd10Code ?? diagnosis.Icd10Code ?? diagnosis.icdCode ?? "",
+  ).trim();
+  if (!diseaseName && !icd10Code) return null;
+
+  return {
+    clinicalReasoning: String(
+      diagnosis.clinicalReasoning ?? diagnosis.ClinicalReasoning ?? "",
+    ).trim(),
+    diseaseName,
+    icd10Code,
+    rank: Number(diagnosis.rank ?? diagnosis.Rank ?? index + 1) || index + 1,
   };
 }
 
@@ -130,6 +157,16 @@ function sanitizeRecommendedFacility(facility) {
 
 function buildClinicalRecommendationContext(analysis) {
   if (!analysis || typeof analysis !== "object") return null;
+  const diagnosisItems = analysis.diagnoses ?? analysis.Diagnoses;
+  const primaryDiagnosis = analysis.primaryDiagnosis ?? analysis.PrimaryDiagnosis;
+  const diagnoses = (
+    Array.isArray(diagnosisItems) && diagnosisItems.length > 0
+      ? diagnosisItems
+      : primaryDiagnosis ? [primaryDiagnosis] : []
+  )
+    .map(sanitizeDiagnosis)
+    .filter(Boolean)
+    .sort((left, right) => left.rank - right.rank);
   const departmentItems = analysis.recommendedDepartments ?? analysis.RecommendedDepartments;
   const recommendedDepartment = sanitizeDepartment(
     analysis.recommendedDepartment
@@ -144,12 +181,13 @@ function buildClinicalRecommendationContext(analysis) {
     .filter(Boolean);
 
   const context = {
+    diagnoses,
     recommendedDepartment,
     recommendedFacilities,
     sessionId: String(analysis.sessionId ?? "").trim(),
   };
 
-  return recommendedDepartment || recommendedFacilities.length
+  return recommendedDepartment || recommendedFacilities.length || diagnoses.length
     ? context
     : null;
 }
@@ -433,7 +471,6 @@ function NearbyClinicPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedFacility, setSelectedFacility] = useState(null);
-  const [assistantOpenRequestKey, setAssistantOpenRequestKey] = useState(0);
   const [sidebarView, setSidebarView] = useState("hospital-list");
   const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -469,6 +506,7 @@ function NearbyClinicPage() {
   const requestedDoctorOpenedRef = useRef(false);
   const lastFittedBoundsRef = useRef("");
   const initialClinicalSelectionRef = useRef(false);
+  const clinicalRestoreRequestRef = useRef({ sessionId: "", promise: null });
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -485,21 +523,41 @@ function NearbyClinicPage() {
     );
     let active = true;
 
-    Promise.resolve().then(() => {
+    async function restoreClinicalContext() {
       if (!active) return;
       if (cachedContext) {
         setRecommendationContext(cachedContext);
         setClinicalStatus("ready");
         setClinicalNotice("");
+        if (cachedContext.diagnoses.length > 0) return;
+      } else {
+        setRecommendationContext(null);
+        setClinicalStatus("error");
+        setClinicalNotice(
+          "Kết quả gợi ý không còn trong phiên hiện tại. Vui lòng quay lại trang chủ và gửi lại triệu chứng.",
+        );
         return;
       }
 
-      setRecommendationContext(null);
-      setClinicalStatus("error");
-      setClinicalNotice(
-        "Kết quả gợi ý không còn trong phiên hiện tại. Vui lòng quay lại trang chủ và gửi lại triệu chứng.",
-      );
-    });
+      try {
+        if (clinicalRestoreRequestRef.current.sessionId !== mapQuery.sessionId) {
+          clinicalRestoreRequestRef.current = {
+            sessionId: mapQuery.sessionId,
+            promise: symptomAnalysisApi.get(mapQuery.sessionId),
+          };
+        }
+        const response = await clinicalRestoreRequestRef.current.promise;
+        const restoredContext = buildClinicalRecommendationContext(readAnalysisPayload(response));
+        if (!active || !restoredContext) return;
+        setRecommendationContext(restoredContext);
+        setClinicalNotice("");
+      } catch {
+        if (!active) return;
+        setClinicalNotice("Chưa thể tải lại danh sách chẩn đoán tham khảo trong lần này.");
+      }
+    }
+
+    void restoreClinicalContext();
 
     return () => {
       active = false;
@@ -812,7 +870,7 @@ function NearbyClinicPage() {
     window.history[mode === "replace" ? "replaceState" : "pushState"]({}, "", nextUrl);
   }, []);
 
-  const handleCardClick = useCallback((facility, options = {}) => {
+  const handleCardClick = useCallback((facility) => {
     setReviewMessage("");
     setSubmittedReview(null);
     setEditingReview(false);
@@ -824,9 +882,6 @@ function NearbyClinicPage() {
       setReviewsLoading(true);
     }
     setSelectedFacility(facility);
-    if (options.openAssistant) {
-      setAssistantOpenRequestKey((current) => current + 1);
-    }
     if (facility.hasValidCoordinates && mapStatus === "ready") {
       mapRef.current?.flyTo?.({
         center: [facility.longitude, facility.latitude],
@@ -883,7 +938,7 @@ function NearbyClinicPage() {
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
-    handleCardClick(facility, { openAssistant: options.openAssistant !== false });
+    handleCardClick(facility);
     setSidebarView("hospital-detail");
     setSelectedDoctor(null);
     setDetailPanelOpen(true);
@@ -960,7 +1015,6 @@ function NearbyClinicPage() {
 
       if (matchedFacility) {
         openFacilityDetail(matchedFacility, {
-          openAssistant: false,
           syncUrl: false,
           tab: nextQuery.tab,
         });
@@ -986,7 +1040,6 @@ function NearbyClinicPage() {
 
     const timeoutId = window.setTimeout(() => {
       openFacilityDetail(matchedFacility, {
-        openAssistant: false,
         syncUrl: false,
         tab: mapQuery.tab,
       });
@@ -1333,7 +1386,7 @@ function NearbyClinicPage() {
   const showLegacyMapDetail = Boolean(0);
 
   return (
-    <main className="clinic-page map-clinical-refresh">
+    <main className={`clinic-page map-clinical-refresh${isClinicalFlow ? " is-clinical-map-flow" : ""}`}>
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list">Bỏ qua bản đồ, đến danh sách cơ sở</a>
@@ -1630,21 +1683,10 @@ function NearbyClinicPage() {
 
       <section className="map-stage">
         <FacilityMap
-          assistantAccessLocked={!auth?.accessToken}
-          assistantOpenRequestKey={assistantOpenRequestKey}
           chatContext={chatContext}
           clinicalNotice={effectiveClinicalNotice}
           clinicalStatus={clinicalStatus}
-          consultationFacility={
-            isClinicalFlow
-              ? selectedFacility
-              : detailPanelOpen && !detailLoading ? detailFacility : null
-          }
           isClinicalFlow={isClinicalFlow}
-          onAssistantLogin={() => navigate(`/login?returnTo=${encodeURIComponent(
-            `${window.location.pathname}${window.location.search}`,
-          )}`)}
-          showConsultationAssistant
           facilities={mappableFacilities}
           locationError={locationError}
           mapRef={mapRef}
@@ -1660,7 +1702,7 @@ function NearbyClinicPage() {
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}
           onSelect={(facility) => facility
-            ? handleCardClick(facility, { openAssistant: true })
+            ? handleCardClick(facility)
             : setSelectedFacility(null)}
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}

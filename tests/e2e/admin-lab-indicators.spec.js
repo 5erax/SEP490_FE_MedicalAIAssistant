@@ -301,7 +301,7 @@ test("indicator detail CRUD keeps the indicator id in every child endpoint", asy
   await dialog.getByLabel(/Giá trị tối đa/).fill("16");
   await dialog.getByLabel(/^Đơn vị/).fill("g/dL");
   await dialog.getByRole("button", { name: "Tạo khoảng tham chiếu" }).click();
-  expect(requestFor(state, "POST", `${root}/reference-ranges`)?.body).toMatchObject({
+  expect(requestFor(state, "POST", `${root}/reference-ranges`)?.body).toEqual({
     gender: "female",
     ageGroup: "adult",
     comparisonType: "between",

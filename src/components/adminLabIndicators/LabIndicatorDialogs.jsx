@@ -21,7 +21,6 @@ const EMPTY_RANGE_FORM = {
   minValue: "",
   maxValue: "",
   unit: "",
-  priority: "0",
 };
 const EMPTY_ADVICE_FORM = {
   status: "",
@@ -129,7 +128,6 @@ function childToForm(kind, item) {
       minValue: item?.minValue ?? "",
       maxValue: item?.maxValue ?? "",
       unit: item?.unit ?? "",
-      priority: item?.priority ?? "0",
     };
   }
   return {
@@ -344,11 +342,8 @@ function RangeFields({ form, errors, update, firstInputRef }) {
       <Field id="lab-maxValue" label="Giá trị tối đa" optional>
         <TextInput name="maxValue" inputMode="decimal" value={form.maxValue} onChange={(event) => update("maxValue", event.target.value)} />
       </Field>
-      <Field id="lab-unit" label="Đơn vị" optional>
+      <Field id="lab-unit" label="Đơn vị" optional className="lab-form-span-2">
         <TextInput name="unit" value={form.unit} onChange={(event) => update("unit", event.target.value)} />
-      </Field>
-      <Field id="lab-priority" label="Độ ưu tiên" hint="Số nguyên; giá trị nhỏ hơn được ưu tiên trước.">
-        <TextInput name="priority" inputMode="numeric" pattern="-?[0-9]*" value={form.priority} onChange={(event) => update("priority", event.target.value)} />
       </Field>
     </div>
   );
@@ -433,7 +428,6 @@ function childPayload(kind, form) {
       minValue: nullableNumber(form.minValue),
       maxValue: nullableNumber(form.maxValue),
       unit: nullableText(form.unit),
-      priority: Number.isFinite(Number(form.priority)) ? Number(form.priority) : 0,
     };
   }
   return {

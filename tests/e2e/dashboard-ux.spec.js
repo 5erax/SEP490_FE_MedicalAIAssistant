@@ -125,6 +125,7 @@ test.describe("patient specialty intake", () => {
                 clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
               }],
               recommendedDepartment: {
+                description: "Tiếp nhận và đánh giá các bệnh lý tai, mũi và họng.",
                 departmentId: DEPARTMENT_ID,
                 departmentName: "Tai Mũi Họng",
                 confidenceScore: 0.86,
@@ -139,7 +140,31 @@ test.describe("patient specialty intake", () => {
 
     await page.route(`**/api/symptom-analysis/${SESSION_ID}`, async (route) => {
       sessionDetailRequests += 1;
-      return route.abort();
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            sessionId: SESSION_ID,
+            analysis: {
+              diagnoses: [{
+                rank: 1,
+                diseaseName: "Viêm họng cấp",
+                icd10Code: "J02",
+                clinicalReasoning: "Phù hợp với sốt nhẹ và đau họng.",
+              }],
+              recommendedDepartment: {
+                description: "Tiếp nhận và đánh giá các bệnh lý tai, mũi và họng.",
+                departmentId: DEPARTMENT_ID,
+                departmentName: "Tai Mũi Họng",
+                confidenceScore: 0.86,
+                reason: "Nên khám chuyên khoa tai mũi họng.",
+              },
+              recommendedFacilities: [recommendedFacility],
+            },
+          },
+        }),
+      });
     });
 
     await page.route("**/api/medical-facilities/active", (route) => route.fulfill({
@@ -227,12 +252,21 @@ test.describe("patient specialty intake", () => {
 
     await expect(page.getByLabel("Lọc danh sách cơ sở y tế")).toHaveValue("");
     const mapRecommendation = page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" });
-    await expect(mapRecommendation).toContainText("Bệnh viện Tai Mũi Họng");
     await expect(mapRecommendation).toContainText("Tai Mũi Họng");
     await expect(mapRecommendation).toContainText("Chuyên khoa được gợi ý");
-    await expect(mapRecommendation).not.toContainText("Viêm họng cấp");
-    await expect(mapRecommendation).not.toContainText("ICD-10: J02");
+    await expect(mapRecommendation).toContainText("Tiếp nhận và đánh giá các bệnh lý tai, mũi và họng.");
+    await expect(mapRecommendation).not.toContainText("Nên khám chuyên khoa tai mũi họng.");
+    await expect(mapRecommendation).not.toContainText("Bệnh viện Tai Mũi Họng");
+    const diagnosisCrossbar = page.getByRole("region", { name: "Các chẩn đoán được cân nhắc" });
+    await expect(diagnosisCrossbar).toContainText("Viêm họng cấp");
+    await expect(diagnosisCrossbar).toContainText("ICD-10: J02");
+    await expect(diagnosisCrossbar).not.toContainText("Phù hợp với sốt nhẹ và đau họng.");
     await expect(mapRecommendation).not.toContainText("PAGivenB");
+    const diagnosisButton = diagnosisCrossbar.getByRole("button", { name: /Viêm họng cấp/ });
+    await expect(diagnosisButton).toHaveAttribute("aria-expanded", "false");
+    await diagnosisButton.click();
+    await expect(diagnosisButton).toHaveAttribute("aria-expanded", "true");
+    await expect(diagnosisCrossbar).toContainText("Phù hợp với sốt nhẹ và đau họng.");
     await expect(page.locator(".facility-result-card")).toHaveCount(1);
     await expect(page.locator(".clinic-marker")).toHaveCount(1);
     await expect(page.getByText("Phòng khám Đánh Giá Cao", { exact: true })).toHaveCount(0);
@@ -255,24 +289,12 @@ test.describe("patient specialty intake", () => {
     expect(cachedRecommendation).not.toHaveProperty("primaryDiagnosis");
     expect(cachedRecommendation).not.toHaveProperty("diagnoses");
 
-    await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
+    await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
+    expect(consultationPayload).toBeNull();
     await expect(page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ })).toBeVisible();
 
-    await page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" }).click();
-    await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toBeVisible();
-    await page.getByLabel("Triệu chứng của bạn").fill("Đau họng và sốt nhẹ");
-    await page.getByRole("button", { name: "Tạo gợi ý câu hỏi" }).click();
-    await expect(page.getByText("Bạn muốn hỏi bác sĩ điều gì?")).toBeVisible();
-    expect(consultationPayload).toEqual({
-      departmentId: DEPARTMENT_ID,
-      symptoms: "Đau họng và sốt nhẹ",
-    });
-
-    await page.getByRole("button", { name: "Đóng AI hỗ trợ" }).click();
-    await page
-      .getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })
-      .getByRole("button", { name: "Xem chi tiết" })
-      .click();
+    await page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ }).click();
     await expect(page).toHaveURL(/tab=overview/);
     await expect(page.locator(".facility-detail-sidebar")).toBeVisible();
 
@@ -315,7 +337,8 @@ test.describe("patient specialty intake", () => {
       recommendedFacility.facilityName,
     );
     await expect(page.locator(".clinic-marker")).toHaveCount(1);
-    expect(sessionDetailRequests).toBe(0);
+    await expect(page.getByRole("region", { name: "Các chẩn đoán được cân nhắc" })).toContainText("ICD-10: J02");
+    expect(sessionDetailRequests).toBe(1);
   });
 
   test("does not expose upstream MedGemma parsing errors", async ({ page }) => {
