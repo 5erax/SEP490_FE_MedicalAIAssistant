@@ -1,5 +1,5 @@
-import { Badge, DataTable, EmptyState } from "../ui";
-import { CreditCard } from "lucide-react";
+import { Badge, Button, EmptyState } from "../ui";
+import { CreditCard, Gauge, Plus } from "lucide-react";
 
 function formatPrice(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
@@ -10,7 +10,25 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString("vi-VN");
 }
 
-export default function SubscriptionPlanTable({ plans }) {
+function getPlanQuotas(plan) {
+  return Array.isArray(plan?.quotas) ? plan.quotas : [];
+}
+
+function getResetPeriodLabel(value) {
+  if (value === "subscriptionCycle") return "mỗi chu kỳ gói";
+  return value || "theo chu kỳ";
+}
+
+function getQuotaTitle(quota) {
+  return quota.quotaName || quota.quotaCode || "Hạn mức sử dụng";
+}
+
+export default function SubscriptionPlanTable({
+  assigningQuotaPlanId,
+  defaultQuota,
+  onAssignDefaultQuota,
+  plans,
+}) {
   if (!plans.length) {
     return (
       <EmptyState
@@ -23,51 +41,89 @@ export default function SubscriptionPlanTable({ plans }) {
   }
 
   return (
-    <DataTable
-      className="subscription-plan-table-wrap"
-      caption="Danh sách gói dịch vụ theo bộ lọc hiện tại"
-      rowHeaderKey="plan"
-      getRowKey={(plan) => plan.id}
-      rows={plans}
-      columns={[
-        {
-          key: "plan",
-          header: "Gói dịch vụ",
-          render: (plan) => (
-            <div className="subscription-plan-primary">
-              <span className="subscription-plan-icon"><CreditCard size={18} /></span>
-              <div>
-                <strong>{plan.planName || "Gói chưa đặt tên"}</strong>
-                <span>{formatPrice(plan.price)}</span>
+    <div className="subscription-plan-card-list" role="table" aria-label="Danh sách gói dịch vụ">
+      <div className="subscription-plan-list-header" role="row">
+        <span>Gói dịch vụ</span>
+        <span>Thời hạn / Cập nhật</span>
+        <span>Quota sử dụng</span>
+        <span>Trạng thái</span>
+        <span>Thao tác</span>
+      </div>
+
+      {plans.map((plan) => {
+        const quotas = getPlanQuotas(plan);
+        const isAssigning = assigningQuotaPlanId === plan.id;
+
+        return (
+          <article className="subscription-plan-card" key={plan.id} role="row">
+            <div className="subscription-plan-card-main" role="cell">
+              <div className="subscription-plan-primary">
+                <span className="subscription-plan-icon"><CreditCard size={18} /></span>
+                <div>
+                  <strong>{plan.planName || "Gói chưa đặt tên"}</strong>
+                  <span>{formatPrice(plan.price)}</span>
+                </div>
               </div>
             </div>
-          ),
-        },
-        {
-          key: "duration",
-          header: "Thời hạn",
-          render: (plan) => `${plan.durationInDays} ngày`,
-        },
-        {
-          key: "limits",
-          header: "Lượt sử dụng",
-          render: () => <span className="subscription-limit-summary">Chưa có dữ liệu hạn mức đã xác nhận</span>,
-        },
-        {
-          key: "updated",
-          header: "Cập nhật",
-          render: (plan) => formatDate(plan.updatedAt || plan.createdAt),
-        },
-        {
-          key: "status",
-          header: "Trạng thái",
-          render: (plan) => (
-            <Badge tone={plan.isActive ? "success" : "warning"}>
-              {plan.isActive ? "Đang bán" : "Tạm ẩn"}
-            </Badge>
-          ),
-        },
-      ]}
-    />
+
+            <div className="subscription-plan-card-meta" role="cell">
+              <span>
+                <small>Thời hạn</small>
+                <strong>{plan.durationInDays} ngày</strong>
+              </span>
+              <span>
+                <small>Cập nhật</small>
+                <strong>{formatDate(plan.updatedAt || plan.createdAt)}</strong>
+              </span>
+            </div>
+
+            <div className="subscription-plan-card-limits" role="cell">
+              {quotas.length ? (
+                <div className="subscription-quota-list">
+                  {quotas.map((quota) => (
+                    <div className="subscription-quota-item" key={quota.id || quota.quotaId || quota.quotaCode}>
+                      <span className="subscription-quota-icon"><Gauge size={15} /></span>
+                      <div className="subscription-quota-main">
+                        <strong>{getQuotaTitle(quota)}</strong>
+                        <span>{quota.quotaDescription || quota.quotaCode || "Quota đã được gán cho gói này."}</span>
+                      </div>
+                      <div className="subscription-quota-value">
+                        <strong>{Number(quota.limitValue || 0).toLocaleString("vi-VN")}</strong>
+                        <span>{quota.unit || "lượt"} · {getResetPeriodLabel(quota.resetPeriod)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="subscription-quota-empty">
+                  <span>Chưa có quota thật cho gói này.</span>
+                  {defaultQuota && (
+                    <Button
+                      className="btn-small subscription-quota-assign"
+                      disabled={isAssigning}
+                      onClick={() => onAssignDefaultQuota?.(plan)}
+                      type="button"
+                    >
+                      <Plus size={15} aria-hidden="true" />
+                      {isAssigning ? "Đang gán..." : "Gán 3 lượt phục hồi"}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="subscription-plan-card-status" role="cell">
+              <Badge tone={plan.isActive ? "success" : "warning"}>
+                {plan.isActive ? "Đang bán" : "Tạm ẩn"}
+              </Badge>
+            </div>
+
+            <div className="subscription-plan-actions" role="cell">
+              <span className="subscription-readonly-note">Quản trị quota</span>
+            </div>
+          </article>
+        );
+      })}
+    </div>
   );
 }

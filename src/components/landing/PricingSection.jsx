@@ -173,7 +173,7 @@ export function PricingPreviewSection() {
           {previewPlans.length > 0 && (
             <>
               {previewPlans.map((plan) => {
-                const benefits = getPlanBenefits(plan.featureLimitJson);
+                const benefits = getPlanBenefits(plan);
                 const planName = getPlanDisplayName(plan.planName);
 
                 return (

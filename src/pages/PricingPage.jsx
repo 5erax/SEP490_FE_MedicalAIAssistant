@@ -116,7 +116,7 @@ function PricingPage() {
     [subscriptions],
   );
   const paidBenefits = useMemo(
-    () => getPlanBenefits(paidPlan?.featureLimitJson),
+    () => getPlanBenefits(paidPlan),
     [paidPlan],
   );
   const currentPrice = Number(paidPlan?.price) || 0;
