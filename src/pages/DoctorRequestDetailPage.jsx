@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   Bone,
   CalendarClock,
   ClipboardCheck,
@@ -325,38 +326,74 @@ function DetailContent({ request, onReload }) {
       </dl>
 
       {request.status === "assigned" && (
-        <ActionPanel>
-          <div className="doctor-detail-actions-primary">
-            <Button loading={actionBusy === "startReview"} loadingLabel="Đang bắt đầu…" onClick={handleStartReview}>
-              <ClipboardCheck size={17} aria-hidden="true" /> Bắt đầu xem xét
-            </Button>
-            <Button tone="ghost" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
-              <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
-            </Button>
+        <ActionArea>
+          <PrimaryActionCard
+            icon={ClipboardCheck}
+            title="Bắt đầu xem xét"
+            subtitle="Mở hồ sơ lâm sàng của bệnh nhân và bắt đầu tính thời hạn xử lý cho yêu cầu này."
+            buttonLabel="Bắt đầu xem xét"
+            loading={actionBusy === "startReview"}
+            loadingLabel="Đang bắt đầu…"
+            disabled={Boolean(actionBusy)}
+            onClick={handleStartReview}
+          />
+          <div className="doctor-action-tiles">
+            <ActionTile
+              icon={UndoDot}
+              title="Trả lại hàng đợi"
+              subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
+              disabled={Boolean(actionBusy)}
+              onClick={() => setReleaseOpen(true)}
+            />
           </div>
-          <button type="button" className="doctor-detail-action-reject" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
-            <XCircle size={16} aria-hidden="true" /> Từ chối yêu cầu
-          </button>
-        </ActionPanel>
+          <DangerZone>
+            <ActionTile
+              tone="danger"
+              icon={XCircle}
+              title="Từ chối yêu cầu"
+              subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
+              disabled={Boolean(actionBusy)}
+              onClick={() => setRejectOpen(true)}
+            />
+          </DangerZone>
+        </ActionArea>
       )}
 
       {request.status === "inReview" && (
-        <ActionPanel>
-          <div className="doctor-detail-actions-primary">
-            <span className="doctor-detail-action-soon" title="Soạn kế hoạch phục hồi sẽ sớm ra mắt (FE2-06)">
-              <FileText size={17} aria-hidden="true" /> Tạo kế hoạch <em>Sắp ra mắt</em>
-            </span>
-            <Button tone="ghost" disabled={Boolean(actionBusy)} onClick={() => setMoreInfoOpen(true)}>
-              <MessageSquarePlus size={17} aria-hidden="true" /> Yêu cầu bổ sung thông tin
-            </Button>
-            <Button tone="ghost" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
-              <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
-            </Button>
+        <ActionArea>
+          <PrimaryActionCard
+            icon={MessageSquarePlus}
+            title="Yêu cầu bổ sung thông tin"
+            subtitle="Gửi yêu cầu để bệnh nhân cung cấp thêm thông tin trước khi bạn tiếp tục xử lý."
+            buttonLabel="Yêu cầu bổ sung"
+            disabled={Boolean(actionBusy)}
+            onClick={() => setMoreInfoOpen(true)}
+          />
+          <div className="doctor-action-tiles">
+            <ActionTile
+              icon={UndoDot}
+              title="Trả lại hàng đợi"
+              subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
+              disabled={Boolean(actionBusy)}
+              onClick={() => setReleaseOpen(true)}
+            />
+            <ComingSoonTile
+              icon={FileText}
+              title="Tạo kế hoạch"
+              subtitle="Soạn kế hoạch phục hồi dinh dưỡng cho bệnh nhân."
+            />
           </div>
-          <button type="button" className="doctor-detail-action-reject" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
-            <XCircle size={16} aria-hidden="true" /> Từ chối yêu cầu
-          </button>
-        </ActionPanel>
+          <DangerZone>
+            <ActionTile
+              tone="danger"
+              icon={XCircle}
+              title="Từ chối yêu cầu"
+              subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
+              disabled={Boolean(actionBusy)}
+              onClick={() => setRejectOpen(true)}
+            />
+          </DangerZone>
+        </ActionArea>
       )}
 
       {request.status === "needMoreInformation" && (
@@ -365,16 +402,27 @@ function DetailContent({ request, onReload }) {
             <MessageSquarePlus size={16} aria-hidden="true" />
             <span>Đang chờ bệnh nhân bổ sung thông tin. Khi bệnh nhân cập nhật, yêu cầu sẽ tự quay lại "Đang xem xét".</span>
           </section>
-          <ActionPanel>
-            <div className="doctor-detail-actions-primary">
-              <Button tone="ghost" disabled={Boolean(actionBusy)} onClick={() => setReleaseOpen(true)}>
-                <UndoDot size={17} aria-hidden="true" /> Trả lại hàng đợi
-              </Button>
+          <ActionArea>
+            <div className="doctor-action-tiles">
+              <ActionTile
+                icon={UndoDot}
+                title="Trả lại hàng đợi"
+                subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
+                disabled={Boolean(actionBusy)}
+                onClick={() => setReleaseOpen(true)}
+              />
             </div>
-            <button type="button" className="doctor-detail-action-reject" disabled={Boolean(actionBusy)} onClick={() => setRejectOpen(true)}>
-              <XCircle size={16} aria-hidden="true" /> Từ chối yêu cầu
-            </button>
-          </ActionPanel>
+            <DangerZone>
+              <ActionTile
+                tone="danger"
+                icon={XCircle}
+                title="Từ chối yêu cầu"
+                subtitle="Đóng yêu cầu này và giải phóng lượt sử dụng đã giữ chỗ cho bệnh nhân."
+                disabled={Boolean(actionBusy)}
+                onClick={() => setRejectOpen(true)}
+              />
+            </DangerZone>
+          </ActionArea>
         </>
       )}
 
@@ -433,12 +481,68 @@ function DetailContent({ request, onReload }) {
   );
 }
 
-function ActionPanel({ children }) {
+function ActionArea({ children }) {
   return (
-    <section className="doctor-detail-action-panel">
-      <p className="doctor-detail-action-heading">Hành động</p>
-      <div className="doctor-detail-actions">{children}</div>
+    <section className="doctor-action-area">
+      <p className="doctor-action-area-eyebrow">Hành động tiếp theo</p>
+      {children}
     </section>
+  );
+}
+
+function PrimaryActionCard({ icon: Icon, title, subtitle, buttonLabel, onClick, loading, loadingLabel, disabled }) {
+  return (
+    <div className="doctor-primary-action">
+      <span className="doctor-primary-action-icon" aria-hidden="true"><Icon size={22} /></span>
+      <div className="doctor-primary-action-body">
+        <strong>{title}</strong>
+        <p>{subtitle}</p>
+      </div>
+      <Button
+        className="doctor-primary-action-cta"
+        size="lg"
+        loading={loading}
+        loadingLabel={loadingLabel}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {buttonLabel}
+      </Button>
+    </div>
+  );
+}
+
+function ActionTile({ tone = "default", icon: Icon, title, subtitle, onClick, disabled }) {
+  return (
+    <button type="button" className="doctor-action-tile" data-tone={tone} disabled={disabled} onClick={onClick}>
+      <span className="doctor-action-tile-icon" aria-hidden="true"><Icon size={18} /></span>
+      <span className="doctor-action-tile-body">
+        <strong>{title}</strong>
+        <p>{subtitle}</p>
+      </span>
+      <ArrowRight size={16} aria-hidden="true" className="doctor-action-tile-chevron" />
+    </button>
+  );
+}
+
+function ComingSoonTile({ icon: Icon, title, subtitle }) {
+  return (
+    <div className="doctor-action-tile is-coming-soon" title="Tính năng này sẽ sớm ra mắt">
+      <span className="doctor-action-tile-icon" aria-hidden="true"><Icon size={18} /></span>
+      <span className="doctor-action-tile-body">
+        <strong>{title} <em className="doctor-action-tile-badge">Sắp ra mắt</em></strong>
+        <p>{subtitle}</p>
+      </span>
+    </div>
+  );
+}
+
+function DangerZone({ children }) {
+  return (
+    <div className="doctor-action-danger-zone">
+      <p className="doctor-action-danger-label">Vùng nguy hiểm</p>
+      {children}
+    </div>
   );
 }
 
