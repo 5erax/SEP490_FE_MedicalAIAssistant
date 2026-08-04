@@ -146,17 +146,17 @@ const authCopy = {
     ],
   },
   forgot: {
-    eyebrow: "Bảo mật tài khoản",
-    title: "Khôi phục quyền truy cập.",
-    copy: "Nhập email gắn với tài khoản. Nếu thông tin hợp lệ, hệ thống sẽ gửi hướng dẫn khôi phục cho bạn.",
-    sideEyebrow: "Khôi phục tài khoản",
-    sideTitle: "Lấy lại tài khoản theo cách an toàn.",
-    sideCopy: "Thực hiện từng bước để xác minh tài khoản mà không làm lộ thông tin đăng nhập.",
-    privacyNote: "Thông báo gửi đi không xác nhận một email có tồn tại trên hệ thống hay không.",
+    eyebrow: "Quên mật khẩu",
+    title: "Đặt lại mật khẩu",
+    copy: "Nhập email đã đăng ký với MediMate để nhận mã xác thực.",
+    sideEyebrow: "Khôi phục mật khẩu",
+    sideTitle: "Đặt lại mật khẩu.",
+    sideCopy: "Nhận mã xác thực qua email và tạo mật khẩu mới.",
+    privacyNote: "Thông báo không xác nhận email có tồn tại trong hệ thống hay không.",
     points: [
-      { label: "Nhập email của tài khoản", icon: Mail },
-      { label: "Nhận mã hoặc hướng dẫn xác thực", icon: KeyRound },
-      { label: "Đặt lại mật khẩu ở bước tiếp theo", icon: LockKeyhole },
+      { label: "Nhập email đã đăng ký", icon: Mail },
+      { label: "Nhận mã xác thực", icon: KeyRound },
+      { label: "Tạo mật khẩu mới", icon: LockKeyhole },
     ],
   },
   reset: {
@@ -500,15 +500,41 @@ export function ForgotPasswordPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail) {
+      setMessage({
+        type: "error",
+        text: "Vui lòng nhập địa chỉ email.",
+      });
+      return;
+    }
+
     setSubmitting(true);
     setMessage(null);
+
     try {
-      const response = await authApi.forgotPassword(email);
-      const text = response.message || "Nếu email hợp lệ, hướng dẫn khôi phục sẽ được gửi đến bạn.";
-      setMessage({ type: "success", text });
-      showToast({ type: "success", title: "Đã gửi hướng dẫn", message: text });
-    } catch (error) {
-      setMessage({ type: "error", text: error.message });
+      await authApi.forgotPassword(normalizedEmail);
+
+      const successMessage =
+        "Nếu email này tồn tại trong hệ thống, mã xác thực đã được gửi.";
+
+      setMessage({
+        type: "success",
+        text: successMessage,
+      });
+
+      showToast({
+        type: "success",
+        title: "Đã gửi yêu cầu",
+        message: successMessage,
+      });
+    } catch {
+      setMessage({
+        type: "error",
+        text: "Chưa thể gửi mã xác thực. Vui lòng thử lại sau.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -516,29 +542,48 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthShell mode="forgot">
-      <form className="clean-form auth-form-clean" onSubmit={handleSubmit}>
+      <form
+        className="clean-form auth-form-clean auth-forgot-form"
+        onSubmit={handleSubmit}
+        aria-busy={submitting}
+      >
         <ApiMessage message={message} />
+
         <Field
-          label="Email"
+          label="Địa chỉ email"
           name="email"
           type="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="you@example.com"
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setMessage(null);
+          }}
+          placeholder="tenban@example.com"
           autoComplete="email"
+          inputMode="email"
           spellCheck={false}
+          hint="Mã xác thực sẽ được gửi đến địa chỉ email này."
+          disabled={submitting}
           required
         />
-        <div className="auth-recovery-note">
-          <KeyRound size={18} aria-hidden="true" />
-          <p>Sau khi nhận hướng dẫn, dùng mã xác thực ở bước đặt lại mật khẩu.</p>
-        </div>
-        <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>
-          {submitting ? "Đang gửi…" : "Gửi hướng dẫn"}
+
+        <button
+          className="btn btn-primary auth-submit"
+          type="submit"
+          disabled={submitting}
+        >
+          {submitting ? "Đang gửi mã…" : "Gửi mã xác thực"}
         </button>
-        <div className="auth-bottom-link">
-          <a href="/change-password">Tôi đã có mã xác thực</a>
-          <a href="/login">Quay lại đăng nhập</a>
+
+        <div className="auth-forgot-actions">
+          <p>
+            Đã có mã xác thực?{" "}
+            <a href="/change-password">Nhập mã</a>
+          </p>
+
+          <a className="auth-back-link" href="/login">
+            Quay lại đăng nhập
+          </a>
         </div>
       </form>
     </AuthShell>
