@@ -1,9 +1,9 @@
 .doctor-detail-page {
   display: grid;
-  gap: 20px;
+  gap: 16px;
   width: min(1180px, 100%);
   margin-inline: auto;
-  padding: 24px clamp(16px, 3vw, 48px) 56px;
+  padding: 22px clamp(16px, 3vw, 48px) 56px;
 }
 
 .doctor-detail-back {
@@ -96,6 +96,94 @@
   color: var(--color-danger);
 }
 
+/* Status progress stepper */
+
+.doctor-detail-steps {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+  padding: 16px clamp(4px, 2vw, 20px) 4px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  list-style: none;
+}
+
+.doctor-detail-steps li {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.doctor-detail-steps li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  z-index: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--color-line);
+}
+
+.doctor-detail-steps li.is-done:not(:last-child)::after {
+  background: var(--color-info-strong);
+}
+
+.doctor-detail-step-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--color-line-strong);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.doctor-detail-steps li.is-done .doctor-detail-step-dot {
+  border-color: var(--color-info-strong);
+  background: var(--color-info-strong);
+  color: #fff;
+}
+
+.doctor-detail-steps li.is-current .doctor-detail-step-dot {
+  border-color: var(--color-info-strong);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  box-shadow: 0 0 0 4px var(--color-info-bg);
+}
+
+.doctor-detail-steps li.is-danger .doctor-detail-step-dot {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.doctor-detail-step-label {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.doctor-detail-steps li.is-done .doctor-detail-step-label,
+.doctor-detail-steps li.is-current .doctor-detail-step-label {
+  color: var(--color-ink);
+}
+
+.doctor-detail-steps li.is-danger .doctor-detail-step-label {
+  color: var(--color-danger);
+}
+
 .doctor-detail-reason-code {
   display: inline-block;
   margin-right: 8px;
@@ -112,12 +200,12 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   align-items: start;
-  gap: 24px;
+  gap: 20px;
 }
 
 .doctor-detail-main {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -125,14 +213,15 @@
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  padding: 22px 24px;
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  padding: 16px 20px;
 }
 
 .doctor-detail-card-heading {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin: 0 0 10px;
+  margin: 0 0 6px;
   color: var(--color-info-strong);
   font-size: 11px;
   font-weight: 900;
@@ -144,7 +233,7 @@
   margin: 0;
   color: var(--color-ink);
   font-size: 14px;
-  line-height: 1.65;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
@@ -160,10 +249,10 @@
 
 .doctor-detail-sidebar {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   align-content: start;
   position: sticky;
-  top: 24px;
+  top: 22px;
 }
 
 .doctor-detail-side-card {
@@ -172,15 +261,23 @@
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  padding: 16px 18px;
 }
 
 .doctor-detail-side-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--color-muted);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.doctor-detail-side-heading svg {
+  color: var(--color-info-strong);
 }
 
 .doctor-detail-side-card .doctor-detail-countdown {
@@ -218,7 +315,7 @@
   position: relative;
   display: flex;
   gap: 12px;
-  padding-bottom: 18px;
+  padding-bottom: 20px;
   padding-left: 2px;
 }
 
@@ -229,18 +326,24 @@
 .doctor-detail-timeline li:not(:last-child)::before {
   content: "";
   position: absolute;
-  top: 16px;
+  top: 15px;
+  bottom: 0;
   left: 5px;
-  width: 1px;
-  height: calc(100% - 6px);
+  width: 2px;
   background: var(--color-line);
 }
 
+.doctor-detail-timeline li.is-done:not(:last-child)::before {
+  background: var(--color-info-strong);
+}
+
 .doctor-detail-timeline-dot {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
-  margin-top: 4px;
-  width: 11px;
-  height: 11px;
+  margin-top: 3px;
+  width: 12px;
+  height: 12px;
   border: 2px solid var(--color-line-strong);
   border-radius: 50%;
   background: var(--color-surface);
@@ -283,15 +386,16 @@
   font-size: 12px;
 }
 
-/* Action area — primary hero card, secondary tiles, danger zone */
+/* Action area — primary hero card, secondary list, danger zone */
 
 .doctor-action-area {
   display: grid;
-  gap: 18px;
+  gap: 16px;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  padding: 26px;
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  padding: 22px;
 }
 
 .doctor-action-area-eyebrow {
@@ -305,24 +409,24 @@
 .doctor-primary-action {
   display: flex;
   align-items: center;
-  gap: 18px;
-  border: 1px solid rgba(8, 127, 140, 0.22);
+  gap: 20px;
+  border: 1px solid rgba(8, 127, 140, 0.24);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #fff 55%, var(--color-info-bg) 165%);
-  padding: 22px 24px;
-  box-shadow: 0 18px 40px rgba(8, 127, 140, 0.12);
+  background: linear-gradient(135deg, #fff 50%, var(--color-info-bg) 175%);
+  padding: 26px 28px;
+  box-shadow: 0 20px 44px rgba(8, 127, 140, 0.16);
 }
 
 .doctor-primary-action-icon {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   flex: 0 0 auto;
-  border-radius: 14px;
+  border-radius: 16px;
   background: linear-gradient(135deg, var(--color-info), var(--color-info-strong));
   color: #fff;
-  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.28);
+  box-shadow: 0 12px 26px rgba(8, 127, 140, 0.32);
 }
 
 .doctor-primary-action-body {
@@ -333,7 +437,7 @@
 .doctor-primary-action-body strong {
   display: block;
   color: var(--color-ink);
-  font-size: 16px;
+  font-size: 17px;
 }
 
 .doctor-primary-action-body p {
@@ -348,34 +452,34 @@
   flex: 0 0 auto;
 }
 
+/* Secondary actions — light list rows, not individual boxed cards */
+
 .doctor-action-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
 }
 
 .doctor-action-tile {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
+  border: 0;
   background: var(--color-surface);
-  padding: 16px;
+  padding: 13px 16px;
   text-align: left;
   cursor: pointer;
-  transition: border-color var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast), background var(--motion-fast);
+  transition: background var(--motion-fast);
+}
+
+.doctor-action-tiles .doctor-action-tile:not(:last-child) {
+  border-bottom: 1px solid var(--color-line);
 }
 
 .doctor-action-tile:hover:not(:disabled) {
-  border-color: rgba(8, 127, 140, 0.35);
   background: var(--color-info-bg);
-  box-shadow: 0 10px 24px rgba(8, 127, 140, 0.1);
-  transform: translateY(-1px);
-}
-
-.doctor-action-tile:active:not(:disabled) {
-  transform: translateY(0);
 }
 
 .doctor-action-tile:disabled {
@@ -386,10 +490,10 @@
 .doctor-action-tile-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--color-info-bg);
   color: var(--color-info-strong);
 }
@@ -404,11 +508,11 @@
   align-items: center;
   gap: 8px;
   color: var(--color-ink);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .doctor-action-tile-body p {
-  margin-top: 3px;
+  margin-top: 2px;
   color: var(--color-muted);
   font-size: 12px;
   line-height: 1.5;
@@ -416,7 +520,6 @@
 
 .doctor-action-tile-chevron {
   flex: 0 0 auto;
-  margin-top: 8px;
   color: var(--color-muted);
   transition: transform var(--motion-fast), color var(--motion-fast);
 }
@@ -436,9 +539,7 @@
 }
 
 .doctor-action-tile[data-tone="danger"]:hover:not(:disabled) {
-  border-color: rgba(180, 35, 24, 0.35);
-  background: var(--color-danger-bg);
-  box-shadow: 0 10px 24px rgba(180, 35, 24, 0.1);
+  background: rgba(180, 35, 24, 0.08);
 }
 
 .doctor-action-tile[data-tone="danger"]:hover:not(:disabled) .doctor-action-tile-chevron {
@@ -446,8 +547,6 @@
 }
 
 .doctor-action-tile.is-coming-soon {
-  border-style: dashed;
-  border-color: var(--color-line-strong);
   background: var(--color-surface-soft);
   cursor: default;
 }
@@ -470,19 +569,48 @@
   text-transform: uppercase;
 }
 
+/* Danger zone — visually separated, light red container */
+
 .doctor-action-danger-zone {
   display: grid;
-  gap: 10px;
-  border-top: 1px dashed var(--color-line);
-  padding-top: 18px;
+  gap: 12px;
+  border: 1px solid rgba(180, 35, 24, 0.18);
+  border-radius: 14px;
+  background: var(--color-danger-bg);
+  padding: 16px 18px;
 }
 
-.doctor-action-danger-label {
+.doctor-action-danger-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.doctor-action-danger-header svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-danger);
+}
+
+.doctor-action-danger-title {
   color: var(--color-danger);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.doctor-action-danger-desc {
+  margin-top: 2px;
+  color: var(--color-danger);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.doctor-action-danger-zone .doctor-action-tile {
+  border: 1px solid rgba(180, 35, 24, 0.22);
+  border-radius: 10px;
+  background: var(--color-surface);
 }
 
 .doctor-detail-plan-note {
@@ -543,8 +671,8 @@
     width: 100%;
   }
 
-  .doctor-action-tiles {
-    grid-template-columns: 1fr;
+  .doctor-detail-step-label {
+    font-size: 10px;
   }
 }
 

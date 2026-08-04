@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Bone,
   CalendarClock,
+  Check,
   ClipboardCheck,
   Clock3,
   FileText,
+  History,
+  Info,
   MessageSquarePlus,
   RefreshCw,
   Send,
@@ -60,6 +64,15 @@ function getDiseaseInfo(value) {
 
 function getStatusMeta(value) {
   return STATUS_META[value] ?? { label: value || "—", tone: "info" };
+}
+
+const TERMINAL_STATUSES = new Set(["published", "rejected", "cancelled", "expired"]);
+
+function getStepIndex(status) {
+  if (status === "assigned") return 1;
+  if (status === "inReview" || status === "needMoreInformation") return 2;
+  if (TERMINAL_STATUSES.has(status)) return 3;
+  return 0;
 }
 
 function formatDate(value) {
@@ -305,6 +318,8 @@ function DetailContent({ request, onReload }) {
         </button>
       </header>
 
+      <ProgressSteps status={request.status} />
+
       <div className="doctor-detail-layout">
         <div className="doctor-detail-main">
           <section className="doctor-detail-card">
@@ -345,7 +360,9 @@ function DetailContent({ request, onReload }) {
 
         <aside className="doctor-detail-sidebar">
           <section className="doctor-detail-side-card">
-            <p className="doctor-detail-side-heading">Trạng thái</p>
+            <p className="doctor-detail-side-heading">
+              <Activity size={13} aria-hidden="true" /> Trạng thái
+            </p>
             <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
             {isAssignmentActive && countdown && (
               <div className={`doctor-detail-countdown ${countdown.remaining <= 0 ? "is-expired" : ""}`}>
@@ -356,12 +373,16 @@ function DetailContent({ request, onReload }) {
           </section>
 
           <section className="doctor-detail-side-card">
-            <p className="doctor-detail-side-heading">Dòng thời gian</p>
+            <p className="doctor-detail-side-heading">
+              <History size={13} aria-hidden="true" /> Dòng thời gian
+            </p>
             <Timeline steps={timelineSteps} />
           </section>
 
           <section className="doctor-detail-side-card">
-            <p className="doctor-detail-side-heading">Thông tin nhanh</p>
+            <p className="doctor-detail-side-heading">
+              <Info size={13} aria-hidden="true" /> Thông tin nhanh
+            </p>
             <dl className="doctor-detail-quick-info">
               <div>
                 <dt>Mã yêu cầu</dt>
@@ -520,6 +541,34 @@ function DetailContent({ request, onReload }) {
   );
 }
 
+function ProgressSteps({ status }) {
+  const stepIndex = getStepIndex(status);
+  const isFailure = ["rejected", "cancelled", "expired"].includes(status);
+  const finalLabel = status === "published" ? "Hoàn tất" : isFailure ? getStatusMeta(status).label : "Hoàn tất";
+  const steps = [
+    { label: "Đã gửi" },
+    { label: "Đã tiếp nhận" },
+    { label: "Đang xem xét" },
+    { label: finalLabel, danger: isFailure },
+  ];
+
+  return (
+    <ol className="doctor-detail-steps">
+      {steps.map((step, index) => {
+        const state = index < stepIndex ? "done" : index === stepIndex ? "current" : "pending";
+        return (
+          <li key={step.label} className={`is-${state}${step.danger && state !== "pending" ? " is-danger" : ""}`}>
+            <span className="doctor-detail-step-dot" aria-hidden="true">
+              {state === "done" ? <Check size={12} /> : index + 1}
+            </span>
+            <span className="doctor-detail-step-label">{step.label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function Timeline({ steps }) {
   return (
     <ol className="doctor-detail-timeline">
@@ -598,7 +647,13 @@ function ComingSoonTile({ icon: Icon, title, subtitle }) {
 function DangerZone({ children }) {
   return (
     <div className="doctor-action-danger-zone">
-      <p className="doctor-action-danger-label">Vùng nguy hiểm</p>
+      <div className="doctor-action-danger-header">
+        <AlertTriangle size={15} aria-hidden="true" />
+        <div>
+          <p className="doctor-action-danger-title">Vùng nguy hiểm</p>
+          <p className="doctor-action-danger-desc">Hành động dưới đây sẽ đóng yêu cầu này và không thể hoàn tác.</p>
+        </div>
+      </div>
       {children}
     </div>
   );
