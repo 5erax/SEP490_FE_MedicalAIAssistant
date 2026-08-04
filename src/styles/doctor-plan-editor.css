@@ -1,0 +1,412 @@
+.doctor-plan-page {
+  display: grid;
+  gap: 16px;
+  width: min(1180px, 100%);
+  margin-inline: auto;
+  padding: 22px clamp(16px, 3vw, 48px) 56px;
+}
+
+.doctor-plan-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  justify-self: start;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-info-strong);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.doctor-plan-back:hover {
+  text-decoration: underline;
+}
+
+.doctor-plan-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.doctor-plan-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.doctor-plan-eyebrow {
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-header h1 {
+  margin-top: 2px;
+  font-size: clamp(21px, 2.6vw, 26px);
+  color: var(--color-ink);
+}
+
+.doctor-plan-refresh {
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  cursor: pointer;
+}
+
+.doctor-plan-refresh:hover {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+/* Two-column dashboard layout: main content + meta sidebar */
+
+.doctor-plan-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 20px;
+}
+
+.doctor-plan-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.doctor-plan-sidebar {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  position: sticky;
+  top: 22px;
+}
+
+.doctor-plan-side-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  padding: 16px 18px;
+}
+
+.doctor-plan-side-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-side-heading svg {
+  color: var(--color-info-strong);
+}
+
+.doctor-plan-quick-info {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.doctor-plan-quick-info dt {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.doctor-plan-quick-info dd {
+  margin: 2px 0 0;
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .doctor-plan-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-plan-sidebar {
+    position: static;
+  }
+}
+
+.doctor-plan-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  padding: 20px 22px;
+}
+
+.doctor-plan-phases-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-style: dashed;
+  border-color: var(--color-line-strong);
+  background: var(--color-surface-soft);
+}
+
+.doctor-plan-phases-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  background: var(--color-line);
+  color: var(--color-muted);
+}
+
+.doctor-plan-soon-badge {
+  display: inline-block;
+  margin-left: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-line);
+  padding: 2px 8px;
+  color: var(--color-muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.doctor-plan-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doctor-plan-card-heading {
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.doctor-plan-grid dt {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-grid dd {
+  margin: 5px 0 0;
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.doctor-plan-grid-wide {
+  grid-column: 1 / -1;
+}
+
+.doctor-plan-empty-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.doctor-plan-danger-zone {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(180, 35, 24, 0.18);
+  border-radius: 14px;
+  background: var(--color-danger-bg);
+  padding: 16px 18px;
+}
+
+.doctor-plan-danger-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.doctor-plan-danger-header svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-danger);
+}
+
+.doctor-plan-danger-title {
+  color: var(--color-danger);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-danger-desc {
+  margin-top: 2px;
+  color: var(--color-danger);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.doctor-plan-danger-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(180, 35, 24, 0.22);
+  border-radius: 10px;
+  background: var(--color-surface);
+  padding: 13px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+
+.doctor-plan-danger-action:hover:not(:disabled) {
+  background: rgba(180, 35, 24, 0.08);
+}
+
+.doctor-plan-danger-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.doctor-plan-danger-action-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.doctor-plan-danger-action-body strong {
+  display: block;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.doctor-plan-danger-action-body p {
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 560px) {
+  .doctor-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-plan-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Edit plan header dialog */
+
+.doctor-plan-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.55);
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+
+.doctor-plan-modal {
+  width: min(520px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.doctor-plan-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 20px 22px 16px;
+}
+
+.doctor-plan-modal-header > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.doctor-plan-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.doctor-plan-modal-header button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.doctor-plan-modal form {
+  display: grid;
+  gap: 16px;
+  padding: 18px 22px 22px;
+}
+
+.doctor-plan-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

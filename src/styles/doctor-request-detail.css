@@ -712,29 +712,6 @@
   color: var(--color-danger);
 }
 
-.doctor-action-tile.is-coming-soon {
-  background: var(--color-surface-soft);
-  cursor: default;
-}
-
-.doctor-action-tile.is-coming-soon .doctor-action-tile-icon {
-  background: var(--color-line);
-  color: var(--color-muted);
-}
-
-.doctor-action-tile-badge {
-  display: inline-block;
-  border-radius: var(--radius-pill);
-  background: var(--color-line);
-  padding: 2px 8px;
-  color: var(--color-muted);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
 /* Danger zone — visually separated, light red container */
 
 .doctor-action-danger-zone {

@@ -27,10 +27,10 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { Badge, Button, Dialog, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
+import { Badge, Button, Dialog, ErrorState, Field, LoadingState, Select, Textarea, TextInput } from "../components/ui";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
-import { doctorRecoveryPlanRequestsApi } from "../services/api";
+import { doctorRecoveryPlanRequestsApi, normalizeDoctorPlanDetail } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
 import "../styles/doctor-request-detail.css";
 
@@ -282,6 +282,7 @@ function DetailContent({ request, onReload }) {
   const [moreInfoOpen, setMoreInfoOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [createDraftOpen, setCreateDraftOpen] = useState(false);
 
   const [clinicalContext, setClinicalContext] = useState(null);
   const [clinicalLoading, setClinicalLoading] = useState(true);
@@ -324,6 +325,30 @@ function DetailContent({ request, onReload }) {
   }[request.status];
   if (finalStepLabel) {
     timelineSteps.push({ label: finalStepLabel, timestamp: null, tone: statusMeta.tone, isFinal: true });
+  }
+
+  async function handleCreateDraft(payload) {
+    setActionBusy("createDraft");
+    try {
+      const response = await doctorRecoveryPlanRequestsApi.createDraft(request.id, payload);
+      const { plan } = normalizeDoctorPlanDetail(response);
+      setCreateDraftOpen(false);
+      if (plan?.id) {
+        navigate(`/app/staff/recovery-plans/${plan.id}`);
+      } else {
+        showToast({ type: "success", title: "Đã tạo bản nháp kế hoạch" });
+        await onReload();
+      }
+    } catch (requestError) {
+      const mapped = getActionErrorMessage(requestError, "Chưa thể tạo kế hoạch. Vui lòng thử lại.");
+      showToast({ type: "error", title: "Không thể tạo kế hoạch", message: mapped.message });
+      if (["ASSIGNMENT_EXPIRED", "INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) {
+        setCreateDraftOpen(false);
+        await onReload();
+      }
+    } finally {
+      setActionBusy("");
+    }
   }
 
   async function handleStartReview() {
@@ -494,26 +519,41 @@ function DetailContent({ request, onReload }) {
 
           {request.status === "inReview" && (
             <ActionArea>
-              <PrimaryActionCard
-                icon={MessageSquarePlus}
-                title="Yêu cầu bổ sung thông tin"
-                subtitle="Gửi yêu cầu để bệnh nhân cung cấp thêm thông tin trước khi bạn tiếp tục xử lý."
-                buttonLabel="Yêu cầu bổ sung"
-                disabled={Boolean(actionBusy)}
-                onClick={() => setMoreInfoOpen(true)}
-              />
+              {request.recoveryPlanId ? (
+                <PrimaryActionCard
+                  icon={FileText}
+                  title="Tiếp tục soạn kế hoạch"
+                  subtitle="Mở lại bản nháp kế hoạch phục hồi dinh dưỡng đang soạn cho bệnh nhân."
+                  buttonLabel="Mở kế hoạch"
+                  disabled={Boolean(actionBusy)}
+                  onClick={() => navigate(`/app/staff/recovery-plans/${request.recoveryPlanId}`)}
+                />
+              ) : (
+                <PrimaryActionCard
+                  icon={FileText}
+                  title="Tạo kế hoạch"
+                  subtitle="Bắt đầu soạn kế hoạch phục hồi dinh dưỡng cho bệnh nhân dựa trên bối cảnh lâm sàng ở trên."
+                  buttonLabel="Tạo kế hoạch"
+                  loading={actionBusy === "createDraft"}
+                  loadingLabel="Đang tạo…"
+                  disabled={Boolean(actionBusy)}
+                  onClick={() => setCreateDraftOpen(true)}
+                />
+              )}
               <div className="doctor-action-tiles">
+                <ActionTile
+                  icon={MessageSquarePlus}
+                  title="Yêu cầu bổ sung thông tin"
+                  subtitle="Gửi yêu cầu để bệnh nhân cung cấp thêm thông tin trước khi bạn tiếp tục xử lý."
+                  disabled={Boolean(actionBusy)}
+                  onClick={() => setMoreInfoOpen(true)}
+                />
                 <ActionTile
                   icon={UndoDot}
                   title="Trả lại hàng đợi"
                   subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
                   disabled={Boolean(actionBusy)}
                   onClick={() => setReleaseOpen(true)}
-                />
-                <ComingSoonTile
-                  icon={FileText}
-                  title="Tạo kế hoạch"
-                  subtitle="Soạn kế hoạch phục hồi dinh dưỡng cho bệnh nhân."
                 />
               </div>
               <DangerZone>
@@ -636,6 +676,14 @@ function DetailContent({ request, onReload }) {
           submitting={actionBusy === "reject"}
           onClose={() => setRejectOpen(false)}
           onSubmit={handleReject}
+        />
+      )}
+
+      {createDraftOpen && (
+        <CreatePlanDialog
+          submitting={actionBusy === "createDraft"}
+          onClose={() => setCreateDraftOpen(false)}
+          onSubmit={handleCreateDraft}
         />
       )}
     </>
@@ -878,18 +926,6 @@ function ActionTile({ tone = "default", icon: Icon, title, subtitle, onClick, di
   );
 }
 
-function ComingSoonTile({ icon: Icon, title, subtitle }) {
-  return (
-    <div className="doctor-action-tile is-coming-soon" title="Tính năng này sẽ sớm ra mắt">
-      <span className="doctor-action-tile-icon" aria-hidden="true"><Icon size={18} /></span>
-      <span className="doctor-action-tile-body">
-        <strong>{title} <em className="doctor-action-tile-badge">Sắp ra mắt</em></strong>
-        <p>{subtitle}</p>
-      </span>
-    </div>
-  );
-}
-
 function DangerZone({ children }) {
   return (
     <div className="doctor-action-danger-zone">
@@ -1016,6 +1052,91 @@ function RejectDialog({ submitting, onClose, onSubmit }) {
           <Button type="button" tone="secondary" onClick={onClose} disabled={submitting}>Hủy</Button>
           <Button type="submit" tone="danger" loading={submitting} loadingLabel="Đang từ chối…">
             <XCircle size={16} aria-hidden="true" /> Từ chối yêu cầu
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+function CreatePlanDialog({ submitting, onClose, onSubmit }) {
+  const [planName, setPlanName] = useState("");
+  const [summary, setSummary] = useState("");
+  const [durationDays, setDurationDays] = useState("14");
+  const [recheckInstruction, setRecheckInstruction] = useState("");
+  const [errors, setErrors] = useState({});
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const trimmedName = planName.trim();
+    const days = Number(durationDays);
+    const nextErrors = {};
+    if (!trimmedName) nextErrors.planName = "Tên kế hoạch là bắt buộc.";
+    if (!Number.isInteger(days) || days <= 0) nextErrors.durationDays = "Số ngày phải là số nguyên dương.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    onSubmit({
+      planName: trimmedName,
+      summary: summary.trim() || null,
+      durationDays: days,
+      recheckInstruction: recheckInstruction.trim() || null,
+    });
+  }
+
+  return (
+    <Dialog
+      backdropClassName="doctor-action-modal-backdrop"
+      className="doctor-action-modal"
+      labelledBy="doctor-create-plan-title"
+      onClose={submitting ? () => {} : onClose}
+      closeOnBackdrop={!submitting}
+      closeOnEscape={!submitting}
+    >
+      <header className="doctor-action-modal-header">
+        <span aria-hidden="true"><FileText size={20} /></span>
+        <h2 id="doctor-create-plan-title">Tạo kế hoạch phục hồi</h2>
+        <button type="button" aria-label="Đóng" onClick={onClose} disabled={submitting}><X size={20} aria-hidden="true" /></button>
+      </header>
+      <form onSubmit={handleSubmit} noValidate>
+        <Field label="Tên kế hoạch" required error={errors.planName}>
+          <TextInput
+            value={planName}
+            maxLength={200}
+            placeholder="Ví dụ: Kế hoạch phục hồi hô hấp 14 ngày"
+            onChange={(event) => { setPlanName(event.target.value); setErrors((current) => ({ ...current, planName: "" })); }}
+            autoFocus
+          />
+        </Field>
+        <Field label="Tóm tắt" optional>
+          <Textarea
+            rows={3}
+            maxLength={1000}
+            value={summary}
+            placeholder="Mô tả ngắn về mục tiêu và hướng tiếp cận của kế hoạch."
+            onChange={(event) => setSummary(event.target.value)}
+          />
+        </Field>
+        <Field label="Số ngày thực hiện" required error={errors.durationDays}>
+          <TextInput
+            type="number"
+            min="1"
+            value={durationDays}
+            onChange={(event) => { setDurationDays(event.target.value); setErrors((current) => ({ ...current, durationDays: "" })); }}
+          />
+        </Field>
+        <Field label="Hướng dẫn tái khám" optional>
+          <Textarea
+            rows={2}
+            maxLength={500}
+            value={recheckInstruction}
+            placeholder="Ví dụ: Tái khám sau 14 ngày hoặc khi có dấu hiệu bất thường."
+            onChange={(event) => setRecheckInstruction(event.target.value)}
+          />
+        </Field>
+        <div className="doctor-action-modal-actions">
+          <Button type="button" tone="secondary" onClick={onClose} disabled={submitting}>Hủy</Button>
+          <Button type="submit" loading={submitting} loadingLabel="Đang tạo…">
+            <Send size={16} aria-hidden="true" /> Tạo kế hoạch
           </Button>
         </div>
       </form>
