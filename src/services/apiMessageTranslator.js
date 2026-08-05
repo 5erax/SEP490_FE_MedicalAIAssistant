@@ -108,6 +108,14 @@ const EXACT_MESSAGES = Object.freeze({
     "Trợ lý AI hiện không khả dụng.",
   "The AI chatbot service is currently unavailable. Please try again later.":
     "Dịch vụ trợ lý AI hiện không khả dụng. Vui lòng thử lại sau.",
+
+  // Payments (admin)
+  "Invalid user id.":
+    "Mã người dùng không hợp lệ.",
+  "Invalid payment id.":
+    "Mã giao dịch thanh toán không hợp lệ.",
+  "Payment not found.":
+    "Không tìm thấy giao dịch thanh toán.",
 });
 
 const FIELD_LABELS = Object.freeze({
