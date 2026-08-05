@@ -58,7 +58,11 @@ export {
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
 export { consultationSessionsApi } from "./consultationSessionService";
-export { labIndicatorsApi } from "./labIndicatorService";
+export {
+  getLabIndicatorApiMessage,
+  LAB_INDICATOR_MESSAGES,
+  labIndicatorsApi,
+} from "./labIndicatorService";
 export { getLabTestApiMessage, labTestsApi } from "./labTestService";
 export { userMedicationsApi } from "./userMedicationService";
 export { subscriptionUsageApi } from "./subscriptionUsageService";
