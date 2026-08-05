@@ -483,3 +483,26 @@ test("expired token during submission switches to the invalid state", async ({ p
     "Liên kết đăng ký đã hết hạn. Vui lòng đề nghị quản trị viên gửi lời mời mới.",
   )).toBeVisible();
 });
+
+test("invitation shows a countdown built from the validated expiresAt", async ({ page }) => {
+  await mockLinkedInvitation(page, "countdown-token", {
+    expiresAt: new Date(Date.now() + 95_000).toISOString(),
+  });
+
+  await page.goto("/register-doctor?token=countdown-token", { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("Lời mời còn hiệu lực", { exact: true })).toBeVisible();
+  const countdownText = await page.locator(".doctor-expiry-notice strong").innerText();
+  expect(countdownText).toMatch(/^\d{2}:\d{2}$/);
+});
+
+test("invitation moves to the invalid state on its own once the countdown reaches zero", async ({ page }) => {
+  await mockLinkedInvitation(page, "expiring-token", {
+    expiresAt: new Date(Date.now() + 500).toISOString(),
+  });
+
+  await page.goto("/register-doctor?token=expiring-token", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "Không thể tiếp tục đăng ký." })).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText(
+    "Liên kết đăng ký đã hết hạn. Vui lòng đề nghị quản trị viên gửi lời mời mới.",
+  )).toBeVisible();
+});
