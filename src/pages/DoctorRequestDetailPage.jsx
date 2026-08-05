@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -32,6 +32,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { doctorRecoveryPlanRequestsApi, normalizeDoctorPlanDetail } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
+import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import "../styles/doctor-request-detail.css";
 
 const MAX_REASON_LENGTH = 2000;
@@ -221,6 +222,20 @@ export default function DoctorRequestDetailPage({ requestId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const refetchTimerRef = useRef(null);
+
+  async function refreshRequest() {
+    // Silent background resync for realtime events - unlike load(), this
+    // never toggles the full-page loading/error state, so a socket event
+    // doesn't flash a spinner over the whole page the doctor is reading.
+    try {
+      const response = await doctorRecoveryPlanRequestsApi.get(requestId);
+      setRequest(response?.data ?? null);
+    } catch {
+      // Ignored - the manual refresh button and next real navigation will
+      // surface any persistent problem instead.
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -242,6 +257,23 @@ export default function DoctorRequestDetailPage({ requestId }) {
 
   useEffect(() => {
     queueMicrotask(() => void load());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestId]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
+      if (event.type === "request" || event.type === "plan" || event.refetch) {
+        window.clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = window.setTimeout(() => {
+          void refreshRequest();
+        }, 250);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(refetchTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
 
