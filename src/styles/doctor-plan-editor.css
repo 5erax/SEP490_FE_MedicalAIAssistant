@@ -160,13 +160,14 @@
   padding: 20px 22px;
 }
 
-.doctor-plan-phases-card {
+.doctor-plan-phases-empty {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  border-style: dashed;
-  border-color: var(--color-line-strong);
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-md);
   background: var(--color-surface-soft);
+  padding: 16px;
 }
 
 .doctor-plan-phases-icon {
@@ -180,19 +181,113 @@
   color: var(--color-muted);
 }
 
-.doctor-plan-soon-badge {
-  display: inline-block;
-  margin-left: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--color-line);
-  padding: 2px 8px;
+.doctor-plan-phase-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-plan-phase-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  padding: 14px 16px;
+}
+
+.doctor-plan-phase-info {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 3px;
+}
+
+.doctor-plan-phase-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.doctor-plan-phase-actions button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  cursor: pointer;
+}
+
+.doctor-plan-phase-actions button:hover:not(:disabled) {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+.doctor-plan-phase-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.doctor-plan-phase-actions button.is-danger {
+  color: var(--color-danger);
+}
+
+.doctor-plan-phase-actions button.is-danger:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.doctor-plan-phase-info strong {
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.doctor-plan-phase-days {
+  color: var(--color-info-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.doctor-plan-phase-meta {
   color: var(--color-muted);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  vertical-align: middle;
+  font-size: 12px;
+}
+
+.doctor-plan-phase-instruction {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.doctor-plan-modal-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.doctor-plan-phase-gaps {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--color-warning-bg);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  padding: 10px 14px;
+  color: var(--color-warning);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.doctor-plan-phase-gaps svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
 }
 
 .doctor-plan-card-head {
@@ -335,6 +430,10 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .doctor-plan-modal-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Edit plan header dialog */
@@ -403,6 +502,16 @@
   display: grid;
   gap: 16px;
   padding: 18px 22px 22px;
+}
+
+.doctor-plan-modal-note {
+  margin: -6px 0 0;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  padding: 10px 12px;
+  color: var(--color-info-strong);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .doctor-plan-modal-actions {
