@@ -8,6 +8,7 @@ import {
   getClinicalQuestionBooleanPrompts,
   getStoredAuth,
   isClinicalQuestionAnswered,
+  SYMPTOM_ANALYSIS_MESSAGES,
 } from "../services/api";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
@@ -327,6 +328,10 @@ export default function DashboardPage() {
     : 0;
   const showIntakeForm = ["idle", "loading-questions", "no-questions"].includes(status);
   const showQuestionFlow = ["questions", "submitting"].includes(status) && currentQuestion;
+  const symptomInputError = [
+    SYMPTOM_ANALYSIS_MESSAGES.inputRequired,
+    SYMPTOM_ANALYSIS_MESSAGES.inputTooLong,
+  ].includes(error) ? error : "";
 
   useEffect(() => {
     if (isAdminSession) {
@@ -469,7 +474,7 @@ export default function DashboardPage() {
         </ol>
 
         {showIntakeForm && (
-          <form className="studio-chatbox" onSubmit={(event) => {
+          <form className="studio-chatbox" noValidate onSubmit={(event) => {
             event.preventDefault();
             startDiagnosis();
           }}>
@@ -487,7 +492,8 @@ export default function DashboardPage() {
             <Field
               id="specialty-symptoms"
               label="Triệu chứng bạn đang gặp"
-              hint="Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm để gợi ý phù hợp hơn."
+              hint="Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm. Tối đa 2000 ký tự."
+              error={symptomInputError}
               required
             >
               <Textarea
@@ -511,7 +517,7 @@ export default function DashboardPage() {
                 size="lg"
                 loading={loading}
                 loadingLabel="Đang tạo câu hỏi..."
-                disabled={!input.trim()}
+                disabled={loading}
                 type="submit"
                 aria-label="Gửi triệu chứng"
                 title="Gửi triệu chứng"
@@ -532,12 +538,12 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {error && (
+        {error && !symptomInputError && (
           <Alert tone="danger" title="Không thể kết nối dịch vụ gợi ý chuyên khoa" live>
             {error}
           </Alert>
         )}
-        {error && (
+        {error && !symptomInputError && (
           <div className="studio-recovery-actions">
             <Button type="button" tone="secondary" onClick={() => resetDiagnosis()}>Quay lại biểu mẫu</Button>
             <Button type="button" onClick={() => startDiagnosis()}>Thử lại</Button>

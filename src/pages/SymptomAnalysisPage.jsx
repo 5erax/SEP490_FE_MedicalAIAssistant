@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../router/navigation";
 import {
   buildClinicalQuestionAnswerItems,
+  getSymptomAnalysisApiMessage,
+  getSymptomInputError,
+  SYMPTOM_ANALYSIS_MESSAGES,
   symptomAnalysisApi,
 } from "../services/api";
 
@@ -163,6 +166,10 @@ export default function SymptomAnalysisPage() {
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const inputError = [
+    SYMPTOM_ANALYSIS_MESSAGES.inputRequired,
+    SYMPTOM_ANALYSIS_MESSAGES.inputTooLong,
+  ].includes(error) ? error : "";
 
   const answeredCount = Object.values(answers).filter((value) => value === true || value === false).length;
   const canSubmitAnswers = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
@@ -194,7 +201,11 @@ export default function SymptomAnalysisPage() {
   async function startDiagnosis(event) {
     event.preventDefault();
     const symptomText = userInput.trim();
-    if (!symptomText) return;
+    const validationError = getSymptomInputError(userInput);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     setError("");
     setResult(null);
@@ -210,7 +221,10 @@ export default function SymptomAnalysisPage() {
       setQuestions(data.questions);
       setStatus(data.questions.length ? "questions" : "no-questions");
     } catch (requestError) {
-      setError(requestError.message || "Không thể tạo câu hỏi làm rõ. Vui lòng thử lại.");
+      setError(getSymptomAnalysisApiMessage(
+        requestError,
+        "Không thể tạo câu hỏi làm rõ. Vui lòng thử lại.",
+      ));
       setStatus("idle");
     }
   }
@@ -241,7 +255,10 @@ export default function SymptomAnalysisPage() {
       });
       setStatus("result");
     } catch (requestError) {
-      setError(requestError.message || "Không thể gửi câu trả lời. Vui lòng thử lại.");
+      setError(getSymptomAnalysisApiMessage(
+        requestError,
+        "Không thể gửi câu trả lời. Vui lòng thử lại.",
+      ));
       setStatus("questions");
     }
   }
@@ -277,17 +294,24 @@ export default function SymptomAnalysisPage() {
           ))}
         </ol>
 
-        <form className="symptom-card" onSubmit={startDiagnosis}>
+        <form className="symptom-card" onSubmit={startDiagnosis} noValidate>
           <label className="symptom-input" htmlFor="symptom-input">
             <span>Triệu chứng của bạn</span>
             <textarea
               id="symptom-input"
               value={userInput}
-              onChange={(event) => setUserInput(event.target.value)}
+              onChange={(event) => {
+                setUserInput(event.target.value);
+                if (error) setError("");
+              }}
               placeholder="Ví dụ: Tôi bị đau đầu 3 ngày, sốt nhẹ, mệt mỏi và buồn nôn..."
               rows={5}
+              required
+              aria-invalid={inputError ? "true" : undefined}
+              aria-describedby={`symptom-input-hint${inputError ? " symptom-input-error" : ""}`}
               disabled={status === "loading-questions" || status === "submitting"}
             />
+            <small id="symptom-input-hint">Tối đa 2000 ký tự.</small>
           </label>
           <div className="chip-row" aria-label="Triệu chứng nhanh">
             {QUICK_SYMPTOMS.map((item) => (
@@ -296,12 +320,12 @@ export default function SymptomAnalysisPage() {
               </button>
             ))}
           </div>
-          <button className="primary-action" type="submit" disabled={!userInput.trim() || status === "loading-questions"}>
+          <button className="primary-action" type="submit" disabled={status === "loading-questions"}>
             {status === "loading-questions" ? "Đang tạo câu hỏi..." : "Bắt đầu sàng lọc"}
           </button>
         </form>
 
-        {error && <div className="diagnosis-alert" role="alert">{error}</div>}
+        {error && <div id={inputError ? "symptom-input-error" : undefined} className="diagnosis-alert" role="alert">{error}</div>}
 
         {status === "loading-questions" && (
           <section className="symptom-card status-card" role="status">

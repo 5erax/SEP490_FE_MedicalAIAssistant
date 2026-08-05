@@ -42,8 +42,11 @@ export {
   getClinicalQuestionAnswerMode,
   getClinicalQuestionAnswerOptions,
   getClinicalQuestionBooleanPrompts,
+  getSymptomAnalysisApiMessage,
+  getSymptomInputError,
   isClinicalQuestionAnswered,
   readAnalysisPayload,
+  SYMPTOM_ANALYSIS_MESSAGES,
   symptomAnalysisApi,
 } from "./symptomAnalysisService";
 export {
