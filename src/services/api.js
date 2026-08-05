@@ -25,7 +25,10 @@ export { doctorInvitationsApi } from "./doctorInvitationService";
 export { feedbackReviewsApi } from "./feedbackReviewService";
 export { icdChaptersApi } from "./icdChapterService";
 export { patientProfilesApi } from "./patientProfileService";
-export { clinicalQuestionsApi } from "./clinicalQuestionService";
+export {
+  clinicalQuestionsApi,
+  getClinicalQuestionApiMessage,
+} from "./clinicalQuestionService";
 export {
   buildClinicalQuestionAnswerItems,
   getClinicalQuestionAnswerMode,
@@ -52,6 +55,6 @@ export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
 export { consultationSessionsApi } from "./consultationSessionService";
 export { labIndicatorsApi } from "./labIndicatorService";
-export { labTestsApi } from "./labTestService";
+export { getLabTestApiMessage, labTestsApi } from "./labTestService";
 export { userMedicationsApi } from "./userMedicationService";
 export { subscriptionUsageApi } from "./subscriptionUsageService";

@@ -182,8 +182,8 @@ const QUESTION_CATALOG_CONFIG = {
   fields: [
     { name: "chapterId", label: "Chương ICD", required: true, type: "icd-select" },
     { name: "questionVi", label: "Câu hỏi tiếng Việt", required: true, multiline: true },
-    { name: "englishPrefix", label: "Câu hỏi tiếng Anh", required: true, multiline: true },
-    { name: "sortOrder", label: "Thứ tự", required: true, type: "number", min: 0, step: 1, serialize: Number },
+    { name: "englishPrefix", label: "Câu hỏi tiếng Anh", nullable: true, multiline: true },
+    { name: "sortOrder", label: "Thứ tự", nullable: true, defaultValue: 0, type: "number", min: 0, step: 1, serialize: Number },
     { name: "answers", label: "Các đáp án", type: "answers" },
   ],
 };

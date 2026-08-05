@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getClinicalQuestionApiMessage } from "../../services/clinicalQuestionService";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 const DEFAULT_FILTERS = {
@@ -55,7 +56,12 @@ function getChapterCode(item, chapterById) {
 }
 
 function createEmptyForm(fields) {
-  return Object.fromEntries(fields.map((field) => [field.name, field.type === "answers" ? [] : ""]));
+  return Object.fromEntries(fields.map((field) => [
+    field.name,
+    field.type === "answers"
+      ? []
+      : field.defaultValue ?? "",
+  ]));
 }
 
 function answersDictionaryToRows(answers) {
@@ -78,6 +84,47 @@ function answersRowsToDictionary(rows) {
   }, {});
 }
 
+function serializeFieldValue(field, value) {
+  if (field.type === "answers") {
+    return answersRowsToDictionary(value ?? []);
+  }
+
+  const normalizedValue =
+    typeof value === "string"
+      ? value.trim()
+      : value;
+
+  if (
+    normalizedValue === "" ||
+    normalizedValue === null ||
+    normalizedValue === undefined
+  ) {
+    return field.nullable ? null : "";
+  }
+
+  return field.serialize
+    ? field.serialize(normalizedValue)
+    : normalizedValue;
+}
+
+function serializeForm(fields, form) {
+  return Object.fromEntries(fields.map((field) => [
+    field.name,
+    serializeFieldValue(field, form[field.name]),
+  ]));
+}
+
+function buildPartialUpdate(fields, form, initialForm) {
+  const currentValues = serializeForm(fields, form);
+  const initialValues = serializeForm(fields, initialForm);
+
+  return Object.fromEntries(
+    Object.entries(currentValues).filter(([key, value]) => (
+      JSON.stringify(value) !== JSON.stringify(initialValues[key])
+    )),
+  );
+}
+
 function getAnswerValidationErrors(rows) {
   const errors = [];
   const seenLabels = new Set();
@@ -86,8 +133,8 @@ function getAnswerValidationErrors(rows) {
     const vietnameseLabel = row.vietnameseLabel.trim();
     const englishLabel = row.englishLabel.trim();
     if (!vietnameseLabel && !englishLabel) return;
-    if (!vietnameseLabel) errors.push(`Đáp án ${index + 1}: nhãn tiếng Việt không được rỗng.`);
-    if (!englishLabel) errors.push(`Đáp án ${index + 1}: nhãn tiếng Anh không được rỗng.`);
+    if (!vietnameseLabel) errors.push(`Đáp án ${index + 1}: Nhãn câu trả lời tiếng Việt không được để trống.`);
+    if (!englishLabel) errors.push(`Đáp án ${index + 1}: Câu trả lời phải có nhãn tiếng Anh.`);
     if (vietnameseLabel) {
       const normalizedLabel = vietnameseLabel.toLowerCase();
       if (seenLabels.has(normalizedLabel)) {
@@ -109,6 +156,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   const emptyForm = createEmptyForm(config.fields);
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [formErrors, setFormErrors] = useState({});
   const [editingId, setEditingId] = useState("");
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
@@ -125,6 +173,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   const deleteConfirmRef = useRef(null);
   const deleteTriggerRef = useRef(null);
   const focusCreateAfterDeleteRef = useRef(false);
+  const initialFormRef = useRef(emptyForm);
 
   useEffect(() => {
     if (!deleteTarget && focusCreateAfterDeleteRef.current) {
@@ -171,44 +220,87 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   function resetForm() {
     setEditingId("");
     setForm(emptyForm);
+    setFormErrors({});
+    initialFormRef.current = emptyForm;
   }
 
   async function submit(event) {
     event.preventDefault();
-    setStatus("saving");
     setMessage("");
-    try {
-      const answerRows = form.answers ?? [];
-      const answerErrors = getAnswerValidationErrors(answerRows);
-      if (answerErrors.length > 0) {
-        setMessageTone("error");
-        setMessage(answerErrors.join(" "));
-        setStatus("ready");
-        window.requestAnimationFrame(() => formErrorRef.current?.focus());
-        return;
-      }
+    const wasEditing = Boolean(editingId);
+    const answerErrors = getAnswerValidationErrors(form.answers ?? []);
+    const nextFormErrors = {};
 
-      const payload = Object.fromEntries(config.fields.map((field) => [
-        field.name,
-        field.type === "answers"
-          ? answersRowsToDictionary(form[field.name] ?? [])
-          : field.serialize ? field.serialize(form[field.name]) : form[field.name],
-      ]));
-      const wasEditing = Boolean(editingId);
-      if (wasEditing) await service.update(editingId, payload);
-      else await service.create(payload);
-      const successMessage = wasEditing
-        ? `Đã cập nhật ${config.singularLabel}.`
-        : `Đã tạo ${config.singularLabel}.`;
+    if (!String(form.chapterId ?? "").trim()) {
+      nextFormErrors.chapterId = wasEditing
+        ? "ChapterId không hợp lệ"
+        : "ChapterId là bắt buộc";
+    }
+
+    if (!String(form.questionVi ?? "").trim()) {
+      nextFormErrors.questionVi = wasEditing
+        ? "Nội dung câu hỏi không được để trống"
+        : "Nội dung câu hỏi là bắt buộc";
+    }
+
+    if (
+      form.sortOrder !== "" &&
+      (!Number.isInteger(Number(form.sortOrder)) || Number(form.sortOrder) < 0)
+    ) {
+      nextFormErrors.sortOrder = "Thứ tự phải là số nguyên không âm";
+    }
+
+    if (answerErrors.length > 0) {
+      nextFormErrors.answers = answerErrors.join(" ");
+    }
+
+    if (Object.keys(nextFormErrors).length > 0) {
+      const validationMessage = Object.values(nextFormErrors).join(" ");
+      setFormErrors(nextFormErrors);
+      setMessageTone("error");
+      setMessage(validationMessage);
+      setStatus("ready");
+      window.requestAnimationFrame(() => formErrorRef.current?.focus());
+      return;
+    }
+
+    const payload = wasEditing
+      ? buildPartialUpdate(config.fields, form, initialFormRef.current)
+      : serializeForm(config.fields, form);
+
+    if (wasEditing && Object.keys(payload).length === 0) {
+      setMessageTone("error");
+      setMessage("Không có trường nào để cập nhật");
+      setStatus("ready");
+      window.requestAnimationFrame(() => formErrorRef.current?.focus());
+      return;
+    }
+
+    setFormErrors({});
+    setStatus("saving");
+
+    try {
+      const response = wasEditing
+        ? await service.update(editingId, payload)
+        : await service.create(payload);
+      const successMessage = getClinicalQuestionApiMessage(
+        response,
+        wasEditing
+          ? "Cập nhật câu hỏi lâm sàng thành công"
+          : "Tạo câu hỏi lâm sàng thành công",
+      );
       const targetPage = wasEditing ? pageInfo.pageNumber : 1;
       resetForm();
       setFormOpen(false);
       await loadItems(targetPage, pageInfo.pageSize);
       setMessageTone("success");
       setMessage(successMessage);
-    } catch {
+    } catch (error) {
       setMessageTone("error");
-      setMessage(`Không thể lưu ${config.singularLabel}. Vui lòng kiểm tra thông tin và thử lại.`);
+      setMessage(getClinicalQuestionApiMessage(
+        error,
+        `Không thể lưu ${config.singularLabel}. Vui lòng kiểm tra thông tin và thử lại.`,
+      ));
       setStatus("ready");
       window.requestAnimationFrame(() => formErrorRef.current?.focus());
     }
@@ -217,10 +309,13 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   function edit(item) {
     formTriggerRef.current = document.activeElement;
     setEditingId(item.id);
-    setForm(Object.fromEntries(config.fields.map((field) => [
+    const nextForm = Object.fromEntries(config.fields.map((field) => [
       field.name,
       field.type === "answers" ? answersDictionaryToRows(item[field.name]) : item[field.name] ?? "",
-    ])));
+    ]));
+    initialFormRef.current = nextForm;
+    setForm(nextForm);
+    setFormErrors({});
     setMessage("");
     setFormOpen(true);
   }
@@ -233,6 +328,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         { id: crypto.randomUUID(), vietnameseLabel: "", englishLabel: "" },
       ],
     }));
+    setFormErrors((current) => ({ ...current, answers: "" }));
   }
 
   function updateAnswerRow(rowId, key, value) {
@@ -242,6 +338,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         row.id === rowId ? { ...row, [key]: value } : row
       )),
     }));
+    setFormErrors((current) => ({ ...current, answers: "" }));
   }
 
   function removeAnswerRow(rowId) {
@@ -249,6 +346,12 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       ...current,
       answers: (current.answers ?? []).filter((row) => row.id !== rowId),
     }));
+    setFormErrors((current) => ({ ...current, answers: "" }));
+  }
+
+  function updateFormField(name, value) {
+    setForm((current) => ({ ...current, [name]: value }));
+    setFormErrors((current) => ({ ...current, [name]: "" }));
   }
 
   function requestRemove(item) {
@@ -337,7 +440,9 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
           ref={chapterSelectRef}
           value={form[field.name]}
           required={field.required}
-          onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+          aria-invalid={Boolean(formErrors[field.name])}
+          aria-describedby={formErrors[field.name] ? `clinical-${field.name}-error` : undefined}
+          onChange={(event) => updateFormField(field.name, event.target.value)}
         >
           <option value="">Chọn chương ICD</option>
           {icdOptions.map((option) => (
@@ -355,7 +460,9 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
           rows={5}
           value={form[field.name]}
           required={field.required}
-          onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+          aria-invalid={Boolean(formErrors[field.name])}
+          aria-describedby={formErrors[field.name] ? `clinical-${field.name}-error` : undefined}
+          onChange={(event) => updateFormField(field.name, event.target.value)}
         />
       );
     }
@@ -367,7 +474,9 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         step={field.step}
         value={form[field.name]}
         required={field.required}
-        onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+        aria-invalid={Boolean(formErrors[field.name])}
+        aria-describedby={formErrors[field.name] ? `clinical-${field.name}-error` : undefined}
+        onChange={(event) => updateFormField(field.name, event.target.value)}
       />
     );
   }
@@ -375,12 +484,17 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   function renderField(field) {
     if (!field) return null;
     return (
-      <label className="clean-field" key={field.name}>
+      <label className={`clean-field${formErrors[field.name] ? " field-error" : ""}`} key={field.name}>
         <span>
           {field.label}
           {field.required && <small className="clinical-required-note"> (bắt buộc)</small>}
         </span>
         {renderFormControl(field)}
+        {formErrors[field.name] && (
+          <small id={`clinical-${field.name}-error`}>
+            {formErrors[field.name]}
+          </small>
+        )}
       </label>
     );
   }
@@ -623,12 +737,12 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
               <h2 id="clinical-question-modal-title">
                 {editingId ? "Cập nhật câu hỏi lâm sàng" : "Tạo câu hỏi lâm sàng"}
               </h2>
-              <p id="clinical-question-modal-description">Nhập câu hỏi song ngữ, thứ tự hiển thị và các lựa chọn trả lời tương ứng.</p>
+              <p id="clinical-question-modal-description">Chọn chương ICD và nhập câu hỏi tiếng Việt. Nội dung tiếng Anh, thứ tự và đáp án có thể bổ sung khi cần.</p>
             </div>
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={status === "saving"}>×</button>
           </header>
 
-          <form className="clean-form doctor-form clinical-question-form" onSubmit={submit}>
+          <form className="clean-form doctor-form clinical-question-form" onSubmit={submit} noValidate>
             {message && (
               <div
                 ref={formErrorRef}
@@ -656,7 +770,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
               <div className="clinical-form-section-head">
                 <div>
                   <strong id="clinical-question-content-title">Nội dung song ngữ</strong>
-                  <p>Cung cấp đầy đủ câu hỏi tiếng Việt và bản tiếng Anh tương ứng.</p>
+                  <p>Câu hỏi tiếng Việt là bắt buộc. Bản tiếng Anh có thể để trống.</p>
                 </div>
               </div>
               <div className="clinical-form-content-grid">
@@ -665,7 +779,11 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             </section>
 
             {answersField && (
-              <section className="clinical-form-section clinical-answer-section" aria-labelledby="clinical-answer-title">
+              <section
+                className="clinical-form-section clinical-answer-section"
+                aria-labelledby="clinical-answer-title"
+                aria-describedby={formErrors.answers ? "clinical-answers-error" : undefined}
+              >
                 <div className="clinical-answer-editor">
                   <div className="clinical-answer-editor-head">
                     <div>
@@ -674,6 +792,11 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                         <strong id="clinical-answer-title">Danh sách đáp án</strong>
                       </div>
                       <p>Các lựa chọn song ngữ sẽ được lưu cùng câu hỏi.</p>
+                      {formErrors.answers && (
+                        <p id="clinical-answers-error" className="field-error">
+                          {formErrors.answers}
+                        </p>
+                      )}
                     </div>
                     <button className="clinical-answer-add" type="button" onClick={addAnswerRow}>
                       <Plus size={16} aria-hidden="true" />
