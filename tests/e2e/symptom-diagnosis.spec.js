@@ -46,7 +46,7 @@ test("clinical symptom intake remains accessible at narrow widths", async ({ pag
   await expect(symptoms).toHaveCSS("outline-width", "3px");
 });
 
-test("diagnosis flow asks clinical questions and renders recommendations", async ({ page }) => {
+test("diagnosis flow asks clinical questions and renders the diagnosis", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -69,7 +69,7 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
           sessionId: SESSION_ID,
           questions: [{
             questionId: QUESTION_ID,
-            questionVi: "Do you have chest pain during exertion?",
+            questionText: "Do you have chest pain during exertion?",
             chapterCode: "IX",
             totalScore: 12,
             answers: {
@@ -81,7 +81,7 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
     });
   });
 
-  await page.route("**/api/symptom-analysis/submit-clinical-question-answers", async (route) => {
+  await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => {
     answerPayload = route.request().postDataJSON();
     return route.fulfill({
       contentType: "application/json",
@@ -89,82 +89,57 @@ test("diagnosis flow asks clinical questions and renders recommendations", async
         success: true,
         data: {
           sessionId: SESSION_ID,
-          userInput: "Trieu chung chinh: Mild chest pain\nMo ta them: Mild chest pain during exertion\nMuc do: moderate",
+          model: "google/medgemma-4b-it",
           answers: [{ questionId: QUESTION_ID, answers: { "Do you have chest pain during exertion?": true } }],
-          analysis: {
-            sessionId: SESSION_ID,
-            primaryDiagnosis: {
-              rank: 1,
-              diseaseName: "Angina",
-              icd10Code: "I20",
-              paGivenB: 0.91,
-              clinicalReasoning: "Matches the described symptoms.",
-            },
-            diagnoses: [{
-              rank: 1,
-              diseaseName: "Angina",
-              icd10Code: "I20",
-              paGivenB: 0.91,
-              clinicalReasoning: "Matches the described symptoms.",
-            }],
-            recommendedDepartment: {
-              departmentId: DEPARTMENT_ID,
-              departmentName: "Cardiology",
-              confidenceScore: 0.91,
-              reason: "Specialist review is recommended.",
-              priorityRank: 1,
-              isEmergencySuggested: false,
-            },
-            recommendedFacilities: [{
-              id: FACILITY_ID,
-              facilityName: "Heart Hospital",
-              address: "123 Nguyen Trai",
-              latitude: 10.77,
-              longitude: 106.69,
-              phone: "0123456789",
-              isActive: true,
-              departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Cardiology" }],
-            }],
+          primaryDiagnosis: {
+            rank: 1,
+            diseaseName: "Angina",
+            icd10Code: "I20",
+            paGivenB: 0.91,
+            clinicalReasoning: "Matches the described symptoms.",
           },
+          diagnoses: [{
+            rank: 1,
+            diseaseName: "Angina",
+            icd10Code: "I20",
+            paGivenB: 0.91,
+            clinicalReasoning: "Matches the described symptoms.",
+          }],
+          recommendedDepartment: {
+            departmentId: DEPARTMENT_ID,
+            departmentName: "Cardiology",
+            confidenceScore: 0.91,
+            reason: "Specialist review is recommended.",
+            priorityRank: 1,
+            isEmergencySuggested: false,
+          },
+          recommendedFacilities: [{
+            id: FACILITY_ID,
+            facilityName: "Heart Hospital",
+            address: "123 Nguyen Trai",
+            latitude: 10.77,
+            longitude: 106.69,
+            phone: "0123456789",
+            isActive: true,
+            departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Cardiology" }],
+          }],
         },
       }),
     });
   });
 
-  await page.route("**/api/symptom-analysis/submit-diagnosis", async (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({
-      success: true,
-      data: {
-        sessionId: SESSION_ID,
-        model: "google/medgemma-4b-it",
-        diagnoses: [{
-          rank: 1,
-          diseaseName: "Angina",
-          icd10Code: "I20",
-          paGivenB: 0.91,
-          clinicalReasoning: "Matches the described symptoms.",
-        }],
-      },
-    }),
-  }));
-
   await page.goto("/symptom", { waitUntil: "domcontentloaded" });
-  await page.locator("#intake-mainSymptom").fill("Mild chest pain");
-  await page.locator("#intake-description").fill("Mild chest pain during exertion");
-  await page.locator(".intake-form").getByRole("button").first().click();
+  await page.locator("#clinical-user-input").fill("Trieu chung chinh: Mild chest pain\nMo ta them: Mild chest pain during exertion\nMuc do: moderate");
+  await page.getByRole("button", { name: "Tiếp tục phân tích lâm sàng" }).click();
 
   await expect(page.getByText("Bạn có đau ngực khi gắng sức không?")).toBeVisible();
-  await expect(page.getByText("Gốc tiếng Anh: Do you have chest pain during exertion?").first()).toBeVisible();
-  await page.locator(".boolean-answer-group").getByRole("radio").first().check();
+  await page.getByRole("radio", { name: "Có" }).check();
   await page.getByRole("button", { name: "Xem gợi ý" }).click();
 
   await expect(page.getByText("Angina", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("Cardiology", { exact: true })).toBeVisible();
-  await expect(page.getByText("Heart Hospital", { exact: true })).toBeVisible();
-  await expect(page.getByText("91%", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("91% phù hợp tham khảo", { exact: true })).toBeVisible();
   expect(questionPayload).toEqual({
-    userInput: "Trieu chung chinh: Mild chest pain\nMo ta them: Mild chest pain during exertion\nMuc do: moderate",
+    userInput: "Trieu chung chinh: Mild chest pain Mo ta them: Mild chest pain during exertion Muc do: moderate",
   });
   expect(answerPayload).toEqual({
     sessionId: SESSION_ID,

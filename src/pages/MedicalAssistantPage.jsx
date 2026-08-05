@@ -18,9 +18,12 @@ import {
   getClinicalQuestionAnswerMode,
   getClinicalQuestionBooleanPrompts,
   getClinicalQuestionAnswerOptions,
+  getSymptomAnalysisApiMessage,
+  getSymptomInputError,
   isClinicalQuestionAnswered,
   readAnalysisPayload,
   readSuggestClinicalQuestionsPayload,
+  SYMPTOM_ANALYSIS_MESSAGES,
   symptomAnalysisApi,
   unwrapApiData,
 } from "../services/symptomAnalysisService";
@@ -321,6 +324,10 @@ function IntakePage() {
 
   const trimmedInput = userInput.trim();
   const isSubmitting = status === "loading";
+  const inputError = [
+    SYMPTOM_ANALYSIS_MESSAGES.inputRequired,
+    SYMPTOM_ANALYSIS_MESSAGES.inputTooLong,
+  ].includes(error) ? error : "";
 
   function updateUserInput(value) {
     setUserInput(value);
@@ -331,8 +338,9 @@ function IntakePage() {
   async function submit(event) {
     event.preventDefault();
 
-    if (!trimmedInput) {
-      setError("Vui lòng mô tả triệu chứng hoặc tình trạng hiện tại.");
+    const validationError = getSymptomInputError(userInput);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -357,11 +365,10 @@ function IntakePage() {
       saveDraft("");
       navigate(`/assessment/${data.sessionId}`);
     } catch (requestError) {
-      setError(
-        requestError.status === 502
-          ? "AI tạm thời không phản hồi. Vui lòng thử lại sau."
-          : requestError.message || "Không thể tạo câu hỏi lâm sàng lúc này.",
-      );
+      setError(getSymptomAnalysisApiMessage(
+        requestError,
+        "Không thể tạo câu hỏi lâm sàng lúc này.",
+      ));
     } finally {
       setStatus("idle");
     }
@@ -395,13 +402,17 @@ function IntakePage() {
             value={userInput}
             onChange={(event) => updateUserInput(event.target.value)}
             disabled={isSubmitting}
+            required
+            error={inputError}
+            aria-describedby={`clinical-user-input-hint${inputError ? " clinical-user-input-error" : ""}`}
             rows={6}
             placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ…"
           />
-          <small>Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm để gợi ý phù hợp hơn.</small>
+          <small id="clinical-user-input-hint">Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm. Tối đa 2000 ký tự.</small>
+          {inputError && <small id="clinical-user-input-error" role="alert">{inputError}</small>}
         </label>
 
-        {error && <Alert tone="danger" live>{error}</Alert>}
+        {error && !inputError && <Alert tone="danger" live>{error}</Alert>}
 
         <div className="clinical-submit-row">
           <span><strong>Sẵn sàng.</strong> MediMate sẽ hỏi thêm một số câu ngắn ở bước tiếp theo.</span>
@@ -410,7 +421,7 @@ function IntakePage() {
             size="lg"
             loading={isSubmitting}
             loadingLabel="Đang tạo câu hỏi…"
-            disabled={!trimmedInput}
+            disabled={isSubmitting}
             aria-label="Tiếp tục phân tích lâm sàng"
             title="Tiếp tục phân tích lâm sàng"
           >
@@ -503,11 +514,10 @@ function QuestionsPage({ sessionId }) {
       saveSessionState(sessionId, next);
       navigate(`/assessment/${sessionId}/result`);
     } catch (requestError) {
-      setError(
-        requestError.status === 502
-          ? "AI tạm thời không phản hồi. Dữ liệu bạn đã nhập vẫn được giữ lại để thử lại."
-          : requestError.message || "Không thể gửi câu trả lời lúc này.",
-      );
+      setError(getSymptomAnalysisApiMessage(
+        requestError,
+        "Không thể gửi câu trả lời lúc này.",
+      ));
       setStatus("idle");
     }
   }
