@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ReceiptText, RefreshCw, X } from "lucide-react";
 import { Dialog } from "../ui";
 import { paymentsApi } from "../../services/api";
+import { getPaymentReconcileErrorMessage } from "../../services/apiError";
 import "../../styles/payment-history.css";
 
 const PAGE_SIZE = 10;
@@ -90,13 +91,7 @@ function canReconcilePayment(payment) {
 }
 
 function getFriendlyReconcileMessage(error) {
-  if (error?.status === 401) return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
-  if (error?.status === 403) return "Giao dịch này không thuộc tài khoản hiện tại.";
-  if (error?.status === 404) return "PayOS không tìm thấy giao dịch này.";
-  if (error?.status === 409) return "Dữ liệu giao dịch không khớp. Vui lòng liên hệ hỗ trợ.";
-  if (error?.status === 429) return "Đang kiểm tra quá thường xuyên. Vui lòng thử lại sau ít phút.";
-  if (error?.status === 502) return "Chưa kết nối được PayOS. Vui lòng thử lại sau.";
-  return error?.message || "Chưa thể kiểm tra giao dịch lúc này. Vui lòng thử lại sau.";
+  return getPaymentReconcileErrorMessage(error, "Chưa thể kiểm tra giao dịch lúc này. Vui lòng thử lại sau.");
 }
 
 function PaymentStatusBadge({ payment }) {
