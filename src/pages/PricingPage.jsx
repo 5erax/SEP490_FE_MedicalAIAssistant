@@ -27,6 +27,7 @@ import {
 } from "../services/api";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch, rememberReturnTo, withReturnTo } from "../router/returnIntent";
+import { getPaymentStatusLabel } from "../services/paymentStatusLabels";
 import { trackUxEvent } from "../utils/analytics";
 import {
   getPlanBenefits,
@@ -66,17 +67,17 @@ function getDurationLabel(durationInDays) {
 }
 
 function isActiveSubscription(subscription) {
-  const status = String(subscription?.statusName ?? "").toLowerCase();
+  const status = String(subscription?.status ?? "").toLowerCase();
   return status === "active" || Number(subscription?.status) === 1;
 }
 
 function isSuccessfulPayment(payment) {
-  const status = String(payment?.statusName ?? "").toLowerCase();
-  return Boolean(payment?.paidAt) || ["paid", "completed", "success", "succeeded"].includes(status);
+  const status = String(payment?.status ?? "").toLowerCase();
+  return Boolean(payment?.paidAt) || status === "paid";
 }
 
 function isTerminalPayment(payment) {
-  const status = String(payment?.statusName ?? "").toLowerCase();
+  const status = String(payment?.status ?? "").toLowerCase();
   return ["failed", "cancelled", "canceled", "expired", "refunded"].includes(status);
 }
 
@@ -292,7 +293,7 @@ function PricingPage() {
             paymentId,
             orderCode,
             message: isTerminalPayment(payment)
-              ? `Giao dịch ${payment?.statusName || "không thành công"}.`
+              ? `Giao dịch ${getPaymentStatusLabel(payment?.status, "không thành công").toLowerCase()}.`
               : "Chưa nhận được xác nhận thanh toán. Bạn có thể kiểm tra lại gói đăng ký sau.",
           });
           return true;
