@@ -38,6 +38,7 @@ import {
   authApi,
   doctorInvitationsApi,
   facilityDepartmentsApi,
+  getMedicalDepartmentApiMessage,
   getStoredAuth,
   medicalFacilitiesApi,
   medicalDepartmentsApi,
@@ -134,6 +135,31 @@ const DEFAULT_DOCTOR_PAGE_SIZE = 10;
 const DEFAULT_DEPARTMENT_PAGE_SIZE = 10;
 const DEFAULT_FACILITY_PAGE_SIZE = 10;
 const DEFAULT_ICD_CHAPTER_PAGE_SIZE = 10;
+
+function serializeDepartmentForm(form) {
+  return {
+    departmentName: String(form?.departmentName ?? "").trim(),
+    description: String(form?.description ?? "").trim(),
+    chapterCode: String(form?.chapterCode ?? "").trim(),
+  };
+}
+
+function buildDepartmentUpdatePayload(currentForm, initialForm) {
+  return Object.fromEntries(
+    Object.entries(currentForm).filter(([key, value]) => value !== initialForm[key]),
+  );
+}
+
+function getDepartmentFieldErrors(message) {
+  if (message.includes("DepartmentName")) {
+    return { departmentName: message };
+  }
+  if (message === "Không tìm thấy ICD chapter") {
+    return { chapterCode: message };
+  }
+  return {};
+}
+
 function createEmptyDisease() {
   return {
     localId: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
@@ -422,6 +448,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [aiConfigFilters, setAIConfigFilters] = useState(EMPTY_AI_CONFIG_FILTERS);
   const [patientProfileSearch, setPatientProfileSearch] = useState("");
   const [departmentForm, setDepartmentForm] = useState(EMPTY_DEPARTMENT);
+  const [departmentFormErrors, setDepartmentFormErrors] = useState({});
   const [icdChapterForm, setIcdChapterForm] = useState(EMPTY_ICD_CHAPTER);
   const [facilityForm, setFacilityForm] = useState(EMPTY_FACILITY);
   const [patientProfileForm, setPatientProfileForm] = useState(EMPTY_PATIENT_PROFILE);
@@ -443,6 +470,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
   const [aiConfigDetail, setAIConfigDetail] = useState(null);
   const operatorDialogTriggerRef = useRef(null);
+  const initialDepartmentFormRef = useRef(EMPTY_DEPARTMENT);
   const [loading, setLoading] = useState(Boolean(auth));
   const [usersLoading, setUsersLoading] = useState(true);
   const [, setDepartmentsLoading] = useState(true);
@@ -1771,31 +1799,79 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   }
 
   function startEditDepartment(department) {
-    setEditingDepartmentId(department.id);
-    setDepartmentForm({
+    const nextForm = {
       departmentName: department.departmentName ?? "",
       description: department.description ?? "",
       chapterCode: department.chapterCode ?? "",
-    });
+    };
+    setEditingDepartmentId(department.id);
+    setDepartmentForm(nextForm);
+    initialDepartmentFormRef.current = serializeDepartmentForm(nextForm);
+    setDepartmentFormErrors({});
+    setDepartmentMessage(null);
     openSection("departments");
   }
 
   function resetDepartmentForm() {
     setEditingDepartmentId("");
     setDepartmentForm(EMPTY_DEPARTMENT);
+    initialDepartmentFormRef.current = serializeDepartmentForm(EMPTY_DEPARTMENT);
+    setDepartmentFormErrors({});
+    setDepartmentMessage(null);
+  }
+
+  function updateDepartmentForm(key, value) {
+    setDepartmentForm((current) => ({ ...current, [key]: value }));
+    setDepartmentFormErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+    if (departmentMessage?.type === "error") setDepartmentMessage(null);
   }
 
   async function handleSaveDepartment(event) {
     event.preventDefault();
-    setSavingDepartment(true);
     setDepartmentMessage(null);
+    setDepartmentFormErrors({});
+
+    const isEditing = Boolean(editingDepartmentId);
+    const serializedForm = serializeDepartmentForm(departmentForm);
+    const payload = isEditing
+      ? buildDepartmentUpdatePayload(serializedForm, initialDepartmentFormRef.current)
+      : serializedForm;
+
+    if (!isEditing && !serializedForm.departmentName) {
+      const text = "DepartmentName là bắt buộc";
+      setDepartmentFormErrors({ departmentName: text });
+      setDepartmentMessage({ type: "error", text });
+      return;
+    }
+
+    if (isEditing && Object.keys(payload).length === 0) {
+      setDepartmentMessage({ type: "error", text: "Không có trường nào để cập nhật" });
+      return;
+    }
+
+    if (isEditing && Object.hasOwn(payload, "departmentName") && !payload.departmentName) {
+      const text = "DepartmentName không được để trống";
+      setDepartmentFormErrors({ departmentName: text });
+      setDepartmentMessage({ type: "error", text });
+      return;
+    }
+
+    setSavingDepartment(true);
     try {
-      const response = editingDepartmentId
-        ? await medicalDepartmentsApi.update(editingDepartmentId, departmentForm)
-        : await medicalDepartmentsApi.create(departmentForm);
+      const response = isEditing
+        ? await medicalDepartmentsApi.update(editingDepartmentId, payload)
+        : await medicalDepartmentsApi.create(payload);
       const successMessage = {
         type: "success",
-        text: response.message || (editingDepartmentId ? "Đã cập nhật chuyên khoa." : "Đã tạo chuyên khoa."),
+        text: getMedicalDepartmentApiMessage(
+          response,
+          isEditing ? "Cập nhật khoa thành công" : "Tạo khoa thành công",
+        ),
       };
       resetDepartmentForm();
       await Promise.all([
@@ -1803,8 +1879,13 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         loadDepartmentCatalog(departmentPageInfo.pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters),
       ]);
       setDepartmentMessage(successMessage);
-    } catch {
-      setDepartmentMessage({ type: "error", text: "Không thể lưu chuyên khoa lúc này. Vui lòng thử lại." });
+    } catch (error) {
+      const text = getMedicalDepartmentApiMessage(
+        error,
+        isEditing ? "Cập nhật khoa thất bại" : "Tạo khoa thất bại",
+      );
+      setDepartmentFormErrors(getDepartmentFieldErrors(text));
+      setDepartmentMessage({ type: "error", text });
     } finally {
       setSavingDepartment(false);
     }
@@ -2445,6 +2526,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 error={departmentCatalogLoadError}
                 filters={departmentFilters}
                 form={departmentForm}
+                formErrors={departmentFormErrors}
                 loading={departmentCatalogLoading}
                 message={departmentMessage}
                 pageInfo={departmentPageInfo}
@@ -2454,7 +2536,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 onDelete={handleDeleteDepartment}
                 onEdit={startEditDepartment}
                 onFilterChange={updateDepartmentFilter}
-                onFormChange={(key, value) => setDepartmentForm((current) => ({ ...current, [key]: value }))}
+                onFormChange={updateDepartmentForm}
                 onLoadPage={(pageNumber) => loadDepartmentCatalog(pageNumber, departmentPageInfo.pageSize, appliedDepartmentFilters)}
                 onPageSizeChange={changeDepartmentPageSize}
                 onReload={() => {

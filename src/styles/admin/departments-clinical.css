@@ -433,6 +433,20 @@
   scrollbar-color: rgba(0, 128, 136, 0.38) transparent;
 }
 
+.department-form-modal .department-form-message {
+  margin-bottom: 20px;
+}
+
+.department-form-modal .department-field-error input,
+.department-form-modal .department-field-error textarea {
+  border-color: var(--danger);
+}
+
+.department-form-modal .department-field-error-message {
+  color: var(--danger);
+  font-weight: 800;
+}
+
 .department-form-modal .facility-form-body {
   display: grid;
   gap: 22px;
@@ -782,7 +796,7 @@ html[data-theme="dark"] .admin-operator .department-card-meta dd {
 }
 
 .department-primary-cell small {
-  color: rgba(16, 20, 17, 0.55);
+  color: var(--color-muted);
   font-size: 12px;
   font-weight: 620;
   line-height: 1.5;
