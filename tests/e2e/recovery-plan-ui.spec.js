@@ -186,6 +186,7 @@ test("user replaces the current note when more information is requested", async 
 
 test("user reads and starts a published recovery plan", async ({ page }) => {
   const calls = await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan()] });
+  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
   await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toBeVisible();
   await expect(page.getByText("Khởi động nhẹ", { exact: true })).toBeVisible();
   await expect(page.getByText("Trứng", { exact: false })).toBeVisible();
