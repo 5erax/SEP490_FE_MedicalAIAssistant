@@ -37,12 +37,14 @@ function getDoctorName(doctor) {
   return doctor.fullName || "bác sĩ chưa đặt tên";
 }
 
+// Keys must match the DepartmentRole string enum exactly (confirmed via the
+// live BE swagger schema) - doctor.departmentRole is never a numeric index.
 const DEPARTMENT_ROLE_LABELS = {
-  0: "Bác sĩ",
-  1: "Phó trưởng khoa",
-  2: "Trưởng khoa",
-  3: "Chuyên gia đầu ngành",
-  4: "Cố vấn",
+  doctor: "Bác sĩ",
+  deputyHead: "Phó trưởng khoa",
+  head: "Trưởng khoa",
+  leadingExpert: "Chuyên gia đầu ngành",
+  consultant: "Cố vấn",
 };
 
 export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete, onCreate }) {

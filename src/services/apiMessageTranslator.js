@@ -187,6 +187,85 @@ const EXACT_MESSAGES = Object.freeze({
     "Chưa thể phân tích tài liệu xét nghiệm lúc này. Vui lòng thử lại sau.",
   "Medical analysis service is unavailable.":
     "Dịch vụ phân tích y tế hiện không khả dụng. Vui lòng thử lại sau.",
+
+  // Payments (admin)
+  "Invalid user id.":
+    "Mã người dùng không hợp lệ.",
+  "Invalid payment id.":
+    "Mã giao dịch thanh toán không hợp lệ.",
+  "Payment not found.":
+    "Không tìm thấy giao dịch thanh toán.",
+
+  // Payments (reconcile success-state messages)
+  "Payment is paid and subscription is active.":
+    "Thanh toán thành công và gói đăng ký đã được kích hoạt.",
+  "Payment is paid, but subscription is not active.":
+    "Thanh toán đã thành công nhưng gói đăng ký chưa được kích hoạt.",
+  "Payment amount received by payOS is insufficient.":
+    "Số tiền payOS nhận được chưa đủ.",
+  "Payment is processing with payOS.":
+    "payOS đang xử lý giao dịch.",
+  "Payment is pending verification with payOS.":
+    "Giao dịch đang chờ payOS xác nhận.",
+  "Payment link expired before payment was completed.":
+    "Liên kết thanh toán đã hết hạn.",
+  "Payment verification failed at payOS.":
+    "payOS không thể xác minh giao dịch.",
+  "Payment was cancelled.":
+    "Giao dịch thanh toán đã bị hủy.",
+  "Payment failed.":
+    "Thanh toán không thành công.",
+  "Payment was refunded.":
+    "Giao dịch đã được hoàn tiền.",
+  "Payment status is unavailable.":
+    "Không thể xác định trạng thái thanh toán.",
+
+  // Payments (checkout) - no stable error codes yet, matched by exact
+  // backend string per BE's "Chuẩn hóa API Payment cho Frontend" doc.
+  "Checkout created.":
+    "Đã tạo yêu cầu thanh toán.",
+  "Checkout failed.":
+    "Không thể tạo yêu cầu thanh toán. Vui lòng thử lại.",
+  "Request body is required.":
+    "Dữ liệu gửi lên không được để trống.",
+  "PlanId is required.":
+    "Vui lòng chọn gói đăng ký.",
+  "Subscription plan not found.":
+    "Không tìm thấy gói đăng ký.",
+  "Subscription plan is not active.":
+    "Gói đăng ký này hiện không còn hoạt động.",
+  "This plan does not require payOS payment.":
+    "Gói đăng ký này không yêu cầu thanh toán qua payOS.",
+  "You already have an active subscription.":
+    "Bạn đang có một gói đăng ký còn hiệu lực.",
+  "Create payOS payment link failed.":
+    "Không thể tạo liên kết thanh toán payOS. Vui lòng thử lại.",
+  "User is not authenticated.":
+    "Vui lòng đăng nhập để tiếp tục.",
+
+  // Doctor invitations (admin)
+  "Doctor invitation created.":
+    "Đã gửi lời mời đăng ký bác sĩ.",
+  "Create doctor invitation failed.":
+    "Không thể tạo lời mời đăng ký bác sĩ.",
+  "Email format is invalid.":
+    "Định dạng email không hợp lệ.",
+  "This email is already registered.":
+    "Email này đã được đăng ký tài khoản.",
+  "An active invitation already exists for this email.":
+    "Email này đã có một lời mời đăng ký còn hiệu lực.",
+  "DoctorId is invalid.":
+    "Mã hồ sơ bác sĩ không hợp lệ.",
+  "Doctor profile not found.":
+    "Không tìm thấy hồ sơ bác sĩ.",
+  "This doctor profile is already linked to a user account.":
+    "Hồ sơ bác sĩ này đã được liên kết với một tài khoản.",
+  "An active invitation already exists for this doctor profile.":
+    "Hồ sơ bác sĩ này đã có một lời mời đăng ký còn hiệu lực.",
+  "Failed to send invitation email.":
+    "Không thể gửi email mời đăng ký. Vui lòng thử lại.",
+  "Frontend:BaseUrl is required.":
+    "Không thể tạo lời mời do lỗi cấu hình hệ thống.",
 });
 
 const FIELD_LABELS = Object.freeze({

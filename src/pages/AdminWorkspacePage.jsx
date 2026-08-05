@@ -48,6 +48,8 @@ import {
   usersApi,
 } from "../services/api";
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
+import { getDoctorInvitationErrorMessage } from "../services/apiError";
+import { translateApiMessage } from "../services/apiMessageTranslator";
 import { doctorManagementApi } from "../services/doctors";
 import { logoutUser } from "../services/logoutService";
 import { HCMC_HOSPITAL_CATALOG, HCMC_HOSPITAL_CATALOG_SIZE } from "../data/hcmcHospitalCatalog";
@@ -62,6 +64,33 @@ import "../styles/operator-workspace.css";
 const EMPTY_DEPARTMENT = { departmentName: "", description: "", chapterCode: "" };
 const EMPTY_ICD_CHAPTER = { chapterCode: "", chapterName: "", keywordWeights: "{}" };
 const EMPTY_INVITATION = { email: "", doctorId: "" };
+const LAST_INVITATION_STORAGE_KEY = "medimate.admin.lastDoctorInvitation";
+
+// BE has no GET /api/admin/doctor-invitations list endpoint yet, so the
+// "just sent" confirmation card is the only place an admin can see it.
+// Persist it to sessionStorage so a reload doesn't lose it, per the doc's
+// acceptance criterion ("Admin có thể list/revoke/resend sau khi reload trang").
+function readStoredInvitation() {
+  try {
+    const raw = window.sessionStorage.getItem(LAST_INVITATION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredInvitation(invitation) {
+  try {
+    if (invitation) {
+      window.sessionStorage.setItem(LAST_INVITATION_STORAGE_KEY, JSON.stringify(invitation));
+    } else {
+      window.sessionStorage.removeItem(LAST_INVITATION_STORAGE_KEY);
+    }
+  } catch {
+    // sessionStorage may be unavailable (private mode); the card just
+    // won't survive a reload in that case.
+  }
+}
 const EMPTY_FACILITY = {
   facilityName: "",
   address: "",
@@ -402,7 +431,15 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [editingPatientProfileId, setEditingPatientProfileId] = useState("");
   const [doctorModal, setDoctorModal] = useState({ open: false, mode: "create", doctor: null });
   const [invitationForm, setInvitationForm] = useState(EMPTY_INVITATION);
-  const [lastInvitation, setLastInvitation] = useState(null);
+  const [lastInvitation, setLastInvitationState] = useState(readStoredInvitation);
+
+  function setLastInvitation(update) {
+    setLastInvitationState((current) => {
+      const next = typeof update === "function" ? update(current) : update;
+      writeStoredInvitation(next);
+      return next;
+    });
+  }
   const [aiConfigModal, setAIConfigModal] = useState({ open: false, mode: "create", config: null });
   const [aiConfigDetail, setAIConfigDetail] = useState(null);
   const operatorDialogTriggerRef = useRef(null);
@@ -1944,10 +1981,13 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       setInvitationForm(EMPTY_INVITATION);
       setDoctorMessage({
         type: "success",
-        text: response.message || "Đã tạo và gửi lời mời đăng ký bác sĩ.",
+        text: translateApiMessage(response.message, { fallback: "Đã gửi lời mời đăng ký bác sĩ." }),
       });
     } catch (error) {
-      setDoctorMessage({ type: "error", text: error.message });
+      setDoctorMessage({
+        type: "error",
+        text: getDoctorInvitationErrorMessage(error, "Không thể tạo lời mời đăng ký bác sĩ. Vui lòng thử lại."),
+      });
     } finally {
       setSavingInvitation(false);
     }
@@ -1960,9 +2000,15 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     try {
       const response = await doctorInvitationsApi.revoke(lastInvitation.id);
       setLastInvitation((current) => current ? { ...current, status: "Revoked" } : current);
-      setDoctorMessage({ type: "success", text: response.message || "Đã thu hồi lời mời." });
+      setDoctorMessage({
+        type: "success",
+        text: translateApiMessage(response.message, { fallback: "Đã thu hồi lời mời." }),
+      });
     } catch (error) {
-      setDoctorMessage({ type: "error", text: error.message });
+      setDoctorMessage({
+        type: "error",
+        text: getDoctorInvitationErrorMessage(error, "Không thể thu hồi lời mời. Vui lòng thử lại."),
+      });
     } finally {
       setSavingInvitation(false);
     }

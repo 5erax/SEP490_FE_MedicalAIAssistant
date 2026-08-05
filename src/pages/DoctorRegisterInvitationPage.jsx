@@ -16,17 +16,19 @@ const INITIAL_FORM = {
   confirmPassword: "",
   phoneNumber: "",
   facilityDepartmentId: "",
-  departmentRole: "0",
+  departmentRole: "doctor",
   qualification: "",
   yearsOfExperience: "",
 };
 
+// Values must match the DepartmentRole string enum exactly (confirmed via
+// the live BE swagger schema) - the API rejects a numeric departmentRole.
 const DEPARTMENT_ROLES = [
-  { value: "0", label: "Bác sĩ" },
-  { value: "1", label: "Phó khoa" },
-  { value: "2", label: "Trưởng khoa" },
-  { value: "3", label: "Chuyên gia đầu ngành" },
-  { value: "4", label: "Cố vấn" },
+  { value: "doctor", label: "Bác sĩ" },
+  { value: "deputyHead", label: "Phó khoa" },
+  { value: "head", label: "Trưởng khoa" },
+  { value: "leadingExpert", label: "Chuyên gia đầu ngành" },
+  { value: "consultant", label: "Cố vấn" },
 ];
 
 const INVITATION_STEPS = [
@@ -37,6 +39,12 @@ const INVITATION_STEPS = [
 
 function getToken() {
   return new URLSearchParams(window.location.search).get("token")?.trim() ?? "";
+}
+
+function formatCountdown(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function normalizeFacilityDepartments(response) {
@@ -115,7 +123,7 @@ function buildPayload(token, form, isLinkedProfile) {
   return {
     ...payload,
     facilityDepartmentId: form.facilityDepartmentId,
-    departmentRole: Number(form.departmentRole),
+    departmentRole: form.departmentRole,
     qualification: form.qualification.trim() || null,
     yearsOfExperience:
       form.yearsOfExperience === "" ? null : Number(form.yearsOfExperience),
@@ -275,6 +283,7 @@ export default function DoctorRegisterInvitationPage() {
   const [facilityError, setFacilityError] = useState("");
   const [facilityLoading, setFacilityLoading] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [remainingSeconds, setRemainingSeconds] = useState(null);
   const errorSummaryRef = useRef(null);
   const statusHeadingRef = useRef(null);
   const isLinkedProfile = Boolean(invitation?.isLinkedToExistingDoctorProfile);
@@ -382,6 +391,32 @@ export default function DoctorRegisterInvitationPage() {
       active = false;
     };
   }, [token]);
+
+  // Invitation tokens are short-lived (BE hard-codes 2 minutes), so the form
+  // counts down from expiresAt and moves to the "invalid" state on its own
+  // instead of letting the doctor discover the token died at submit time.
+  useEffect(() => {
+    const expiresAtMs = invitation?.expiresAt ? new Date(invitation.expiresAt).getTime() : NaN;
+    if (Number.isNaN(expiresAtMs)) {
+      queueMicrotask(() => setRemainingSeconds(null));
+      return undefined;
+    }
+
+    let intervalId;
+    function tick() {
+      const secondsLeft = Math.max(0, Math.round((expiresAtMs - Date.now()) / 1000));
+      setRemainingSeconds(secondsLeft);
+      if (secondsLeft <= 0) {
+        window.clearInterval(intervalId);
+        setStatus((current) => (["ready-new", "ready-linked"].includes(current) ? "invalid" : current));
+        setApiErrors(["Liên kết đăng ký đã hết hạn. Vui lòng đề nghị quản trị viên gửi lời mời mới."]);
+      }
+    }
+
+    tick();
+    intervalId = window.setInterval(tick, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [invitation?.expiresAt]);
 
   useEffect(() => {
     if (status !== "success") return undefined;
@@ -529,6 +564,17 @@ export default function DoctorRegisterInvitationPage() {
                     </p>
                   </div>
                 </header>
+
+                {remainingSeconds != null && (
+                  <div
+                    className={`doctor-expiry-notice ${remainingSeconds <= 30 ? "is-urgent" : ""}`.trim()}
+                    role="status"
+                    aria-atomic="true"
+                  >
+                    <span>Lời mời còn hiệu lực</span>
+                    <strong>{formatCountdown(remainingSeconds)}</strong>
+                  </div>
+                )}
 
                 {apiErrors.length > 0 && (
                   <div className="doctor-api-errors" role="alert">

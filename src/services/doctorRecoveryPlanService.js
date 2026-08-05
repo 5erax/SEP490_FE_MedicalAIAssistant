@@ -77,10 +77,15 @@ export const doctorRecoveryPlanRequestsApi = {
 };
 
 // GET /api/doctor/recovery-plans/{planId} wraps the plan tree in
-// data.plan alongside request/doctor/clinical-snapshot context, while
-// every mutation (create/update/publish) returns the plan tree directly
-// in data. Callers should always read through this so the editor never
-// has to branch on which endpoint produced the response.
+// data.plan alongside request/doctor/clinical-snapshot context.
+// Full-plan mutations (updateHeader, publish) return the plan tree
+// directly in data, so this normalizer handles both shapes.
+//
+// Nested CRUD mutations (create/update phase, nutrient, food) do NOT
+// return the plan tree — they return only the affected resource
+// (RecoveryPlanPhaseResponse / RecoveryPlanNutrientTargetResponse /
+// RecoveryPlanFoodSourceResponse). Do not run those responses through
+// this normalizer; refetch the plan (get) instead to resync state.
 export function normalizeDoctorPlanDetail(response) {
   const data = response?.data;
   if (data && typeof data === "object" && data.plan) {

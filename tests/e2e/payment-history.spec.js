@@ -201,7 +201,7 @@ test("patient views paged payment history and owned payment detail", async ({ pa
 
   await page.getByRole("button", { name: "Trang sau" }).click();
   await expect(page.getByText("MediMate+ Năm", { exact: true })).toBeVisible();
-  await expect(page.getByText("Đang chờ", { exact: true })).toBeVisible();
+  await expect(page.getByText("Đang chờ thanh toán", { exact: true })).toBeVisible();
   await expect(page.locator('[data-label="Thanh toán"]')).toBeHidden();
 
   const viewportWidth = await page.evaluate(() => ({

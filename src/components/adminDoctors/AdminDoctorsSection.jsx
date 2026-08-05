@@ -145,6 +145,11 @@ export default function AdminDoctorsSection({
               <span>
                 <strong>{lastInvitation.email}</strong>
                 <small>{getInvitationStatusLabel(lastInvitation.status)}</small>
+                {invitationStatus === "pending" && (
+                  <small className="doctor-invitation-status-caveat">
+                    Trạng thái tại thời điểm gửi — bác sĩ có thể đã hoàn tất đăng ký.
+                  </small>
+                )}
               </span>
             </div>
             {lastInvitation.expiresAt && (
