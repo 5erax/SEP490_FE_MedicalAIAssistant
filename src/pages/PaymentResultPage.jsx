@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { authApi, getStoredAuth, paymentsApi, subscriptionUsageApi, userSubscriptionsApi } from "../services/api";
+import { getApiErrorCode, getPaymentReconcileErrorMessage } from "../services/apiError";
 import { navigate } from "../router/navigation";
 import {
   clearRememberedReturnTo,
@@ -65,10 +66,10 @@ function classifyPayment(data) {
 }
 
 function getReconcileErrorState(error) {
-  const codes = Array.isArray(error?.payload?.errors) ? error.payload.errors : [];
-  if (error?.status === 401) return "unauthenticated";
-  if (error?.status === 429 || codes.includes("PAYOS_RATE_LIMITED")) return "rate-limited";
-  if (error?.status === 502) return "provider-unavailable";
+  const code = getApiErrorCode(error);
+  if (error?.status === 401 || code === "UNAUTHENTICATED") return "unauthenticated";
+  if (error?.status === 429 || code === "PAYOS_RATE_LIMITED") return "rate-limited";
+  if (error?.status === 502 || code === "PAYOS_UNAVAILABLE" || code === "PAYOS_INVALID_RESPONSE") return "provider-unavailable";
   return "error";
 }
 
@@ -305,7 +306,7 @@ export default function PaymentResultPage({ expectedResult }) {
       } catch (error) {
         if (!active) return;
         setStatus(getReconcileErrorState(error));
-        setMessage(error?.message || "MediMate chưa thể xác minh giao dịch lúc này.");
+        setMessage(getPaymentReconcileErrorMessage(error, "MediMate chưa thể xác minh giao dịch lúc này."));
       }
     };
 
@@ -330,7 +331,7 @@ export default function PaymentResultPage({ expectedResult }) {
       await checkStatus();
     } catch (error) {
       setStatus(getReconcileErrorState(error));
-      setMessage(error?.message || "MediMate chưa thể xác minh giao dịch lúc này.");
+      setMessage(getPaymentReconcileErrorMessage(error, "MediMate chưa thể xác minh giao dịch lúc này."));
     } finally {
       setCheckingAgain(false);
     }
@@ -339,6 +340,7 @@ export default function PaymentResultPage({ expectedResult }) {
   const success = status === "success";
   const settled = TERMINAL_STATUSES.has(status);
   const verifying = ["checking", "pending", "processing", "activation-pending"].includes(status);
+  const isErrorStatus = ["unauthenticated", "rate-limited", "provider-unavailable", "error"].includes(status);
 
   useEffect(() => {
     document.title = success
@@ -384,6 +386,7 @@ export default function PaymentResultPage({ expectedResult }) {
 
         <p className="payment-result-eyebrow">{view.eyebrow}</p>
         <h1>{view.title}</h1>
+        {isErrorStatus && message && <p className="payment-result-description">{message}</p>}
 
         {orderCode && (
           <dl className="payment-result-reference">
