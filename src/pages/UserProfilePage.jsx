@@ -13,6 +13,7 @@ import {
   usersApi,
   userSubscriptionsApi,
 } from "../services/api";
+import { getSubscriptionStatusLabel } from "../services/paymentStatusLabels";
 import {
   getChronicDiseaseText,
   normalizeChronicDiseases,
@@ -31,15 +32,6 @@ const tabs = [
   ["security", ShieldCheck, "Bảo mật"],
 ];
 const TAB_IDS = new Set(tabs.map(([id]) => id));
-const SUBSCRIPTION_STATUS_LABELS = {
-  active: "Đang hoạt động",
-  pending: "Đang chờ",
-  expired: "Đã hết hạn",
-  cancelled: "Đã hủy",
-  canceled: "Đã hủy",
-  inactive: "Không hoạt động",
-};
-
 function formatPlanName(planName) {
   const normalizedName = String(planName ?? "").trim();
   if (!normalizedName) return "Miễn phí";
@@ -47,10 +39,10 @@ function formatPlanName(planName) {
   return normalizedName;
 }
 
-function formatSubscriptionStatus(statusName) {
-  const normalizedStatus = String(statusName ?? "").trim();
+function formatSubscriptionStatus(status) {
+  const normalizedStatus = String(status ?? "").trim();
   if (!normalizedStatus) return "Chưa có gói trả phí";
-  return SUBSCRIPTION_STATUS_LABELS[normalizedStatus.toLowerCase()] ?? normalizedStatus;
+  return getSubscriptionStatusLabel(normalizedStatus, normalizedStatus);
 }
 
 function getInitialTab() {
@@ -199,7 +191,7 @@ export default function UserProfilePage() {
         ? Array.isArray(subscriptionResult.value.data) ? subscriptionResult.value.data : []
         : [];
       if (subscriptionResult.status === "fulfilled") {
-        setSubscription(subscriptions.find((item) => String(item.statusName).toLowerCase() === "active") ?? subscriptions[0] ?? null);
+        setSubscription(subscriptions.find((item) => String(item.status).toLowerCase() === "active") ?? subscriptions[0] ?? null);
       }
       // NO_ACTIVE_SUBSCRIPTION / RECOVERY_PLAN_QUOTA_NOT_CONFIGURED are
       // expected states (no plan yet), not a load failure worth warning
@@ -504,7 +496,7 @@ export default function UserProfilePage() {
               </strong>
               <small>
                 {subscriptionReady
-                  ? formatSubscriptionStatus(subscription?.statusName)
+                  ? formatSubscriptionStatus(subscription?.status)
                   : "Chưa thể xác định gói hiện tại."}
               </small>
             </article>
@@ -709,7 +701,7 @@ export default function UserProfilePage() {
               <strong>{formatPlanName(subscription?.planName)}</strong>
               <p>
                 {subscription
-                  ? `${formatSubscriptionStatus(subscription.statusName)}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
+                  ? `${formatSubscriptionStatus(subscription.status)}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
                   : "Bạn chưa có gói đăng ký trả phí đang hoạt động."}
               </p>
             </div>
