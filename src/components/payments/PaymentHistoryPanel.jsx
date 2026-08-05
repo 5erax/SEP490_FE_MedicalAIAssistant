@@ -4,16 +4,18 @@ import { Dialog } from "../ui";
 import { paymentsApi } from "../../services/api";
 import { getPaymentReconcileErrorMessage } from "../../services/apiError";
 import { translateApiMessage } from "../../services/apiMessageTranslator";
+import { getPaymentStatusLabel } from "../../services/paymentStatusLabels";
 import "../../styles/payment-history.css";
 
 const PAGE_SIZE = 10;
 
-const PAYMENT_STATUS = {
-  pending: { label: "Đang chờ", tone: "warning" },
-  paid: { label: "Đã thanh toán", tone: "success" },
-  cancelled: { label: "Đã hủy", tone: "neutral" },
-  canceled: { label: "Đã hủy", tone: "neutral" },
-  failed: { label: "Thất bại", tone: "danger" },
+const PAYMENT_STATUS_TONE = {
+  pending: "warning",
+  paid: "success",
+  cancelled: "neutral",
+  canceled: "neutral",
+  failed: "danger",
+  refunded: "neutral",
 };
 
 function normalizePaymentPage(response, requestedPage) {
@@ -33,9 +35,9 @@ function normalizePaymentPage(response, requestedPage) {
 }
 
 function getPaymentStatus(payment) {
-  const rawStatus = String(payment?.statusName ?? payment?.status ?? "Đang xử lý").trim();
-  const presentation = PAYMENT_STATUS[rawStatus.toLowerCase()];
-  return presentation ?? { label: rawStatus || "Đang xử lý", tone: "neutral" };
+  const status = String(payment?.status ?? "").toLowerCase();
+  const label = getPaymentStatusLabel(status, payment?.statusName || "Đang xử lý");
+  return { label, tone: PAYMENT_STATUS_TONE[status] ?? "neutral" };
 }
 
 function formatMoney(amount, currency = "VND") {
@@ -87,7 +89,7 @@ function getDetailErrorMessage(error) {
 // Only Pending PayOS transactions can be reconciled - other providers or
 // already-terminal statuses have nothing for the reconcile endpoint to fix.
 function canReconcilePayment(payment) {
-  const status = String(payment?.statusName ?? "").toLowerCase();
+  const status = String(payment?.status ?? "").toLowerCase();
   const provider = String(payment?.paymentProvider ?? payment?.provider ?? "").toLowerCase();
   const orderCode = String(payment?.transactionReference ?? "").trim();
   return status === "pending" && provider === "payos" && Boolean(orderCode);
