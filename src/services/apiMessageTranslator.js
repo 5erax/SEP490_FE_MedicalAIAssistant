@@ -148,7 +148,7 @@ const EXACT_MESSAGES = Object.freeze({
   "Checkout failed.":
     "Không thể tạo yêu cầu thanh toán. Vui lòng thử lại.",
   "Request body is required.":
-    "Dữ liệu thanh toán không được để trống.",
+    "Dữ liệu gửi lên không được để trống.",
   "PlanId is required.":
     "Vui lòng chọn gói đăng ký.",
   "Subscription plan not found.":
@@ -163,6 +163,30 @@ const EXACT_MESSAGES = Object.freeze({
     "Không thể tạo liên kết thanh toán payOS. Vui lòng thử lại.",
   "User is not authenticated.":
     "Vui lòng đăng nhập để tiếp tục.",
+
+  // Doctor invitations (admin)
+  "Doctor invitation created.":
+    "Đã gửi lời mời đăng ký bác sĩ.",
+  "Create doctor invitation failed.":
+    "Không thể tạo lời mời đăng ký bác sĩ.",
+  "Email format is invalid.":
+    "Định dạng email không hợp lệ.",
+  "This email is already registered.":
+    "Email này đã được đăng ký tài khoản.",
+  "An active invitation already exists for this email.":
+    "Email này đã có một lời mời đăng ký còn hiệu lực.",
+  "DoctorId is invalid.":
+    "Mã hồ sơ bác sĩ không hợp lệ.",
+  "Doctor profile not found.":
+    "Không tìm thấy hồ sơ bác sĩ.",
+  "This doctor profile is already linked to a user account.":
+    "Hồ sơ bác sĩ này đã được liên kết với một tài khoản.",
+  "An active invitation already exists for this doctor profile.":
+    "Hồ sơ bác sĩ này đã có một lời mời đăng ký còn hiệu lực.",
+  "Failed to send invitation email.":
+    "Không thể gửi email mời đăng ký. Vui lòng thử lại.",
+  "Frontend:BaseUrl is required.":
+    "Không thể tạo lời mời do lỗi cấu hình hệ thống.",
 });
 
 const FIELD_LABELS = Object.freeze({
