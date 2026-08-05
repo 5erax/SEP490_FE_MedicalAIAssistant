@@ -1,11 +1,18 @@
 export {
+  AUTH_REFRESH_LEAD_MS,
   apiRequest,
   clearStoredAuth,
   getAccessToken,
+  getAuthExpiresAt,
   getStoredAuth,
+  getStoredSessionAuth,
   hasPremiumAccess,
   isAuthenticated,
+  isAuthExpired,
+  isAuthRefreshDue,
+  refreshAuthSession,
   setStoredAuth,
+  subscribeToAuth,
   withPagination,
 } from "./apiClient";
 export { authApi } from "./authService";
