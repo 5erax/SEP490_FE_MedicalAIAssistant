@@ -147,7 +147,7 @@ test("facility review submits the Swagger payload", async ({ page }) => {
       reviewPayload = route.request().postDataJSON();
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ success: true, message: "Đã gửi đánh giá.", data: { id: "review-id" } }),
+        body: JSON.stringify({ success: true, message: "Tạo feedback thành công", data: { id: "review-id" } }),
       });
     }
 
@@ -155,7 +155,7 @@ test("facility review submits the Swagger payload", async ({ page }) => {
       reviewUpdatePayload = route.request().postDataJSON();
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ success: true, message: "Đã cập nhật đánh giá.", data: { id: "review-id" } }),
+        body: JSON.stringify({ success: true, message: "Cập nhật feedback thành công", data: { id: "review-id" } }),
       });
     }
 
@@ -233,7 +233,7 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Gửi đánh giá" })).toBeVisible();
   await page.getByRole("button", { name: "Gửi đánh giá" }).click();
 
-  await expect(page.getByText("Đã gửi đánh giá.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tạo feedback thành công", { exact: true })).toBeVisible();
   await expect(page.getByText("Bạn đã đánh giá cơ sở này", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Gửi đánh giá" })).toHaveCount(0);
   expect(reviewPayload).toEqual({
@@ -253,7 +253,7 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   await page.getByRole("radio", { name: "3 sao" }).check();
   await page.getByLabel("Chia sẻ trải nghiệm").fill("Dịch vụ đã được cải thiện");
   await page.getByRole("button", { name: "Lưu chỉnh sửa" }).click();
-  await expect(page.getByText("Đã cập nhật đánh giá của bạn.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Cập nhật feedback thành công", { exact: true })).toBeVisible();
   expect(reviewUpdatePayload).toEqual({
     rating: 3,
     comment: "Dịch vụ đã được cải thiện",
