@@ -115,7 +115,7 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
   await expect(dialog.getByLabel("Số năm kinh nghiệm")).toBeFocused();
   await expect(errorSummary).toContainText("Số năm kinh nghiệm phải là số nguyên không âm.");
   await dialog.getByLabel("Số năm kinh nghiệm").fill("8");
-  await dialog.getByLabel("Vai trò trong khoa").selectOption("0");
+  await dialog.getByLabel("Vai trò trong khoa").selectOption("doctor");
   await dialog.locator('input[type="file"]').setInputFiles({
     name: "doctor.jpg",
     mimeType: "image/jpeg",
@@ -135,7 +135,7 @@ test("admin creates a doctor with a selected FacilityDepartment UUID", async ({ 
     specialty: null,
     academicTitle: "ThS.BS",
     imageUrl: uploadedImageUrl,
-    departmentRole: 0,
+    departmentRole: "doctor",
     yearsOfExperience: 8,
     isActive: true,
   });
