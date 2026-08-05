@@ -302,9 +302,17 @@ function DetailContent({ request, onReload }) {
   }
 
   useEffect(() => {
+    // The backend only allows clinical-context reads while the request is in
+    // an active review state (assigned/inReview/needMoreInformation) — it
+    // returns 409 INVALID_REQUEST_STATE once published/rejected/cancelled/
+    // expired, so don't even attempt the call outside that window.
+    if (!ASSIGNMENT_ACTIVE_STATUSES.has(request.status)) {
+      queueMicrotask(() => setClinicalLoading(false));
+      return;
+    }
     queueMicrotask(() => void loadClinicalContext());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request.id]);
+  }, [request.id, request.status]);
 
   const isAssignmentActive = ASSIGNMENT_ACTIVE_STATUSES.has(request.status);
   const countdown = useCountdown(
@@ -446,12 +454,14 @@ function DetailContent({ request, onReload }) {
             <p className="doctor-detail-note-text">{request.requestNote || "Không có ghi chú."}</p>
           </section>
 
-          <ClinicalContextSection
-            loading={clinicalLoading}
-            error={clinicalError}
-            data={clinicalContext}
-            onRetry={loadClinicalContext}
-          />
+          {ASSIGNMENT_ACTIVE_STATUSES.has(request.status) && (
+            <ClinicalContextSection
+              loading={clinicalLoading}
+              error={clinicalError}
+              data={clinicalContext}
+              onRetry={loadClinicalContext}
+            />
+          )}
 
           {request.status === "rejected" && (
             <section className="doctor-detail-card doctor-detail-card-danger">
