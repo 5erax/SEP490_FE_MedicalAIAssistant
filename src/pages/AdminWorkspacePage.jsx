@@ -48,6 +48,8 @@ import {
   usersApi,
 } from "../services/api";
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
+import { getDoctorInvitationErrorMessage } from "../services/apiError";
+import { translateApiMessage } from "../services/apiMessageTranslator";
 import { doctorManagementApi } from "../services/doctors";
 import { logoutUser } from "../services/logoutService";
 import { HCMC_HOSPITAL_CATALOG, HCMC_HOSPITAL_CATALOG_SIZE } from "../data/hcmcHospitalCatalog";
@@ -1717,10 +1719,13 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       setInvitationForm(EMPTY_INVITATION);
       setDoctorMessage({
         type: "success",
-        text: response.message || "Đã tạo và gửi lời mời đăng ký bác sĩ.",
+        text: translateApiMessage(response.message, { fallback: "Đã gửi lời mời đăng ký bác sĩ." }),
       });
     } catch (error) {
-      setDoctorMessage({ type: "error", text: error.message });
+      setDoctorMessage({
+        type: "error",
+        text: getDoctorInvitationErrorMessage(error, "Không thể tạo lời mời đăng ký bác sĩ. Vui lòng thử lại."),
+      });
     } finally {
       setSavingInvitation(false);
     }

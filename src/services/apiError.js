@@ -50,14 +50,30 @@ export function getPaymentReconcileErrorMessage(error, fallback) {
   return PAYMENT_RECONCILE_ERROR_MESSAGES[code] || fallback;
 }
 
-// POST /api/user-subscriptions/checkout has no stable error codes yet, so
-// the specific reason lives in errors[0] as a plain English sentence (BE's
-// "message" field is always the generic "Checkout failed."). Prefer the
-// specific errors[0] string over message when translating.
-export function getCheckoutErrorMessage(error, fallback) {
+// Shared by endpoints that have no stable error codes yet: BE sends a
+// generic "X failed." in `message` plus the real reason as a plain English
+// sentence in errors[0]. Prefer the specific errors[0] string over message
+// when translating, since apiClient concatenates both into error.message
+// when they differ, which won't exact-match a single translation entry.
+function getFirstErrorMessage(error, fallback) {
   const specific = Array.isArray(error?.payload?.errors) ? error.payload.errors[0] : "";
   return translateApiMessage(specific || error?.message, {
     status: error?.status,
     fallback,
   });
+}
+
+// POST /api/user-subscriptions/checkout
+export function getCheckoutErrorMessage(error, fallback) {
+  return getFirstErrorMessage(error, fallback);
+}
+
+// POST /api/admin/doctor-invitations - 403 may be returned by the
+// authorization middleware without an ApiResponse body, so it's handled
+// before falling back to message/errors[0] translation.
+export function getDoctorInvitationErrorMessage(error, fallback) {
+  if (error?.status === 403) {
+    return "Bạn không có quyền tạo lời mời đăng ký bác sĩ.";
+  }
+  return getFirstErrorMessage(error, fallback);
 }

@@ -286,7 +286,7 @@ test("admin creates a doctor invitation with an optional doctor link", async ({ 
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          message: "Invitation sent.",
+          message: "Doctor invitation created.",
           data: {
             id: "44444444-4444-4444-8444-444444444444",
             email: "doctor@example.com",
@@ -310,13 +310,13 @@ test("admin creates a doctor invitation with an optional doctor link", async ({ 
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Bác sĩ", exact: true }).click();
   await page.getByLabel("Email bác sĩ").fill("doctor@example.com");
-  await page.getByRole("button", { name: "Gửi invitation" }).click();
+  await page.getByRole("button", { name: "Gửi lời mời đăng ký" }).click();
 
-  await expect(page.getByText("Invitation sent.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Đã gửi lời mời đăng ký bác sĩ.", { exact: true })).toBeVisible();
   expect(invitationPayload).toEqual({ email: "doctor@example.com" });
 });
 
-test("admin invitation displays backend error details with the generic summary", async ({ page }) => {
+test("admin invitation shows the translated backend error instead of raw English", async ({ page }) => {
   await preparePage(page);
   await authenticate(page);
 
@@ -337,7 +337,7 @@ test("admin invitation displays backend error details with the generic summary",
         body: JSON.stringify({
           success: false,
           message: "Create doctor invitation failed.",
-          errors: ["The email already has an account."],
+          errors: ["This email is already registered."],
         }),
       });
     }
@@ -355,10 +355,10 @@ test("admin invitation displays backend error details with the generic summary",
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Bác sĩ", exact: true }).click();
   await page.getByLabel("Email bác sĩ").fill("new-doctor@example.com");
-  await page.getByRole("button", { name: "Gửi invitation" }).click();
+  await page.getByRole("button", { name: "Gửi lời mời đăng ký" }).click();
 
   await expect(page.getByText(
-    "Create doctor invitation failed. The email already has an account.",
+    "Email này đã được đăng ký tài khoản.",
     { exact: true },
   )).toBeVisible();
 });
