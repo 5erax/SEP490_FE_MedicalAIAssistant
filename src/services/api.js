@@ -17,7 +17,10 @@ export {
 } from "./apiClient";
 export { authApi } from "./authService";
 export { usersApi } from "./userService";
-export { medicalDepartmentsApi } from "./departmentService";
+export {
+  getMedicalDepartmentApiMessage,
+  medicalDepartmentsApi,
+} from "./departmentService";
 export { medicalFacilitiesApi } from "./facilityService";
 export { facilityDepartmentsApi } from "./facilityDepartmentService";
 export { doctorsApi } from "./doctorService";

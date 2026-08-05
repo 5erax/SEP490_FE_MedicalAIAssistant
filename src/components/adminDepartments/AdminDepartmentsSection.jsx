@@ -2,15 +2,16 @@ import { BookOpen, Check, Filter, Pencil, Plus, RefreshCw, RotateCcw, Search, St
 import { useEffect, useRef, useState } from "react";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
-function Field({ label, children, className = "", help, required = false }) {
+function Field({ label, children, className = "", error, errorId, help, helpId, required = false }) {
   return (
-    <label className={`clean-field ${className}`.trim()}>
+    <label className={`clean-field ${error ? "department-field-error" : ""} ${className}`.trim()}>
       <span>
         {label}
         {required && <small className="department-required-note"> (bắt buộc)</small>}
       </span>
       {children}
-      {help && <small>{help}</small>}
+      {help && <small id={helpId}>{help}</small>}
+      {error && <small className="department-field-error-message" id={errorId}>{error}</small>}
     </label>
   );
 }
@@ -22,6 +23,7 @@ export default function AdminDepartmentsSection({
   error,
   filters,
   form,
+  formErrors,
   loading,
   message,
   pageInfo,
@@ -42,6 +44,7 @@ export default function AdminDepartmentsSection({
   const wasSavingRef = useRef(false);
   const nameInputRef = useRef(null);
   const dialogTriggerRef = useRef(null);
+  const formMessageRef = useRef(null);
 
   useEffect(() => {
     if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
@@ -49,6 +52,12 @@ export default function AdminDepartmentsSection({
     }
     wasSavingRef.current = saving;
   }, [formOpen, message, saving]);
+
+  useEffect(() => {
+    if (formOpen && message?.type === "error") {
+      formMessageRef.current?.focus();
+    }
+  }, [formOpen, message]);
 
   function openCreateForm() {
     dialogTriggerRef.current = document.activeElement;
@@ -93,7 +102,7 @@ export default function AdminDepartmentsSection({
         </div>
       </header>
 
-      {message && (
+      {message && !formOpen && (
         <div
           className={`api-message ${message.type}`}
           role={message.type === "error" ? "alert" : "status"}
@@ -285,7 +294,17 @@ export default function AdminDepartmentsSection({
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={saving}>×</button>
           </header>
 
-          <form className="clean-form doctor-form facility-form department-form" onSubmit={onSubmit}>
+          <form className="clean-form doctor-form facility-form department-form" onSubmit={onSubmit} noValidate>
+            {message?.type === "error" && (
+              <div
+                ref={formMessageRef}
+                className="api-message error department-form-message"
+                role="alert"
+                tabIndex={-1}
+              >
+                {message.text}
+              </div>
+            )}
             <div className="facility-form-body">
               <section className="facility-form-card" aria-labelledby="department-basic-section">
                 <div className="facility-form-card-head">
@@ -297,12 +316,20 @@ export default function AdminDepartmentsSection({
                 </div>
 
                 <div className="facility-form-grid department-form-grid">
-                  <Field label="Tên chuyên khoa" className="facility-form-span-2" required>
+                  <Field
+                    label="Tên chuyên khoa"
+                    className="facility-form-span-2"
+                    error={formErrors.departmentName}
+                    errorId="department-name-error"
+                    required
+                  >
                     <input
                       ref={nameInputRef}
                       value={form.departmentName}
                       onChange={(event) => onFormChange("departmentName", event.target.value)}
                       placeholder="Ví dụ: Tim mạch"
+                      aria-invalid={Boolean(formErrors.departmentName)}
+                      aria-describedby={formErrors.departmentName ? "department-name-error" : undefined}
                       required
                     />
                   </Field>
@@ -310,6 +337,7 @@ export default function AdminDepartmentsSection({
                   <Field
                     label="Mô tả"
                     className="facility-form-span-2"
+                    helpId="department-description-help"
                     help="Mô tả ngắn phạm vi chuyên môn hoặc nhóm vấn đề thường được tiếp nhận."
                   >
                     <textarea
@@ -317,6 +345,7 @@ export default function AdminDepartmentsSection({
                       value={form.description}
                       onChange={(event) => onFormChange("description", event.target.value)}
                       placeholder="Mô tả chức năng, nhóm triệu chứng thường gặp..."
+                      aria-describedby="department-description-help"
                     />
                   </Field>
                 </div>
@@ -335,12 +364,19 @@ export default function AdminDepartmentsSection({
                   <Field
                     label="Mã chương ICD"
                     className="facility-form-span-2"
+                    error={formErrors.chapterCode}
+                    errorId="department-chapter-code-error"
+                    helpId="department-chapter-code-help"
                     help="Nhập mã chương ICD đang áp dụng cho chuyên khoa này, nếu có."
                   >
                     <input
                       value={form.chapterCode}
                       onChange={(event) => onFormChange("chapterCode", event.target.value)}
                       placeholder="Ví dụ: IX"
+                      aria-invalid={Boolean(formErrors.chapterCode)}
+                      aria-describedby={formErrors.chapterCode
+                        ? "department-chapter-code-help department-chapter-code-error"
+                        : "department-chapter-code-help"}
                     />
                   </Field>
                 </div>
