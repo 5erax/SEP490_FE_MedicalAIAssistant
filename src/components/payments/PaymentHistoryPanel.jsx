@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, ReceiptText, RefreshCw, X } from "lucide-rea
 import { Dialog } from "../ui";
 import { paymentsApi } from "../../services/api";
 import { getPaymentReconcileErrorMessage } from "../../services/apiError";
+import { translateApiMessage } from "../../services/apiMessageTranslator";
 import "../../styles/payment-history.css";
 
 const PAGE_SIZE = 10;
@@ -72,13 +73,15 @@ function getHistoryErrorMessage(error) {
 }
 
 function getDetailErrorMessage(error) {
+  // 404 covers both "not found" and "belongs to another user" - BE intentionally
+  // returns the same status for both to avoid leaking other users' payment IDs.
   if (error?.status === 404) {
     return "Không tìm thấy giao dịch này hoặc bạn không có quyền xem giao dịch.";
   }
-  if (error?.status === 401) {
-    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
-  }
-  return "Chưa thể tải chi tiết giao dịch. Vui lòng thử lại sau.";
+  return translateApiMessage(error?.message, {
+    status: error?.status,
+    fallback: "Chưa thể tải chi tiết giao dịch. Vui lòng thử lại sau.",
+  });
 }
 
 // Only Pending PayOS transactions can be reconciled - other providers or
