@@ -1,21 +1,35 @@
-import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, ClipboardList, RefreshCw, UserCheck } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Bone,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  RefreshCw,
+  Thermometer,
+  UserCheck,
+  Wind,
+} from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Badge, Button, CustomSelect, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { doctorRecoveryPlanRequestsApi } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
+import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import "../styles/doctor-recovery-plan.css";
 
 const PAGE_SIZE = 10;
 const DISEASE_GROUPS = [
   { value: "", label: "Tất cả nhóm bệnh" },
-  { value: "respiratory", label: "Hô hấp" },
-  { value: "musculoskeletal", label: "Cơ xương khớp" },
-  { value: "infectiousDisease", label: "Bệnh truyền nhiễm" },
+  { value: "respiratory", label: "Hô hấp", icon: Wind },
+  { value: "musculoskeletal", label: "Cơ xương khớp", icon: Bone },
+  { value: "infectiousDisease", label: "Bệnh truyền nhiễm", icon: Thermometer },
 ];
 
+function getDiseaseGroup(value) {
+  return DISEASE_GROUPS.find((item) => item.value === value);
+}
+
 function getDiseaseLabel(value) {
-  return DISEASE_GROUPS.find((item) => item.value === value)?.label ?? "Chưa phân loại";
+  return getDiseaseGroup(value)?.label ?? "Chưa phân loại";
 }
 
 function formatDate(value) {
@@ -31,6 +45,7 @@ function normalizePaged(response, pageNumber) {
     items: Array.isArray(data.items) ? data.items : [],
     pageNumber: Number(data.pageNumber) || pageNumber,
     totalPages: Math.max(1, Number(data.totalPages) || 1),
+    totalCount: Math.max(0, Number(data.totalCount) || 0),
   };
 }
 
@@ -58,11 +73,12 @@ export default function DoctorRecoveryPlanQueuePage() {
   const { showToast } = useFeedback();
   const [diseaseGroup, setDiseaseGroup] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
-  const [page, setPage] = useState({ items: [], pageNumber: 1, totalPages: 1 });
+  const [page, setPage] = useState({ items: [], pageNumber: 1, totalPages: 1, totalCount: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [blockedMessage, setBlockedMessage] = useState("");
   const [acceptingId, setAcceptingId] = useState("");
+  const refetchTimerRef = useRef(null);
 
   const loadQueue = useCallback(async (targetPage = pageNumber, targetDiseaseGroup = diseaseGroup) => {
     setLoading(true);
@@ -86,7 +102,7 @@ export default function DoctorRecoveryPlanQueuePage() {
       } else {
         setError("Chưa thể tải hàng đợi yêu cầu. Vui lòng thử lại.");
       }
-      setPage({ items: [], pageNumber: targetPage, totalPages: 1 });
+      setPage({ items: [], pageNumber: targetPage, totalPages: 1, totalCount: 0 });
     } finally {
       setLoading(false);
     }
@@ -104,6 +120,26 @@ export default function DoctorRecoveryPlanQueuePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diseaseGroup]);
 
+  useEffect(() => {
+    // The doctor workspace shell owns the actual SignalR connection; this
+    // page just listens and debounces a refetch so an "Added"/claimed event
+    // from another doctor (or this page's own accept action elsewhere)
+    // keeps the queue in sync without a manual reload.
+    const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
+      if (event.type === "queue" || event.type === "request" || event.refetch) {
+        window.clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = window.setTimeout(() => {
+          void loadQueue(pageNumber, diseaseGroup);
+        }, 250);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(refetchTimerRef.current);
+    };
+  }, [loadQueue, pageNumber, diseaseGroup]);
+
   async function handleAccept(request) {
     setAcceptingId(request.id);
     try {
@@ -114,7 +150,11 @@ export default function DoctorRecoveryPlanQueuePage() {
       const mapped = getAcceptErrorMessage(requestError);
       showToast({ type: "error", title: "Không thể nhận yêu cầu", message: mapped.message });
       if (mapped.code === "RECOVERY_PLAN_REQUEST_ALREADY_CLAIMED") {
-        setPage((current) => ({ ...current, items: current.items.filter((item) => item.id !== request.id) }));
+        setPage((current) => ({
+          ...current,
+          items: current.items.filter((item) => item.id !== request.id),
+          totalCount: Math.max(0, current.totalCount - 1),
+        }));
       }
       if (["DOCTOR_NOT_ACTIVE", "DOCTOR_NOT_ACCEPTING_REQUESTS"].includes(mapped.code)) {
         void loadQueue(pageNumber, diseaseGroup);
@@ -128,7 +168,10 @@ export default function DoctorRecoveryPlanQueuePage() {
     <div className="doctor-recovery-page">
       <header className="doctor-recovery-header">
         <div>
-          <p className="doctor-recovery-eyebrow">Hàng đợi chung</p>
+          <p className="doctor-recovery-eyebrow">
+            <span className="doctor-recovery-eyebrow-icon" aria-hidden="true"><ClipboardList size={14} /></span>
+            Hàng đợi chung
+          </p>
           <h1>Yêu cầu Kế hoạch phục hồi</h1>
           <p>Nhận một yêu cầu để bắt đầu xem xét. Yêu cầu chưa có bác sĩ nhận sẽ hiển thị tại đây theo thứ tự gửi trước.</p>
         </div>
@@ -137,13 +180,21 @@ export default function DoctorRecoveryPlanQueuePage() {
         </Button>
       </header>
 
-      <div className="doctor-recovery-filters">
+      <div className="doctor-recovery-toolbar">
         <CustomSelect
           label="Nhóm bệnh"
           value={diseaseGroup}
           options={DISEASE_GROUPS}
           onChange={setDiseaseGroup}
+          className="doctor-recovery-select"
         />
+        <span className="doctor-recovery-toolbar-count">
+          {blockedMessage || error
+            ? null
+            : loading
+              ? "Đang tải…"
+              : `${page.totalCount} yêu cầu đang chờ`}
+        </span>
       </div>
 
       {blockedMessage ? (
@@ -165,8 +216,11 @@ export default function DoctorRecoveryPlanQueuePage() {
       ) : (
         <>
           <div className="doctor-recovery-queue-list">
-            {page.items.map((request) => (
+            {page.items.map((request) => {
+              const DiseaseIcon = getDiseaseGroup(request.diseaseGroup)?.icon ?? ClipboardList;
+              return (
               <article className="doctor-recovery-queue-card" key={request.id}>
+                <span className="doctor-recovery-queue-icon" aria-hidden="true"><DiseaseIcon size={20} /></span>
                 <div>
                   <Badge tone="info">{getDiseaseLabel(request.diseaseGroup)}</Badge>
                   <p className="doctor-recovery-queue-time">Gửi lúc {formatDate(request.requestedAt)}</p>
@@ -180,7 +234,8 @@ export default function DoctorRecoveryPlanQueuePage() {
                   <UserCheck size={17} aria-hidden="true" /> Nhận yêu cầu
                 </Button>
               </article>
-            ))}
+              );
+            })}
           </div>
 
           {page.totalPages > 1 && (

@@ -2,16 +2,20 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ReceiptText, RefreshCw, X } from "lucide-react";
 import { Dialog } from "../ui";
 import { paymentsApi } from "../../services/api";
+import { getPaymentReconcileErrorMessage } from "../../services/apiError";
+import { translateApiMessage } from "../../services/apiMessageTranslator";
+import { getPaymentStatusLabel } from "../../services/paymentStatusLabels";
 import "../../styles/payment-history.css";
 
 const PAGE_SIZE = 10;
 
-const PAYMENT_STATUS = {
-  pending: { label: "Đang chờ", tone: "warning" },
-  paid: { label: "Đã thanh toán", tone: "success" },
-  cancelled: { label: "Đã hủy", tone: "neutral" },
-  canceled: { label: "Đã hủy", tone: "neutral" },
-  failed: { label: "Thất bại", tone: "danger" },
+const PAYMENT_STATUS_TONE = {
+  pending: "warning",
+  paid: "success",
+  cancelled: "neutral",
+  canceled: "neutral",
+  failed: "danger",
+  refunded: "neutral",
 };
 
 function normalizePaymentPage(response, requestedPage) {
@@ -31,9 +35,9 @@ function normalizePaymentPage(response, requestedPage) {
 }
 
 function getPaymentStatus(payment) {
-  const rawStatus = String(payment?.statusName ?? payment?.status ?? "Đang xử lý").trim();
-  const presentation = PAYMENT_STATUS[rawStatus.toLowerCase()];
-  return presentation ?? { label: rawStatus || "Đang xử lý", tone: "neutral" };
+  const status = String(payment?.status ?? "").toLowerCase();
+  const label = getPaymentStatusLabel(status, payment?.statusName || "Đang xử lý");
+  return { label, tone: PAYMENT_STATUS_TONE[status] ?? "neutral" };
 }
 
 function formatMoney(amount, currency = "VND") {
@@ -71,32 +75,28 @@ function getHistoryErrorMessage(error) {
 }
 
 function getDetailErrorMessage(error) {
+  // 404 covers both "not found" and "belongs to another user" - BE intentionally
+  // returns the same status for both to avoid leaking other users' payment IDs.
   if (error?.status === 404) {
     return "Không tìm thấy giao dịch này hoặc bạn không có quyền xem giao dịch.";
   }
-  if (error?.status === 401) {
-    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
-  }
-  return "Chưa thể tải chi tiết giao dịch. Vui lòng thử lại sau.";
+  return translateApiMessage(error?.message, {
+    status: error?.status,
+    fallback: "Chưa thể tải chi tiết giao dịch. Vui lòng thử lại sau.",
+  });
 }
 
 // Only Pending PayOS transactions can be reconciled - other providers or
 // already-terminal statuses have nothing for the reconcile endpoint to fix.
 function canReconcilePayment(payment) {
-  const status = String(payment?.statusName ?? "").toLowerCase();
+  const status = String(payment?.status ?? "").toLowerCase();
   const provider = String(payment?.paymentProvider ?? payment?.provider ?? "").toLowerCase();
   const orderCode = String(payment?.transactionReference ?? "").trim();
   return status === "pending" && provider === "payos" && Boolean(orderCode);
 }
 
 function getFriendlyReconcileMessage(error) {
-  if (error?.status === 401) return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
-  if (error?.status === 403) return "Giao dịch này không thuộc tài khoản hiện tại.";
-  if (error?.status === 404) return "PayOS không tìm thấy giao dịch này.";
-  if (error?.status === 409) return "Dữ liệu giao dịch không khớp. Vui lòng liên hệ hỗ trợ.";
-  if (error?.status === 429) return "Đang kiểm tra quá thường xuyên. Vui lòng thử lại sau ít phút.";
-  if (error?.status === 502) return "Chưa kết nối được PayOS. Vui lòng thử lại sau.";
-  return error?.message || "Chưa thể kiểm tra giao dịch lúc này. Vui lòng thử lại sau.";
+  return getPaymentReconcileErrorMessage(error, "Chưa thể kiểm tra giao dịch lúc này. Vui lòng thử lại sau.");
 }
 
 function PaymentStatusBadge({ payment }) {

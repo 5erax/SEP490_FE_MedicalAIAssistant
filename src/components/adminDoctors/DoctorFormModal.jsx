@@ -10,17 +10,19 @@ const EMPTY_FORM = {
   specialty: "",
   academicTitle: "",
   imageUrl: "",
-  departmentRole: "0",
+  departmentRole: "doctor",
   yearsOfExperience: "",
   isActive: "true",
 };
 
+// Values must match the DepartmentRole string enum exactly (confirmed via
+// the live BE swagger schema) - the API rejects a numeric departmentRole.
 const ROLE_OPTIONS = [
-  { value: 0, label: "Bác sĩ" },
-  { value: 1, label: "Phó trưởng khoa" },
-  { value: 2, label: "Trưởng khoa" },
-  { value: 3, label: "Chuyên gia đầu ngành" },
-  { value: 4, label: "Cố vấn" },
+  { value: "doctor", label: "Bác sĩ" },
+  { value: "deputyHead", label: "Phó trưởng khoa" },
+  { value: "head", label: "Trưởng khoa" },
+  { value: "leadingExpert", label: "Chuyên gia đầu ngành" },
+  { value: "consultant", label: "Cố vấn" },
 ];
 
 const GUID_PATTERN = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -33,7 +35,7 @@ function toFormValue(doctor) {
     specialty: doctor.specialty ?? "",
     academicTitle: doctor.academicTitle ?? "",
     imageUrl: doctor.imageUrl ?? doctor.avatarUrl ?? doctor.photoUrl ?? "",
-    departmentRole: String(doctor.departmentRole ?? 0),
+    departmentRole: doctor.departmentRole ?? "doctor",
     yearsOfExperience: doctor.yearsOfExperience ?? "",
     isActive: String(Boolean(doctor.isActive)),
   };
@@ -82,7 +84,7 @@ function buildDoctorPayload(form) {
     specialty: form.specialty.trim() || null,
     academicTitle: form.academicTitle.trim() || null,
     imageUrl: form.imageUrl.trim() || null,
-    departmentRole: Number(form.departmentRole),
+    departmentRole: form.departmentRole,
     yearsOfExperience: form.yearsOfExperience === "" ? null : Number(form.yearsOfExperience),
     isActive: form.isActive === "true",
   };

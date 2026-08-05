@@ -104,6 +104,7 @@
 }
 
 .auth-mode-doctor .doctor-profile-summary,
+.auth-mode-doctor .doctor-expiry-notice,
 .auth-mode-doctor .doctor-facility-warning,
 .auth-mode-doctor .doctor-api-errors,
 .auth-mode-doctor .doctor-error-summary {
@@ -111,7 +112,8 @@
   padding: 14px 16px;
 }
 
-.auth-mode-doctor .doctor-profile-summary {
+.auth-mode-doctor .doctor-profile-summary,
+.auth-mode-doctor .doctor-expiry-notice {
   display: grid;
   gap: 5px;
   margin-bottom: 16px;
@@ -119,7 +121,8 @@
   background: #edf8f4;
 }
 
-.auth-mode-doctor .doctor-profile-summary span {
+.auth-mode-doctor .doctor-profile-summary span,
+.auth-mode-doctor .doctor-expiry-notice span {
   color: var(--auth-muted);
   font-size: 11px;
   font-weight: 900;
@@ -127,8 +130,23 @@
   text-transform: uppercase;
 }
 
-.auth-mode-doctor .doctor-profile-summary strong {
+.auth-mode-doctor .doctor-profile-summary strong,
+.auth-mode-doctor .doctor-expiry-notice strong {
   color: var(--auth-navy);
+}
+
+.auth-mode-doctor .doctor-expiry-notice strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+}
+
+.auth-mode-doctor .doctor-expiry-notice.is-urgent {
+  border-color: #d8b46a;
+  background: #fff9e8;
+}
+
+.auth-mode-doctor .doctor-expiry-notice.is-urgent strong {
+  color: #6f4d12;
 }
 
 .auth-mode-doctor .doctor-api-errors {
@@ -231,7 +249,8 @@ html[data-theme="dark"] .auth-mode-doctor .doctor-form-group {
   background: rgba(255, 255, 255, 0.015);
 }
 
-html[data-theme="dark"] .auth-mode-doctor .doctor-profile-summary {
+html[data-theme="dark"] .auth-mode-doctor .doctor-profile-summary,
+html[data-theme="dark"] .auth-mode-doctor .doctor-expiry-notice {
   border-color: var(--auth-line);
   background: #1a3033;
 }
@@ -243,9 +262,14 @@ html[data-theme="dark"] .auth-mode-doctor .doctor-error-summary {
   color: #ffd0c1;
 }
 
-html[data-theme="dark"] .auth-mode-doctor .doctor-facility-warning {
+html[data-theme="dark"] .auth-mode-doctor .doctor-facility-warning,
+html[data-theme="dark"] .auth-mode-doctor .doctor-expiry-notice.is-urgent {
   border-color: #96753c;
   background: #342f22;
+  color: #f5d898;
+}
+
+html[data-theme="dark"] .auth-mode-doctor .doctor-expiry-notice.is-urgent strong {
   color: #f5d898;
 }
 

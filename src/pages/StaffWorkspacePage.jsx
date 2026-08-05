@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   CircleHelp,
-  ClipboardList,
   Home,
   MapPin,
   RefreshCw,
@@ -171,13 +170,6 @@ export default function StaffWorkspacePage() {
                 </div>
               </div>
               <nav className="staff-quick-links" aria-label="Liên kết nhanh Doctor và Staff">
-                {hasRole(roles, "doctor") && (
-                  <a href="/app/staff/recovery-plans/queue">
-                    <span><ClipboardList size={20} aria-hidden="true" /></span>
-                    <div><strong>Hàng đợi Kế hoạch phục hồi</strong><small>Nhận và xử lý yêu cầu bệnh nhân</small></div>
-                    <ArrowRight size={18} aria-hidden="true" />
-                  </a>
-                )}
                 <a href="/map">
                   <span><MapPin size={20} aria-hidden="true" /></span>
                   <div><strong>Tìm cơ sở y tế</strong><small>Xem cơ sở đang hoạt động trên bản đồ</small></div>

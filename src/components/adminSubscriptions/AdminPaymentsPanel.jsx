@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, ReceiptText, RefreshCw, X } from "lucide-react";
 import { Badge, Button, DataTable, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
 import { paymentsApi } from "../../services/api";
+import { translateApiMessage } from "../../services/apiMessageTranslator";
+import { getPaymentStatusLabel } from "../../services/paymentStatusLabels";
 
 const PAGE_SIZE = 10;
 
@@ -32,11 +34,12 @@ function formatDateTime(value) {
 }
 
 function getPaymentStatus(payment) {
-  const status = String(payment?.statusName ?? payment?.status ?? "").toLowerCase();
-  if (["paid", "completed", "success"].includes(status)) return { label: "Đã thanh toán", tone: "success" };
-  if (["failed", "refunded"].includes(status)) return { label: status === "refunded" ? "Đã hoàn tiền" : "Thất bại", tone: "danger" };
-  if (["cancelled", "canceled"].includes(status)) return { label: "Đã hủy", tone: "warning" };
-  return { label: "Đang chờ", tone: "warning" };
+  const status = String(payment?.status ?? "").toLowerCase();
+  const label = getPaymentStatusLabel(status, payment?.statusName || "Đang chờ");
+  if (status === "paid") return { label, tone: "success" };
+  if (status === "failed" || status === "refunded") return { label, tone: "danger" };
+  if (status === "cancelled" || status === "canceled") return { label, tone: "warning" };
+  return { label, tone: "warning" };
 }
 
 function PaymentDetailDialog({ paymentSummary, onClose, restoreFocusRef }) {
@@ -52,8 +55,13 @@ function PaymentDetailDialog({ paymentSummary, onClose, restoreFocusRef }) {
         .then((response) => {
           if (active) setPayment(response?.data ?? paymentSummary);
         })
-        .catch(() => {
-          if (active) setError("Chưa thể tải đầy đủ chi tiết giao dịch.");
+        .catch((error) => {
+          if (active) {
+            setError(translateApiMessage(error?.message, {
+              status: error?.status,
+              fallback: "Chưa thể tải đầy đủ chi tiết giao dịch.",
+            }));
+          }
         })
         .finally(() => {
           if (active) setLoading(false);
@@ -116,8 +124,13 @@ export default function AdminPaymentsPanel() {
         .then((response) => {
           if (active) setPaymentPage(normalizePage(response, pageNumber));
         })
-        .catch(() => {
-          if (active) setError("Chưa thể tải lịch sử thanh toán. Vui lòng thử lại.");
+        .catch((error) => {
+          if (active) {
+            setError(translateApiMessage(error?.message, {
+              status: error?.status,
+              fallback: "Chưa thể tải lịch sử thanh toán. Vui lòng thử lại.",
+            }));
+          }
         })
         .finally(() => {
           if (active) setLoading(false);

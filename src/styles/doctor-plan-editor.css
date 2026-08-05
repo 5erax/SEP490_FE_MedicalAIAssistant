@@ -1,0 +1,756 @@
+.doctor-plan-page {
+  display: grid;
+  gap: 16px;
+  width: min(1180px, 100%);
+  margin-inline: auto;
+  padding: 22px clamp(16px, 3vw, 48px) 56px;
+}
+
+/* The global `img, svg { display: block; }` reset (base.css) makes any
+   icon inside .ui-button's plain content <span> force a line break
+   before the label, since that span isn't a flex container itself.
+   Turning it into one neutralizes the reset for the icon+label pair. */
+.doctor-plan-page .ui-button {
+  white-space: nowrap;
+}
+
+.doctor-plan-page .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doctor-plan-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  justify-self: start;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-info-strong);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.doctor-plan-back:hover {
+  text-decoration: underline;
+}
+
+.doctor-plan-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.doctor-plan-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.doctor-plan-eyebrow {
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-header h1 {
+  margin-top: 2px;
+  font-size: clamp(21px, 2.6vw, 26px);
+  color: var(--color-ink);
+}
+
+.doctor-plan-refresh {
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  cursor: pointer;
+}
+
+.doctor-plan-refresh:hover {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+.doctor-plan-preview-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 0 14px;
+  height: 38px;
+  color: var(--color-info-strong);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.doctor-plan-preview-trigger:hover {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+/* Two-column dashboard layout: main content + meta sidebar */
+
+.doctor-plan-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 20px;
+}
+
+.doctor-plan-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.doctor-plan-sidebar {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  position: sticky;
+  top: 22px;
+}
+
+.doctor-plan-side-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  padding: 16px 18px;
+}
+
+.doctor-plan-side-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-side-heading svg {
+  color: var(--color-info-strong);
+}
+
+.doctor-plan-quick-info {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.doctor-plan-quick-info dt {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.doctor-plan-quick-info dd {
+  margin: 2px 0 0;
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .doctor-plan-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-plan-sidebar {
+    position: static;
+  }
+}
+
+.doctor-plan-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+  padding: 20px 22px;
+}
+
+.doctor-plan-phases-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  padding: 16px;
+}
+
+.doctor-plan-phases-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  background: var(--color-line);
+  color: var(--color-muted);
+}
+
+.doctor-plan-phase-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-plan-phase-row {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(8, 127, 140, 0.18);
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  padding: 16px 18px;
+}
+
+.doctor-plan-phase-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.doctor-plan-phase-info {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 3px;
+}
+
+.doctor-plan-phase-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.doctor-plan-phase-actions button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  cursor: pointer;
+}
+
+.doctor-plan-phase-actions button:hover:not(:disabled) {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+.doctor-plan-phase-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.doctor-plan-phase-actions button.is-danger {
+  color: var(--color-danger);
+}
+
+.doctor-plan-phase-actions button.is-danger:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.doctor-plan-phase-info strong {
+  color: var(--color-ink);
+  font-size: 15px;
+}
+
+.doctor-plan-phase-days {
+  color: var(--color-info-strong);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.doctor-plan-phase-meta {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.doctor-plan-phase-instruction {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.doctor-plan-modal-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* Nested nutrient / food sub-sections inside a phase row */
+
+.doctor-plan-subsection {
+  display: grid;
+  gap: 8px;
+  border-top: 1px dashed var(--color-line);
+  padding-top: 12px;
+}
+
+.doctor-plan-subsection-nested {
+  margin-top: 4px;
+  border-top-style: dotted;
+}
+
+.doctor-plan-subsection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.doctor-plan-subsection-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-subsection-heading svg {
+  color: var(--color-info-strong);
+}
+
+.doctor-plan-subsection-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-info-strong);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.doctor-plan-subsection-add:hover {
+  text-decoration: underline;
+}
+
+.doctor-plan-subsection-empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.doctor-plan-nutrient-list,
+.doctor-plan-food-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-plan-nutrient-row {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(8, 127, 140, 0.14);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-info-bg) 45%, #fff);
+  padding: 13px 14px;
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
+}
+
+.doctor-plan-nutrient-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.doctor-plan-nutrient-info,
+.doctor-plan-food-info {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 2px;
+}
+
+.doctor-plan-nutrient-info strong,
+.doctor-plan-food-info strong {
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.doctor-plan-food-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  padding: 11px 13px;
+}
+
+.doctor-plan-phase-gaps {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--color-warning-bg);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  padding: 10px 14px;
+  color: var(--color-warning);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.doctor-plan-phase-gaps svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.doctor-plan-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doctor-plan-card-heading {
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.doctor-plan-grid dt {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-grid dd {
+  margin: 5px 0 0;
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.doctor-plan-grid-wide {
+  grid-column: 1 / -1;
+}
+
+.doctor-plan-empty-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Publish checklist card */
+
+.doctor-plan-publish-card {
+  border-color: rgba(8, 127, 140, 0.22);
+  background: linear-gradient(150deg, #fff 55%, var(--color-info-bg) 200%);
+}
+
+.doctor-plan-checklist {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-plan-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.doctor-plan-checklist li > span:last-child {
+  display: grid;
+  gap: 2px;
+  padding-top: 1px;
+}
+
+.doctor-plan-checklist li em {
+  color: var(--color-danger);
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.doctor-plan-checklist li.is-done {
+  color: var(--color-ink);
+}
+
+.doctor-plan-checklist-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-line);
+  color: var(--color-muted);
+}
+
+.doctor-plan-checklist li.is-done .doctor-plan-checklist-icon {
+  background: var(--color-info-strong);
+  color: #fff;
+}
+
+.doctor-plan-checklist li.is-blocked .doctor-plan-checklist-icon {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.doctor-plan-publish-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Patient-view preview modal */
+
+.doctor-plan-preview-modal {
+  width: min(680px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.doctor-plan-preview-body {
+  padding: 4px 22px 22px;
+}
+
+.doctor-plan-danger-zone {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(180, 35, 24, 0.18);
+  border-radius: 14px;
+  background: var(--color-danger-bg);
+  padding: 16px 18px;
+}
+
+.doctor-plan-danger-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.doctor-plan-danger-header svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-danger);
+}
+
+.doctor-plan-danger-title {
+  color: var(--color-danger);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-danger-desc {
+  margin-top: 2px;
+  color: var(--color-danger);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.doctor-plan-danger-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(180, 35, 24, 0.22);
+  border-radius: 10px;
+  background: var(--color-surface);
+  padding: 13px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+
+.doctor-plan-danger-action:hover:not(:disabled) {
+  background: rgba(180, 35, 24, 0.08);
+}
+
+.doctor-plan-danger-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.doctor-plan-danger-action-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.doctor-plan-danger-action-body strong {
+  display: block;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.doctor-plan-danger-action-body p {
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 560px) {
+  .doctor-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-plan-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doctor-plan-modal-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Edit plan header dialog */
+
+.doctor-plan-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.55);
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+
+.doctor-plan-modal {
+  width: min(520px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.doctor-plan-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 20px 22px 16px;
+}
+
+.doctor-plan-modal-header > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.doctor-plan-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.doctor-plan-modal-header button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.doctor-plan-modal form {
+  display: grid;
+  gap: 16px;
+  padding: 18px 22px 22px;
+}
+
+.doctor-plan-modal-note {
+  margin: -6px 0 0;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  padding: 10px 12px;
+  color: var(--color-info-strong);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.doctor-plan-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
