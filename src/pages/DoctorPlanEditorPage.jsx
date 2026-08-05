@@ -692,11 +692,11 @@ function PhaseRow({
       <div className="doctor-plan-subsection">
         <div className="doctor-plan-subsection-head">
           <p className="doctor-plan-subsection-heading">
-            <Apple size={13} aria-hidden="true" /> Dưỡng chất
+            <Apple size={14} aria-hidden="true" /> Dưỡng chất
           </p>
           {isDraft && (
             <button type="button" className="doctor-plan-subsection-add" onClick={() => onAddNutrient(phase.id, nutrients.length)}>
-              <Plus size={13} aria-hidden="true" /> Thêm dưỡng chất
+              <Plus size={14} aria-hidden="true" /> Thêm dưỡng chất
             </button>
           )}
         </div>
@@ -754,7 +754,7 @@ function NutrientRow({
         {isDraft && (
           <div className="doctor-plan-phase-actions">
             <button type="button" aria-label="Chỉnh sửa dưỡng chất" onClick={() => onEditNutrient(phaseId, nutrient)}>
-              <Edit3 size={14} aria-hidden="true" />
+              <Edit3 size={15} aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -763,7 +763,7 @@ function NutrientRow({
               disabled={nutrientBusy === `delete-${nutrient.id}`}
               onClick={() => onDeleteNutrient(phaseId, nutrient)}
             >
-              <Trash2 size={14} aria-hidden="true" />
+              <Trash2 size={15} aria-hidden="true" />
             </button>
           </div>
         )}
@@ -772,11 +772,11 @@ function NutrientRow({
       <div className="doctor-plan-subsection doctor-plan-subsection-nested">
         <div className="doctor-plan-subsection-head">
           <p className="doctor-plan-subsection-heading">
-            <Utensils size={12} aria-hidden="true" /> Nguồn thực phẩm
+            <Utensils size={13} aria-hidden="true" /> Nguồn thực phẩm
           </p>
           {isDraft && (
             <button type="button" className="doctor-plan-subsection-add" onClick={() => onAddFood(phaseId, nutrient.id, foods.length)}>
-              <Plus size={12} aria-hidden="true" /> Thêm thực phẩm
+              <Plus size={13} aria-hidden="true" /> Thêm thực phẩm
             </button>
           )}
         </div>
@@ -815,7 +815,7 @@ function FoodRow({ phaseId, nutrientId, food, isDraft, foodBusy, onEditFood, onD
       {isDraft && (
         <div className="doctor-plan-phase-actions">
           <button type="button" aria-label="Chỉnh sửa thực phẩm" onClick={() => onEditFood(phaseId, nutrientId, food)}>
-            <Edit3 size={13} aria-hidden="true" />
+            <Edit3 size={14} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -824,7 +824,7 @@ function FoodRow({ phaseId, nutrientId, food, isDraft, foodBusy, onEditFood, onD
             disabled={foodBusy === `delete-${food.id}`}
             onClick={() => onDeleteFood(phaseId, nutrientId, food)}
           >
-            <Trash2 size={13} aria-hidden="true" />
+            <Trash2 size={14} aria-hidden="true" />
           </button>
         </div>
       )}
