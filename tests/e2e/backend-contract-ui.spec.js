@@ -316,6 +316,59 @@ test("admin creates a doctor invitation with an optional doctor link", async ({ 
   expect(invitationPayload).toEqual({ email: "doctor@example.com" });
 });
 
+test("admin invitation confirmation card survives a page reload", async ({ page }) => {
+  await preparePage(page);
+  await authenticate(page);
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+
+    if (url.pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (url.pathname === "/api/admin/doctor-invitations" && method === "POST") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          message: "Doctor invitation created.",
+          data: {
+            id: "44444444-4444-4444-8444-444444444444",
+            email: "reload-survivor@example.com",
+            doctorId: null,
+            status: "Pending",
+            expiresAt: new Date(Date.now() + 120_000).toISOString(),
+          },
+        }),
+      });
+    }
+
+    const pagedPaths = ["/api/users", "/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
+    const data = pagedPaths.includes(url.pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Bác sĩ", exact: true }).click();
+  await page.getByLabel("Email bác sĩ").fill("reload-survivor@example.com");
+  await page.getByRole("button", { name: "Gửi lời mời đăng ký" }).click();
+  await expect(page.getByText("reload-survivor@example.com", { exact: true })).toBeVisible();
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Bác sĩ", exact: true }).click();
+  await expect(page.getByText("reload-survivor@example.com", { exact: true })).toBeVisible();
+});
+
 test("admin invitation shows the translated backend error instead of raw English", async ({ page }) => {
   await preparePage(page);
   await authenticate(page);
