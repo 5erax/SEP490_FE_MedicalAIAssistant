@@ -608,8 +608,8 @@ test("admin clinical question form sends the Swagger DTO", async ({ page }) => {
   await page.getByRole("button", { name: "Tạo câu hỏi", exact: true }).first().click();
   await page.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER_ID);
   await page.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có sốt cao không?");
-  await page.getByLabel("Câu hỏi tiếng Anh (bắt buộc)").fill("Do you have a high fever?");
-  await page.getByLabel("Thứ tự (bắt buộc)").fill("2");
+  await page.getByLabel("Câu hỏi tiếng Anh").fill("Do you have a high fever?");
+  await page.getByLabel("Thứ tự").fill("2");
   await page.getByRole("button", { name: "Tạo câu hỏi", exact: true }).last().click();
 
   expect(clinicalPayload).toEqual({

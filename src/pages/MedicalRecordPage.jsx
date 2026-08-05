@@ -17,8 +17,13 @@ import {
   X,
 } from "lucide-react";
 import { Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
+import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
-import { authApi, labTestsApi } from "../services/api";
+import {
+  authApi,
+  getLabTestApiMessage,
+  labTestsApi,
+} from "../services/api";
 import {
   uploadMedicalDocumentToCloudinary,
   validateMedicalDocument,
@@ -306,6 +311,7 @@ function SessionDetail({ session, status, error, onRetry, headingRef }) {
 }
 
 export default function MedicalRecordPage() {
+  const { showToast } = useFeedback();
   const [profile, setProfile] = useState(null);
   const [profileStatus, setProfileStatus] = useState("loading");
   const [profileReloadKey, setProfileReloadKey] = useState(0);
@@ -374,11 +380,22 @@ export default function MedicalRecordPage() {
         totalPages: Math.max(1, Number(data.totalPages) || 1),
       });
       setHistoryStatus("ready");
-    } catch {
-      setHistoryError("Chưa thể tải lịch sử xét nghiệm. Vui lòng thử lại.");
+    } catch (error) {
+      const message = getLabTestApiMessage(
+        error,
+        "Chưa thể tải lịch sử xét nghiệm. Vui lòng thử lại.",
+      );
+      setHistoryError(message);
       setHistoryStatus("error");
+      if (!quiet) {
+        showToast({
+          type: "error",
+          title: "Không thể tải lịch sử xét nghiệm",
+          message,
+        });
+      }
     }
-  }, [historyFilter, historyPage]);
+  }, [historyFilter, historyPage, showToast]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadHistory(), 0);
@@ -393,12 +410,30 @@ export default function MedicalRecordPage() {
       const response = await labTestsApi.get(sessionId);
       setSelectedSession(unwrapData(response) ?? null);
       setDetailStatus("ready");
+      if (!quiet && response?.message && response.message !== "OK") {
+        showToast({
+          type: "info",
+          title: "Trạng thái OCR xét nghiệm",
+          message: getLabTestApiMessage(response),
+        });
+      }
       if (focus) window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
-    } catch {
-      setDetailError("Chưa thể tải chi tiết phiên xét nghiệm. Vui lòng thử lại.");
+    } catch (error) {
+      const message = getLabTestApiMessage(
+        error,
+        "Chưa thể tải chi tiết phiên xét nghiệm. Vui lòng thử lại.",
+      );
+      setDetailError(message);
       setDetailStatus("error");
+      if (!quiet) {
+        showToast({
+          type: "error",
+          title: "Không thể tải chi tiết xét nghiệm",
+          message,
+        });
+      }
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     const sessionId = selectedSession?.sessionId;
@@ -478,21 +513,33 @@ export default function MedicalRecordPage() {
       setSelectedSession(session);
       setDetailStatus("ready");
       setSubmissionStatus("success");
-      setSubmissionMessage(
+      const successMessage = getLabTestApiMessage(
+        response,
         session?.status === "completed"
           ? "Đã nhận kết quả phân tích từ hệ thống."
           : "Phiếu xét nghiệm đã được tiếp nhận và đang được phân tích.",
       );
+      setSubmissionMessage(successMessage);
+      showToast({
+        type: "success",
+        title: "Đã gửi phiếu xét nghiệm",
+        message: successMessage,
+      });
       setHistoryPage(1);
       setHistoryReloadKey((current) => current + 1);
       window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
     } catch (error) {
-      setSubmissionStatus("error");
-      setSubmissionMessage(
-        error?.message?.startsWith("Phiếu xét nghiệm") || error?.message?.startsWith("Chưa cấu hình")
-          ? error.message
-          : "Chưa thể gửi phiếu xét nghiệm để phân tích. Vui lòng thử lại.",
+      const message = getLabTestApiMessage(
+        error,
+        "Chưa thể gửi phiếu xét nghiệm để phân tích. Vui lòng thử lại.",
       );
+      setSubmissionStatus("error");
+      setSubmissionMessage(message);
+      showToast({
+        type: "error",
+        title: "Không thể phân tích phiếu xét nghiệm",
+        message,
+      });
     }
   }
 
