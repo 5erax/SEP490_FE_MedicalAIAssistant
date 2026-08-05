@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { authApi, getStoredAuth, paymentsApi, subscriptionUsageApi, userSubscriptionsApi } from "../services/api";
 import { getApiErrorCode, getPaymentReconcileErrorMessage } from "../services/apiError";
+import { translateApiMessage } from "../services/apiMessageTranslator";
 import { navigate } from "../router/navigation";
 import {
   clearRememberedReturnTo,
@@ -24,7 +25,7 @@ import "../styles/payment-result.css";
 const MAX_RECONCILE_ATTEMPTS = 6;
 const RECONCILE_DELAY_MS = 10_000;
 const AUTO_RETRY_STATUSES = new Set(["pending", "processing", "activation-pending"]);
-const TERMINAL_STATUSES = new Set(["success", "cancelled", "expired", "failed"]);
+const TERMINAL_STATUSES = new Set(["success", "cancelled", "expired", "failed", "refunded"]);
 
 function getOrderCode() {
   return new URLSearchParams(window.location.search).get("orderCode")?.trim() || "";
@@ -49,6 +50,7 @@ function classifyPayment(data) {
 
   if (data?.isPaid && data?.isActive) return "success";
 
+  if (paymentStatus === "refunded") return "refunded";
   if (providerStatus === "CANCELLED" || data?.isCancelled) return "cancelled";
   if (providerStatus === "EXPIRED") return "expired";
   if (providerStatus === "FAILED") return "failed";
@@ -79,6 +81,16 @@ function getView(status, paymentDetail) {
       eyebrow: "Trạng thái đã được xác nhận",
       title: "Giao dịch đã hủy",
       description: "PayOS xác nhận giao dịch đã bị hủy.",
+      icon: CircleX,
+      tone: "cancelled",
+    };
+  }
+
+  if (status === "refunded") {
+    return {
+      eyebrow: "Trạng thái đã được xác nhận",
+      title: "Giao dịch đã được hoàn tiền.",
+      description: "Số tiền đã được hoàn lại. Kiểm tra tài khoản ngân hàng hoặc ví đã dùng để xác nhận.",
       icon: CircleX,
       tone: "cancelled",
     };
@@ -213,6 +225,7 @@ function getStatusLabel(status) {
   if (status === "processing") return "PayOS đang xử lý";
   if (status === "underpaid") return "Thiếu tiền";
   if (status === "cancelled") return "Đã hủy";
+  if (status === "refunded") return "Đã hoàn tiền";
   if (status === "expired") return "Hết hạn";
   if (status === "failed") return "Thất bại";
   if (status === "unauthenticated") return "Cần đăng nhập lại";
@@ -278,7 +291,7 @@ export default function PaymentResultPage({ expectedResult }) {
     const data = response.data ?? {};
     const nextStatus = classifyPayment(data);
     setStatus(nextStatus);
-    setMessage(data.message || response.message || "");
+    setMessage(translateApiMessage(data.message || response.message, { fallback: "" }));
     setPaymentDetail(data);
 
     if (nextStatus === "success") await refreshPremiumState();
@@ -340,7 +353,6 @@ export default function PaymentResultPage({ expectedResult }) {
   const success = status === "success";
   const settled = TERMINAL_STATUSES.has(status);
   const verifying = ["checking", "pending", "processing", "activation-pending"].includes(status);
-  const isErrorStatus = ["unauthenticated", "rate-limited", "provider-unavailable", "error"].includes(status);
 
   useEffect(() => {
     document.title = success
@@ -386,7 +398,7 @@ export default function PaymentResultPage({ expectedResult }) {
 
         <p className="payment-result-eyebrow">{view.eyebrow}</p>
         <h1>{view.title}</h1>
-        {isErrorStatus && message && <p className="payment-result-description">{message}</p>}
+        {message && <p className="payment-result-description">{message}</p>}
 
         {orderCode && (
           <dl className="payment-result-reference">
