@@ -15,7 +15,11 @@ import {
 } from "lucide-react";
 import { useFeedback } from "../feedback/feedbackContext";
 import { navigate } from "../../router/navigation";
-import { labIndicatorsApi } from "../../services/api";
+import {
+  getLabIndicatorApiMessage,
+  LAB_INDICATOR_MESSAGES,
+  labIndicatorsApi,
+} from "../../services/api";
 import {
   Button,
   DataTable,
@@ -45,6 +49,18 @@ const STATUS_LABELS = {
   criticalLow: "Thấp nguy cấp",
 };
 const SEVERITY_LABELS = { info: "Thông tin", warning: "Cảnh báo", critical: "Nguy cấp" };
+
+function getIndicatorDetailFailure(error) {
+  if (error?.status === 400) return LAB_INDICATOR_MESSAGES.indicator.invalidId;
+  if (error?.status === 404) return LAB_INDICATOR_MESSAGES.indicator.notFound;
+  return "Không thể tải chi tiết chỉ số xét nghiệm.";
+}
+
+function getChildMessages(kind) {
+  if (kind === "alias") return LAB_INDICATOR_MESSAGES.alias;
+  if (kind === "range") return LAB_INDICATOR_MESSAGES.range;
+  return LAB_INDICATOR_MESSAGES.advice;
+}
 
 function unwrapData(response) {
   return response?.data ?? response?.Data ?? response;
@@ -155,7 +171,7 @@ function IndicatorListView() {
       });
       setStatus("ready");
     } catch (loadError) {
-      setError(loadError.message || "Không thể tải danh sách chỉ số xét nghiệm.");
+      setError(getLabIndicatorApiMessage(loadError, "Không thể tải danh sách chỉ số xét nghiệm."));
       setStatus("error");
     }
   }, []);
@@ -188,14 +204,26 @@ function IndicatorListView() {
       const response = dialog.mode === "edit"
         ? await labIndicatorsApi.update(getIndicatorId(dialog.indicator), payload)
         : await labIndicatorsApi.create(payload);
-      const text = response.message || (dialog.mode === "edit" ? "Đã cập nhật chỉ số xét nghiệm." : "Đã tạo chỉ số xét nghiệm.");
+      const text = getLabIndicatorApiMessage(
+        response,
+        dialog.mode === "edit"
+          ? LAB_INDICATOR_MESSAGES.indicator.updateSuccess
+          : LAB_INDICATOR_MESSAGES.indicator.createSuccess,
+      );
       setMessage({ type: "success", text });
       showToast({ type: "success", title: dialog.mode === "edit" ? "Đã cập nhật chỉ số" : "Đã tạo chỉ số", message: text });
       setDialog(null);
       await loadIndicators(pageInfo.pageNumber, pageInfo.pageSize, appliedSearch);
+      return { success: true, message: text };
     } catch (saveError) {
-      setMessage({ type: "error", text: saveError.message });
-      showToast({ type: "error", title: "Không lưu được chỉ số", message: saveError.message });
+      const text = getLabIndicatorApiMessage(
+        saveError,
+        dialog.mode === "edit"
+          ? LAB_INDICATOR_MESSAGES.indicator.updateFailure
+          : LAB_INDICATOR_MESSAGES.indicator.createFailure,
+      );
+      showToast({ type: "error", title: "Không lưu được chỉ số", message: text });
+      return { success: false, message: text };
     } finally {
       setSaving(false);
     }
@@ -213,14 +241,15 @@ function IndicatorListView() {
 
     try {
       const response = await labIndicatorsApi.remove(getIndicatorId(indicator));
-      const text = response.message || "Đã xóa chỉ số xét nghiệm.";
+      const text = getLabIndicatorApiMessage(response, LAB_INDICATOR_MESSAGES.indicator.deleteSuccess);
       showToast({ type: "success", title: "Đã xóa chỉ số", message: text });
       setMessage({ type: "success", text });
       const targetPage = items.length === 1 && pageInfo.pageNumber > 1 ? pageInfo.pageNumber - 1 : pageInfo.pageNumber;
       await loadIndicators(targetPage, pageInfo.pageSize, appliedSearch);
     } catch (deleteError) {
-      setMessage({ type: "error", text: deleteError.message });
-      showToast({ type: "error", title: "Không xóa được chỉ số", message: deleteError.message });
+      const text = getLabIndicatorApiMessage(deleteError, LAB_INDICATOR_MESSAGES.indicator.deleteFailure);
+      setMessage({ type: "error", text });
+      showToast({ type: "error", title: "Không xóa được chỉ số", message: text });
     }
   }
 
@@ -423,7 +452,10 @@ function IndicatorDetailView({ indicatorId }) {
     ]);
 
     if (results[0].status === "rejected") {
-      setError(results[0].reason?.message || "Không thể tải chi tiết chỉ số xét nghiệm.");
+      setError(getLabIndicatorApiMessage(
+        results[0].reason,
+        getIndicatorDetailFailure(results[0].reason),
+      ));
       setStatus("error");
       return;
     }
@@ -431,11 +463,20 @@ function IndicatorDetailView({ indicatorId }) {
     setIndicator(unwrapData(results[0].value));
     const nextErrors = {};
     if (results[1].status === "fulfilled") setAliases(unwrapList(results[1].value));
-    else { setAliases([]); nextErrors.alias = results[1].reason?.message || "Không thể tải bí danh."; }
+    else {
+      setAliases([]);
+      nextErrors.alias = getLabIndicatorApiMessage(results[1].reason, LAB_INDICATOR_MESSAGES.alias.listFailure);
+    }
     if (results[2].status === "fulfilled") setRanges(unwrapList(results[2].value));
-    else { setRanges([]); nextErrors.range = results[2].reason?.message || "Không thể tải khoảng tham chiếu."; }
+    else {
+      setRanges([]);
+      nextErrors.range = getLabIndicatorApiMessage(results[2].reason, LAB_INDICATOR_MESSAGES.range.listFailure);
+    }
     if (results[3].status === "fulfilled") setAdvice(unwrapList(results[3].value));
-    else { setAdvice([]); nextErrors.advice = results[3].reason?.message || "Không thể tải lời khuyên."; }
+    else {
+      setAdvice([]);
+      nextErrors.advice = getLabIndicatorApiMessage(results[3].reason, LAB_INDICATOR_MESSAGES.advice.listFailure);
+    }
     setSectionErrors(nextErrors);
     setStatus("ready");
   }, [indicatorId]);
@@ -465,14 +506,16 @@ function IndicatorDetailView({ indicatorId }) {
     setSaving(true);
     try {
       const response = await labIndicatorsApi.update(indicatorId, payload);
-      const text = response.message || "Đã cập nhật chỉ số xét nghiệm.";
+      const text = getLabIndicatorApiMessage(response, LAB_INDICATOR_MESSAGES.indicator.updateSuccess);
       showToast({ type: "success", title: "Đã cập nhật chỉ số", message: text });
       setMessage({ type: "success", text });
       setIndicatorDialogOpen(false);
       await loadDetail();
+      return { success: true, message: text };
     } catch (saveError) {
-      setMessage({ type: "error", text: saveError.message });
-      showToast({ type: "error", title: "Không cập nhật được chỉ số", message: saveError.message });
+      const text = getLabIndicatorApiMessage(saveError, LAB_INDICATOR_MESSAGES.indicator.updateFailure);
+      showToast({ type: "error", title: "Không cập nhật được chỉ số", message: text });
+      return { success: false, message: text };
     } finally {
       setSaving(false);
     }
@@ -487,12 +530,14 @@ function IndicatorDetailView({ indicatorId }) {
     });
     if (!confirmed) return;
     try {
-      await labIndicatorsApi.remove(indicatorId);
-      showToast({ type: "success", title: "Đã xóa chỉ số", message: "Danh mục chỉ số xét nghiệm đã được cập nhật." });
+      const response = await labIndicatorsApi.remove(indicatorId);
+      const text = getLabIndicatorApiMessage(response, LAB_INDICATOR_MESSAGES.indicator.deleteSuccess);
+      showToast({ type: "success", title: "Đã xóa chỉ số", message: text });
       navigate(LIST_PATH);
     } catch (deleteError) {
-      setMessage({ type: "error", text: deleteError.message });
-      showToast({ type: "error", title: "Không xóa được chỉ số", message: deleteError.message });
+      const text = getLabIndicatorApiMessage(deleteError, LAB_INDICATOR_MESSAGES.indicator.deleteFailure);
+      setMessage({ type: "error", text });
+      showToast({ type: "error", title: "Không xóa được chỉ số", message: text });
     }
   }
 
@@ -515,14 +560,24 @@ function IndicatorDetailView({ indicatorId }) {
           ? await labIndicatorsApi.updateAdvice(indicatorId, getAdviceId(item), payload)
           : await labIndicatorsApi.createAdvice(indicatorId, payload);
       }
-      const text = response.message || `Đã ${editing ? "cập nhật" : "tạo"} dữ liệu cho chỉ số.`;
+      const childMessages = getChildMessages(kind);
+      const text = getLabIndicatorApiMessage(
+        response,
+        editing ? childMessages.updateSuccess : childMessages.createSuccess,
+      );
       showToast({ type: "success", title: editing ? "Đã cập nhật dữ liệu" : "Đã thêm dữ liệu", message: text });
       setMessage({ type: "success", text });
       setChildDialog(null);
       await loadDetail();
+      return { success: true, message: text };
     } catch (saveError) {
-      setMessage({ type: "error", text: saveError.message });
-      showToast({ type: "error", title: "Không lưu được dữ liệu", message: saveError.message });
+      const childMessages = getChildMessages(kind);
+      const text = getLabIndicatorApiMessage(
+        saveError,
+        editing ? childMessages.updateFailure : childMessages.createFailure,
+      );
+      showToast({ type: "error", title: "Không lưu được dữ liệu", message: text });
+      return { success: false, message: text };
     } finally {
       setSaving(false);
     }
@@ -539,14 +594,18 @@ function IndicatorDetailView({ indicatorId }) {
     if (!confirmed) return;
 
     try {
-      if (kind === "alias") await labIndicatorsApi.removeAlias(indicatorId, getAliasId(item));
-      else if (kind === "range") await labIndicatorsApi.removeReferenceRange(indicatorId, getRangeId(item));
-      else await labIndicatorsApi.removeAdvice(indicatorId, getAdviceId(item));
-      showToast({ type: "success", title: "Đã xóa dữ liệu", message: `Đã xóa ${labels[kind]} khỏi chỉ số.` });
+      let response;
+      if (kind === "alias") response = await labIndicatorsApi.removeAlias(indicatorId, getAliasId(item));
+      else if (kind === "range") response = await labIndicatorsApi.removeReferenceRange(indicatorId, getRangeId(item));
+      else response = await labIndicatorsApi.removeAdvice(indicatorId, getAdviceId(item));
+      const text = getLabIndicatorApiMessage(response, getChildMessages(kind).deleteSuccess);
+      showToast({ type: "success", title: "Đã xóa dữ liệu", message: text });
+      setMessage({ type: "success", text });
       await loadDetail();
     } catch (deleteError) {
-      setMessage({ type: "error", text: deleteError.message });
-      showToast({ type: "error", title: "Không xóa được dữ liệu", message: deleteError.message });
+      const text = getLabIndicatorApiMessage(deleteError, getChildMessages(kind).deleteFailure);
+      setMessage({ type: "error", text });
+      showToast({ type: "error", title: "Không xóa được dữ liệu", message: text });
     }
   }
 

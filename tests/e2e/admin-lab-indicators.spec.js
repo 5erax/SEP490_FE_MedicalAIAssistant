@@ -35,6 +35,7 @@ async function mockLabIndicatorAdmin(page, initial = {}) {
     ranges: [...(initial.ranges ?? [])],
     advice: [...(initial.advice ?? [])],
     requests: [],
+    failures: [],
   };
 
   await page.route("**/api/**", async (route) => {
@@ -50,6 +51,22 @@ async function mockLabIndicatorAdmin(page, initial = {}) {
       contentType: "application/json",
       body: JSON.stringify({ success: true, data, ...(message ? { message } : {}) }),
     });
+
+    const failureIndex = state.failures.findIndex((failure) => (
+      failure.method === method && failure.pathname === pathname
+    ));
+    if (failureIndex >= 0) {
+      const [failure] = state.failures.splice(failureIndex, 1);
+      return route.fulfill({
+        status: failure.status ?? 400,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: false,
+          ...(failure.message ? { message: failure.message } : {}),
+          errors: failure.errors ?? [],
+        }),
+      });
+    }
 
     if (pathname === "/api/users/me") {
       return fulfill({ name: "Quản trị MediMate", roles: ["Admin"] });
@@ -67,7 +84,7 @@ async function mockLabIndicatorAdmin(page, initial = {}) {
     if (pathname === "/api/lab-indicators" && method === "POST") {
       const indicator = { indicatorId: "indicator-created", ...body };
       state.indicators = [indicator, ...state.indicators];
-      return fulfill(indicator, "Đã tạo chỉ số xét nghiệm.");
+      return fulfill(indicator, "Tạo chỉ số xét nghiệm thành công");
     }
 
     const indicatorPath = `/api/lab-indicators/${INDICATOR_ID}`;
@@ -79,51 +96,51 @@ async function mockLabIndicatorAdmin(page, initial = {}) {
     if (pathname === aliasesPath && method === "POST") {
       const alias = { aliasId: "alias-created", indicatorId: INDICATOR_ID, ...body };
       state.aliases = [...state.aliases, alias];
-      return fulfill(alias, "Đã tạo bí danh.");
+      return fulfill(alias, "Tạo alias thành công");
     }
     if (pathname.startsWith(`${aliasesPath}/`) && method === "PUT") {
       const aliasId = decodeURIComponent(pathname.split("/").at(-1));
       state.aliases = state.aliases.map((alias) => alias.aliasId === aliasId ? { ...alias, ...body } : alias);
-      return fulfill(state.aliases.find((alias) => alias.aliasId === aliasId), "Đã cập nhật bí danh.");
+      return fulfill(state.aliases.find((alias) => alias.aliasId === aliasId), "Cập nhật alias thành công");
     }
     if (pathname.startsWith(`${aliasesPath}/`) && method === "DELETE") {
       const aliasId = decodeURIComponent(pathname.split("/").at(-1));
       state.aliases = state.aliases.filter((alias) => alias.aliasId !== aliasId);
-      return fulfill(null, "Đã xóa bí danh.");
+      return fulfill(null, "Xóa alias thành công");
     }
 
     if (pathname === rangesPath && method === "GET") return fulfill(state.ranges);
     if (pathname === rangesPath && method === "POST") {
       const range = { referenceRangeId: "range-created", indicatorId: INDICATOR_ID, ...body };
       state.ranges = [...state.ranges, range];
-      return fulfill(range, "Đã tạo khoảng tham chiếu.");
+      return fulfill(range, "Tạo khoảng tham chiếu thành công");
     }
     if (pathname.startsWith(`${rangesPath}/`) && method === "PUT") {
       const rangeId = decodeURIComponent(pathname.split("/").at(-1));
       state.ranges = state.ranges.map((range) => range.referenceRangeId === rangeId ? { ...range, ...body } : range);
-      return fulfill(state.ranges.find((range) => range.referenceRangeId === rangeId), "Đã cập nhật khoảng tham chiếu.");
+      return fulfill(state.ranges.find((range) => range.referenceRangeId === rangeId), "Cập nhật khoảng tham chiếu thành công");
     }
     if (pathname.startsWith(`${rangesPath}/`) && method === "DELETE") {
       const rangeId = decodeURIComponent(pathname.split("/").at(-1));
       state.ranges = state.ranges.filter((range) => range.referenceRangeId !== rangeId);
-      return fulfill(null, "Đã xóa khoảng tham chiếu.");
+      return fulfill(null, "Xóa khoảng tham chiếu thành công");
     }
 
     if (pathname === advicePath && method === "GET") return fulfill(state.advice);
     if (pathname === advicePath && method === "POST") {
       const advice = { cacheId: "advice-created", indicatorId: INDICATOR_ID, ...body };
       state.advice = [...state.advice, advice];
-      return fulfill(advice, "Đã tạo lời khuyên.");
+      return fulfill(advice, "Tạo advice cache thành công");
     }
     if (pathname.startsWith(`${advicePath}/`) && method === "PUT") {
       const cacheId = decodeURIComponent(pathname.split("/").at(-1));
       state.advice = state.advice.map((item) => item.cacheId === cacheId ? { ...item, ...body } : item);
-      return fulfill(state.advice.find((item) => item.cacheId === cacheId), "Đã cập nhật lời khuyên.");
+      return fulfill(state.advice.find((item) => item.cacheId === cacheId), "Cập nhật advice cache thành công");
     }
     if (pathname.startsWith(`${advicePath}/`) && method === "DELETE") {
       const cacheId = decodeURIComponent(pathname.split("/").at(-1));
       state.advice = state.advice.filter((item) => item.cacheId !== cacheId);
-      return fulfill(null, "Đã xóa lời khuyên.");
+      return fulfill(null, "Xóa advice cache thành công");
     }
 
     if (pathname === indicatorPath && method === "GET") {
@@ -133,11 +150,11 @@ async function mockLabIndicatorAdmin(page, initial = {}) {
       state.indicators = state.indicators.map((indicator) => indicator.indicatorId === INDICATOR_ID
         ? { ...indicator, ...body }
         : indicator);
-      return fulfill(state.indicators.find((indicator) => indicator.indicatorId === INDICATOR_ID), "Đã cập nhật chỉ số.");
+      return fulfill(state.indicators.find((indicator) => indicator.indicatorId === INDICATOR_ID), "Cập nhật chỉ số xét nghiệm thành công");
     }
     if (pathname === indicatorPath && method === "DELETE") {
       state.indicators = state.indicators.filter((indicator) => indicator.indicatorId !== INDICATOR_ID);
-      return fulfill(null, "Đã xóa chỉ số.");
+      return fulfill(null, "Xóa chỉ số xét nghiệm thành công");
     }
 
     if (pathname.startsWith("/api/lab-indicators/") && !pathname.includes("/aliases")
@@ -148,11 +165,11 @@ async function mockLabIndicatorAdmin(page, initial = {}) {
         state.indicators = state.indicators.map((indicator) => indicator.indicatorId === indicatorId
           ? { ...indicator, ...body }
           : indicator);
-        return fulfill(state.indicators.find((indicator) => indicator.indicatorId === indicatorId), "Đã cập nhật chỉ số.");
+        return fulfill(state.indicators.find((indicator) => indicator.indicatorId === indicatorId), "Cập nhật chỉ số xét nghiệm thành công");
       }
       if (method === "DELETE") {
         state.indicators = state.indicators.filter((indicator) => indicator.indicatorId !== indicatorId);
-        return fulfill(null, "Đã xóa chỉ số.");
+        return fulfill(null, "Xóa chỉ số xét nghiệm thành công");
       }
     }
 
@@ -167,6 +184,10 @@ async function mockLabIndicatorAdmin(page, initial = {}) {
   });
 
   return state;
+}
+
+function queueFailure(state, method, pathname, failure = {}) {
+  state.failures.push({ method, pathname, ...failure });
 }
 
 function requestFor(state, method, pathname) {
@@ -212,14 +233,20 @@ test("admin creates, opens, edits, and deletes a lab indicator", async ({ page }
 
   await dialog.getByRole("button", { name: "Tạo chỉ số", exact: true }).click();
   await expect(dialog.locator(".lab-form-error-summary")).toBeFocused();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("Symbol là bắt buộc");
   await expect(dialog.getByLabel(/Ký hiệu/)).toHaveAttribute("aria-invalid", "true");
   await dialog.getByLabel(/Ký hiệu/).fill("WBC");
   await dialog.getByLabel(/Tên đầy đủ/).fill("Bạch cầu");
   await dialog.getByLabel(/Nhóm chỉ số/).fill("Huyết học");
   await dialog.getByLabel(/Đơn vị mặc định/).fill("G/L");
+  await dialog.getByLabel(/Tham chiếu tối thiểu/).fill("10");
+  await dialog.getByLabel(/Tham chiếu tối đa/).fill("4");
+  await dialog.getByRole("button", { name: "Tạo chỉ số", exact: true }).click();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("MinReference không được lớn hơn MaxReference");
   await dialog.getByLabel(/Tham chiếu tối thiểu/).fill("4");
   await dialog.getByLabel(/Tham chiếu tối đa/).fill("10");
   await dialog.getByRole("button", { name: "Tạo chỉ số", exact: true }).click();
+  await expect(page.locator(".lab-indicator-panel > .api-message")).toHaveText("Tạo chỉ số xét nghiệm thành công");
 
   await expect(page.getByRole("link", { name: /WBC Bạch cầu/ })).toBeVisible();
   await expect(page.locator(".lab-indicator-table tbody th").first()).toHaveCSS("position", "static");
@@ -236,8 +263,13 @@ test("admin creates, opens, edits, and deletes a lab indicator", async ({ page }
 
   await page.getByRole("button", { name: "Sửa Bạch cầu" }).click();
   dialog = page.getByRole("dialog");
+  await dialog.getByLabel(/Ký hiệu/).fill("   ");
+  await dialog.getByRole("button", { name: "Lưu thay đổi" }).click();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("Symbol không được để trống");
+  await dialog.getByLabel(/Ký hiệu/).fill("WBC");
   await dialog.getByLabel(/Tên đầy đủ/).fill("Bạch cầu toàn phần");
   await dialog.getByRole("button", { name: "Lưu thay đổi" }).click();
+  await expect(page.locator(".lab-indicator-panel > .api-message")).toHaveText("Cập nhật chỉ số xét nghiệm thành công");
   await expect(page.getByText("Bạch cầu toàn phần", { exact: true })).toBeVisible();
   expect(requestFor(state, "PUT", "/api/lab-indicators/indicator-created")?.body.fullName).toBe("Bạch cầu toàn phần");
 
@@ -247,6 +279,7 @@ test("admin creates, opens, edits, and deletes a lab indicator", async ({ page }
   await page.getByRole("link", { name: "Quay lại danh sách chỉ số" }).click();
   await page.getByRole("button", { name: "Xóa Bạch cầu toàn phần" }).click();
   await confirmDelete(page, "Xóa chỉ số");
+  await expect(page.locator(".lab-indicator-panel > .api-message")).toHaveText("Xóa chỉ số xét nghiệm thành công");
   await expect(page.getByText("Chưa có chỉ số phù hợp", { exact: true })).toBeVisible();
   expect(requestFor(state, "DELETE", "/api/lab-indicators/indicator-created")).toBeTruthy();
 });
@@ -277,33 +310,40 @@ test("indicator detail CRUD keeps the indicator id in every child endpoint", asy
 
   await page.getByRole("button", { name: "Tạo bí danh" }).click();
   let dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Tạo bí danh" }).click();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("AliasText là bắt buộc");
   await dialog.getByLabel(/Tên bí danh/).fill("Huyết sắc tố");
   await dialog.getByLabel(/Ngôn ngữ/).fill("vi");
   await dialog.getByLabel("Bí danh chính").check();
   await dialog.getByRole("button", { name: "Tạo bí danh" }).click();
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Tạo alias thành công");
   expect(requestFor(state, "POST", `${root}/aliases`)?.body).toEqual({ aliasText: "Huyết sắc tố", language: "vi", isPrimary: true });
 
   await page.getByRole("button", { name: "Sửa Huyết sắc tố" }).click();
   dialog = page.getByRole("dialog");
   await dialog.getByLabel(/Tên bí danh/).fill("Huyết sắc tố cập nhật");
   await dialog.getByRole("button", { name: "Lưu thay đổi" }).click();
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Cập nhật alias thành công");
   expect(requestFor(state, "PUT", `${root}/aliases/alias-created`)?.body.aliasText).toBe("Huyết sắc tố cập nhật");
   await page.getByRole("button", { name: "Xóa Huyết sắc tố cập nhật" }).click();
   await confirmDelete(page, "Xóa");
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Xóa alias thành công");
   expect(requestFor(state, "DELETE", `${root}/aliases/alias-created`)).toBeTruthy();
 
   await page.getByRole("button", { name: "Tạo khoảng" }).click();
   dialog = page.getByRole("dialog");
   await dialog.getByLabel(/Giới tính/).selectOption("female");
-  await dialog.getByLabel(/Nhóm tuổi/).selectOption("adult");
   await dialog.getByLabel(/Kiểu so sánh/).selectOption("between");
+  await dialog.getByRole("button", { name: "Tạo khoảng tham chiếu" }).click();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("So sánh Between yêu cầu MinValue và MaxValue");
   await dialog.getByLabel(/Giá trị tối thiểu/).fill("12");
   await dialog.getByLabel(/Giá trị tối đa/).fill("16");
   await dialog.getByLabel(/^Đơn vị/).fill("g/dL");
   await dialog.getByRole("button", { name: "Tạo khoảng tham chiếu" }).click();
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Tạo khoảng tham chiếu thành công");
   expect(requestFor(state, "POST", `${root}/reference-ranges`)?.body).toEqual({
     gender: "female",
-    ageGroup: "adult",
+    ageGroup: null,
     comparisonType: "between",
     minValue: 12,
     maxValue: 16,
@@ -314,18 +354,24 @@ test("indicator detail CRUD keeps the indicator id in every child endpoint", asy
   dialog = page.getByRole("dialog");
   await dialog.getByLabel(/Giá trị tối đa/).fill("15.5");
   await dialog.getByRole("button", { name: "Lưu thay đổi" }).click();
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Cập nhật khoảng tham chiếu thành công");
   expect(requestFor(state, "PUT", `${root}/reference-ranges/range-created`)?.body.maxValue).toBe(15.5);
   await page.getByRole("button", { name: "Xóa khoảng tham chiếu" }).click();
   await confirmDelete(page, "Xóa");
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Xóa khoảng tham chiếu thành công");
   expect(requestFor(state, "DELETE", `${root}/reference-ranges/range-created`)).toBeTruthy();
 
   await page.getByRole("button", { name: "Tạo lời khuyên" }).click();
   dialog = page.getByRole("dialog");
-  await dialog.getByLabel(/Trạng thái kết quả/).selectOption("low");
+  await dialog.getByLabel(/Trạng thái kết quả/).selectOption("unknown");
   await dialog.getByLabel(/^Mức độ\s*\*/).selectOption("warning");
+  await dialog.getByRole("button", { name: "Tạo lời khuyên" }).click();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("Status không được là Unknown");
+  await dialog.getByLabel(/Trạng thái kết quả/).selectOption("low");
   await dialog.getByLabel(/Tiêu đề hiển thị/).fill("Hemoglobin thấp");
   await dialog.getByLabel(/Tóm tắt/).fill("Theo dõi chỉ số và trao đổi với bác sĩ.");
   await dialog.getByRole("button", { name: "Tạo lời khuyên" }).click();
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Tạo advice cache thành công");
   expect(requestFor(state, "POST", `${root}/advice`)?.body).toMatchObject({
     status: "low",
     severityLevel: "warning",
@@ -336,9 +382,11 @@ test("indicator detail CRUD keeps the indicator id in every child endpoint", asy
   dialog = page.getByRole("dialog");
   await dialog.getByLabel(/Tiêu đề hiển thị/).fill("Hemoglobin thấp cần theo dõi");
   await dialog.getByRole("button", { name: "Lưu thay đổi" }).click();
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Cập nhật advice cache thành công");
   expect(requestFor(state, "PUT", `${root}/advice/advice-created`)?.body.displayTitle).toBe("Hemoglobin thấp cần theo dõi");
   await page.getByRole("button", { name: "Xóa Hemoglobin thấp cần theo dõi" }).click();
   await confirmDelete(page, "Xóa");
+  await expect(page.locator(".lab-indicator-detail > .api-message")).toHaveText("Xóa advice cache thành công");
   expect(requestFor(state, "DELETE", `${root}/advice/advice-created`)).toBeTruthy();
 
   const accessibility = await new AxeBuilder({ page })
@@ -352,6 +400,56 @@ test("indicator detail CRUD keeps the indicator id in every child endpoint", asy
       nodes: violation.nodes.map((node) => ({ target: node.target, summary: node.failureSummary })),
     }));
   expect(seriousViolations).toEqual([]);
+});
+
+test("lab indicator prioritizes service errors and uses controller fallbacks", async ({ page }) => {
+  await preparePage(page);
+  const state = await mockLabIndicatorAdmin(page, {
+    indicators: [{
+      indicatorId: INDICATOR_ID,
+      symbol: "HGB",
+      fullName: "Hemoglobin",
+      unit: "g/dL",
+      category: "Huyết học",
+      isActive: true,
+    }],
+  });
+
+  await page.goto("/app/admin/lab-indicators", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Tạo chỉ số", exact: true }).first().click();
+
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel(/Ký hiệu/).fill("HGB");
+  queueFailure(state, "POST", "/api/lab-indicators", {
+    message: "Tạo chỉ số xét nghiệm thất bại",
+    errors: ["Ký hiệu chỉ số đã tồn tại: HGB"],
+  });
+  await dialog.getByRole("button", { name: "Tạo chỉ số", exact: true }).click();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("Ký hiệu chỉ số đã tồn tại: HGB");
+  await expect(dialog.getByLabel(/Ký hiệu/)).toHaveAttribute("aria-invalid", "true");
+
+  await dialog.getByLabel(/Ký hiệu/).fill("RBC");
+  queueFailure(state, "POST", "/api/lab-indicators");
+  await dialog.getByRole("button", { name: "Tạo chỉ số", exact: true }).click();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("Tạo chỉ số xét nghiệm thất bại");
+
+  await dialog.getByRole("button", { name: "Đóng" }).click();
+  const root = `/api/lab-indicators/${INDICATOR_ID}`;
+  queueFailure(state, "GET", `${root}/aliases`);
+  queueFailure(state, "GET", `${root}/reference-ranges`);
+  queueFailure(state, "GET", `${root}/advice`);
+  await page.goto(`/app/admin/lab-indicators/${INDICATOR_ID}`, { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("Lấy danh sách alias thất bại", { exact: true })).toBeVisible();
+  await expect(page.getByText("Lấy khoảng tham chiếu thất bại", { exact: true })).toBeVisible();
+  await expect(page.getByText("Lấy advice cache thất bại", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Tạo bí danh" }).click();
+  dialog = page.getByRole("dialog");
+  await dialog.getByLabel(/Tên bí danh/).fill("Huyết sắc tố");
+  queueFailure(state, "POST", `${root}/aliases`);
+  await dialog.getByRole("button", { name: "Tạo bí danh" }).click();
+  await expect(dialog.locator(".lab-form-error-summary")).toContainText("Tạo alias thất bại");
 });
 
 test("indicator detail remains usable by keyboard on mobile and in forced colors", async ({ page }) => {
