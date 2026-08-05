@@ -82,11 +82,53 @@
   background: var(--color-success);
 }
 
+.recovery-stats-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.recovery-stat-tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.recovery-stat-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.recovery-stat-tile p {
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recovery-stat-tile strong {
+  display: block;
+  margin-top: 3px;
+  font-size: clamp(22px, 2.6vw, 28px);
+  letter-spacing: -0.03em;
+}
+
 .recovery-quota-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
   padding: 22px;
   border: 1px solid #b8d7cd;
   border-radius: 20px;
@@ -171,16 +213,85 @@
   justify-content: flex-start;
 }
 
-.recovery-top-grid {
+.recovery-workspace-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.62fr);
+  align-items: start;
   gap: 20px;
-  margin-bottom: 24px;
+}
+
+.recovery-workspace-sidebar {
+  display: grid;
+  gap: 20px;
+  position: sticky;
+  top: 24px;
+}
+
+.recovery-workspace-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.recovery-workspace-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-soft);
+}
+
+.recovery-workspace-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  padding: 9px 16px;
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.recovery-workspace-tabs button.is-active {
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  box-shadow: var(--shadow-card);
+}
+
+.recovery-tab-count {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-info-bg);
+  padding: 0 6px;
+  color: var(--color-info-strong);
+  font-size: 11px;
+}
+
+.recovery-workspace-tabs button.is-active .recovery-tab-count {
+  background: var(--color-info);
+  color: #fff;
+}
+
+.recovery-workspace-panel {
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  background: var(--color-surface);
+  padding: clamp(20px, 3vw, 28px);
+  box-shadow: var(--shadow-card);
 }
 
 .recovery-create-card,
 .recovery-guidance-card,
-.recovery-management-section,
 .recovery-detail-card,
 .recovery-plan-detail {
   border: 1px solid var(--color-line);
@@ -311,16 +422,6 @@
 
 .recovery-submit-row > p {
   min-height: 22px;
-}
-
-.recovery-management-section {
-  margin-top: 24px;
-  padding: clamp(20px, 3vw, 28px);
-  box-shadow: var(--shadow-card);
-}
-
-.recovery-management-section > .recovery-section-heading {
-  margin-bottom: 20px;
 }
 
 .recovery-split-view,
@@ -604,7 +705,6 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-top: 24px;
   padding: 18px 20px;
   border: 1px solid var(--color-line);
   border-radius: 16px;
@@ -621,11 +721,21 @@
   color: var(--color-muted);
 }
 
+@media (max-width: 1000px) {
+  .recovery-stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
-  .recovery-top-grid,
+  .recovery-workspace-layout,
   .recovery-split-view,
   .recovery-plan-layout {
     grid-template-columns: 1fr;
+  }
+
+  .recovery-workspace-sidebar {
+    position: static;
   }
 
   .recovery-item-list,
@@ -646,6 +756,7 @@
   .recovery-page-header,
   .recovery-quota-heading,
   .recovery-section-heading,
+  .recovery-workspace-head,
   .recovery-submit-row,
   .recovery-detail-header,
   .recovery-start-card {
@@ -654,6 +765,10 @@
   }
 
   .recovery-realtime-status {
+    width: fit-content;
+  }
+
+  .recovery-workspace-tabs {
     width: fit-content;
   }
 
