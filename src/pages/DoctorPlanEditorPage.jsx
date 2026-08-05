@@ -96,8 +96,11 @@ function findOverlappingPhase(phases, start, end, excludeId) {
 
 function getActionMessage(error) {
   const code = getApiErrorCode(error);
-  if (code === "NOT_FOUND") return "Kế hoạch không tồn tại hoặc đã bị xóa.";
-  if (code === "INVALID_REQUEST_STATE" || code === "CONFLICT") return "Kế hoạch đã thay đổi trạng thái. Vui lòng tải lại trang.";
+  if (code === "INVALID_REQUEST") return "Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại các trường đã nhập.";
+  if (code === "INVALID_PLAN_STRUCTURE") return "Cấu trúc kế hoạch không hợp lệ. Vui lòng kiểm tra khoảng ngày và thứ tự hiển thị.";
+  if (code === "NOT_FOUND") return "Dữ liệu không còn tồn tại hoặc bạn không có quyền chỉnh sửa. Vui lòng tải lại trang.";
+  if (code === "RECOVERY_PLAN_NOT_EDITABLE") return "Kế hoạch không còn ở trạng thái có thể chỉnh sửa. Vui lòng tải lại trang.";
+  if (code === "INVALID_REQUEST_STATE" || code === "CONFLICT") return "Dữ liệu hoặc trạng thái kế hoạch đã thay đổi. Vui lòng tải lại trang.";
   return error?.message || "Đã có lỗi xảy ra. Vui lòng thử lại.";
 }
 
@@ -113,13 +116,17 @@ export default function DoctorPlanEditorPage({ planId }) {
   const [editingPhase, setEditingPhase] = useState(null);
   const [phaseBusy, setPhaseBusy] = useState("");
 
+  async function refreshPlan() {
+    const response = await doctorRecoveryPlansApi.get(planId);
+    setState(normalizeDoctorPlanDetail(response));
+  }
+
   async function load() {
     setLoading(true);
     setError("");
     setNotFound(false);
     try {
-      const response = await doctorRecoveryPlansApi.get(planId);
-      setState(normalizeDoctorPlanDetail(response));
+      await refreshPlan();
     } catch (requestError) {
       if (requestError?.status === 404 || getApiErrorCode(requestError) === "NOT_FOUND") {
         setNotFound(true);
@@ -147,7 +154,7 @@ export default function DoctorPlanEditorPage({ planId }) {
       showToast({ type: "error", title: "Không thể cập nhật kế hoạch", message: getActionMessage(requestError) });
       if (getApiErrorCode(requestError) === "NOT_FOUND") {
         setEditOpen(false);
-        await load();
+        await refreshPlan();
       }
     } finally {
       setBusy("");
@@ -157,10 +164,10 @@ export default function DoctorPlanEditorPage({ planId }) {
   async function handleCreatePhase(payload) {
     setPhaseBusy("create");
     try {
-      const response = await doctorRecoveryPlansApi.createPhase(planId, payload);
-      setState((current) => ({ ...current, plan: normalizeDoctorPlanDetail(response).plan }));
-      showToast({ type: "success", title: "Đã thêm giai đoạn" });
+      await doctorRecoveryPlansApi.createPhase(planId, payload);
+      await refreshPlan();
       setCreatePhaseOpen(false);
+      showToast({ type: "success", title: "Đã thêm giai đoạn" });
     } catch (requestError) {
       showToast({ type: "error", title: "Không thể thêm giai đoạn", message: getActionMessage(requestError) });
     } finally {
@@ -171,15 +178,15 @@ export default function DoctorPlanEditorPage({ planId }) {
   async function handleUpdatePhase(payload) {
     setPhaseBusy("update");
     try {
-      const response = await doctorRecoveryPlansApi.updatePhase(planId, editingPhase.id, payload);
-      setState((current) => ({ ...current, plan: normalizeDoctorPlanDetail(response).plan }));
-      showToast({ type: "success", title: "Đã cập nhật giai đoạn" });
+      await doctorRecoveryPlansApi.updatePhase(planId, editingPhase.id, payload);
+      await refreshPlan();
       setEditingPhase(null);
+      showToast({ type: "success", title: "Đã cập nhật giai đoạn" });
     } catch (requestError) {
       showToast({ type: "error", title: "Không thể cập nhật giai đoạn", message: getActionMessage(requestError) });
       if (getApiErrorCode(requestError) === "NOT_FOUND") {
         setEditingPhase(null);
-        await load();
+        await refreshPlan();
       }
     } finally {
       setPhaseBusy("");
@@ -197,10 +204,7 @@ export default function DoctorPlanEditorPage({ planId }) {
     setPhaseBusy(`delete-${phase.id}`);
     try {
       await doctorRecoveryPlansApi.removePhase(planId, phase.id);
-      setState((current) => ({
-        ...current,
-        plan: { ...current.plan, phases: toArray(current.plan?.phases).filter((item) => item.id !== phase.id) },
-      }));
+      await refreshPlan();
       showToast({ type: "success", title: "Đã xóa giai đoạn" });
     } catch (requestError) {
       showToast({ type: "error", title: "Không thể xóa giai đoạn", message: getActionMessage(requestError) });
