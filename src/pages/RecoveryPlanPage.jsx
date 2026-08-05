@@ -101,7 +101,7 @@ function getStatusDefinition(map, value) {
   return map[value] ?? { label: value || "Chưa cập nhật", tone: "muted" };
 }
 
-function StatusBadge({ map, value }) {
+export function StatusBadge({ map, value }) {
   const definition = getStatusDefinition(map, value);
   return <span className={`recovery-status-badge is-${definition.tone}`}>{definition.label}</span>;
 }
@@ -421,7 +421,7 @@ function RequestDetail({ request, loading, onCancel, onProvideInformation, busy 
   );
 }
 
-function PlanDetail({ plan, loading, onStart, busy }) {
+export function PlanDetail({ plan, loading, onStart, busy }) {
   if (loading) return <LoadingState label="Đang tải nội dung kế hoạch…" />;
   if (!plan) return null;
   const phases = [...(plan.phases ?? [])].sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder));
