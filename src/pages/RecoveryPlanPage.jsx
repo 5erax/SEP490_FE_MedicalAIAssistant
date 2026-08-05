@@ -219,9 +219,9 @@ function QuotaCard({ quota, error, loading, onRetry }) {
   );
 }
 
-function StatTile({ icon: Icon, label, value }) {
+function StatTile({ icon: Icon, label, value, tone = "info" }) {
   return (
-    <div className="recovery-stat-tile">
+    <div className={`recovery-stat-tile is-${tone}`}>
       <span className="recovery-stat-icon" aria-hidden="true"><Icon size={20} /></span>
       <div>
         <p>{label}</p>
@@ -738,6 +738,7 @@ export default function RecoveryPlanPage() {
   return (
     <div className="recovery-page">
       <header className="recovery-page-header">
+        <HeartPulse className="recovery-hero-icon" size={160} strokeWidth={1.3} aria-hidden="true" />
         <div>
           <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Đồng hành sau điều trị</p>
           <h1>Kế hoạch phục hồi của bạn</h1>
@@ -753,8 +754,8 @@ export default function RecoveryPlanPage() {
 
       <div className="recovery-stats-row">
         <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
-        <StatTile icon={ListChecks} label="Tổng yêu cầu đã gửi" value={requestPage.totalCount} />
-        <StatTile icon={FileText} label="Tổng kế hoạch đã nhận" value={planPage.totalCount} />
+        <StatTile icon={ListChecks} label="Tổng yêu cầu đã gửi" value={requestPage.totalCount} tone="warning" />
+        <StatTile icon={FileText} label="Tổng kế hoạch đã nhận" value={planPage.totalCount} tone="success" />
       </div>
 
       <div className="recovery-workspace-layout">
