@@ -5,8 +5,10 @@ import {
   Apple,
   ArrowLeft,
   Bone,
+  Check,
   ClipboardList,
   Edit3,
+  Eye,
   Info,
   Layers,
   Plus,
@@ -23,6 +25,8 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { doctorRecoveryPlansApi, normalizeDoctorPlanDetail } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
+import { PlanDetail } from "./RecoveryPlanPage";
+import "../styles/recovery-plan.css";
 import "../styles/doctor-plan-editor.css";
 
 const DISEASE_GROUPS = {
@@ -129,6 +133,7 @@ export default function DoctorPlanEditorPage({ planId }) {
   const [createFoodFor, setCreateFoodFor] = useState(null);
   const [editingFood, setEditingFood] = useState(null);
   const [foodBusy, setFoodBusy] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   async function refreshPlan() {
     const response = await doctorRecoveryPlansApi.get(planId);
@@ -353,6 +358,23 @@ export default function DoctorPlanEditorPage({ planId }) {
     }
   }
 
+  async function handlePublish() {
+    setBusy("publish");
+    try {
+      const response = await doctorRecoveryPlansApi.publish(planId);
+      setState((current) => ({ ...current, plan: normalizeDoctorPlanDetail(response).plan }));
+      showToast({ type: "success", title: "Đã xuất bản kế hoạch", message: "Bệnh nhân đã có thể xem kế hoạch phục hồi này." });
+      navigate(state.requestId ? `/app/staff/recovery-plan-requests/${state.requestId}` : "/app/staff/recovery-plans/mine");
+    } catch (requestError) {
+      showToast({ type: "error", title: "Không thể xuất bản kế hoạch", message: getActionMessage(requestError) });
+      if (getApiErrorCode(requestError) === "NOT_FOUND" || getApiErrorCode(requestError) === "INVALID_PLAN_STRUCTURE") {
+        await refreshPlan();
+      }
+    } finally {
+      setBusy("");
+    }
+  }
+
   const backTarget = state.requestId ? `/app/staff/recovery-plan-requests/${state.requestId}` : "/app/staff/recovery-plans/mine";
 
   return (
@@ -395,7 +417,27 @@ export default function DoctorPlanEditorPage({ planId }) {
           onEditFood={(phaseId, nutrientId, food) => setEditingFood({ phaseId, nutrientId, food })}
           onDeleteFood={handleDeleteFood}
           foodBusy={foodBusy}
+          onPreview={() => setPreviewOpen(true)}
+          onPublish={handlePublish}
         />
+      )}
+
+      {previewOpen && (
+        <Dialog
+          backdropClassName="doctor-plan-modal-backdrop"
+          className="doctor-plan-preview-modal"
+          labelledBy="doctor-plan-preview-title"
+          onClose={() => setPreviewOpen(false)}
+        >
+          <header className="doctor-plan-modal-header">
+            <span aria-hidden="true"><Eye size={20} aria-hidden="true" /></span>
+            <h2 id="doctor-plan-preview-title">Xem trước · góc nhìn bệnh nhân</h2>
+            <button type="button" aria-label="Đóng" onClick={() => setPreviewOpen(false)}><X size={20} aria-hidden="true" /></button>
+          </header>
+          <div className="doctor-plan-preview-body">
+            <PlanDetail plan={state.plan} loading={false} onStart={() => {}} busy={false} />
+          </div>
+        </Dialog>
       )}
 
       {editOpen && (
@@ -483,6 +525,8 @@ function PlanContent({
   onEditFood,
   onDeleteFood,
   foodBusy,
+  onPreview,
+  onPublish,
 }) {
   const { plan, requestId, diseaseGroup } = state;
   const disease = getDiseaseInfo(diseaseGroup);
@@ -491,6 +535,9 @@ function PlanContent({
   const isDraft = plan.status === "draft";
   const phases = getSortedPhases(plan);
   const gaps = findCoverageGaps(phases, plan.durationDays);
+  const hasPhases = phases.length > 0;
+  const hasFullCoverage = hasPhases && gaps.length === 0;
+  const canPublish = hasPhases && hasFullCoverage;
 
   return (
     <>
@@ -501,6 +548,9 @@ function PlanContent({
           <h1>{plan.planName || "Chưa đặt tên kế hoạch"}</h1>
         </div>
         <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+        <button type="button" className="doctor-plan-preview-trigger" onClick={onPreview}>
+          <Eye size={15} aria-hidden="true" /> Xem trước
+        </button>
         <button type="button" className="doctor-plan-refresh" aria-label="Tải lại" onClick={onReload}>
           <RefreshCw size={16} aria-hidden="true" />
         </button>
@@ -583,6 +633,34 @@ function PlanContent({
               </div>
             )}
           </section>
+
+          {isDraft && (
+            <section className="doctor-plan-card doctor-plan-publish-card">
+              <p className="doctor-plan-card-heading">Xuất bản kế hoạch</p>
+              <ul className="doctor-plan-checklist">
+                <li className={hasPhases ? "is-done" : "is-blocked"}>
+                  <span className="doctor-plan-checklist-icon" aria-hidden="true">
+                    {hasPhases ? <Check size={13} /> : <X size={13} />}
+                  </span>
+                  Có ít nhất 1 giai đoạn điều trị
+                </li>
+                <li className={hasFullCoverage ? "is-done" : "is-blocked"}>
+                  <span className="doctor-plan-checklist-icon" aria-hidden="true">
+                    {hasFullCoverage ? <Check size={13} /> : <X size={13} />}
+                  </span>
+                  Các giai đoạn phủ kín {plan.durationDays ? `${plan.durationDays} ngày` : "toàn bộ thời lượng"} của kế hoạch
+                </li>
+              </ul>
+              <div className="doctor-plan-publish-actions">
+                <Button tone="ghost" onClick={onPreview}>
+                  <Eye size={16} aria-hidden="true" /> Xem trước
+                </Button>
+                <Button disabled={!canPublish || Boolean(busy)} loading={busy === "publish"} loadingLabel="Đang xuất bản…" onClick={onPublish}>
+                  <Send size={16} aria-hidden="true" /> Xuất bản kế hoạch
+                </Button>
+              </div>
+            </section>
+          )}
 
           {isDraft && (
             <div className="doctor-plan-danger-zone">
