@@ -87,6 +87,27 @@
   background: var(--color-info-bg);
 }
 
+.doctor-plan-preview-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 0 14px;
+  height: 38px;
+  color: var(--color-info-strong);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.doctor-plan-preview-trigger:hover {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
 /* Two-column dashboard layout: main content + meta sidebar */
 
 .doctor-plan-layout {
@@ -467,6 +488,91 @@
   color: var(--color-muted);
   font-size: 13px;
   font-style: italic;
+}
+
+/* Publish checklist card */
+
+.doctor-plan-publish-card {
+  border-color: rgba(8, 127, 140, 0.22);
+  background: linear-gradient(150deg, #fff 55%, var(--color-info-bg) 200%);
+}
+
+.doctor-plan-checklist {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-plan-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.doctor-plan-checklist li > span:last-child {
+  display: grid;
+  gap: 2px;
+  padding-top: 1px;
+}
+
+.doctor-plan-checklist li em {
+  color: var(--color-danger);
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.doctor-plan-checklist li.is-done {
+  color: var(--color-ink);
+}
+
+.doctor-plan-checklist-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-line);
+  color: var(--color-muted);
+}
+
+.doctor-plan-checklist li.is-done .doctor-plan-checklist-icon {
+  background: var(--color-info-strong);
+  color: #fff;
+}
+
+.doctor-plan-checklist li.is-blocked .doctor-plan-checklist-icon {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.doctor-plan-publish-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Patient-view preview modal */
+
+.doctor-plan-preview-modal {
+  width: min(680px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.doctor-plan-preview-body {
+  padding: 4px 22px 22px;
 }
 
 .doctor-plan-danger-zone {
