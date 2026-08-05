@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bone,
   ChevronLeft,
@@ -13,6 +13,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Badge, Button, CustomSelect, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { doctorRecoveryPlanRequestsApi } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
+import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import "../styles/doctor-recovery-plan.css";
 
 const PAGE_SIZE = 10;
@@ -77,6 +78,7 @@ export default function DoctorRecoveryPlanQueuePage() {
   const [error, setError] = useState("");
   const [blockedMessage, setBlockedMessage] = useState("");
   const [acceptingId, setAcceptingId] = useState("");
+  const refetchTimerRef = useRef(null);
 
   const loadQueue = useCallback(async (targetPage = pageNumber, targetDiseaseGroup = diseaseGroup) => {
     setLoading(true);
@@ -117,6 +119,26 @@ export default function DoctorRecoveryPlanQueuePage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diseaseGroup]);
+
+  useEffect(() => {
+    // The doctor workspace shell owns the actual SignalR connection; this
+    // page just listens and debounces a refetch so an "Added"/claimed event
+    // from another doctor (or this page's own accept action elsewhere)
+    // keeps the queue in sync without a manual reload.
+    const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
+      if (event.type === "queue" || event.type === "request" || event.refetch) {
+        window.clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = window.setTimeout(() => {
+          void loadQueue(pageNumber, diseaseGroup);
+        }, 250);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(refetchTimerRef.current);
+    };
+  }, [loadQueue, pageNumber, diseaseGroup]);
 
   async function handleAccept(request) {
     setAcceptingId(request.id);
