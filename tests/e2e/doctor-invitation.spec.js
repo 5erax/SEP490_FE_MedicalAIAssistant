@@ -299,7 +299,7 @@ test("new doctor submits facility department and professional fields", async ({ 
   await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
   await page.getByLabel("Số điện thoại").fill("0900000000");
   await page.getByLabel("Cơ sở y tế - khoa").selectOption("33333333-3333-3333-3333-333333333333");
-  await page.getByLabel("Vai trò trong khoa").selectOption("2");
+  await page.getByLabel("Vai trò trong khoa").selectOption("head");
   await page.getByLabel("Chuyên môn / bằng cấp").fill("General Doctor");
   await page.getByLabel("Số năm kinh nghiệm").fill("3");
   await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
@@ -311,7 +311,7 @@ test("new doctor submits facility department and professional fields", async ({ 
     password: "Password123!",
     phoneNumber: "0900000000",
     facilityDepartmentId: "33333333-3333-3333-3333-333333333333",
-    departmentRole: 2,
+    departmentRole: "head",
     qualification: "General Doctor",
     yearsOfExperience: 3,
   });
