@@ -140,6 +140,29 @@ const EXACT_MESSAGES = Object.freeze({
     "Giao dịch đã được hoàn tiền.",
   "Payment status is unavailable.":
     "Không thể xác định trạng thái thanh toán.",
+
+  // Payments (checkout) - no stable error codes yet, matched by exact
+  // backend string per BE's "Chuẩn hóa API Payment cho Frontend" doc.
+  "Checkout created.":
+    "Đã tạo yêu cầu thanh toán.",
+  "Checkout failed.":
+    "Không thể tạo yêu cầu thanh toán. Vui lòng thử lại.",
+  "Request body is required.":
+    "Dữ liệu thanh toán không được để trống.",
+  "PlanId is required.":
+    "Vui lòng chọn gói đăng ký.",
+  "Subscription plan not found.":
+    "Không tìm thấy gói đăng ký.",
+  "Subscription plan is not active.":
+    "Gói đăng ký này hiện không còn hoạt động.",
+  "This plan does not require payOS payment.":
+    "Gói đăng ký này không yêu cầu thanh toán qua payOS.",
+  "You already have an active subscription.":
+    "Bạn đang có một gói đăng ký còn hiệu lực.",
+  "Create payOS payment link failed.":
+    "Không thể tạo liên kết thanh toán payOS. Vui lòng thử lại.",
+  "User is not authenticated.":
+    "Vui lòng đăng nhập để tiếp tục.",
 });
 
 const FIELD_LABELS = Object.freeze({
