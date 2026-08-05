@@ -24,6 +24,7 @@ export {
 export { medicalFacilitiesApi } from "./facilityService";
 export { facilityDepartmentsApi } from "./facilityDepartmentService";
 export { doctorsApi } from "./doctorService";
+export { getDoctorApiMessage } from "./doctorService";
 export { doctorInvitationsApi } from "./doctorInvitationService";
 export { feedbackReviewsApi } from "./feedbackReviewService";
 export { icdChaptersApi } from "./icdChapterService";

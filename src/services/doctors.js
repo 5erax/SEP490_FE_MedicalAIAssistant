@@ -1,1 +1,1 @@
-export { doctorManagementApi } from "./doctorService";
+export { doctorManagementApi, getDoctorApiMessage } from "./doctorService";

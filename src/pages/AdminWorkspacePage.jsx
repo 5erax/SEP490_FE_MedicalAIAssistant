@@ -51,7 +51,7 @@ import {
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
 import { getDoctorInvitationErrorMessage } from "../services/apiError";
 import { translateApiMessage } from "../services/apiMessageTranslator";
-import { doctorManagementApi } from "../services/doctors";
+import { doctorManagementApi, getDoctorApiMessage } from "../services/doctors";
 import { logoutUser } from "../services/logoutService";
 import { HCMC_HOSPITAL_CATALOG, HCMC_HOSPITAL_CATALOG_SIZE } from "../data/hcmcHospitalCatalog";
 import {
@@ -1688,11 +1688,13 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
 
   function openCreateDoctor() {
     operatorDialogTriggerRef.current = document.activeElement;
+    setDoctorMessage(null);
     setDoctorModal({ open: true, mode: "create", doctor: null });
   }
 
   function openEditDoctor(doctor) {
     operatorDialogTriggerRef.current = document.activeElement;
+    setDoctorMessage(null);
     setDoctorModal({ open: true, mode: "edit", doctor });
   }
 
@@ -1709,14 +1711,18 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         ? await doctorManagementApi.update(doctorModal.doctor.id, payload)
         : await doctorManagementApi.create(payload);
       const savedDoctor = response.data;
+      const successMessage = getDoctorApiMessage(
+        response,
+        doctorModal.mode === "edit" ? "Cập nhật bác sĩ thành công" : "Tạo bác sĩ thành công",
+      );
       setDoctorMessage({
         type: "success",
-        text: response.message || (doctorModal.mode === "edit" ? "Đã cập nhật bác sĩ." : "Đã thêm bác sĩ."),
+        text: successMessage,
       });
       showToast({
         type: "success",
-        title: doctorModal.mode === "edit" ? "Đã cập nhật bác sĩ" : "Đã thêm bác sĩ",
-        message: response.message || "Danh sách bác sĩ đã được cập nhật.",
+        title: doctorModal.mode === "edit" ? "Cập nhật bác sĩ thành công" : "Tạo bác sĩ thành công",
+        message: successMessage,
       });
       setDoctorModal({ open: false, mode: "create", doctor: null });
       if (savedDoctor?.id && doctorModal.mode === "edit") {
@@ -1724,9 +1730,14 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       } else {
         await loadDoctors(1);
       }
+      return { success: true, message: successMessage };
     } catch (error) {
-      setDoctorMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không lưu được bác sĩ", message: error.message });
+      const message = getDoctorApiMessage(
+        error,
+        doctorModal.mode === "edit" ? "Cập nhật bác sĩ thất bại" : "Tạo bác sĩ thất bại",
+      );
+      showToast({ type: "error", title: "Không lưu được bác sĩ", message });
+      return { success: false, message };
     } finally {
       setSavingDoctor(false);
     }
@@ -1737,15 +1748,18 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     try {
       const response = await doctorManagementApi.setStatus(doctor.id, !doctor.isActive);
       const updatedDoctor = response.data;
+      const message = getDoctorApiMessage(response, "Cập nhật bác sĩ thành công");
       setDoctors((current) => current.map((item) => (item.id === doctor.id ? (updatedDoctor ?? { ...item, isActive: !item.isActive }) : item)));
+      setDoctorMessage({ type: "success", text: message });
       showToast({
         type: "success",
         title: (updatedDoctor?.isActive ?? !doctor.isActive) ? "Đã kích hoạt bác sĩ" : "Đã tạm ẩn bác sĩ",
-        message: response.message || "Trạng thái bác sĩ đã được cập nhật.",
+        message,
       });
     } catch (error) {
-      setDoctorMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không đổi được trạng thái", message: error.message });
+      const message = getDoctorApiMessage(error, "Cập nhật bác sĩ thất bại");
+      setDoctorMessage({ type: "error", text: message });
+      showToast({ type: "error", title: "Không đổi được trạng thái", message });
     }
   }
 
@@ -1761,12 +1775,15 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     setDoctorMessage(null);
     try {
       const response = await doctorManagementApi.remove(doctor.id);
+      const message = getDoctorApiMessage(response, "Xóa bác sĩ thành công");
       setDoctors((current) => current.filter((item) => item.id !== doctor.id));
       setDoctorPageInfo((current) => ({ ...current, totalCount: Math.max(0, current.totalCount - 1) }));
-      showToast({ type: "success", title: "Đã xóa bác sĩ", message: response.message || "Danh sách bác sĩ đã được cập nhật." });
+      setDoctorMessage({ type: "success", text: message });
+      showToast({ type: "success", title: "Xóa bác sĩ thành công", message });
     } catch (error) {
-      setDoctorMessage({ type: "error", text: error.message });
-      showToast({ type: "error", title: "Không xóa được bác sĩ", message: error.message });
+      const message = getDoctorApiMessage(error, "Xóa bác sĩ thất bại");
+      setDoctorMessage({ type: "error", text: message });
+      showToast({ type: "error", title: "Không xóa được bác sĩ", message });
     }
   }
 
