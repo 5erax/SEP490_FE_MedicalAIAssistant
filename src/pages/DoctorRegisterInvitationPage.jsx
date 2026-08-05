@@ -16,17 +16,19 @@ const INITIAL_FORM = {
   confirmPassword: "",
   phoneNumber: "",
   facilityDepartmentId: "",
-  departmentRole: "0",
+  departmentRole: "doctor",
   qualification: "",
   yearsOfExperience: "",
 };
 
+// Values must match the DepartmentRole string enum exactly (confirmed via
+// the live BE swagger schema) - the API rejects a numeric departmentRole.
 const DEPARTMENT_ROLES = [
-  { value: "0", label: "Bác sĩ" },
-  { value: "1", label: "Phó khoa" },
-  { value: "2", label: "Trưởng khoa" },
-  { value: "3", label: "Chuyên gia đầu ngành" },
-  { value: "4", label: "Cố vấn" },
+  { value: "doctor", label: "Bác sĩ" },
+  { value: "deputyHead", label: "Phó khoa" },
+  { value: "head", label: "Trưởng khoa" },
+  { value: "leadingExpert", label: "Chuyên gia đầu ngành" },
+  { value: "consultant", label: "Cố vấn" },
 ];
 
 const INVITATION_STEPS = [
@@ -115,7 +117,7 @@ function buildPayload(token, form, isLinkedProfile) {
   return {
     ...payload,
     facilityDepartmentId: form.facilityDepartmentId,
-    departmentRole: Number(form.departmentRole),
+    departmentRole: form.departmentRole,
     qualification: form.qualification.trim() || null,
     yearsOfExperience:
       form.yearsOfExperience === "" ? null : Number(form.yearsOfExperience),
