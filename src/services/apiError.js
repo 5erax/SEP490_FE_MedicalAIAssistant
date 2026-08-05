@@ -1,3 +1,5 @@
+import { translateApiMessage } from "./apiMessageTranslator";
+
 function normalizeErrorCode(value) {
   const code = String(value ?? "").trim();
   return /^[A-Z][A-Z0-9_]+$/.test(code) ? code : "";
@@ -46,4 +48,16 @@ const PAYMENT_RECONCILE_ERROR_MESSAGES = {
 export function getPaymentReconcileErrorMessage(error, fallback) {
   const code = getApiErrorCode(error);
   return PAYMENT_RECONCILE_ERROR_MESSAGES[code] || fallback;
+}
+
+// POST /api/user-subscriptions/checkout has no stable error codes yet, so
+// the specific reason lives in errors[0] as a plain English sentence (BE's
+// "message" field is always the generic "Checkout failed."). Prefer the
+// specific errors[0] string over message when translating.
+export function getCheckoutErrorMessage(error, fallback) {
+  const specific = Array.isArray(error?.payload?.errors) ? error.payload.errors[0] : "";
+  return translateApiMessage(specific || error?.message, {
+    status: error?.status,
+    fallback,
+  });
 }
