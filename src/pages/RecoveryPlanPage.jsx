@@ -484,20 +484,27 @@ export function PlanDetail({ plan, loading, onStart, busy }) {
                 </dl>
                 {(phase.nutrientTargets ?? []).length > 0 && (
                   <div className="recovery-nutrients">
-                    <strong>Dinh dưỡng gợi ý</strong>
-                    {(phase.nutrientTargets ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((nutrient) => (
-                      <div className="recovery-nutrient" key={nutrient.id}>
-                        <div><span>{nutrient.nutrientName}</span><b>{nutrient.amountPerDay} {nutrient.unit}/ngày</b></div>
-                        {nutrient.instruction && <p>{nutrient.instruction}</p>}
-                        {(nutrient.foodSources ?? []).length > 0 && (
-                          <ul>
-                            {(nutrient.foodSources ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
-                              <li key={food.id}><strong>{food.foodName}</strong>{food.suggestedServing ? ` · ${food.suggestedServing}` : ""}{food.note ? ` — ${food.note}` : ""}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
+                    <p className="recovery-subsection-label">Dinh dưỡng gợi ý</p>
+                    <div className="recovery-nutrient-list">
+                      {(phase.nutrientTargets ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((nutrient) => (
+                        <div className="recovery-nutrient" key={nutrient.id}>
+                          <div><span>{nutrient.nutrientName}</span><b>{nutrient.amountPerDay} {nutrient.unit}/ngày</b></div>
+                          {nutrient.instruction && <p>{nutrient.instruction}</p>}
+                          {(nutrient.foodSources ?? []).length > 0 && (
+                            <ul className="recovery-food-list">
+                              {(nutrient.foodSources ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
+                                <li className="recovery-food-item" key={food.id}>
+                                  <strong>{food.foodName}</strong>
+                                  {(food.suggestedServing || food.note) && (
+                                    <span>{[food.suggestedServing, food.note].filter(Boolean).join(" — ")}</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </article>
