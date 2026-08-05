@@ -7,6 +7,7 @@ import {
   Bone,
   CalendarClock,
   Check,
+  CheckCircle2,
   ClipboardCheck,
   Clock3,
   FileText,
@@ -52,6 +53,21 @@ const STATUS_META = {
   cancelled: { label: "Đã hủy", tone: "danger" },
   expired: { label: "Hết hạn", tone: "danger" },
 };
+
+// Vietnamese labels for RecoveryPlanStatus (the *plan's* own lifecycle,
+// separate from the request's status above) - shown once a plan has been
+// published, instead of the raw backend enum value.
+const RECOVERY_PLAN_STATUS_META = {
+  readyToStart: { label: "Sẵn sàng bắt đầu", tone: "success" },
+  active: { label: "Đang thực hiện", tone: "info" },
+  completed: { label: "Đã hoàn thành", tone: "success" },
+  cancelled: { label: "Đã hủy", tone: "danger" },
+  superseded: { label: "Đã thay thế", tone: "danger" },
+};
+
+function getRecoveryPlanStatusMeta(value) {
+  return RECOVERY_PLAN_STATUS_META[value] ?? { label: value || "—", tone: "info" };
+}
 
 const REJECTION_REASON_CODES = [
   { value: "OUT_OF_SCOPE", label: "Ngoài phạm vi xử lý" },
@@ -510,11 +526,21 @@ function DetailContent({ request, onReload }) {
           )}
 
           {request.status === "published" && (
-            <section className="doctor-detail-plan-note">
-              <FileText size={16} aria-hidden="true" />
-              <span>
-                Kế hoạch liên kết đang ở trạng thái <strong>{request.recoveryPlanStatus}</strong>. Trang xem kế hoạch sẽ sớm ra mắt.
-              </span>
+            <section className="doctor-detail-success-card">
+              <span className="doctor-detail-success-icon" aria-hidden="true"><CheckCircle2 size={24} /></span>
+              <div>
+                <p className="doctor-detail-success-eyebrow">Đã xuất bản thành công</p>
+                <h2>Kế hoạch phục hồi đã được gửi tới bệnh nhân</h2>
+                <div className="doctor-detail-success-status">
+                  <span>Trạng thái kế hoạch:</span>
+                  <Badge tone={getRecoveryPlanStatusMeta(request.recoveryPlanStatus).tone}>
+                    {getRecoveryPlanStatusMeta(request.recoveryPlanStatus).label}
+                  </Badge>
+                </div>
+                <p className="doctor-detail-success-note">
+                  <FileText size={13} aria-hidden="true" /> Trang xem chi tiết kế hoạch đầy đủ sẽ sớm ra mắt tại đây.
+                </p>
+              </div>
             </section>
           )}
 
@@ -746,7 +772,16 @@ function ProgressSteps({ status }) {
   return (
     <ol className="doctor-detail-steps">
       {steps.map((step, index) => {
-        const state = index < stepIndex ? "done" : index === stepIndex ? "current" : "pending";
+        const isLastStep = index === steps.length - 1;
+        // Reaching the last step IS completion, not "in progress" - so it
+        // should render as done (checkmark) the instant it's reached,
+        // unlike the middle steps which stay a "current" ring until the
+        // next step starts.
+        const state = index < stepIndex || (index === stepIndex && isLastStep)
+          ? "done"
+          : index === stepIndex
+            ? "current"
+            : "pending";
         return (
           <li key={step.label} className={`is-${state}${step.danger && state !== "pending" ? " is-danger" : ""}`}>
             <span className="doctor-detail-step-dot" aria-hidden="true">
