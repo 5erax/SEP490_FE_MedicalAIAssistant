@@ -98,6 +98,65 @@ function getSortedItems(list) {
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 }
 
+// Mirrors the backend's ValidateCompletePlan rules (RecoveryPlanValidation.cs)
+// so the doctor sees exactly what's missing before hitting a 400 on publish,
+// instead of just "có giai đoạn + phủ kín ngày" which isn't the full picture:
+// every phase also needs sleep/rest hours + >=1 nutrient, and every nutrient
+// needs >=1 food source.
+function getPublishChecklist(plan) {
+  const phases = getSortedPhases(plan);
+  const gaps = findCoverageGaps(phases, plan.durationDays);
+  const phaseLabel = (phase, index) => phase.phaseName || `giai đoạn ${index + 1}`;
+
+  const missingSleepRest = phases.filter((phase) => phase.sleepHoursPerDay == null || phase.restHoursPerDay == null);
+  const phasesWithoutNutrients = phases.filter((phase) => getSortedItems(phase.nutrientTargets).length === 0);
+  const nutrientsWithoutFood = [];
+  phases.forEach((phase) => {
+    getSortedItems(phase.nutrientTargets).forEach((nutrient) => {
+      if (getSortedItems(nutrient.foodSources).length === 0) {
+        nutrientsWithoutFood.push(nutrient.nutrientName || "dưỡng chất chưa đặt tên");
+      }
+    });
+  });
+
+  return [
+    {
+      key: "summary",
+      label: "Có tóm tắt và hướng dẫn tái khám",
+      done: Boolean(plan.summary?.trim()) && Boolean(plan.recheckInstruction?.trim()),
+    },
+    {
+      key: "coverage",
+      label: `Có ít nhất 1 giai đoạn, phủ kín ${plan.durationDays ? `${plan.durationDays} ngày` : "toàn bộ thời lượng"} của kế hoạch`,
+      done: phases.length > 0 && gaps.length === 0,
+    },
+    {
+      key: "sleep-rest",
+      label: "Mỗi giai đoạn có đủ giờ ngủ và giờ nghỉ",
+      done: phases.length > 0 && missingSleepRest.length === 0,
+      detail: missingSleepRest.length > 0
+        ? `Còn thiếu ở: ${missingSleepRest.map(phaseLabel).join(", ")}`
+        : null,
+    },
+    {
+      key: "nutrients",
+      label: "Mỗi giai đoạn có ít nhất 1 dưỡng chất",
+      done: phases.length > 0 && phasesWithoutNutrients.length === 0,
+      detail: phasesWithoutNutrients.length > 0
+        ? `Còn thiếu ở: ${phasesWithoutNutrients.map(phaseLabel).join(", ")}`
+        : null,
+    },
+    {
+      key: "foods",
+      label: "Mỗi dưỡng chất có ít nhất 1 nguồn thực phẩm",
+      done: nutrientsWithoutFood.length === 0,
+      detail: nutrientsWithoutFood.length > 0
+        ? `Còn thiếu ở: ${nutrientsWithoutFood.join(", ")}`
+        : null,
+    },
+  ];
+}
+
 function findOverlappingPhase(phases, start, end, excludeId) {
   return phases.find((item) => {
     if (excludeId && item.id === excludeId) return false;
@@ -110,6 +169,7 @@ function getActionMessage(error) {
   const code = getApiErrorCode(error);
   if (code === "INVALID_REQUEST") return "Dữ liệu chưa hợp lệ. Vui lòng kiểm tra lại các trường đã nhập.";
   if (code === "INVALID_PLAN_STRUCTURE") return "Cấu trúc kế hoạch không hợp lệ. Vui lòng kiểm tra khoảng ngày và thứ tự hiển thị.";
+  if (code === "RECOVERY_PLAN_INCOMPLETE") return "Kế hoạch chưa đầy đủ thông tin bắt buộc để xuất bản. Vui lòng kiểm tra lại danh sách yêu cầu.";
   if (code === "NOT_FOUND") return "Dữ liệu không còn tồn tại hoặc bạn không có quyền chỉnh sửa. Vui lòng tải lại trang.";
   if (code === "RECOVERY_PLAN_NOT_EDITABLE") return "Kế hoạch không còn ở trạng thái có thể chỉnh sửa. Vui lòng tải lại trang.";
   if (code === "INVALID_REQUEST_STATE" || code === "CONFLICT") return "Dữ liệu hoặc trạng thái kế hoạch đã thay đổi. Vui lòng tải lại trang.";
@@ -367,7 +427,7 @@ export default function DoctorPlanEditorPage({ planId }) {
       navigate(state.requestId ? `/app/staff/recovery-plan-requests/${state.requestId}` : "/app/staff/recovery-plans/mine");
     } catch (requestError) {
       showToast({ type: "error", title: "Không thể xuất bản kế hoạch", message: getActionMessage(requestError) });
-      if (getApiErrorCode(requestError) === "NOT_FOUND" || getApiErrorCode(requestError) === "INVALID_PLAN_STRUCTURE") {
+      if (["NOT_FOUND", "INVALID_PLAN_STRUCTURE", "RECOVERY_PLAN_INCOMPLETE", "RECOVERY_PLAN_NOT_EDITABLE", "INVALID_REQUEST_STATE", "CONFLICT"].includes(getApiErrorCode(requestError))) {
         await refreshPlan();
       }
     } finally {
@@ -535,9 +595,8 @@ function PlanContent({
   const isDraft = plan.status === "draft";
   const phases = getSortedPhases(plan);
   const gaps = findCoverageGaps(phases, plan.durationDays);
-  const hasPhases = phases.length > 0;
-  const hasFullCoverage = hasPhases && gaps.length === 0;
-  const canPublish = hasPhases && hasFullCoverage;
+  const publishChecklist = getPublishChecklist(plan);
+  const canPublish = publishChecklist.every((item) => item.done);
 
   return (
     <>
@@ -638,18 +697,17 @@ function PlanContent({
             <section className="doctor-plan-card doctor-plan-publish-card">
               <p className="doctor-plan-card-heading">Xuất bản kế hoạch</p>
               <ul className="doctor-plan-checklist">
-                <li className={hasPhases ? "is-done" : "is-blocked"}>
-                  <span className="doctor-plan-checklist-icon" aria-hidden="true">
-                    {hasPhases ? <Check size={13} /> : <X size={13} />}
-                  </span>
-                  Có ít nhất 1 giai đoạn điều trị
-                </li>
-                <li className={hasFullCoverage ? "is-done" : "is-blocked"}>
-                  <span className="doctor-plan-checklist-icon" aria-hidden="true">
-                    {hasFullCoverage ? <Check size={13} /> : <X size={13} />}
-                  </span>
-                  Các giai đoạn phủ kín {plan.durationDays ? `${plan.durationDays} ngày` : "toàn bộ thời lượng"} của kế hoạch
-                </li>
+                {publishChecklist.map((item) => (
+                  <li key={item.key} className={item.done ? "is-done" : "is-blocked"}>
+                    <span className="doctor-plan-checklist-icon" aria-hidden="true">
+                      {item.done ? <Check size={13} /> : <X size={13} />}
+                    </span>
+                    <span>
+                      {item.label}
+                      {!item.done && item.detail && <em>{item.detail}</em>}
+                    </span>
+                  </li>
+                ))}
               </ul>
               <div className="doctor-plan-publish-actions">
                 <Button tone="ghost" onClick={onPreview}>
