@@ -190,13 +190,18 @@
 }
 
 .doctor-plan-phase-row {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
   gap: 12px;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
   background: var(--color-surface-soft);
   padding: 14px 16px;
+}
+
+.doctor-plan-phase-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .doctor-plan-phase-info {
@@ -270,6 +275,115 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+/* Nested nutrient / food sub-sections inside a phase row */
+
+.doctor-plan-subsection {
+  display: grid;
+  gap: 8px;
+  border-top: 1px dashed var(--color-line);
+  padding-top: 12px;
+}
+
+.doctor-plan-subsection-nested {
+  margin-top: 4px;
+  border-top-style: dotted;
+}
+
+.doctor-plan-subsection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.doctor-plan-subsection-heading {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.doctor-plan-subsection-heading svg {
+  color: var(--color-info-strong);
+}
+
+.doctor-plan-subsection-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.doctor-plan-subsection-add:hover {
+  text-decoration: underline;
+}
+
+.doctor-plan-subsection-empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.doctor-plan-nutrient-list,
+.doctor-plan-food-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doctor-plan-nutrient-row {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  padding: 10px 12px;
+}
+
+.doctor-plan-nutrient-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.doctor-plan-nutrient-info,
+.doctor-plan-food-info {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 2px;
+}
+
+.doctor-plan-nutrient-info strong,
+.doctor-plan-food-info strong {
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.doctor-plan-food-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  padding: 8px 10px;
 }
 
 .doctor-plan-phase-gaps {
