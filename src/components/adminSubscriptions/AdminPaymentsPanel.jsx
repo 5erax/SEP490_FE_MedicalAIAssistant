@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, ReceiptText, RefreshCw, X } from "lucide-react";
 import { Badge, Button, DataTable, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
 import { paymentsApi } from "../../services/api";
+import { translateApiMessage } from "../../services/apiMessageTranslator";
 
 const PAGE_SIZE = 10;
 
@@ -52,8 +53,13 @@ function PaymentDetailDialog({ paymentSummary, onClose, restoreFocusRef }) {
         .then((response) => {
           if (active) setPayment(response?.data ?? paymentSummary);
         })
-        .catch(() => {
-          if (active) setError("Chưa thể tải đầy đủ chi tiết giao dịch.");
+        .catch((error) => {
+          if (active) {
+            setError(translateApiMessage(error?.message, {
+              status: error?.status,
+              fallback: "Chưa thể tải đầy đủ chi tiết giao dịch.",
+            }));
+          }
         })
         .finally(() => {
           if (active) setLoading(false);
@@ -116,8 +122,13 @@ export default function AdminPaymentsPanel() {
         .then((response) => {
           if (active) setPaymentPage(normalizePage(response, pageNumber));
         })
-        .catch(() => {
-          if (active) setError("Chưa thể tải lịch sử thanh toán. Vui lòng thử lại.");
+        .catch((error) => {
+          if (active) {
+            setError(translateApiMessage(error?.message, {
+              status: error?.status,
+              fallback: "Chưa thể tải lịch sử thanh toán. Vui lòng thử lại.",
+            }));
+          }
         })
         .finally(() => {
           if (active) setLoading(false);
