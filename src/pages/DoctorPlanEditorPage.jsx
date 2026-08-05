@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -25,6 +25,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { doctorRecoveryPlansApi, normalizeDoctorPlanDetail } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
+import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import { PlanDetail } from "./RecoveryPlanPage";
 import "../styles/recovery-plan.css";
 import "../styles/doctor-plan-editor.css";
@@ -194,6 +195,7 @@ export default function DoctorPlanEditorPage({ planId }) {
   const [editingFood, setEditingFood] = useState(null);
   const [foodBusy, setFoodBusy] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
+  const refetchTimerRef = useRef(null);
 
   async function refreshPlan() {
     const response = await doctorRecoveryPlansApi.get(planId);
@@ -219,6 +221,26 @@ export default function DoctorPlanEditorPage({ planId }) {
 
   useEffect(() => {
     queueMicrotask(() => void load());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId]);
+
+  useEffect(() => {
+    // refreshPlan() already never touches the loading flag, so it's safe to
+    // call straight from a background socket event without flashing a
+    // spinner over a form the doctor might have open.
+    const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
+      if (event.type === "plan" || event.refetch) {
+        window.clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = window.setTimeout(() => {
+          void refreshPlan();
+        }, 250);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(refetchTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId]);
 

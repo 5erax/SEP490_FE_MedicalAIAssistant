@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bone,
   ChevronLeft,
@@ -11,6 +11,7 @@ import {
 import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { doctorRecoveryPlanRequestsApi } from "../services/api";
+import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import "../styles/doctor-my-requests.css";
 
 const PAGE_SIZE = 10;
@@ -83,6 +84,7 @@ export default function DoctorMyRequestsPage() {
   const [page, setPage] = useState({ items: [], pageNumber: 1, totalPages: 1, totalCount: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const refetchTimerRef = useRef(null);
 
   const loadRequests = useCallback(async (targetPage = pageNumber, targetStatus = status) => {
     setLoading(true);
@@ -109,6 +111,22 @@ export default function DoctorMyRequestsPage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
+      if (event.type === "request" || event.refetch) {
+        window.clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = window.setTimeout(() => {
+          void loadRequests(pageNumber, status);
+        }, 250);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(refetchTimerRef.current);
+    };
+  }, [loadRequests, pageNumber, status]);
 
   return (
     <div className="doctor-mine-page">

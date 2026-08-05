@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -7,6 +7,7 @@ import {
   Bone,
   CalendarClock,
   Check,
+  CheckCircle2,
   ClipboardCheck,
   Clock3,
   FileText,
@@ -32,6 +33,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { doctorRecoveryPlanRequestsApi, normalizeDoctorPlanDetail } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
+import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import "../styles/doctor-request-detail.css";
 
 const MAX_REASON_LENGTH = 2000;
@@ -51,6 +53,21 @@ const STATUS_META = {
   cancelled: { label: "Đã hủy", tone: "danger" },
   expired: { label: "Hết hạn", tone: "danger" },
 };
+
+// Vietnamese labels for RecoveryPlanStatus (the *plan's* own lifecycle,
+// separate from the request's status above) - shown once a plan has been
+// published, instead of the raw backend enum value.
+const RECOVERY_PLAN_STATUS_META = {
+  readyToStart: { label: "Sẵn sàng bắt đầu", tone: "success" },
+  active: { label: "Đang thực hiện", tone: "info" },
+  completed: { label: "Đã hoàn thành", tone: "success" },
+  cancelled: { label: "Đã hủy", tone: "danger" },
+  superseded: { label: "Đã thay thế", tone: "danger" },
+};
+
+function getRecoveryPlanStatusMeta(value) {
+  return RECOVERY_PLAN_STATUS_META[value] ?? { label: value || "—", tone: "info" };
+}
 
 const REJECTION_REASON_CODES = [
   { value: "OUT_OF_SCOPE", label: "Ngoài phạm vi xử lý" },
@@ -221,6 +238,20 @@ export default function DoctorRequestDetailPage({ requestId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const refetchTimerRef = useRef(null);
+
+  async function refreshRequest() {
+    // Silent background resync for realtime events - unlike load(), this
+    // never toggles the full-page loading/error state, so a socket event
+    // doesn't flash a spinner over the whole page the doctor is reading.
+    try {
+      const response = await doctorRecoveryPlanRequestsApi.get(requestId);
+      setRequest(response?.data ?? null);
+    } catch {
+      // Ignored - the manual refresh button and next real navigation will
+      // surface any persistent problem instead.
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -242,6 +273,23 @@ export default function DoctorRequestDetailPage({ requestId }) {
 
   useEffect(() => {
     queueMicrotask(() => void load());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestId]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
+      if (event.type === "request" || event.type === "plan" || event.refetch) {
+        window.clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = window.setTimeout(() => {
+          void refreshRequest();
+        }, 250);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      window.clearTimeout(refetchTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
 
@@ -478,11 +526,21 @@ function DetailContent({ request, onReload }) {
           )}
 
           {request.status === "published" && (
-            <section className="doctor-detail-plan-note">
-              <FileText size={16} aria-hidden="true" />
-              <span>
-                Kế hoạch liên kết đang ở trạng thái <strong>{request.recoveryPlanStatus}</strong>. Trang xem kế hoạch sẽ sớm ra mắt.
-              </span>
+            <section className="doctor-detail-success-card">
+              <span className="doctor-detail-success-icon" aria-hidden="true"><CheckCircle2 size={24} /></span>
+              <div>
+                <p className="doctor-detail-success-eyebrow">Đã xuất bản thành công</p>
+                <h2>Kế hoạch phục hồi đã được gửi tới bệnh nhân</h2>
+                <div className="doctor-detail-success-status">
+                  <span>Trạng thái kế hoạch:</span>
+                  <Badge tone={getRecoveryPlanStatusMeta(request.recoveryPlanStatus).tone}>
+                    {getRecoveryPlanStatusMeta(request.recoveryPlanStatus).label}
+                  </Badge>
+                </div>
+                <p className="doctor-detail-success-note">
+                  <FileText size={13} aria-hidden="true" /> Trang xem chi tiết kế hoạch đầy đủ sẽ sớm ra mắt tại đây.
+                </p>
+              </div>
             </section>
           )}
 
@@ -714,7 +772,16 @@ function ProgressSteps({ status }) {
   return (
     <ol className="doctor-detail-steps">
       {steps.map((step, index) => {
-        const state = index < stepIndex ? "done" : index === stepIndex ? "current" : "pending";
+        const isLastStep = index === steps.length - 1;
+        // Reaching the last step IS completion, not "in progress" - so it
+        // should render as done (checkmark) the instant it's reached,
+        // unlike the middle steps which stay a "current" ring until the
+        // next step starts.
+        const state = index < stepIndex || (index === stepIndex && isLastStep)
+          ? "done"
+          : index === stepIndex
+            ? "current"
+            : "pending";
         return (
           <li key={step.label} className={`is-${state}${step.danger && state !== "pending" ? " is-danger" : ""}`}>
             <span className="doctor-detail-step-dot" aria-hidden="true">
