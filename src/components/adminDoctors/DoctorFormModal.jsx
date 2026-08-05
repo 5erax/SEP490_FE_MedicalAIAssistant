@@ -24,6 +24,7 @@ const ROLE_OPTIONS = [
   { value: "leadingExpert", label: "Chuyên gia đầu ngành" },
   { value: "consultant", label: "Cố vấn" },
 ];
+const ROLE_VALUES = new Set(ROLE_OPTIONS.map((role) => role.value));
 
 const GUID_PATTERN = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
@@ -41,40 +42,54 @@ function toFormValue(doctor) {
   };
 }
 
-function validate(form, validFacilityDepartmentIds) {
+function validate(form, validFacilityDepartmentIds, mode) {
   const errors = {};
   const facilityDepartmentId = form.facilityDepartmentId.trim();
   if (!facilityDepartmentId) {
-    errors.facilityDepartmentId = "Vui lòng chọn cơ sở y tế và khoa công tác.";
+    errors.facilityDepartmentId = "FacilityDepartmentId là bắt buộc";
   } else if (
     !GUID_PATTERN.test(facilityDepartmentId) ||
     !validFacilityDepartmentIds.has(facilityDepartmentId)
   ) {
-    errors.facilityDepartmentId = "Cơ sở y tế và khoa công tác không hợp lệ. Vui lòng chọn lại từ danh sách.";
+    errors.facilityDepartmentId = "FacilityDepartment không hợp lệ hoặc đã xóa";
   }
-  if (!form.fullName.trim()) errors.fullName = "Cần nhập họ tên bác sĩ.";
+  if (!form.fullName.trim()) {
+    errors.fullName = mode === "edit" ? "Họ tên không được để trống" : "Họ tên là bắt buộc";
+  }
   if (form.yearsOfExperience !== "") {
     const years = Number(form.yearsOfExperience);
     if (!Number.isInteger(years) || years < 0) {
-      errors.yearsOfExperience = "Số năm kinh nghiệm phải là số nguyên không âm.";
+      errors.yearsOfExperience = "Số năm kinh nghiệm phải ≥ 0";
     }
   }
   const imageUrl = form.imageUrl.trim();
   if (imageUrl) {
     if (imageUrl.length > 2048) {
-      errors.imageUrl = "URL ảnh bác sĩ không được vượt quá 2048 ký tự.";
+      errors.imageUrl = "ImageUrl không hợp lệ / quá dài";
     } else {
       try {
         const url = new URL(imageUrl);
         if (!["http:", "https:"].includes(url.protocol)) {
-          errors.imageUrl = "URL ảnh bác sĩ phải bắt đầu bằng http hoặc https.";
+          errors.imageUrl = "ImageUrl không hợp lệ / quá dài";
         }
       } catch {
-        errors.imageUrl = "URL ảnh bác sĩ không hợp lệ.";
+        errors.imageUrl = "ImageUrl không hợp lệ / quá dài";
       }
     }
   }
+  if (!ROLE_VALUES.has(form.departmentRole)) {
+    errors.departmentRole = "DepartmentRole không hợp lệ";
+  }
   return errors;
+}
+
+function getDoctorFieldErrors(message) {
+  if (message.startsWith("FacilityDepartment")) return { facilityDepartmentId: message };
+  if (message.startsWith("Họ tên") || message.startsWith("Bác sĩ cùng họ tên")) return { fullName: message };
+  if (message.startsWith("Số năm kinh nghiệm")) return { yearsOfExperience: message };
+  if (message.startsWith("ImageUrl")) return { imageUrl: message };
+  if (message.startsWith("DepartmentRole")) return { departmentRole: message };
+  return {};
 }
 
 function buildDoctorPayload(form) {
@@ -112,32 +127,39 @@ export default function DoctorFormModal({
 }) {
   const [form, setForm] = useState(() => toFormValue(doctor));
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadMessage, setImageUploadMessage] = useState(null);
   const [selectedImageName, setSelectedImageName] = useState("");
   const formRef = useRef(null);
+  const errorSummaryRef = useRef(null);
   const title = mode === "edit" ? "Cập nhật bác sĩ" : "Thêm bác sĩ mới";
   const locked = saving || imageUploading;
   const currentImageUrl = getSafeImageUrl(form.imageUrl.trim());
-  const hasErrors = Object.values(errors).some(Boolean);
+  const summaryMessages = useMemo(
+    () => Array.from(new Set([...Object.values(errors).filter(Boolean), submitError].filter(Boolean))),
+    [errors, submitError],
+  );
+  const hasErrors = summaryMessages.length > 0;
 
   const options = useMemo(() => {
-    const current = form.facilityDepartmentId
+    const current = doctor?.facilityDepartmentId
       ? [{
-          id: form.facilityDepartmentId,
+          id: doctor.facilityDepartmentId,
           label: doctor?.facilityName && doctor?.departmentName
             ? `${doctor.facilityName} - ${doctor.departmentName}`
-            : form.facilityDepartmentId,
+            : doctor.facilityDepartmentId,
         }]
       : [];
 
     const merged = [...current, ...facilityDepartmentOptions];
     return Array.from(new Map(merged.map((item) => [item.id, item])).values());
-  }, [doctor, facilityDepartmentOptions, form.facilityDepartmentId]);
+  }, [doctor, facilityDepartmentOptions]);
 
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: "" }));
+    setSubmitError("");
     if (key === "imageUrl") setImageUploadMessage(null);
   }
 
@@ -162,16 +184,27 @@ export default function DoctorFormModal({
     }
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const validFacilityDepartmentIds = new Set(options.map((option) => option.id));
-    const nextErrors = validate(form, validFacilityDepartmentIds);
+    const nextErrors = validate(form, validFacilityDepartmentIds, mode);
     setErrors(nextErrors);
+    setSubmitError("");
     if (Object.keys(nextErrors).length) {
       focusFirstInvalidField(formRef, nextErrors);
       return;
     }
-    onSubmit(buildDoctorPayload(form));
+    const result = await onSubmit(buildDoctorPayload(form));
+    if (result?.success === false) {
+      const fieldErrors = getDoctorFieldErrors(result.message);
+      setErrors(fieldErrors);
+      setSubmitError(result.message);
+      if (Object.keys(fieldErrors).length) {
+        focusFirstInvalidField(formRef, fieldErrors);
+      } else {
+        window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
+      }
+    }
   }
 
   function clearImage() {
@@ -202,12 +235,14 @@ export default function DoctorFormModal({
         <form ref={formRef} className="clean-form facility-form doctor-form" onSubmit={handleSubmit} noValidate>
           {hasErrors && (
             <div
+              ref={errorSummaryRef}
               className="doctor-form-error-summary"
               role="alert"
+              tabIndex={-1}
             >
               <strong>Kiểm tra lại thông tin bác sĩ</strong>
               <ul>
-                {Object.values(errors).filter(Boolean).map((error) => (
+                {summaryMessages.map((error) => (
                   <li key={error}>{error}</li>
                 ))}
               </ul>
@@ -290,13 +325,18 @@ export default function DoctorFormModal({
                   />
                   {errors.yearsOfExperience && <small id="doctor-experience-error" role="alert">{errors.yearsOfExperience}</small>}
                 </label>
-                <label className="clean-field">
+                <label className={`clean-field ${errors.departmentRole ? "doctor-field-error" : ""}`}>
                   <span>Vai trò trong khoa</span>
-                  <select name="departmentRole" value={form.departmentRole} onChange={(event) => update("departmentRole", event.target.value)}>
+                  <select
+                    {...getAdminFieldProps("departmentRole", errors.departmentRole, errors.departmentRole ? "doctor-role-error" : "")}
+                    value={form.departmentRole}
+                    onChange={(event) => update("departmentRole", event.target.value)}
+                  >
                     {ROLE_OPTIONS.map((role) => (
                       <option key={role.value} value={role.value}>{role.label}</option>
                     ))}
                   </select>
+                  {errors.departmentRole && <small id="doctor-role-error" role="alert">{errors.departmentRole}</small>}
                 </label>
                 <label className="clean-field">
                   <span>Trạng thái</span>
