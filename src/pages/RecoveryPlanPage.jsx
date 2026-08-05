@@ -219,6 +219,18 @@ function QuotaCard({ quota, error, loading, onRetry }) {
   );
 }
 
+function StatTile({ icon: Icon, label, value }) {
+  return (
+    <div className="recovery-stat-tile">
+      <span className="recovery-stat-icon" aria-hidden="true"><Icon size={20} /></span>
+      <div>
+        <p>{label}</p>
+        <strong>{value}</strong>
+      </div>
+    </div>
+  );
+}
+
 function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
   const [diseaseGroup, setDiseaseGroup] = useState("");
   const [requestNote, setRequestNote] = useState("");
@@ -517,6 +529,7 @@ export default function RecoveryPlanPage() {
   const [actionBusy, setActionBusy] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [statusMessage, setStatusMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("requests");
   const refetchTimerRef = useRef(null);
 
   const loadQuota = useCallback(async () => {
@@ -737,123 +750,156 @@ export default function RecoveryPlanPage() {
       </header>
 
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
-      <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
 
-      <div className="recovery-top-grid">
-        <CreateRequestForm
-          disabled={requestCreationDisabled}
-          disabledMessage={requestDisabledMessage}
-          onCreated={handleCreated}
-        />
-        <aside className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
-          <p className="recovery-eyebrow">Trong thời gian chờ</p>
-          <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>
-          <ul>
-            <li><ClipboardCheck size={19} aria-hidden="true" /><span><strong>Giữ lại hướng dẫn sau khám</strong><small>Đơn thuốc, lịch hẹn và các chỉ dẫn đã nhận.</small></span></li>
-            <li><Activity size={19} aria-hidden="true" /><span><strong>Ghi nhận thay đổi đáng chú ý</strong><small>Thời điểm, mức độ và diễn biến gần đây.</small></span></li>
-            <li><CalendarCheck size={19} aria-hidden="true" /><span><strong>Theo dõi mốc tái khám</strong><small>Chuẩn bị câu hỏi cho lần trao đổi tiếp theo.</small></span></li>
-          </ul>
-        </aside>
+      <div className="recovery-stats-row">
+        <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
+        <StatTile icon={ListChecks} label="Tổng yêu cầu đã gửi" value={requestPage.totalCount} />
+        <StatTile icon={FileText} label="Tổng kế hoạch đã nhận" value={planPage.totalCount} />
       </div>
 
-      <section className="recovery-management-section" aria-labelledby="recovery-requests-title">
-        <div className="recovery-section-heading">
-          <div><p className="recovery-eyebrow">Yêu cầu của bạn</p><h2 id="recovery-requests-title">Theo dõi quá trình chuẩn bị</h2></div>
-          <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
-            <RefreshCw size={16} aria-hidden="true" /> Tải lại
-          </Button>
-        </div>
-        {requestsLoading && requestItems.length === 0 ? (
-          <LoadingState label="Đang tải yêu cầu…" />
-        ) : requestsError ? (
-          <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(requestPageNumber)}>Thử lại</Button>} />
-        ) : requestItems.length === 0 ? (
-          <EmptyState icon={<ListChecks size={26} aria-hidden="true" />} title="Chưa có yêu cầu phục hồi" description="Yêu cầu mới của bạn sẽ xuất hiện tại đây." />
-        ) : (
-          <div className="recovery-split-view">
-            <div className="recovery-item-list" role="group" aria-label="Danh sách yêu cầu phục hồi">
-              {requestItems.map((request) => (
-                <button
-                  type="button"
-                  key={request.id}
-                  className={`recovery-item-button ${selectedRequest?.id === request.id ? "is-selected" : ""}`}
-                  aria-pressed={selectedRequest?.id === request.id}
-                  onClick={() => loadRequestDetail(request.id, request)}
-                >
-                  <span><strong>{getDiseaseLabel(request.diseaseGroup)}</strong><small>{formatDate(request.requestedAt, true)}</small></span>
-                  <StatusBadge map={REQUEST_STATUS} value={request.status} />
-                </button>
-              ))}
-              <Pagination
-                label="Phân trang yêu cầu phục hồi"
-                page={requestPage}
-                loading={requestsLoading}
-                onChange={(nextPage) => {
-                  setRequestPageNumber(nextPage);
-                  void loadRequests(nextPage);
-                }}
-              />
+      <div className="recovery-workspace-layout">
+        <div className="recovery-workspace-main">
+          <div className="recovery-workspace-head">
+            <div className="recovery-workspace-tabs" role="tablist" aria-label="Khu vực làm việc">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "requests"}
+                className={activeTab === "requests" ? "is-active" : ""}
+                onClick={() => setActiveTab("requests")}
+              >
+                Yêu cầu của bạn
+                {requestPage.totalCount > 0 && <span className="recovery-tab-count">{requestPage.totalCount}</span>}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "plans"}
+                className={activeTab === "plans" ? "is-active" : ""}
+                onClick={() => setActiveTab("plans")}
+              >
+                Kế hoạch của bạn
+                {planPage.totalCount > 0 && <span className="recovery-tab-count">{planPage.totalCount}</span>}
+              </button>
             </div>
-            <RequestDetail
-              key={selectedRequest?.id || "empty-request"}
-              request={selectedRequest}
-              loading={requestDetailLoading}
-              busy={actionBusy}
-              onCancel={handleCancel}
-              onProvideInformation={handleProvideInformation}
-            />
+            {activeTab === "requests" ? (
+              <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
+                <RefreshCw size={16} aria-hidden="true" /> Tải lại
+              </Button>
+            ) : (
+              <Button tone="secondary" size="sm" onClick={() => loadPlans(planPageNumber, selectedPlan?.id)} disabled={plansLoading}>
+                <RefreshCw size={16} aria-hidden="true" /> Tải lại
+              </Button>
+            )}
           </div>
-        )}
-      </section>
 
-      <section className="recovery-management-section" aria-labelledby="recovery-plans-title">
-        <div className="recovery-section-heading">
-          <div><p className="recovery-eyebrow">Kế hoạch đã nhận</p><h2 id="recovery-plans-title">Lộ trình phục hồi</h2></div>
-          <Button tone="secondary" size="sm" onClick={() => loadPlans(planPageNumber, selectedPlan?.id)} disabled={plansLoading}>
-            <RefreshCw size={16} aria-hidden="true" /> Tải lại
-          </Button>
+          {activeTab === "requests" ? (
+            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Yêu cầu của bạn">
+              {requestsLoading && requestItems.length === 0 ? (
+                <LoadingState label="Đang tải yêu cầu…" />
+              ) : requestsError ? (
+                <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(requestPageNumber)}>Thử lại</Button>} />
+              ) : requestItems.length === 0 ? (
+                <EmptyState icon={<ListChecks size={26} aria-hidden="true" />} title="Chưa có yêu cầu phục hồi" description="Yêu cầu mới của bạn sẽ xuất hiện tại đây." />
+              ) : (
+                <div className="recovery-split-view">
+                  <div className="recovery-item-list" role="group" aria-label="Danh sách yêu cầu phục hồi">
+                    {requestItems.map((request) => (
+                      <button
+                        type="button"
+                        key={request.id}
+                        className={`recovery-item-button ${selectedRequest?.id === request.id ? "is-selected" : ""}`}
+                        aria-pressed={selectedRequest?.id === request.id}
+                        onClick={() => loadRequestDetail(request.id, request)}
+                      >
+                        <span><strong>{getDiseaseLabel(request.diseaseGroup)}</strong><small>{formatDate(request.requestedAt, true)}</small></span>
+                        <StatusBadge map={REQUEST_STATUS} value={request.status} />
+                      </button>
+                    ))}
+                    <Pagination
+                      label="Phân trang yêu cầu phục hồi"
+                      page={requestPage}
+                      loading={requestsLoading}
+                      onChange={(nextPage) => {
+                        setRequestPageNumber(nextPage);
+                        void loadRequests(nextPage);
+                      }}
+                    />
+                  </div>
+                  <RequestDetail
+                    key={selectedRequest?.id || "empty-request"}
+                    request={selectedRequest}
+                    loading={requestDetailLoading}
+                    busy={actionBusy}
+                    onCancel={handleCancel}
+                    onProvideInformation={handleProvideInformation}
+                  />
+                </div>
+              )}
+            </section>
+          ) : (
+            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Kế hoạch của bạn">
+              {plansLoading && planItems.length === 0 ? (
+                <LoadingState label="Đang tải kế hoạch…" />
+              ) : plansError ? (
+                <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
+              ) : planItems.length === 0 ? (
+                <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
+              ) : (
+                <div className="recovery-plan-layout">
+                  <div className="recovery-plan-tabs" role="group" aria-label="Danh sách kế hoạch">
+                    {planItems.map((plan) => (
+                      <button
+                        type="button"
+                        key={plan.id}
+                        className={selectedPlan?.id === plan.id ? "is-selected" : ""}
+                        aria-pressed={selectedPlan?.id === plan.id}
+                        onClick={() => loadPlanDetail(plan.id, plan)}
+                      >
+                        <span><strong>{plan.planName || "Kế hoạch phục hồi"}</strong><small>{plan.durationDays || 0} ngày</small></span>
+                        <StatusBadge map={PLAN_STATUS} value={plan.status} />
+                        <ArrowRight size={17} aria-hidden="true" />
+                      </button>
+                    ))}
+                    <Pagination
+                      label="Phân trang kế hoạch phục hồi"
+                      page={planPage}
+                      loading={plansLoading}
+                      onChange={(nextPage) => {
+                        setPlanPageNumber(nextPage);
+                        void loadPlans(nextPage);
+                      }}
+                    />
+                  </div>
+                  <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} />
+                </div>
+              )}
+            </section>
+          )}
         </div>
-        {plansLoading && planItems.length === 0 ? (
-          <LoadingState label="Đang tải kế hoạch…" />
-        ) : plansError ? (
-          <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
-        ) : planItems.length === 0 ? (
-          <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
-        ) : (
-          <div className="recovery-plan-layout">
-            <div className="recovery-plan-tabs" role="group" aria-label="Danh sách kế hoạch">
-              {planItems.map((plan) => (
-                <button
-                  type="button"
-                  key={plan.id}
-                  className={selectedPlan?.id === plan.id ? "is-selected" : ""}
-                  aria-pressed={selectedPlan?.id === plan.id}
-                  onClick={() => loadPlanDetail(plan.id, plan)}
-                >
-                  <span><strong>{plan.planName || "Kế hoạch phục hồi"}</strong><small>{plan.durationDays || 0} ngày</small></span>
-                  <StatusBadge map={PLAN_STATUS} value={plan.status} />
-                  <ArrowRight size={17} aria-hidden="true" />
-                </button>
-              ))}
-              <Pagination
-                label="Phân trang kế hoạch phục hồi"
-                page={planPage}
-                loading={plansLoading}
-                onChange={(nextPage) => {
-                  setPlanPageNumber(nextPage);
-                  void loadPlans(nextPage);
-                }}
-              />
-            </div>
-            <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} />
-          </div>
-        )}
-      </section>
 
-      <section className="recovery-medical-note">
-        <ShieldCheck size={21} aria-hidden="true" />
-        <div><strong>Thông tin hỗ trợ, không thay thế chăm sóc y tế</strong><p>Nếu có dấu hiệu nghiêm trọng hoặc diễn biến bất thường, hãy liên hệ cơ sở y tế hoặc dịch vụ cấp cứu phù hợp.</p></div>
-      </section>
+        <div className="recovery-workspace-sidebar">
+          <CreateRequestForm
+            disabled={requestCreationDisabled}
+            disabledMessage={requestDisabledMessage}
+            onCreated={handleCreated}
+          />
+          <section className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
+            <p className="recovery-eyebrow">Trong thời gian chờ</p>
+            <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>
+            <ul>
+              <li><ClipboardCheck size={19} aria-hidden="true" /><span><strong>Giữ lại hướng dẫn sau khám</strong><small>Đơn thuốc, lịch hẹn và các chỉ dẫn đã nhận.</small></span></li>
+              <li><Activity size={19} aria-hidden="true" /><span><strong>Ghi nhận thay đổi đáng chú ý</strong><small>Thời điểm, mức độ và diễn biến gần đây.</small></span></li>
+              <li><CalendarCheck size={19} aria-hidden="true" /><span><strong>Theo dõi mốc tái khám</strong><small>Chuẩn bị câu hỏi cho lần trao đổi tiếp theo.</small></span></li>
+            </ul>
+          </section>
+
+          <section className="recovery-medical-note">
+            <ShieldCheck size={21} aria-hidden="true" />
+            <div><strong>Thông tin hỗ trợ, không thay thế chăm sóc y tế</strong><p>Nếu có dấu hiệu nghiêm trọng hoặc diễn biến bất thường, hãy liên hệ cơ sở y tế hoặc dịch vụ cấp cứu phù hợp.</p></div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
