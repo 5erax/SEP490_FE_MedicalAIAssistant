@@ -27,6 +27,7 @@ import {
 } from "../services/api";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch, rememberReturnTo, withReturnTo } from "../router/returnIntent";
+import { getCheckoutErrorMessage } from "../services/apiError";
 import { getPaymentStatusLabel } from "../services/paymentStatusLabels";
 import { trackUxEvent } from "../utils/analytics";
 import {
@@ -389,13 +390,13 @@ function PricingPage() {
       }
 
       pollPayment(checkout.paymentId, checkout.orderCode);
-    } catch {
+    } catch (error) {
       paymentWindow?.close();
       setCheckoutState({
         status: "error",
         paymentId: "",
         orderCode: "",
-        message: "Chưa thể tạo liên kết thanh toán lúc này. Vui lòng thử lại sau.",
+        message: getCheckoutErrorMessage(error, "Chưa thể tạo liên kết thanh toán lúc này. Vui lòng thử lại sau."),
       });
     }
   }
