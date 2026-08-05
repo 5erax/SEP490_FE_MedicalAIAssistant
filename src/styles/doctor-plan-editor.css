@@ -6,6 +6,20 @@
   padding: 22px clamp(16px, 3vw, 48px) 56px;
 }
 
+/* The global `img, svg { display: block; }` reset (base.css) makes any
+   icon inside .ui-button's plain content <span> force a line break
+   before the label, since that span isn't a flex container itself.
+   Turning it into one neutralizes the reset for the icon+label pair. */
+.doctor-plan-page .ui-button {
+  white-space: nowrap;
+}
+
+.doctor-plan-page .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .doctor-plan-back {
   display: inline-flex;
   align-items: center;
@@ -191,11 +205,11 @@
 
 .doctor-plan-phase-row {
   display: grid;
-  gap: 12px;
-  border: 1px solid var(--color-line);
+  gap: 14px;
+  border: 1px solid rgba(8, 127, 140, 0.18);
   border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-  padding: 14px 16px;
+  background: var(--color-info-bg);
+  padding: 16px 18px;
 }
 
 .doctor-plan-phase-top {
@@ -220,8 +234,8 @@
 .doctor-plan-phase-actions button {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -250,25 +264,25 @@
 
 .doctor-plan-phase-info strong {
   color: var(--color-ink);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .doctor-plan-phase-days {
   color: var(--color-info-strong);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .doctor-plan-phase-meta {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .doctor-plan-phase-instruction {
   margin: 4px 0 0;
   color: var(--color-muted);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .doctor-plan-modal-row {
@@ -301,10 +315,10 @@
 .doctor-plan-subsection-heading {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   margin: 0;
   color: var(--color-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -322,7 +336,7 @@
   background: none;
   padding: 0;
   color: var(--color-info-strong);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -350,10 +364,11 @@
 .doctor-plan-nutrient-row {
   display: grid;
   gap: 8px;
-  border: 1px solid var(--color-line);
+  border: 1px solid rgba(8, 127, 140, 0.14);
   border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  padding: 10px 12px;
+  background: color-mix(in srgb, var(--color-info-bg) 45%, #fff);
+  padding: 13px 14px;
+  box-shadow: 0 1px 2px rgba(17, 20, 18, 0.04);
 }
 
 .doctor-plan-nutrient-top {
@@ -373,7 +388,7 @@
 .doctor-plan-nutrient-info strong,
 .doctor-plan-food-info strong {
   color: var(--color-ink);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .doctor-plan-food-row {
@@ -383,7 +398,7 @@
   border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
-  padding: 8px 10px;
+  padding: 11px 13px;
 }
 
 .doctor-plan-phase-gaps {
