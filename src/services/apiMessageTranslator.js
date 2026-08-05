@@ -116,6 +116,30 @@ const EXACT_MESSAGES = Object.freeze({
     "Mã giao dịch thanh toán không hợp lệ.",
   "Payment not found.":
     "Không tìm thấy giao dịch thanh toán.",
+
+  // Payments (reconcile success-state messages)
+  "Payment is paid and subscription is active.":
+    "Thanh toán thành công và gói đăng ký đã được kích hoạt.",
+  "Payment is paid, but subscription is not active.":
+    "Thanh toán đã thành công nhưng gói đăng ký chưa được kích hoạt.",
+  "Payment amount received by payOS is insufficient.":
+    "Số tiền payOS nhận được chưa đủ.",
+  "Payment is processing with payOS.":
+    "payOS đang xử lý giao dịch.",
+  "Payment is pending verification with payOS.":
+    "Giao dịch đang chờ payOS xác nhận.",
+  "Payment link expired before payment was completed.":
+    "Liên kết thanh toán đã hết hạn.",
+  "Payment verification failed at payOS.":
+    "payOS không thể xác minh giao dịch.",
+  "Payment was cancelled.":
+    "Giao dịch thanh toán đã bị hủy.",
+  "Payment failed.":
+    "Thanh toán không thành công.",
+  "Payment was refunded.":
+    "Giao dịch đã được hoàn tiền.",
+  "Payment status is unavailable.":
+    "Không thể xác định trạng thái thanh toán.",
 });
 
 const FIELD_LABELS = Object.freeze({
