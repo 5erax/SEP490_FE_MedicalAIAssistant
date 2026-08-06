@@ -126,8 +126,9 @@ test("patient shell keeps the MediMate Plus upgrade entry functional", async ({ 
   await expect(upgradeCard).toBeVisible();
   await expect(upgradeCard).toContainText("MediMate+");
   await upgradeCard.getByRole("button", { name: "Xem gói MediMate+" }).click();
-  await expect(page).toHaveURL(/\/pricing$/);
+  await expect(page).toHaveURL(/\/pricing\?view=upgrade&returnTo=%2Fdashboard$/);
   await expect(page.locator('button[aria-label="Thông báo"]')).toHaveCount(0);
+  await expect(page.locator("header.nav")).toHaveCount(0);
 });
 
 test("clinical history action stays below the sticky workspace header", async ({ page }) => {
