@@ -103,6 +103,51 @@ test("patient profile tabs support keyboard navigation", async ({ page }) => {
   await expect(page.locator("#profile-panel-medical")).toBeVisible();
 });
 
+test("security tab updates the password with the current/new/confirm fields", async ({ page }) => {
+  let updateBody = null;
+  await openPatientProfile(page);
+  await page.route("**/api/authentication/update-password", (route) => {
+    updateBody = route.request().postDataJSON();
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, message: "Đổi mật khẩu thành công.", data: null }),
+    });
+  });
+
+  await page.getByRole("tab", { name: "Bảo mật" }).click();
+  await expect(page.getByRole("tab", { name: "Bảo mật" })).toHaveAttribute("aria-selected", "true");
+  await page.getByLabel("Mật khẩu hiện tại").fill("OldPass123!");
+  await page.getByLabel(/^Mật khẩu mới/).fill("NewPass456!");
+  await page.getByLabel("Nhập lại mật khẩu mới").fill("NewPass456!");
+  await page.getByRole("button", { name: "Lưu mật khẩu mới" }).click();
+
+  await expect(page.locator(".security-message-success")).toBeVisible();
+  expect(updateBody).toEqual({
+    currentPassword: "OldPass123!",
+    newPassword: "NewPass456!",
+    confirmNewPassword: "NewPass456!",
+  });
+  await expect(page.getByLabel("Mật khẩu hiện tại")).toHaveValue("");
+});
+
+test("security tab blocks submit when the new password confirmation doesn't match", async ({ page }) => {
+  let updateCalled = false;
+  await openPatientProfile(page);
+  await page.route("**/api/authentication/update-password", (route) => {
+    updateCalled = true;
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: null }) });
+  });
+
+  await page.getByRole("tab", { name: "Bảo mật" }).click();
+  await page.getByLabel("Mật khẩu hiện tại").fill("OldPass123!");
+  await page.getByLabel(/^Mật khẩu mới/).fill("NewPass456!");
+  await page.getByLabel("Nhập lại mật khẩu mới").fill("Mismatch789!");
+  await page.getByRole("button", { name: "Lưu mật khẩu mới" }).click();
+
+  await expect(page.getByText("Mật khẩu mới nhập lại chưa khớp.", { exact: true })).toBeVisible();
+  expect(updateCalled).toBe(false);
+});
+
 test("patient profile has no serious automated accessibility violations", async ({ page }) => {
   await openPatientProfile(page);
 
