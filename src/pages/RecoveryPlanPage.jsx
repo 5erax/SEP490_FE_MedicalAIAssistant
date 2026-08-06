@@ -856,6 +856,10 @@ export default function RecoveryPlanPage() {
               ) : (
                 <div className="recovery-plan-layout">
                   <div className="recovery-plan-tabs" role="group" aria-label="Danh sách kế hoạch">
+                    <div className="recovery-plan-tabs-head">
+                      <p className="recovery-eyebrow">Danh sách kế hoạch</p>
+                      <span className="recovery-tab-count">{planPage.totalCount}</span>
+                    </div>
                     {planItems.map((plan) => (
                       <button
                         type="button"
