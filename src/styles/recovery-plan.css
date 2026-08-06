@@ -1048,6 +1048,14 @@
   color: var(--color-muted);
 }
 
+.recovery-plan-status-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
 .recovery-plan-collapse-toggle {
   display: grid;
   place-items: center;

@@ -53,7 +53,7 @@ const PLAN_STATUS = {
   readyToStart: { label: "Sẵn sàng bắt đầu", tone: "attention" },
   active: { label: "Đang thực hiện", tone: "progress" },
   completed: { label: "Đã hoàn thành", tone: "success" },
-  cancelled: { label: "Đã hủy", tone: "muted" },
+  cancelled: { label: "Đã hủy", tone: "danger" },
   superseded: { label: "Đã thay thế", tone: "muted" },
 };
 const CANCELLABLE_PLAN_STATUSES = new Set(["readyToStart", "active"]);
@@ -492,18 +492,20 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, busy })
           <p className="recovery-eyebrow">Kế hoạch của bạn</p>
           <h3>{plan.planName || "Kế hoạch phục hồi"}</h3>
         </div>
-        <StatusBadge map={PLAN_STATUS} value={plan.status} />
-        {isHistorical && (
-          <button
-            type="button"
-            className="recovery-plan-collapse-toggle"
-            aria-expanded={!collapsed}
-            aria-label={collapsed ? "Mở rộng kế hoạch" : "Thu gọn kế hoạch"}
-            onClick={toggleCollapsed}
-          >
-            <ChevronDown size={18} aria-hidden="true" />
-          </button>
-        )}
+        <div className="recovery-plan-status-column">
+          <StatusBadge map={PLAN_STATUS} value={plan.status} />
+          {isHistorical && (
+            <button
+              type="button"
+              className="recovery-plan-collapse-toggle"
+              aria-expanded={!collapsed}
+              aria-label={collapsed ? "Mở rộng kế hoạch" : "Thu gọn kế hoạch"}
+              onClick={toggleCollapsed}
+            >
+              <ChevronDown size={18} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </header>
 
       {(!isHistorical || !collapsed) && (
