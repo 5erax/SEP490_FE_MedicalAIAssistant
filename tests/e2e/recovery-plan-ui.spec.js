@@ -237,6 +237,18 @@ test("timeline tab paints each phase onto its real calendar dates", async ({ pag
   await expect(page.getByText("17/8/2026 – 18/8/2026", { exact: true })).toBeVisible();
 });
 
+test("new-request form is hidden while a plan is active", async ({ page }) => {
+  await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "active" })] });
+  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await expect(page.getByText("Đang thực hiện", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toHaveCount(0);
+});
+
+test("new-request form is visible again once the plan is no longer active", async ({ page }) => {
+  await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "completed" })] });
+  await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toBeVisible();
+});
+
 test("recovery plan page remains accessible on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "completed" })] });
