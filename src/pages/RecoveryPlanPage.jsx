@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
-  ArrowRight,
   CalendarCheck,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -854,36 +854,43 @@ export default function RecoveryPlanPage() {
               ) : planItems.length === 0 ? (
                 <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
               ) : (
-                <div className="recovery-plan-layout">
-                  <div className="recovery-plan-tabs" role="group" aria-label="Danh sách kế hoạch">
-                    <div className="recovery-plan-tabs-head">
-                      <p className="recovery-eyebrow">Danh sách kế hoạch</p>
-                      <span className="recovery-tab-count">{planPage.totalCount}</span>
-                    </div>
-                    {planItems.map((plan) => (
-                      <button
-                        type="button"
-                        key={plan.id}
-                        className={selectedPlan?.id === plan.id ? "is-selected" : ""}
-                        aria-pressed={selectedPlan?.id === plan.id}
-                        onClick={() => loadPlanDetail(plan.id, plan)}
-                      >
-                        <span><strong>{plan.planName || "Kế hoạch phục hồi"}</strong><small>{plan.durationDays || 0} ngày</small></span>
-                        <StatusBadge map={PLAN_STATUS} value={plan.status} />
-                        <ArrowRight size={17} aria-hidden="true" />
-                      </button>
-                    ))}
-                    <Pagination
-                      label="Phân trang kế hoạch phục hồi"
-                      page={planPage}
-                      loading={plansLoading}
-                      onChange={(nextPage) => {
-                        setPlanPageNumber(nextPage);
-                        void loadPlans(nextPage);
-                      }}
-                    />
+                <div className="recovery-plan-accordion">
+                  <div className="recovery-plan-tabs-head">
+                    <p className="recovery-eyebrow">Danh sách kế hoạch</p>
+                    <span className="recovery-tab-count">{planPage.totalCount}</span>
                   </div>
-                  <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} />
+                  {planItems.map((plan) => {
+                    const isExpanded = selectedPlan?.id === plan.id;
+                    return (
+                      <div className={`recovery-plan-bar-wrap ${isExpanded ? "is-expanded" : ""}`} key={plan.id}>
+                        <button
+                          type="button"
+                          className="recovery-plan-bar"
+                          aria-expanded={isExpanded}
+                          aria-controls={`recovery-plan-panel-${plan.id}`}
+                          onClick={() => (isExpanded ? setSelectedPlan(null) : loadPlanDetail(plan.id, plan))}
+                        >
+                          <span><strong>{plan.planName || "Kế hoạch phục hồi"}</strong><small>{plan.durationDays || 0} ngày</small></span>
+                          <StatusBadge map={PLAN_STATUS} value={plan.status} />
+                          <ChevronDown className="recovery-plan-bar-chevron" size={18} aria-hidden="true" />
+                        </button>
+                        {isExpanded && (
+                          <div id={`recovery-plan-panel-${plan.id}`} className="recovery-plan-bar-panel">
+                            <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <Pagination
+                    label="Phân trang kế hoạch phục hồi"
+                    page={planPage}
+                    loading={plansLoading}
+                    onChange={(nextPage) => {
+                      setPlanPageNumber(nextPage);
+                      void loadPlans(nextPage);
+                    }}
+                  />
                 </div>
               )}
             </section>
