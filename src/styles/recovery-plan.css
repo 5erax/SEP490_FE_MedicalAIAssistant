@@ -1112,6 +1112,123 @@
   color: var(--color-muted);
 }
 
+/* Cancelled-plan metadata */
+
+.recovery-cancellation-detail {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+}
+
+.recovery-cancellation-detail > strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.recovery-cancellation-detail dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.recovery-cancellation-detail dt {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recovery-cancellation-detail dd {
+  margin: 3px 0 0;
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+/* Cancel-plan reason dialog */
+
+.recovery-cancel-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.55);
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+
+.recovery-cancel-modal {
+  width: min(480px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--recovery-radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.recovery-cancel-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 20px 22px 16px;
+}
+
+.recovery-cancel-modal-header > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--recovery-radius-md);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.recovery-cancel-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.recovery-cancel-modal-header button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.recovery-cancel-modal form {
+  display: grid;
+  gap: 16px;
+  padding: 18px 22px 22px;
+}
+
+.recovery-cancel-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .recovery-cancellation-detail dl {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1000px) {
   .recovery-stats-row {
     grid-template-columns: 1fr;

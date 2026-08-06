@@ -95,7 +95,7 @@ async function prepareRecoveryPage(page, options = {}) {
     cycleEnd: "2026-08-31",
     resetPeriod: "subscriptionCycle",
   };
-  const calls = { createBody: null, idempotencyKey: "", provideBody: null, cancelled: false, started: false };
+  const calls = { createBody: null, idempotencyKey: "", provideBody: null, cancelled: false, started: false, cancelPlanBody: null };
 
   await page.route("**/hubs/recovery-plans**", (route) => route.abort());
   await page.route("**/api/**", async (route) => {
@@ -110,7 +110,9 @@ async function prepareRecoveryPage(page, options = {}) {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: quota }) });
     }
     if (path === "/api/recovery-plan-requests/me") {
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { items: requests, pageNumber: 1, pageSize: 10, totalCount: requests.length, totalPages: 1 } }) });
+      const statusFilter = url.searchParams.get("Status");
+      const filtered = statusFilter ? requests.filter((item) => item.status === statusFilter) : requests;
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { items: filtered, pageNumber: 1, pageSize: 10, totalCount: filtered.length, totalPages: 1 } }) });
     }
     if (path === "/api/recovery-plan-requests" && method === "POST") {
       calls.createBody = route.request().postDataJSON();
@@ -135,7 +137,9 @@ async function prepareRecoveryPage(page, options = {}) {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: requests[0] }) });
     }
     if (path === "/api/recovery-plans/me") {
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { items: plans, pageNumber: 1, pageSize: 10, totalCount: plans.length, totalPages: 1 } }) });
+      const statusFilter = url.searchParams.get("Status");
+      const filtered = statusFilter ? plans.filter((item) => item.status === statusFilter) : plans;
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { items: filtered, pageNumber: 1, pageSize: 10, totalCount: filtered.length, totalPages: 1 } }) });
     }
     if (path === `/api/recovery-plans/${PLAN_ID}`) {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: plans.find((item) => item.id === PLAN_ID) }) });
@@ -143,6 +147,17 @@ async function prepareRecoveryPage(page, options = {}) {
     if (path === `/api/recovery-plans/${PLAN_ID}/start`) {
       calls.started = true;
       plans = plans.map((item) => item.id === PLAN_ID ? { ...item, status: "active", startDate: "2026-08-02", endDate: "2026-08-15" } : item);
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: plans[0] }) });
+    }
+    if (path === `/api/recovery-plans/${PLAN_ID}/cancel`) {
+      calls.cancelPlanBody = route.request().postDataJSON();
+      plans = plans.map((item) => item.id === PLAN_ID ? {
+        ...item,
+        status: "cancelled",
+        cancelledAt: "2026-08-06T14:02:15.123Z",
+        cancellationReasonCode: calls.cancelPlanBody.cancellationReasonCode,
+        cancellationReason: calls.cancelPlanBody.cancellationReason,
+      } : item);
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: plans[0] }) });
     }
 
@@ -195,6 +210,38 @@ test("user reads and starts a published recovery plan", async ({ page }) => {
   expect(calls.started).toBe(true);
 });
 
+test("user cancels a ready-to-start plan and sees the reason afterwards", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan()] });
+  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("button", { name: "Hủy kế hoạch" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("Lượt kế hoạch đã sử dụng không được hoàn lại")).toBeVisible();
+  await dialog.getByLabel("Lý do hủy").selectOption("UNABLE_TO_FOLLOW");
+  await dialog.getByRole("button", { name: "Hủy kế hoạch" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeVisible();
+  await expect(page.getByText("Không thể tiếp tục thực hiện", { exact: true })).toBeVisible();
+  expect(calls.cancelPlanBody).toEqual({ cancellationReasonCode: "UNABLE_TO_FOLLOW", cancellationReason: null });
+
+  await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toBeVisible();
+});
+
+test("cancelling a plan with \"Lý do khác\" requires a note", async ({ page }) => {
+  await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan({ status: "active" })] });
+  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("button", { name: "Hủy kế hoạch" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Lý do hủy").selectOption("OTHER");
+  await dialog.getByRole("button", { name: "Hủy kế hoạch" }).click();
+
+  await expect(dialog.getByText("Vui lòng mô tả lý do khi chọn \"Lý do khác\".")).toBeVisible();
+  await expect(dialog).toBeVisible();
+});
+
 test("timeline tab paints each phase onto its real calendar dates", async ({ page }) => {
   await prepareRecoveryPage(page, {
     requests: [request({ status: "published" })],
@@ -235,14 +282,17 @@ test("timeline tab paints each phase onto its real calendar dates", async ({ pag
 });
 
 test("new-request form is hidden while a plan is active", async ({ page }) => {
-  await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "active" })] });
+  // The request behind an active/readyToStart plan is already published (a
+  // terminal, non-blocking request status) - the plan itself is what's
+  // still blocking the workflow guard here.
+  await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan({ status: "active" })] });
   await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
   await expect(page.getByText("Đang thực hiện", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toHaveCount(0);
 });
 
 test("new-request form is visible again once the plan is no longer active", async ({ page }) => {
-  await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "completed" })] });
+  await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan({ status: "completed" })] });
   await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toBeVisible();
 });
 
