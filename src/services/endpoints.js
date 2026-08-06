@@ -43,6 +43,7 @@ export const ENDPOINTS = {
     LOGOUT: `${AUTH_BASE}/logout`,
     FORGOT_PASSWORD: `${AUTH_BASE}/forgot-password`,
     CHANGE_PASSWORD: `${AUTH_BASE}/change-password`,
+    UPDATE_PASSWORD: `${AUTH_BASE}/update-password`,
   },
   USERS: {
     BASE: USERS_BASE,
