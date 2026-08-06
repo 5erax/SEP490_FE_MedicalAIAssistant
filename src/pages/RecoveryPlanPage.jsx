@@ -1019,6 +1019,12 @@ export default function RecoveryPlanPage() {
                 <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
               ) : planItems.length === 0 ? (
                 <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
+              ) : planPage.totalCount === 1 ? (
+                // Only one plan can ever exist at a time in practice, and
+                // PlanDetail already renders its own name/duration/status
+                // header - a selector bar above it would just repeat the
+                // same line twice.
+                <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} />
               ) : (
                 <div className="recovery-plan-accordion">
                   <div className="recovery-plan-tabs-head">
