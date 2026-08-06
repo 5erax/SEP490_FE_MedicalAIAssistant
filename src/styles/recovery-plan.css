@@ -376,6 +376,11 @@
   color: #fff;
 }
 
+.recovery-plan-list {
+  display: grid;
+  gap: 16px;
+}
+
 .recovery-workspace-panel {
   border: 1px solid var(--color-line);
   border-top: 4px solid var(--color-info);
