@@ -1,8 +1,8 @@
 import { Children, cloneElement, useEffect, useId, useRef, useState } from "react";
-import { AlertTriangle, CreditCard, Eye, EyeOff, FileHeart, Plus, ReceiptText, ShieldCheck, Trash2, User, X } from "lucide-react";
+import { AlertTriangle, CreditCard, Eye, EyeOff, FileHeart, Plus, ReceiptText, ShieldCheck, Trash2, User } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import PaymentHistoryPanel from "../components/payments/PaymentHistoryPanel";
-import { Dialog, ErrorState, LoadingState } from "../components/ui";
+import { ErrorState, LoadingState } from "../components/ui";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 import { navigate as go } from "../router/navigation";
 import {
@@ -32,14 +32,6 @@ const tabs = [
   ["security", ShieldCheck, "Bảo mật"],
 ];
 const TAB_IDS = new Set(tabs.map(([id]) => id));
-const OTP_LENGTH = 6;
-const OTP_DURATION_SECONDS = 60;
-
-function formatOtpCountdown(totalSeconds) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
 
 function formatPlanName(planName) {
   const normalizedName = String(planName ?? "").trim();
@@ -134,29 +126,12 @@ export default function UserProfilePage() {
   const [passwordVisibility, setPasswordVisibility] = useState({ currentPassword: false, newPassword: false, confirmNewPassword: false });
   const [passwordMessage, setPasswordMessage] = useState(null);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [otpModalOpen, setOtpModalOpen] = useState(false);
-  const [otpDigits, setOtpDigits] = useState(Array(OTP_LENGTH).fill(""));
-  const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
-  const [otpEmail, setOtpEmail] = useState("");
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [confirmedOtp, setConfirmedOtp] = useState("");
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpError, setOtpError] = useState("");
   const confirmNewPasswordRef = useRef(null);
-  const otpInputRefs = useRef([]);
   const profileFormRef = useRef(null);
   const medicalFormRef = useRef(null);
   const pendingDiseaseFocusRef = useRef(false);
 
   useUnsavedChangesWarning(profileDirty || medicalDirty);
-
-  useEffect(() => {
-    if (!otpModalOpen) return undefined;
-    const timer = window.setInterval(() => {
-      setOtpSecondsLeft((current) => (current > 0 ? current - 1 : 0));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [otpModalOpen]);
 
   useEffect(() => {
     if (!pendingDiseaseFocusRef.current) return;
@@ -338,121 +313,16 @@ export default function UserProfilePage() {
     }
     setSavingPassword(true);
     try {
-      const response = otpVerified
-        ? await authApi.changePassword({
-          email: otpEmail,
-          otp: confirmedOtp,
-          newPassword: passwordForm.newPassword,
-          confirmNewPassword: passwordForm.confirmNewPassword,
-        })
-        : await authApi.updatePassword(passwordForm);
+      const response = await authApi.updatePassword(passwordForm);
       const text = response.message || "Đổi mật khẩu thành công.";
       setPasswordMessage({ type: "success", text });
       showToast({ type: "success", title: "Đã đổi mật khẩu", message: text });
       setPasswordForm({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
-      setOtpVerified(false);
-      setConfirmedOtp("");
     } catch (error) {
-      // A failure at this point can mean the OTP itself was wrong/expired, or
-      // that the new password was rejected - route each to where it belongs
-      // instead of showing every error in the OTP modal.
-      if (otpVerified && isOtpFieldError(error.message)) {
-        setOtpError(error.message);
-        setOtpDigits(Array(OTP_LENGTH).fill(""));
-        setOtpModalOpen(true);
-        window.requestAnimationFrame(() => otpInputRefs.current[0]?.focus());
-      } else {
-        setPasswordMessage({ type: "error", text: error.message });
-      }
+      setPasswordMessage({ type: "error", text: error.message });
     } finally {
       setSavingPassword(false);
     }
-  }
-
-  async function requestPasswordOtp() {
-    setOtpSending(true);
-    setOtpError("");
-    try {
-      await authApi.forgotPassword(profileForm.email);
-      setOtpEmail(profileForm.email);
-      setOtpDigits(Array(OTP_LENGTH).fill(""));
-      setOtpSecondsLeft(OTP_DURATION_SECONDS);
-      setOtpError("");
-      setOtpModalOpen(true);
-      window.requestAnimationFrame(() => otpInputRefs.current[0]?.focus());
-    } catch (error) {
-      showToast({ type: "error", title: "Không thể gửi mã", message: error.message });
-    } finally {
-      setOtpSending(false);
-    }
-  }
-
-  async function resendPasswordOtp() {
-    if (otpSecondsLeft > 0 || otpSending) return;
-    setOtpSending(true);
-    setOtpError("");
-    try {
-      await authApi.forgotPassword(otpEmail);
-      setOtpDigits(Array(OTP_LENGTH).fill(""));
-      setOtpSecondsLeft(OTP_DURATION_SECONDS);
-      window.requestAnimationFrame(() => otpInputRefs.current[0]?.focus());
-    } catch (error) {
-      setOtpError(error.message);
-    } finally {
-      setOtpSending(false);
-    }
-  }
-
-  function updateOtpDigit(index, rawValue) {
-    const digit = rawValue.replace(/\D/g, "").slice(-1);
-    setOtpDigits((current) => {
-      const next = [...current];
-      next[index] = digit;
-      return next;
-    });
-    setOtpError("");
-    if (digit && index < OTP_LENGTH - 1) otpInputRefs.current[index + 1]?.focus();
-  }
-
-  function handleOtpKeyDown(index, event) {
-    if (event.key === "Backspace" && !otpDigits[index] && index > 0) {
-      otpInputRefs.current[index - 1]?.focus();
-    }
-  }
-
-  function handleOtpPaste(event) {
-    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
-    if (!pasted) return;
-    event.preventDefault();
-    setOtpDigits((current) => {
-      const next = [...current];
-      pasted.split("").forEach((char, index) => { next[index] = char; });
-      return next;
-    });
-    otpInputRefs.current[Math.min(pasted.length, OTP_LENGTH) - 1]?.focus();
-  }
-
-  // Route each failure to whichever field it's actually about (OTP box vs
-  // password fields) instead of one generic message, since a
-  // password-policy rejection has nothing to do with the code being wrong.
-  function isOtpFieldError(message) {
-    return /otp|mã xác thực/i.test(message);
-  }
-
-  // This is only a local format check - the code itself can only be
-  // verified together with the new password by the change-password call in
-  // handleUpdatePassword, since there is no standalone "verify OTP" endpoint.
-  function confirmOtp(event) {
-    event.preventDefault();
-    const code = otpDigits.join("");
-    if (code.length !== OTP_LENGTH) {
-      setOtpError(`Vui lòng nhập đủ ${OTP_LENGTH} số.`);
-      return;
-    }
-    setOtpError("");
-    setConfirmedOtp(code);
-    setOtpVerified(true);
-    setOtpModalOpen(false);
   }
 
   function cancelProfileEdit() {
@@ -836,25 +706,19 @@ export default function UserProfilePage() {
         {activeTab === "security" && (
           <section id="profile-panel-security" role="tabpanel" aria-label="Bảo mật" className="profile-card">
             <h1>Bảo mật</h1>
-            <p>
-              {otpVerified
-                ? "Mã xác thực đã được xác nhận. Nhập mật khẩu mới để hoàn tất."
-                : "Nhập mật khẩu hiện tại và mật khẩu mới để đổi mật khẩu đăng nhập."}
-            </p>
+            <p>Nhập mật khẩu hiện tại và mật khẩu mới để đổi mật khẩu đăng nhập.</p>
             <form className="security-password-form" onSubmit={handleUpdatePassword}>
-              {!otpVerified && (
-                <PasswordField
-                  label="Mật khẩu hiện tại"
-                  name="currentPassword"
-                  autoComplete="current-password"
-                  value={passwordForm.currentPassword}
-                  disabled={savingPassword}
-                  onChange={(e) => updatePasswordField("currentPassword", e.target.value)}
-                  visible={passwordVisibility.currentPassword}
-                  onToggleVisible={() => togglePasswordVisibility("currentPassword")}
-                  required
-                />
-              )}
+              <PasswordField
+                label="Mật khẩu hiện tại"
+                name="currentPassword"
+                autoComplete="current-password"
+                value={passwordForm.currentPassword}
+                disabled={savingPassword}
+                onChange={(e) => updatePasswordField("currentPassword", e.target.value)}
+                visible={passwordVisibility.currentPassword}
+                onToggleVisible={() => togglePasswordVisibility("currentPassword")}
+                required
+              />
               <PasswordField
                 label="Mật khẩu mới"
                 name="newPassword"
@@ -891,66 +755,14 @@ export default function UserProfilePage() {
                 {savingPassword ? "Đang lưu…" : "Lưu mật khẩu mới"}
               </button>
             </form>
-            {!otpVerified && (
-              <p className="security-fallback-note">
-                Quên mật khẩu hiện tại?{" "}
-                <button type="button" className="link-button" disabled={otpSending} onClick={requestPasswordOtp}>
-                  {otpSending ? "Đang gửi…" : "Gửi mã xác thực qua email"}
-                </button>{" "}
-                để đổi mật khẩu.
-              </p>
-            )}
+            <p className="security-fallback-note">
+              Quên mật khẩu hiện tại?{" "}
+              <button type="button" className="link-button" onClick={() => go("/forgot-password")}>
+                Gửi mã xác thực qua email
+              </button>{" "}
+              để đổi mật khẩu.
+            </p>
           </section>
-        )}
-
-        {otpModalOpen && (
-          <Dialog
-            backdropClassName="otp-modal-backdrop"
-            className="otp-modal"
-            labelledBy="otp-modal-title"
-            onClose={() => setOtpModalOpen(false)}
-          >
-            <header className="otp-modal-header">
-              <h2 id="otp-modal-title">Xác thực qua email</h2>
-              <button type="button" aria-label="Đóng" onClick={() => setOtpModalOpen(false)}><X size={20} aria-hidden="true" /></button>
-            </header>
-            <form className="otp-modal-body" onSubmit={confirmOtp}>
-              <p>Nhập mã gồm {OTP_LENGTH} số vừa được gửi tới <strong>{otpEmail}</strong>.</p>
-              <div className="otp-boxes" onPaste={handleOtpPaste}>
-                {otpDigits.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => { otpInputRefs.current[index] = el; }}
-                    className="otp-box"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={1}
-                    value={digit}
-                    aria-label={`Số thứ ${index + 1} trên ${OTP_LENGTH}`}
-                    onChange={(e) => updateOtpDigit(index, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  />
-                ))}
-              </div>
-              <p className="otp-countdown">
-                {otpSecondsLeft > 0 ? `Mã hết hạn sau ${formatOtpCountdown(otpSecondsLeft)}` : "Mã đã hết hạn, vui lòng gửi lại."}
-              </p>
-              {otpError && (
-                <p className="security-message security-message-error" role="alert">{otpError}</p>
-              )}
-              <div className="otp-modal-actions">
-                <button
-                  type="button"
-                  className="link-button"
-                  disabled={otpSecondsLeft > 0 || otpSending}
-                  onClick={resendPasswordOtp}
-                >
-                  {otpSending ? "Đang gửi…" : "Gửi lại mã"}
-                </button>
-                <button className="lime" type="submit">Xác nhận</button>
-              </div>
-            </form>
-          </Dialog>
         )}
 
         {activeTab === "package" && (
@@ -1460,20 +1272,6 @@ const styles = `
 .password-input-wrap input{padding-right:42px}
 .password-toggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--profile-muted,rgba(17,20,18,.6));cursor:pointer}
 .password-toggle:hover{background:var(--profile-subtle,#f7f8f3)}
-.otp-modal-backdrop{position:fixed;inset:0;z-index:var(--z-overlay,120);display:grid;place-items:center;background:rgba(17,20,18,.55);padding:20px}
-.otp-modal{width:min(420px,100%);max-height:calc(100svh - 40px);overflow:auto;border:1px solid var(--line,#dde4d5);border-radius:16px;background:#fff;box-shadow:var(--shadow-card,0 18px 48px rgba(17,20,18,.08))}
-.otp-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line,#dde4d5);padding:18px 20px}
-.otp-modal-header h2{margin:0;font-size:18px}
-.otp-modal-header button{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line,#dde4d5);border-radius:999px;background:#fff;color:#111412;cursor:pointer}
-.otp-modal-body{display:grid;gap:16px;padding:18px 20px 22px;text-align:center}
-.otp-boxes{display:flex;justify-content:center;gap:8px}
-.otp-box{width:44px;height:52px;border:1px solid var(--profile-line,#b9c5ad);border-radius:10px;background:#fff;text-align:center;font-size:22px;font-weight:800}
-.otp-box:focus{outline:none;border-color:var(--profile-teal,#087f78);box-shadow:0 0 0 3px rgba(8,127,120,.16)}
-.otp-countdown{margin:0;color:var(--profile-muted,rgba(17,20,18,.6));font-size:13px;font-weight:700}
-.otp-modal-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.otp-modal .lime{border-color:var(--profile-teal,#087f78);background:var(--profile-teal,#087f78);color:#fff}
-.otp-modal .lime:hover{border-color:var(--profile-teal-dark,#05665f);background:var(--profile-teal-dark,#05665f)}
-.link-button:disabled{color:var(--profile-muted,rgba(17,20,18,.4));cursor:not-allowed;text-decoration:none}
 .field-hint{margin:-10px 0 0;color:var(--muted,rgba(17,20,18,.72));font-size:12px}
 .link-button{display:inline;border:0;background:none;padding:0;color:var(--profile-teal-dark,#087f8c);font-weight:800;text-decoration:underline;cursor:pointer}
 .profile-load-warning{border-width:1px;box-shadow:none}
