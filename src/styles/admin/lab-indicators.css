@@ -969,4 +969,275 @@
   .lab-dialog .lab-form-submit-error {
     border: 1px solid CanvasText;
   }
+  /* =========================================================
+   FINAL UI POLISH — ADMIN LAB INDICATORS
+   Dán toàn bộ block này vào cuối lab-indicators.css
+   ========================================================= */
+
+/* ---------- Làm nhẹ khung tìm kiếm ---------- */
+
+.admin-operator .lab-filter-card {
+  border-color: rgba(16, 20, 17, 0.08);
+  background: #f8faf7;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 24px rgba(16, 20, 17, 0.025);
+}
+
+.admin-operator .lab-filter-card h3 {
+  color: #18201c;
+}
+
+.admin-operator .lab-filter-card p {
+  color: rgba(16, 20, 17, 0.56);
+}
+
+/* ---------- Làm rõ header của bảng ---------- */
+
+.admin-operator .lab-indicator-table .ui-table thead th {
+  border-bottom-color: rgba(16, 20, 17, 0.13);
+  background: #f5f8f6;
+  color: rgba(16, 20, 17, 0.7);
+  font-weight: 900;
+}
+
+/* Căn cột thao tác về bên phải rõ ràng hơn */
+
+.admin-operator .lab-indicator-table .ui-table thead th:last-child,
+.admin-operator .lab-child-table .ui-table thead th:last-child {
+  text-align: right;
+}
+
+/* ---------- Điều chỉnh row ---------- */
+
+.admin-operator .lab-indicator-table .ui-table tbody th,
+.admin-operator .lab-indicator-table .ui-table tbody td {
+  border-bottom-color: rgba(16, 20, 17, 0.075);
+}
+
+.admin-operator .lab-indicator-table .ui-table tbody tr {
+  transition: background-color 150ms ease;
+}
+
+.admin-operator .lab-indicator-table .ui-table tbody tr:hover > * {
+  background: #f6faf8;
+}
+
+/* Giữ nội dung chính cân theo chiều dọc */
+
+.admin-operator .lab-indicator-table .ui-table tbody td:nth-child(3),
+.admin-operator .lab-indicator-table .ui-table tbody td:nth-child(4),
+.admin-operator .lab-indicator-table .ui-table tbody td:last-child {
+  vertical-align: middle;
+}
+
+/* ---------- Giá trị trống ---------- */
+
+.admin-operator .lab-indicator-description.is-empty,
+.admin-operator .lab-indicator-unit.is-empty {
+  color: rgba(16, 20, 17, 0.43);
+  font-weight: 700;
+}
+
+/* Mô tả thật vẫn đủ rõ nhưng không cạnh tranh với tên chỉ số */
+
+.admin-operator .lab-indicator-description:not(.is-empty) {
+  color: rgba(16, 20, 17, 0.68);
+  font-weight: 650;
+}
+
+/* Đơn vị là text dữ liệu, không phải status pill */
+
+.admin-operator .lab-indicator-unit:not(.is-empty) {
+  color: #34423b;
+  font-weight: 800;
+}
+
+/* ---------- Trạng thái ---------- */
+
+.admin-operator .lab-indicator-table .status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  white-space: nowrap;
+}
+
+/* ---------- Nhóm nút thao tác ---------- */
+
+.admin-operator .lab-indicator-table .lab-row-actions,
+.admin-operator .lab-child-table .lab-row-actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Tạo khoảng thở nhẹ ở mép phải */
+
+.admin-operator .lab-indicator-table .ui-table th:last-child,
+.admin-operator .lab-indicator-table .ui-table td:last-child {
+  padding-right: 18px;
+}
+
+/* Button đồng nhất và phản hồi hover mượt hơn */
+
+.admin-operator .lab-row-actions .btn {
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-operator .lab-row-actions .btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 20, 17, 0.07);
+}
+
+.admin-operator .lab-row-actions .btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.admin-operator .lab-row-actions .btn:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.24);
+  outline-offset: 2px;
+}
+
+/* ---------- Pagination ---------- */
+
+.admin-operator .lab-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+  margin-top: 0;
+  padding-top: 2px;
+}
+
+.admin-operator .lab-pagination span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 98px;
+  min-height: 38px;
+  color: rgba(16, 20, 17, 0.68);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-operator .lab-pagination button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  min-height: 38px;
+  margin: 0;
+  border: 1px solid rgba(16, 20, 17, 0.16);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #26322d;
+  padding: 8px 14px;
+  box-shadow: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-operator .lab-pagination button:hover:not(:disabled) {
+  border-color: #75aa9a;
+  background: #eef8f4;
+  color: #0c5f5e;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(12, 95, 94, 0.08);
+}
+
+.admin-operator .lab-pagination button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.admin-operator .lab-pagination button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.25);
+  outline-offset: 2px;
+}
+
+.admin-operator .lab-pagination button:disabled {
+  border-color: rgba(16, 20, 17, 0.08);
+  background: #f4f6f3;
+  color: rgba(16, 20, 17, 0.34);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 760px) {
+  .admin-operator .lab-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .admin-operator .lab-pagination button {
+    min-width: 96px;
+  }
+
+  .admin-operator .lab-pagination span {
+    min-width: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-operator .lab-pagination {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 6px;
+  }
+
+  .admin-operator .lab-pagination button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .admin-operator .lab-pagination span {
+    min-width: 82px;
+    font-size: 12px;
+  }
+}
+
+/* ---------- Accessibility ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-operator .lab-indicator-table .ui-table tbody tr,
+  .admin-operator .lab-row-actions .btn,
+  .admin-operator .lab-pagination button {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .admin-operator .lab-filter-card,
+  .admin-operator .lab-pagination button {
+    border: 1px solid CanvasText;
+  }
+
+  .admin-operator .lab-pagination button:disabled {
+    color: GrayText;
+  }
+}
 }
