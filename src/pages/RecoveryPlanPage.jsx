@@ -481,8 +481,9 @@ export function PlanDetail({ plan, loading, onStart, busy }) {
                 </header>
                 {phase.instruction && <p>{phase.instruction}</p>}
                 <dl className="recovery-phase-rest">
-                  {phase.sleepHoursPerDay != null && <div><dt>Ngủ</dt><dd>{phase.sleepHoursPerDay} giờ/ngày</dd></div>}
-                  {phase.restHoursPerDay != null && <div><dt>Nghỉ ngơi</dt><dd>{phase.restHoursPerDay} giờ/ngày</dd></div>}
+                  {phase.sleepAndRestHoursPerDay != null && (
+                    <div><dt>Ngủ nghỉ</dt><dd>{phase.sleepAndRestHoursPerDay} giờ/ngày</dd></div>
+                  )}
                 </dl>
                 {(phase.nutrientTargets ?? []).length > 0 && (
                   <div className="recovery-nutrients">

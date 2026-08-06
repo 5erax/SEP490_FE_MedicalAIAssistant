@@ -305,8 +305,7 @@ test.describe("doctor recovery plan workflow", () => {
     await phaseDialog.getByLabel("Tên giai đoạn").fill("Giai đoạn 1");
     await phaseDialog.getByLabel("Ngày bắt đầu").fill("1");
     await phaseDialog.getByLabel("Ngày kết thúc").fill("7");
-    await phaseDialog.getByLabel("Giờ ngủ / ngày").fill("8");
-    await phaseDialog.getByLabel("Giờ nghỉ / ngày").fill("2");
+    await phaseDialog.getByLabel("Tổng giờ ngủ nghỉ / ngày").fill("10");
     await phaseDialog.getByRole("button", { name: "Thêm giai đoạn" }).click();
     await expect(page.getByText("Giai đoạn 1", { exact: true })).toBeVisible();
 
