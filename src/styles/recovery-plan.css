@@ -347,8 +347,7 @@
 }
 
 .recovery-workspace-tabs button:focus-visible,
-.recovery-item-button:focus-visible,
-.recovery-plan-bar:focus-visible {
+.recovery-item-button:focus-visible {
   outline: 2px solid var(--color-info-strong);
   outline-offset: 2px;
 }
@@ -549,14 +548,6 @@
   gap: 10px;
 }
 
-.recovery-plan-tabs-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 2px;
-}
-
 .recovery-item-button {
   position: relative;
   display: grid;
@@ -610,66 +601,6 @@
 .recovery-item-button small {
   margin-top: 4px;
   color: var(--color-muted);
-}
-
-.recovery-plan-accordion {
-  display: grid;
-  gap: 12px;
-}
-
-.recovery-plan-bar-wrap {
-  border: 1px solid var(--color-info);
-  border-radius: 16px;
-  background: var(--color-surface);
-  overflow: hidden;
-  box-shadow: var(--shadow-card);
-}
-
-.recovery-plan-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  padding: 16px 18px;
-  border: 0;
-  border-bottom: 1px solid rgba(8, 127, 140, 0.18);
-  background: var(--color-info-bg);
-  color: var(--color-info-strong);
-  text-align: left;
-  cursor: pointer;
-}
-
-.recovery-plan-bar > span:first-child {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.recovery-plan-bar strong,
-.recovery-plan-bar small {
-  display: block;
-}
-
-.recovery-plan-bar strong {
-  color: var(--color-ink);
-  font-size: 16px;
-}
-
-.recovery-plan-bar small {
-  margin-top: 3px;
-  color: var(--color-info-strong);
-  font-weight: 700;
-}
-
-.recovery-plan-bar-panel {
-  padding: 18px;
-}
-
-.recovery-plan-bar-panel .recovery-plan-detail {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
 }
 
 .recovery-status-badge {
@@ -1112,6 +1043,27 @@
   color: var(--color-muted);
 }
 
+.recovery-plan-collapse-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.recovery-plan-collapse-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.recovery-plan-collapse-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 /* Cancelled-plan metadata */
 
 .recovery-cancellation-detail {
@@ -1305,10 +1257,6 @@
 
   .recovery-item-list {
     grid-template-columns: 1fr;
-  }
-
-  .recovery-plan-bar {
-    flex-wrap: wrap;
   }
 
   .recovery-status-badge {
