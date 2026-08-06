@@ -340,11 +340,11 @@ export default function UserProfilePage() {
     try {
       const response = otpVerified
         ? await authApi.changePassword({
-            email: otpEmail,
-            otp: confirmedOtp,
-            newPassword: passwordForm.newPassword,
-            confirmNewPassword: passwordForm.confirmNewPassword,
-          })
+          email: otpEmail,
+          otp: confirmedOtp,
+          newPassword: passwordForm.newPassword,
+          confirmNewPassword: passwordForm.confirmNewPassword,
+        })
         : await authApi.updatePassword(passwordForm);
       const text = response.message || "Đổi mật khẩu thành công.";
       setPasswordMessage({ type: "success", text });
@@ -353,7 +353,17 @@ export default function UserProfilePage() {
       setOtpVerified(false);
       setConfirmedOtp("");
     } catch (error) {
-      setPasswordMessage({ type: "error", text: error.message });
+      // A failure at this point can mean the OTP itself was wrong/expired, or
+      // that the new password was rejected - route each to where it belongs
+      // instead of showing every error in the OTP modal.
+      if (otpVerified && isOtpFieldError(error.message)) {
+        setOtpError(error.message);
+        setOtpDigits(Array(OTP_LENGTH).fill(""));
+        setOtpModalOpen(true);
+        window.requestAnimationFrame(() => otpInputRefs.current[0]?.focus());
+      } else {
+        setPasswordMessage({ type: "error", text: error.message });
+      }
     } finally {
       setSavingPassword(false);
     }
@@ -367,6 +377,7 @@ export default function UserProfilePage() {
       setOtpEmail(profileForm.email);
       setOtpDigits(Array(OTP_LENGTH).fill(""));
       setOtpSecondsLeft(OTP_DURATION_SECONDS);
+      setOtpError("");
       setOtpModalOpen(true);
       window.requestAnimationFrame(() => otpInputRefs.current[0]?.focus());
     } catch (error) {
@@ -421,6 +432,16 @@ export default function UserProfilePage() {
     otpInputRefs.current[Math.min(pasted.length, OTP_LENGTH) - 1]?.focus();
   }
 
+  // Route each failure to whichever field it's actually about (OTP box vs
+  // password fields) instead of one generic message, since a
+  // password-policy rejection has nothing to do with the code being wrong.
+  function isOtpFieldError(message) {
+    return /otp|mã xác thực/i.test(message);
+  }
+
+  // This is only a local format check - the code itself can only be
+  // verified together with the new password by the change-password call in
+  // handleUpdatePassword, since there is no standalone "verify OTP" endpoint.
   function confirmOtp(event) {
     event.preventDefault();
     const code = otpDigits.join("");
@@ -428,15 +449,10 @@ export default function UserProfilePage() {
       setOtpError(`Vui lòng nhập đủ ${OTP_LENGTH} số.`);
       return;
     }
+    setOtpError("");
     setConfirmedOtp(code);
     setOtpVerified(true);
     setOtpModalOpen(false);
-  }
-
-  function useCurrentPasswordInstead() {
-    setOtpVerified(false);
-    setConfirmedOtp("");
-    setPasswordMessage(null);
   }
 
   function cancelProfileEdit() {
@@ -825,27 +841,19 @@ export default function UserProfilePage() {
                 ? "Mã xác thực đã được xác nhận. Nhập mật khẩu mới để hoàn tất."
                 : "Nhập mật khẩu hiện tại và mật khẩu mới để đổi mật khẩu đăng nhập."}
             </p>
-            {otpVerified && (
-              <p className="security-fallback-note">
-                Đang đổi mật khẩu bằng mã xác thực qua email ({otpEmail}).{" "}
-                <button type="button" className="link-button" onClick={useCurrentPasswordInstead}>
-                  Dùng mật khẩu hiện tại thay vào đó
-                </button>
-              </p>
-            )}
             <form className="security-password-form" onSubmit={handleUpdatePassword}>
               {!otpVerified && (
-              <PasswordField
-                label="Mật khẩu hiện tại"
-                name="currentPassword"
-                autoComplete="current-password"
-                value={passwordForm.currentPassword}
-                disabled={savingPassword}
-                onChange={(e) => updatePasswordField("currentPassword", e.target.value)}
-                visible={passwordVisibility.currentPassword}
-                onToggleVisible={() => togglePasswordVisibility("currentPassword")}
-                required
-              />
+                <PasswordField
+                  label="Mật khẩu hiện tại"
+                  name="currentPassword"
+                  autoComplete="current-password"
+                  value={passwordForm.currentPassword}
+                  disabled={savingPassword}
+                  onChange={(e) => updatePasswordField("currentPassword", e.target.value)}
+                  visible={passwordVisibility.currentPassword}
+                  onToggleVisible={() => togglePasswordVisibility("currentPassword")}
+                  required
+                />
               )}
               <PasswordField
                 label="Mật khẩu mới"
