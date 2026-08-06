@@ -353,18 +353,7 @@ export default function UserProfilePage() {
       setOtpVerified(false);
       setConfirmedOtp("");
     } catch (error) {
-      if (otpVerified) {
-        // The OTP is only ever really checked by this call (there is no
-        // standalone verify endpoint) - if it was wrong/expired, send the
-        // user back to the code modal to fix it instead of a page-level
-        // error, and keep what they already typed as the new password.
-        setOtpError(error.message);
-        setOtpDigits(Array(OTP_LENGTH).fill(""));
-        setOtpModalOpen(true);
-        window.requestAnimationFrame(() => otpInputRefs.current[0]?.focus());
-      } else {
-        setPasswordMessage({ type: "error", text: error.message });
-      }
+      setPasswordMessage({ type: "error", text: error.message });
     } finally {
       setSavingPassword(false);
     }
@@ -442,6 +431,12 @@ export default function UserProfilePage() {
     setConfirmedOtp(code);
     setOtpVerified(true);
     setOtpModalOpen(false);
+  }
+
+  function useCurrentPasswordInstead() {
+    setOtpVerified(false);
+    setConfirmedOtp("");
+    setPasswordMessage(null);
   }
 
   function cancelProfileEdit() {
@@ -830,19 +825,27 @@ export default function UserProfilePage() {
                 ? "Mã xác thực đã được xác nhận. Nhập mật khẩu mới để hoàn tất."
                 : "Nhập mật khẩu hiện tại và mật khẩu mới để đổi mật khẩu đăng nhập."}
             </p>
+            {otpVerified && (
+              <p className="security-fallback-note">
+                Đang đổi mật khẩu bằng mã xác thực qua email ({otpEmail}).{" "}
+                <button type="button" className="link-button" onClick={useCurrentPasswordInstead}>
+                  Dùng mật khẩu hiện tại thay vào đó
+                </button>
+              </p>
+            )}
             <form className="security-password-form" onSubmit={handleUpdatePassword}>
               {!otpVerified && (
-                <PasswordField
-                  label="Mật khẩu hiện tại"
-                  name="currentPassword"
-                  autoComplete="current-password"
-                  value={passwordForm.currentPassword}
-                  disabled={savingPassword}
-                  onChange={(e) => updatePasswordField("currentPassword", e.target.value)}
-                  visible={passwordVisibility.currentPassword}
-                  onToggleVisible={() => togglePasswordVisibility("currentPassword")}
-                  required
-                />
+              <PasswordField
+                label="Mật khẩu hiện tại"
+                name="currentPassword"
+                autoComplete="current-password"
+                value={passwordForm.currentPassword}
+                disabled={savingPassword}
+                onChange={(e) => updatePasswordField("currentPassword", e.target.value)}
+                visible={passwordVisibility.currentPassword}
+                onToggleVisible={() => togglePasswordVisibility("currentPassword")}
+                required
+              />
               )}
               <PasswordField
                 label="Mật khẩu mới"
