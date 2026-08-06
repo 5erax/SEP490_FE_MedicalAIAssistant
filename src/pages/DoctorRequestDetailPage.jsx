@@ -828,7 +828,7 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
       <p className="doctor-detail-card-heading">Bối cảnh lâm sàng</p>
 
       <div className="doctor-clinical-grid">
-        <ClinicalBlock icon={Ruler} title="Chỉ số cơ thể">
+        <ClinicalBlock icon={Ruler} title="Chỉ số cơ thể" isMissing={!profile?.height && !profile?.weight}>
           {profile?.height || profile?.weight ? (
             <>
               <div className="doctor-clinical-metrics">
@@ -848,7 +848,7 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
           )}
         </ClinicalBlock>
 
-        <ClinicalBlock icon={ShieldAlert} title="Dị ứng">
+        <ClinicalBlock icon={ShieldAlert} title="Dị ứng" isMissing={!profile?.allergyNote}>
           {profile?.allergyNote ? (
             <p className="doctor-clinical-text">{profile.allergyNote}</p>
           ) : (
@@ -856,7 +856,7 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
           )}
         </ClinicalBlock>
 
-        <ClinicalBlock icon={HeartPulse} title="Bệnh nền">
+        <ClinicalBlock icon={HeartPulse} title="Bệnh nền" isMissing={chronicDiseases.length === 0}>
           {chronicDiseases.length > 0 ? (
             <ul className="doctor-clinical-list">
               {chronicDiseases.map((item) => (
@@ -872,7 +872,7 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
           )}
         </ClinicalBlock>
 
-        <ClinicalBlock icon={Pill} title="Thuốc đang sử dụng">
+        <ClinicalBlock icon={Pill} title="Thuốc đang sử dụng" isMissing={medications.length === 0}>
           {medications.length > 0 ? (
             <ul className="doctor-clinical-list">
               {medications.map((item) => (
@@ -888,7 +888,7 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
           )}
         </ClinicalBlock>
 
-        <ClinicalBlock icon={FlaskConical} title="Xét nghiệm gần đây">
+        <ClinicalBlock icon={FlaskConical} title="Xét nghiệm gần đây" isMissing={labSessions.length === 0}>
           {labSessions.length > 0 ? (
             <ul className="doctor-clinical-list">
               {labSessions.slice(0, 5).map((session) => (
@@ -903,7 +903,7 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
           )}
         </ClinicalBlock>
 
-        <ClinicalBlock icon={Milestone} title="Hành trình điều trị">
+        <ClinicalBlock icon={Milestone} title="Hành trình điều trị" isMissing={journeyEvents.length === 0}>
           {journeyEvents.length > 0 ? (
             <ol className="doctor-clinical-journey">
               {journeyEvents.map((event, index) => (
@@ -925,11 +925,16 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
   );
 }
 
-function ClinicalBlock({ icon: Icon, title, children }) {
+function ClinicalBlock({ icon: Icon, title, isMissing, children }) {
   return (
     <div className="doctor-clinical-block">
       <p className="doctor-clinical-block-heading">
         <Icon size={14} aria-hidden="true" /> {title}
+        {isMissing && (
+          <span className="doctor-clinical-missing-badge" role="img" aria-label="Thiếu thông tin">
+            <AlertTriangle size={11} aria-hidden="true" />
+          </span>
+        )}
       </p>
       {children}
     </div>
