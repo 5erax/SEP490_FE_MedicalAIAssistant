@@ -799,18 +799,43 @@
 
 .recovery-phase-list {
   display: grid;
-  gap: 14px;
+  gap: 20px;
   margin-top: 16px;
 }
 
 .recovery-phase-card {
   padding: 18px;
-  border: 1px solid rgba(8, 127, 140, 0.18);
+  border: 1.5px solid rgba(8, 127, 140, 0.45);
   border-radius: 16px;
   background: var(--color-info-bg);
+  box-shadow: 0 6px 16px rgba(8, 127, 140, 0.08);
 }
 
-.recovery-phase-card header > span {
+.recovery-phase-card header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.recovery-phase-step {
+  display: grid;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-info-strong);
+  box-shadow: 0 0 0 3px var(--color-info-bg), 0 0 0 4.5px rgba(8, 127, 140, 0.45);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.recovery-phase-heading {
+  min-width: 0;
+}
+
+.recovery-phase-heading > span {
   color: var(--color-info-strong);
   font-size: var(--recovery-fs-xs);
   font-weight: 800;
