@@ -196,6 +196,47 @@ test("user reads and starts a published recovery plan", async ({ page }) => {
   expect(calls.started).toBe(true);
 });
 
+test("timeline tab paints each phase onto its real calendar dates", async ({ page }) => {
+  await prepareRecoveryPage(page, {
+    requests: [request({ status: "published" })],
+    plans: [plan({
+      startDate: "2026-08-05",
+      endDate: "2026-08-18",
+      phases: [
+        {
+          id: "phase-1",
+          phaseName: "Khởi động nhẹ",
+          startDay: 1,
+          endDay: 12,
+          sleepHoursPerDay: 8,
+          restHoursPerDay: 2,
+          instruction: "Đi bộ nhẹ và theo dõi nhịp thở.",
+          sortOrder: 1,
+          nutrientTargets: [],
+        },
+        {
+          id: "phase-2",
+          phaseName: "Tăng cường",
+          startDay: 13,
+          endDay: 14,
+          sleepHoursPerDay: 7,
+          restHoursPerDay: 1,
+          instruction: "Tăng dần cường độ vận động.",
+          sortOrder: 2,
+          nutrientTargets: [],
+        },
+      ],
+    })],
+  });
+
+  await page.getByRole("tab", { name: /Lộ trình của bạn/ }).click();
+  await expect(page.getByText("Tháng 8 - 2026", { exact: true })).toBeVisible();
+  await expect(page.getByText("Giai đoạn 1: Khởi động nhẹ", { exact: true })).toBeVisible();
+  await expect(page.getByText("5/8/2026 – 16/8/2026", { exact: true })).toBeVisible();
+  await expect(page.getByText("Giai đoạn 2: Tăng cường", { exact: true })).toBeVisible();
+  await expect(page.getByText("17/8/2026 – 18/8/2026", { exact: true })).toBeVisible();
+});
+
 test("recovery plan page remains accessible on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "completed" })] });
