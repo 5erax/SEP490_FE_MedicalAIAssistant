@@ -562,11 +562,11 @@ function getPhaseTimeline(plan) {
 // than colors. Each stop pairs a light background with a darker text of
 // the same hue, same pattern as the app's existing tone badges.
 const PHASE_COLORS = [
-  { bg: "hsl(174, 45%, 85%)", text: "hsl(174, 55%, 26%)" }, // teal
-  { bg: "hsl(206, 55%, 87%)", text: "hsl(206, 60%, 30%)" }, // blue
-  { bg: "hsl(160, 40%, 86%)", text: "hsl(160, 45%, 26%)" }, // mint
-  { bg: "hsl(230, 45%, 88%)", text: "hsl(230, 45%, 38%)" }, // indigo
-  { bg: "hsl(260, 40%, 89%)", text: "hsl(260, 35%, 40%)" }, // violet
+  { bg: "hsl(174, 48%, 72%)", text: "hsl(174, 60%, 20%)" }, // teal
+  { bg: "hsl(206, 58%, 74%)", text: "hsl(206, 65%, 24%)" }, // blue
+  { bg: "hsl(160, 42%, 70%)", text: "hsl(160, 50%, 20%)" }, // mint
+  { bg: "hsl(230, 48%, 76%)", text: "hsl(230, 50%, 28%)" }, // indigo
+  { bg: "hsl(260, 42%, 78%)", text: "hsl(260, 40%, 30%)" }, // violet
 ];
 
 function getPhaseColor(index) {
