@@ -470,11 +470,14 @@ export function PlanDetail({ plan, loading, onStart, busy }) {
             <span>{phases.length} giai đoạn</span>
           </div>
           <div className="recovery-phase-list">
-            {phases.map((phase) => (
+            {phases.map((phase, index) => (
               <article className="recovery-phase-card" key={phase.id}>
                 <header>
-                  <span>Ngày {phase.startDay}–{phase.endDay}</span>
-                  <h5>{phase.phaseName}</h5>
+                  <span className="recovery-phase-step" aria-hidden="true">{index + 1}</span>
+                  <div className="recovery-phase-heading">
+                    <span>Ngày {phase.startDay}–{phase.endDay}</span>
+                    <h5>{phase.phaseName}</h5>
+                  </div>
                 </header>
                 {phase.instruction && <p>{phase.instruction}</p>}
                 <dl className="recovery-phase-rest">
