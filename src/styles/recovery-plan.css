@@ -347,8 +347,7 @@
 }
 
 .recovery-workspace-tabs button:focus-visible,
-.recovery-item-button:focus-visible,
-.recovery-plan-bar:focus-visible {
+.recovery-item-button:focus-visible {
   outline: 2px solid var(--color-info-strong);
   outline-offset: 2px;
 }
@@ -549,14 +548,6 @@
   gap: 10px;
 }
 
-.recovery-plan-tabs-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 2px;
-}
-
 .recovery-item-button {
   position: relative;
   display: grid;
@@ -610,66 +601,6 @@
 .recovery-item-button small {
   margin-top: 4px;
   color: var(--color-muted);
-}
-
-.recovery-plan-accordion {
-  display: grid;
-  gap: 12px;
-}
-
-.recovery-plan-bar-wrap {
-  border: 1px solid var(--color-info);
-  border-radius: 16px;
-  background: var(--color-surface);
-  overflow: hidden;
-  box-shadow: var(--shadow-card);
-}
-
-.recovery-plan-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  padding: 16px 18px;
-  border: 0;
-  border-bottom: 1px solid rgba(8, 127, 140, 0.18);
-  background: var(--color-info-bg);
-  color: var(--color-info-strong);
-  text-align: left;
-  cursor: pointer;
-}
-
-.recovery-plan-bar > span:first-child {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.recovery-plan-bar strong,
-.recovery-plan-bar small {
-  display: block;
-}
-
-.recovery-plan-bar strong {
-  color: var(--color-ink);
-  font-size: 16px;
-}
-
-.recovery-plan-bar small {
-  margin-top: 3px;
-  color: var(--color-info-strong);
-  font-weight: 700;
-}
-
-.recovery-plan-bar-panel {
-  padding: 18px;
-}
-
-.recovery-plan-bar-panel .recovery-plan-detail {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
 }
 
 .recovery-status-badge {
@@ -1112,6 +1043,144 @@
   color: var(--color-muted);
 }
 
+.recovery-plan-collapse-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.recovery-plan-collapse-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.recovery-plan-collapse-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* Cancelled-plan metadata */
+
+.recovery-cancellation-detail {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+}
+
+.recovery-cancellation-detail > strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.recovery-cancellation-detail dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.recovery-cancellation-detail dt {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recovery-cancellation-detail dd {
+  margin: 3px 0 0;
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+/* Cancel-plan reason dialog */
+
+.recovery-cancel-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.55);
+  padding:
+    max(20px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+
+.recovery-cancel-modal {
+  width: min(480px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--recovery-radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.recovery-cancel-modal-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 20px 22px 16px;
+}
+
+.recovery-cancel-modal-header > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--recovery-radius-md);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.recovery-cancel-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.recovery-cancel-modal-header button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.recovery-cancel-modal form {
+  display: grid;
+  gap: 16px;
+  padding: 18px 22px 22px;
+}
+
+.recovery-cancel-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .recovery-cancellation-detail dl {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1000px) {
   .recovery-stats-row {
     grid-template-columns: 1fr;
@@ -1188,10 +1257,6 @@
 
   .recovery-item-list {
     grid-template-columns: 1fr;
-  }
-
-  .recovery-plan-bar {
-    flex-wrap: wrap;
   }
 
   .recovery-status-badge {

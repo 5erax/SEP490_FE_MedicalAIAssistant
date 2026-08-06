@@ -185,6 +185,7 @@ export const ENDPOINTS = {
     ME: `${RECOVERY_PLANS_BASE}/me`,
     BY_ID: (planId) => encodedById(RECOVERY_PLANS_BASE, planId),
     START: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/start`,
+    CANCEL: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/cancel`,
   },
   DOCTOR_RECOVERY_PLAN_REQUESTS: {
     OPEN: `${DOCTOR_RECOVERY_PLAN_REQUESTS_BASE}/open`,

@@ -266,6 +266,16 @@ const EXACT_MESSAGES = Object.freeze({
     "Không thể gửi email mời đăng ký. Vui lòng thử lại.",
   "Frontend:BaseUrl is required.":
     "Không thể tạo lời mời do lỗi cấu hình hệ thống.",
+
+  // Kế hoạch phục hồi (hủy kế hoạch, giới hạn workflow)
+  "Recovery plan cancelled.":
+    "Đã hủy kế hoạch phục hồi.",
+  "Recovery plan was already cancelled.":
+    "Kế hoạch phục hồi đã được hủy trước đó.",
+  "You already have a recovery plan request or plan in progress.":
+    "Bạn đang có một yêu cầu hoặc kế hoạch phục hồi chưa kết thúc.",
+  "Only ReadyToStart or Active recovery plans can be cancelled.":
+    "Chỉ có thể hủy kế hoạch đang chờ bắt đầu hoặc đang thực hiện.",
 });
 
 const FIELD_LABELS = Object.freeze({

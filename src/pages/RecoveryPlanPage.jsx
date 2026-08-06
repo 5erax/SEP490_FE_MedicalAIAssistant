@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   CalendarCheck,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -13,9 +14,11 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
+  X,
+  XCircle,
 } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
+import { Button, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getApiErrorCode } from "../services/apiError";
 import {
@@ -53,6 +56,24 @@ const PLAN_STATUS = {
   cancelled: { label: "Đã hủy", tone: "muted" },
   superseded: { label: "Đã thay thế", tone: "muted" },
 };
+const CANCELLABLE_PLAN_STATUSES = new Set(["readyToStart", "active"]);
+const RECOVERY_PLAN_CANCELLATION_REASONS = [
+  { value: "NO_LONGER_NEEDED", label: "Không còn cần thiết" },
+  { value: "HEALTH_CONDITION_CHANGED", label: "Tình trạng sức khỏe đã thay đổi" },
+  { value: "PLAN_NOT_SUITABLE", label: "Kế hoạch không phù hợp" },
+  { value: "UNABLE_TO_FOLLOW", label: "Không thể tiếp tục thực hiện" },
+  { value: "STARTING_OTHER_TREATMENT", label: "Bắt đầu phương pháp điều trị khác" },
+  { value: "OTHER", label: "Lý do khác" },
+];
+// Statuses that mean a user already has an open Recovery Plan workflow -
+// mirrors the backend's single-active-workflow rule so the UI can hide/
+// disable the "new request" form without waiting on a 409 first.
+const BLOCKING_REQUEST_STATUSES = ["waitingForDoctor", "assigned", "inReview", "needMoreInformation"];
+const BLOCKING_PLAN_STATUSES = ["readyToStart", "active"];
+
+function getCancellationReasonLabel(code) {
+  return RECOVERY_PLAN_CANCELLATION_REASONS.find((item) => item.value === code)?.label ?? code ?? "Không rõ lý do";
+}
 
 function normalizePaged(response, pageNumber) {
   const data = response?.data ?? {};
@@ -128,6 +149,12 @@ function getRecoveryError(error, fallback) {
   }
   if (code === "QUOTA_MUTATION_FAILED") {
     return { code, message: "Hạn mức chưa được cập nhật. Hãy tải lại trạng thái trước khi thử tiếp." };
+  }
+  if (code === "RECOVERY_PLAN_WORKFLOW_ALREADY_ACTIVE") {
+    return { code, message: "Bạn đang có một yêu cầu hoặc kế hoạch phục hồi chưa kết thúc." };
+  }
+  if (code === "RECOVERY_PLAN_NOT_CANCELLABLE") {
+    return { code, message: "Kế hoạch này không còn ở trạng thái có thể hủy." };
   }
   return { code, message: fallback };
 }
@@ -230,7 +257,7 @@ function StatTile({ icon: Icon, label, value, tone = "info" }) {
   );
 }
 
-function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
+function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowConflict }) {
   const [diseaseGroup, setDiseaseGroup] = useState("");
   const [requestNote, setRequestNote] = useState("");
   const [errors, setErrors] = useState({});
@@ -271,7 +298,11 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
       setRequestNote("");
       await onCreated(response?.data);
     } catch (error) {
-      setSubmitError(getRecoveryError(error, "Chưa thể gửi yêu cầu. Bạn có thể thử lại mà không tạo yêu cầu trùng."));
+      const mapped = getRecoveryError(error, "Chưa thể gửi yêu cầu. Bạn có thể thử lại mà không tạo yêu cầu trùng.");
+      setSubmitError(mapped);
+      if (mapped.code === "RECOVERY_PLAN_WORKFLOW_ALREADY_ACTIVE") {
+        await onWorkflowConflict?.();
+      }
     } finally {
       setSubmitting(false);
     }
@@ -432,11 +463,19 @@ function RequestDetail({ request, loading, onCancel, onProvideInformation, busy 
   );
 }
 
-export function PlanDetail({ plan, loading, onStart, busy }) {
+export function PlanDetail({ plan, loading, onStart, onCancel, busy }) {
+  const isCancelled = plan?.status === "cancelled";
+  const [collapsed, setCollapsed] = useState(isCancelled);
+
+  useEffect(() => {
+    queueMicrotask(() => setCollapsed(plan?.status === "cancelled"));
+  }, [plan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (loading) return <LoadingState label="Đang tải nội dung kế hoạch…" />;
   if (!plan) return null;
   const phases = [...(plan.phases ?? [])].sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder));
   const canStart = plan.status === "readyToStart";
+  const canCancel = Boolean(onCancel) && CANCELLABLE_PLAN_STATUSES.has(plan.status);
 
   return (
     <article className="recovery-plan-detail">
@@ -446,14 +485,49 @@ export function PlanDetail({ plan, loading, onStart, busy }) {
           <h3>{plan.planName || "Kế hoạch phục hồi"}</h3>
         </div>
         <StatusBadge map={PLAN_STATUS} value={plan.status} />
+        {isCancelled && (
+          <button
+            type="button"
+            className="recovery-plan-collapse-toggle"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Mở rộng kế hoạch" : "Thu gọn kế hoạch"}
+            onClick={() => setCollapsed((current) => !current)}
+          >
+            <ChevronDown size={18} aria-hidden="true" />
+          </button>
+        )}
       </header>
 
+      {(!isCancelled || !collapsed) && (
+        <>
       <p className="recovery-plan-summary">{plan.summary || "Nội dung tổng quan sẽ được cập nhật trong kế hoạch."}</p>
       <dl className="recovery-detail-grid">
         <div><dt>Thời lượng</dt><dd>{plan.durationDays || 0} ngày</dd></div>
         <div><dt>Thời gian thực hiện</dt><dd>{plan.startDate ? `${formatDate(plan.startDate)} – ${formatDate(plan.endDate)}` : "Bắt đầu khi bạn sẵn sàng"}</dd></div>
         {plan.recheckInstruction && <div className="recovery-detail-wide"><dt>Hướng dẫn tái khám</dt><dd>{plan.recheckInstruction}</dd></div>}
       </dl>
+
+      {plan.status === "cancelled" && (
+        <section className="recovery-cancellation-detail">
+          <strong>Kế hoạch đã được hủy</strong>
+          <dl>
+            <div>
+              <dt>Thời điểm hủy</dt>
+              <dd>{formatDate(plan.cancelledAt, true)}</dd>
+            </div>
+            <div>
+              <dt>Lý do</dt>
+              <dd>{getCancellationReasonLabel(plan.cancellationReasonCode)}</dd>
+            </div>
+            {plan.cancellationReason && (
+              <div>
+                <dt>Ghi chú</dt>
+                <dd>{plan.cancellationReason}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+      )}
 
       {canStart && (
         <div className="recovery-start-card">
@@ -515,7 +589,82 @@ export function PlanDetail({ plan, loading, onStart, busy }) {
           </div>
         </section>
       )}
+
+      {canCancel && (
+        <footer className="recovery-detail-actions">
+          <Button tone="danger" disabled={busy} onClick={() => onCancel(plan)}>Hủy kế hoạch</Button>
+        </footer>
+      )}
+        </>
+      )}
     </article>
+  );
+}
+
+function CancelPlanDialog({ plan, submitting, onClose, onSubmit }) {
+  const [reasonCode, setReasonCode] = useState("");
+  const [reason, setReason] = useState("");
+  const [errors, setErrors] = useState({});
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const trimmedReason = reason.trim();
+    const nextErrors = {};
+    if (!reasonCode) nextErrors.reasonCode = "Vui lòng chọn lý do hủy.";
+    if (reasonCode === "OTHER" && !trimmedReason) nextErrors.reason = "Vui lòng mô tả lý do khi chọn \"Lý do khác\".";
+    if (trimmedReason.length > 2000) nextErrors.reason = "Ghi chú không được vượt quá 2.000 ký tự.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    onSubmit(plan.id, reasonCode, trimmedReason);
+  }
+
+  return (
+    <Dialog
+      backdropClassName="recovery-cancel-modal-backdrop"
+      className="recovery-cancel-modal"
+      labelledBy="recovery-cancel-modal-title"
+      onClose={submitting ? () => {} : onClose}
+      closeOnBackdrop={!submitting}
+      closeOnEscape={!submitting}
+    >
+      <header className="recovery-cancel-modal-header">
+        <span aria-hidden="true"><XCircle size={20} /></span>
+        <h2 id="recovery-cancel-modal-title">Hủy kế hoạch phục hồi</h2>
+        <button type="button" aria-label="Đóng" onClick={onClose} disabled={submitting}><X size={20} aria-hidden="true" /></button>
+      </header>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="recovery-form-warning">
+          <Info size={18} aria-hidden="true" />
+          <span>Lượt kế hoạch đã sử dụng không được hoàn lại. Kế hoạch vẫn được lưu trong lịch sử của bạn.</span>
+        </div>
+        <Field label="Lý do hủy" required error={errors.reasonCode}>
+          <Select
+            value={reasonCode}
+            onChange={(event) => { setReasonCode(event.target.value); setErrors((current) => ({ ...current, reasonCode: "" })); }}
+          >
+            <option value="">Chọn lý do</option>
+            {RECOVERY_PLAN_CANCELLATION_REASONS.map((item) => (
+              <option key={item.value} value={item.value}>{item.label}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Ghi chú" optional={reasonCode !== "OTHER"} required={reasonCode === "OTHER"} error={errors.reason}>
+          <Textarea
+            rows={4}
+            maxLength={2000}
+            value={reason}
+            placeholder="Chia sẻ thêm lý do bạn muốn hủy kế hoạch này."
+            onChange={(event) => { setReason(event.target.value); setErrors((current) => ({ ...current, reason: "" })); }}
+          />
+        </Field>
+        <div className="recovery-cancel-modal-actions">
+          <Button type="button" tone="secondary" onClick={onClose} disabled={submitting}>Đóng</Button>
+          <Button type="submit" tone="danger" loading={submitting} loadingLabel="Đang hủy…">
+            <XCircle size={16} aria-hidden="true" /> Hủy kế hoạch
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
 
@@ -692,7 +841,10 @@ export default function RecoveryPlanPage() {
   const [requestsError, setRequestsError] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestDetailLoading, setRequestDetailLoading] = useState(false);
-  const [planPageNumber, setPlanPageNumber] = useState(1);
+  // Plans are always shown as a single current-plan detail view (no
+  // selector/pagination UI), so this never changes - kept as a named
+  // constant rather than inlining `1` everywhere loadPlans is called.
+  const planPageNumber = 1;
   const [planPage, setPlanPage] = useState(() => normalizePaged(null, 1));
   const [plansLoading, setPlansLoading] = useState(true);
   const [plansError, setPlansError] = useState("");
@@ -702,6 +854,9 @@ export default function RecoveryPlanPage() {
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [statusMessage, setStatusMessage] = useState("");
   const [activeTab, setActiveTab] = useState("requests");
+  const [workflowBlocked, setWorkflowBlocked] = useState(false);
+  const [workflowGuardLoading, setWorkflowGuardLoading] = useState(true);
+  const [cancelPlan, setCancelPlan] = useState(null);
   const refetchTimerRef = useRef(null);
 
   const loadQuota = useCallback(async () => {
@@ -740,6 +895,23 @@ export default function RecoveryPlanPage() {
     }
   }, [requestPageNumber, selectedRequest?.id]);
 
+  async function loadPlanDetail(planId, fallback) {
+    setSelectedPlan(fallback ?? selectedPlan);
+    setPlanDetailLoading(true);
+    try {
+      const response = await recoveryPlansApi.get(planId);
+      setSelectedPlan(response?.data ?? fallback);
+    } catch (error) {
+      if (error?.status === 404 || getApiErrorCode(error) === "NOT_FOUND") {
+        setSelectedPlan(null);
+      } else {
+        showToast({ type: "error", title: "Không tải được kế hoạch", message: "Vui lòng thử lại sau." });
+      }
+    } finally {
+      setPlanDetailLoading(false);
+    }
+  }
+
   const loadPlans = useCallback(async (pageNumber = planPageNumber, preferredId = "") => {
     setPlansLoading(true);
     setPlansError("");
@@ -765,6 +937,28 @@ export default function RecoveryPlanPage() {
     }
   }, [planPageNumber, selectedPlan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Only one Recovery Plan workflow (request or plan) can be open per user.
+  // The backend is the source of truth (every mutating call still handles a
+  // 409), but probing these blocking statuses up front lets the UI hide/
+  // disable the "new request" form instead of always failing the request.
+  async function loadWorkflowGuard() {
+    setWorkflowGuardLoading(true);
+    try {
+      const responses = await Promise.all([
+        ...BLOCKING_REQUEST_STATUSES.map((status) => recoveryPlanRequestsApi.listMine({ pageNumber: 1, pageSize: 1, status })),
+        ...BLOCKING_PLAN_STATUSES.map((status) => recoveryPlansApi.listMine({ pageNumber: 1, pageSize: 1, status })),
+      ]);
+      const blocked = responses.some((response) => {
+        const page = normalizePaged(response, 1);
+        return page.totalCount > 0 || page.items.length > 0;
+      });
+      setWorkflowBlocked(blocked);
+      return blocked;
+    } finally {
+      setWorkflowGuardLoading(false);
+    }
+  }
+
   async function loadRequestDetail(requestId, fallback) {
     setSelectedRequest(fallback ?? selectedRequest);
     setRequestDetailLoading(true);
@@ -782,33 +976,17 @@ export default function RecoveryPlanPage() {
     }
   }
 
-  async function loadPlanDetail(planId, fallback) {
-    setSelectedPlan(fallback ?? selectedPlan);
-    setPlanDetailLoading(true);
-    try {
-      const response = await recoveryPlansApi.get(planId);
-      setSelectedPlan(response?.data ?? fallback);
-    } catch (error) {
-      if (error?.status === 404 || getApiErrorCode(error) === "NOT_FOUND") {
-        setSelectedPlan(null);
-      } else {
-        showToast({ type: "error", title: "Không tải được kế hoạch", message: "Vui lòng thử lại sau." });
-      }
-    } finally {
-      setPlanDetailLoading(false);
-    }
-  }
-
   const refetchAll = useCallback(async () => {
     await Promise.allSettled([
       loadQuota(),
       loadRequests(requestPageNumber, selectedRequest?.id),
       loadPlans(planPageNumber, selectedPlan?.id),
+      loadWorkflowGuard(),
     ]);
   }, [loadPlans, loadQuota, loadRequests, planPageNumber, requestPageNumber, selectedPlan?.id, selectedRequest?.id]);
 
   useEffect(() => {
-    queueMicrotask(() => void Promise.allSettled([loadQuota(), loadRequests(1), loadPlans(1)]));
+    queueMicrotask(() => void Promise.allSettled([loadQuota(), loadRequests(1), loadPlans(1), loadWorkflowGuard()]));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -836,6 +1014,7 @@ export default function RecoveryPlanPage() {
     await Promise.allSettled([
       loadQuota(),
       loadRequests(1, createdRequest?.id),
+      loadWorkflowGuard(),
     ]);
     setRequestPageNumber(1);
   }
@@ -887,17 +1066,55 @@ export default function RecoveryPlanPage() {
     } catch (error) {
       const mapped = getRecoveryError(error, "Chưa thể bắt đầu kế hoạch. Vui lòng thử lại.");
       showToast({ type: "error", title: "Không thể bắt đầu kế hoạch", message: mapped.message });
-      if (mapped.code === "INVALID_REQUEST_STATE") await loadPlans(planPageNumber, planId);
+      if (["INVALID_REQUEST_STATE", "RECOVERY_PLAN_WORKFLOW_ALREADY_ACTIVE"].includes(mapped.code)) {
+        await Promise.allSettled([loadPlans(planPageNumber, planId), loadWorkflowGuard()]);
+      }
     } finally {
       setActionBusy(false);
     }
   }
 
-  const requestCreationDisabled = quotaLoading || Boolean(quotaError) || !quota || Number(quota.remainingCount) <= 0;
-  const requestDisabledMessage = quotaLoading
-    ? "Đang kiểm tra lượt kế hoạch của bạn."
-    : quotaError?.message
-      ?? (!quota ? "Chưa có thông tin lượt kế hoạch." : "Bạn đã dùng hết lượt trong chu kỳ hiện tại.");
+  async function handleCancelPlan(planId, reasonCode, reason) {
+    setActionBusy(true);
+    try {
+      const response = await recoveryPlansApi.cancel(planId, {
+        cancellationReasonCode: reasonCode,
+        cancellationReason: reason.trim() || null,
+      });
+      setSelectedPlan(response?.data ?? null);
+      setCancelPlan(null);
+      showToast({
+        type: "success",
+        title: "Đã hủy kế hoạch",
+        message: "Kế hoạch vẫn được lưu trong lịch sử. Lượt đã dùng không được hoàn lại.",
+      });
+      await Promise.allSettled([loadPlans(planPageNumber, planId), loadWorkflowGuard()]);
+    } catch (error) {
+      const mapped = getRecoveryError(error, "Chưa thể hủy kế hoạch. Vui lòng thử lại.");
+      showToast({ type: "error", title: "Không thể hủy kế hoạch", message: mapped.message });
+      if (["NOT_FOUND", "RECOVERY_PLAN_NOT_CANCELLABLE"].includes(mapped.code)) {
+        setCancelPlan(null);
+        await loadPlans(planPageNumber);
+      }
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  const requestCreationDisabled = workflowGuardLoading
+    || workflowBlocked
+    || quotaLoading
+    || Boolean(quotaError)
+    || !quota
+    || Number(quota.remainingCount) <= 0;
+  const requestDisabledMessage = workflowBlocked
+    ? "Bạn đang có một yêu cầu hoặc kế hoạch phục hồi chưa kết thúc."
+    : workflowGuardLoading
+      ? "Đang kiểm tra trạng thái kế hoạch của bạn."
+      : quotaLoading
+        ? "Đang kiểm tra lượt kế hoạch của bạn."
+        : quotaError?.message
+          ?? (!quota ? "Chưa có thông tin lượt kế hoạch." : "Bạn đã dùng hết lượt trong chu kỳ hiện tại.");
   const realtimeLabel = connectionStatus === "connected"
     ? "Cập nhật tự động đang bật"
     : connectionStatus === "reconnecting"
@@ -906,9 +1123,6 @@ export default function RecoveryPlanPage() {
 
   const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
   const planItems = useMemo(() => planPage.items, [planPage.items]);
-  // Only one recovery plan can be active at a time, so there is nothing new
-  // to request until the current one finishes (completed/cancelled/superseded).
-  const hasActivePlan = useMemo(() => planItems.some((item) => item.status === "active"), [planItems]);
 
   return (
     <div className="recovery-page">
@@ -1030,49 +1244,12 @@ export default function RecoveryPlanPage() {
                 <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
               ) : planItems.length === 0 ? (
                 <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
-              ) : planPage.totalCount === 1 ? (
-                // Only one plan can ever exist at a time in practice, and
-                // PlanDetail already renders its own name/duration/status
-                // header - a selector bar above it would just repeat the
-                // same line twice.
-                <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} />
               ) : (
-                <div className="recovery-plan-accordion">
-                  <div className="recovery-plan-tabs-head">
-                    <p className="recovery-eyebrow">Danh sách kế hoạch</p>
-                    <span className="recovery-tab-count">{planPage.totalCount}</span>
-                  </div>
-                  {planItems.map((plan) => {
-                    const isSelected = selectedPlan?.id === plan.id;
-                    return (
-                      <div className="recovery-plan-bar-wrap" key={plan.id}>
-                        <button
-                          type="button"
-                          className="recovery-plan-bar"
-                          aria-pressed={isSelected}
-                          onClick={() => loadPlanDetail(plan.id, plan)}
-                        >
-                          <span><strong>{plan.planName || "Kế hoạch phục hồi"}</strong><small>{plan.durationDays || 0} ngày</small></span>
-                          <StatusBadge map={PLAN_STATUS} value={plan.status} />
-                        </button>
-                        {isSelected && (
-                          <div className="recovery-plan-bar-panel">
-                            <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <Pagination
-                    label="Phân trang kế hoạch phục hồi"
-                    page={planPage}
-                    loading={plansLoading}
-                    onChange={(nextPage) => {
-                      setPlanPageNumber(nextPage);
-                      void loadPlans(nextPage);
-                    }}
-                  />
-                </div>
+                // PlanDetail already renders its own name/duration/status
+                // header, so a selector bar above it would just repeat the
+                // same line twice - only one plan is ever relevant at a
+                // time in practice (single active workflow rule).
+                <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} onCancel={setCancelPlan} />
               )}
             </section>
           ) : (
@@ -1087,11 +1264,15 @@ export default function RecoveryPlanPage() {
         </div>
 
         <div className="recovery-workspace-sidebar">
-          {!hasActivePlan && (
+          {!workflowBlocked && (
             <CreateRequestForm
               disabled={requestCreationDisabled}
               disabledMessage={requestDisabledMessage}
               onCreated={handleCreated}
+              onWorkflowConflict={async () => {
+                setWorkflowBlocked(true);
+                await Promise.allSettled([loadRequests(1), loadPlans(1), loadWorkflowGuard()]);
+              }}
             />
           )}
           <section className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
@@ -1110,6 +1291,15 @@ export default function RecoveryPlanPage() {
           </section>
         </div>
       </div>
+
+      {cancelPlan && (
+        <CancelPlanDialog
+          plan={cancelPlan}
+          submitting={actionBusy}
+          onClose={() => setCancelPlan(null)}
+          onSubmit={handleCancelPlan}
+        />
+      )}
     </div>
   );
 }
