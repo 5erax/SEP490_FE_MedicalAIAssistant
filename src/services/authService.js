@@ -80,6 +80,14 @@ export const authApi = {
     });
   },
 
+  updatePassword(payload) {
+    return apiRequest(ENDPOINTS.AUTH.UPDATE_PASSWORD, {
+      method: "POST",
+      body: payload,
+      auth: true,
+    });
+  },
+
   me() {
     return apiRequest(ENDPOINTS.USERS.ME, { auth: true }).then((response) => ({
       ...response,

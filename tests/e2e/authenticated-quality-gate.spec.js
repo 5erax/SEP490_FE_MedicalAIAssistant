@@ -288,7 +288,7 @@ test("profile transactions and security remain accessible at 200 percent zoom", 
   await expectNoReleaseBlockingAxeViolations(page, "#profile-panel-security");
 
   await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
-  const passwordAction = securityPanel.getByRole("button", { name: "Gửi mã đổi mật khẩu" });
+  const passwordAction = securityPanel.getByRole("button", { name: "Gửi mã xác thực qua email" });
   await passwordAction.focus();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Shift+Tab");
