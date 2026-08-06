@@ -67,4 +67,11 @@ export const recoveryPlansApi = {
       method: "POST",
     });
   },
+
+  cancel(planId, payload) {
+    return authenticatedRequest(ENDPOINTS.RECOVERY_PLANS.CANCEL(planId), {
+      method: "POST",
+      body: payload,
+    });
+  },
 };
