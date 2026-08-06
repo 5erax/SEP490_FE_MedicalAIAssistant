@@ -1,5 +1,5 @@
 import { Children, cloneElement, useEffect, useId, useRef, useState } from "react";
-import { AlertTriangle, CreditCard, FileHeart, Plus, ReceiptText, ShieldCheck, Trash2, User } from "lucide-react";
+import { AlertTriangle, CreditCard, Eye, EyeOff, FileHeart, Plus, ReceiptText, ShieldCheck, Trash2, User } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import PaymentHistoryPanel from "../components/payments/PaymentHistoryPanel";
 import { ErrorState, LoadingState } from "../components/ui";
@@ -122,6 +122,7 @@ export default function UserProfilePage() {
   const [medicalDirty, setMedicalDirty] = useState(false);
   const [isMedicalEditing, setIsMedicalEditing] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+  const [passwordVisibility, setPasswordVisibility] = useState({ currentPassword: false, newPassword: false, confirmNewPassword: false });
   const [passwordMessage, setPasswordMessage] = useState(null);
   const [savingPassword, setSavingPassword] = useState(false);
   const confirmNewPasswordRef = useRef(null);
@@ -295,6 +296,10 @@ export default function UserProfilePage() {
   function updatePasswordField(key, value) {
     setPasswordForm((current) => ({ ...current, [key]: value }));
     setPasswordMessage(null);
+  }
+
+  function togglePasswordVisibility(key) {
+    setPasswordVisibility((current) => ({ ...current, [key]: !current[key] }));
   }
 
   async function handleUpdatePassword(event) {
@@ -702,41 +707,41 @@ export default function UserProfilePage() {
             <h1>Bảo mật</h1>
             <p>Nhập mật khẩu hiện tại và mật khẩu mới để đổi mật khẩu đăng nhập.</p>
             <form className="security-password-form" onSubmit={handleUpdatePassword}>
-              <Field label="Mật khẩu hiện tại">
-                <input
-                  name="currentPassword"
-                  type="password"
-                  autoComplete="current-password"
-                  value={passwordForm.currentPassword}
-                  disabled={savingPassword}
-                  onChange={(e) => updatePasswordField("currentPassword", e.target.value)}
-                  required
-                />
-              </Field>
-              <Field label="Mật khẩu mới">
-                <input
-                  name="newPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  value={passwordForm.newPassword}
-                  disabled={savingPassword}
-                  onChange={(e) => updatePasswordField("newPassword", e.target.value)}
-                  required
-                />
-              </Field>
+              <PasswordField
+                label="Mật khẩu hiện tại"
+                name="currentPassword"
+                autoComplete="current-password"
+                value={passwordForm.currentPassword}
+                disabled={savingPassword}
+                onChange={(e) => updatePasswordField("currentPassword", e.target.value)}
+                visible={passwordVisibility.currentPassword}
+                onToggleVisible={() => togglePasswordVisibility("currentPassword")}
+                required
+              />
+              <PasswordField
+                label="Mật khẩu mới"
+                name="newPassword"
+                autoComplete="new-password"
+                value={passwordForm.newPassword}
+                disabled={savingPassword}
+                onChange={(e) => updatePasswordField("newPassword", e.target.value)}
+                visible={passwordVisibility.newPassword}
+                onToggleVisible={() => togglePasswordVisibility("newPassword")}
+                required
+              />
               <p className="field-hint">Tối thiểu 8 ký tự, nên có chữ hoa, chữ thường, số và ký tự đặc biệt.</p>
-              <Field label="Nhập lại mật khẩu mới">
-                <input
-                  ref={confirmNewPasswordRef}
-                  name="confirmNewPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  value={passwordForm.confirmNewPassword}
-                  disabled={savingPassword}
-                  onChange={(e) => updatePasswordField("confirmNewPassword", e.target.value)}
-                  required
-                />
-              </Field>
+              <PasswordField
+                label="Nhập lại mật khẩu mới"
+                name="confirmNewPassword"
+                autoComplete="new-password"
+                inputRef={confirmNewPasswordRef}
+                value={passwordForm.confirmNewPassword}
+                disabled={savingPassword}
+                onChange={(e) => updatePasswordField("confirmNewPassword", e.target.value)}
+                visible={passwordVisibility.confirmNewPassword}
+                onToggleVisible={() => togglePasswordVisibility("confirmNewPassword")}
+                required
+              />
               {passwordMessage && (
                 <p
                   className={`security-message security-message-${passwordMessage.type}`}
@@ -826,6 +831,36 @@ function Field({ label, error, wide, children }) {
       })}
       {content}
       {error && <small id={errorId}>{error}</small>}
+    </label>
+  );
+}
+
+function PasswordField({ label, name, value, onChange, autoComplete, disabled, required, inputRef, visible, onToggleVisible }) {
+  const id = useId();
+  return (
+    <label className="field" htmlFor={id}>
+      <span>{label}</span>
+      <div className="password-input-wrap">
+        <input
+          id={id}
+          ref={inputRef}
+          name={name}
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          value={value}
+          disabled={disabled}
+          required={required}
+          onChange={onChange}
+        />
+        <button
+          type="button"
+          className="password-toggle"
+          aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+          onClick={onToggleVisible}
+        >
+          {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+        </button>
+      </div>
     </label>
   );
 }
@@ -1224,7 +1259,11 @@ const styles = `
 .security-message{margin:10px 0 0;font-size:13px;font-weight:700}
 .security-message-success{color:var(--color-success,#15803d)}
 .security-message-error{color:var(--color-danger,#b42318)}
-.security-password-form{display:grid;gap:16px;max-width:420px;margin-top:16px}
+.security-password-form{display:grid;gap:16px;max-width:420px;margin:16px auto 0}
+.password-input-wrap{position:relative}
+.password-input-wrap input{padding-right:42px}
+.password-toggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--profile-muted,rgba(17,20,18,.6));cursor:pointer}
+.password-toggle:hover{background:var(--profile-subtle,#f7f8f3)}
 .field-hint{margin:-10px 0 0;color:var(--muted,rgba(17,20,18,.72));font-size:12px}
 .link-button{display:inline;border:0;background:none;padding:0;color:var(--profile-teal-dark,#087f8c);font-weight:800;text-decoration:underline;cursor:pointer}
 .profile-load-warning{border-width:1px;box-shadow:none}
