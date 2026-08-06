@@ -754,7 +754,7 @@ export default function UserProfilePage() {
                 {savingPassword ? "Đang lưu…" : "Lưu mật khẩu mới"}
               </button>
             </form>
-            <p>Quên mật khẩu hiện tại? <button type="button" className="link-button" onClick={() => go("/forgot-password")}>Gửi mã xác thực qua email</button> để đổi mật khẩu.</p>
+            <p className="security-fallback-note">Quên mật khẩu hiện tại? <button type="button" className="link-button" onClick={() => go("/forgot-password")}>Gửi mã xác thực qua email</button> để đổi mật khẩu.</p>
           </section>
         )}
 
@@ -1260,6 +1260,7 @@ const styles = `
 .security-message-success{color:var(--color-success,#15803d)}
 .security-message-error{color:var(--color-danger,#b42318)}
 .security-password-form{display:grid;gap:16px;max-width:420px;margin:16px auto 0}
+.security-fallback-note{max-width:420px;margin:12px auto 0;text-align:center}
 .password-input-wrap{position:relative}
 .password-input-wrap input{padding-right:42px}
 .password-toggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:8px;background:none;color:var(--profile-muted,rgba(17,20,18,.6));cursor:pointer}
