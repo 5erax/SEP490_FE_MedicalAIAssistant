@@ -141,8 +141,9 @@ async function prepareRecoveryPage(page, options = {}) {
       const filtered = statusFilter ? plans.filter((item) => item.status === statusFilter) : plans;
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { items: filtered, pageNumber: 1, pageSize: 10, totalCount: filtered.length, totalPages: 1 } }) });
     }
-    if (path === `/api/recovery-plans/${PLAN_ID}`) {
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: plans.find((item) => item.id === PLAN_ID) }) });
+    if (/^\/api\/recovery-plans\/[^/]+$/.test(path)) {
+      const planId = path.split("/").pop();
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: plans.find((item) => item.id === planId) }) });
     }
     if (path === `/api/recovery-plans/${PLAN_ID}/start`) {
       calls.started = true;
@@ -240,6 +241,44 @@ test("cancelling a plan with \"Lý do khác\" requires a note", async ({ page })
 
   await expect(dialog.getByText("Vui lòng mô tả lý do khi chọn \"Lý do khác\".")).toBeVisible();
   await expect(dialog).toBeVisible();
+});
+
+test("a cancelled plan is collapsed by default and can be expanded", async ({ page }) => {
+  await prepareRecoveryPage(page, {
+    requests: [request({ status: "published" })],
+    plans: [plan({
+      status: "cancelled",
+      cancelledAt: "2026-08-01T10:00:00Z",
+      cancellationReasonCode: "NO_LONGER_NEEDED",
+      cancellationReason: null,
+    })],
+  });
+  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toBeVisible();
+  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeHidden();
+  await expect(page.getByText("Khởi động nhẹ", { exact: true })).toBeHidden();
+
+  await page.getByRole("button", { name: "Mở rộng kế hoạch" }).click();
+  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeVisible();
+  await expect(page.getByText("Khởi động nhẹ", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Thu gọn kế hoạch" }).click();
+  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeHidden();
+});
+
+test("plans tab never repeats the plan name/status when there are multiple plans", async ({ page }) => {
+  await prepareRecoveryPage(page, {
+    requests: [request({ status: "published" })],
+    plans: [
+      plan(),
+      plan({ id: "33333333-3333-4333-8333-333333333333", planName: "Kế hoạch cũ", status: "cancelled", cancelledAt: "2026-07-01T10:00:00Z" }),
+    ],
+  });
+  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await expect(page.getByRole("tab", { name: /Kế hoạch của bạn/ })).toContainText("2");
+  await expect(page.getByText("Phục hồi hô hấp 14 ngày", { exact: true })).toHaveCount(1);
+  await expect(page.locator(".recovery-plan-bar")).toHaveCount(0);
 });
 
 test("timeline tab paints each phase onto its real calendar dates", async ({ page }) => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   CalendarCheck,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -463,6 +464,13 @@ function RequestDetail({ request, loading, onCancel, onProvideInformation, busy 
 }
 
 export function PlanDetail({ plan, loading, onStart, onCancel, busy }) {
+  const isCancelled = plan?.status === "cancelled";
+  const [collapsed, setCollapsed] = useState(isCancelled);
+
+  useEffect(() => {
+    queueMicrotask(() => setCollapsed(plan?.status === "cancelled"));
+  }, [plan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (loading) return <LoadingState label="Đang tải nội dung kế hoạch…" />;
   if (!plan) return null;
   const phases = [...(plan.phases ?? [])].sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder));
@@ -477,8 +485,21 @@ export function PlanDetail({ plan, loading, onStart, onCancel, busy }) {
           <h3>{plan.planName || "Kế hoạch phục hồi"}</h3>
         </div>
         <StatusBadge map={PLAN_STATUS} value={plan.status} />
+        {isCancelled && (
+          <button
+            type="button"
+            className="recovery-plan-collapse-toggle"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Mở rộng kế hoạch" : "Thu gọn kế hoạch"}
+            onClick={() => setCollapsed((current) => !current)}
+          >
+            <ChevronDown size={18} aria-hidden="true" />
+          </button>
+        )}
       </header>
 
+      {(!isCancelled || !collapsed) && (
+        <>
       <p className="recovery-plan-summary">{plan.summary || "Nội dung tổng quan sẽ được cập nhật trong kế hoạch."}</p>
       <dl className="recovery-detail-grid">
         <div><dt>Thời lượng</dt><dd>{plan.durationDays || 0} ngày</dd></div>
@@ -573,6 +594,8 @@ export function PlanDetail({ plan, loading, onStart, onCancel, busy }) {
         <footer className="recovery-detail-actions">
           <Button tone="danger" disabled={busy} onClick={() => onCancel(plan)}>Hủy kế hoạch</Button>
         </footer>
+      )}
+        </>
       )}
     </article>
   );
@@ -818,7 +841,10 @@ export default function RecoveryPlanPage() {
   const [requestsError, setRequestsError] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestDetailLoading, setRequestDetailLoading] = useState(false);
-  const [planPageNumber, setPlanPageNumber] = useState(1);
+  // Plans are always shown as a single current-plan detail view (no
+  // selector/pagination UI), so this never changes - kept as a named
+  // constant rather than inlining `1` everywhere loadPlans is called.
+  const planPageNumber = 1;
   const [planPage, setPlanPage] = useState(() => normalizePaged(null, 1));
   const [plansLoading, setPlansLoading] = useState(true);
   const [plansError, setPlansError] = useState("");
@@ -868,6 +894,23 @@ export default function RecoveryPlanPage() {
       setRequestsLoading(false);
     }
   }, [requestPageNumber, selectedRequest?.id]);
+
+  async function loadPlanDetail(planId, fallback) {
+    setSelectedPlan(fallback ?? selectedPlan);
+    setPlanDetailLoading(true);
+    try {
+      const response = await recoveryPlansApi.get(planId);
+      setSelectedPlan(response?.data ?? fallback);
+    } catch (error) {
+      if (error?.status === 404 || getApiErrorCode(error) === "NOT_FOUND") {
+        setSelectedPlan(null);
+      } else {
+        showToast({ type: "error", title: "Không tải được kế hoạch", message: "Vui lòng thử lại sau." });
+      }
+    } finally {
+      setPlanDetailLoading(false);
+    }
+  }
 
   const loadPlans = useCallback(async (pageNumber = planPageNumber, preferredId = "") => {
     setPlansLoading(true);
@@ -930,23 +973,6 @@ export default function RecoveryPlanPage() {
       }
     } finally {
       setRequestDetailLoading(false);
-    }
-  }
-
-  async function loadPlanDetail(planId, fallback) {
-    setSelectedPlan(fallback ?? selectedPlan);
-    setPlanDetailLoading(true);
-    try {
-      const response = await recoveryPlansApi.get(planId);
-      setSelectedPlan(response?.data ?? fallback);
-    } catch (error) {
-      if (error?.status === 404 || getApiErrorCode(error) === "NOT_FOUND") {
-        setSelectedPlan(null);
-      } else {
-        showToast({ type: "error", title: "Không tải được kế hoạch", message: "Vui lòng thử lại sau." });
-      }
-    } finally {
-      setPlanDetailLoading(false);
     }
   }
 
@@ -1218,49 +1244,12 @@ export default function RecoveryPlanPage() {
                 <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
               ) : planItems.length === 0 ? (
                 <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
-              ) : planPage.totalCount === 1 ? (
-                // Only one plan can ever exist at a time in practice, and
-                // PlanDetail already renders its own name/duration/status
-                // header - a selector bar above it would just repeat the
-                // same line twice.
-                <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} onCancel={setCancelPlan} />
               ) : (
-                <div className="recovery-plan-accordion">
-                  <div className="recovery-plan-tabs-head">
-                    <p className="recovery-eyebrow">Danh sách kế hoạch</p>
-                    <span className="recovery-tab-count">{planPage.totalCount}</span>
-                  </div>
-                  {planItems.map((plan) => {
-                    const isSelected = selectedPlan?.id === plan.id;
-                    return (
-                      <div className="recovery-plan-bar-wrap" key={plan.id}>
-                        <button
-                          type="button"
-                          className="recovery-plan-bar"
-                          aria-pressed={isSelected}
-                          onClick={() => loadPlanDetail(plan.id, plan)}
-                        >
-                          <span><strong>{plan.planName || "Kế hoạch phục hồi"}</strong><small>{plan.durationDays || 0} ngày</small></span>
-                          <StatusBadge map={PLAN_STATUS} value={plan.status} />
-                        </button>
-                        {isSelected && (
-                          <div className="recovery-plan-bar-panel">
-                            <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} onCancel={setCancelPlan} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <Pagination
-                    label="Phân trang kế hoạch phục hồi"
-                    page={planPage}
-                    loading={plansLoading}
-                    onChange={(nextPage) => {
-                      setPlanPageNumber(nextPage);
-                      void loadPlans(nextPage);
-                    }}
-                  />
-                </div>
+                // PlanDetail already renders its own name/duration/status
+                // header, so a selector bar above it would just repeat the
+                // same line twice - only one plan is ever relevant at a
+                // time in practice (single active workflow rule).
+                <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} onCancel={setCancelPlan} />
               )}
             </section>
           ) : (
