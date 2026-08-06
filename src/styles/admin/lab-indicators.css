@@ -1,3 +1,11 @@
+/* =========================================================
+   Admin > Chỉ số xét nghiệm
+   File thay thế hoàn toàn cho:
+   src/styles/admin/lab-indicators.css
+   ========================================================= */
+
+/* ---------- Page layout ---------- */
+
 .admin-operator .lab-indicator-panel {
   display: grid;
   gap: 20px;
@@ -24,7 +32,7 @@
   font-weight: 860;
   letter-spacing: -0.035em;
   line-height: 1.08;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .admin-operator .lab-page-heading p:not(.eyebrow),
@@ -51,6 +59,8 @@
   gap: 7px;
   min-height: 36px;
 }
+
+/* ---------- Filter ---------- */
 
 .admin-operator .lab-filter-card {
   display: grid;
@@ -106,6 +116,7 @@
 .admin-operator .lab-filter-form input {
   width: 100%;
   min-height: 42px;
+  box-sizing: border-box;
   border: 1px solid rgba(16, 20, 17, 0.18);
   border-radius: 12px;
   background: #fff;
@@ -136,10 +147,7 @@
   font-weight: 900;
 }
 
-.admin-operator .lab-indicator-table .ui-table th,
-.admin-operator .lab-child-table .ui-table th {
-  white-space: nowrap;
-}
+/* ---------- Main indicator table ---------- */
 
 .admin-operator .lab-indicator-table {
   border: 1px solid rgba(16, 20, 17, 0.12);
@@ -149,9 +157,15 @@
 }
 
 .admin-operator .lab-indicator-table .ui-table {
-  min-width: 840px;
+  min-width: 980px;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.admin-operator .lab-indicator-table .ui-table th,
+.admin-operator .lab-child-table .ui-table th {
+  white-space: nowrap;
 }
 
 .admin-operator .lab-indicator-table .ui-table thead th {
@@ -181,17 +195,36 @@
   vertical-align: middle;
 }
 
-.admin-operator .lab-indicator-table .ui-table tbody th {
-  min-width: 220px;
-  max-width: 320px;
-}
-
 .admin-operator .lab-indicator-table .ui-table tbody tr:last-child > * {
   border-bottom: 0;
 }
 
 .admin-operator .lab-indicator-table .ui-table tbody tr:hover > * {
   background: #f7fbf9;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:nth-child(1) {
+  width: 24%;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:nth-child(2) {
+  width: auto;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:nth-child(3) {
+  width: 130px;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:nth-child(4) {
+  width: 140px;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:last-child,
+.admin-operator .lab-indicator-table .ui-table td:last-child {
+  width: 294px;
+  min-width: 294px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .admin-operator .lab-indicator-link {
@@ -231,21 +264,55 @@
   text-decoration-color: currentColor;
 }
 
+.admin-operator .lab-indicator-description {
+  display: -webkit-box;
+  overflow: hidden;
+  max-width: 420px;
+  color: rgba(16, 20, 17, 0.7);
+  font-weight: 650;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.admin-operator .lab-indicator-unit {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  background: #f1f7f5;
+  color: #0c5f5e;
+  padding: 5px 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+/* ---------- Actions in all tables ---------- */
+
 .admin-operator .lab-row-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  min-width: max-content;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 88px;
+  justify-content: end;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .admin-operator .lab-row-actions .btn {
-  min-height: 38px;
+  width: 88px;
+  min-width: 88px;
+  min-height: 40px;
+  margin: 0;
   border: 1px solid rgba(16, 20, 17, 0.14);
   border-radius: 10px;
   background: #fff;
   color: #26322d;
-  padding: 0 11px;
+  padding: 0 10px;
   box-shadow: none;
+  white-space: nowrap;
 }
 
 .admin-operator .lab-row-actions .btn:hover {
@@ -264,9 +331,19 @@
   background: #fce8e5;
 }
 
+.admin-operator .lab-child-table .ui-table th:last-child,
+.admin-operator .lab-child-table .ui-table td:last-child {
+  width: 198px;
+  min-width: 198px;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .admin-operator .lab-pagination {
   margin-top: 0;
 }
+
+/* ---------- Detail page ---------- */
 
 .admin-operator .lab-back-link {
   display: inline-flex;
@@ -289,7 +366,12 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   border: 1px solid rgba(16, 20, 17, 0.1);
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(232, 246, 247, 0.9), rgba(247, 250, 244, 0.92));
+  background:
+    linear-gradient(
+      135deg,
+      rgba(232, 246, 247, 0.9),
+      rgba(247, 250, 244, 0.92)
+    );
   padding: clamp(18px, 2.5vw, 26px);
 }
 
@@ -390,6 +472,7 @@
   place-items: center;
   width: 38px;
   height: 38px;
+  flex: 0 0 auto;
   border-radius: 13px;
   background: #eef9e6;
   color: #0c5f5e;
@@ -403,7 +486,11 @@
 .admin-operator .lab-advice-copy {
   display: grid;
   gap: 4px;
-  max-width: 360px;
+  max-width: 540px;
+}
+
+.admin-operator .lab-advice-copy strong {
+  overflow-wrap: anywhere;
 }
 
 .admin-operator .lab-advice-copy small {
@@ -414,6 +501,8 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+/* ---------- Modal shell ---------- */
 
 .lab-dialog {
   display: grid;
@@ -438,7 +527,6 @@
 
 .lab-dialog-header > div {
   min-width: 0;
-  flex: 1;
 }
 
 .lab-dialog-header p,
@@ -469,36 +557,60 @@
 .lab-dialog-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
   width: 44px;
   height: 44px;
+  flex: 0 0 auto;
   border-radius: 15px;
   background: #e8f6f7;
   color: #0c5f5e;
 }
 
-.lab-dialog-form {
-  align-content: start;
-  min-height: 0;
-  overflow-y: auto;
-  padding: clamp(18px, 2.6vw, 26px);
-  overscroll-behavior: contain;
+.lab-dialog .doctor-modal-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
 }
 
-.lab-indicator-dialog-form {
+.lab-dialog .doctor-modal-close svg {
+  display: block;
+  margin: 0;
+}
+
+/* ---------- Modal form: fixed header/body/footer ---------- */
+
+.lab-dialog .lab-dialog-form {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
   gap: 0;
-  background: #f7faf8;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
   padding: 0;
 }
 
-.lab-indicator-dialog-form .lab-form-error-summary {
-  margin: 20px 20px 0;
+.lab-dialog .lab-dialog-body {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(18px, 2.6vw, 26px);
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.lab-dialog .lab-indicator-dialog-body {
+  background: #f7faf8;
+  padding: 20px;
 }
 
 .lab-form-sections {
   display: grid;
   gap: 14px;
-  padding: 20px;
+  padding: 0;
 }
 
 .lab-form-section {
@@ -507,7 +619,7 @@
   margin: 0;
   border: 0;
   border-radius: 18px;
-  background: #ffffff;
+  background: #fff;
   padding: 18px;
   box-shadow:
     inset 0 0 0 1px rgba(16, 20, 17, 0.11),
@@ -551,9 +663,10 @@
   row-gap: 18px;
 }
 
-.lab-form-grid > .ui-field {
+.lab-form-grid > .ui-field,
+.lab-form-grid > .lab-checkbox {
   min-width: 0;
-  align-content: start;
+  align-self: start;
 }
 
 .lab-dialog .ui-field input,
@@ -561,9 +674,29 @@
   min-height: 48px;
 }
 
-.lab-dialog .doctor-modal-close {
-  width: 44px;
-  height: 44px;
+.lab-dialog .ui-field input,
+.lab-dialog .ui-field select,
+.lab-dialog .ui-field textarea {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lab-dialog .ui-field textarea {
+  width: 100%;
+}
+
+/* Field.jsx renders the validation message as a child element. */
+.lab-dialog .ui-field .ui-field-error {
+  color: var(--color-danger, #b42318);
+  font-weight: 800;
+}
+
+.lab-dialog .ui-field-invalid input,
+.lab-dialog .ui-field-invalid select,
+.lab-dialog .ui-field-invalid textarea {
+  border-color: var(--color-danger, #b42318);
+  background: var(--color-danger-bg, #fff0ee);
 }
 
 .lab-form-span-2 {
@@ -575,6 +708,7 @@
   align-items: flex-start;
   gap: 10px;
   min-height: 48px;
+  box-sizing: border-box;
   border: 1px solid rgba(16, 20, 17, 0.12);
   border-radius: 14px;
   background: #fbfcf7;
@@ -607,55 +741,56 @@
   line-height: 1.45;
 }
 
-.lab-form-error-summary {
-  margin-bottom: 16px;
-  border: 1px solid #b93b35;
-  border-radius: 14px;
-  background: #fff0ee;
-  color: #79231f;
-  padding: 13px 15px;
-}
-
-.lab-form-error-summary:focus {
-  outline: 3px solid rgba(185, 59, 53, 0.32);
-  outline-offset: 3px;
-}
-
-.lab-form-error-summary ul {
-  display: grid;
-  gap: 4px;
-  margin: 8px 0 0;
-  padding-left: 20px;
-}
-
-.lab-form-error-summary a {
-  color: inherit;
-  font-size: 12px;
+/* Only unmapped API failures are displayed here.
+   Field validation stays directly under each field. */
+.lab-dialog .lab-form-submit-error {
+  margin: 0 0 16px;
+  border: 1px solid rgba(180, 35, 24, 0.34);
+  border-radius: 12px;
+  background: var(--color-danger-bg, #fff0ee);
+  color: var(--color-danger, #b42318);
+  padding: 11px 13px;
+  font-size: 13px;
   font-weight: 800;
+  line-height: 1.5;
 }
 
-.lab-dialog-actions {
-  position: sticky;
-  bottom: -26px;
-  z-index: 2;
-  margin: 22px -26px -26px;
-  border-top: 1px solid rgba(16, 20, 17, 0.1);
-  background: rgba(255, 255, 255, 0.96);
-  padding: 14px 26px;
+.lab-dialog .lab-form-submit-error:focus {
+  outline: 3px solid rgba(180, 35, 24, 0.24);
+  outline-offset: 2px;
+}
+
+.lab-dialog .lab-advice-form-grid textarea {
+  min-height: 126px;
+}
+
+.lab-dialog .lab-advice-form-grid .lab-form-span-2 textarea {
+  min-height: 112px;
+}
+
+.lab-dialog .doctor-modal-actions.lab-dialog-actions {
+  position: static;
+  inset: auto;
+  z-index: 4;
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border-top: 1px solid rgba(16, 20, 17, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  padding: 14px clamp(18px, 2.6vw, 26px);
+  box-shadow: 0 -10px 28px rgba(16, 20, 17, 0.055);
   backdrop-filter: blur(12px);
 }
 
-.lab-indicator-dialog-form .lab-dialog-actions {
-  bottom: 0;
-  margin: 0;
-  border-top-color: rgba(16, 20, 17, 0.12);
-  padding: 14px 20px;
+.lab-dialog .lab-dialog-actions .ui-button {
+  min-height: 44px;
 }
 
 .lab-dialog-actions .ui-button[data-tone="primary"] {
   border-color: #0c5f5e;
   background: #087f8c;
-  color: #ffffff;
+  color: #fff;
   box-shadow: none;
 }
 
@@ -665,9 +800,11 @@
 
 .lab-dialog-actions .ui-button[data-tone="secondary"] {
   border-color: rgba(16, 20, 17, 0.18);
-  background: #ffffff;
+  background: #fff;
   box-shadow: none;
 }
+
+/* ---------- Responsive ---------- */
 
 @media (max-width: 1100px) {
   .admin-operator .lab-filter-card {
@@ -728,6 +865,19 @@
   .lab-form-span-2 {
     grid-column: auto;
   }
+
+  .lab-dialog .lab-dialog-body,
+  .lab-dialog .lab-indicator-dialog-body {
+    padding: 16px;
+  }
+
+  .lab-dialog .doctor-modal-actions.lab-dialog-actions {
+    padding: 12px 16px;
+  }
+
+  .lab-dialog .lab-dialog-actions .ui-button {
+    flex: 1 1 150px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -751,34 +901,39 @@
     grid-template-columns: 1fr;
   }
 
+  .doctor-modal-backdrop:has(.lab-dialog) {
+    padding: 8px;
+  }
+
   .lab-dialog {
     width: calc(100vw - 16px);
     max-height: calc(100svh - 16px);
   }
 
-  .lab-dialog-actions {
-    bottom: -18px;
-    margin: 20px -18px -18px;
-    padding: 12px 18px;
+  .lab-dialog .lab-dialog-header {
+    gap: 10px;
+    padding: 18px 16px 16px;
   }
 
-  .lab-dialog-header {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 12px;
-  }
-
-  .lab-dialog-icon {
+  .lab-dialog .lab-dialog-icon,
+  .lab-dialog .doctor-modal-close {
     width: 40px;
     height: 40px;
   }
 
-  .lab-form-sections {
+  .lab-dialog .lab-dialog-body,
+  .lab-dialog .lab-indicator-dialog-body {
     padding: 14px;
   }
 
-  .lab-indicator-dialog-form .lab-dialog-actions {
-    margin: 0;
+  .lab-dialog .doctor-modal-actions.lab-dialog-actions {
+    gap: 8px;
     padding: 12px 14px;
+  }
+
+  .lab-dialog .lab-dialog-actions .ui-button {
+    flex-basis: 100%;
+    width: 100%;
   }
 }
 
@@ -793,9 +948,10 @@
 @media (forced-colors: active) {
   .admin-operator .lab-detail-symbol,
   .admin-operator .lab-indicator-link span,
+  .admin-operator .lab-indicator-unit,
   .lab-dialog-icon,
   .lab-checkbox,
-  .lab-form-error-summary {
+  .lab-dialog .lab-form-submit-error {
     border: 1px solid CanvasText;
   }
 }
