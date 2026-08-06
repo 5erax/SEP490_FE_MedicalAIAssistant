@@ -148,6 +148,69 @@ test("security tab blocks submit when the new password confirmation doesn't matc
   expect(updateCalled).toBe(false);
 });
 
+test("security tab: email code opens a 6-digit OTP modal with a countdown", async ({ page }) => {
+  let forgotPasswordCalls = 0;
+  await openPatientProfile(page);
+  await page.route("**/api/authentication/forgot-password", (route) => {
+    forgotPasswordCalls += 1;
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: null }) });
+  });
+
+  await page.getByRole("tab", { name: "Bảo mật" }).click();
+  await page.getByRole("button", { name: "Gửi mã xác thực qua email" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Xác thực qua email" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("patient@example.com")).toBeVisible();
+  await expect(dialog.locator(".otp-box")).toHaveCount(6);
+  await expect(dialog.getByText("Mã hết hạn sau", { exact: false })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Gửi lại mã" })).toBeDisabled();
+  expect(forgotPasswordCalls).toBe(1);
+});
+
+test("security tab: confirming the OTP switches to a new-password-only form", async ({ page }) => {
+  let changePasswordBody = null;
+  await openPatientProfile(page);
+  await page.route("**/api/authentication/forgot-password", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: null }),
+  }));
+  await page.route("**/api/authentication/change-password", (route) => {
+    changePasswordBody = route.request().postDataJSON();
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, message: "Đổi mật khẩu thành công.", data: null }),
+    });
+  });
+
+  await page.getByRole("tab", { name: "Bảo mật" }).click();
+  await page.getByRole("button", { name: "Gửi mã xác thực qua email" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Xác thực qua email" });
+  const boxes = dialog.locator(".otp-box");
+  const digits = "123456".split("");
+  for (let index = 0; index < digits.length; index += 1) {
+    await boxes.nth(index).fill(digits[index]);
+  }
+  await dialog.getByRole("button", { name: "Xác nhận" }).click();
+  await expect(dialog).toBeHidden();
+
+  await expect(page.getByLabel("Mật khẩu hiện tại")).toHaveCount(0);
+  const newPasswordField = page.getByLabel(/^Mật khẩu mới/);
+  await expect(newPasswordField).toBeVisible();
+  await newPasswordField.fill("NewPass456!");
+  await page.getByLabel("Nhập lại mật khẩu mới").fill("NewPass456!");
+  await page.getByRole("button", { name: "Lưu mật khẩu mới" }).click();
+
+  await expect(page.locator(".security-message-success")).toBeVisible();
+  expect(changePasswordBody).toEqual({
+    email: "patient@example.com",
+    otp: "123456",
+    newPassword: "NewPass456!",
+    confirmNewPassword: "NewPass456!",
+  });
+});
+
 test("patient profile has no serious automated accessibility violations", async ({ page }) => {
   await openPatientProfile(page);
 
