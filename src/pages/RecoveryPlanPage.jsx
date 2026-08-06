@@ -556,11 +556,20 @@ function getPhaseTimeline(plan) {
     }));
 }
 
-// Same teal used across the page, just at increasing opacity per phase so
-// later phases read as visibly "deeper" than earlier ones.
+// Distinct on-brand hues (reusing the app's existing semantic colors) so
+// adjacent phases stay visually distinguishable instead of blending into
+// one another the way same-hue opacity steps did. Cycles if a plan ever
+// has more phases than colors.
+const PHASE_COLORS = [
+  "#087f8c", // teal (--color-info)
+  "#b45309", // amber (--color-warning)
+  "#15803d", // green (--color-success)
+  "#b42318", // red (--color-danger)
+  "#3f641f", // dark green (--color-primary-strong)
+];
+
 function getPhaseColor(index) {
-  const opacity = Math.min(0.82, 0.26 + index * 0.16);
-  return `rgba(8, 127, 140, ${opacity})`;
+  return PHASE_COLORS[index % PHASE_COLORS.length];
 }
 
 function RecoveryTimelineCalendar({ plan, loading }) {
@@ -641,7 +650,7 @@ function RecoveryTimelineCalendar({ plan, loading }) {
                     role="gridcell"
                     key={toDateKey(date)}
                     className={`recovery-timeline-day ${inMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""}`.trim()}
-                    style={entry ? { background: getPhaseColor(entry.index), color: entry.index >= 2 ? "#fff" : "var(--color-ink)" } : undefined}
+                    style={entry ? { background: getPhaseColor(entry.index), color: "#fff" } : undefined}
                     title={entry ? `${entry.phase.phaseName || `Giai đoạn ${entry.index + 1}`} (Giai đoạn ${entry.index + 1})` : undefined}
                   >
                     {date.getDate()}
