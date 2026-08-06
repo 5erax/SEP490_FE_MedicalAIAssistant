@@ -135,7 +135,7 @@ function ApiMessage({ message }) {
 function RowActions({ label, onView, onEdit, onDelete }) {
   return (
     <div
-      className="record-actions lab-row-actions"
+      className={`record-actions lab-row-actions ${onView ? "lab-row-actions--three" : "lab-row-actions--two"}`}
       aria-label={`Thao tác với ${label}`}
     >
       {onView && (
@@ -386,8 +386,13 @@ function IndicatorListView() {
       key: "description",
       header: "Mô tả",
       render: (indicator) => (
-        <span className="lab-indicator-description">
-          {indicator.description || "Chưa có mô tả"}
+        <span
+          className={`lab-indicator-description ${
+            indicator.description ? "" : "is-empty"
+          }`}
+          aria-label={indicator.description ? undefined : "Chưa có mô tả"}
+        >
+          {indicator.description || "—"}
         </span>
       ),
     },
@@ -395,8 +400,13 @@ function IndicatorListView() {
       key: "unit",
       header: "Đơn vị",
       render: (indicator) => (
-        <span className="lab-indicator-unit">
-          {indicator.unit || "Chưa cấu hình"}
+        <span
+          className={`lab-indicator-unit ${
+            indicator.unit ? "" : "is-empty"
+          }`}
+          aria-label={indicator.unit ? undefined : "Chưa cấu hình đơn vị"}
+        >
+          {indicator.unit || "—"}
         </span>
       ),
     },
@@ -499,7 +509,7 @@ function IndicatorListView() {
         </div>
 
         <form className="lab-filter-form" onSubmit={applySearch}>
-          <label htmlFor="lab-indicator-search">Từ khóa</label>
+          <label className="sr-only" htmlFor="lab-indicator-search">Từ khóa tìm kiếm</label>
           <input
             id="lab-indicator-search"
             type="search"
