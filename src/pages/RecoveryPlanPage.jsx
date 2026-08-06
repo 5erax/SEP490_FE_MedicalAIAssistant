@@ -518,6 +518,158 @@ export function PlanDetail({ plan, loading, onStart, busy }) {
   );
 }
 
+const WEEKDAY_LABELS = ["Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy", "Chủ nhật"];
+
+function parseDateOnly(value) {
+  if (!value) return null;
+  const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function addDays(date, amount) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + amount);
+  return result;
+}
+
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// Phases store startDay/endDay as 1-based offsets from the plan's start
+// date, not absolute dates - this turns each phase into a real [from, to]
+// calendar range so it can be painted onto a month grid.
+function getPhaseTimeline(plan) {
+  const start = parseDateOnly(plan?.startDate);
+  if (!start) return [];
+
+  return [...(plan.phases ?? [])]
+    .sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder))
+    .map((phase, index) => ({
+      phase,
+      index,
+      from: addDays(start, Math.max(0, Number(phase.startDay) - 1)),
+      to: addDays(start, Math.max(0, Number(phase.endDay) - 1)),
+    }));
+}
+
+// Same teal used across the page, just at increasing opacity per phase so
+// later phases read as visibly "deeper" than earlier ones.
+function getPhaseColor(index) {
+  const opacity = Math.min(0.82, 0.26 + index * 0.16);
+  return `rgba(8, 127, 140, ${opacity})`;
+}
+
+function RecoveryTimelineCalendar({ plan, loading }) {
+  const timeline = useMemo(() => getPhaseTimeline(plan), [plan]);
+  const [monthCursor, setMonthCursor] = useState(() => {
+    const anchor = timeline[0]?.from ?? new Date();
+    return new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  });
+
+  useEffect(() => {
+    const anchor = getPhaseTimeline(plan)[0]?.from ?? new Date();
+    queueMicrotask(() => setMonthCursor(new Date(anchor.getFullYear(), anchor.getMonth(), 1)));
+  }, [plan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const weeks = useMemo(() => {
+    const year = monthCursor.getFullYear();
+    const month = monthCursor.getMonth();
+    const firstOfMonth = new Date(year, month, 1);
+    const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // Monday = 0
+    const gridStart = addDays(firstOfMonth, -firstWeekday);
+    const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+    const result = [];
+    for (let i = 0; i < days.length; i += 7) result.push(days.slice(i, i + 7));
+    return result;
+  }, [monthCursor]);
+
+  if (loading) return <LoadingState label="Đang tải lộ trình…" />;
+  if (!plan) return null;
+
+  const today = new Date();
+  const monthLabel = `Tháng ${monthCursor.getMonth() + 1} - ${monthCursor.getFullYear()}`;
+
+  function findPhase(date) {
+    const key = toDateKey(date);
+    return timeline.find((entry) => key >= toDateKey(entry.from) && key <= toDateKey(entry.to)) ?? null;
+  }
+
+  return (
+    <div className="recovery-timeline">
+      <div className="recovery-timeline-intro">
+        <p className="recovery-eyebrow">Lộ trình</p>
+        <h4>{plan.planName || "Kế hoạch phục hồi"}</h4>
+        <p>Mỗi màu tương ứng với một giai đoạn trong kế hoạch của bạn.</p>
+      </div>
+
+      <div className="recovery-timeline-calendar">
+        <div className="recovery-timeline-header">
+          <button
+            type="button"
+            onClick={() => setMonthCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
+            aria-label="Tháng trước"
+          >
+            <ChevronLeft size={18} aria-hidden="true" />
+          </button>
+          <strong>{monthLabel}</strong>
+          <button
+            type="button"
+            onClick={() => setMonthCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
+            aria-label="Tháng sau"
+          >
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="recovery-timeline-weekdays" aria-hidden="true">
+          {WEEKDAY_LABELS.map((label) => <span key={label}>{label}</span>)}
+        </div>
+
+        <div className="recovery-timeline-grid" role="grid" aria-label={monthLabel}>
+          {weeks.map((week) => (
+            <div className="recovery-timeline-week" role="row" key={toDateKey(week[0])}>
+              {week.map((date) => {
+                const entry = findPhase(date);
+                const inMonth = date.getMonth() === monthCursor.getMonth();
+                const isToday = toDateKey(date) === toDateKey(today);
+                return (
+                  <div
+                    role="gridcell"
+                    key={toDateKey(date)}
+                    className={`recovery-timeline-day ${inMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""}`.trim()}
+                    style={entry ? { background: getPhaseColor(entry.index), color: entry.index >= 2 ? "#fff" : "var(--color-ink)" } : undefined}
+                    title={entry ? `${entry.phase.phaseName || `Giai đoạn ${entry.index + 1}`} (Giai đoạn ${entry.index + 1})` : undefined}
+                  >
+                    {date.getDate()}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {timeline.length > 0 && (
+        <div className="recovery-timeline-legend">
+          {timeline.map((entry) => (
+            <div className="recovery-timeline-legend-item" key={entry.phase.id}>
+              <span className="recovery-timeline-swatch" style={{ background: getPhaseColor(entry.index) }} aria-hidden="true" />
+              <div>
+                <strong>Giai đoạn {entry.index + 1}{entry.phase.phaseName ? `: ${entry.phase.phaseName}` : ""}</strong>
+                <small>{formatDate(entry.from)} – {formatDate(entry.to)}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RecoveryPlanPage() {
   const { confirmAction, showToast } = useFeedback();
   const [quota, setQuota] = useState(null);
@@ -791,16 +943,25 @@ export default function RecoveryPlanPage() {
                 Kế hoạch của bạn
                 {planPage.totalCount > 0 && <span className="recovery-tab-count">{planPage.totalCount}</span>}
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "timeline"}
+                className={activeTab === "timeline" ? "is-active" : ""}
+                onClick={() => setActiveTab("timeline")}
+              >
+                Lộ trình của bạn
+              </button>
             </div>
             {activeTab === "requests" ? (
               <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
                 <RefreshCw size={16} aria-hidden="true" /> Tải lại
               </Button>
-            ) : (
+            ) : activeTab === "plans" ? (
               <Button tone="secondary" size="sm" onClick={() => loadPlans(planPageNumber, selectedPlan?.id)} disabled={plansLoading}>
                 <RefreshCw size={16} aria-hidden="true" /> Tải lại
               </Button>
-            )}
+            ) : null}
           </div>
 
           {activeTab === "requests" ? (
@@ -847,7 +1008,7 @@ export default function RecoveryPlanPage() {
                 </div>
               )}
             </section>
-          ) : (
+          ) : activeTab === "plans" ? (
             <section className="recovery-workspace-panel" role="tabpanel" aria-label="Kế hoạch của bạn">
               {plansLoading && planItems.length === 0 ? (
                 <LoadingState label="Đang tải kế hoạch…" />
@@ -892,6 +1053,14 @@ export default function RecoveryPlanPage() {
                     }}
                   />
                 </div>
+              )}
+            </section>
+          ) : (
+            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Lộ trình của bạn">
+              {planItems.length === 0 ? (
+                <EmptyState icon={<CalendarCheck size={26} aria-hidden="true" />} title="Chưa có lộ trình để hiển thị" description="Lộ trình sẽ hiện ra dưới dạng lịch khi bạn có kế hoạch phục hồi." />
+              ) : (
+                <RecoveryTimelineCalendar plan={selectedPlan} loading={planDetailLoading} />
               )}
             </section>
           )}
