@@ -969,7 +969,9 @@
   .lab-dialog .lab-form-submit-error {
     border: 1px solid CanvasText;
   }
-  /* =========================================================
+  
+}
+/* =========================================================
    FINAL UI POLISH — ADMIN LAB INDICATORS
    Dán toàn bộ block này vào cuối lab-indicators.css
    ========================================================= */
@@ -1239,5 +1241,4 @@
   .admin-operator .lab-pagination button:disabled {
     color: GrayText;
   }
-}
 }
