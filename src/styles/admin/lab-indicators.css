@@ -28,7 +28,7 @@
 .admin-operator .lab-detail-hero h2 {
   margin: 4px 0 0;
   color: #101411;
-  font-size: clamp(30px, 3.1vw, 44px);
+  font-size: clamp(30px, 2.4vw, 38px);
   font-weight: 860;
   letter-spacing: -0.035em;
   line-height: 1.08;
@@ -70,7 +70,7 @@
   border: 1px solid rgba(16, 20, 17, 0.1);
   border-radius: 18px;
   background: rgba(247, 250, 244, 0.86);
-  padding: 18px;
+  padding: 14px 16px;
 }
 
 .admin-operator .lab-filter-card > div {
@@ -102,11 +102,11 @@
 .admin-operator .lab-filter-form {
   display: grid;
   grid-template-columns: minmax(190px, 1fr) auto auto;
-  align-items: end;
+  align-items: center;
   gap: 9px;
 }
 
-.admin-operator .lab-filter-form label {
+.admin-operator .lab-filter-form label:not(.sr-only) {
   grid-column: 1 / -1;
   color: rgba(16, 20, 17, 0.66);
   font-size: 12px;
@@ -189,7 +189,8 @@
   border-bottom: 1px solid rgba(16, 20, 17, 0.08);
   background: #fff;
   color: #26322d;
-  padding: 16px;
+  height: 70px;
+  padding: 12px 14px;
   font-size: 13px;
   font-weight: 700;
   vertical-align: middle;
@@ -204,7 +205,7 @@
 }
 
 .admin-operator .lab-indicator-table .ui-table th:nth-child(1) {
-  width: 24%;
+  width: 220px;
 }
 
 .admin-operator .lab-indicator-table .ui-table th:nth-child(2) {
@@ -212,17 +213,17 @@
 }
 
 .admin-operator .lab-indicator-table .ui-table th:nth-child(3) {
-  width: 130px;
+  width: 110px;
 }
 
 .admin-operator .lab-indicator-table .ui-table th:nth-child(4) {
-  width: 140px;
+  width: 118px;
 }
 
 .admin-operator .lab-indicator-table .ui-table th:last-child,
 .admin-operator .lab-indicator-table .ui-table td:last-child {
-  width: 294px;
-  min-width: 294px;
+  width: 224px;
+  min-width: 224px;
   text-align: right;
   white-space: nowrap;
 }
@@ -267,51 +268,65 @@
 .admin-operator .lab-indicator-description {
   display: -webkit-box;
   overflow: hidden;
-  max-width: 420px;
+  max-width: 100%;
   color: rgba(16, 20, 17, 0.7);
   font-weight: 650;
-  line-height: 1.55;
+  line-height: 1.5;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
+.admin-operator .lab-indicator-description.is-empty,
+.admin-operator .lab-indicator-unit.is-empty {
+  color: rgba(16, 20, 17, 0.36);
+  font-weight: 650;
+}
+
 .admin-operator .lab-indicator-unit {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  border-radius: 999px;
-  background: #f1f7f5;
-  color: #0c5f5e;
-  padding: 5px 10px;
-  font-weight: 850;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: rgba(16, 20, 17, 0.72);
+  font-weight: 780;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 /* ---------- Actions in all tables ---------- */
 
-.admin-operator .lab-row-actions {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 88px;
-  justify-content: end;
+.admin-operator .lab-indicator-table .lab-row-actions,
+.admin-operator .lab-child-table .lab-row-actions {
+  display: flex !important;
+  flex-flow: row nowrap !important;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 6px;
   width: 100%;
-  min-width: 0;
+  white-space: nowrap;
+}
+
+.admin-operator .lab-row-actions--three {
+  min-width: 210px;
+}
+
+.admin-operator .lab-row-actions--two {
+  min-width: 138px;
 }
 
 .admin-operator .lab-row-actions .btn {
-  width: 88px;
-  min-width: 88px;
-  min-height: 40px;
+  flex: 0 0 66px !important;
+  width: 66px;
+  min-width: 66px;
+  min-height: 36px;
   margin: 0;
   border: 1px solid rgba(16, 20, 17, 0.14);
   border-radius: 10px;
   background: #fff;
   color: #26322d;
-  padding: 0 10px;
+  padding: 0 6px;
   box-shadow: none;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -333,8 +348,8 @@
 
 .admin-operator .lab-child-table .ui-table th:last-child,
 .admin-operator .lab-child-table .ui-table td:last-child {
-  width: 198px;
-  min-width: 198px;
+  width: 152px;
+  min-width: 152px;
   text-align: right;
   white-space: nowrap;
 }
