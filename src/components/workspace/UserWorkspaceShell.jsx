@@ -428,7 +428,7 @@ export default function UserWorkspaceShell({ children }) {
             <button
               type="button"
               aria-label="Nâng cấp · Xem gói MediMate+"
-              onClick={() => goTo("/pricing")}
+              onClick={() => goTo(withReturnTo("/pricing?view=upgrade", path))}
             >
               Nâng cấp
             </button>
