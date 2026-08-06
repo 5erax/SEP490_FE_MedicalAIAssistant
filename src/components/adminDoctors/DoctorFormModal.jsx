@@ -5,55 +5,6 @@ import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUt
 import { Dialog } from "../ui";
 
 const DOCTOR_FORM_VALIDATION_STYLES = `
-  .doctor-form-modal .doctor-form-error-summary {
-    position: relative;
-    z-index: 1;
-    box-sizing: border-box;
-    width: 100%;
-    flex: 0 0 auto;
-    margin: 0;
-    border: 1px solid rgba(185, 48, 54, 0.28);
-    border-left: 4px solid #a3262d;
-    border-radius: 14px;
-    background: #fff7f7;
-    color: #7e1f25;
-    padding: 14px 16px;
-    box-shadow: 0 10px 28px rgba(126, 31, 37, 0.08);
-    scroll-margin-top: 20px;
-  }
-
-  .doctor-form-modal .doctor-form-error-summary:focus {
-    outline: none;
-  }
-
-  .doctor-form-modal .doctor-form-error-summary:focus-visible {
-    outline: 3px solid var(--color-info);
-    outline-offset: 3px;
-  }
-
-  .doctor-form-modal .doctor-form-error-summary strong {
-    display: block;
-    margin: 0;
-    font-size: 14px;
-    font-weight: 900;
-    line-height: 1.4;
-  }
-
-  .doctor-form-modal .doctor-form-error-summary ul {
-    display: grid;
-    gap: 4px;
-    margin: 7px 0 0;
-    padding-left: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.55;
-  }
-
-  .doctor-form-modal .doctor-form-error-summary li {
-    margin: 0;
-    padding: 0;
-  }
-
   .doctor-form-modal .clean-field.doctor-field-error input,
   .doctor-form-modal .clean-field.doctor-field-error select,
   .doctor-form-modal .clean-field.doctor-field-error textarea {
@@ -66,18 +17,7 @@ const DOCTOR_FORM_VALIDATION_STYLES = `
     color: var(--color-danger, #a3262d);
   }
 
-  @media (max-width: 760px) {
-    .doctor-form-modal .doctor-form-error-summary {
-      border-radius: 12px;
-      padding: 12px 14px;
-    }
-  }
-
   @media (forced-colors: active) {
-    .doctor-form-modal .doctor-form-error-summary {
-      border: 1px solid CanvasText;
-    }
-
     .doctor-form-modal .clean-field.doctor-field-error input,
     .doctor-form-modal .clean-field.doctor-field-error select,
     .doctor-form-modal .clean-field.doctor-field-error textarea {
@@ -283,29 +223,16 @@ export default function DoctorFormModal({
 }) {
   const [form, setForm] = useState(() => toFormValue(doctor));
   const [errors, setErrors] = useState({});
-  const [submitError, setSubmitError] = useState("");
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadMessage, setImageUploadMessage] = useState(null);
   const [selectedImageName, setSelectedImageName] = useState("");
 
   const formRef = useRef(null);
-  const errorSummaryRef = useRef(null);
 
   const title = mode === "edit" ? "Cập nhật bác sĩ" : "Thêm bác sĩ mới";
   const locked = saving || imageUploading;
   const currentImageUrl = getSafeImageUrl(form.imageUrl.trim());
 
-  const summaryMessages = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          [...Object.values(errors).filter(Boolean), submitError].filter(Boolean),
-        ),
-      ),
-    [errors, submitError],
-  );
-
-  const hasErrors = summaryMessages.length > 0;
 
   const options = useMemo(() => {
     const current = doctor?.facilityDepartmentId
@@ -330,7 +257,6 @@ export default function DoctorFormModal({
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: "" }));
-    setSubmitError("");
 
     if (key === "imageUrl") {
       setImageUploadMessage(null);
@@ -374,7 +300,6 @@ export default function DoctorFormModal({
     const nextErrors = validate(form, validFacilityDepartmentIds);
 
     setErrors(nextErrors);
-    setSubmitError("");
 
     if (Object.keys(nextErrors).length > 0) {
       focusFirstInvalidField(formRef, nextErrors);
@@ -388,14 +313,11 @@ export default function DoctorFormModal({
       const fieldErrors = getDoctorFieldErrors(message);
 
       setErrors(fieldErrors);
-      setSubmitError(message);
 
       if (Object.keys(fieldErrors).length > 0) {
         focusFirstInvalidField(formRef, fieldErrors);
       } else {
-        window.requestAnimationFrame(() => {
-          errorSummaryRef.current?.focus();
-        });
+        window.alert(message);
       }
     }
   }
@@ -443,22 +365,6 @@ export default function DoctorFormModal({
         noValidate
       >
         <div className="facility-form-body">
-          {hasErrors && (
-            <div
-              ref={errorSummaryRef}
-              className="doctor-form-error-summary"
-              role="alert"
-              tabIndex={-1}
-            >
-              <strong>Kiểm tra lại thông tin bác sĩ</strong>
-
-              <ul>
-                {summaryMessages.map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           <section
             className="facility-form-card"
