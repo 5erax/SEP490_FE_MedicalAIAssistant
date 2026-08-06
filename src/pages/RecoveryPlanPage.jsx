@@ -57,6 +57,9 @@ const PLAN_STATUS = {
   superseded: { label: "Đã thay thế", tone: "muted" },
 };
 const CANCELLABLE_PLAN_STATUSES = new Set(["readyToStart", "active"]);
+// Finished/inactive plans default to collapsed when shown in the plans
+// list, since only the current readyToStart/active plan is actionable.
+const HISTORICAL_PLAN_STATUSES = new Set(["cancelled", "completed", "superseded"]);
 const RECOVERY_PLAN_CANCELLATION_REASONS = [
   { value: "NO_LONGER_NEEDED", label: "Không còn cần thiết" },
   { value: "HEALTH_CONDITION_CHANGED", label: "Tình trạng sức khỏe đã thay đổi" },
@@ -463,12 +466,12 @@ function RequestDetail({ request, loading, onCancel, onProvideInformation, busy 
   );
 }
 
-export function PlanDetail({ plan, loading, onStart, onCancel, busy }) {
-  const isCancelled = plan?.status === "cancelled";
-  const [collapsed, setCollapsed] = useState(isCancelled);
+export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, busy }) {
+  const isHistorical = plan ? HISTORICAL_PLAN_STATUSES.has(plan.status) : false;
+  const [collapsed, setCollapsed] = useState(isHistorical);
 
   useEffect(() => {
-    queueMicrotask(() => setCollapsed(plan?.status === "cancelled"));
+    queueMicrotask(() => setCollapsed(plan ? HISTORICAL_PLAN_STATUSES.has(plan.status) : false));
   }, [plan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <LoadingState label="Đang tải nội dung kế hoạch…" />;
@@ -476,6 +479,11 @@ export function PlanDetail({ plan, loading, onStart, onCancel, busy }) {
   const phases = [...(plan.phases ?? [])].sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder));
   const canStart = plan.status === "readyToStart";
   const canCancel = Boolean(onCancel) && CANCELLABLE_PLAN_STATUSES.has(plan.status);
+
+  function toggleCollapsed() {
+    if (collapsed) onExpand?.(); // was collapsed, now expanding
+    setCollapsed((current) => !current);
+  }
 
   return (
     <article className="recovery-plan-detail">
@@ -485,20 +493,20 @@ export function PlanDetail({ plan, loading, onStart, onCancel, busy }) {
           <h3>{plan.planName || "Kế hoạch phục hồi"}</h3>
         </div>
         <StatusBadge map={PLAN_STATUS} value={plan.status} />
-        {isCancelled && (
+        {isHistorical && (
           <button
             type="button"
             className="recovery-plan-collapse-toggle"
             aria-expanded={!collapsed}
             aria-label={collapsed ? "Mở rộng kế hoạch" : "Thu gọn kế hoạch"}
-            onClick={() => setCollapsed((current) => !current)}
+            onClick={toggleCollapsed}
           >
             <ChevronDown size={18} aria-hidden="true" />
           </button>
         )}
       </header>
 
-      {(!isCancelled || !collapsed) && (
+      {(!isHistorical || !collapsed) && (
         <>
       <p className="recovery-plan-summary">{plan.summary || "Nội dung tổng quan sẽ được cập nhật trong kế hoạch."}</p>
       <dl className="recovery-detail-grid">
@@ -1245,11 +1253,28 @@ export default function RecoveryPlanPage() {
               ) : planItems.length === 0 ? (
                 <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
               ) : (
-                // PlanDetail already renders its own name/duration/status
-                // header, so a selector bar above it would just repeat the
-                // same line twice - only one plan is ever relevant at a
-                // time in practice (single active workflow rule).
-                <PlanDetail plan={selectedPlan} loading={planDetailLoading} busy={actionBusy} onStart={handleStart} onCancel={setCancelPlan} />
+                // Stacked list, no selector bar - PlanDetail already renders
+                // its own name/duration/status header, so a bar above it
+                // would just repeat the same line twice. Historical plans
+                // (cancelled/completed/superseded) collapse by default; the
+                // one matching selectedPlan already has full detail loaded,
+                // others only have summary data until expanded.
+                <div className="recovery-plan-list">
+                  {planItems.map((item) => {
+                    const isSelected = item.id === selectedPlan?.id;
+                    return (
+                      <PlanDetail
+                        key={item.id}
+                        plan={isSelected ? selectedPlan : item}
+                        loading={isSelected && planDetailLoading}
+                        busy={actionBusy}
+                        onStart={handleStart}
+                        onCancel={setCancelPlan}
+                        onExpand={isSelected ? undefined : () => loadPlanDetail(item.id, item)}
+                      />
+                    );
+                  })}
+                </div>
               )}
             </section>
           ) : (
