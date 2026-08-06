@@ -109,7 +109,7 @@ function getPublishChecklist(plan) {
   const gaps = findCoverageGaps(phases, plan.durationDays);
   const phaseLabel = (phase, index) => phase.phaseName || `giai đoạn ${index + 1}`;
 
-  const missingSleepRest = phases.filter((phase) => phase.sleepHoursPerDay == null || phase.restHoursPerDay == null);
+  const missingSleepRest = phases.filter((phase) => phase.sleepAndRestHoursPerDay == null);
   const phasesWithoutNutrients = phases.filter((phase) => getSortedItems(phase.nutrientTargets).length === 0);
   const nutrientsWithoutFood = [];
   phases.forEach((phase) => {
@@ -133,7 +133,7 @@ function getPublishChecklist(plan) {
     },
     {
       key: "sleep-rest",
-      label: "Mỗi giai đoạn có đủ giờ ngủ và giờ nghỉ",
+      label: "Mỗi giai đoạn có tổng giờ ngủ nghỉ",
       done: phases.length > 0 && missingSleepRest.length === 0,
       detail: missingSleepRest.length > 0
         ? `Còn thiếu ở: ${missingSleepRest.map(phaseLabel).join(", ")}`
@@ -820,11 +820,9 @@ function PhaseRow({
         <div className="doctor-plan-phase-info">
           <strong>{phase.phaseName || "Chưa đặt tên giai đoạn"}</strong>
           <span className="doctor-plan-phase-days">{formatDayRange(phase.startDay, phase.endDay)}</span>
-          {(phase.sleepHoursPerDay != null || phase.restHoursPerDay != null) && (
+          {phase.sleepAndRestHoursPerDay != null && (
             <span className="doctor-plan-phase-meta">
-              {phase.sleepHoursPerDay != null && `Ngủ ${phase.sleepHoursPerDay}h/ngày`}
-              {phase.sleepHoursPerDay != null && phase.restHoursPerDay != null && " · "}
-              {phase.restHoursPerDay != null && `Nghỉ ${phase.restHoursPerDay}h/ngày`}
+              Ngủ nghỉ {phase.sleepAndRestHoursPerDay}h/ngày
             </span>
           )}
           {phase.instruction && <p className="doctor-plan-phase-instruction">{phase.instruction}</p>}
@@ -1067,8 +1065,9 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
   const [phaseName, setPhaseName] = useState(phase?.phaseName ?? "");
   const [startDay, setStartDay] = useState(String(phase?.startDay ?? ""));
   const [endDay, setEndDay] = useState(String(phase?.endDay ?? ""));
-  const [sleepHoursPerDay, setSleepHoursPerDay] = useState(phase?.sleepHoursPerDay != null ? String(phase.sleepHoursPerDay) : "");
-  const [restHoursPerDay, setRestHoursPerDay] = useState(phase?.restHoursPerDay != null ? String(phase.restHoursPerDay) : "");
+  const [sleepAndRestHoursPerDay, setSleepAndRestHoursPerDay] = useState(
+    phase?.sleepAndRestHoursPerDay != null ? String(phase.sleepAndRestHoursPerDay) : "",
+  );
   const [instruction, setInstruction] = useState(phase?.instruction ?? "");
   const [errors, setErrors] = useState({});
 
@@ -1093,6 +1092,16 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
         nextErrors.endDay = `Trùng ngày với giai đoạn "${overlapping.phaseName || "khác"}" (${formatDayRange(overlapping.startDay, overlapping.endDay)}).`;
       }
     }
+
+    const hoursText = sleepAndRestHoursPerDay.trim();
+    const hours = hoursText === "" ? null : Number(hoursText);
+    if (
+      hours !== null
+      && (!Number.isFinite(hours) || hours < 0 || hours > 24 || !/^\d+(\.\d{1,2})?$/.test(hoursText))
+    ) {
+      nextErrors.sleepAndRestHoursPerDay = "Tổng giờ ngủ nghỉ phải từ 0 đến 24 và tối đa 2 chữ số thập phân.";
+    }
+
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
@@ -1100,8 +1109,7 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
       phaseName: trimmedName,
       startDay: start,
       endDay: end,
-      sleepHoursPerDay: sleepHoursPerDay.trim() ? Number(sleepHoursPerDay) : null,
-      restHoursPerDay: restHoursPerDay.trim() ? Number(restHoursPerDay) : null,
+      sleepAndRestHoursPerDay: hours,
       instruction: instruction.trim() || null,
       sortOrder: phase?.sortOrder ?? getSortedPhases(plan).length,
     });
@@ -1153,14 +1161,19 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
             />
           </Field>
         </div>
-        <div className="doctor-plan-modal-row">
-          <Field label="Giờ ngủ / ngày" optional>
-            <TextInput type="number" min="0" step="0.5" value={sleepHoursPerDay} onChange={(event) => setSleepHoursPerDay(event.target.value)} />
-          </Field>
-          <Field label="Giờ nghỉ / ngày" optional>
-            <TextInput type="number" min="0" step="0.5" value={restHoursPerDay} onChange={(event) => setRestHoursPerDay(event.target.value)} />
-          </Field>
-        </div>
+        <Field label="Tổng giờ ngủ nghỉ / ngày" optional error={errors.sleepAndRestHoursPerDay}>
+          <TextInput
+            type="number"
+            min="0"
+            max="24"
+            step="0.01"
+            value={sleepAndRestHoursPerDay}
+            onChange={(event) => {
+              setSleepAndRestHoursPerDay(event.target.value);
+              setErrors((current) => ({ ...current, sleepAndRestHoursPerDay: "" }));
+            }}
+          />
+        </Field>
         <Field label="Hướng dẫn" optional>
           <Textarea rows={3} maxLength={1000} value={instruction} onChange={(event) => setInstruction(event.target.value)} />
         </Field>
