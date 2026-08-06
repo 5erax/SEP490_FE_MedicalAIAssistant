@@ -556,16 +556,17 @@ function getPhaseTimeline(plan) {
     }));
 }
 
-// Distinct on-brand hues (reusing the app's existing semantic colors) so
-// adjacent phases stay visually distinguishable instead of blending into
-// one another the way same-hue opacity steps did. Cycles if a plan ever
-// has more phases than colors.
+// Soft, cool-toned pastel hues (teal through violet) so adjacent phases
+// stay visually distinguishable without feeling harsh - fits the calmer
+// tone expected on a medical page. Cycles if a plan ever has more phases
+// than colors. Each stop pairs a light background with a darker text of
+// the same hue, same pattern as the app's existing tone badges.
 const PHASE_COLORS = [
-  "#087f8c", // teal (--color-info)
-  "#b45309", // amber (--color-warning)
-  "#15803d", // green (--color-success)
-  "#b42318", // red (--color-danger)
-  "#3f641f", // dark green (--color-primary-strong)
+  { bg: "hsl(174, 45%, 85%)", text: "hsl(174, 55%, 26%)" }, // teal
+  { bg: "hsl(206, 55%, 87%)", text: "hsl(206, 60%, 30%)" }, // blue
+  { bg: "hsl(160, 40%, 86%)", text: "hsl(160, 45%, 26%)" }, // mint
+  { bg: "hsl(230, 45%, 88%)", text: "hsl(230, 45%, 38%)" }, // indigo
+  { bg: "hsl(260, 40%, 89%)", text: "hsl(260, 35%, 40%)" }, // violet
 ];
 
 function getPhaseColor(index) {
@@ -650,7 +651,7 @@ function RecoveryTimelineCalendar({ plan, loading }) {
                     role="gridcell"
                     key={toDateKey(date)}
                     className={`recovery-timeline-day ${inMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""}`.trim()}
-                    style={entry ? { background: getPhaseColor(entry.index), color: "#fff" } : undefined}
+                    style={entry ? { background: getPhaseColor(entry.index).bg, color: getPhaseColor(entry.index).text } : undefined}
                     title={entry ? `${entry.phase.phaseName || `Giai đoạn ${entry.index + 1}`} (Giai đoạn ${entry.index + 1})` : undefined}
                   >
                     {date.getDate()}
@@ -666,7 +667,7 @@ function RecoveryTimelineCalendar({ plan, loading }) {
         <div className="recovery-timeline-legend">
           {timeline.map((entry) => (
             <div className="recovery-timeline-legend-item" key={entry.phase.id}>
-              <span className="recovery-timeline-swatch" style={{ background: getPhaseColor(entry.index) }} aria-hidden="true" />
+              <span className="recovery-timeline-swatch" style={{ background: getPhaseColor(entry.index).bg }} aria-hidden="true" />
               <div>
                 <strong>Giai đoạn {entry.index + 1}{entry.phase.phaseName ? `: ${entry.phase.phaseName}` : ""}</strong>
                 <small>{formatDate(entry.from)} – {formatDate(entry.to)}</small>
