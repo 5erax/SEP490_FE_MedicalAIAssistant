@@ -211,6 +211,44 @@ test("security tab: confirming the OTP switches to a new-password-only form", as
   });
 });
 
+test("security tab: a wrong OTP reopens the code modal with an error instead of silently succeeding", async ({ page }) => {
+  await openPatientProfile(page);
+  await page.route("**/api/authentication/forgot-password", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: null }),
+  }));
+  await page.route("**/api/authentication/change-password", (route) => route.fulfill({
+    status: 400,
+    contentType: "application/json",
+    body: JSON.stringify({ success: false, message: "OTP is invalid or expired.", data: null }),
+  }));
+
+  await page.getByRole("tab", { name: "Bảo mật" }).click();
+  await page.getByRole("button", { name: "Gửi mã xác thực qua email" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Xác thực qua email" });
+  const boxes = dialog.locator(".otp-box");
+  const digits = "000000".split("");
+  for (let index = 0; index < digits.length; index += 1) {
+    await boxes.nth(index).fill(digits[index]);
+  }
+  await dialog.getByRole("button", { name: "Xác nhận" }).click();
+  await expect(dialog).toBeHidden();
+
+  const newPasswordField = page.getByLabel(/^Mật khẩu mới/);
+  await newPasswordField.fill("NewPass456!");
+  await page.getByLabel("Nhập lại mật khẩu mới").fill("NewPass456!");
+  await page.getByRole("button", { name: "Lưu mật khẩu mới" }).click();
+
+  // Wrong/expired OTP can only be detected once the real change-password
+  // call is made (no separate verify endpoint) - the user should land
+  // back in the OTP modal with the error, not a silently "successful"
+  // password change.
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("Mã xác thực không hợp lệ hoặc đã hết hạn.", { exact: true })).toBeVisible();
+  await expect(page.locator(".security-message-success")).toHaveCount(0);
+});
+
 test("patient profile has no serious automated accessibility violations", async ({ page }) => {
   await openPatientProfile(page);
 
