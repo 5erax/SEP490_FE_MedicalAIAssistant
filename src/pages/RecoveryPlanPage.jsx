@@ -895,6 +895,9 @@ export default function RecoveryPlanPage() {
 
   const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
   const planItems = useMemo(() => planPage.items, [planPage.items]);
+  // Only one recovery plan can be active at a time, so there is nothing new
+  // to request until the current one finishes (completed/cancelled/superseded).
+  const hasActivePlan = useMemo(() => planItems.some((item) => item.status === "active"), [planItems]);
 
   return (
     <div className="recovery-page">
@@ -1067,11 +1070,13 @@ export default function RecoveryPlanPage() {
         </div>
 
         <div className="recovery-workspace-sidebar">
-          <CreateRequestForm
-            disabled={requestCreationDisabled}
-            disabledMessage={requestDisabledMessage}
-            onCreated={handleCreated}
-          />
+          {!hasActivePlan && (
+            <CreateRequestForm
+              disabled={requestCreationDisabled}
+              disabledMessage={requestDisabledMessage}
+              onCreated={handleCreated}
+            />
+          )}
           <section className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
             <p className="recovery-eyebrow">Trong thời gian chờ</p>
             <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>
