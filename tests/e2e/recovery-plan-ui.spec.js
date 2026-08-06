@@ -279,6 +279,13 @@ test("plans tab never repeats the plan name/status when there are multiple plans
   await expect(page.getByRole("tab", { name: /Kế hoạch của bạn/ })).toContainText("2");
   await expect(page.getByText("Phục hồi hô hấp 14 ngày", { exact: true })).toHaveCount(1);
   await expect(page.locator(".recovery-plan-bar")).toHaveCount(0);
+
+  // The historical (cancelled) plan must still be reachable - just
+  // collapsed by default, not gone from the page entirely.
+  await expect(page.getByText("Kế hoạch cũ", { exact: true })).toBeVisible();
+  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeHidden();
+  await page.getByRole("button", { name: "Mở rộng kế hoạch" }).click();
+  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeVisible();
 });
 
 test("timeline tab paints each phase onto its real calendar dates", async ({ page }) => {
