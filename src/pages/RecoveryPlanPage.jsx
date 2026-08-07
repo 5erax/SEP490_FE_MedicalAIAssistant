@@ -576,16 +576,19 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, busy })
                           <div><span>{nutrient.nutrientName}</span><b>{nutrient.amountPerDay} {nutrient.unit}/ngày</b></div>
                           {nutrient.instruction && <p>{nutrient.instruction}</p>}
                           {(nutrient.foodSources ?? []).length > 0 && (
-                            <ul className="recovery-food-list">
-                              {(nutrient.foodSources ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
-                                <li className="recovery-food-item" key={food.id}>
-                                  <strong>{food.foodName}</strong>
-                                  {(food.suggestedServing || food.note) && (
-                                    <span>{[food.suggestedServing, food.note].filter(Boolean).join(" — ")}</span>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
+                            <>
+                              <p className="recovery-food-list-label">Bạn có thể lựa chọn một trong các thực phẩm sau:</p>
+                              <ul className="recovery-food-list">
+                                {(nutrient.foodSources ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
+                                  <li className="recovery-food-item" key={food.id}>
+                                    <strong>{food.foodName}</strong>
+                                    {(food.suggestedServing || food.note) && (
+                                      <span>{[food.suggestedServing, food.note].filter(Boolean).join(" — ")}</span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
                           )}
                         </div>
                       ))}

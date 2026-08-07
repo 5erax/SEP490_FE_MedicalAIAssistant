@@ -855,6 +855,16 @@
   color: var(--color-muted);
 }
 
+.recovery-food-list-label {
+  margin: 10px 0 0;
+  color: var(--color-muted);
+  font-size: var(--recovery-fs-xs);
+}
+
+.recovery-food-list-label + .recovery-food-list {
+  margin-top: 8px;
+}
+
 .recovery-food-list {
   display: grid;
   gap: 8px;
