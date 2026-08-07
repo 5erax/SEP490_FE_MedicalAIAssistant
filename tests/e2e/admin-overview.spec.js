@@ -191,9 +191,11 @@ test("admin overview shows revenue growth and a payment success/failure chart", 
   await expect(page.locator(".admin-overview-chart-total")).toHaveText("300.000 ₫");
 
   await expect(page.getByRole("heading", { name: "Tỉ lệ thanh toán thành công" })).toBeVisible();
-  const gaugeChart = page.getByRole("img", { name: "Tỉ lệ thanh toán thành công: 50%" });
-  await expect(gaugeChart).toBeVisible();
-  await expect(gaugeChart.locator("path.overview-gauge-value")).toHaveCount(1);
+  const barChartRows = page.locator(".overview-bar-chart-rows > li");
+  await expect(barChartRows.nth(0).locator(".overview-bar-chart-fill.is-success")).toBeVisible();
+  await expect(barChartRows.nth(0).locator(".overview-bar-chart-value")).toHaveText("2 · 50%");
+  await expect(barChartRows.nth(1).locator(".overview-bar-chart-fill.is-danger")).toBeVisible();
+  await expect(barChartRows.nth(1).locator(".overview-bar-chart-value")).toHaveText("2 · 50%");
 
   await expect(page.getByRole("heading", { name: "Tăng trưởng tài khoản" })).toBeVisible();
   await expect(page.getByText("API tài khoản người dùng hiện chưa trả về thời gian tạo")).toBeVisible();

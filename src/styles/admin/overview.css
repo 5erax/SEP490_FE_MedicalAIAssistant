@@ -475,74 +475,88 @@
   font-weight: 700;
 }
 
-.admin-operator .overview-gauge-chart {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
+.admin-operator .overview-bar-chart {
+  --bar-label-width: 132px;
+  --bar-value-width: 78px;
+  position: relative;
+  padding: 6px 0;
 }
 
-.admin-operator .overview-gauge-chart > svg {
-  width: min(260px, 100%);
-  height: auto;
-}
-
-.admin-operator .overview-gauge-track {
-  stroke: #eef4f2;
-  stroke-linecap: round;
-}
-
-.admin-operator .overview-gauge-value {
-  stroke: var(--overview-teal);
-  stroke-linecap: round;
-}
-
-.admin-operator .overview-gauge-percent-text {
-  fill: var(--overview-teal-dark);
-  font-size: 34px;
-  font-weight: 800;
-}
-
-.admin-operator .overview-gauge-legend {
+.admin-operator .overview-bar-chart-gridlines {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--bar-label-width) + 14px);
+  right: calc(var(--bar-value-width) + 14px);
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 18px;
+  pointer-events: none;
+}
+
+.admin-operator .overview-bar-chart-gridlines span {
+  flex: 1;
+  border-right: 1px solid var(--overview-line);
+}
+
+.admin-operator .overview-bar-chart-gridlines span:last-child {
+  border-right: none;
+}
+
+.admin-operator .overview-bar-chart-rows {
+  display: grid;
+  grid-template-columns: var(--bar-label-width) 1fr var(--bar-value-width);
+  column-gap: 14px;
+  row-gap: 20px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.admin-operator .overview-gauge-legend li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.admin-operator .overview-bar-chart-rows li {
+  display: contents;
 }
 
-.admin-operator .overview-gauge-legend li span:not(.overview-gauge-swatch) {
-  color: var(--overview-muted);
+.admin-operator .overview-bar-chart-label {
+  align-self: center;
+  color: var(--overview-ink);
   font-size: 13px;
   font-weight: 700;
+  text-align: right;
 }
 
-.admin-operator .overview-gauge-legend li strong {
+.admin-operator .overview-bar-chart-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 26px;
+}
+
+.admin-operator .overview-bar-chart-fill {
+  height: 100%;
+  min-width: 8px;
+  border-radius: 999px;
+  transition: width 320ms ease;
+}
+
+.admin-operator .overview-bar-chart-fill.is-success {
+  background: linear-gradient(90deg, var(--overview-teal), var(--overview-teal-dark));
+}
+
+.admin-operator .overview-bar-chart-fill.is-danger {
+  background: linear-gradient(90deg, #e5665a, var(--color-danger, #b42318));
+}
+
+.admin-operator .overview-bar-chart-value {
+  align-self: center;
+  color: var(--overview-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-operator .overview-bar-chart-value strong {
   color: var(--overview-ink);
   font-size: 14px;
   font-weight: 800;
-}
-
-.admin-operator .overview-gauge-swatch {
-  width: 10px;
-  height: 10px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-}
-
-.admin-operator .overview-gauge-swatch.is-success {
-  background: var(--overview-teal);
-}
-
-.admin-operator .overview-gauge-swatch.is-muted {
-  background: #c3d3d0;
 }
 
 .admin-operator .overview-pie-chart {
@@ -691,6 +705,19 @@
 }
 
 @media (max-width: 760px) {
+  .admin-operator .overview-bar-chart {
+    --bar-label-width: 84px;
+    --bar-value-width: 56px;
+  }
+
+  .admin-operator .overview-bar-chart-track {
+    height: 18px;
+  }
+
+  .admin-operator .overview-bar-chart-label {
+    font-size: 12px;
+  }
+
   .admin-operator .admin-overview-heading {
     grid-template-columns: 1fr;
     align-items: start;
@@ -792,14 +819,6 @@ html[data-theme="dark"] .admin-operator .admin-overview-card:hover {
   background: #203632;
 }
 
-html[data-theme="dark"] .admin-operator .overview-gauge-track {
-  stroke: #24433e;
-}
-
-html[data-theme="dark"] .admin-operator .overview-gauge-swatch.is-muted {
-  background: #3a534f;
-}
-
 html[data-theme="dark"] .admin-operator .admin-overview-loading {
   background: linear-gradient(90deg, #324b47, #46635e, #324b47);
   background-size: 200% 100%;
@@ -815,7 +834,8 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     transition: none;
   }
 
-  .admin-operator .overview-pie-slice {
+  .admin-operator .overview-pie-slice,
+  .admin-operator .overview-bar-chart-fill {
     transition: none;
   }
 }
@@ -832,8 +852,8 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     border-color: CanvasText;
   }
 
-  .admin-operator .overview-gauge-track {
-    stroke: CanvasText;
+  .admin-operator .overview-bar-chart-gridlines span {
+    border-right-color: CanvasText;
   }
 
   .admin-operator .admin-overview-heading::after {
@@ -862,18 +882,12 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     fill: CanvasText;
   }
 
-  .admin-operator .overview-gauge-value,
-  .admin-operator .overview-gauge-swatch.is-success {
-    stroke: Highlight;
+  .admin-operator .overview-bar-chart-fill.is-success {
     background: Highlight;
   }
 
-  .admin-operator .overview-gauge-swatch.is-muted {
+  .admin-operator .overview-bar-chart-fill.is-danger {
     background: CanvasText;
-  }
-
-  .admin-operator .overview-gauge-percent-text {
-    fill: CanvasText;
   }
 
   /* Each pie slice's color is the only thing distinguishing one department

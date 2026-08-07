@@ -59,48 +59,39 @@ export function RevenueLineChart({ series }) {
   );
 }
 
-export function PaymentSuccessGaugeChart({ success, failure }) {
+export function PaymentStatusBarChart({ success, failure }) {
   const total = success + failure;
-  const percent = total > 0 ? Math.round((success / total) * 100) : 0;
-
-  const width = 240;
-  const height = 150;
-  const radius = 92;
-  const strokeWidth = 28;
-  const cx = width / 2;
-  const cy = 136;
-  const circumference = Math.PI * radius;
-  const dash = (percent / 100) * circumference;
-  const path = `M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`;
+  const maxValue = Math.max(success, failure, 1);
+  const bars = [
+    { key: "success", label: "Thành công", value: success, tone: "success" },
+    { key: "failure", label: "Không thành công", value: failure, tone: "danger" },
+  ];
 
   return (
-    <div className="overview-gauge-chart">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Tỉ lệ thanh toán thành công: ${percent}%`}>
-        <path d={path} className="overview-gauge-track" strokeWidth={strokeWidth} fill="none" />
-        {total > 0 && (
-          <path
-            d={path}
-            className="overview-gauge-value"
-            strokeWidth={strokeWidth}
-            fill="none"
-            strokeDasharray={`${dash} ${circumference - dash}`}
-          />
-        )}
-        <text x={cx} y={cy - 14} textAnchor="middle" className="overview-gauge-percent-text">
-          {percent}%
-        </text>
-      </svg>
-      <ul className="overview-gauge-legend">
-        <li>
-          <span className="overview-gauge-swatch is-success" aria-hidden="true" />
-          <span>Thành công</span>
-          <strong>{success}</strong>
-        </li>
-        <li>
-          <span className="overview-gauge-swatch is-muted" aria-hidden="true" />
-          <span>Không thành công</span>
-          <strong>{failure}</strong>
-        </li>
+    <div className="overview-bar-chart">
+      <div className="overview-bar-chart-gridlines" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+      <ul className="overview-bar-chart-rows">
+        {bars.map((bar) => {
+          const percent = total > 0 ? Math.round((bar.value / total) * 100) : 0;
+          const widthPercent = (bar.value / maxValue) * 100;
+          return (
+            <li key={bar.key}>
+              <span className="overview-bar-chart-label">{bar.label}</span>
+              <span className="overview-bar-chart-track">
+                <span className={`overview-bar-chart-fill is-${bar.tone}`} style={{ width: `${widthPercent}%` }} />
+              </span>
+              <span className="overview-bar-chart-value">
+                <strong>{bar.value}</strong> · {percent}%
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -279,7 +270,7 @@ export function PaymentStatusChartCard({ loading, error, payments, onRetry }) {
           <p>Tỉ lệ sẽ hiển thị khi có giao dịch thành công hoặc thất bại.</p>
         </div>
       ) : (
-        <PaymentSuccessGaugeChart success={success} failure={failure} />
+        <PaymentStatusBarChart success={success} failure={failure} />
       )}
     </div>
   );
