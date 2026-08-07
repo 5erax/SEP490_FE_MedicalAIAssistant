@@ -411,12 +411,6 @@ const PASSWORD_HINT =
 
 const MIN_BIRTH_DATE = "1900-01-01";
 
-/*
- * Theo testcase reporter, tài khoản phải đạt độ tuổi tối thiểu.
- * Nếu SRS của dự án quy định giá trị khác, chỉ cần đổi hằng số này.
- */
-const MIN_SIGNUP_AGE = 18;
-
 function formatDateInputValue(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -920,21 +914,24 @@ export function SignupPage() {
               onChange={(event) =>
                 updateDateOfBirth(event.target.value)
               }
-              onBlur={(event) =>
+              onBlur={(event) => {
+                const value = event.currentTarget.value;
+                const error = validateDateOfBirth(value);
+
                 setFieldErrors((current) => ({
                   ...current,
-                  dateOfBirth: validateDateOfBirth(
-                    event.target.value,
-                  ),
-                }))
-              }
+                  dateOfBirth: error,
+                }));
+              }}
               onInvalid={(event) => {
                 event.preventDefault();
+
+                const value = event.currentTarget.value;
+                const error = validateDateOfBirth(value);
+
                 setFieldErrors((current) => ({
                   ...current,
-                  dateOfBirth: validateDateOfBirth(
-                    event.currentTarget.value,
-                  ),
+                  dateOfBirth: error,
                 }));
               }}
               min={MIN_BIRTH_DATE}
