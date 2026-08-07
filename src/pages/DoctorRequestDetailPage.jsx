@@ -85,6 +85,10 @@ function getDiseaseInfo(value) {
   return DISEASE_GROUPS[value] ?? { label: "Chưa phân loại", icon: ClipboardCheck };
 }
 
+function getRejectionReasonLabel(code) {
+  return REJECTION_REASON_CODES.find((item) => item.value === code)?.label ?? code;
+}
+
 function getStatusMeta(value) {
   return STATUS_META[value] ?? { label: value || "—", tone: "info" };
 }
@@ -518,7 +522,7 @@ function DetailContent({ request, onReload }) {
               </p>
               <p className="doctor-detail-note-text">
                 {request.rejectionReasonCode && (
-                  <span className="doctor-detail-reason-code">{request.rejectionReasonCode}</span>
+                  <span className="doctor-detail-reason-code">{getRejectionReasonLabel(request.rejectionReasonCode)}</span>
                 )}
                 {request.rejectionReason || "Không có mô tả."}
               </p>
