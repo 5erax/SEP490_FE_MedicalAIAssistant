@@ -475,115 +475,74 @@
   font-weight: 700;
 }
 
-.admin-operator .overview-donut-chart {
-  position: relative;
+.admin-operator .overview-gauge-chart {
   display: grid;
   justify-items: center;
-  gap: 16px;
+  gap: 4px;
 }
 
-.admin-operator .overview-donut-chart > svg {
-  width: min(200px, 100%);
+.admin-operator .overview-gauge-chart > svg {
+  width: min(260px, 100%);
   height: auto;
 }
 
-.admin-operator .overview-donut-track {
+.admin-operator .overview-gauge-track {
   stroke: #eef4f2;
+  stroke-linecap: round;
 }
 
-.admin-operator .overview-donut-segment {
-  stroke-linecap: butt;
-  transition: stroke-dasharray 240ms ease;
-}
-
-.admin-operator .overview-donut-segment.is-success {
+.admin-operator .overview-gauge-value {
   stroke: var(--overview-teal);
+  stroke-linecap: round;
 }
 
-.admin-operator .overview-donut-segment.is-danger {
-  stroke: var(--color-danger, #b42318);
-}
-
-.admin-operator .overview-donut-center {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  display: grid;
-  width: min(200px, 100%);
-  height: min(200px, 100%);
-  justify-items: center;
-  align-content: center;
-  gap: 2px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  text-align: center;
-}
-
-.admin-operator .overview-donut-center strong {
-  color: var(--overview-ink);
-  font-size: 26px;
+.admin-operator .overview-gauge-percent-text {
+  fill: var(--overview-teal-dark);
+  font-size: 34px;
   font-weight: 800;
 }
 
-.admin-operator .overview-donut-center span {
-  color: var(--overview-muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.admin-operator .overview-donut-legend {
-  display: grid;
-  gap: 10px;
+.admin-operator .overview-gauge-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
   margin: 0;
   padding: 0;
-  max-width: 260px;
   list-style: none;
 }
 
-.admin-operator .overview-donut-legend li {
+.admin-operator .overview-gauge-legend li {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.admin-operator .overview-donut-swatch {
-  width: 12px;
-  height: 12px;
-  flex: 0 0 auto;
-  border-radius: 4px;
-}
-
-.admin-operator .overview-donut-swatch.is-success {
-  background: var(--overview-teal);
-}
-
-.admin-operator .overview-donut-swatch.is-danger {
-  background: var(--color-danger, #b42318);
-}
-
-.admin-operator .overview-donut-legend-label {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--overview-ink);
+.admin-operator .overview-gauge-legend li span:not(.overview-gauge-swatch) {
+  color: var(--overview-muted);
   font-size: 13px;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.admin-operator .overview-donut-legend li strong {
+.admin-operator .overview-gauge-legend li strong {
   color: var(--overview-ink);
   font-size: 14px;
   font-weight: 800;
 }
 
-.admin-operator .overview-donut-legend-percent {
-  min-width: 38px;
-  color: var(--overview-muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-align: right;
+.admin-operator .overview-gauge-swatch {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.admin-operator .overview-gauge-swatch.is-success {
+  background: var(--overview-teal);
+}
+
+.admin-operator .overview-gauge-swatch.is-muted {
+  background: #c3d3d0;
 }
 
 .admin-operator .overview-pie-chart {
@@ -833,8 +792,12 @@ html[data-theme="dark"] .admin-operator .admin-overview-card:hover {
   background: #203632;
 }
 
-html[data-theme="dark"] .admin-operator .overview-donut-track {
+html[data-theme="dark"] .admin-operator .overview-gauge-track {
   stroke: #24433e;
+}
+
+html[data-theme="dark"] .admin-operator .overview-gauge-swatch.is-muted {
+  background: #3a534f;
 }
 
 html[data-theme="dark"] .admin-operator .admin-overview-loading {
@@ -852,7 +815,6 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     transition: none;
   }
 
-  .admin-operator .overview-donut-segment,
   .admin-operator .overview-pie-slice {
     transition: none;
   }
@@ -870,7 +832,7 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     border-color: CanvasText;
   }
 
-  .admin-operator .overview-donut-track {
+  .admin-operator .overview-gauge-track {
     stroke: CanvasText;
   }
 
@@ -900,16 +862,18 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     fill: CanvasText;
   }
 
-  .admin-operator .overview-donut-segment.is-success,
-  .admin-operator .overview-donut-swatch.is-success {
+  .admin-operator .overview-gauge-value,
+  .admin-operator .overview-gauge-swatch.is-success {
     stroke: Highlight;
     background: Highlight;
   }
 
-  .admin-operator .overview-donut-segment.is-danger,
-  .admin-operator .overview-donut-swatch.is-danger {
-    stroke: CanvasText;
+  .admin-operator .overview-gauge-swatch.is-muted {
     background: CanvasText;
+  }
+
+  .admin-operator .overview-gauge-percent-text {
+    fill: CanvasText;
   }
 
   /* Each pie slice's color is the only thing distinguishing one department
