@@ -109,7 +109,7 @@
 
 .admin-operator .admin-overview-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border: 1px solid var(--overview-line);
   border-radius: 22px;
   background: var(--overview-surface);
@@ -124,6 +124,7 @@
   min-height: 260px;
   border: 0;
   border-right: 1px solid var(--overview-line);
+  border-bottom: 1px solid var(--overview-line);
   background: transparent;
   color: var(--overview-ink);
   padding: clamp(20px, 2.4vw, 30px);
@@ -132,13 +133,29 @@
   transition: background 160ms ease, color 160ms ease;
 }
 
+/* 5-column desktop grid: two full rows of five. */
+.admin-operator .admin-overview-card:nth-child(5n) {
+  border-right: 0;
+}
+
+.admin-operator .admin-overview-card:nth-last-child(-n + 5) {
+  border-bottom: 0;
+}
+
 .admin-operator .admin-overview-card:first-child {
-  border-radius: 21px 0 0 21px;
+  border-radius: 21px 0 0 0;
+}
+
+.admin-operator .admin-overview-card:nth-child(5) {
+  border-radius: 0 21px 0 0;
+}
+
+.admin-operator .admin-overview-card:nth-last-child(5) {
+  border-radius: 0 0 0 21px;
 }
 
 .admin-operator .admin-overview-card:last-child {
-  border-right: 0;
-  border-radius: 0 21px 21px 0;
+  border-radius: 0 0 21px 0;
 }
 
 .admin-operator .admin-overview-card:hover {
@@ -605,11 +622,15 @@
 
   .admin-operator .admin-overview-card {
     min-height: 238px;
-    border-bottom: 1px solid var(--overview-line);
   }
 
-  .admin-operator .admin-overview-card:nth-child(2) {
+  .admin-operator .admin-overview-card:nth-child(odd) {
+    border-radius: 0;
+  }
+
+  .admin-operator .admin-overview-card:nth-child(even) {
     border-right: 0;
+    border-radius: 0;
   }
 
   .admin-operator .admin-overview-card:nth-last-child(-n + 2) {
@@ -617,19 +638,19 @@
   }
 
   .admin-operator .admin-overview-card:first-child {
-    border-radius: 21px 0 0;
+    border-radius: 21px 0 0 0;
   }
 
   .admin-operator .admin-overview-card:nth-child(2) {
     border-radius: 0 21px 0 0;
   }
 
-  .admin-operator .admin-overview-card:nth-child(3) {
+  .admin-operator .admin-overview-card:nth-last-child(2) {
     border-radius: 0 0 0 21px;
   }
 
   .admin-operator .admin-overview-card:last-child {
-    border-radius: 0 0 21px;
+    border-radius: 0 0 21px 0;
   }
 }
 
@@ -663,13 +684,6 @@
     border-bottom: 1px solid var(--overview-line);
     border-radius: 0;
     padding: 20px;
-  }
-
-  .admin-operator .admin-overview-card:first-child,
-  .admin-operator .admin-overview-card:nth-child(2),
-  .admin-operator .admin-overview-card:nth-child(3),
-  .admin-operator .admin-overview-card:last-child {
-    border-radius: 0;
   }
 
   .admin-operator .admin-overview-card:first-child {
