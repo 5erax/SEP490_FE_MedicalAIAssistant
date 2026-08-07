@@ -327,6 +327,41 @@ test("timeline tab paints each phase onto its real calendar dates", async ({ pag
   await expect(page.getByText("17/8/2026 – 18/8/2026", { exact: true })).toBeVisible();
 });
 
+test("cancelling a plan immediately clears its colored roadmap, without a reload", async ({ page }) => {
+  await prepareRecoveryPage(page, {
+    requests: [request({ status: "published" })],
+    plans: [plan({
+      status: "active",
+      startDate: "2026-08-05",
+      endDate: "2026-08-18",
+      phases: [{
+        id: "phase-1",
+        phaseName: "Khởi động nhẹ",
+        startDay: 1,
+        endDay: 14,
+        sleepAndRestHoursPerDay: 10,
+        instruction: "Đi bộ nhẹ và theo dõi nhịp thở.",
+        sortOrder: 1,
+        nutrientTargets: [],
+      }],
+    })],
+  });
+
+  await page.getByRole("tab", { name: /Lộ trình của bạn/ }).click();
+  await expect(page.getByText("Giai đoạn 1: Khởi động nhẹ", { exact: true })).toBeVisible();
+
+  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("button", { name: "Hủy kế hoạch" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Lý do hủy").selectOption("UNABLE_TO_FOLLOW");
+  await dialog.getByRole("button", { name: "Hủy kế hoạch" }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole("tab", { name: /Lộ trình của bạn/ }).click();
+  await expect(page.getByText("Lộ trình không còn hiệu lực", { exact: true })).toBeVisible();
+  await expect(page.getByText("Giai đoạn 1: Khởi động nhẹ", { exact: true })).toHaveCount(0);
+});
+
 test("new-request form is hidden while a plan is active", async ({ page }) => {
   // The request behind an active/readyToStart plan is already published (a
   // terminal, non-blocking request status) - the plan itself is what's

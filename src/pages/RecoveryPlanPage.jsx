@@ -758,6 +758,22 @@ function RecoveryTimelineCalendar({ plan, loading }) {
   if (loading) return <LoadingState label="Đang tải lộ trình…" />;
   if (!plan) return null;
 
+  if (plan.status === "cancelled") {
+    return (
+      <div className="recovery-timeline">
+        <div className="recovery-timeline-intro">
+          <p className="recovery-eyebrow">Lộ trình</p>
+          <h4>{plan.planName || "Kế hoạch phục hồi"}</h4>
+        </div>
+        <EmptyState
+          icon={<CalendarCheck size={26} aria-hidden="true" />}
+          title="Lộ trình không còn hiệu lực"
+          description="Kế hoạch này đã bị hủy nên các mốc thời gian không còn được áp dụng."
+        />
+      </div>
+    );
+  }
+
   const today = new Date();
   const monthLabel = `Tháng ${monthCursor.getMonth() + 1} - ${monthCursor.getFullYear()}`;
 
