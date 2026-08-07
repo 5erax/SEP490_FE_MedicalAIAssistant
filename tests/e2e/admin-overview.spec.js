@@ -74,6 +74,96 @@ test("admin overview shows only backend totals without inferred operational data
   await expect(page.getByRole("button", { name: "Lịch vận hành" })).toHaveCount(0);
 });
 
+test("admin overview shows the phase-1 master-data count cards", async ({ page }) => {
+  await mockAdminOverview(page);
+  await page.route("**/api/medical-departments*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 10, totalCount: 7, totalPages: 1 } }),
+  }));
+  await page.route("**/api/icd-chapters*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 10, totalCount: 22, totalPages: 3 } }),
+  }));
+  await page.route("**/api/clinical-questions*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 1, totalCount: 48, totalPages: 48 } }),
+  }));
+  await page.route("**/api/lab-indicators*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 1, totalCount: 15, totalPages: 15 } }),
+  }));
+  await page.route("**/api/patient-profiles*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 10, totalCount: 30, totalPages: 3 } }),
+  }));
+  await page.route("**/api/subscription-plans*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: [{ id: "p1", isActive: true }, { id: "p2", isActive: true }, { id: "p3", isActive: false }] }),
+  }));
+  await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("link", { name: "Mở trang Chuyên khoa" })).toContainText("7");
+  await expect(page.getByRole("link", { name: "Mở trang Chương ICD" })).toContainText("22");
+  await expect(page.getByRole("link", { name: "Mở trang Câu hỏi" })).toContainText("48");
+  await expect(page.getByRole("link", { name: "Mở trang Chỉ số XN" })).toContainText("15");
+  await expect(page.getByRole("link", { name: "Mở trang Hồ sơ bệnh nhân" })).toContainText("30");
+  await expect(page.getByRole("link", { name: "Mở trang Gói dịch vụ" })).toContainText("2");
+});
+
+test("admin overview shows the phase-2 operational attention list, including blocked metrics", async ({ page }) => {
+  await mockAdminOverview(page);
+  await page.route("**/api/feedback-reviews*", (route) => {
+    const status = new URL(route.request().url()).searchParams.get("status");
+    const totalCount = status === "pending" ? 3 : status === "hidden" ? 2 : 0;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 1, totalCount, totalPages: 1 } }),
+    });
+  });
+  await page.route("**/api/lab-tests/sessions*", (route) => {
+    const status = new URL(route.request().url()).searchParams.get("status");
+    const totalCount = status === "processing" ? 4 : status === "failed" ? 1 : 0;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 1, totalCount, totalPages: 1 } }),
+    });
+  });
+  await page.route("**/api/symptom-analysis/sessions*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { items: [], pageNumber: 1, pageSize: 1, totalCount: 6, totalPages: 6 } }),
+  }));
+  await page.route("**/api/payments*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        items: [
+          { id: "p1", amount: 100000, status: "paid", createdAt: "2026-08-01T08:00:00Z" },
+          { id: "p2", amount: 50000, status: "pending", createdAt: "2026-08-02T08:00:00Z" },
+          { id: "p3", amount: 30000, status: "failed", createdAt: "2026-08-03T08:00:00Z" },
+        ],
+        pageNumber: 1,
+        pageSize: 100,
+        totalCount: 3,
+        totalPages: 1,
+      },
+    }),
+  }));
+  await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("heading", { name: "Vận hành cần xử lý" })).toBeVisible();
+  const attentionList = page.locator(".admin-overview-attention-list");
+  await expect(attentionList.getByText("Feedback chờ duyệt")).toBeVisible();
+  await expect(attentionList.locator("li", { hasText: "Feedback chờ duyệt" }).getByText("5", { exact: true })).toBeVisible();
+  await expect(attentionList.locator("li", { hasText: "Xét nghiệm cần xử lý" }).getByText("5", { exact: true })).toBeVisible();
+  await expect(attentionList.locator("li", { hasText: "Phân tích triệu chứng lỗi" }).getByText("6", { exact: true })).toBeVisible();
+  await expect(attentionList.locator("li", { hasText: "Thanh toán chưa hoàn tất" }).getByText("2", { exact: true })).toBeVisible();
+
+  // Metrics with no backend list endpoint yet must read as blocked, not as zero.
+  await expect(attentionList.locator("li", { hasText: "Lời mời bác sĩ chưa nhận" }).getByText("Chưa khả dụng")).toBeVisible();
+  await expect(attentionList.locator("li", { hasText: "Người dùng đang dùng gói" }).getByText("Chưa khả dụng")).toBeVisible();
+});
+
 test("admin overview shows revenue growth and a payment success/failure chart", async ({ page }) => {
   await mockAdminOverview(page);
   await page.route("**/api/payments*", (route) => route.fulfill({

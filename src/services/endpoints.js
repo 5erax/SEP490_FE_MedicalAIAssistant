@@ -96,6 +96,7 @@ export const ENDPOINTS = {
     SUBMIT_CLINICAL_QUESTION_ANSWERS: `${SYMPTOM_ANALYSIS_BASE}/submit-clinical-question-answers`,
     SUBMIT_DIAGNOSIS: `${SYMPTOM_ANALYSIS_BASE}/submit-diagnosis`,
     MY_SESSIONS: `${SYMPTOM_ANALYSIS_BASE}/my-sessions`,
+    SESSIONS: `${SYMPTOM_ANALYSIS_BASE}/sessions`,
     BY_SESSION: (sessionId) => byId(SYMPTOM_ANALYSIS_BASE, sessionId),
   },
   PATIENT_PROFILES: {
@@ -165,6 +166,7 @@ export const ENDPOINTS = {
   LAB_TESTS: {
     ANALYZE: `${LAB_TESTS_BASE}/analyze`,
     MY_SESSIONS: `${LAB_TESTS_BASE}/my-sessions`,
+    SESSIONS: `${LAB_TESTS_BASE}/sessions`,
     BY_SESSION: (sessionId) => encodedById(LAB_TESTS_BASE, sessionId),
   },
   USER_MEDICATIONS: {
