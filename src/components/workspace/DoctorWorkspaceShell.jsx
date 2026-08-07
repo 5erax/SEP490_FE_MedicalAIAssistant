@@ -4,8 +4,6 @@ import {
   ListChecks,
   LogOut,
   Menu,
-  Wifi,
-  WifiOff,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -34,7 +32,6 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
   const [profile, setProfile] = useState(null);
   const [openCount, setOpenCount] = useState(null);
   const [mineCount, setMineCount] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const loadOpenCount = useCallback(async () => {
@@ -76,9 +73,8 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
 
   useEffect(() => {
     const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
-      if (event.type === "connection") {
-        setConnectionStatus(event.status);
-        if (event.status === "connected") void refreshDoctorMembership();
+      if (event.type === "connection" && event.status === "connected") {
+        void refreshDoctorMembership();
       }
       if (event.type === "queue" || event.refetch) {
         void loadOpenCount();
@@ -89,7 +85,6 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
     });
 
     ensureRecoveryPlanConnection().then((status) => {
-      setConnectionStatus(status);
       if (status === "connected") void refreshDoctorMembership();
     });
 
@@ -100,12 +95,6 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
     || auth?.displayName || auth?.fullName || auth?.name || "Bác sĩ";
 
   const counts = useMemo(() => ({ open: openCount, mine: mineCount }), [openCount, mineCount]);
-
-  const realtimeLabel = connectionStatus === "connected"
-    ? "Cập nhật trực tiếp đang bật"
-    : connectionStatus === "reconnecting"
-      ? "Đang kết nối lại..."
-      : "Cập nhật trực tiếp tạm ngưng";
 
   async function handleLogout() {
     await logoutUser({ onClear: () => setAuth(null), redirect: navigate });
@@ -152,11 +141,6 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
             );
           })}
         </nav>
-
-        <div className="doctor-shell-realtime" data-status={connectionStatus}>
-          {connectionStatus === "connected" ? <Wifi size={15} aria-hidden="true" /> : <WifiOff size={15} aria-hidden="true" />}
-          <span>{realtimeLabel}</span>
-        </div>
 
         <div className="doctor-shell-account">
           <span className="doctor-shell-avatar" aria-hidden="true">{getInitials(displayName)}</span>
