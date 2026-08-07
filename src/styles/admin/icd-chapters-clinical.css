@@ -745,7 +745,7 @@ html[data-theme="dark"] .admin-operator .icd-keyword {
 }
 
 .icd-primary-cell small {
-  color: rgba(16, 20, 17, 0.55);
+  color: rgba(16, 20, 17, 0.75);
   font-size: 11px;
   font-weight: 650;
 }
