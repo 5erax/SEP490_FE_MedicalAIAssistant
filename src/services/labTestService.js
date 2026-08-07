@@ -52,4 +52,11 @@ export const labTestsApi = {
   get(sessionId) {
     return apiRequest(ENDPOINTS.LAB_TESTS.BY_SESSION(sessionId), { auth: true });
   },
+
+  // Admin-wide session listing (all users), unlike mySessions above.
+  adminSessions(pageNumber = 1, pageSize = 1, { status = "" } = {}) {
+    const query = new URLSearchParams(withPagination(pageNumber, pageSize));
+    if (status) query.set("status", status);
+    return apiRequest(`${ENDPOINTS.LAB_TESTS.SESSIONS}?${query}`, { auth: true });
+  },
 };

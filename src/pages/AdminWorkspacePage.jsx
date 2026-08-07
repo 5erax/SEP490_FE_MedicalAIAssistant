@@ -38,8 +38,11 @@ import {
   authApi,
   doctorInvitationsApi,
   facilityDepartmentsApi,
+  feedbackReviewsApi,
   getMedicalDepartmentApiMessage,
   getStoredAuth,
+  labIndicatorsApi,
+  labTestsApi,
   medicalFacilitiesApi,
   medicalDepartmentsApi,
   clinicalQuestionsApi,
@@ -47,6 +50,7 @@ import {
   patientProfilesApi,
   paymentsApi,
   subscriptionPlansApi,
+  symptomAnalysisApi,
   usersApi,
 } from "../services/api";
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
@@ -506,6 +510,14 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [overviewPayments, setOverviewPayments] = useState([]);
   const [overviewPaymentsLoading, setOverviewPaymentsLoading] = useState(true);
   const [overviewPaymentsError, setOverviewPaymentsError] = useState("");
+  const [overviewOperationalCounts, setOverviewOperationalCounts] = useState({
+    clinicalQuestions: null,
+    labIndicators: null,
+    feedbackPending: null,
+    labTestNeedsAttention: null,
+    symptomAnalysisFailed: null,
+  });
+  const [overviewOperationalLoading, setOverviewOperationalLoading] = useState(true);
 
   useEffect(() => {
     const navigation = adminNavRef.current;
@@ -542,6 +554,9 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     else if (section === "doctors") loadDoctors();
     else if (section === "ai-configs") loadAIConfigs();
     else if (section === "facilities") loadFacilities();
+    else if (section === "departments") loadDepartmentCatalog(1, departmentPageInfo.pageSize, EMPTY_DEPARTMENT_FILTERS);
+    else if (section === "icd-chapters") loadIcdChapters(1, icdChapterPageInfo.pageSize, EMPTY_ICD_CHAPTER_FILTERS);
+    else if (["clinical-questions", "lab-indicators"].includes(section)) loadOverviewOperationalCounts();
   }
 
   async function loadOverviewPayments() {
@@ -566,6 +581,46 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       }));
     } finally {
       setOverviewPaymentsLoading(false);
+    }
+  }
+
+  async function loadOverviewOperationalCounts() {
+    setOverviewOperationalLoading(true);
+    try {
+      const [
+        clinicalQuestionsResult,
+        labIndicatorsResult,
+        feedbackPendingResult,
+        feedbackHiddenResult,
+        labTestProcessingResult,
+        labTestFailedResult,
+        symptomAnalysisFailedResult,
+      ] = await Promise.allSettled([
+        clinicalQuestionsApi.list(1, 1, {}),
+        labIndicatorsApi.list(1, 1, {}),
+        feedbackReviewsApi.list(1, 1, { status: "pending" }),
+        feedbackReviewsApi.list(1, 1, { status: "hidden" }),
+        labTestsApi.adminSessions(1, 1, { status: "processing" }),
+        labTestsApi.adminSessions(1, 1, { status: "failed" }),
+        symptomAnalysisApi.adminSessions(1, 1, { status: "failed" }),
+      ]);
+
+      // Every request behind a combined metric must succeed - otherwise
+      // the sum would silently understate the real count.
+      function sumTotals(results) {
+        if (results.some((result) => result.status !== "fulfilled")) return null;
+        return results.reduce((sum, result) => sum + (Number(result.value?.data?.totalCount) || 0), 0);
+      }
+
+      setOverviewOperationalCounts({
+        clinicalQuestions: sumTotals([clinicalQuestionsResult]),
+        labIndicators: sumTotals([labIndicatorsResult]),
+        feedbackPending: sumTotals([feedbackPendingResult, feedbackHiddenResult]),
+        labTestNeedsAttention: sumTotals([labTestProcessingResult, labTestFailedResult]),
+        symptomAnalysisFailed: sumTotals([symptomAnalysisFailedResult]),
+      });
+    } finally {
+      setOverviewOperationalLoading(false);
     }
   }
 
@@ -854,6 +909,11 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   useEffect(() => {
     if (!auth) return;
     queueMicrotask(() => void loadOverviewPayments());
+  }, [auth]);
+
+  useEffect(() => {
+    if (!auth) return;
+    queueMicrotask(() => void loadOverviewOperationalCounts());
   }, [auth]);
 
   useEffect(() => {
@@ -2475,6 +2535,20 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 usersError={usersLoadError}
                 usersLoading={usersLoading}
                 userTotalCount={pageInfo.totalCount}
+                departmentTotalCount={departmentPageInfo.totalCount}
+                departmentError={departmentCatalogLoadError}
+                departmentLoading={departmentCatalogLoading}
+                icdChapterTotalCount={icdChapterPageInfo.totalCount}
+                icdChapterError={icdChapterLoadError}
+                icdChapterLoading={icdChaptersLoading}
+                patientProfileTotalCount={patientProfilePageInfo.totalCount}
+                patientProfileError={patientProfileLoadError}
+                patientProfileLoading={patientProfilesLoading}
+                activeSubscriptionPlanCount={activeSubscriptionPlans}
+                subscriptionError={subscriptionPlanLoadError}
+                subscriptionLoading={subscriptionPlansLoading}
+                operationalCounts={overviewOperationalCounts}
+                operationalCountsLoading={overviewOperationalLoading}
                 onOpenSection={openSection}
                 onRetryMetric={retryOverviewMetric}
                 payments={overviewPayments}

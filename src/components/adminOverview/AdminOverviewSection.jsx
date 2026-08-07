@@ -1,8 +1,17 @@
 import {
+  Activity,
   ArrowUpRight,
+  BookOpen,
   BrainCircuit,
   Building2,
   Database,
+  FileHeart,
+  FlaskConical,
+  HelpCircle,
+  Layers,
+  MessageSquareWarning,
+  PackageCheck,
+  ReceiptText,
   ShieldCheck,
   Stethoscope,
   Users,
@@ -42,6 +51,48 @@ const OVERVIEW_METRICS = [
     section: "facilities",
     icon: Building2,
   },
+  {
+    label: "Chuyên khoa",
+    shortLabel: "Chuyên khoa",
+    description: "Tổng số chuyên khoa hiện có.",
+    section: "departments",
+    icon: Layers,
+  },
+  {
+    label: "Chương ICD",
+    shortLabel: "Chương ICD",
+    description: "Tổng số chương ICD hiện có.",
+    section: "icd-chapters",
+    icon: BookOpen,
+  },
+  {
+    label: "Câu hỏi lâm sàng",
+    shortLabel: "Câu hỏi",
+    description: "Tổng số câu hỏi lâm sàng hiện có.",
+    section: "clinical-questions",
+    icon: HelpCircle,
+  },
+  {
+    label: "Chỉ số xét nghiệm",
+    shortLabel: "Chỉ số XN",
+    description: "Tổng số chỉ số xét nghiệm hiện có.",
+    section: "lab-indicators",
+    icon: FlaskConical,
+  },
+  {
+    label: "Hồ sơ bệnh nhân",
+    shortLabel: "Hồ sơ bệnh nhân",
+    description: "Tổng số hồ sơ bệnh nhân hiện có.",
+    section: "patient-profiles",
+    icon: FileHeart,
+  },
+  {
+    label: "Gói dịch vụ",
+    shortLabel: "Gói dịch vụ",
+    description: "Gói dịch vụ đang hoạt động.",
+    section: "subscriptions",
+    icon: PackageCheck,
+  },
 ];
 
 function getAdminPath(section) {
@@ -61,6 +112,20 @@ export default function AdminOverviewSection({
   usersError,
   usersLoading,
   userTotalCount,
+  departmentTotalCount,
+  departmentError = "",
+  departmentLoading = false,
+  icdChapterTotalCount,
+  icdChapterError = "",
+  icdChapterLoading = false,
+  patientProfileTotalCount,
+  patientProfileError = "",
+  patientProfileLoading = false,
+  activeSubscriptionPlanCount,
+  subscriptionError = "",
+  subscriptionLoading = false,
+  operationalCounts = {},
+  operationalCountsLoading = false,
   onOpenSection,
   onRetryMetric,
   payments = [],
@@ -68,11 +133,28 @@ export default function AdminOverviewSection({
   paymentsLoading = false,
   onRetryPayments,
 }) {
+  const clinicalQuestionsAvailable = operationalCounts.clinicalQuestions !== null;
+  const labIndicatorsAvailable = operationalCounts.labIndicators !== null;
+
   const metricState = {
     users: { value: userTotalCount, loading: usersLoading, error: usersError },
     doctors: { value: doctorTotalCount, loading: doctorsLoading, error: doctorsError },
     "ai-configs": { value: aiConfigTotalCount, loading: aiConfigsLoading, error: aiConfigsError },
     facilities: { value: facilityTotalCount, loading: facilitiesLoading, error: facilitiesError },
+    departments: { value: departmentTotalCount, loading: departmentLoading, error: departmentError },
+    "icd-chapters": { value: icdChapterTotalCount, loading: icdChapterLoading, error: icdChapterError },
+    "clinical-questions": {
+      value: operationalCounts.clinicalQuestions,
+      loading: operationalCountsLoading,
+      error: !operationalCountsLoading && !clinicalQuestionsAvailable ? "unavailable" : "",
+    },
+    "lab-indicators": {
+      value: operationalCounts.labIndicators,
+      loading: operationalCountsLoading,
+      error: !operationalCountsLoading && !labIndicatorsAvailable ? "unavailable" : "",
+    },
+    "patient-profiles": { value: patientProfileTotalCount, loading: patientProfileLoading, error: patientProfileError },
+    subscriptions: { value: activeSubscriptionPlanCount, loading: subscriptionLoading, error: subscriptionError },
   };
 
   return (
@@ -147,6 +229,13 @@ export default function AdminOverviewSection({
         })}
       </div>
 
+      <OperationalAttentionSection
+        operationalCounts={operationalCounts}
+        operationalCountsLoading={operationalCountsLoading}
+        payments={payments}
+        paymentsLoading={paymentsLoading}
+      />
+
       <div className="admin-overview-charts">
         <RevenueChartCard
           loading={paymentsLoading}
@@ -173,6 +262,102 @@ export default function AdminOverviewSection({
           </p>
         </div>
       </aside>
+    </section>
+  );
+}
+
+function OperationalAttentionSection({ operationalCounts, operationalCountsLoading, payments, paymentsLoading }) {
+  const paymentIssueCount = payments.filter((payment) => (
+    ["pending", "failed"].includes(String(payment?.status ?? "").toLowerCase())
+  )).length;
+
+  const items = [
+    {
+      key: "feedbackPending",
+      icon: MessageSquareWarning,
+      label: "Feedback chờ duyệt",
+      reason: "Đang chờ duyệt hoặc đã ẩn, cần admin xử lý.",
+      value: operationalCounts.feedbackPending,
+      loading: operationalCountsLoading,
+    },
+    {
+      key: "labTestNeedsAttention",
+      icon: FlaskConical,
+      label: "Xét nghiệm cần xử lý",
+      reason: "Đang xử lý OCR/phân tích hoặc đã lỗi.",
+      value: operationalCounts.labTestNeedsAttention,
+      loading: operationalCountsLoading,
+    },
+    {
+      key: "symptomAnalysisFailed",
+      icon: Activity,
+      label: "Phân tích triệu chứng lỗi",
+      reason: "Phiên phân tích với MedGemma thất bại.",
+      value: operationalCounts.symptomAnalysisFailed,
+      loading: operationalCountsLoading,
+    },
+    {
+      key: "paymentIssues",
+      icon: ReceiptText,
+      label: "Thanh toán chưa hoàn tất",
+      reason: "Giao dịch đang chờ hoặc thất bại.",
+      value: paymentIssueCount,
+      loading: paymentsLoading,
+    },
+  ];
+
+  const blockedItems = [
+    {
+      key: "doctorInvitationPending",
+      icon: Stethoscope,
+      label: "Lời mời bác sĩ chưa nhận",
+      reason: "Backend chưa có API liệt kê lời mời bác sĩ.",
+    },
+    {
+      key: "subscriptionActive",
+      icon: PackageCheck,
+      label: "Người dùng đang dùng gói",
+      reason: "Backend chưa có API liệt kê gói đăng ký của toàn bộ người dùng.",
+    },
+  ];
+
+  return (
+    <section className="admin-overview-attention" aria-labelledby="admin-overview-attention-title">
+      <header className="admin-overview-attention-head">
+        <p className="eyebrow">Cần chú ý</p>
+        <h2 id="admin-overview-attention-title">Vận hành cần xử lý</h2>
+      </header>
+      <ul className="admin-overview-attention-list">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const unavailable = !item.loading && item.value === null;
+          return (
+            <li key={item.key}>
+              <span className="admin-overview-attention-icon" aria-hidden="true"><Icon size={18} /></span>
+              <div>
+                <strong>{item.label}</strong>
+                <p>{item.reason}</p>
+              </div>
+              <span className="admin-overview-attention-value">
+                {item.loading ? "…" : unavailable ? "Không khả dụng" : item.value}
+              </span>
+            </li>
+          );
+        })}
+        {blockedItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <li key={item.key} className="is-blocked">
+              <span className="admin-overview-attention-icon" aria-hidden="true"><Icon size={18} /></span>
+              <div>
+                <strong>{item.label}</strong>
+                <p>{item.reason}</p>
+              </div>
+              <span className="admin-overview-attention-value is-blocked">Chưa khả dụng</span>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

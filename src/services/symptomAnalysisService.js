@@ -819,4 +819,16 @@ export const symptomAnalysisApi = {
       auth: true,
     });
   },
+
+  // Admin-wide session listing (all users), unlike listMySessions above.
+  adminSessions(pageNumber = 1, pageSize = 1, { status = "" } = {}) {
+    const search = new URLSearchParams({
+      PageNumber: String(pageNumber),
+      PageSize: String(pageSize),
+    });
+    if (status) search.set("status", status);
+    return apiRequest(`${ENDPOINTS.SYMPTOM_ANALYSIS.SESSIONS}?${search.toString()}`, {
+      auth: true,
+    });
+  },
 };
