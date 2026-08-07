@@ -135,8 +135,7 @@ export default function DoctorOverviewPage() {
         <div className="doctor-overview-roadmap-heading">
           <span aria-hidden="true"><Sparkles size={20} /></span>
           <div>
-            <p className="doctor-overview-eyebrow">Đang được xây dựng</p>
-            <h2 id="doctor-roadmap-title">Các bước tiếp theo trong quy trình</h2>
+            <h2 id="doctor-roadmap-title">Các bước tiếp theo trong quy trình lập kế hoạch hồi phục</h2>
           </div>
         </div>
         <ol className="doctor-overview-roadmap-list">
