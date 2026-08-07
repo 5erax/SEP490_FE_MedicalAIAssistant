@@ -23,6 +23,7 @@ import { isGoogleOAuthEnabledForCurrentOrigin } from "../services/googleOAuthCon
 import { findPatientProfileByUserId } from "../services/patientProfileSetup";
 import { getWorkspacePath, hasAuthRole } from "../utils/roles";
 import "../styles/auth-refresh.css";
+import "../styles/auth-signup.css";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -340,6 +341,7 @@ function Field({
   hint,
   error,
   inputRef,
+  required = false,
   ...props
 }) {
   const id = useId();
@@ -349,20 +351,29 @@ function Field({
     [hintId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className="clean-field">
-      <label htmlFor={id}>{label}</label>
+    <div className={`clean-field${error ? " has-error" : ""}`}>
+      <label htmlFor={id}>
+        <span>{label}</span>
+        {required && (
+          <span className="field-required" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
       <input
         id={id}
         ref={inputRef}
+        required={required}
         aria-describedby={describedBy}
         aria-invalid={error ? "true" : undefined}
         {...props}
       />
-      {hint && <small id={hintId}>{hint}</small>}
+      {hint && !error && <small id={hintId}>{hint}</small>}
       {error && (
         <small
           className="clean-field-error"
           id={errorId}
+          role="alert"
         >
           {error}
         </small>
@@ -371,13 +382,25 @@ function Field({
   );
 }
 
-function SelectField({ label, children, ...props }) {
+function SelectField({
+  label,
+  children,
+  required = false,
+  ...props
+}) {
   const id = useId();
 
   return (
     <div className="clean-field">
-      <label htmlFor={id}>{label}</label>
-      <select id={id} {...props}>
+      <label htmlFor={id}>
+        <span>{label}</span>
+        {required && (
+          <span className="field-required" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      <select id={id} required={required} {...props}>
         {children}
       </select>
     </div>
@@ -432,25 +455,10 @@ function parseDateInputValue(value) {
   return date;
 }
 
-function calculateAge(dateOfBirth, today = new Date()) {
-  let age = today.getFullYear() - dateOfBirth.getFullYear();
-
-  const birthdayHasNotOccurred =
-    today.getMonth() < dateOfBirth.getMonth() ||
-    (
-      today.getMonth() === dateOfBirth.getMonth() &&
-      today.getDate() < dateOfBirth.getDate()
-    );
-
-  if (birthdayHasNotOccurred) {
-    age -= 1;
-  }
-
-  return age;
-}
-
 function validateDateOfBirth(value, today = new Date()) {
-  if (!value) return "";
+  if (!value) {
+    return "Vui lòng nhập ngày sinh.";
+  }
 
   const dateOfBirth = parseDateInputValue(value);
 
@@ -466,10 +474,6 @@ function validateDateOfBirth(value, today = new Date()) {
 
   if (value < MIN_BIRTH_DATE) {
     return "Ngày sinh không hợp lệ. Vui lòng chọn ngày từ 01/01/1900 trở đi.";
-  }
-
-  if (calculateAge(dateOfBirth, today) < MIN_SIGNUP_AGE) {
-    return `Bạn phải đủ ${MIN_SIGNUP_AGE} tuổi để đăng ký tài khoản.`;
   }
 
   return "";
@@ -773,7 +777,7 @@ export function SignupPage() {
       const response = await authApi.register({
         ...form,
         gender: Number(form.gender),
-        dateOfBirth: form.dateOfBirth || null,
+        dateOfBirth: form.dateOfBirth,
       });
 
       showToast({
@@ -806,8 +810,7 @@ export function SignupPage() {
         <fieldset className="auth-field-group">
           <legend>Thông tin tài khoản</legend>
           <p>
-            Dùng để nhận diện tài khoản và hiển thị trong
-            không gian cá nhân.
+            Thông tin dùng để đăng nhập và nhận diện tài khoản.
           </p>
 
           <div className="form-two-cols">
@@ -861,8 +864,8 @@ export function SignupPage() {
         <fieldset className="auth-field-group">
           <legend>Bảo mật và thông tin cơ bản</legend>
           <p>
-            Mật khẩu bảo vệ tài khoản; ngày sinh và giới tính
-            có thể được bổ sung hoặc kiểm tra lại trong hồ sơ.
+            Thiết lập mật khẩu và cung cấp thông tin cơ bản
+            để hoàn tất tài khoản.
           </p>
 
           <div className="form-two-cols">
@@ -901,6 +904,7 @@ export function SignupPage() {
               label="Giới tính"
               name="gender"
               value={form.gender}
+              required
               onChange={(event) =>
                 update("gender", event.target.value)
               }
@@ -929,10 +933,9 @@ export function SignupPage() {
                 event.preventDefault();
                 setFieldErrors((current) => ({
                   ...current,
-                  dateOfBirth:
-                    validateDateOfBirth(
-                      event.currentTarget.value,
-                    ) || "Ngày sinh không hợp lệ.",
+                  dateOfBirth: validateDateOfBirth(
+                    event.currentTarget.value,
+                  ),
                 }));
               }}
               min={MIN_BIRTH_DATE}
@@ -940,10 +943,8 @@ export function SignupPage() {
               autoComplete="bday"
               inputRef={dateOfBirthRef}
               error={fieldErrors.dateOfBirth}
-              hint={
-                `Ngày sinh phải từ 01/01/1900 đến hiện tại ` +
-                `và người đăng ký phải đủ ${MIN_SIGNUP_AGE} tuổi.`
-              }
+              hint="Ngày sinh hợp lệ từ 01/01/1900 đến hôm nay."
+              required
             />
           </div>
         </fieldset>
