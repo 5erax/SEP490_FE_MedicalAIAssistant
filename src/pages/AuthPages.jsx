@@ -426,6 +426,7 @@ function SelectField({
 const PASSWORD_HINT =
   "Tối thiểu 8 ký tự, nên có chữ hoa, chữ thường, số và ký tự đặc biệt.";
 
+const MIN_SIGNUP_AGE = 16;
 const MAX_REASONABLE_AGE = 120;
 
 function formatDateInputValue(date) {
@@ -444,6 +445,16 @@ function getEarliestBirthDateValue(today = new Date()) {
   );
 
   return formatDateInputValue(earliest);
+}
+
+function getLatestBirthDateValue(today = new Date()) {
+  const latest = new Date(
+    today.getFullYear() - MIN_SIGNUP_AGE,
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  return formatDateInputValue(latest);
 }
 
 function isValidEmail(value) {
@@ -492,15 +503,15 @@ function validateDateOfBirth(value, today = new Date()) {
     return "Ngày sinh không hợp lệ.";
   }
 
-  const todayValue = formatDateInputValue(today);
   const earliestValue = getEarliestBirthDateValue(today);
-
-  if (value > todayValue) {
-    return "Ngày sinh không thể nằm trong tương lai.";
-  }
+  const latestValue = getLatestBirthDateValue(today);
 
   if (value < earliestValue) {
     return `Ngày sinh không hợp lý. Tuổi không được vượt quá ${MAX_REASONABLE_AGE}.`;
+  }
+
+  if (value > latestValue) {
+    return `Bạn phải đủ ${MIN_SIGNUP_AGE} tuổi để đăng ký tài khoản.`;
   }
 
   return "";
@@ -770,9 +781,10 @@ export function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const signupFormRef = useRef(null);
   const today = new Date();
-  const todayDateValue = formatDateInputValue(today);
   const earliestBirthDateValue =
     getEarliestBirthDateValue(today);
+  const latestBirthDateValue =
+    getLatestBirthDateValue(today);
 
   function update(key, value) {
     setForm((current) => ({
@@ -998,10 +1010,10 @@ export function SignupPage() {
                 }));
               }}
               min={earliestBirthDateValue}
-              max={todayDateValue}
+              max={latestBirthDateValue}
               autoComplete="bday"
               error={fieldErrors.dateOfBirth}
-              hint={`Ngày sinh hợp lệ, không ở tương lai và tuổi không vượt quá ${MAX_REASONABLE_AGE}.`}
+              hint={`Bạn phải từ ${MIN_SIGNUP_AGE} tuổi trở lên. Tuổi tối đa hợp lý là ${MAX_REASONABLE_AGE}.`}
               required
             />
           </div>
