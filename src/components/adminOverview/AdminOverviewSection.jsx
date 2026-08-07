@@ -245,6 +245,12 @@ export default function AdminOverviewSection({
           payments={payments}
           onRetry={onRetryPayments}
         />
+        <PaymentStatusChartCard
+          loading={paymentsLoading}
+          error={paymentsError}
+          payments={payments}
+          onRetry={onRetryPayments}
+        />
         <DepartmentDistributionCard
           loading={facilitiesLoading}
           error={facilitiesError}
@@ -252,12 +258,6 @@ export default function AdminOverviewSection({
           onRetry={() => onRetryMetric("facilities")}
         />
         <UserGrowthPlaceholderCard />
-        <PaymentStatusChartCard
-          loading={paymentsLoading}
-          error={paymentsError}
-          payments={payments}
-          onRetry={onRetryPayments}
-        />
       </div>
 
       <aside className="admin-overview-scope" aria-label="Phạm vi dữ liệu tổng quan">
