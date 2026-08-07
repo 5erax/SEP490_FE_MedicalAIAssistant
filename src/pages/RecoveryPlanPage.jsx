@@ -766,6 +766,7 @@ function RecoveryTimelineCalendar({ plan, loading }) {
           <h4>{plan.planName || "Kế hoạch phục hồi"}</h4>
         </div>
         <EmptyState
+          className="recovery-timeline-empty"
           icon={<CalendarCheck size={26} aria-hidden="true" />}
           title="Lộ trình không còn hiệu lực"
           description="Kế hoạch này đã bị hủy nên các mốc thời gian không còn được áp dụng."
