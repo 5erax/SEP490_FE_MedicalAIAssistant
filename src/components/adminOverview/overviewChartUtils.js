@@ -7,37 +7,32 @@ export function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(amount);
 }
 
-function getMonthKey(value) {
+function getYearKey(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  return String(date.getFullYear());
 }
 
-function formatMonthLabel(monthKey) {
-  const [year, month] = monthKey.split("-");
-  return `T${Number(month)}/${year}`;
-}
-
-// Growth is shown as a cumulative running total across months, the
+// Growth is shown as a cumulative running total across years, the
 // conventional shape for a "revenue growth" chart - each point is the sum
-// of every successful payment up to and including that month.
+// of every successful payment up to and including that year.
 export function buildRevenueGrowth(payments) {
   const paidPayments = payments.filter((payment) => String(payment?.status ?? "").toLowerCase() === SUCCESS_STATUS);
   const total = paidPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
 
-  const byMonth = new Map();
+  const byYear = new Map();
   paidPayments.forEach((payment) => {
-    const key = getMonthKey(payment.createdAt);
+    const key = getYearKey(payment.createdAt);
     if (!key) return;
-    byMonth.set(key, (byMonth.get(key) ?? 0) + (Number(payment.amount) || 0));
+    byYear.set(key, (byYear.get(key) ?? 0) + (Number(payment.amount) || 0));
   });
 
   let cumulative = 0;
-  const series = Array.from(byMonth.keys())
+  const series = Array.from(byYear.keys())
     .sort()
-    .map((key) => {
-      cumulative += byMonth.get(key);
-      return { label: formatMonthLabel(key), value: cumulative };
+    .map((year) => {
+      cumulative += byYear.get(year);
+      return { label: year, value: cumulative };
     });
 
   return { series, total };
