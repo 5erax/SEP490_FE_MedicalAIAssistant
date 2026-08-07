@@ -190,7 +190,6 @@
 .doctor-recovery-queue-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
   border: 1px solid var(--color-line);
@@ -223,10 +222,194 @@
   gap: 8px;
 }
 
+.doctor-recovery-queue-info {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 280px;
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  margin: -6px 0;
+  padding: 6px 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+
+.doctor-recovery-queue-info:hover,
+.doctor-recovery-queue-info:focus-visible {
+  background: var(--color-info-bg);
+}
+
+.doctor-recovery-queue-info-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .doctor-recovery-queue-time {
-  margin-top: 6px;
   color: var(--color-muted);
   font-size: 13px;
+}
+
+.doctor-recovery-queue-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.doctor-recovery-queue-note svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-info-strong);
+}
+
+.doctor-recovery-queue-note span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doctor-recovery-queue-info-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-info-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.doctor-recovery-queue-info-cta svg {
+  transition: transform var(--motion-fast);
+}
+
+.doctor-recovery-queue-info:hover .doctor-recovery-queue-info-cta svg,
+.doctor-recovery-queue-info:focus-visible .doctor-recovery-queue-info-cta svg {
+  transform: translateX(3px);
+}
+
+.doctor-queue-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  background: rgba(17, 20, 18, 0.55);
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+}
+
+.doctor-queue-preview-modal {
+  width: min(480px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.doctor-queue-preview-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 20px 22px 16px;
+}
+
+.doctor-queue-preview-header > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+}
+
+.doctor-queue-preview-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.doctor-queue-preview-eyebrow {
+  margin: 0 0 2px;
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doctor-queue-preview-header button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.doctor-queue-preview-body {
+  display: grid;
+  gap: 16px;
+  padding: 18px 22px 4px;
+}
+
+.doctor-queue-preview-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.doctor-queue-preview-note {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  padding: 14px 16px;
+}
+
+.doctor-queue-preview-note-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--color-info-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.doctor-queue-preview-note-text {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.doctor-queue-preview-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.doctor-queue-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 22px 22px;
 }
 
 .doctor-recovery-pagination {
