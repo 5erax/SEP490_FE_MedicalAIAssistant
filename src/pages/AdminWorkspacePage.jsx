@@ -45,6 +45,7 @@ import {
   clinicalQuestionsApi,
   icdChaptersApi,
   patientProfilesApi,
+  paymentsApi,
   subscriptionPlansApi,
   usersApi,
 } from "../services/api";
@@ -502,6 +503,9 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [facilityOverviewLoadError, setFacilityOverviewLoadError] = useState("");
   const [patientProfileMessage, setPatientProfileMessage] = useState(null);
   const [patientProfileLoadError, setPatientProfileLoadError] = useState("");
+  const [overviewPayments, setOverviewPayments] = useState([]);
+  const [overviewPaymentsLoading, setOverviewPaymentsLoading] = useState(true);
+  const [overviewPaymentsError, setOverviewPaymentsError] = useState("");
 
   useEffect(() => {
     const navigation = adminNavRef.current;
@@ -538,6 +542,31 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     else if (section === "doctors") loadDoctors();
     else if (section === "ai-configs") loadAIConfigs();
     else if (section === "facilities") loadFacilities();
+  }
+
+  async function loadOverviewPayments() {
+    setOverviewPaymentsLoading(true);
+    setOverviewPaymentsError("");
+    try {
+      const pageSize = 100;
+      const firstResponse = await paymentsApi.list(1, pageSize);
+      const firstPage = getPagedPayload(firstResponse);
+      const allPayments = [...firstPage.items];
+
+      for (let pageNumber = 2; pageNumber <= firstPage.totalPages; pageNumber += 1) {
+        const response = await paymentsApi.list(pageNumber, pageSize);
+        allPayments.push(...getPagedPayload(response).items);
+      }
+
+      setOverviewPayments(allPayments);
+    } catch (error) {
+      setOverviewPaymentsError(translateApiMessage(error?.message, {
+        status: error?.status,
+        fallback: "Chưa thể tải dữ liệu thanh toán. Vui lòng thử lại.",
+      }));
+    } finally {
+      setOverviewPaymentsLoading(false);
+    }
   }
 
   const manageableUsers = useMemo(() => users.filter((user) => !isProtectedAdminUser(user)), [users]);
@@ -821,6 +850,11 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       active = false;
     };
   }, [auth, initialDoctorView, pageInfo.pageSize, patientProfilePageInfo.pageSize]);
+
+  useEffect(() => {
+    if (!auth) return;
+    queueMicrotask(() => void loadOverviewPayments());
+  }, [auth]);
 
   useEffect(() => {
     if (!auth || activeSection !== "doctors" || lastDoctorViewSearchRef.current === currentDoctorSearch) return undefined;
@@ -2443,6 +2477,10 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 userTotalCount={pageInfo.totalCount}
                 onOpenSection={openSection}
                 onRetryMetric={retryOverviewMetric}
+                payments={overviewPayments}
+                paymentsError={overviewPaymentsError}
+                paymentsLoading={overviewPaymentsLoading}
+                onRetryPayments={loadOverviewPayments}
               />
             )}
 
