@@ -3,24 +3,29 @@ import { buildPaymentStatusCounts, buildRevenueGrowth, formatCurrency } from "./
 
 export function RevenueLineChart({ series }) {
   const width = 600;
-  const height = 200;
+  const height = 220;
+  const xPadding = 30;
+  const topPadding = 30;
+  const bottomPadding = 30;
+  const plotWidth = width - xPadding * 2;
+  const plotHeight = height - topPadding - bottomPadding;
+
   // A single year has nothing to draw a line between, so anchor it to an
   // implicit zero point instead of leaving just a lone dot on the chart.
   const chartSeries = series.length === 1 ? [{ label: "", value: 0 }, series[0]] : series;
   const maxValue = Math.max(...chartSeries.map((point) => point.value), 1);
-  const stepX = chartSeries.length > 1 ? width / (chartSeries.length - 1) : 0;
+  const stepX = chartSeries.length > 1 ? plotWidth / (chartSeries.length - 1) : 0;
 
   const points = chartSeries.map((point, index) => ({
     ...point,
-    x: index * stepX,
-    y: height - (point.value / maxValue) * (height - 12) - 6,
+    x: xPadding + (chartSeries.length > 1 ? index * stepX : plotWidth / 2),
+    y: topPadding + plotHeight - (point.value / maxValue) * plotHeight,
     isAnchor: series.length === 1 && index === 0,
   }));
 
   const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x},${point.y}`).join(" ");
-  const areaPath = points.length > 0
-    ? `${linePath} L${points[points.length - 1].x},${height} L${points[0].x},${height} Z`
-    : "";
+  const gridLineCount = 4;
+  const gridLines = Array.from({ length: gridLineCount + 1 }, (_, index) => topPadding + (plotHeight / gridLineCount) * index);
 
   return (
     <svg
@@ -29,12 +34,22 @@ export function RevenueLineChart({ series }) {
       role="img"
       aria-label="Biểu đồ tăng trưởng doanh thu theo năm"
     >
-      <path d={areaPath} className="overview-line-chart-area" />
+      {gridLines.map((y) => (
+        <line key={y} x1={xPadding} y1={y} x2={width - xPadding} y2={y} className="overview-line-chart-grid" />
+      ))}
       <path d={linePath} className="overview-line-chart-line" />
       {points.filter((point) => !point.isAnchor).map((point) => (
-        <circle key={point.label} cx={point.x} cy={point.y} r="4" className="overview-line-chart-dot">
-          <title>{`${point.label}: ${formatCurrency(point.value)}`}</title>
-        </circle>
+        <g key={point.label}>
+          <circle cx={point.x} cy={point.y} r="4" className="overview-line-chart-dot">
+            <title>{`${point.label}: ${formatCurrency(point.value)}`}</title>
+          </circle>
+          <text x={point.x} y={point.y - 12} textAnchor="middle" className="overview-line-chart-value-label">
+            {formatCurrency(point.value)}
+          </text>
+          <text x={point.x} y={height - 8} textAnchor="middle" className="overview-line-chart-axis-label">
+            {point.label}
+          </text>
+        </g>
       ))}
     </svg>
   );
@@ -154,9 +169,6 @@ export function RevenueChartCard({ loading, error, payments, onRetry }) {
         <>
           <p className="admin-overview-chart-total">{formatCurrency(total)}</p>
           <RevenueLineChart series={series} />
-          <div className="overview-line-chart-legend">
-            {series.map((point) => <span key={point.label}>{point.label}</span>)}
-          </div>
         </>
       )}
     </div>

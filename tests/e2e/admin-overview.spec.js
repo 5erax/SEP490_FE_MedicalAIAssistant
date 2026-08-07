@@ -188,7 +188,7 @@ test("admin overview shows revenue growth and a payment success/failure chart", 
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("heading", { name: "Tăng trưởng doanh thu" })).toBeVisible();
-  await expect(page.getByText("300.000 ₫", { exact: true })).toBeVisible();
+  await expect(page.locator(".admin-overview-chart-total")).toHaveText("300.000 ₫");
 
   await expect(page.getByRole("heading", { name: "Tỉ lệ thanh toán thành công" })).toBeVisible();
   const donutChart = page.getByRole("img", { name: "Tỉ lệ thanh toán: 2 thành công, 2 không thành công" });
@@ -219,7 +219,7 @@ test("revenue chart still draws a visible line when every payment lands in a sin
   }));
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("764.000 ₫", { exact: true })).toBeVisible();
+  await expect(page.locator(".admin-overview-chart-total")).toHaveText("764.000 ₫");
   const chart = page.getByRole("img", { name: "Biểu đồ tăng trưởng doanh thu theo năm" });
   await expect(chart).toBeVisible();
   // A single real year is anchored to an implicit zero point so the line

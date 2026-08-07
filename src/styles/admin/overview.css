@@ -441,12 +441,14 @@
 .admin-operator .overview-line-chart {
   width: 100%;
   height: auto;
-  aspect-ratio: 3 / 1;
+  aspect-ratio: 600 / 220;
+  overflow: visible;
 }
 
-.admin-operator .overview-line-chart-area {
-  fill: rgba(13, 119, 115, 0.12);
-  stroke: none;
+.admin-operator .overview-line-chart-grid {
+  stroke: var(--overview-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 
 .admin-operator .overview-line-chart-line {
@@ -465,12 +467,14 @@
   vector-effect: non-scaling-stroke;
 }
 
-.admin-operator .overview-line-chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 6px 12px;
-  color: var(--overview-muted);
+.admin-operator .overview-line-chart-value-label {
+  fill: var(--overview-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-operator .overview-line-chart-axis-label {
+  fill: var(--overview-muted);
   font-size: 11px;
   font-weight: 700;
 }
@@ -764,10 +768,6 @@ html[data-theme="dark"] .admin-operator .admin-overview-card:hover {
   background: #203632;
 }
 
-html[data-theme="dark"] .admin-operator .overview-line-chart-area {
-  fill: rgba(114, 214, 207, 0.16);
-}
-
 html[data-theme="dark"] .admin-operator .overview-donut-track {
   stroke: #24433e;
 }
@@ -824,12 +824,14 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
   }
 
   .admin-operator .overview-line-chart-line,
-  .admin-operator .overview-line-chart-dot {
+  .admin-operator .overview-line-chart-dot,
+  .admin-operator .overview-line-chart-grid {
     stroke: CanvasText;
   }
 
-  .admin-operator .overview-line-chart-area {
-    fill: none;
+  .admin-operator .overview-line-chart-value-label,
+  .admin-operator .overview-line-chart-axis-label {
+    fill: CanvasText;
   }
 
   .admin-operator .overview-donut-segment.is-success,
