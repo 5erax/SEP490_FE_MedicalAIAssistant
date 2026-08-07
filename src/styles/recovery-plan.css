@@ -917,6 +917,11 @@
   gap: 20px;
 }
 
+.recovery-timeline-empty p {
+  max-width: 400px;
+  text-wrap: balance;
+}
+
 .recovery-timeline-intro h4 {
   margin: 5px 0 4px;
   font-size: var(--recovery-fs-h3);
