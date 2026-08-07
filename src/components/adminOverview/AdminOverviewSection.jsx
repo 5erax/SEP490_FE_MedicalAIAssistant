@@ -7,6 +7,11 @@ import {
   Stethoscope,
   Users,
 } from "lucide-react";
+import {
+  PaymentStatusChartCard,
+  RevenueChartCard,
+  UserGrowthPlaceholderCard,
+} from "./OverviewCharts";
 
 const OVERVIEW_METRICS = [
   {
@@ -58,6 +63,10 @@ export default function AdminOverviewSection({
   userTotalCount,
   onOpenSection,
   onRetryMetric,
+  payments = [],
+  paymentsError = "",
+  paymentsLoading = false,
+  onRetryPayments,
 }) {
   const metricState = {
     users: { value: userTotalCount, loading: usersLoading, error: usersError },
@@ -136,6 +145,22 @@ export default function AdminOverviewSection({
             </a>
           );
         })}
+      </div>
+
+      <div className="admin-overview-charts">
+        <RevenueChartCard
+          loading={paymentsLoading}
+          error={paymentsError}
+          payments={payments}
+          onRetry={onRetryPayments}
+        />
+        <UserGrowthPlaceholderCard />
+        <PaymentStatusChartCard
+          loading={paymentsLoading}
+          error={paymentsError}
+          payments={payments}
+          onRetry={onRetryPayments}
+        />
       </div>
 
       <aside className="admin-overview-scope" aria-label="Phạm vi dữ liệu tổng quan">

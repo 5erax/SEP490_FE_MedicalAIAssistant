@@ -236,6 +236,195 @@
   transform: translate(2px, -2px);
 }
 
+.admin-operator .admin-overview-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 20px);
+}
+
+.admin-operator .admin-overview-chart-card.is-revenue {
+  grid-column: 1 / -1;
+}
+
+.admin-operator .admin-overview-chart-card {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  border: 1px solid var(--overview-line);
+  border-radius: 20px;
+  background: var(--overview-surface);
+  padding: clamp(20px, 2.4vw, 26px);
+}
+
+.admin-operator .admin-overview-chart-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-operator .admin-overview-chart-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: #e5f4ef;
+  color: var(--overview-teal-dark);
+}
+
+.admin-operator .admin-overview-chart-head .eyebrow {
+  margin: 0;
+  color: var(--overview-teal-dark);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.admin-operator .admin-overview-chart-head h3 {
+  margin: 2px 0 0;
+  color: var(--overview-ink);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.admin-operator .admin-overview-chart-total {
+  margin: 0;
+  color: var(--overview-ink);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.admin-operator .admin-overview-chart-status {
+  margin: 0;
+  color: var(--overview-muted);
+  font-size: 13px;
+}
+
+.admin-operator .admin-overview-chart-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 20px 10px;
+  color: var(--overview-muted);
+  text-align: center;
+}
+
+.admin-operator .admin-overview-chart-empty svg {
+  color: var(--overview-teal);
+}
+
+.admin-operator .admin-overview-chart-empty strong {
+  color: var(--overview-ink);
+  font-size: 14px;
+}
+
+.admin-operator .admin-overview-chart-empty p {
+  max-width: 320px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.admin-operator .overview-line-chart {
+  width: 100%;
+  height: 160px;
+}
+
+.admin-operator .overview-line-chart-area {
+  fill: rgba(13, 119, 115, 0.12);
+  stroke: none;
+}
+
+.admin-operator .overview-line-chart-line {
+  fill: none;
+  stroke: var(--overview-teal);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.admin-operator .overview-line-chart-dot {
+  fill: var(--overview-surface);
+  stroke: var(--overview-teal-dark);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.admin-operator .overview-line-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  color: var(--overview-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-operator .overview-bar-chart {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 20px;
+  height: 200px;
+  padding-top: 12px;
+}
+
+.admin-operator .overview-bar-chart-column {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  justify-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+.admin-operator .overview-bar-chart-value {
+  color: var(--overview-ink);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.admin-operator .overview-bar-chart-track {
+  display: flex;
+  align-items: flex-end;
+  width: 56px;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #eef4f2;
+}
+
+.admin-operator .overview-bar-chart-fill {
+  width: 100%;
+  min-height: 6px;
+  border-radius: 10px 10px 0 0;
+  transition: height 240ms ease;
+}
+
+.admin-operator .overview-bar-chart-fill.is-success {
+  background: var(--overview-teal);
+}
+
+.admin-operator .overview-bar-chart-fill.is-danger {
+  background: var(--color-danger, #b42318);
+}
+
+.admin-operator .overview-bar-chart-label {
+  color: var(--overview-ink);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.admin-operator .overview-bar-chart-percent {
+  color: var(--overview-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .admin-operator .admin-overview-scope {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -378,6 +567,14 @@
   .admin-operator .admin-overview-card-action {
     grid-column: 2;
   }
+
+  .admin-operator .admin-overview-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-overview-chart-card.is-revenue {
+    grid-column: auto;
+  }
 }
 
 html[data-theme="dark"] .admin-operator .admin-overview {
@@ -396,12 +593,21 @@ html[data-theme="dark"] .admin-operator .admin-overview-heading {
 }
 
 html[data-theme="dark"] .admin-operator .admin-overview-source-icon,
-html[data-theme="dark"] .admin-operator .admin-overview-card-icon {
+html[data-theme="dark"] .admin-operator .admin-overview-card-icon,
+html[data-theme="dark"] .admin-operator .admin-overview-chart-icon {
   background: #24433e;
 }
 
 html[data-theme="dark"] .admin-operator .admin-overview-card:hover {
   background: #203632;
+}
+
+html[data-theme="dark"] .admin-operator .overview-line-chart-area {
+  fill: rgba(114, 214, 207, 0.16);
+}
+
+html[data-theme="dark"] .admin-operator .overview-bar-chart-track {
+  background: #24433e;
 }
 
 html[data-theme="dark"] .admin-operator .admin-overview-loading {
@@ -418,6 +624,10 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
   .admin-operator .admin-overview-card-action svg {
     transition: none;
   }
+
+  .admin-operator .overview-bar-chart-fill {
+    transition: none;
+  }
 }
 
 @media (forced-colors: active) {
@@ -425,8 +635,13 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
   .admin-operator .admin-overview-grid,
   .admin-operator .admin-overview-card,
   .admin-operator .admin-overview-scope,
-  .admin-operator .admin-overview-source {
+  .admin-operator .admin-overview-source,
+  .admin-operator .admin-overview-chart-card {
     border-color: CanvasText;
+  }
+
+  .admin-operator .overview-bar-chart-track {
+    border: 1px solid CanvasText;
   }
 
   .admin-operator .admin-overview-heading::after {
@@ -438,7 +653,21 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
   }
 
   .admin-operator .admin-overview-card-icon,
-  .admin-operator .admin-overview-source-icon {
+  .admin-operator .admin-overview-source-icon,
+  .admin-operator .admin-overview-chart-icon {
     border: 1px solid ButtonBorder;
+  }
+
+  .admin-operator .overview-line-chart-line,
+  .admin-operator .overview-line-chart-dot {
+    stroke: CanvasText;
+  }
+
+  .admin-operator .overview-line-chart-area {
+    fill: none;
+  }
+
+  .admin-operator .overview-bar-chart-fill {
+    forced-color-adjust: none;
   }
 }

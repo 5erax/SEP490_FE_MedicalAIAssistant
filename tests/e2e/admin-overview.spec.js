@@ -74,6 +74,40 @@ test("admin overview shows only backend totals without inferred operational data
   await expect(page.getByRole("button", { name: "Lịch vận hành" })).toHaveCount(0);
 });
 
+test("admin overview shows revenue growth and a payment success/failure chart", async ({ page }) => {
+  await mockAdminOverview(page);
+  await page.route("**/api/payments*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        items: [
+          { id: "p1", amount: 100000, status: "paid", createdAt: "2026-06-15T08:00:00Z" },
+          { id: "p2", amount: 200000, status: "paid", createdAt: "2026-07-10T08:00:00Z" },
+          { id: "p3", amount: 50000, status: "failed", createdAt: "2026-07-12T08:00:00Z" },
+          { id: "p4", amount: 150000, status: "pending", createdAt: "2026-07-14T08:00:00Z" },
+          { id: "p5", amount: 80000, status: "cancelled", createdAt: "2026-07-15T08:00:00Z" },
+        ],
+        pageNumber: 1,
+        pageSize: 100,
+        totalCount: 5,
+        totalPages: 1,
+      },
+    }),
+  }));
+  await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("heading", { name: "Tăng trưởng doanh thu" })).toBeVisible();
+  await expect(page.getByText("300.000 ₫", { exact: true })).toBeVisible();
+
+  await expect(page.getByRole("heading", { name: "Tỉ lệ thanh toán thành công" })).toBeVisible();
+  const barChart = page.getByRole("img", { name: "Tỉ lệ thanh toán: 2 thành công, 2 không thành công" });
+  await expect(barChart).toBeVisible();
+
+  await expect(page.getByRole("heading", { name: "Tăng trưởng tài khoản" })).toBeVisible();
+  await expect(page.getByText("API tài khoản người dùng hiện chưa trả về thời gian tạo")).toBeVisible();
+});
+
 test("admin overview navigation remains keyboard operable", async ({ page }) => {
   await mockAdminOverview(page);
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
