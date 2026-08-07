@@ -338,7 +338,7 @@ function OperationalAttentionSection({ operationalCounts, operationalCountsLoadi
                 <strong>{item.label}</strong>
                 <p>{item.reason}</p>
               </div>
-              <span className="admin-overview-attention-value">
+              <span className={`admin-overview-attention-value${unavailable ? " is-blocked" : ""}`}>
                 {item.loading ? "…" : unavailable ? "Không khả dụng" : item.value}
               </span>
             </li>
