@@ -187,7 +187,7 @@ test("admin overview shows revenue growth and a payment success/failure chart", 
   }));
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { name: "Tăng trưởng doanh thu" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Doanh thu theo tháng - Năm 2026" })).toBeVisible();
   await expect(page.locator(".admin-overview-chart-total")).toHaveText("300.000 ₫");
 
   await expect(page.getByRole("heading", { name: "Tỉ lệ thanh toán thành công" })).toBeVisible();
@@ -199,7 +199,7 @@ test("admin overview shows revenue growth and a payment success/failure chart", 
   await expect(page.getByText("API tài khoản người dùng hiện chưa trả về thời gian tạo")).toBeVisible();
 });
 
-test("revenue chart still draws a visible line when every payment lands in a single year", async ({ page }) => {
+test("revenue chart always plots all 12 months of the latest year with data, even ones with no revenue", async ({ page }) => {
   await mockAdminOverview(page);
   await page.route("**/api/payments*", (route) => route.fulfill({
     contentType: "application/json",
@@ -220,12 +220,17 @@ test("revenue chart still draws a visible line when every payment lands in a sin
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
 
   await expect(page.locator(".admin-overview-chart-total")).toHaveText("764.000 ₫");
-  const chart = page.getByRole("img", { name: "Biểu đồ tăng trưởng doanh thu theo năm" });
+  const chart = page.getByRole("img", { name: "Biểu đồ doanh thu theo từng tháng" });
   await expect(chart).toBeVisible();
-  // A single real year is anchored to an implicit zero point so the line
-  // is actually visible instead of collapsing into a lone, invisible dot.
-  await expect(chart.locator("path.overview-line-chart-line")).toHaveAttribute("d", /L/);
-  await expect(chart.locator("circle.overview-line-chart-dot")).toHaveCount(1);
+  // Every calendar month of the year must get a point, not just August
+  // (the only month with an actual payment).
+  await expect(chart.locator("circle.overview-line-chart-dot")).toHaveCount(12);
+  await expect(chart.locator("text.overview-line-chart-axis-label")).toHaveText([
+    "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12",
+  ]);
+  // Zero-revenue months skip the value label to avoid cluttering the chart.
+  await expect(chart.locator("text.overview-line-chart-value-label")).toHaveCount(1);
+  await expect(chart.locator("text.overview-line-chart-value-label")).toHaveText("764k ₫");
 });
 
 test("admin overview navigation remains keyboard operable", async ({ page }) => {

@@ -441,7 +441,7 @@
 .admin-operator .overview-line-chart {
   width: 100%;
   height: auto;
-  aspect-ratio: 600 / 220;
+  aspect-ratio: 720 / 220;
   overflow: visible;
 }
 
@@ -469,13 +469,13 @@
 
 .admin-operator .overview-line-chart-value-label {
   fill: var(--overview-ink);
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 800;
 }
 
 .admin-operator .overview-line-chart-axis-label {
   fill: var(--overview-muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
