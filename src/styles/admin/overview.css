@@ -479,7 +479,7 @@
   --bar-label-width: 132px;
   --bar-value-width: 78px;
   position: relative;
-  padding: 6px 0;
+  padding: 20px 0 10px;
 }
 
 .admin-operator .overview-bar-chart-gridlines {
@@ -505,7 +505,7 @@
   display: grid;
   grid-template-columns: var(--bar-label-width) 1fr var(--bar-value-width);
   column-gap: 14px;
-  row-gap: 20px;
+  row-gap: 26px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -518,7 +518,7 @@
 .admin-operator .overview-bar-chart-label {
   align-self: center;
   color: var(--overview-ink);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   text-align: right;
 }
@@ -527,7 +527,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 26px;
+  height: 34px;
 }
 
 .admin-operator .overview-bar-chart-fill {
@@ -548,14 +548,14 @@
 .admin-operator .overview-bar-chart-value {
   align-self: center;
   color: var(--overview-muted);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .admin-operator .overview-bar-chart-value strong {
   color: var(--overview-ink);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
 }
 
@@ -563,11 +563,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: clamp(20px, 3vw, 32px);
+  justify-content: center;
+  gap: clamp(28px, 4vw, 48px);
+  padding: 8px 0;
 }
 
 .admin-operator .overview-pie-chart > svg {
-  width: min(240px, 100%);
+  width: min(320px, 100%);
   height: auto;
   flex: 0 0 auto;
 }
@@ -711,7 +713,7 @@
   }
 
   .admin-operator .overview-bar-chart-track {
-    height: 18px;
+    height: 24px;
   }
 
   .admin-operator .overview-bar-chart-label {
