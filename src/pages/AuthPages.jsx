@@ -457,8 +457,8 @@ function getLatestBirthDateValue(today = new Date()) {
   return formatDateInputValue(latest);
 }
 
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+function isValidGmailAddress(value) {
+  return /^[^\s@]+@gmail\.com$/i.test(
     String(value ?? "").trim(),
   );
 }
@@ -532,7 +532,7 @@ function validateDateOfBirth(value, today = new Date()) {
   }
 
   if (age > MAX_REASONABLE_AGE) {
-    return "Ngày sinh không hợp lệ. Vui lòng kiểm tra lại.";
+    return "Ngày sinh không hợp lý. Vui lòng kiểm tra lại.";
   }
 
   return "";
@@ -543,8 +543,9 @@ function validateSignupForm(form, accepted) {
 
   if (!form.email.trim()) {
     errors.email = "Vui lòng nhập email.";
-  } else if (!isValidEmail(form.email)) {
-    errors.email = "Email không đúng định dạng.";
+  } else if (!isValidGmailAddress(form.email)) {
+    errors.email =
+      "Vui lòng sử dụng địa chỉ Gmail có dạng tenban@gmail.com.";
   }
 
   if (!form.userName.trim()) {
@@ -870,6 +871,7 @@ export function SignupPage() {
     try {
       const response = await authApi.register({
         ...form,
+        email: form.email.trim().toLowerCase(),
         gender: Number(form.gender),
         dateOfBirth: form.dateOfBirth,
       });
@@ -918,7 +920,21 @@ export function SignupPage() {
               onChange={(event) =>
                 update("email", event.target.value)
               }
+              onBlur={(event) => {
+                const value = event.currentTarget.value.trim();
+
+                setFieldErrors((current) => ({
+                  ...current,
+                  email: !value
+                    ? "Vui lòng nhập email."
+                    : isValidGmailAddress(value)
+                      ? ""
+                      : "Vui lòng sử dụng địa chỉ Gmail có dạng tenban@gmail.com.",
+                }));
+              }}
+              placeholder="tenban@gmail.com"
               autoComplete="email"
+              inputMode="email"
               spellCheck={false}
               error={fieldErrors.email}
               required
