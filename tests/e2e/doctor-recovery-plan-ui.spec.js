@@ -302,6 +302,11 @@ test.describe("doctor recovery plan workflow", () => {
       rejectionReasonCode: "NOT_ELIGIBLE",
       rejectionReason: "Bệnh nhân không phù hợp phác đồ hiện có.",
     });
+
+    // The reason code shown back to the doctor must be the Vietnamese
+    // label, not the raw backend enum value.
+    await expect(page.getByText("Không đủ điều kiện tạo kế hoạch", { exact: true })).toBeVisible();
+    await expect(page.getByText("NOT_ELIGIBLE", { exact: true })).toHaveCount(0);
   });
 
   test("requesting more information updates the request status", async ({ page }) => {
