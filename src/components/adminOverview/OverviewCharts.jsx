@@ -4,7 +4,7 @@ import { buildPaymentStatusCounts, buildRevenueGrowth, formatCurrency } from "./
 export function RevenueLineChart({ series }) {
   const width = 600;
   const height = 200;
-  // A single month has nothing to draw a line between, so anchor it to an
+  // A single year has nothing to draw a line between, so anchor it to an
   // implicit zero point instead of leaving just a lone dot on the chart.
   const chartSeries = series.length === 1 ? [{ label: "", value: 0 }, series[0]] : series;
   const maxValue = Math.max(...chartSeries.map((point) => point.value), 1);
@@ -27,7 +27,7 @@ export function RevenueLineChart({ series }) {
       viewBox={`0 0 ${width} ${height}`}
       className="overview-line-chart"
       role="img"
-      aria-label="Biểu đồ tăng trưởng doanh thu theo tháng"
+      aria-label="Biểu đồ tăng trưởng doanh thu theo năm"
     >
       <path d={areaPath} className="overview-line-chart-area" />
       <path d={linePath} className="overview-line-chart-line" />

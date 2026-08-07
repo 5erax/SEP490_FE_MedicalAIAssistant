@@ -199,7 +199,7 @@ test("admin overview shows revenue growth and a payment success/failure chart", 
   await expect(page.getByText("API tài khoản người dùng hiện chưa trả về thời gian tạo")).toBeVisible();
 });
 
-test("revenue chart still draws a visible line when every payment lands in a single month", async ({ page }) => {
+test("revenue chart still draws a visible line when every payment lands in a single year", async ({ page }) => {
   await mockAdminOverview(page);
   await page.route("**/api/payments*", (route) => route.fulfill({
     contentType: "application/json",
@@ -220,9 +220,9 @@ test("revenue chart still draws a visible line when every payment lands in a sin
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByText("764.000 ₫", { exact: true })).toBeVisible();
-  const chart = page.getByRole("img", { name: "Biểu đồ tăng trưởng doanh thu theo tháng" });
+  const chart = page.getByRole("img", { name: "Biểu đồ tăng trưởng doanh thu theo năm" });
   await expect(chart).toBeVisible();
-  // A single real month is anchored to an implicit zero point so the line
+  // A single real year is anchored to an implicit zero point so the line
   // is actually visible instead of collapsing into a lone, invisible dot.
   await expect(chart.locator("path.overview-line-chart-line")).toHaveAttribute("d", /L/);
   await expect(chart.locator("circle.overview-line-chart-dot")).toHaveCount(1);
