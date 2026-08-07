@@ -101,11 +101,41 @@ test("admin overview shows revenue growth and a payment success/failure chart", 
   await expect(page.getByText("300.000 ₫", { exact: true })).toBeVisible();
 
   await expect(page.getByRole("heading", { name: "Tỉ lệ thanh toán thành công" })).toBeVisible();
-  const barChart = page.getByRole("img", { name: "Tỉ lệ thanh toán: 2 thành công, 2 không thành công" });
-  await expect(barChart).toBeVisible();
+  const donutChart = page.getByRole("img", { name: "Tỉ lệ thanh toán: 2 thành công, 2 không thành công" });
+  await expect(donutChart).toBeVisible();
+  await expect(donutChart.locator("circle.overview-donut-segment")).toHaveCount(2);
 
   await expect(page.getByRole("heading", { name: "Tăng trưởng tài khoản" })).toBeVisible();
   await expect(page.getByText("API tài khoản người dùng hiện chưa trả về thời gian tạo")).toBeVisible();
+});
+
+test("revenue chart still draws a visible line when every payment lands in a single month", async ({ page }) => {
+  await mockAdminOverview(page);
+  await page.route("**/api/payments*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        items: [
+          { id: "p1", amount: 400000, status: "paid", createdAt: "2026-08-01T08:00:00Z" },
+          { id: "p2", amount: 364000, status: "paid", createdAt: "2026-08-06T08:00:00Z" },
+        ],
+        pageNumber: 1,
+        pageSize: 100,
+        totalCount: 2,
+        totalPages: 1,
+      },
+    }),
+  }));
+  await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("764.000 ₫", { exact: true })).toBeVisible();
+  const chart = page.getByRole("img", { name: "Biểu đồ tăng trưởng doanh thu theo tháng" });
+  await expect(chart).toBeVisible();
+  // A single real month is anchored to an implicit zero point so the line
+  // is actually visible instead of collapsing into a lone, invisible dot.
+  await expect(chart.locator("path.overview-line-chart-line")).toHaveAttribute("d", /L/);
+  await expect(chart.locator("circle.overview-line-chart-dot")).toHaveCount(1);
 });
 
 test("admin overview navigation remains keyboard operable", async ({ page }) => {

@@ -330,7 +330,8 @@
 
 .admin-operator .overview-line-chart {
   width: 100%;
-  height: 160px;
+  height: auto;
+  aspect-ratio: 3 / 1;
 }
 
 .admin-operator .overview-line-chart-area {
@@ -364,65 +365,110 @@
   font-weight: 700;
 }
 
-.admin-operator .overview-bar-chart {
+.admin-operator .overview-donut-chart {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: end;
-  gap: 20px;
-  height: 200px;
-  padding-top: 12px;
-}
-
-.admin-operator .overview-bar-chart-column {
-  display: grid;
-  grid-template-rows: auto 1fr auto auto;
   justify-items: center;
-  gap: 6px;
-  height: 100%;
+  gap: 16px;
 }
 
-.admin-operator .overview-bar-chart-value {
-  color: var(--overview-ink);
-  font-size: 20px;
-  font-weight: 800;
+.admin-operator .overview-donut-chart > svg {
+  width: min(200px, 100%);
+  height: auto;
 }
 
-.admin-operator .overview-bar-chart-track {
-  display: flex;
-  align-items: flex-end;
-  width: 56px;
-  height: 100%;
-  overflow: hidden;
-  border-radius: 10px;
-  background: #eef4f2;
+.admin-operator .overview-donut-track {
+  stroke: #eef4f2;
 }
 
-.admin-operator .overview-bar-chart-fill {
-  width: 100%;
-  min-height: 6px;
-  border-radius: 10px 10px 0 0;
-  transition: height 240ms ease;
+.admin-operator .overview-donut-segment {
+  stroke-linecap: butt;
+  transition: stroke-dasharray 240ms ease;
 }
 
-.admin-operator .overview-bar-chart-fill.is-success {
-  background: var(--overview-teal);
+.admin-operator .overview-donut-segment.is-success {
+  stroke: var(--overview-teal);
 }
 
-.admin-operator .overview-bar-chart-fill.is-danger {
-  background: var(--color-danger, #b42318);
+.admin-operator .overview-donut-segment.is-danger {
+  stroke: var(--color-danger, #b42318);
 }
 
-.admin-operator .overview-bar-chart-label {
-  color: var(--overview-ink);
-  font-size: 12px;
-  font-weight: 700;
+.admin-operator .overview-donut-center {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: grid;
+  width: min(200px, 100%);
+  height: min(200px, 100%);
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  transform: translateX(-50%);
+  pointer-events: none;
   text-align: center;
 }
 
-.admin-operator .overview-bar-chart-percent {
+.admin-operator .overview-donut-center strong {
+  color: var(--overview-ink);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.admin-operator .overview-donut-center span {
   color: var(--overview-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
+}
+
+.admin-operator .overview-donut-legend {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-operator .overview-donut-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-operator .overview-donut-swatch {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+}
+
+.admin-operator .overview-donut-swatch.is-success {
+  background: var(--overview-teal);
+}
+
+.admin-operator .overview-donut-swatch.is-danger {
+  background: var(--color-danger, #b42318);
+}
+
+.admin-operator .overview-donut-legend-label {
+  flex: 1 1 auto;
+  color: var(--overview-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-operator .overview-donut-legend li strong {
+  color: var(--overview-ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.admin-operator .overview-donut-legend-percent {
+  min-width: 38px;
+  color: var(--overview-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
 }
 
 .admin-operator .admin-overview-scope {
@@ -606,8 +652,8 @@ html[data-theme="dark"] .admin-operator .overview-line-chart-area {
   fill: rgba(114, 214, 207, 0.16);
 }
 
-html[data-theme="dark"] .admin-operator .overview-bar-chart-track {
-  background: #24433e;
+html[data-theme="dark"] .admin-operator .overview-donut-track {
+  stroke: #24433e;
 }
 
 html[data-theme="dark"] .admin-operator .admin-overview-loading {
@@ -625,7 +671,7 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     transition: none;
   }
 
-  .admin-operator .overview-bar-chart-fill {
+  .admin-operator .overview-donut-segment {
     transition: none;
   }
 }
@@ -640,8 +686,8 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     border-color: CanvasText;
   }
 
-  .admin-operator .overview-bar-chart-track {
-    border: 1px solid CanvasText;
+  .admin-operator .overview-donut-track {
+    stroke: CanvasText;
   }
 
   .admin-operator .admin-overview-heading::after {
@@ -667,7 +713,15 @@ html[data-theme="dark"] .admin-operator .admin-overview-loading {
     fill: none;
   }
 
-  .admin-operator .overview-bar-chart-fill {
-    forced-color-adjust: none;
+  .admin-operator .overview-donut-segment.is-success,
+  .admin-operator .overview-donut-swatch.is-success {
+    stroke: Highlight;
+    background: Highlight;
+  }
+
+  .admin-operator .overview-donut-segment.is-danger,
+  .admin-operator .overview-donut-swatch.is-danger {
+    stroke: CanvasText;
+    background: CanvasText;
   }
 }
