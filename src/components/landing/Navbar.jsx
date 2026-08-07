@@ -9,6 +9,10 @@ const NAV_LINKS = [
   { name: "Bảng giá", href: "/#pricing-preview", sectionId: "pricing-preview" },
 ];
 
+const NAV_SECTION_IDS = new Set(
+  NAV_LINKS.map(({ sectionId }) => sectionId),
+);
+
 function Logo() {
   return (
     <a className="brand" href="/" aria-label="MediMate AI">
@@ -18,6 +22,17 @@ function Logo() {
       <span>MediMate AI</span>
     </a>
   );
+}
+
+function getScrollBehavior() {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return "auto";
+  }
+
+  return "smooth";
 }
 
 export function Navbar({ variant = "default" }) {
@@ -35,6 +50,66 @@ export function Navbar({ variant = "default" }) {
     () => Array.from({ length: 8 }, () => createRef()),
     [],
   );
+
+  function scrollToLandingSection(
+    sectionId,
+    { behavior = getScrollBehavior(), updateHistory = true } = {},
+  ) {
+    if (
+      typeof window === "undefined" ||
+      window.location.pathname !== "/" ||
+      !NAV_SECTION_IDS.has(sectionId)
+    ) {
+      return false;
+    }
+
+    const section = document.getElementById(sectionId);
+    if (!section) {
+      return false;
+    }
+
+    const navHeight =
+      headerRef.current?.getBoundingClientRect().height ??
+      document.querySelector(".nav")?.getBoundingClientRect().height ??
+      0;
+
+    const targetTop = Math.max(
+      0,
+      section.getBoundingClientRect().top +
+        window.scrollY -
+        navHeight -
+        12,
+    );
+
+    if (updateHistory) {
+      const nextUrl = `/#${sectionId}`;
+
+      if (`${window.location.pathname}${window.location.hash}` !== nextUrl) {
+        window.history.pushState(null, "", nextUrl);
+      }
+    }
+
+    window.scrollTo({
+      top: targetTop,
+      behavior,
+    });
+    setActiveSection(sectionId);
+
+    return true;
+  }
+
+  function handleSectionLinkClick(event, link) {
+    if (window.location.pathname !== "/") {
+      // Ở trang khác: giữ href="/#section" để browser quay về landing page.
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!scrollToLandingSection(link.sectionId)) {
+      window.location.assign(link.href);
+    }
+  }
 
   useEffect(() => {
     const header = headerRef.current;
@@ -71,9 +146,11 @@ export function Navbar({ variant = "default" }) {
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 960px)");
+
     function closeMenuOnDesktop(event) {
       if (!event.matches) setOpen(false);
     }
+
     mobileQuery.addEventListener("change", closeMenuOnDesktop);
     return () => mobileQuery.removeEventListener("change", closeMenuOnDesktop);
   }, []);
@@ -88,13 +165,42 @@ export function Navbar({ variant = "default" }) {
   });
 
   useEffect(() => {
-    const navSectionIds = new Set(NAV_LINKS.map(({ sectionId }) => sectionId));
+    if (window.location.pathname !== "/") {
+      return undefined;
+    }
+
+    let firstFrame = 0;
+    let secondFrame = 0;
+
+    const sectionId = window.location.hash.slice(1);
+    if (NAV_SECTION_IDS.has(sectionId)) {
+      // Chờ layout landing page ổn định rồi bù chiều cao sticky navbar.
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          scrollToLandingSection(sectionId, {
+            behavior: "auto",
+            updateHistory: false,
+          });
+        });
+      });
+    }
+
+    return () => {
+      if (firstFrame) window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, []);
+
+  useEffect(() => {
     const sections = [...document.querySelectorAll(".landing-page > section")];
     let animationFrame = 0;
 
     function updateActiveSection() {
       animationFrame = 0;
-      const navHeight = document.querySelector(".nav")?.getBoundingClientRect().height ?? 0;
+      const navHeight =
+        headerRef.current?.getBoundingClientRect().height ??
+        document.querySelector(".nav")?.getBoundingClientRect().height ??
+        0;
       const viewportTop = navHeight;
       const viewportBottom = window.innerHeight;
       let currentSection = null;
@@ -104,7 +210,8 @@ export function Navbar({ variant = "default" }) {
         const rect = section.getBoundingClientRect();
         const visibleArea = Math.max(
           0,
-          Math.min(rect.bottom, viewportBottom) - Math.max(rect.top, viewportTop),
+          Math.min(rect.bottom, viewportBottom) -
+            Math.max(rect.top, viewportTop),
         );
 
         if (visibleArea > largestVisibleArea) {
@@ -113,10 +220,14 @@ export function Navbar({ variant = "default" }) {
         }
       });
 
-      const nextSection = currentSection && navSectionIds.has(currentSection.id)
-        ? currentSection.id
-        : "";
-      setActiveSection((current) => current === nextSection ? current : nextSection);
+      const nextSection =
+        currentSection && NAV_SECTION_IDS.has(currentSection.id)
+          ? currentSection.id
+          : "";
+
+      setActiveSection((current) =>
+        current === nextSection ? current : nextSection
+      );
     }
 
     function scheduleUpdate() {
@@ -124,27 +235,36 @@ export function Navbar({ variant = "default" }) {
       animationFrame = window.requestAnimationFrame(updateActiveSection);
     }
 
-    function syncHash() {
+    function syncLocation() {
       const hashSection = window.location.hash.slice(1);
-      if (navSectionIds.has(hashSection)) setActiveSection(hashSection);
+
+      if (NAV_SECTION_IDS.has(hashSection)) {
+        setActiveSection(hashSection);
+      }
+
       scheduleUpdate();
     }
 
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
-    window.addEventListener("hashchange", syncHash);
+    window.addEventListener("hashchange", syncLocation);
+    window.addEventListener("popstate", syncLocation);
     scheduleUpdate();
 
     return () => {
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
-      window.removeEventListener("hashchange", syncHash);
+      window.removeEventListener("hashchange", syncLocation);
+      window.removeEventListener("popstate", syncLocation);
     };
   }, []);
 
   return (
-    <header ref={headerRef} className={`nav ${variant === "landing" ? "nav-care" : ""}`}>
+    <header
+      ref={headerRef}
+      className={`nav ${variant === "landing" ? "nav-care" : ""}`}
+    >
       <div className="container nav-inner">
         <Logo />
 
@@ -153,8 +273,10 @@ export function Navbar({ variant = "default" }) {
             <a
               key={link.href}
               href={link.href}
-              aria-current={activeSection === link.sectionId ? "location" : undefined}
-              onClick={() => setActiveSection(link.sectionId)}
+              aria-current={
+                activeSection === link.sectionId ? "location" : undefined
+              }
+              onClick={(event) => handleSectionLinkClick(event, link)}
             >
               {link.name}
             </a>
@@ -167,7 +289,9 @@ export function Navbar({ variant = "default" }) {
               Vào ứng dụng
             </a>
           ) : (
-            <a href="/login" className="btn btn-dark">Đăng nhập</a>
+            <a href="/login" className="btn btn-dark">
+              Đăng nhập
+            </a>
           )}
         </div>
 
@@ -180,7 +304,11 @@ export function Navbar({ variant = "default" }) {
           aria-controls="mobile-navigation"
           onClick={() => setOpen((value) => !value)}
         >
-          {open ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
+          {open ? (
+            <X size={19} aria-hidden="true" />
+          ) : (
+            <Menu size={19} aria-hidden="true" />
+          )}
         </button>
       </div>
 
@@ -216,26 +344,39 @@ export function Navbar({ variant = "default" }) {
                 <span>Đóng menu</span>
                 <X size={19} aria-hidden="true" />
               </button>
+
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
-                  aria-current={activeSection === link.sectionId ? "location" : undefined}
-                  onClick={() => {
-                    setActiveSection(link.sectionId);
+                  aria-current={
+                    activeSection === link.sectionId ? "location" : undefined
+                  }
+                  onClick={(event) => {
+                    handleSectionLinkClick(event, link);
                     setOpen(false);
                   }}
                 >
                   {link.name}
                 </a>
               ))}
+
               {!auth && (
-                <a className="btn care-nav-login" href="/login" onClick={() => setOpen(false)}>
+                <a
+                  className="btn care-nav-login"
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                >
                   Đăng nhập
                 </a>
               )}
+
               {auth && (
-                <a className="btn btn-primary" href="/app" onClick={() => setOpen(false)}>
+                <a
+                  className="btn btn-primary"
+                  href="/app"
+                  onClick={() => setOpen(false)}
+                >
                   Vào ứng dụng
                 </a>
               )}

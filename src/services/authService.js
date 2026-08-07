@@ -1,4 +1,8 @@
-import { apiRequest, setStoredAuth } from "./apiClient";
+import {
+  apiRequest,
+  refreshAuthSession,
+  setStoredAuth,
+} from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 import { normalizeUserRecord } from "./userService";
 
@@ -53,10 +57,7 @@ export const authApi = {
   },
 
   refresh() {
-    return apiRequest(ENDPOINTS.AUTH.REFRESH, {
-      method: "POST",
-      auth: true,
-    }).then(normalizeAuthResponse);
+    return refreshAuthSession().then(normalizeAuthResponse);
   },
 
   logout() {

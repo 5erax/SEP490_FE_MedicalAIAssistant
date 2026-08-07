@@ -1,3 +1,11 @@
+/* =========================================================
+   Admin > Chỉ số xét nghiệm
+   File thay thế hoàn toàn cho:
+   src/styles/admin/lab-indicators.css
+   ========================================================= */
+
+/* ---------- Page layout ---------- */
+
 .admin-operator .lab-indicator-panel {
   display: grid;
   gap: 20px;
@@ -20,11 +28,11 @@
 .admin-operator .lab-detail-hero h2 {
   margin: 4px 0 0;
   color: #101411;
-  font-size: clamp(30px, 3.1vw, 44px);
+  font-size: clamp(30px, 2.4vw, 38px);
   font-weight: 860;
   letter-spacing: -0.035em;
   line-height: 1.08;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .admin-operator .lab-page-heading p:not(.eyebrow),
@@ -52,6 +60,8 @@
   min-height: 36px;
 }
 
+/* ---------- Filter ---------- */
+
 .admin-operator .lab-filter-card {
   display: grid;
   grid-template-columns: minmax(230px, 0.7fr) minmax(420px, 1.3fr);
@@ -60,7 +70,7 @@
   border: 1px solid rgba(16, 20, 17, 0.1);
   border-radius: 18px;
   background: rgba(247, 250, 244, 0.86);
-  padding: 18px;
+  padding: 14px 16px;
 }
 
 .admin-operator .lab-filter-card > div {
@@ -92,11 +102,11 @@
 .admin-operator .lab-filter-form {
   display: grid;
   grid-template-columns: minmax(190px, 1fr) auto auto;
-  align-items: end;
+  align-items: center;
   gap: 9px;
 }
 
-.admin-operator .lab-filter-form label {
+.admin-operator .lab-filter-form label:not(.sr-only) {
   grid-column: 1 / -1;
   color: rgba(16, 20, 17, 0.66);
   font-size: 12px;
@@ -106,6 +116,7 @@
 .admin-operator .lab-filter-form input {
   width: 100%;
   min-height: 42px;
+  box-sizing: border-box;
   border: 1px solid rgba(16, 20, 17, 0.18);
   border-radius: 12px;
   background: #fff;
@@ -136,10 +147,7 @@
   font-weight: 900;
 }
 
-.admin-operator .lab-indicator-table .ui-table th,
-.admin-operator .lab-child-table .ui-table th {
-  white-space: nowrap;
-}
+/* ---------- Main indicator table ---------- */
 
 .admin-operator .lab-indicator-table {
   border: 1px solid rgba(16, 20, 17, 0.12);
@@ -149,9 +157,15 @@
 }
 
 .admin-operator .lab-indicator-table .ui-table {
-  min-width: 840px;
+  min-width: 980px;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.admin-operator .lab-indicator-table .ui-table th,
+.admin-operator .lab-child-table .ui-table th {
+  white-space: nowrap;
 }
 
 .admin-operator .lab-indicator-table .ui-table thead th {
@@ -175,15 +189,11 @@
   border-bottom: 1px solid rgba(16, 20, 17, 0.08);
   background: #fff;
   color: #26322d;
-  padding: 16px;
+  height: 70px;
+  padding: 12px 14px;
   font-size: 13px;
   font-weight: 700;
   vertical-align: middle;
-}
-
-.admin-operator .lab-indicator-table .ui-table tbody th {
-  min-width: 220px;
-  max-width: 320px;
 }
 
 .admin-operator .lab-indicator-table .ui-table tbody tr:last-child > * {
@@ -192,6 +202,30 @@
 
 .admin-operator .lab-indicator-table .ui-table tbody tr:hover > * {
   background: #f7fbf9;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:nth-child(1) {
+  width: 220px;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:nth-child(2) {
+  width: auto;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:nth-child(3) {
+  width: 110px;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:nth-child(4) {
+  width: 118px;
+}
+
+.admin-operator .lab-indicator-table .ui-table th:last-child,
+.admin-operator .lab-indicator-table .ui-table td:last-child {
+  width: 224px;
+  min-width: 224px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .admin-operator .lab-indicator-link {
@@ -231,21 +265,69 @@
   text-decoration-color: currentColor;
 }
 
-.admin-operator .lab-row-actions {
-  display: flex;
-  flex-wrap: nowrap;
+.admin-operator .lab-indicator-description {
+  display: -webkit-box;
+  overflow: hidden;
+  max-width: 100%;
+  color: rgba(16, 20, 17, 0.7);
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.admin-operator .lab-indicator-description.is-empty,
+.admin-operator .lab-indicator-unit.is-empty {
+  color: rgba(16, 20, 17, 0.36);
+  font-weight: 650;
+}
+
+.admin-operator .lab-indicator-unit {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: rgba(16, 20, 17, 0.72);
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Actions in all tables ---------- */
+
+.admin-operator .lab-indicator-table .lab-row-actions,
+.admin-operator .lab-child-table .lab-row-actions {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: center;
+  justify-content: flex-end;
   gap: 6px;
-  min-width: max-content;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.admin-operator .lab-row-actions--three {
+  min-width: 210px;
+}
+
+.admin-operator .lab-row-actions--two {
+  min-width: 138px;
 }
 
 .admin-operator .lab-row-actions .btn {
-  min-height: 38px;
+  flex: 0 0 66px !important;
+  width: 66px;
+  min-width: 66px;
+  min-height: 36px;
+  margin: 0;
   border: 1px solid rgba(16, 20, 17, 0.14);
   border-radius: 10px;
   background: #fff;
   color: #26322d;
-  padding: 0 11px;
+  padding: 0 6px;
   box-shadow: none;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .admin-operator .lab-row-actions .btn:hover {
@@ -264,9 +346,19 @@
   background: #fce8e5;
 }
 
+.admin-operator .lab-child-table .ui-table th:last-child,
+.admin-operator .lab-child-table .ui-table td:last-child {
+  width: 152px;
+  min-width: 152px;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .admin-operator .lab-pagination {
   margin-top: 0;
 }
+
+/* ---------- Detail page ---------- */
 
 .admin-operator .lab-back-link {
   display: inline-flex;
@@ -289,7 +381,12 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   border: 1px solid rgba(16, 20, 17, 0.1);
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(232, 246, 247, 0.9), rgba(247, 250, 244, 0.92));
+  background:
+    linear-gradient(
+      135deg,
+      rgba(232, 246, 247, 0.9),
+      rgba(247, 250, 244, 0.92)
+    );
   padding: clamp(18px, 2.5vw, 26px);
 }
 
@@ -390,6 +487,7 @@
   place-items: center;
   width: 38px;
   height: 38px;
+  flex: 0 0 auto;
   border-radius: 13px;
   background: #eef9e6;
   color: #0c5f5e;
@@ -403,7 +501,11 @@
 .admin-operator .lab-advice-copy {
   display: grid;
   gap: 4px;
-  max-width: 360px;
+  max-width: 540px;
+}
+
+.admin-operator .lab-advice-copy strong {
+  overflow-wrap: anywhere;
 }
 
 .admin-operator .lab-advice-copy small {
@@ -414,6 +516,8 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+/* ---------- Modal shell ---------- */
 
 .lab-dialog {
   display: grid;
@@ -438,7 +542,6 @@
 
 .lab-dialog-header > div {
   min-width: 0;
-  flex: 1;
 }
 
 .lab-dialog-header p,
@@ -469,36 +572,60 @@
 .lab-dialog-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
   width: 44px;
   height: 44px;
+  flex: 0 0 auto;
   border-radius: 15px;
   background: #e8f6f7;
   color: #0c5f5e;
 }
 
-.lab-dialog-form {
-  align-content: start;
-  min-height: 0;
-  overflow-y: auto;
-  padding: clamp(18px, 2.6vw, 26px);
-  overscroll-behavior: contain;
+.lab-dialog .doctor-modal-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
 }
 
-.lab-indicator-dialog-form {
+.lab-dialog .doctor-modal-close svg {
+  display: block;
+  margin: 0;
+}
+
+/* ---------- Modal form: fixed header/body/footer ---------- */
+
+.lab-dialog .lab-dialog-form {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
   gap: 0;
-  background: #f7faf8;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
   padding: 0;
 }
 
-.lab-indicator-dialog-form .lab-form-error-summary {
-  margin: 20px 20px 0;
+.lab-dialog .lab-dialog-body {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(18px, 2.6vw, 26px);
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.lab-dialog .lab-indicator-dialog-body {
+  background: #f7faf8;
+  padding: 20px;
 }
 
 .lab-form-sections {
   display: grid;
   gap: 14px;
-  padding: 20px;
+  padding: 0;
 }
 
 .lab-form-section {
@@ -507,7 +634,7 @@
   margin: 0;
   border: 0;
   border-radius: 18px;
-  background: #ffffff;
+  background: #fff;
   padding: 18px;
   box-shadow:
     inset 0 0 0 1px rgba(16, 20, 17, 0.11),
@@ -551,9 +678,10 @@
   row-gap: 18px;
 }
 
-.lab-form-grid > .ui-field {
+.lab-form-grid > .ui-field,
+.lab-form-grid > .lab-checkbox {
   min-width: 0;
-  align-content: start;
+  align-self: start;
 }
 
 .lab-dialog .ui-field input,
@@ -561,9 +689,29 @@
   min-height: 48px;
 }
 
-.lab-dialog .doctor-modal-close {
-  width: 44px;
-  height: 44px;
+.lab-dialog .ui-field input,
+.lab-dialog .ui-field select,
+.lab-dialog .ui-field textarea {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lab-dialog .ui-field textarea {
+  width: 100%;
+}
+
+/* Field.jsx renders the validation message as a child element. */
+.lab-dialog .ui-field .ui-field-error {
+  color: var(--color-danger, #b42318);
+  font-weight: 800;
+}
+
+.lab-dialog .ui-field-invalid input,
+.lab-dialog .ui-field-invalid select,
+.lab-dialog .ui-field-invalid textarea {
+  border-color: var(--color-danger, #b42318);
+  background: var(--color-danger-bg, #fff0ee);
 }
 
 .lab-form-span-2 {
@@ -575,6 +723,7 @@
   align-items: flex-start;
   gap: 10px;
   min-height: 48px;
+  box-sizing: border-box;
   border: 1px solid rgba(16, 20, 17, 0.12);
   border-radius: 14px;
   background: #fbfcf7;
@@ -607,55 +756,56 @@
   line-height: 1.45;
 }
 
-.lab-form-error-summary {
-  margin-bottom: 16px;
-  border: 1px solid #b93b35;
-  border-radius: 14px;
-  background: #fff0ee;
-  color: #79231f;
-  padding: 13px 15px;
-}
-
-.lab-form-error-summary:focus {
-  outline: 3px solid rgba(185, 59, 53, 0.32);
-  outline-offset: 3px;
-}
-
-.lab-form-error-summary ul {
-  display: grid;
-  gap: 4px;
-  margin: 8px 0 0;
-  padding-left: 20px;
-}
-
-.lab-form-error-summary a {
-  color: inherit;
-  font-size: 12px;
+/* Only unmapped API failures are displayed here.
+   Field validation stays directly under each field. */
+.lab-dialog .lab-form-submit-error {
+  margin: 0 0 16px;
+  border: 1px solid rgba(180, 35, 24, 0.34);
+  border-radius: 12px;
+  background: var(--color-danger-bg, #fff0ee);
+  color: var(--color-danger, #b42318);
+  padding: 11px 13px;
+  font-size: 13px;
   font-weight: 800;
+  line-height: 1.5;
 }
 
-.lab-dialog-actions {
-  position: sticky;
-  bottom: -26px;
-  z-index: 2;
-  margin: 22px -26px -26px;
-  border-top: 1px solid rgba(16, 20, 17, 0.1);
-  background: rgba(255, 255, 255, 0.96);
-  padding: 14px 26px;
+.lab-dialog .lab-form-submit-error:focus {
+  outline: 3px solid rgba(180, 35, 24, 0.24);
+  outline-offset: 2px;
+}
+
+.lab-dialog .lab-advice-form-grid textarea {
+  min-height: 126px;
+}
+
+.lab-dialog .lab-advice-form-grid .lab-form-span-2 textarea {
+  min-height: 112px;
+}
+
+.lab-dialog .doctor-modal-actions.lab-dialog-actions {
+  position: static;
+  inset: auto;
+  z-index: 4;
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border-top: 1px solid rgba(16, 20, 17, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  padding: 14px clamp(18px, 2.6vw, 26px);
+  box-shadow: 0 -10px 28px rgba(16, 20, 17, 0.055);
   backdrop-filter: blur(12px);
 }
 
-.lab-indicator-dialog-form .lab-dialog-actions {
-  bottom: 0;
-  margin: 0;
-  border-top-color: rgba(16, 20, 17, 0.12);
-  padding: 14px 20px;
+.lab-dialog .lab-dialog-actions .ui-button {
+  min-height: 44px;
 }
 
 .lab-dialog-actions .ui-button[data-tone="primary"] {
   border-color: #0c5f5e;
   background: #087f8c;
-  color: #ffffff;
+  color: #fff;
   box-shadow: none;
 }
 
@@ -665,9 +815,11 @@
 
 .lab-dialog-actions .ui-button[data-tone="secondary"] {
   border-color: rgba(16, 20, 17, 0.18);
-  background: #ffffff;
+  background: #fff;
   box-shadow: none;
 }
+
+/* ---------- Responsive ---------- */
 
 @media (max-width: 1100px) {
   .admin-operator .lab-filter-card {
@@ -728,6 +880,19 @@
   .lab-form-span-2 {
     grid-column: auto;
   }
+
+  .lab-dialog .lab-dialog-body,
+  .lab-dialog .lab-indicator-dialog-body {
+    padding: 16px;
+  }
+
+  .lab-dialog .doctor-modal-actions.lab-dialog-actions {
+    padding: 12px 16px;
+  }
+
+  .lab-dialog .lab-dialog-actions .ui-button {
+    flex: 1 1 150px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -751,34 +916,39 @@
     grid-template-columns: 1fr;
   }
 
+  .doctor-modal-backdrop:has(.lab-dialog) {
+    padding: 8px;
+  }
+
   .lab-dialog {
     width: calc(100vw - 16px);
     max-height: calc(100svh - 16px);
   }
 
-  .lab-dialog-actions {
-    bottom: -18px;
-    margin: 20px -18px -18px;
-    padding: 12px 18px;
+  .lab-dialog .lab-dialog-header {
+    gap: 10px;
+    padding: 18px 16px 16px;
   }
 
-  .lab-dialog-header {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 12px;
-  }
-
-  .lab-dialog-icon {
+  .lab-dialog .lab-dialog-icon,
+  .lab-dialog .doctor-modal-close {
     width: 40px;
     height: 40px;
   }
 
-  .lab-form-sections {
+  .lab-dialog .lab-dialog-body,
+  .lab-dialog .lab-indicator-dialog-body {
     padding: 14px;
   }
 
-  .lab-indicator-dialog-form .lab-dialog-actions {
-    margin: 0;
+  .lab-dialog .doctor-modal-actions.lab-dialog-actions {
+    gap: 8px;
     padding: 12px 14px;
+  }
+
+  .lab-dialog .lab-dialog-actions .ui-button {
+    flex-basis: 100%;
+    width: 100%;
   }
 }
 
@@ -793,9 +963,282 @@
 @media (forced-colors: active) {
   .admin-operator .lab-detail-symbol,
   .admin-operator .lab-indicator-link span,
+  .admin-operator .lab-indicator-unit,
   .lab-dialog-icon,
   .lab-checkbox,
-  .lab-form-error-summary {
+  .lab-dialog .lab-form-submit-error {
     border: 1px solid CanvasText;
+  }
+  
+}
+/* =========================================================
+   FINAL UI POLISH — ADMIN LAB INDICATORS
+   Dán toàn bộ block này vào cuối lab-indicators.css
+   ========================================================= */
+
+/* ---------- Làm nhẹ khung tìm kiếm ---------- */
+
+.admin-operator .lab-filter-card {
+  border-color: rgba(16, 20, 17, 0.08);
+  background: #f8faf7;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 24px rgba(16, 20, 17, 0.025);
+}
+
+.admin-operator .lab-filter-card h3 {
+  color: #18201c;
+}
+
+.admin-operator .lab-filter-card p {
+  color: rgba(16, 20, 17, 0.56);
+}
+
+/* ---------- Làm rõ header của bảng ---------- */
+
+.admin-operator .lab-indicator-table .ui-table thead th {
+  border-bottom-color: rgba(16, 20, 17, 0.13);
+  background: #f5f8f6;
+  color: rgba(16, 20, 17, 0.7);
+  font-weight: 900;
+}
+
+/* Căn cột thao tác về bên phải rõ ràng hơn */
+
+.admin-operator .lab-indicator-table .ui-table thead th:last-child,
+.admin-operator .lab-child-table .ui-table thead th:last-child {
+  text-align: right;
+}
+
+/* ---------- Điều chỉnh row ---------- */
+
+.admin-operator .lab-indicator-table .ui-table tbody th,
+.admin-operator .lab-indicator-table .ui-table tbody td {
+  border-bottom-color: rgba(16, 20, 17, 0.075);
+}
+
+.admin-operator .lab-indicator-table .ui-table tbody tr {
+  transition: background-color 150ms ease;
+}
+
+.admin-operator .lab-indicator-table .ui-table tbody tr:hover > * {
+  background: #f6faf8;
+}
+
+/* Giữ nội dung chính cân theo chiều dọc */
+
+.admin-operator .lab-indicator-table .ui-table tbody td:nth-child(3),
+.admin-operator .lab-indicator-table .ui-table tbody td:nth-child(4),
+.admin-operator .lab-indicator-table .ui-table tbody td:last-child {
+  vertical-align: middle;
+}
+
+/* ---------- Giá trị trống ---------- */
+
+.admin-operator .lab-indicator-description.is-empty,
+.admin-operator .lab-indicator-unit.is-empty {
+  color: rgba(16, 20, 17, 0.43);
+  font-weight: 700;
+}
+
+/* Mô tả thật vẫn đủ rõ nhưng không cạnh tranh với tên chỉ số */
+
+.admin-operator .lab-indicator-description:not(.is-empty) {
+  color: rgba(16, 20, 17, 0.68);
+  font-weight: 650;
+}
+
+/* Đơn vị là text dữ liệu, không phải status pill */
+
+.admin-operator .lab-indicator-unit:not(.is-empty) {
+  color: #34423b;
+  font-weight: 800;
+}
+
+/* ---------- Trạng thái ---------- */
+
+.admin-operator .lab-indicator-table .status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  white-space: nowrap;
+}
+
+/* ---------- Nhóm nút thao tác ---------- */
+
+.admin-operator .lab-indicator-table .lab-row-actions,
+.admin-operator .lab-child-table .lab-row-actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Tạo khoảng thở nhẹ ở mép phải */
+
+.admin-operator .lab-indicator-table .ui-table th:last-child,
+.admin-operator .lab-indicator-table .ui-table td:last-child {
+  padding-right: 18px;
+}
+
+/* Button đồng nhất và phản hồi hover mượt hơn */
+
+.admin-operator .lab-row-actions .btn {
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-operator .lab-row-actions .btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 20, 17, 0.07);
+}
+
+.admin-operator .lab-row-actions .btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.admin-operator .lab-row-actions .btn:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.24);
+  outline-offset: 2px;
+}
+
+/* ---------- Pagination ---------- */
+
+.admin-operator .lab-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+  margin-top: 0;
+  padding-top: 2px;
+}
+
+.admin-operator .lab-pagination span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 98px;
+  min-height: 38px;
+  color: rgba(16, 20, 17, 0.68);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-operator .lab-pagination button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  min-height: 38px;
+  margin: 0;
+  border: 1px solid rgba(16, 20, 17, 0.16);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #26322d;
+  padding: 8px 14px;
+  box-shadow: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.admin-operator .lab-pagination button:hover:not(:disabled) {
+  border-color: #75aa9a;
+  background: #eef8f4;
+  color: #0c5f5e;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(12, 95, 94, 0.08);
+}
+
+.admin-operator .lab-pagination button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.admin-operator .lab-pagination button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.25);
+  outline-offset: 2px;
+}
+
+.admin-operator .lab-pagination button:disabled {
+  border-color: rgba(16, 20, 17, 0.08);
+  background: #f4f6f3;
+  color: rgba(16, 20, 17, 0.34);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 760px) {
+  .admin-operator .lab-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .admin-operator .lab-pagination button {
+    min-width: 96px;
+  }
+
+  .admin-operator .lab-pagination span {
+    min-width: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-operator .lab-pagination {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 6px;
+  }
+
+  .admin-operator .lab-pagination button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .admin-operator .lab-pagination span {
+    min-width: 82px;
+    font-size: 12px;
+  }
+}
+
+/* ---------- Accessibility ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-operator .lab-indicator-table .ui-table tbody tr,
+  .admin-operator .lab-row-actions .btn,
+  .admin-operator .lab-pagination button {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .admin-operator .lab-filter-card,
+  .admin-operator .lab-pagination button {
+    border: 1px solid CanvasText;
+  }
+
+  .admin-operator .lab-pagination button:disabled {
+    color: GrayText;
   }
 }

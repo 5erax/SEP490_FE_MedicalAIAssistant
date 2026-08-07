@@ -2,6 +2,8 @@ import { useMemo, useRef, useState } from "react";
 import { Check, FlaskConical, Languages, Ruler, Sparkles, X } from "lucide-react";
 import { Button, Dialog, Field, Select, Textarea, TextInput } from "../ui";
 
+const DEFAULT_ADVICE_SEVERITY = "info";
+
 const EMPTY_INDICATOR_FORM = {
   symbol: "",
   fullName: "",
@@ -30,7 +32,7 @@ const EMPTY_ADVICE_FORM = {
   lifestyleAdvice: "",
   nutritionalAdvice: "",
   urgencyLevel: "",
-  severityLevel: "",
+  severityLevel: DEFAULT_ADVICE_SEVERITY,
   warningSigns: "",
   followUpSuggestion: "",
   doctorQuestions: "",
@@ -61,12 +63,6 @@ const STATUS_OPTIONS = [
   { value: "criticalLow", label: "Thấp nguy cấp" },
 ];
 
-const SEVERITY_OPTIONS = [
-  { value: "info", label: "Thông tin" },
-  { value: "warning", label: "Cảnh báo" },
-  { value: "critical", label: "Nguy cấp" },
-];
-
 const CHILD_DIALOG_META = {
   alias: {
     icon: Languages,
@@ -94,6 +90,30 @@ function nullableNumber(value) {
   if (value === "" || value === null || value === undefined) return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
+}
+
+function hasFieldErrors(errors) {
+  return Object.values(errors).some(Boolean);
+}
+
+function focusValidationFeedback(formRef, submitErrorRef, fieldErrors) {
+  window.requestAnimationFrame(() => {
+    if (hasFieldErrors(fieldErrors)) {
+      formRef.current?.querySelector('[aria-invalid="true"]')?.focus();
+      return;
+    }
+    submitErrorRef.current?.focus();
+  });
+}
+
+function SubmitError({ message, errorRef }) {
+  if (!message) return null;
+
+  return (
+    <p className="lab-form-submit-error" role="alert" tabIndex={-1} ref={errorRef}>
+      {message}
+    </p>
+  );
 }
 
 function indicatorToForm(indicator) {
@@ -139,64 +159,86 @@ function childToForm(kind, item) {
     lifestyleAdvice: item?.lifestyleAdvice ?? "",
     nutritionalAdvice: item?.nutritionalAdvice ?? "",
     urgencyLevel: item?.urgencyLevel ?? "",
-    severityLevel: item?.severityLevel ?? "",
+    severityLevel: item?.severityLevel || DEFAULT_ADVICE_SEVERITY,
     warningSigns: item?.warningSigns ?? "",
     followUpSuggestion: item?.followUpSuggestion ?? "",
     doctorQuestions: item?.doctorQuestions ?? "",
   };
 }
 
-function FormErrorSummary({ errors, summaryRef }) {
-  const entries = Object.entries(errors).filter(([, message]) => message);
-  if (!entries.length) return null;
-
-  return (
-    <section className="lab-form-error-summary" role="alert" tabIndex="-1" ref={summaryRef}>
-      <strong>Vui lòng kiểm tra {entries.length} trường sau:</strong>
-      <ul>
-        {entries.map(([field, message]) => (
-          <li key={field}>
-            <a href={`#lab-${field}`}>{message}</a>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 function validateReferenceOrder(minValue, maxValue) {
   if (minValue === "" || maxValue === "") return "";
   return Number(minValue) <= Number(maxValue)
     ? ""
-    : "Giá trị tối thiểu không được lớn hơn giá trị tối đa.";
+    : "MinReference không được lớn hơn MaxReference";
+}
+
+function getIndicatorFieldErrors(message = "") {
+  if (message.startsWith("Symbol") || message.startsWith("Ký hiệu chỉ số")) return { symbol: message };
+  if (message.startsWith("MinReference")) return { minReference: message };
+  if (message.startsWith("MaxReference")) return { maxReference: message };
+  return {};
+}
+
+function getChildFieldErrors(kind, message = "") {
+  if (kind === "alias" && (message.startsWith("AliasText") || message.startsWith("Alias đã"))) {
+    return { aliasText: message };
+  }
+  if (kind === "range") {
+    if (message.startsWith("Khoảng tham chiếu không thể")) return { gender: message };
+    if (message.startsWith("Khoảng tham chiếu cho giới tính")) return { gender: message };
+    if (message.startsWith("Khoảng tham chiếu cho nhóm tuổi")) return { ageGroup: message };
+    if (message.startsWith("So sánh Between")) return { minValue: message };
+    if (message.startsWith("MinValue")) return { minValue: message };
+    if (message.startsWith("MaxValue")) return { maxValue: message };
+    if (message.startsWith("So sánh LessThanOrEqual")) return { maxValue: message };
+    if (message.startsWith("So sánh GreaterThanOrEqual")) return { minValue: message };
+  }
+  if (kind === "advice" && (message.startsWith("Status") || message.startsWith("Advice cache đã"))) {
+    return { status: message };
+  }
+  return {};
 }
 
 export function LabIndicatorFormDialog({ indicator, saving, restoreFocusRef, onClose, onSubmit }) {
   const editing = Boolean(indicator);
   const [form, setForm] = useState(() => indicatorToForm(indicator));
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
+  const formRef = useRef(null);
   const firstInputRef = useRef(null);
-  const errorSummaryRef = useRef(null);
+  const submitErrorRef = useRef(null);
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: "", minReference: "" }));
+    setErrors((current) => {
+      const next = { ...current, [field]: "" };
+      if (field === "minReference" || field === "maxReference") {
+        next.minReference = "";
+        next.maxReference = "";
+      }
+      return next;
+    });
+    setSubmitError("");
   }
 
   async function submit(event) {
     event.preventDefault();
     const nextErrors = {};
-    if (!form.symbol.trim()) nextErrors.symbol = "Nhập ký hiệu chỉ số.";
-    if (!form.fullName.trim()) nextErrors.fullName = "Nhập tên đầy đủ của chỉ số.";
+    if (!form.symbol.trim()) {
+      nextErrors.symbol = editing ? "Symbol không được để trống" : "Symbol là bắt buộc";
+    }
     const referenceOrderError = validateReferenceOrder(form.minReference, form.maxReference);
-    if (referenceOrderError) nextErrors.minReference = referenceOrderError;
+    if (referenceOrderError) nextErrors.maxReference = referenceOrderError;
+
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) {
-      window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
+    setSubmitError("");
+    if (hasFieldErrors(nextErrors)) {
+      focusValidationFeedback(formRef, submitErrorRef, nextErrors);
       return;
     }
 
-    await onSubmit({
+    const result = await onSubmit({
       symbol: nullableText(form.symbol),
       fullName: nullableText(form.fullName),
       unit: nullableText(form.unit),
@@ -206,6 +248,13 @@ export function LabIndicatorFormDialog({ indicator, saving, restoreFocusRef, onC
       category: nullableText(form.category),
       isActive: Boolean(form.isActive),
     });
+
+    if (result?.success === false) {
+      const fieldErrors = getIndicatorFieldErrors(result.message);
+      setErrors(fieldErrors);
+      setSubmitError(hasFieldErrors(fieldErrors) ? "" : result.message);
+      focusValidationFeedback(formRef, submitErrorRef, fieldErrors);
+    }
   }
 
   return (
@@ -230,63 +279,65 @@ export function LabIndicatorFormDialog({ indicator, saving, restoreFocusRef, onC
         </button>
       </header>
 
-      <form className="clean-form doctor-form lab-dialog-form lab-indicator-dialog-form" onSubmit={submit} noValidate>
-        <FormErrorSummary errors={errors} summaryRef={errorSummaryRef} />
-        <div className="lab-form-sections">
-          <fieldset className="lab-form-section">
-            <legend>
-              <span>Thông tin định danh</span>
-              <small>Tên và quy ước hiển thị của chỉ số.</small>
-            </legend>
-            <div className="lab-form-grid">
-              <Field id="lab-symbol" label="Ký hiệu" required error={errors.symbol} hint="Ví dụ: WBC, HGB hoặc ALT.">
-                <TextInput ref={firstInputRef} name="symbol" value={form.symbol} onChange={(event) => update("symbol", event.target.value)} />
-              </Field>
-              <Field id="lab-fullName" label="Tên đầy đủ" required error={errors.fullName}>
-                <TextInput name="fullName" value={form.fullName} onChange={(event) => update("fullName", event.target.value)} />
-              </Field>
-              <Field id="lab-category" label="Nhóm chỉ số" optional>
-                <TextInput name="category" value={form.category} onChange={(event) => update("category", event.target.value)} />
-              </Field>
-              <Field id="lab-unit" label="Đơn vị mặc định" optional>
-                <TextInput name="unit" value={form.unit} onChange={(event) => update("unit", event.target.value)} />
-              </Field>
-            </div>
-          </fieldset>
+      <form ref={formRef} className="clean-form doctor-form lab-dialog-form lab-indicator-dialog-form" onSubmit={submit} noValidate>
+        <div className="lab-dialog-body lab-indicator-dialog-body">
+          <SubmitError message={submitError} errorRef={submitErrorRef} />
+          <div className="lab-form-sections">
+            <fieldset className="lab-form-section">
+              <legend>
+                <span>Thông tin định danh</span>
+                <small>Tên và quy ước hiển thị của chỉ số.</small>
+              </legend>
+              <div className="lab-form-grid">
+                <Field id="lab-symbol" label="Ký hiệu" required error={errors.symbol} hint="Ví dụ: WBC, HGB hoặc ALT.">
+                  <TextInput ref={firstInputRef} name="symbol" value={form.symbol} onChange={(event) => update("symbol", event.target.value)} />
+                </Field>
+                <Field id="lab-fullName" label="Tên đầy đủ" optional error={errors.fullName}>
+                  <TextInput name="fullName" value={form.fullName} onChange={(event) => update("fullName", event.target.value)} />
+                </Field>
+                <Field id="lab-category" label="Nhóm chỉ số" optional>
+                  <TextInput name="category" value={form.category} onChange={(event) => update("category", event.target.value)} />
+                </Field>
+                <Field id="lab-unit" label="Đơn vị mặc định" optional>
+                  <TextInput name="unit" value={form.unit} onChange={(event) => update("unit", event.target.value)} />
+                </Field>
+              </div>
+            </fieldset>
 
-          <fieldset className="lab-form-section">
-            <legend>
-              <span>Khoảng tham chiếu mặc định</span>
-              <small>Có thể để trống nếu chỉ số dùng các range chi tiết riêng.</small>
-            </legend>
-            <div className="lab-form-grid">
-              <Field id="lab-minReference" label="Tham chiếu tối thiểu" optional error={errors.minReference}>
-                <TextInput name="minReference" inputMode="decimal" value={form.minReference} onChange={(event) => update("minReference", event.target.value)} />
-              </Field>
-              <Field id="lab-maxReference" label="Tham chiếu tối đa" optional>
-                <TextInput name="maxReference" inputMode="decimal" value={form.maxReference} onChange={(event) => update("maxReference", event.target.value)} />
-              </Field>
-            </div>
-          </fieldset>
+            <fieldset className="lab-form-section">
+              <legend>
+                <span>Khoảng tham chiếu mặc định</span>
+                <small>Có thể để trống nếu chỉ số dùng các range chi tiết riêng.</small>
+              </legend>
+              <div className="lab-form-grid">
+                <Field id="lab-minReference" label="Tham chiếu tối thiểu" optional error={errors.minReference}>
+                  <TextInput name="minReference" inputMode="decimal" value={form.minReference} onChange={(event) => update("minReference", event.target.value)} />
+                </Field>
+                <Field id="lab-maxReference" label="Tham chiếu tối đa" optional error={errors.maxReference}>
+                  <TextInput name="maxReference" inputMode="decimal" value={form.maxReference} onChange={(event) => update("maxReference", event.target.value)} />
+                </Field>
+              </div>
+            </fieldset>
 
-          <fieldset className="lab-form-section">
-            <legend>
-              <span>Hiển thị và trạng thái</span>
-              <small>Bổ sung ngữ cảnh cho người quản trị và các luồng xét nghiệm.</small>
-            </legend>
-            <div className="lab-form-grid">
-              <Field id="lab-description" label="Mô tả" optional className="lab-form-span-2">
-                <Textarea name="description" rows="3" value={form.description} onChange={(event) => update("description", event.target.value)} />
-              </Field>
-              <label className="lab-checkbox lab-form-span-2" htmlFor="lab-isActive">
-                <input id="lab-isActive" name="isActive" type="checkbox" checked={form.isActive} onChange={(event) => update("isActive", event.target.checked)} />
-                <span>
-                  <strong>Đang sử dụng</strong>
-                  <small>Cho phép chỉ số xuất hiện trong các luồng xử lý xét nghiệm.</small>
-                </span>
-              </label>
-            </div>
-          </fieldset>
+            <fieldset className="lab-form-section">
+              <legend>
+                <span>Hiển thị và trạng thái</span>
+                <small>Bổ sung ngữ cảnh cho người quản trị và các luồng xét nghiệm.</small>
+              </legend>
+              <div className="lab-form-grid">
+                <Field id="lab-description" label="Mô tả" optional className="lab-form-span-2">
+                  <Textarea name="description" rows="3" value={form.description} onChange={(event) => update("description", event.target.value)} />
+                </Field>
+                <label className="lab-checkbox lab-form-span-2" htmlFor="lab-isActive">
+                  <input id="lab-isActive" name="isActive" type="checkbox" checked={form.isActive} onChange={(event) => update("isActive", event.target.checked)} />
+                  <span>
+                    <strong>Đang sử dụng</strong>
+                    <small>Cho phép chỉ số xuất hiện trong các luồng xử lý xét nghiệm.</small>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
         </div>
 
         <div className="doctor-modal-actions lab-dialog-actions">
@@ -318,13 +369,13 @@ function AliasFields({ form, errors, update, firstInputRef }) {
 function RangeFields({ form, errors, update, firstInputRef }) {
   return (
     <div className="lab-form-grid">
-      <Field id="lab-gender" label="Giới tính" required error={errors.gender}>
+      <Field id="lab-gender" label="Giới tính" optional error={errors.gender}>
         <Select ref={firstInputRef} name="gender" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
           <option value="">Chọn giới tính</option>
           {GENDER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </Select>
       </Field>
-      <Field id="lab-ageGroup" label="Nhóm tuổi" required error={errors.ageGroup}>
+      <Field id="lab-ageGroup" label="Nhóm tuổi" optional error={errors.ageGroup}>
         <Select name="ageGroup" value={form.ageGroup} onChange={(event) => update("ageGroup", event.target.value)}>
           <option value="">Chọn nhóm tuổi</option>
           {AGE_GROUP_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -339,7 +390,7 @@ function RangeFields({ form, errors, update, firstInputRef }) {
       <Field id="lab-minValue" label="Giá trị tối thiểu" optional error={errors.minValue}>
         <TextInput name="minValue" inputMode="decimal" value={form.minValue} onChange={(event) => update("minValue", event.target.value)} />
       </Field>
-      <Field id="lab-maxValue" label="Giá trị tối đa" optional>
+      <Field id="lab-maxValue" label="Giá trị tối đa" optional error={errors.maxValue}>
         <TextInput name="maxValue" inputMode="decimal" value={form.maxValue} onChange={(event) => update("maxValue", event.target.value)} />
       </Field>
       <Field id="lab-unit" label="Đơn vị" optional className="lab-form-span-2">
@@ -351,20 +402,14 @@ function RangeFields({ form, errors, update, firstInputRef }) {
 
 function AdviceFields({ form, errors, update, firstInputRef }) {
   return (
-    <div className="lab-form-grid">
+    <div className="lab-form-grid lab-advice-form-grid">
       <Field id="lab-status" label="Trạng thái kết quả" required error={errors.status}>
         <Select ref={firstInputRef} name="status" value={form.status} onChange={(event) => update("status", event.target.value)}>
           <option value="">Chọn trạng thái</option>
           {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </Select>
       </Field>
-      <Field id="lab-severityLevel" label="Mức độ" required error={errors.severityLevel}>
-        <Select name="severityLevel" value={form.severityLevel} onChange={(event) => update("severityLevel", event.target.value)}>
-          <option value="">Chọn mức độ</option>
-          {SEVERITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </Select>
-      </Field>
-      <Field id="lab-displayTitle" label="Tiêu đề hiển thị" optional className="lab-form-span-2">
+      <Field id="lab-displayTitle" label="Tiêu đề hiển thị" optional>
         <TextInput name="displayTitle" value={form.displayTitle} onChange={(event) => update("displayTitle", event.target.value)} />
       </Field>
       <Field id="lab-summary" label="Tóm tắt" optional className="lab-form-span-2">
@@ -382,14 +427,8 @@ function AdviceFields({ form, errors, update, firstInputRef }) {
       <Field id="lab-nutritionalAdvice" label="Lời khuyên dinh dưỡng" optional>
         <Textarea name="nutritionalAdvice" rows="4" value={form.nutritionalAdvice} onChange={(event) => update("nutritionalAdvice", event.target.value)} />
       </Field>
-      <Field id="lab-urgencyLevel" label="Mức độ khẩn cấp" optional>
-        <TextInput name="urgencyLevel" value={form.urgencyLevel} onChange={(event) => update("urgencyLevel", event.target.value)} />
-      </Field>
-      <Field id="lab-followUpSuggestion" label="Đề xuất theo dõi" optional>
+      <Field id="lab-followUpSuggestion" label="Đề xuất theo dõi" optional className="lab-form-span-2">
         <Textarea name="followUpSuggestion" rows="3" value={form.followUpSuggestion} onChange={(event) => update("followUpSuggestion", event.target.value)} />
-      </Field>
-      <Field id="lab-doctorQuestions" label="Câu hỏi dành cho bác sĩ" optional className="lab-form-span-2">
-        <Textarea name="doctorQuestions" rows="4" value={form.doctorQuestions} onChange={(event) => update("doctorQuestions", event.target.value)} />
       </Field>
     </div>
   );
@@ -397,17 +436,28 @@ function AdviceFields({ form, errors, update, firstInputRef }) {
 
 function validateChildForm(kind, form) {
   const errors = {};
-  if (kind === "alias" && !form.aliasText.trim()) errors.aliasText = "Nhập tên bí danh.";
+  if (kind === "alias" && !form.aliasText.trim()) errors.aliasText = "AliasText là bắt buộc";
   if (kind === "range") {
-    if (!form.gender) errors.gender = "Chọn giới tính.";
-    if (!form.ageGroup) errors.ageGroup = "Chọn nhóm tuổi.";
+    if (form.gender && form.ageGroup) {
+      errors.gender = "Khoảng tham chiếu không thể đặt cả Gender và AgeGroup";
+    }
     if (!form.comparisonType) errors.comparisonType = "Chọn kiểu so sánh.";
-    const referenceOrderError = validateReferenceOrder(form.minValue, form.maxValue);
-    if (referenceOrderError) errors.minValue = referenceOrderError;
+    if (form.comparisonType === "between") {
+      if (form.minValue === "" || form.maxValue === "") {
+        errors.minValue = "So sánh Between yêu cầu MinValue và MaxValue";
+      } else if (Number(form.minValue) > Number(form.maxValue)) {
+        errors.maxValue = "MinValue không được lớn hơn MaxValue";
+      }
+    }
+    if (form.comparisonType === "lessThanOrEqual" && form.maxValue === "") {
+      errors.maxValue = "So sánh LessThanOrEqual yêu cầu MaxValue";
+    }
+    if (form.comparisonType === "greaterThanOrEqual" && form.minValue === "") {
+      errors.minValue = "So sánh GreaterThanOrEqual yêu cầu MinValue";
+    }
   }
-  if (kind === "advice") {
-    if (!form.status) errors.status = "Chọn trạng thái kết quả.";
-    if (!form.severityLevel) errors.severityLevel = "Chọn mức độ lời khuyên.";
+  if (kind === "advice" && (!form.status || form.status === "unknown")) {
+    errors.status = "Status không được là Unknown";
   }
   return errors;
 }
@@ -422,8 +472,8 @@ function childPayload(kind, form) {
   }
   if (kind === "range") {
     return {
-      gender: form.gender,
-      ageGroup: form.ageGroup,
+      gender: nullableText(form.gender),
+      ageGroup: nullableText(form.ageGroup),
       comparisonType: form.comparisonType,
       minValue: nullableNumber(form.minValue),
       maxValue: nullableNumber(form.maxValue),
@@ -438,7 +488,7 @@ function childPayload(kind, form) {
     lifestyleAdvice: nullableText(form.lifestyleAdvice),
     nutritionalAdvice: nullableText(form.nutritionalAdvice),
     urgencyLevel: nullableText(form.urgencyLevel),
-    severityLevel: form.severityLevel,
+    severityLevel: form.severityLevel || DEFAULT_ADVICE_SEVERITY,
     warningSigns: nullableText(form.warningSigns),
     followUpSuggestion: nullableText(form.followUpSuggestion),
     doctorQuestions: nullableText(form.doctorQuestions),
@@ -451,7 +501,9 @@ export function LabIndicatorChildDialog({ kind, item, saving, restoreFocusRef, o
   const Icon = meta.icon;
   const [form, setForm] = useState(() => childToForm(kind, item));
   const [errors, setErrors] = useState({});
-  const errorSummaryRef = useRef(null);
+  const [submitError, setSubmitError] = useState("");
+  const formRef = useRef(null);
+  const submitErrorRef = useRef(null);
   const firstInputRef = useRef(null);
 
   const title = useMemo(
@@ -461,18 +513,39 @@ export function LabIndicatorChildDialog({ kind, item, saving, restoreFocusRef, o
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: "", minValue: "" }));
+    setErrors((current) => {
+      const next = { ...current, [field]: "" };
+      if (kind === "range" && (field === "gender" || field === "ageGroup")) {
+        next.gender = "";
+        next.ageGroup = "";
+      }
+      if (kind === "range" && ["comparisonType", "minValue", "maxValue"].includes(field)) {
+        next.minValue = "";
+        next.maxValue = "";
+        next.comparisonType = "";
+      }
+      return next;
+    });
+    setSubmitError("");
   }
 
   async function submit(event) {
     event.preventDefault();
     const nextErrors = validateChildForm(kind, form);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) {
-      window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
+    setSubmitError("");
+    if (hasFieldErrors(nextErrors)) {
+      focusValidationFeedback(formRef, submitErrorRef, nextErrors);
       return;
     }
-    await onSubmit(childPayload(kind, form));
+
+    const result = await onSubmit(childPayload(kind, form));
+    if (result?.success === false) {
+      const fieldErrors = getChildFieldErrors(kind, result.message);
+      setErrors(fieldErrors);
+      setSubmitError(hasFieldErrors(fieldErrors) ? "" : result.message);
+      focusValidationFeedback(formRef, submitErrorRef, fieldErrors);
+    }
   }
 
   return (
@@ -497,11 +570,13 @@ export function LabIndicatorChildDialog({ kind, item, saving, restoreFocusRef, o
         </button>
       </header>
 
-      <form className="clean-form doctor-form lab-dialog-form" onSubmit={submit} noValidate>
-        <FormErrorSummary errors={errors} summaryRef={errorSummaryRef} />
-        {kind === "alias" && <AliasFields form={form} errors={errors} update={update} firstInputRef={firstInputRef} />}
-        {kind === "range" && <RangeFields form={form} errors={errors} update={update} firstInputRef={firstInputRef} />}
-        {kind === "advice" && <AdviceFields form={form} errors={errors} update={update} firstInputRef={firstInputRef} />}
+      <form ref={formRef} className="clean-form doctor-form lab-dialog-form" onSubmit={submit} noValidate>
+        <div className="lab-dialog-body">
+          <SubmitError message={submitError} errorRef={submitErrorRef} />
+          {kind === "alias" && <AliasFields form={form} errors={errors} update={update} firstInputRef={firstInputRef} />}
+          {kind === "range" && <RangeFields form={form} errors={errors} update={update} firstInputRef={firstInputRef} />}
+          {kind === "advice" && <AdviceFields form={form} errors={errors} update={update} firstInputRef={firstInputRef} />}
+        </div>
         <div className="doctor-modal-actions lab-dialog-actions">
           <Button tone="secondary" type="button" onClick={onClose} disabled={saving}>Hủy</Button>
           <Button type="submit" loading={saving} loadingLabel="Đang lưu…"><Check size={16} aria-hidden="true" /> {editing ? "Lưu thay đổi" : title}</Button>

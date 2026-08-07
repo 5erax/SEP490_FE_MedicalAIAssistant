@@ -2,6 +2,7 @@ import {
   getApiStatusMessage,
   localizeApiPayload,
 } from "./apiMessageTranslator";
+import { ENDPOINTS } from "./endpoints";
 
 // Ở môi trường production, frontend gọi API cùng origin thông qua
 // /api/proxy.js để tránh mixed-content và giảm vấn đề CORS.
@@ -11,6 +12,13 @@ const API_BASE_URL = import.meta.env.DEV
 
 const API_PROXY_PATH = "/api/proxy.js";
 const AUTH_STORAGE_KEY = "medimate.auth";
+const AUTH_CHANGE_EVENT = "medimate:auth-change";
+const AUTH_REFRESH_LOCK_NAME = "medimate:auth-refresh";
+export const AUTH_REFRESH_LEAD_MS = 2 * 60 * 1000;
+
+let cachedAuthStorageValue;
+let cachedAuthSnapshot = null;
+let refreshPromise = null;
 
 function buildUrl(path) {
   const normalizedPath = String(path ?? "").trim();
@@ -147,10 +155,51 @@ function isExpiredToken(token) {
   return Number(payload.exp) * 1000 <= Date.now();
 }
 
+export function getAuthExpiresAt(auth) {
+  if (!auth) {
+    return null;
+  }
+
+  const explicitExpiry = Date.parse(auth.expiresAtUtc ?? "");
+
+  if (Number.isFinite(explicitExpiry)) {
+    return explicitExpiry;
+  }
+
+  const payload = decodeJwtPayload(auth.accessToken);
+  const tokenExpiry = Number(payload?.exp) * 1000;
+
+  return Number.isFinite(tokenExpiry) && tokenExpiry > 0
+    ? tokenExpiry
+    : null;
+}
+
+export function isAuthExpired(auth, now = Date.now()) {
+  if (!auth?.accessToken) {
+    return true;
+  }
+
+  const expiresAt = getAuthExpiresAt(auth);
+
+  return expiresAt !== null
+    ? expiresAt <= now
+    : isExpiredToken(auth.accessToken);
+}
+
+export function isAuthRefreshDue(
+  auth,
+  leadMs = AUTH_REFRESH_LEAD_MS,
+  now = Date.now(),
+) {
+  const expiresAt = getAuthExpiresAt(auth);
+
+  return expiresAt !== null && expiresAt - now <= leadMs;
+}
+
 function isUsableAuth(auth) {
   return (
     Boolean(auth?.accessToken) &&
-    !isExpiredToken(auth.accessToken)
+    !isAuthExpired(auth)
   );
 }
 
@@ -447,19 +496,34 @@ function parseResponsePayload(text, responseOk) {
   }
 }
 
-export function getStoredAuth() {
+function notifyAuthChange() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+}
+
+export function getStoredSessionAuth() {
   if (!canUseLocalStorage()) {
     return null;
   }
 
-  const auth = parseStoredAuth();
+  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
 
-  if (!isUsableAuth(auth)) {
-    clearStoredAuth();
+  if (raw === cachedAuthStorageValue) {
+    return cachedAuthSnapshot;
+  }
+
+  const auth = parseStoredAuth();
+  const storedAuth = selectStoredAuth(auth);
+
+  if (!storedAuth?.accessToken) {
+    cachedAuthStorageValue = raw;
+    cachedAuthSnapshot = null;
     return null;
   }
 
-  const storedAuth = selectStoredAuth(auth);
   const serializedAuth = JSON.stringify(storedAuth);
 
   if (
@@ -472,7 +536,40 @@ export function getStoredAuth() {
     );
   }
 
-  return storedAuth;
+  cachedAuthStorageValue = serializedAuth;
+  cachedAuthSnapshot = storedAuth;
+
+  return cachedAuthSnapshot;
+}
+
+export function getStoredAuth() {
+  const auth = getStoredSessionAuth();
+
+  return isUsableAuth(auth) ? auth : null;
+}
+
+export function subscribeToAuth(callback) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleStorage = (event) => {
+    if (event.key !== AUTH_STORAGE_KEY) {
+      return;
+    }
+
+    cachedAuthStorageValue = undefined;
+    cachedAuthSnapshot = null;
+    callback();
+  };
+
+  window.addEventListener(AUTH_CHANGE_EVENT, callback);
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener(AUTH_CHANGE_EVENT, callback);
+    window.removeEventListener("storage", handleStorage);
+  };
 }
 
 export function setStoredAuth(auth) {
@@ -486,10 +583,15 @@ export function setStoredAuth(auth) {
     return;
   }
 
+  const serializedAuth = JSON.stringify(storedAuth);
+
   window.localStorage.setItem(
     AUTH_STORAGE_KEY,
-    JSON.stringify(storedAuth),
+    serializedAuth,
   );
+  cachedAuthStorageValue = serializedAuth;
+  cachedAuthSnapshot = storedAuth;
+  notifyAuthChange();
 }
 
 export function clearStoredAuth() {
@@ -498,6 +600,9 @@ export function clearStoredAuth() {
   }
 
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  cachedAuthStorageValue = null;
+  cachedAuthSnapshot = null;
+  notifyAuthChange();
 }
 
 export function isAuthenticated() {
@@ -554,6 +659,104 @@ export function withPagination(
   }).toString();
 }
 
+function mergeRefreshedAuth(response) {
+  const authData = response?.data ?? response;
+
+  if (!authData?.accessToken) {
+    const payload = {
+      success: false,
+      message: "Phiên đăng nhập không thể được gia hạn.",
+    };
+
+    throw createApiError({
+      message: payload.message,
+      status: 401,
+      payload,
+      originalPayload: response,
+    });
+  }
+
+  const refreshedAuth = {
+    ...(getStoredSessionAuth() ?? {}),
+    ...authData,
+  };
+
+  if (!("expiresAtUtc" in authData)) {
+    delete refreshedAuth.expiresAtUtc;
+  }
+
+  setStoredAuth(refreshedAuth);
+
+  return response?.data
+    ? { ...response, data: refreshedAuth }
+    : refreshedAuth;
+}
+
+async function performAuthRefresh(previousAccessToken) {
+  const refresh = async () => {
+    const currentAuth = getStoredSessionAuth();
+
+    // Một tab hoặc request khác có thể đã rotate refresh token trong lúc chờ.
+    // Khi đó dùng access token mới thay vì gửi lại refresh cookie cũ.
+    if (
+      currentAuth?.accessToken &&
+      currentAuth.accessToken !== previousAccessToken &&
+      !isAuthExpired(currentAuth)
+    ) {
+      return {
+        success: true,
+        data: currentAuth,
+      };
+    }
+
+    const response = await apiRequest(
+      ENDPOINTS.AUTH.REFRESH,
+      {
+        method: "POST",
+        credentials: "include",
+        _skipAuthRefresh: true,
+      },
+    );
+
+    return mergeRefreshedAuth(response);
+  };
+
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.locks?.request
+  ) {
+    return navigator.locks.request(
+      AUTH_REFRESH_LOCK_NAME,
+      { mode: "exclusive" },
+      refresh,
+    );
+  }
+
+  return refresh();
+}
+
+export function refreshAuthSession() {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  const previousAccessToken =
+    getStoredSessionAuth()?.accessToken ?? "";
+
+  refreshPromise = performAuthRefresh(
+    previousAccessToken,
+  )
+    .catch((error) => {
+      clearStoredAuth();
+      throw error;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
+
 export async function apiRequest(
   path,
   options = {},
@@ -567,19 +770,33 @@ export async function apiRequest(
     signal,
     cache,
     redirect,
+    _skipAuthRefresh = false,
+    _authRetry = false,
   } = options;
 
   const requestHeaders = new Headers(headers);
+  let requestAuth = auth
+    ? getStoredSessionAuth()
+    : null;
 
-  if (auth) {
-    const token = getAccessToken();
+  if (
+    auth &&
+    !_skipAuthRefresh &&
+    requestAuth &&
+    isAuthExpired(requestAuth)
+  ) {
+    await refreshAuthSession();
+    requestAuth = getStoredSessionAuth();
+  }
 
-    if (token) {
-      requestHeaders.set(
-        "Authorization",
-        `Bearer ${token}`,
-      );
-    }
+  const accessTokenUsed =
+    requestAuth?.accessToken ?? "";
+
+  if (auth && accessTokenUsed) {
+    requestHeaders.set(
+      "Authorization",
+      `Bearer ${accessTokenUsed}`,
+    );
   }
 
   const requestBody = prepareRequestBody(
@@ -617,6 +834,28 @@ export async function apiRequest(
       payload,
       originalPayload: null,
       cause,
+    });
+  }
+
+  if (
+    response.status === 401 &&
+    auth &&
+    !_skipAuthRefresh &&
+    !_authRetry
+  ) {
+    const latestAuth = getStoredSessionAuth();
+    const tokenWasAlreadyReplaced =
+      latestAuth?.accessToken &&
+      latestAuth.accessToken !== accessTokenUsed &&
+      !isAuthExpired(latestAuth);
+
+    if (!tokenWasAlreadyReplaced) {
+      await refreshAuthSession();
+    }
+
+    return apiRequest(path, {
+      ...options,
+      _authRetry: true,
     });
   }
 

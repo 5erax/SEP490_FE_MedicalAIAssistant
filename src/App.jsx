@@ -4,7 +4,7 @@ import UserWorkspaceShell from "./components/workspace/UserWorkspaceShell";
 import DoctorWorkspaceShell from "./components/workspace/DoctorWorkspaceShell";
 import StaticPage from "./pages/StaticPage";
 import WorkspaceRedirect from "./pages/WorkspaceRedirect";
-import { getStoredAuth } from "./services/api";
+import { useAuthSession } from "./state/useAuthSession";
 import {
   ChangePasswordPage,
   ForgotPasswordPage,
@@ -72,16 +72,16 @@ function App() {
   const path = window.location.pathname;
   const route = resolveRoute(path);
   const canonicalPath = getCanonicalPath(route);
-  const auth = getStoredAuth();
+  const { auth } = useAuthSession();
 
   useEffect(() => {
     document.title = route?.title ?? "MediMate AI";
 
-    const canCanonicalize = route?.access !== "auth" || Boolean(getStoredAuth());
+    const canCanonicalize = route?.access !== "auth" || Boolean(auth);
     if (canCanonicalize && canonicalPath && canonicalPath !== path && window.location.pathname === path) {
       window.history.replaceState(null, "", `${canonicalPath}${window.location.search}${window.location.hash}`);
     }
-  }, [canonicalPath, path, route]);
+  }, [auth, canonicalPath, path, route]);
 
   if (!route) return <StaticPage path={path} />;
 

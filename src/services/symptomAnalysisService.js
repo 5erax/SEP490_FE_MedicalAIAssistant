@@ -10,6 +10,52 @@ const BOOLEAN_CHOICE_PREFIX = "__medimate_boolean_choice__";
 const CLINICAL_MAP_CACHE_KEY = "medimate.clinical-map.recommendation";
 const clinicalAnalysisCache = new Map();
 
+function firstMessage(value) {
+  if (typeof value === "string") return value.trim();
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const message = firstMessage(item);
+      if (message) return message;
+    }
+  }
+
+  if (value && typeof value === "object") {
+    for (const item of Object.values(value)) {
+      const message = firstMessage(item);
+      if (message) return message;
+    }
+  }
+
+  return "";
+}
+
+export const SYMPTOM_ANALYSIS_MESSAGES = {
+  inputRequired: "Nội dung triệu chứng là bắt buộc",
+  inputTooLong: "Nội dung triệu chứng không được vượt quá 2000 ký tự",
+  requestRequired: "Request body là bắt buộc",
+  sessionIdRequired: "Id phiên phân tích triệu chứng là bắt buộc",
+  sessionNotFound: "Không tìm thấy phiên phân tích triệu chứng",
+  sessionInputMissing: "Nội dung triệu chứng của phiên không tồn tại",
+  questionsNotFound: "Không tìm thấy câu hỏi lâm sàng cho phiên này",
+  medGemmaJsonInvalid: "Không thể phân tích phản hồi JSON từ MedGemma",
+};
+
+export function getSymptomAnalysisApiMessage(source, fallback = "") {
+  const payload = source?.payload ?? source;
+  const detail = firstMessage(payload?.errors) || firstMessage(payload?.message);
+  if (detail) return detail;
+  if (source?.payload && fallback) return fallback;
+  return firstMessage(source?.message) || fallback;
+}
+
+export function getSymptomInputError(value) {
+  const input = normalizeText(value);
+  if (!input) return SYMPTOM_ANALYSIS_MESSAGES.inputRequired;
+  if (input.length > 2000) return SYMPTOM_ANALYSIS_MESSAGES.inputTooLong;
+  return "";
+}
+
 const CLINICAL_TRANSLATIONS = new Map([
   [
     "do you have a persistent high fever that does not improve after taking fever-reducing medicine?",
@@ -656,7 +702,7 @@ export const symptomAnalysisApi = {
     const response = await apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_CLINICAL_QUESTION_ANSWERS, {
       method: "POST",
       body: {
-        sessionId,
+        sessionId: normalizeText(sessionId),
         answers: Array.isArray(answers) ? answers : [],
       },
       auth: true,
@@ -702,7 +748,7 @@ export const symptomAnalysisApi = {
     return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_DIAGNOSIS, {
       method: "POST",
       body: {
-        sessionId,
+        sessionId: normalizeText(sessionId),
         answers: Array.isArray(answers) ? answers : [],
       },
       auth: true,

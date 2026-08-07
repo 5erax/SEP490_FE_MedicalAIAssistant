@@ -227,7 +227,10 @@ test.describe("patient specialty intake", () => {
       "aria-describedby",
       /specialty-symptoms-hint/,
     );
-    await expect(submit).toBeDisabled();
+    await expect(submit).toBeEnabled();
+    await submit.click();
+    await expect(page.getByText("Nội dung triệu chứng là bắt buộc", { exact: true })).toBeVisible();
+    await expect(symptoms).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByText("Khi nào cần cấp cứu?")).toBeVisible();
 
     await symptoms.fill("Sốt nhẹ 2 ngày kèm đau họng");
@@ -341,7 +344,7 @@ test.describe("patient specialty intake", () => {
     expect(sessionDetailRequests).toBe(1);
   });
 
-  test("does not expose upstream MedGemma parsing errors", async ({ page }) => {
+  test("displays the standardized MedGemma parsing error", async ({ page }) => {
     await page.route("**/api/symptom-analysis/suggest-clinical-questions", async (route) => route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
@@ -361,7 +364,8 @@ test.describe("patient specialty intake", () => {
       contentType: "application/json",
       body: JSON.stringify({
         success: false,
-        message: "MedGemma analysis failed. Failed to parse MedGemma diagnoses JSON response.",
+        message: "Phân tích triệu chứng thất bại",
+        errors: ["Không thể phân tích phản hồi JSON từ MedGemma"],
       }),
     }));
 
@@ -372,7 +376,8 @@ test.describe("patient specialty intake", () => {
     await page.getByRole("button", { name: "Xem gợi ý" }).click();
 
     await expect(page.getByText(
-      "Dịch vụ AI chưa thể tạo gợi ý chuyên khoa lần này. Vui lòng thử lại sau ít phút.",
+      "Không thể phân tích phản hồi JSON từ MedGemma",
+      { exact: true },
     )).toBeVisible();
     await expect(page.getByText(/MedGemma analysis failed/i)).toHaveCount(0);
     await expect(page.getByText(/Failed to parse/i)).toHaveCount(0);
