@@ -59,66 +59,48 @@ export function RevenueLineChart({ series }) {
   );
 }
 
-export function PaymentStatusDonutChart({ success, failure }) {
+export function PaymentSuccessGaugeChart({ success, failure }) {
   const total = success + failure;
-  const size = 200;
-  const radius = 74;
-  const strokeWidth = 30;
-  const center = size / 2;
-  const circumference = 2 * Math.PI * radius;
+  const percent = total > 0 ? Math.round((success / total) * 100) : 0;
 
-  const segments = [
-    { key: "success", label: "Thành công", value: success, tone: "success" },
-    { key: "failure", label: "Không thành công", value: failure, tone: "danger" },
-  ].filter((segment) => segment.value > 0);
-
-  let cumulativeFraction = 0;
-  const arcs = segments.map((segment) => {
-    const fraction = segment.value / total;
-    const dash = fraction * circumference;
-    const arc = { ...segment, fraction, dash, offset: -cumulativeFraction * circumference };
-    cumulativeFraction += fraction;
-    return arc;
-  });
+  const width = 240;
+  const height = 150;
+  const radius = 92;
+  const strokeWidth = 28;
+  const cx = width / 2;
+  const cy = 136;
+  const circumference = Math.PI * radius;
+  const dash = (percent / 100) * circumference;
+  const path = `M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`;
 
   return (
-    <div className="overview-donut-chart">
-      <svg
-        viewBox={`0 0 ${size} ${size}`}
-        role="img"
-        aria-label={`Tỉ lệ thanh toán: ${success} thành công, ${failure} không thành công`}
-      >
-        <circle cx={center} cy={center} r={radius} className="overview-donut-track" strokeWidth={strokeWidth} fill="none" />
-        {arcs.map((arc) => (
-          <circle
-            key={arc.key}
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
+    <div className="overview-gauge-chart">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Tỉ lệ thanh toán thành công: ${percent}%`}>
+        <path d={path} className="overview-gauge-track" strokeWidth={strokeWidth} fill="none" />
+        {total > 0 && (
+          <path
+            d={path}
+            className="overview-gauge-value"
             strokeWidth={strokeWidth}
-            strokeDasharray={`${arc.dash} ${circumference - arc.dash}`}
-            strokeDashoffset={arc.offset}
-            transform={`rotate(-90 ${center} ${center})`}
-            className={`overview-donut-segment is-${arc.tone}`}
-          >
-            <title>{`${arc.label}: ${arc.value} (${Math.round(arc.fraction * 100)}%)`}</title>
-          </circle>
-        ))}
+            fill="none"
+            strokeDasharray={`${dash} ${circumference - dash}`}
+          />
+        )}
+        <text x={cx} y={cy - 14} textAnchor="middle" className="overview-gauge-percent-text">
+          {percent}%
+        </text>
       </svg>
-      <div className="overview-donut-center">
-        <strong>{total}</strong>
-        <span>giao dịch</span>
-      </div>
-      <ul className="overview-donut-legend">
-        {segments.map((segment) => (
-          <li key={segment.key}>
-            <span className={`overview-donut-swatch is-${segment.tone}`} aria-hidden="true" />
-            <span className="overview-donut-legend-label">{segment.label}</span>
-            <strong>{segment.value}</strong>
-            <span className="overview-donut-legend-percent">{Math.round((segment.value / total) * 100)}%</span>
-          </li>
-        ))}
+      <ul className="overview-gauge-legend">
+        <li>
+          <span className="overview-gauge-swatch is-success" aria-hidden="true" />
+          <span>Thành công</span>
+          <strong>{success}</strong>
+        </li>
+        <li>
+          <span className="overview-gauge-swatch is-muted" aria-hidden="true" />
+          <span>Không thành công</span>
+          <strong>{failure}</strong>
+        </li>
       </ul>
     </div>
   );
@@ -297,7 +279,7 @@ export function PaymentStatusChartCard({ loading, error, payments, onRetry }) {
           <p>Tỉ lệ sẽ hiển thị khi có giao dịch thành công hoặc thất bại.</p>
         </div>
       ) : (
-        <PaymentStatusDonutChart success={success} failure={failure} />
+        <PaymentSuccessGaugeChart success={success} failure={failure} />
       )}
     </div>
   );
