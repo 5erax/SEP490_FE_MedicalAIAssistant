@@ -147,6 +147,13 @@
   background: transparent;
   color: var(--map-ink);
   font-size: 14px;
+  outline: none;
+}
+
+.map-clinical-refresh .clinic-search input::-webkit-search-cancel-button,
+.map-clinical-refresh .clinic-search input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .map-clinical-refresh .clinic-search input::placeholder {
