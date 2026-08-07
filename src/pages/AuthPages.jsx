@@ -385,12 +385,14 @@ function SelectField({
   label,
   children,
   required = false,
+  error,
   ...props
 }) {
   const id = useId();
+  const errorId = error ? `${id}-error` : undefined;
 
   return (
-    <div className="clean-field">
+    <div className={`clean-field${error ? " has-error" : ""}`}>
       <label htmlFor={id}>
         <span>{label}</span>
         {required && (
@@ -399,9 +401,24 @@ function SelectField({
           </span>
         )}
       </label>
-      <select id={id} required={required} {...props}>
+      <select
+        id={id}
+        required={required}
+        aria-describedby={errorId}
+        aria-invalid={error ? "true" : undefined}
+        {...props}
+      >
         {children}
       </select>
+      {error && (
+        <small
+          className="clean-field-error"
+          id={errorId}
+          role="alert"
+        >
+          {error}
+        </small>
+      )}
     </div>
   );
 }
@@ -409,7 +426,7 @@ function SelectField({
 const PASSWORD_HINT =
   "Tối thiểu 8 ký tự, nên có chữ hoa, chữ thường, số và ký tự đặc biệt.";
 
-const MIN_BIRTH_DATE = "1900-01-01";
+const MAX_REASONABLE_AGE = 120;
 
 function formatDateInputValue(date) {
   const year = date.getFullYear();
@@ -417,6 +434,22 @@ function formatDateInputValue(date) {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function getEarliestBirthDateValue(today = new Date()) {
+  const earliest = new Date(
+    today.getFullYear() - MAX_REASONABLE_AGE,
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  return formatDateInputValue(earliest);
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    String(value ?? "").trim(),
+  );
 }
 
 function parseDateInputValue(value) {
@@ -460,16 +493,62 @@ function validateDateOfBirth(value, today = new Date()) {
   }
 
   const todayValue = formatDateInputValue(today);
+  const earliestValue = getEarliestBirthDateValue(today);
 
   if (value > todayValue) {
     return "Ngày sinh không thể nằm trong tương lai.";
   }
 
-  if (value < MIN_BIRTH_DATE) {
-    return "Ngày sinh không hợp lệ. Vui lòng chọn ngày từ 01/01/1900 trở đi.";
+  if (value < earliestValue) {
+    return `Ngày sinh không hợp lý. Tuổi không được vượt quá ${MAX_REASONABLE_AGE}.`;
   }
 
   return "";
+}
+
+function validateSignupForm(form, accepted) {
+  const errors = {};
+
+  if (!form.email.trim()) {
+    errors.email = "Vui lòng nhập email.";
+  } else if (!isValidEmail(form.email)) {
+    errors.email = "Email không đúng định dạng.";
+  }
+
+  if (!form.userName.trim()) {
+    errors.userName = "Vui lòng nhập tên đăng nhập.";
+  }
+
+  if (!form.password) {
+    errors.password = "Vui lòng nhập mật khẩu.";
+  } else if (form.password.length < 8) {
+    errors.password = "Mật khẩu phải có ít nhất 8 ký tự.";
+  }
+
+  if (!form.confirmPassword) {
+    errors.confirmPassword = "Vui lòng nhập lại mật khẩu.";
+  } else if (form.password !== form.confirmPassword) {
+    errors.confirmPassword =
+      "Mật khẩu nhập lại chưa khớp. Vui lòng kiểm tra lại.";
+  }
+
+  if (!form.gender) {
+    errors.gender = "Vui lòng chọn giới tính.";
+  }
+
+  const dateOfBirthError = validateDateOfBirth(
+    form.dateOfBirth,
+  );
+  if (dateOfBirthError) {
+    errors.dateOfBirth = dateOfBirthError;
+  }
+
+  if (!accepted) {
+    errors.accepted =
+      "Vui lòng xác nhận thông tin quyền riêng tư và tuyên bố miễn trừ y tế.";
+  }
+
+  return errors;
 }
 
 export function LoginPage() {
@@ -689,9 +768,11 @@ export function SignupPage() {
   const [message, setMessage] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const confirmPasswordRef = useRef(null);
-  const dateOfBirthRef = useRef(null);
-  const todayDateValue = formatDateInputValue(new Date());
+  const signupFormRef = useRef(null);
+  const today = new Date();
+  const todayDateValue = formatDateInputValue(today);
+  const earliestBirthDateValue =
+    getEarliestBirthDateValue(today);
 
   function update(key, value) {
     setForm((current) => ({
@@ -713,53 +794,40 @@ export function SignupPage() {
 
     setFieldErrors((current) => ({
       ...current,
-      dateOfBirth: validateDateOfBirth(value),
+      dateOfBirth: "",
     }));
+  }
+
+  function focusFirstSignupError(errors) {
+    const order = [
+      "email",
+      "userName",
+      "password",
+      "confirmPassword",
+      "gender",
+      "dateOfBirth",
+      "accepted",
+    ];
+
+    const firstField = order.find((name) => errors[name]);
+    if (!firstField) return;
+
+    window.requestAnimationFrame(() => {
+      signupFormRef.current
+        ?.querySelector(`[name="${firstField}"]`)
+        ?.focus();
+    });
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const dateOfBirthError =
-      validateDateOfBirth(form.dateOfBirth);
+    const errors = validateSignupForm(form, accepted);
 
-    if (dateOfBirthError) {
+    if (Object.keys(errors).length > 0) {
       setMessage(null);
-      setFieldErrors((current) => ({
-        ...current,
-        dateOfBirth: dateOfBirthError,
-      }));
-
-      window.requestAnimationFrame(() =>
-        dateOfBirthRef.current?.focus()
-      );
-
-      return;
-    }
-
-    if (!accepted) {
-      setMessage({
-        type: "error",
-        text:
-          "Bạn cần xác nhận đã đọc thông tin quyền riêng tư " +
-          "và tuyên bố miễn trừ y tế.",
-      });
-      return;
-    }
-
-    if (form.password !== form.confirmPassword) {
-      setMessage(null);
-
-      setFieldErrors((current) => ({
-        ...current,
-        confirmPassword:
-          "Mật khẩu nhập lại chưa khớp. Vui lòng kiểm tra lại.",
-      }));
-
-      window.requestAnimationFrame(() =>
-        confirmPasswordRef.current?.focus()
-      );
-
+      setFieldErrors(errors);
+      focusFirstSignupError(errors);
       return;
     }
 
@@ -795,8 +863,10 @@ export function SignupPage() {
   return (
     <AuthShell mode="signup">
       <form
+        ref={signupFormRef}
         className="clean-form auth-form-clean"
         onSubmit={handleSubmit}
+        noValidate
       >
         <ApiMessage message={message} />
 
@@ -817,6 +887,7 @@ export function SignupPage() {
               }
               autoComplete="email"
               spellCheck={false}
+              error={fieldErrors.email}
               required
             />
 
@@ -829,6 +900,7 @@ export function SignupPage() {
               }
               autoComplete="username"
               spellCheck={false}
+              error={fieldErrors.userName}
               required
             />
 
@@ -872,6 +944,7 @@ export function SignupPage() {
               }
               autoComplete="new-password"
               hint={PASSWORD_HINT}
+              error={fieldErrors.password}
               required
             />
 
@@ -889,7 +962,6 @@ export function SignupPage() {
               autoComplete="new-password"
               hint="Nhập lại đúng mật khẩu mới để tránh khóa nhầm tài khoản."
               error={fieldErrors.confirmPassword}
-              inputRef={confirmPasswordRef}
               required
             />
 
@@ -898,6 +970,7 @@ export function SignupPage() {
               name="gender"
               value={form.gender}
               required
+              error={fieldErrors.gender}
               onChange={(event) =>
                 update("gender", event.target.value)
               }
@@ -915,58 +988,69 @@ export function SignupPage() {
                 updateDateOfBirth(event.target.value)
               }
               onBlur={(event) => {
-                const value = event.currentTarget.value;
-                const error = validateDateOfBirth(value);
+                const error = validateDateOfBirth(
+                  event.currentTarget.value,
+                );
 
                 setFieldErrors((current) => ({
                   ...current,
                   dateOfBirth: error,
                 }));
               }}
-              onInvalid={(event) => {
-                event.preventDefault();
-
-                const value = event.currentTarget.value;
-                const error = validateDateOfBirth(value);
-
-                setFieldErrors((current) => ({
-                  ...current,
-                  dateOfBirth: error,
-                }));
-              }}
-              min={MIN_BIRTH_DATE}
+              min={earliestBirthDateValue}
               max={todayDateValue}
               autoComplete="bday"
-              inputRef={dateOfBirthRef}
               error={fieldErrors.dateOfBirth}
-              hint="Ngày sinh hợp lệ từ 01/01/1900 đến hôm nay."
+              hint={`Ngày sinh hợp lệ, không ở tương lai và tuổi không vượt quá ${MAX_REASONABLE_AGE}.`}
               required
             />
           </div>
         </fieldset>
 
-        <label className="api-check auth-consent">
-          <input
-            type="checkbox"
-            checked={accepted}
-            onChange={(event) =>
-              setAccepted(event.target.checked)
-            }
-            required
-          />
+        <div
+          className={
+            `auth-consent-wrap${
+              fieldErrors.accepted ? " has-error" : ""
+            }`
+          }
+        >
+          <label className="api-check auth-consent">
+            <input
+              name="accepted"
+              type="checkbox"
+              checked={accepted}
+              onChange={(event) => {
+                setAccepted(event.target.checked);
+                setFieldErrors((current) => ({
+                  ...current,
+                  accepted: "",
+                }));
+              }}
+              required
+            />
 
-          <span>
-            Tôi đã đọc{" "}
-            <a href="/privacy">
-              thông tin quyền riêng tư
-            </a>
-            {" "}và hiểu nội dung MediMate chỉ mang tính
-            tham khảo theo{" "}
-            <a href="/medical-disclaimer">
-              tuyên bố miễn trừ y tế
-            </a>.
-          </span>
-        </label>
+            <span>
+              Tôi đã đọc{" "}
+              <a href="/privacy">
+                thông tin quyền riêng tư
+              </a>
+              {" "}và hiểu nội dung MediMate chỉ mang tính
+              tham khảo theo{" "}
+              <a href="/medical-disclaimer">
+                tuyên bố miễn trừ y tế
+              </a>.
+            </span>
+          </label>
+
+          {fieldErrors.accepted && (
+            <small
+              className="auth-consent-error"
+              role="alert"
+            >
+              {fieldErrors.accepted}
+            </small>
+          )}
+        </div>
 
         <button
           className="btn btn-primary auth-submit"

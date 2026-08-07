@@ -858,7 +858,10 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
 }
 
 .auth-mode-signup .clean-field {
+  align-content: start;
+  align-self: start;
   gap: 6px;
+  width: 100%;
   font-size: 12.5px;
 }
 
@@ -877,6 +880,7 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
 }
 
 .auth-mode-signup .clean-field :is(input, select) {
+  height: 46px;
   min-height: 46px;
   border: 1px solid var(--signup-border-strong);
   border-radius: 10px;
@@ -929,6 +933,23 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
   color: #53686c;
   font-size: 12.5px;
   font-weight: 700;
+}
+
+.auth-mode-signup .auth-consent-wrap {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-mode-signup .auth-consent-wrap.has-error .auth-consent {
+  border-color: #d92d20;
+  background: #fffafa;
+}
+
+.auth-mode-signup .auth-consent-error {
+  color: var(--signup-danger);
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .auth-mode-signup .auth-consent input {
