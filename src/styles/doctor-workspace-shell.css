@@ -90,31 +90,11 @@
   background: var(--shell-mint);
 }
 
-.doctor-shell-realtime {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: auto;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.08);
-  padding: var(--space-3);
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.doctor-shell-realtime[data-status="connected"] {
-  color: #d7f7e6;
-}
-
-.doctor-shell-realtime[data-status="connected"] svg {
-  color: #6ee7b7;
-}
-
 .doctor-shell-account {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  margin-top: auto;
   border-top: 1px solid var(--shell-line);
   padding-top: var(--space-4);
 }
