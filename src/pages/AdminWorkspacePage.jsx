@@ -2581,6 +2581,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 paymentsError={overviewPaymentsError}
                 paymentsLoading={overviewPaymentsLoading}
                 onRetryPayments={loadOverviewPayments}
+                facilityDepartments={facilityDepartments}
               />
             )}
 

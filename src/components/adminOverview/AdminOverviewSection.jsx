@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import {
+  DepartmentDistributionCard,
   PaymentStatusChartCard,
   RevenueChartCard,
   UserGrowthPlaceholderCard,
@@ -132,6 +133,7 @@ export default function AdminOverviewSection({
   paymentsError = "",
   paymentsLoading = false,
   onRetryPayments,
+  facilityDepartments = [],
 }) {
   const clinicalQuestionsAvailable = operationalCounts.clinicalQuestions !== null;
   const labIndicatorsAvailable = operationalCounts.labIndicators !== null;
@@ -242,6 +244,12 @@ export default function AdminOverviewSection({
           error={paymentsError}
           payments={payments}
           onRetry={onRetryPayments}
+        />
+        <DepartmentDistributionCard
+          loading={facilitiesLoading}
+          error={facilitiesError}
+          facilityDepartments={facilityDepartments}
+          onRetry={() => onRetryMetric("facilities")}
         />
         <UserGrowthPlaceholderCard />
         <PaymentStatusChartCard
