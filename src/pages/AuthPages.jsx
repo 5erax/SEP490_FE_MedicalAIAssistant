@@ -23,7 +23,6 @@ import { isGoogleOAuthEnabledForCurrentOrigin } from "../services/googleOAuthCon
 import { findPatientProfileByUserId } from "../services/patientProfileSetup";
 import { getWorkspacePath, hasAuthRole } from "../utils/roles";
 import "../styles/auth-refresh.css";
-import "../styles/auth-signup.css";
 
 function ApiMessage({ message }) {
   if (!message) return null;
