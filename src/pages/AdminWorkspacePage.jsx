@@ -587,37 +587,44 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   async function loadOverviewOperationalCounts() {
     setOverviewOperationalLoading(true);
     try {
-      const [
-        clinicalQuestionsResult,
-        labIndicatorsResult,
-        feedbackPendingResult,
-        feedbackHiddenResult,
-        labTestProcessingResult,
-        labTestFailedResult,
-        symptomAnalysisFailedResult,
-      ] = await Promise.allSettled([
-        clinicalQuestionsApi.list(1, 1, {}),
-        labIndicatorsApi.list(1, 1, {}),
-        feedbackReviewsApi.list(1, 1, { status: "pending" }),
-        feedbackReviewsApi.list(1, 1, { status: "hidden" }),
-        labTestsApi.adminSessions(1, 1, { status: "processing" }),
-        labTestsApi.adminSessions(1, 1, { status: "failed" }),
-        symptomAnalysisApi.adminSessions(1, 1, { status: "failed" }),
-      ]);
+      const requests = [
+        { key: "clinicalQuestions", promise: clinicalQuestionsApi.list(1, 1, {}) },
+        { key: "labIndicators", promise: labIndicatorsApi.list(1, 1, {}) },
+        { key: "feedbackPending (status=pending)", promise: feedbackReviewsApi.list(1, 1, { status: "pending" }) },
+        { key: "feedbackPending (status=hidden)", promise: feedbackReviewsApi.list(1, 1, { status: "hidden" }) },
+        { key: "labTestNeedsAttention (status=processing)", promise: labTestsApi.adminSessions(1, 1, { status: "processing" }) },
+        { key: "labTestNeedsAttention (status=failed)", promise: labTestsApi.adminSessions(1, 1, { status: "failed" }) },
+        { key: "symptomAnalysisFailed", promise: symptomAnalysisApi.adminSessions(1, 1, { status: "failed" }) },
+      ];
+      const settled = await Promise.allSettled(requests.map((request) => request.promise));
+      const results = Object.fromEntries(requests.map((request, index) => [request.key, settled[index]]));
+
+      // Surface exactly which request failed and why - a silent "Không khả
+      // dụng" with no trace makes this impossible to debug from the app.
+      settled.forEach((result, index) => {
+        if (result.status === "rejected") {
+          console.warn(
+            `[Tổng quan quản trị] Không tải được "${requests[index].key}":`,
+            result.reason?.status,
+            result.reason?.message,
+          );
+        }
+      });
 
       // Every request behind a combined metric must succeed - otherwise
       // the sum would silently understate the real count.
-      function sumTotals(results) {
-        if (results.some((result) => result.status !== "fulfilled")) return null;
-        return results.reduce((sum, result) => sum + (Number(result.value?.data?.totalCount) || 0), 0);
+      function sumTotals(keys) {
+        const items = keys.map((key) => results[key]);
+        if (items.some((result) => result.status !== "fulfilled")) return null;
+        return items.reduce((sum, result) => sum + (Number(result.value?.data?.totalCount) || 0), 0);
       }
 
       setOverviewOperationalCounts({
-        clinicalQuestions: sumTotals([clinicalQuestionsResult]),
-        labIndicators: sumTotals([labIndicatorsResult]),
-        feedbackPending: sumTotals([feedbackPendingResult, feedbackHiddenResult]),
-        labTestNeedsAttention: sumTotals([labTestProcessingResult, labTestFailedResult]),
-        symptomAnalysisFailed: sumTotals([symptomAnalysisFailedResult]),
+        clinicalQuestions: sumTotals(["clinicalQuestions"]),
+        labIndicators: sumTotals(["labIndicators"]),
+        feedbackPending: sumTotals(["feedbackPending (status=pending)", "feedbackPending (status=hidden)"]),
+        labTestNeedsAttention: sumTotals(["labTestNeedsAttention (status=processing)", "labTestNeedsAttention (status=failed)"]),
+        symptomAnalysisFailed: sumTotals(["symptomAnalysisFailed"]),
       });
     } finally {
       setOverviewOperationalLoading(false);
