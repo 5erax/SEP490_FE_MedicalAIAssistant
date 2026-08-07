@@ -492,6 +492,24 @@ function parseDateInputValue(value) {
   return date;
 }
 
+function calculateAge(dateOfBirth, today = new Date()) {
+  let age =
+    today.getFullYear() - dateOfBirth.getFullYear();
+
+  const hasNotHadBirthday =
+    today.getMonth() < dateOfBirth.getMonth() ||
+    (
+      today.getMonth() === dateOfBirth.getMonth() &&
+      today.getDate() < dateOfBirth.getDate()
+    );
+
+  if (hasNotHadBirthday) {
+    age -= 1;
+  }
+
+  return age;
+}
+
 function validateDateOfBirth(value, today = new Date()) {
   if (!value) {
     return "Vui lòng nhập ngày sinh.";
@@ -500,18 +518,21 @@ function validateDateOfBirth(value, today = new Date()) {
   const dateOfBirth = parseDateInputValue(value);
 
   if (!dateOfBirth) {
-    return "Ngày sinh không hợp lệ.";
+    return "Ngày sinh không hợp lệ. Vui lòng kiểm tra lại.";
   }
 
-  const earliestValue = getEarliestBirthDateValue(today);
-  const latestValue = getLatestBirthDateValue(today);
-
-  if (value < earliestValue) {
-    return `Ngày sinh không hợp lý. Tuổi không được vượt quá ${MAX_REASONABLE_AGE}.`;
+  if (dateOfBirth > today) {
+    return "Ngày sinh không thể nằm trong tương lai.";
   }
 
-  if (value > latestValue) {
+  const age = calculateAge(dateOfBirth, today);
+
+  if (age < MIN_SIGNUP_AGE) {
     return `Bạn phải đủ ${MIN_SIGNUP_AGE} tuổi để đăng ký tài khoản.`;
+  }
+
+  if (age > MAX_REASONABLE_AGE) {
+    return "Ngày sinh không hợp lệ. Vui lòng kiểm tra lại.";
   }
 
   return "";
@@ -1013,7 +1034,6 @@ export function SignupPage() {
               max={latestBirthDateValue}
               autoComplete="bday"
               error={fieldErrors.dateOfBirth}
-              hint={`Bạn phải từ ${MIN_SIGNUP_AGE} tuổi trở lên. Tuổi tối đa hợp lý là ${MAX_REASONABLE_AGE}.`}
               required
             />
           </div>
