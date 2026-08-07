@@ -4,13 +4,17 @@ import { buildPaymentStatusCounts, buildRevenueGrowth, formatCurrency } from "./
 export function RevenueLineChart({ series }) {
   const width = 600;
   const height = 200;
-  const maxValue = Math.max(...series.map((point) => point.value), 1);
-  const stepX = series.length > 1 ? width / (series.length - 1) : 0;
+  // A single month has nothing to draw a line between, so anchor it to an
+  // implicit zero point instead of leaving just a lone dot on the chart.
+  const chartSeries = series.length === 1 ? [{ label: "", value: 0 }, series[0]] : series;
+  const maxValue = Math.max(...chartSeries.map((point) => point.value), 1);
+  const stepX = chartSeries.length > 1 ? width / (chartSeries.length - 1) : 0;
 
-  const points = series.map((point, index) => ({
+  const points = chartSeries.map((point, index) => ({
     ...point,
-    x: series.length > 1 ? index * stepX : width / 2,
+    x: index * stepX,
     y: height - (point.value / maxValue) * (height - 12) - 6,
+    isAnchor: series.length === 1 && index === 0,
   }));
 
   const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x},${point.y}`).join(" ");
@@ -21,14 +25,13 @@ export function RevenueLineChart({ series }) {
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
       className="overview-line-chart"
       role="img"
       aria-label="Biểu đồ tăng trưởng doanh thu theo tháng"
     >
       <path d={areaPath} className="overview-line-chart-area" />
       <path d={linePath} className="overview-line-chart-line" />
-      {points.map((point) => (
+      {points.filter((point) => !point.isAnchor).map((point) => (
         <circle key={point.label} cx={point.x} cy={point.y} r="4" className="overview-line-chart-dot">
           <title>{`${point.label}: ${formatCurrency(point.value)}`}</title>
         </circle>
@@ -37,36 +40,67 @@ export function RevenueLineChart({ series }) {
   );
 }
 
-export function PaymentStatusBarChart({ success, failure }) {
+export function PaymentStatusDonutChart({ success, failure }) {
   const total = success + failure;
-  const maxValue = Math.max(success, failure, 1);
-  const bars = [
+  const size = 200;
+  const radius = 74;
+  const strokeWidth = 30;
+  const center = size / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  const segments = [
     { key: "success", label: "Thành công", value: success, tone: "success" },
     { key: "failure", label: "Không thành công", value: failure, tone: "danger" },
-  ];
+  ].filter((segment) => segment.value > 0);
+
+  let cumulativeFraction = 0;
+  const arcs = segments.map((segment) => {
+    const fraction = segment.value / total;
+    const dash = fraction * circumference;
+    const arc = { ...segment, fraction, dash, offset: -cumulativeFraction * circumference };
+    cumulativeFraction += fraction;
+    return arc;
+  });
 
   return (
-    <div
-      className="overview-bar-chart"
-      role="img"
-      aria-label={`Tỉ lệ thanh toán: ${success} thành công, ${failure} không thành công`}
-    >
-      {bars.map((bar) => {
-        const percentOfTotal = total > 0 ? Math.round((bar.value / total) * 100) : 0;
-        return (
-          <div className="overview-bar-chart-column" key={bar.key}>
-            <span className="overview-bar-chart-value">{bar.value}</span>
-            <div className="overview-bar-chart-track">
-              <div
-                className={`overview-bar-chart-fill is-${bar.tone}`}
-                style={{ height: `${(bar.value / maxValue) * 100}%` }}
-              />
-            </div>
-            <span className="overview-bar-chart-label">{bar.label}</span>
-            <span className="overview-bar-chart-percent">{percentOfTotal}%</span>
-          </div>
-        );
-      })}
+    <div className="overview-donut-chart">
+      <svg
+        viewBox={`0 0 ${size} ${size}`}
+        role="img"
+        aria-label={`Tỉ lệ thanh toán: ${success} thành công, ${failure} không thành công`}
+      >
+        <circle cx={center} cy={center} r={radius} className="overview-donut-track" strokeWidth={strokeWidth} fill="none" />
+        {arcs.map((arc) => (
+          <circle
+            key={arc.key}
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${arc.dash} ${circumference - arc.dash}`}
+            strokeDashoffset={arc.offset}
+            transform={`rotate(-90 ${center} ${center})`}
+            className={`overview-donut-segment is-${arc.tone}`}
+          >
+            <title>{`${arc.label}: ${arc.value} (${Math.round(arc.fraction * 100)}%)`}</title>
+          </circle>
+        ))}
+      </svg>
+      <div className="overview-donut-center">
+        <strong>{total}</strong>
+        <span>giao dịch</span>
+      </div>
+      <ul className="overview-donut-legend">
+        {segments.map((segment) => (
+          <li key={segment.key}>
+            <span className={`overview-donut-swatch is-${segment.tone}`} aria-hidden="true" />
+            <span className="overview-donut-legend-label">{segment.label}</span>
+            <strong>{segment.value}</strong>
+            <span className="overview-donut-legend-percent">{Math.round((segment.value / total) * 100)}%</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -156,7 +190,7 @@ export function PaymentStatusChartCard({ loading, error, payments, onRetry }) {
           <p>Tỉ lệ sẽ hiển thị khi có giao dịch thành công hoặc thất bại.</p>
         </div>
       ) : (
-        <PaymentStatusBarChart success={success} failure={failure} />
+        <PaymentStatusDonutChart success={success} failure={failure} />
       )}
     </div>
   );
