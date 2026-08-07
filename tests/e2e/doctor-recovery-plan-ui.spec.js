@@ -210,6 +210,20 @@ test.describe("doctor recovery plan workflow", () => {
     await expect(page.getByText("Không có yêu cầu đang chờ")).toBeVisible();
   });
 
+  test("clicking a queue card opens a preview with the patient's note and can accept from there", async ({ page }) => {
+    await prepareDoctorPage(page, { openItems: [openRequest()] });
+    await page.goto("/app/staff/recovery-plans/queue", { waitUntil: "domcontentloaded" });
+
+    await page.getByRole("button", { name: /Xem chi tiết yêu cầu/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Hô hấp" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText("Ho nhiều về đêm.")).toBeVisible();
+
+    await dialog.getByRole("button", { name: "Nhận yêu cầu" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText("Không có yêu cầu đang chờ")).toBeVisible();
+  });
+
   test("accepting an already-claimed request removes it from the queue with an error", async ({ page }) => {
     await prepareDoctorPage(page, {
       openItems: [openRequest()],

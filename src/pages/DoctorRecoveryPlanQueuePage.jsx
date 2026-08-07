@@ -4,13 +4,16 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Clock3,
+  MessageSquareText,
   RefreshCw,
   Thermometer,
   UserCheck,
   Wind,
+  X,
 } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Badge, Button, CustomSelect, EmptyState, ErrorState, LoadingState } from "../components/ui";
+import { Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { doctorRecoveryPlanRequestsApi } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
 import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
@@ -78,6 +81,7 @@ export default function DoctorRecoveryPlanQueuePage() {
   const [error, setError] = useState("");
   const [blockedMessage, setBlockedMessage] = useState("");
   const [acceptingId, setAcceptingId] = useState("");
+  const [previewRequest, setPreviewRequest] = useState(null);
   const refetchTimerRef = useRef(null);
 
   const loadQueue = useCallback(async (targetPage = pageNumber, targetDiseaseGroup = diseaseGroup) => {
@@ -164,6 +168,11 @@ export default function DoctorRecoveryPlanQueuePage() {
     }
   }
 
+  async function handleAcceptFromPreview(request) {
+    await handleAccept(request);
+    setPreviewRequest(null);
+  }
+
   return (
     <div className="doctor-recovery-page">
       <header className="doctor-recovery-header">
@@ -221,10 +230,23 @@ export default function DoctorRecoveryPlanQueuePage() {
               return (
               <article className="doctor-recovery-queue-card" key={request.id}>
                 <span className="doctor-recovery-queue-icon" aria-hidden="true"><DiseaseIcon size={20} /></span>
-                <div>
-                  <Badge tone="info">{getDiseaseLabel(request.diseaseGroup)}</Badge>
-                  <p className="doctor-recovery-queue-time">Gửi lúc {formatDate(request.requestedAt)}</p>
-                </div>
+                <button
+                  type="button"
+                  className="doctor-recovery-queue-info"
+                  onClick={() => setPreviewRequest(request)}
+                >
+                  <span className="doctor-recovery-queue-info-meta">
+                    <Badge tone="info">{getDiseaseLabel(request.diseaseGroup)}</Badge>
+                    <span className="doctor-recovery-queue-time">Gửi lúc {formatDate(request.requestedAt)}</span>
+                  </span>
+                  <span className="doctor-recovery-queue-note">
+                    <MessageSquareText size={14} aria-hidden="true" />
+                    <span>{request.requestNote || "Bệnh nhân không để lại ghi chú."}</span>
+                  </span>
+                  <span className="doctor-recovery-queue-info-cta">
+                    Xem chi tiết yêu cầu <ChevronRight size={14} aria-hidden="true" />
+                  </span>
+                </button>
                 <Button
                   loading={acceptingId === request.id}
                   loadingLabel="Đang nhận…"
@@ -269,6 +291,62 @@ export default function DoctorRecoveryPlanQueuePage() {
           )}
         </>
       )}
+
+      {previewRequest && (
+        <RequestPreviewDialog
+          request={previewRequest}
+          accepting={acceptingId === previewRequest.id}
+          disabled={Boolean(acceptingId) && acceptingId !== previewRequest.id}
+          onClose={() => setPreviewRequest(null)}
+          onAccept={() => handleAcceptFromPreview(previewRequest)}
+        />
+      )}
     </div>
+  );
+}
+
+function RequestPreviewDialog({ request, accepting, disabled, onClose, onAccept }) {
+  const DiseaseIcon = getDiseaseGroup(request.diseaseGroup)?.icon ?? ClipboardList;
+
+  return (
+    <Dialog
+      backdropClassName="doctor-queue-preview-backdrop"
+      className="doctor-queue-preview-modal"
+      labelledBy="queue-preview-title"
+      onClose={onClose}
+    >
+      <header className="doctor-queue-preview-header">
+        <span aria-hidden="true"><DiseaseIcon size={20} /></span>
+        <div>
+          <p className="doctor-queue-preview-eyebrow">Xem trước yêu cầu</p>
+          <h2 id="queue-preview-title">{getDiseaseLabel(request.diseaseGroup)}</h2>
+        </div>
+        <button type="button" aria-label="Đóng" onClick={onClose}><X size={18} aria-hidden="true" /></button>
+      </header>
+
+      <div className="doctor-queue-preview-body">
+        <p className="doctor-queue-preview-time">
+          <Clock3 size={14} aria-hidden="true" /> Gửi lúc {formatDate(request.requestedAt)}
+        </p>
+
+        <div className="doctor-queue-preview-note">
+          <p className="doctor-queue-preview-note-heading">
+            <MessageSquareText size={14} aria-hidden="true" /> Ghi chú từ bệnh nhân
+          </p>
+          <p className="doctor-queue-preview-note-text">{request.requestNote || "Không có ghi chú."}</p>
+        </div>
+
+        <p className="doctor-queue-preview-hint">
+          Hồ sơ lâm sàng đầy đủ (chỉ số cơ thể, dị ứng, bệnh nền, thuốc đang dùng...) sẽ hiển thị ngay sau khi bạn nhận yêu cầu này.
+        </p>
+      </div>
+
+      <div className="doctor-queue-preview-actions">
+        <Button tone="secondary" onClick={onClose} disabled={accepting}>Đóng</Button>
+        <Button loading={accepting} loadingLabel="Đang nhận…" disabled={disabled} onClick={onAccept}>
+          <UserCheck size={17} aria-hidden="true" /> Nhận yêu cầu
+        </Button>
+      </div>
+    </Dialog>
   );
 }
