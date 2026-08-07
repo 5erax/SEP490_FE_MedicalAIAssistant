@@ -588,15 +588,34 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     setOverviewOperationalLoading(true);
     try {
       const requests = [
-        { key: "clinicalQuestions", promise: clinicalQuestionsApi.list(1, 1, {}) },
-        { key: "labIndicators", promise: labIndicatorsApi.list(1, 1, {}) },
-        { key: "feedbackPending (status=pending)", promise: feedbackReviewsApi.list(1, 1, { status: "pending" }) },
-        { key: "feedbackPending (status=hidden)", promise: feedbackReviewsApi.list(1, 1, { status: "hidden" }) },
-        { key: "labTestNeedsAttention (status=processing)", promise: labTestsApi.adminSessions(1, 1, { status: "processing" }) },
-        { key: "labTestNeedsAttention (status=failed)", promise: labTestsApi.adminSessions(1, 1, { status: "failed" }) },
-        { key: "symptomAnalysisFailed", promise: symptomAnalysisApi.adminSessions(1, 1, { status: "failed" }) },
+        { key: "clinicalQuestions", request: () => clinicalQuestionsApi.list(1, 1, {}) },
+        { key: "labIndicators", request: () => labIndicatorsApi.list(1, 1, {}) },
+        { key: "feedbackPending (status=pending)", request: () => feedbackReviewsApi.list(1, 1, { status: "pending" }) },
+        { key: "feedbackPending (status=hidden)", request: () => feedbackReviewsApi.list(1, 1, { status: "hidden" }) },
+        { key: "labTestNeedsAttention (status=processing)", request: () => labTestsApi.adminSessions(1, 1, { status: "processing" }) },
+        { key: "labTestNeedsAttention (status=failed)", request: () => labTestsApi.adminSessions(1, 1, { status: "failed" }) },
+        { key: "symptomAnalysisFailed", request: () => symptomAnalysisApi.adminSessions(1, 1, { status: "failed" }) },
       ];
-      const settled = await Promise.allSettled(requests.map((request) => request.promise));
+
+      // These admin-only calls have been seen to fail intermittently under
+      // load (likely a token-refresh race when many auth'd requests fire
+      // at once) and succeed again on the very next attempt - one retry
+      // after a short delay smooths that over instead of surfacing a false
+      // "Không khả dụng".
+      async function withRetry(request) {
+        try {
+          return await request();
+        } catch (error) {
+          await new Promise((resolve) => { window.setTimeout(resolve, 700); });
+          try {
+            return await request();
+          } catch {
+            throw error;
+          }
+        }
+      }
+
+      const settled = await Promise.allSettled(requests.map((item) => withRetry(item.request)));
       const results = Object.fromEntries(requests.map((request, index) => [request.key, settled[index]]));
 
       // Surface exactly which request failed and why - a silent "Không khả
@@ -604,7 +623,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       settled.forEach((result, index) => {
         if (result.status === "rejected") {
           console.warn(
-            `[Tổng quan quản trị] Không tải được "${requests[index].key}":`,
+            `[Tổng quan quản trị] Không tải được "${requests[index].key}" (đã thử lại 1 lần):`,
             result.reason?.status,
             result.reason?.message,
           );
