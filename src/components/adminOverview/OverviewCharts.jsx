@@ -1,5 +1,11 @@
-import { LineChart, TrendingUp, Users } from "lucide-react";
-import { buildPaymentStatusCounts, buildRevenueGrowth, formatCompactCurrency, formatCurrency } from "./overviewChartUtils";
+import { LineChart, PieChart, TrendingUp, Users } from "lucide-react";
+import {
+  buildDepartmentDistribution,
+  buildPaymentStatusCounts,
+  buildRevenueGrowth,
+  formatCompactCurrency,
+  formatCurrency,
+} from "./overviewChartUtils";
 
 export function RevenueLineChart({ series }) {
   const width = 720;
@@ -114,6 +120,97 @@ export function PaymentStatusDonutChart({ success, failure }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+export function DepartmentPieChart({ segments }) {
+  const size = 220;
+  const radius = 100;
+  const center = size / 2;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const slices = segments.reduce((acc, segment) => {
+    const previous = acc[acc.length - 1];
+    const startAngle = previous ? previous.endAngle : -90;
+    const angle = segment.fraction * 360;
+    const endAngle = startAngle + angle;
+
+    const x1 = center + radius * Math.cos(toRad(startAngle));
+    const y1 = center + radius * Math.sin(toRad(startAngle));
+    const x2 = center + radius * Math.cos(toRad(endAngle));
+    const y2 = center + radius * Math.sin(toRad(endAngle));
+    const largeArc = angle > 180 ? 1 : 0;
+
+    acc.push({
+      ...segment,
+      endAngle,
+      path: `M${center},${center} L${x1},${y1} A${radius},${radius} 0 ${largeArc} 1 ${x2},${y2} Z`,
+    });
+    return acc;
+  }, []);
+
+  return (
+    <div className="overview-pie-chart">
+      <svg viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Tỉ trọng chuyên khoa trong tổng số cơ sở y tế">
+        {slices.length === 1 ? (
+          <circle cx={center} cy={center} r={radius} className="overview-pie-slice" style={{ fill: slices[0].color }}>
+            <title>{`${slices[0].label}: ${slices[0].value} (100%)`}</title>
+          </circle>
+        ) : (
+          slices.map((slice) => (
+            <path key={slice.id} d={slice.path} className="overview-pie-slice" style={{ fill: slice.color }}>
+              <title>{`${slice.label}: ${slice.value} (${Math.round(slice.fraction * 100)}%)`}</title>
+            </path>
+          ))
+        )}
+      </svg>
+      <ul className="overview-pie-legend">
+        {segments.map((segment) => (
+          <li key={segment.id}>
+            <span className="overview-pie-swatch" style={{ backgroundColor: segment.color }} aria-hidden="true" />
+            <span className="overview-pie-legend-label">{segment.label}</span>
+            <strong>{segment.value}</strong>
+            <span className="overview-pie-legend-percent">{Math.round(segment.fraction * 100)}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function DepartmentDistributionCard({ loading, error, facilityDepartments, onRetry }) {
+  const { segments, total } = buildDepartmentDistribution(facilityDepartments);
+
+  return (
+    <div className="admin-overview-chart-card is-department-pie">
+      <header className="admin-overview-chart-head">
+        <span className="admin-overview-chart-icon" aria-hidden="true"><PieChart size={19} /></span>
+        <div>
+          <p className="eyebrow">Cơ sở y tế</p>
+          <h3>Tỉ trọng chuyên khoa theo cơ sở y tế</h3>
+        </div>
+      </header>
+
+      {loading ? (
+        <p className="admin-overview-chart-status">Đang tải dữ liệu cơ sở - khoa…</p>
+      ) : error ? (
+        <div className="admin-overview-chart-empty">
+          <strong>Không thể tải dữ liệu cơ sở - khoa</strong>
+          <p>{error}</p>
+          <button type="button" className="btn btn-ghost btn-small" onClick={onRetry}>Thử lại</button>
+        </div>
+      ) : total === 0 ? (
+        <div className="admin-overview-chart-empty">
+          <strong>Chưa có cơ sở nào được gán chuyên khoa</strong>
+          <p>Biểu đồ sẽ hiển thị khi cơ sở y tế được gán ít nhất một chuyên khoa.</p>
+        </div>
+      ) : (
+        <>
+          <p className="admin-overview-chart-total">{total} lượt gán chuyên khoa</p>
+          <DepartmentPieChart segments={segments} />
+        </>
+      )}
     </div>
   );
 }
