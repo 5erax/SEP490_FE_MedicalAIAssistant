@@ -59,6 +59,17 @@ function getKeywords(chapter) {
   return Object.entries(chapter.keywordWeights ?? {});
 }
 
+// Backend trả lỗi bằng đúng tên field ("ChapterCode đã tồn tại"...), nên
+// khớp field bằng cách tìm tên field ngay trong nội dung message thay vì
+// một mã lỗi riêng.
+function getFieldErrorsFromMessage(text) {
+  if (!text) return {};
+  const errors = {};
+  if (text.includes("ChapterCode") || text === "Không tìm thấy ICD chapter") errors.chapterCode = text;
+  if (text.includes("ChapterName")) errors.chapterName = text;
+  return errors;
+}
+
 export default function AdminICDChaptersSection({
   chapters,
   editingChapterId,
@@ -91,8 +102,12 @@ export default function AdminICDChaptersSection({
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    if (formOpen && wasSavingRef.current && !saving && message?.type === "success") {
-      setFormOpen(false);
+    if (formOpen && wasSavingRef.current && !saving) {
+      if (message?.type === "success") {
+        queueMicrotask(() => setFormOpen(false));
+      } else if (message?.type === "error") {
+        queueMicrotask(() => setFieldErrors((current) => ({ ...current, ...getFieldErrorsFromMessage(message.text) })));
+      }
     }
     wasSavingRef.current = saving;
   }, [formOpen, message, saving]);
@@ -132,8 +147,8 @@ export default function AdminICDChaptersSection({
   function handleFormSubmit(event) {
     event.preventDefault();
     const nextErrors = {};
-    if (!form.chapterCode.trim()) nextErrors.chapterCode = "Vui lòng nhập mã chương ICD.";
-    if (!form.chapterName.trim()) nextErrors.chapterName = "Vui lòng nhập tên chương ICD.";
+    if (!form.chapterCode.trim()) nextErrors.chapterCode = "ChapterCode là bắt buộc";
+    if (!form.chapterName.trim()) nextErrors.chapterName = "ChapterName là bắt buộc";
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       focusFirstInvalidField(formRef, nextErrors);

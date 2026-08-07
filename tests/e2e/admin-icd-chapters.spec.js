@@ -23,6 +23,8 @@ async function mockIcdChapterAdmin(page, initialRecords) {
     updatedPayload: null,
     deletedId: null,
     lastSearch: "",
+    createFailure: null,
+    updateFailure: null,
   };
 
   await page.route("**/api/**", async (route) => {
@@ -68,6 +70,13 @@ async function mockIcdChapterAdmin(page, initialRecords) {
     }
 
     if (pathname === "/api/icd-chapters" && method === "POST") {
+      if (state.createFailure) {
+        return route.fulfill({
+          status: state.createFailure.status ?? 400,
+          contentType: "application/json",
+          body: JSON.stringify({ success: false, ...state.createFailure }),
+        });
+      }
       state.createdPayload = request.postDataJSON();
       state.records = [{
         id: "icd-created",
@@ -95,6 +104,13 @@ async function mockIcdChapterAdmin(page, initialRecords) {
     }
 
     if (pathname.startsWith("/api/icd-chapters/") && method === "PUT") {
+      if (state.updateFailure) {
+        return route.fulfill({
+          status: state.updateFailure.status ?? 400,
+          contentType: "application/json",
+          body: JSON.stringify({ success: false, ...state.updateFailure }),
+        });
+      }
       state.updatedPayload = request.postDataJSON();
       const id = pathname.split("/").at(-1);
       state.records = state.records.map((record) => (
@@ -156,7 +172,7 @@ test("admin creates, edits, and deletes an ICD chapter", async ({ page }) => {
   await createDialog.getByRole("button", { name: "Tạo chương ICD" }).click();
   await expect(createDialog.getByLabel("Mã chương (bắt buộc)")).toBeFocused();
   await expect(createDialog.getByLabel("Mã chương (bắt buộc)")).toHaveAttribute("aria-invalid", "true");
-  await expect(createDialog.getByText("Vui lòng nhập mã chương ICD.", { exact: true })).toBeVisible();
+  await expect(createDialog.getByText("ChapterCode là bắt buộc", { exact: true })).toBeVisible();
   await createDialog.getByLabel("Mã chương (bắt buộc)").fill("IX");
   await createDialog.getByLabel("Tên chương (bắt buộc)").fill("Bệnh hệ tuần hoàn");
   await createDialog.getByRole("button", { name: "Thêm từ khóa" }).click();
@@ -208,7 +224,6 @@ test("admin creates, edits, and deletes an ICD chapter", async ({ page }) => {
     }));
   expect(seriousViolations).toEqual([]);
 
-  await page.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("button", { name: "Sửa chương ICD IX" }).click();
   const editDialog = page.getByRole("dialog");
   await editDialog.getByLabel("Tên chương (bắt buộc)").fill("Bệnh hệ tuần hoàn cập nhật");
@@ -221,7 +236,6 @@ test("admin creates, edits, and deletes an ICD chapter", async ({ page }) => {
     chapterName: "Bệnh hệ tuần hoàn cập nhật",
   });
 
-  await page.getByRole("button", { name: "Thao tác khác" }).click();
   await page.getByRole("button", { name: "Xóa chương ICD IX" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xóa ICD Chapter" }).click();
   await expect(page.getByText("Chưa có chương ICD phù hợp", { exact: true })).toBeVisible();
@@ -271,7 +285,6 @@ test("ICD filters and actions remain usable on narrow screens", async ({ page })
   )).toBeVisible();
 
   await page.emulateMedia({ forcedColors: "active" });
-  await page.getByRole("button", { name: "Thao tác khác" }).click();
   const editButton = page.getByRole("button", { name: "Sửa chương ICD XVIII" });
   await editButton.focus();
   await expect(editButton).toBeFocused();
@@ -293,4 +306,44 @@ test("ICD filters and actions remain usable on narrow screens", async ({ page })
   expect(await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   )).toBe(true);
+});
+
+test("ICD chapter surfaces the backend's exact duplicate-code message and highlights the field", async ({ page }) => {
+  await preparePage(page);
+  const state = await mockIcdChapterAdmin(page, []);
+  state.createFailure = { status: 409, message: "ChapterCode đã tồn tại" };
+
+  await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Tạo chương ICD", exact: true }).first().click();
+
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Mã chương (bắt buộc)").fill("IX");
+  await dialog.getByLabel("Tên chương (bắt buộc)").fill("Bệnh hệ tuần hoàn");
+  await dialog.getByRole("button", { name: "Tạo chương ICD" }).click();
+
+  await expect(page.locator(".api-message.error")).toHaveText("ChapterCode đã tồn tại");
+  await expect(dialog.getByText("ChapterCode đã tồn tại", { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel("Mã chương (bắt buộc)")).toHaveAttribute("aria-invalid", "true");
+});
+
+test("ICD chapter surfaces the backend's exact not-found message on update", async ({ page }) => {
+  await preparePage(page);
+  const state = await mockIcdChapterAdmin(page, [{
+    id: "icd-missing",
+    chapterCode: "IX",
+    chapterName: "Bệnh hệ tuần hoàn",
+    keywordWeights: {},
+  }]);
+  state.updateFailure = { status: 404, message: "Không tìm thấy ICD chapter" };
+
+  await page.goto("/app/admin/icd-chapters", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Sửa chương ICD IX" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Tên chương (bắt buộc)").fill("Bệnh hệ tuần hoàn cập nhật");
+  await dialog.getByRole("button", { name: "Lưu cập nhật" }).click();
+
+  await expect(page.locator(".api-message.error")).toHaveText("Không tìm thấy ICD chapter");
+  await expect(dialog.getByText("Không tìm thấy ICD chapter", { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel("Mã chương (bắt buộc)")).toHaveAttribute("aria-invalid", "true");
 });

@@ -2077,8 +2077,11 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   function buildIcdChapterPayload(keywordWeightsOverride) {
     const chapterCode = icdChapterForm.chapterCode.trim();
     const chapterName = icdChapterForm.chapterName.trim();
-    if (!chapterCode || !chapterName) {
-      throw new Error("Vui lòng nhập mã và tên ICD Chapter.");
+    if (!chapterCode) {
+      throw new Error("ChapterCode là bắt buộc");
+    }
+    if (!chapterName) {
+      throw new Error("ChapterName là bắt buộc");
     }
     let keywordWeights = keywordWeightsOverride;
     if (!keywordWeights) {
@@ -2107,8 +2110,14 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       const response = await icdChaptersApi.get(id);
       startEditIcdChapter(response.data ?? chapter);
       setIcdChapterMessage({ type: "success", text: response.message || "Đã tải chi tiết ICD Chapter." });
-    } catch {
-      setIcdChapterMessage({ type: "error", text: "Không thể tải chi tiết chương ICD lúc này. Vui lòng thử lại." });
+    } catch (error) {
+      setIcdChapterMessage({
+        type: "error",
+        text: translateApiMessage(error?.message, {
+          status: error?.status,
+          fallback: "Không thể tải chi tiết chương ICD lúc này. Vui lòng thử lại.",
+        }),
+      });
     }
   }
 
@@ -2122,7 +2131,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         ? await icdChaptersApi.update(editingIcdChapterId, payload)
         : await icdChaptersApi.create(payload);
       const successMessage = response.message
-        || (editingIcdChapterId ? "Đã cập nhật chương ICD." : "Đã tạo chương ICD.");
+        || (editingIcdChapterId ? "Cập nhật ICD chapter thành công" : "Tạo ICD chapter thành công");
       const targetPage = editingIcdChapterId ? icdChapterPageInfo.pageNumber : 1;
       resetIcdChapterForm();
       await loadIcdChapters(targetPage, icdChapterPageInfo.pageSize);
@@ -2130,8 +2139,14 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         type: "success",
         text: successMessage,
       });
-    } catch {
-      setIcdChapterMessage({ type: "error", text: "Không thể lưu chương ICD lúc này. Vui lòng thử lại." });
+    } catch (error) {
+      setIcdChapterMessage({
+        type: "error",
+        text: translateApiMessage(error?.message, {
+          status: error?.status,
+          fallback: editingIcdChapterId ? "Không thể cập nhật chương ICD lúc này. Vui lòng thử lại." : "Không thể tạo chương ICD lúc này. Vui lòng thử lại.",
+        }),
+      });
     } finally {
       setSavingIcdChapter(false);
     }
@@ -2160,8 +2175,14 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       await loadIcdChapters(icdChapterPageInfo.pageNumber, icdChapterPageInfo.pageSize);
       setIcdChapterMessage({ type: "success", text: successMessage });
       showToast({ type: "success", title: "Đã xóa chương ICD", message: response.message || "Danh mục đã được cập nhật." });
-    } catch {
-      setIcdChapterMessage({ type: "error", text: "Không thể xóa chương ICD lúc này. Vui lòng thử lại." });
+    } catch (error) {
+      setIcdChapterMessage({
+        type: "error",
+        text: translateApiMessage(error?.message, {
+          status: error?.status,
+          fallback: "Không thể xóa chương ICD lúc này. Vui lòng thử lại.",
+        }),
+      });
     }
   }
 
