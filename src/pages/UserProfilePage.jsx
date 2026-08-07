@@ -379,19 +379,21 @@ export default function UserProfilePage() {
       focusFirstError(medicalFormRef);
       return;
     }
+    // Blank rows added via "Thêm bệnh nền" but never filled in aren't sent
+    // to the backend, so drop them from the form too - otherwise they keep
+    // showing as an empty card after saving even though nothing was stored.
+    const keptDiseases = medicalForm.chronicDiseases.filter(hasChronicDisease);
     const payload = {
       bloodType: medicalForm.bloodType || null,
       height: medicalForm.height === "" ? null : Number(medicalForm.height),
       weight: medicalForm.weight === "" ? null : Number(medicalForm.weight),
       allergyNote: medicalForm.allergyNote.trim() || null,
-      chronicDiseases: medicalForm.chronicDiseases
-        .filter(hasChronicDisease)
-        .map((disease) => ({
-          diseaseName: disease.diseaseName.trim(),
-          from: disease.from || null,
-          to: disease.to || null,
-          note: disease.note.trim() || null,
-        })),
+      chronicDiseases: keptDiseases.map((disease) => ({
+        diseaseName: disease.diseaseName.trim(),
+        from: disease.from || null,
+        to: disease.to || null,
+        note: disease.note.trim() || null,
+      })),
     };
     setSavingMedical(true);
     try {
@@ -399,7 +401,9 @@ export default function UserProfilePage() {
         ? await patientProfilesApi.update(patientProfileId, payload)
         : await patientProfilesApi.create({ userId, ...payload });
       if (!patientProfileId) setPatientProfileId(response.data?.id ?? "");
-      setMedicalSnapshot(medicalForm);
+      const savedMedicalForm = { ...medicalForm, chronicDiseases: keptDiseases };
+      setMedicalForm(savedMedicalForm);
+      setMedicalSnapshot(savedMedicalForm);
       setMedicalDirty(false);
       setIsMedicalEditing(false);
       setToast("Đã lưu hồ sơ!");

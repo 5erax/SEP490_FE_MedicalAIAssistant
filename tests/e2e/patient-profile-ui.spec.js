@@ -103,6 +103,37 @@ test("patient profile tabs support keyboard navigation", async ({ page }) => {
   await expect(page.locator("#profile-panel-medical")).toBeVisible();
 });
 
+test("saving the medical tab drops a chronic-disease row that was added but left blank", async ({ page }) => {
+  let createBody = null;
+  await openPatientProfile(page);
+  await page.route("**/api/patient-profiles", (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    createBody = route.request().postDataJSON();
+    return route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { id: "profile-1", ...createBody } }),
+    });
+  });
+
+  await page.getByRole("tab", { name: "Hồ sơ y tế" }).click();
+  await page.getByRole("button", { name: "Chỉnh sửa" }).click();
+  await page.getByRole("button", { name: "Thêm bệnh nền" }).click();
+  await page.getByLabel("Tên bệnh").fill("Hen suyễn");
+
+  // A second, completely blank row - added but never filled in.
+  await page.getByRole("button", { name: "Thêm bệnh nền" }).click();
+  await expect(page.getByRole("group", { name: "Bệnh nền #2" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Lưu hồ sơ" }).click();
+
+  expect(createBody.chronicDiseases).toEqual([
+    { diseaseName: "Hen suyễn", from: null, to: null, note: null },
+  ]);
+  await expect(page.getByRole("group", { name: "Bệnh nền #1" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Bệnh nền #2" })).toHaveCount(0);
+});
+
 test("security tab updates the password with the current/new/confirm fields", async ({ page }) => {
   let updateBody = null;
   await openPatientProfile(page);
