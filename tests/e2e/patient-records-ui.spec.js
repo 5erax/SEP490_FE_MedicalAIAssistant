@@ -119,17 +119,32 @@ async function openPatientRecords(page, options = {}) {
 
     if (pathname === "/api/lab-tests/analyze" && request.method() === "POST") {
       state.analyzePayload = request.postDataJSON();
+      if (options.analyzeError) {
+        return route.fulfill({
+          status: options.analyzeError.status ?? 400,
+          contentType: "application/json",
+          body: JSON.stringify(options.analyzeError.payload),
+        });
+      }
       return route.fulfill({
         status: 202,
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: options.analyzeResponse ?? session }),
+        body: JSON.stringify({
+          success: true,
+          message: options.analyzeMessage ?? "Đã xếp hàng OCR xét nghiệm",
+          data: options.analyzeResponse ?? session,
+        }),
       });
     }
 
     if (pathname === `/api/lab-tests/${SESSION_ID}`) {
       return route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: session }),
+        body: JSON.stringify({
+          success: true,
+          message: options.detailMessage ?? "OK",
+          data: session,
+        }),
       });
     }
 
@@ -167,6 +182,36 @@ test("patient submits the backend lab analysis payload from profile data", async
   await expect(page.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeVisible();
   await expect(page.getByText("Hemoglobin", { exact: true })).toBeVisible();
   await expect(page.getByText("13,8 g/dL", { exact: true })).toBeVisible();
+  await expect(page.locator(".toast-success")).toContainText("Đã xếp hàng OCR xét nghiệm");
+});
+
+test("patient sees the standardized analyze error message in a toast", async ({ page }) => {
+  await openPatientRecords(page, {
+    analyzeError: {
+      status: 400,
+      payload: {
+        success: false,
+        message: "DocumentUrl không hợp lệ",
+        errors: [
+          "DocumentUrl không hợp lệ",
+          "Yêu cầu phân tích xét nghiệm thất bại",
+        ],
+      },
+    },
+  });
+
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "phieu-xet-nghiem.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("mock-lab-report"),
+  });
+  await page.getByLabel(/Ngày xét nghiệm/).fill("2026-08-01");
+  await page.getByRole("button", { name: "Phân tích kết quả" }).click();
+
+  const errorToast = page.locator(".toast-error");
+  await expect(errorToast).toContainText("Không thể phân tích phiếu xét nghiệm");
+  await expect(errorToast).toContainText("DocumentUrl không hợp lệ");
+  await expect(errorToast).not.toContainText("Yêu cầu phân tích xét nghiệm thất bại");
 });
 
 test("patient age is derived from the profile birth date and selected test date", async ({ page }) => {
@@ -218,6 +263,7 @@ test("patient-facing lab states avoid technical implementation terms", async ({ 
 
 test("patient opens a session detail through the account-owned history endpoint", async ({ page }) => {
   const state = await openPatientRecords(page, {
+    detailMessage: "OCR xét nghiệm hoàn tất",
     summaries: [{
       sessionId: SESSION_ID,
       status: "completed",
@@ -232,6 +278,7 @@ test("patient opens a session detail through the account-owned history endpoint"
   await page.getByRole("button", { name: /1\/8\/2026/ }).click();
   await expect(page.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeFocused();
   await expect(page.getByText("Chỉ số trong ngưỡng tham chiếu", { exact: true })).toBeVisible();
+  await expect(page.locator(".toast-info")).toContainText("OCR xét nghiệm hoàn tất");
   expect(state.requests.some((request) => (
     request.method === "GET" && request.pathname === `/api/lab-tests/${SESSION_ID}`
   ))).toBe(true);

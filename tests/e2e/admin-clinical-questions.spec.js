@@ -27,6 +27,7 @@ async function mockClinicalQuestionAdmin(page, initialRecords) {
   const state = {
     records: [...initialRecords],
     createdPayload: null,
+    createFailure: null,
     updatedPayload: null,
     deletedId: null,
     lastSearch: "",
@@ -94,6 +95,13 @@ async function mockClinicalQuestionAdmin(page, initialRecords) {
     }
 
     if (pathname === "/api/clinical-questions" && method === "POST") {
+      if (state.createFailure) {
+        return route.fulfill({
+          status: state.createFailure.status,
+          contentType: "application/json",
+          body: JSON.stringify(state.createFailure.payload),
+        });
+      }
       state.createdPayload = request.postDataJSON();
       state.records = [{
         id: "clinical-question-created",
@@ -104,7 +112,7 @@ async function mockClinicalQuestionAdmin(page, initialRecords) {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          message: "Đã tạo câu hỏi.",
+          message: "Tạo câu hỏi lâm sàng thành công",
           data: state.records[0],
         }),
       });
@@ -120,7 +128,7 @@ async function mockClinicalQuestionAdmin(page, initialRecords) {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          message: "Đã cập nhật câu hỏi.",
+          message: "Cập nhật câu hỏi lâm sàng thành công",
           data: state.records.find((record) => record.id === id),
         }),
       });
@@ -169,9 +177,9 @@ test("admin creates, edits, and deletes a clinical question", async ({ page }) =
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByLabel("Chương ICD (bắt buộc)")).toBeFocused();
   await createDialog.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER.id);
-  await createDialog.getByLabel("Thứ tự (bắt buộc)").fill("2");
+  await createDialog.getByLabel("Thứ tự").fill("2");
   await createDialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có đau ngực khi vận động không?");
-  await createDialog.getByLabel("Câu hỏi tiếng Anh (bắt buộc)").fill("Do you have chest pain during activity?");
+  await createDialog.getByLabel("Câu hỏi tiếng Anh").fill("Do you have chest pain during activity?");
   await createDialog.getByRole("button", { name: "Thêm đáp án" }).click();
   await createDialog.getByLabel("Tiếng Việt", { exact: true }).fill("Có");
   await createDialog.getByLabel("Tiếng Anh", { exact: true }).fill("Yes");
@@ -186,7 +194,7 @@ test("admin creates, edits, and deletes a clinical question", async ({ page }) =
 
   await createDialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
 
-  await expect(page.getByText("Đã tạo câu hỏi.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tạo câu hỏi lâm sàng thành công", { exact: true })).toBeVisible();
   await expect(page.getByText("Bạn có đau ngực khi vận động không?", { exact: true })).toBeVisible();
   await expect(createDialog).toHaveCount(0);
   await expect(createButton).toBeFocused();
@@ -214,12 +222,10 @@ test("admin creates, edits, and deletes a clinical question", async ({ page }) =
   await editDialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có đau ngực kéo dài không?");
   await editDialog.getByRole("button", { name: "Lưu cập nhật" }).click();
 
-  await expect(page.getByText("Đã cập nhật câu hỏi.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Cập nhật câu hỏi lâm sàng thành công", { exact: true })).toBeVisible();
   await expect(page.getByText("Bạn có đau ngực kéo dài không?", { exact: true })).toBeVisible();
-  expect(state.updatedPayload).toMatchObject({
-    chapterId: CHAPTER.id,
+  expect(state.updatedPayload).toEqual({
     questionVi: "Bạn có đau ngực kéo dài không?",
-    answers: { Có: "Yes" },
   });
 
   const deleteButton = page.getByRole("button", {
@@ -234,6 +240,110 @@ test("admin creates, edits, and deletes a clinical question", async ({ page }) =
   await expect(page.getByText("Chưa có câu hỏi lâm sàng phù hợp", { exact: true })).toBeVisible();
   await expect(createButton).toBeFocused();
   expect(state.deletedId).toBe("clinical-question-created");
+});
+
+test("clinical question create requires only chapter and Vietnamese content", async ({ page }) => {
+  await preparePage(page);
+  const state = await mockClinicalQuestionAdmin(page, []);
+
+  await page.goto("/app/admin/clinical-questions", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Tạo câu hỏi", exact: true }).first().click();
+
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("ChapterId là bắt buộc");
+  await expect(dialog.getByRole("alert")).toContainText("Nội dung câu hỏi là bắt buộc");
+
+  await dialog.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER.id);
+  await dialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có khó thở không?");
+  await expect(dialog.getByLabel("Câu hỏi tiếng Anh")).not.toHaveAttribute("required", "");
+  await expect(dialog.getByLabel("Thứ tự")).toHaveValue("0");
+
+  await dialog.getByRole("button", { name: "Thêm đáp án" }).click();
+  await dialog.getByLabel("Tiếng Việt", { exact: true }).fill("Có");
+  await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Câu trả lời phải có nhãn tiếng Anh");
+
+  await dialog.getByRole("button", { name: "Xóa đáp án 1" }).click();
+  await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
+
+  await expect(page.getByText("Tạo câu hỏi lâm sàng thành công", { exact: true })).toBeVisible();
+  expect(state.createdPayload).toEqual({
+    chapterId: CHAPTER.id,
+    questionVi: "Bạn có khó thở không?",
+    englishPrefix: null,
+    sortOrder: 0,
+    answers: {},
+  });
+});
+
+test("clinical question update sends only changed fields", async ({ page }) => {
+  await preparePage(page);
+  const question = {
+    id: "clinical-question-partial",
+    chapterId: CHAPTER.id,
+    chapterCode: CHAPTER.chapterCode,
+    questionVi: "Bạn có sốt không?",
+    englishPrefix: null,
+    sortOrder: 0,
+    answers: {},
+  };
+  const state = await mockClinicalQuestionAdmin(page, [question]);
+
+  await page.goto("/app/admin/clinical-questions", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: `Sửa câu hỏi ${question.questionVi}` }).click();
+
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Lưu cập nhật" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Không có trường nào để cập nhật");
+  expect(state.updatedPayload).toBeNull();
+
+  await dialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("   ");
+  await dialog.getByRole("button", { name: "Lưu cập nhật" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Nội dung câu hỏi không được để trống");
+  await dialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill(question.questionVi);
+
+  await dialog.getByLabel("Chương ICD (bắt buộc)").selectOption("");
+  await dialog.getByRole("button", { name: "Lưu cập nhật" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("ChapterId không hợp lệ");
+  await dialog.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER.id);
+
+  await dialog.getByLabel("Câu hỏi tiếng Anh").fill("Do you have a fever?");
+  await dialog.getByRole("button", { name: "Lưu cập nhật" }).click();
+
+  expect(state.updatedPayload).toEqual({
+    englishPrefix: "Do you have a fever?",
+  });
+
+  await page.getByRole("button", { name: `Sửa câu hỏi ${question.questionVi}` }).click();
+  const secondDialog = page.getByRole("dialog");
+  await secondDialog.getByLabel("Câu hỏi tiếng Anh").fill("");
+  await secondDialog.getByRole("button", { name: "Lưu cập nhật" }).click();
+
+  expect(state.updatedPayload).toEqual({ englishPrefix: null });
+});
+
+test("clinical question form displays the standardized backend message", async ({ page }) => {
+  await preparePage(page);
+  const state = await mockClinicalQuestionAdmin(page, []);
+  state.createFailure = {
+    status: 404,
+    payload: {
+      success: false,
+      message: "Không tìm thấy ICD chapter",
+      errors: ["Không tìm thấy ICD chapter"],
+    },
+  };
+
+  await page.goto("/app/admin/clinical-questions", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Tạo câu hỏi", exact: true }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER.id);
+  await dialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có ho kéo dài không?");
+  await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
+
+  await expect(dialog.getByRole("alert")).toHaveText("Không tìm thấy ICD chapter");
+  expect(state.createdPayload).toBeNull();
 });
 
 test("clinical question filters remain usable without mobile overflow", async ({ page }) => {

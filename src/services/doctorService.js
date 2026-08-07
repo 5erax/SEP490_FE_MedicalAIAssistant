@@ -1,6 +1,37 @@
 import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
+function firstMessage(value) {
+  if (typeof value === "string") return value.trim();
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const message = firstMessage(item);
+      if (message) return message;
+    }
+  }
+
+  if (value && typeof value === "object") {
+    for (const item of Object.values(value)) {
+      const message = firstMessage(item);
+      if (message) return message;
+    }
+  }
+
+  return "";
+}
+
+export function getDoctorApiMessage(source, fallback = "") {
+  const payload = source?.payload ?? source;
+
+  return (
+    firstMessage(payload?.message) ||
+    firstMessage(payload?.errors) ||
+    firstMessage(source?.message) ||
+    fallback
+  );
+}
+
 function buildDoctorQuery({
   pageNumber = 1,
   pageSize = 10,

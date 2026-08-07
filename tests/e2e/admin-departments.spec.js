@@ -23,6 +23,8 @@ async function mockDepartmentAdmin(page, initialRecords) {
     updatedPayload: null,
     deletedId: null,
     lastSearch: "",
+    createFailure: null,
+    updateFailure: null,
   };
 
   await page.route("**/api/**", async (route) => {
@@ -78,6 +80,13 @@ async function mockDepartmentAdmin(page, initialRecords) {
 
     if (pathname === "/api/medical-departments" && method === "POST") {
       state.createdPayload = request.postDataJSON();
+      if (state.createFailure) {
+        return route.fulfill({
+          status: state.createFailure.status ?? 400,
+          contentType: "application/json",
+          body: JSON.stringify({ success: false, ...state.createFailure }),
+        });
+      }
       state.records = [{
         id: "department-created",
         ...state.createdPayload,
@@ -86,7 +95,7 @@ async function mockDepartmentAdmin(page, initialRecords) {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          message: "Đã tạo chuyên khoa.",
+          message: "Tạo khoa thành công",
           data: state.records[0],
         }),
       });
@@ -94,6 +103,13 @@ async function mockDepartmentAdmin(page, initialRecords) {
 
     if (pathname.startsWith("/api/medical-departments/") && method === "PUT") {
       state.updatedPayload = request.postDataJSON();
+      if (state.updateFailure) {
+        return route.fulfill({
+          status: state.updateFailure.status ?? 400,
+          contentType: "application/json",
+          body: JSON.stringify({ success: false, ...state.updateFailure }),
+        });
+      }
       const id = pathname.split("/").at(-1);
       state.records = state.records.map((record) => (
         record.id === id ? { ...record, ...state.updatedPayload } : record
@@ -102,7 +118,7 @@ async function mockDepartmentAdmin(page, initialRecords) {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          message: "Đã cập nhật chuyên khoa.",
+          message: "Cập nhật khoa thành công",
           data: state.records.find((record) => record.id === id),
         }),
       });
@@ -156,7 +172,7 @@ test("admin creates, edits, and deletes a medical department", async ({ page }) 
   await createDialog.getByLabel("Mã chương ICD").fill("IX");
   await createDialog.getByRole("button", { name: "Tạo chuyên khoa" }).click();
 
-  await expect(page.getByText("Đã tạo chuyên khoa.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tạo khoa thành công", { exact: true })).toBeVisible();
   await expect(page.getByText("Tim mạch", { exact: true })).toBeVisible();
   await expect(createDialog).toHaveCount(0);
   await expect(createButton).toBeFocused();
@@ -180,17 +196,116 @@ test("admin creates, edits, and deletes a medical department", async ({ page }) 
   await editDialog.getByLabel("Tên chuyên khoa (bắt buộc)").fill("Tim mạch can thiệp");
   await editDialog.getByRole("button", { name: "Lưu cập nhật" }).click();
 
-  await expect(page.getByText("Đã cập nhật chuyên khoa.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Cập nhật khoa thành công", { exact: true })).toBeVisible();
   await expect(page.getByText("Tim mạch can thiệp", { exact: true })).toBeVisible();
-  expect(state.updatedPayload).toMatchObject({
+  expect(state.updatedPayload).toEqual({
     departmentName: "Tim mạch can thiệp",
-    chapterCode: "IX",
   });
 
   await page.getByRole("button", { name: "Xóa chuyên khoa Tim mạch can thiệp" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xóa chuyên khoa" }).click();
   await expect(page.getByText("Chưa có chuyên khoa phù hợp", { exact: true })).toBeVisible();
   expect(state.deletedId).toBe("department-created");
+});
+
+test("medical department create uses the standardized validation and API messages", async ({ page }) => {
+  await preparePage(page);
+  const state = await mockDepartmentAdmin(page, []);
+
+  await page.goto("/app/admin/departments", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Tạo chuyên khoa", exact: true }).first().click();
+
+  const dialog = page.getByRole("dialog");
+  const nameField = dialog.getByLabel("Tên chuyên khoa (bắt buộc)");
+  const chapterField = dialog.getByLabel("Mã chương ICD");
+
+  await dialog.getByRole("button", { name: "Tạo chuyên khoa" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText("DepartmentName là bắt buộc");
+  await expect(nameField).toHaveAttribute("aria-invalid", "true");
+  expect(state.createdPayload).toBeNull();
+
+  await nameField.fill("Tim mạch");
+  await chapterField.fill("UNKNOWN");
+  state.createFailure = { message: "Không tìm thấy ICD chapter" };
+  await dialog.getByRole("button", { name: "Tạo chuyên khoa" }).click();
+
+  await expect(dialog.getByRole("alert")).toHaveText("Không tìm thấy ICD chapter");
+  await expect(chapterField).toHaveAttribute("aria-invalid", "true");
+
+  state.createFailure = null;
+  await chapterField.fill("IX");
+  await dialog.getByRole("button", { name: "Tạo chuyên khoa" }).click();
+
+  await expect(page.getByText("Tạo khoa thành công", { exact: true })).toBeVisible();
+  expect(state.createdPayload).toEqual({
+    departmentName: "Tim mạch",
+    description: "",
+    chapterCode: "IX",
+  });
+});
+
+test("medical department update is partial and rejects an empty name", async ({ page }) => {
+  await preparePage(page);
+  const state = await mockDepartmentAdmin(page, [{
+    id: "department-existing",
+    departmentName: "Tim mạch",
+    description: "Theo dõi bệnh tim mạch.",
+    chapterCode: "IX",
+  }]);
+
+  await page.goto("/app/admin/departments", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Sửa chuyên khoa Tim mạch" }).click();
+
+  const dialog = page.getByRole("dialog");
+  const nameField = dialog.getByLabel("Tên chuyên khoa (bắt buộc)");
+  const chapterField = dialog.getByLabel("Mã chương ICD");
+  const submitButton = dialog.getByRole("button", { name: "Lưu cập nhật" });
+
+  await submitButton.click();
+  await expect(dialog.getByRole("alert")).toHaveText("Không có trường nào để cập nhật");
+  expect(state.updatedPayload).toBeNull();
+
+  await nameField.fill("   ");
+  await submitButton.click();
+  await expect(dialog.getByRole("alert")).toHaveText("DepartmentName không được để trống");
+  await expect(nameField).toHaveAttribute("aria-invalid", "true");
+  expect(state.updatedPayload).toBeNull();
+
+  await nameField.fill("Tim mạch");
+  await chapterField.fill("UNKNOWN");
+  state.updateFailure = { message: "Không tìm thấy ICD chapter" };
+  await submitButton.click();
+  await expect(dialog.getByRole("alert")).toHaveText("Không tìm thấy ICD chapter");
+  await expect(chapterField).toHaveAttribute("aria-invalid", "true");
+
+  state.updateFailure = null;
+  await chapterField.fill("IX");
+  await dialog.getByLabel("Mô tả").fill("Theo dõi và điều trị bệnh tim mạch.");
+  await submitButton.click();
+
+  await expect(page.getByText("Cập nhật khoa thành công", { exact: true })).toBeVisible();
+  expect(state.updatedPayload).toEqual({
+    description: "Theo dõi và điều trị bệnh tim mạch.",
+  });
+});
+
+test("medical department displays the standardized not-found update message", async ({ page }) => {
+  await preparePage(page);
+  const state = await mockDepartmentAdmin(page, [{
+    id: "department-missing",
+    departmentName: "Khoa cũ",
+    description: "",
+    chapterCode: "",
+  }]);
+  state.updateFailure = { status: 404, message: "Không tìm thấy khoa" };
+
+  await page.goto("/app/admin/departments", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Sửa chuyên khoa Khoa cũ" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Tên chuyên khoa (bắt buộc)").fill("Khoa mới");
+  await dialog.getByRole("button", { name: "Lưu cập nhật" }).click();
+
+  await expect(dialog.getByRole("alert")).toHaveText("Không tìm thấy khoa");
 });
 
 test("department filters remain usable without mobile overflow", async ({ page }) => {

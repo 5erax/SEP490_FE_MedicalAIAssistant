@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   buildClinicalQuestionAnswerItems,
+  getSymptomAnalysisApiMessage,
+  getSymptomInputError,
   isClinicalQuestionAnswered,
   symptomAnalysisApi,
 } from "../services/api";
@@ -10,15 +12,10 @@ const RESUMABLE_STATUSES = new Set(["idle", "questions", "no-questions", "result
 let intakeStateCache = null;
 
 function getRecommendationErrorMessage(apiError) {
-  const technicalMessage = String(apiError?.message ?? "");
-  const isUpstreamAnalysisFailure = apiError?.status === 502
-    || /medgemma|analysis failed|parse.*json|json.*response/i.test(technicalMessage);
-
-  if (isUpstreamAnalysisFailure) {
-    return "Dịch vụ AI chưa thể tạo gợi ý chuyên khoa lần này. Vui lòng thử lại sau ít phút.";
-  }
-
-  return technicalMessage || "Không thể gửi câu trả lời. Vui lòng thử lại.";
+  return getSymptomAnalysisApiMessage(
+    apiError,
+    "Không thể gửi câu trả lời. Vui lòng thử lại.",
+  );
 }
 
 function readSymptomPrefill() {
@@ -124,7 +121,13 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
 
   async function startDiagnosis(textOverride) {
     const symptom = (textOverride ?? input).trim();
-    if (!symptom || loading) return;
+    if (loading) return;
+    const validationError = getSymptomInputError(textOverride ?? input);
+    if (validationError) {
+      setError(validationError);
+      setStatus("idle");
+      return;
+    }
     setError("");
     setResult(null);
     setQuestions([]);
@@ -141,7 +144,10 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
       setQuestions(data.questions);
       setStatus(data.questions.length ? "questions" : "no-questions");
     } catch (apiError) {
-      setError(apiError.message || "Không thể tạo câu hỏi làm rõ. Vui lòng thử lại.");
+      setError(getSymptomAnalysisApiMessage(
+        apiError,
+        "Không thể tạo câu hỏi làm rõ. Vui lòng thử lại.",
+      ));
       setStatus("idle");
     }
   }
@@ -194,9 +200,14 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
     setAnswers((current) => ({ ...current, [questionId]: answer }));
   }
 
+  function updateInput(value) {
+    setInput(value);
+    if (error) setError("");
+  }
+
   return {
     answeredCount, answers, canSubmitAnswers, currentQuestionIndex, error, input, loading,
-    questions, questionsPanelRef, resetDiagnosis, result, sessionId, setCurrentQuestionIndex, setInput,
+    questions, questionsPanelRef, resetDiagnosis, result, sessionId, setCurrentQuestionIndex, setInput: updateInput,
     startDiagnosis, status, submitAnswers, updateAnswer,
   };
 }

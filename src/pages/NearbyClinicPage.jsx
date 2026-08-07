@@ -26,7 +26,9 @@ import { doctorManagementApi } from "../services/doctors";
 import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
 import {
   facilityDepartmentsApi,
+  FEEDBACK_REVIEW_MESSAGES,
   feedbackReviewsApi,
+  getFeedbackReviewApiMessage,
   getStoredAuth,
   medicalFacilitiesApi,
   readAnalysisPayload,
@@ -297,39 +299,6 @@ function isReviewByCurrentUser(review, auth) {
   const currentEmail = String(auth.email || "").trim().toLowerCase();
   const reviewEmail = String(review.reviewerEmail || review.userEmail || "").trim().toLowerCase();
   return Boolean(currentEmail && reviewEmail && currentEmail === reviewEmail);
-}
-
-function getReviewMessageText(message, fallback = "Không thể xử lý đánh giá lúc này.") {
-  const source = [
-    typeof message === "string" ? message : "",
-    message?.message,
-    message?.payload?.message,
-    message?.payload?.errors ? JSON.stringify(message.payload.errors) : "",
-  ].filter(Boolean).join(" ").trim();
-  if (!source) return fallback;
-
-  const normalized = normalizeSearchText(source);
-  if (normalized.includes("already reviewed") || normalized.includes("reviewed this facility")) {
-    return "Bạn đã đánh giá cơ sở y tế này rồi.";
-  }
-  if (normalized.includes("create feedback review failed")) {
-    return "Không thể gửi đánh giá. Vui lòng thử lại sau.";
-  }
-  if (normalized.includes("feedback review created")
-    || normalized.includes("review created")
-    || normalized.includes("create feedback review success")
-    || normalized.includes("created successfully")
-    || normalized === "ok") {
-    return "Đã gửi đánh giá của bạn.";
-  }
-  if (normalized.includes("unauthorized") || normalized.includes("forbidden")) {
-    return "Bạn cần đăng nhập để gửi đánh giá.";
-  }
-  if (normalized.includes("network") || normalized.includes("failed to fetch")) {
-    return "Không thể tải thông tin. Vui lòng thử lại.";
-  }
-
-  return source;
 }
 
 function getArrayData(response) {
@@ -663,7 +632,12 @@ function NearbyClinicPage() {
         }
       })
       .catch((error) => {
-        if (active) setReviewMessage(getReviewMessageText(error, "Không thể tải đánh giá cho cơ sở này."));
+        if (active) {
+          setReviewMessage(getFeedbackReviewApiMessage(
+            error,
+            FEEDBACK_REVIEW_MESSAGES.facility.invalidId,
+          ));
+        }
       })
       .finally(() => {
         if (active) setReviewsLoading(false);
@@ -1243,6 +1217,7 @@ function NearbyClinicPage() {
       return;
     }
 
+    const isUpdating = Boolean(editingReview && currentUserReview?.id);
     setSavingReview(true);
     setReviewMessage("");
     try {
@@ -1254,7 +1229,6 @@ function NearbyClinicPage() {
         comment: submittedComment || null,
         imageUrls: Object.keys(submittedImageUrls).length ? submittedImageUrls : null,
       };
-      const isUpdating = editingReview && currentUserReview?.id;
       const response = isUpdating
         ? await feedbackReviewsApi.update(currentUserReview.id, reviewValues)
         : await feedbackReviewsApi.create({ facilityId: selectedFacility.facilityId, ...reviewValues });
@@ -1273,19 +1247,34 @@ function NearbyClinicPage() {
       setEditingReview(false);
       setHoveredReviewRating(0);
       setReviewForm({ rating: "5", comment: "", imageUrls: [] });
-      setReviewMessage(isUpdating
-        ? "Đã cập nhật đánh giá của bạn."
-        : getReviewMessageText(response.message, "Đã gửi đánh giá của bạn."));
-      const refreshed = await feedbackReviewsApi.byFacility(selectedFacility.facilityId);
-      const refreshedItems = refreshed.data?.items ?? [];
-      const savedIndex = refreshedItems.findIndex((review) => String(review.id) === String(savedReview.id));
-      const nextReviews = savedIndex >= 0
-        ? refreshedItems.map((review, index) => index === savedIndex ? { ...savedReview, ...review } : review)
-        : [savedReview, ...refreshedItems];
-      setReviews(nextReviews);
-      setReviewsTotalCount(Math.max(refreshed.data?.totalCount ?? 0, nextReviews.length));
+      setReviewMessage(getFeedbackReviewApiMessage(
+        response,
+        isUpdating
+          ? FEEDBACK_REVIEW_MESSAGES.update.success
+          : FEEDBACK_REVIEW_MESSAGES.create.success,
+      ));
+      try {
+        const refreshed = await feedbackReviewsApi.byFacility(selectedFacility.facilityId);
+        const refreshedItems = refreshed.data?.items ?? [];
+        const savedIndex = refreshedItems.findIndex((review) => String(review.id) === String(savedReview.id));
+        const nextReviews = savedIndex >= 0
+          ? refreshedItems.map((review, index) => index === savedIndex ? { ...savedReview, ...review } : review)
+          : [savedReview, ...refreshedItems];
+        setReviews(nextReviews);
+        setReviewsTotalCount(Math.max(refreshed.data?.totalCount ?? 0, nextReviews.length));
+      } catch {
+        setReviews((current) => [savedReview, ...current.filter((review) => String(review.id) !== String(savedReview.id))]);
+        setReviewsTotalCount((current) => Math.max(current, 1));
+      }
     } catch (error) {
-      const message = getReviewMessageText(error, "Không thể gửi đánh giá. Vui lòng thử lại sau.");
+      const message = getFeedbackReviewApiMessage(
+        error,
+        error?.status === 401
+          ? FEEDBACK_REVIEW_MESSAGES.auth.fallback
+          : isUpdating
+            ? FEEDBACK_REVIEW_MESSAGES.update.failure
+            : FEEDBACK_REVIEW_MESSAGES.create.failure,
+      );
       setReviewMessage(message);
       if (normalizeSearchText(message).includes("da danh gia")) {
         setSubmittedReview({ isCurrentUser: true, isKnownDuplicate: true });

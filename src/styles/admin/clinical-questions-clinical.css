@@ -738,7 +738,7 @@ html[data-theme="dark"] .admin-operator .clinical-question-card-meta dd {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: rgba(16, 20, 17, 0.55);
+  color: var(--color-muted);
   font-size: 12px;
   font-weight: 620;
 }
