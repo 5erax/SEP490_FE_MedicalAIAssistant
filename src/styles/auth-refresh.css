@@ -912,7 +912,6 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
 }
 
 .auth-mode-signup .clean-field small {
-  min-height: 16px;
   color: #728286;
   font-size: 11.5px;
   font-weight: 650;
