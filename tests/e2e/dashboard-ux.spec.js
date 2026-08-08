@@ -509,8 +509,9 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toBeVisible();
   });
 
-  test("opens every specialty history page in a sidebar without navigating", async ({ page }) => {
+  test("restores a specialty suggestion from history on the map", async ({ page }) => {
     const requestedPages = [];
+    let sessionDetailRequests = 0;
     const historySessions = [
       {
         sessionId: "44444444-4444-4444-8444-444444444444",
@@ -527,6 +528,16 @@ test.describe("patient specialty intake", () => {
         createdAt: "2026-07-21T02:00:00Z",
       },
     ];
+    const recommendedFacility = {
+      id: FACILITY_ID,
+      facilityName: "Bệnh viện Tai Mũi Họng",
+      address: "123 Nguyễn Trãi",
+      rating: 4.7,
+      latitude: 10.77,
+      longitude: 106.69,
+      isActive: true,
+      departments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tai Mũi Họng" }],
+    };
 
     await page.route("**/api/symptom-analysis/my-sessions**", async (route) => {
       const url = new URL(route.request().url());
@@ -549,28 +560,41 @@ test.describe("patient specialty intake", () => {
         }),
       });
     });
-    await page.route(`**/api/symptom-analysis/${historySessions[0].sessionId}`, async (route) => route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          inputText: historySessions[0].inputText,
-          analysis: {
-            diagnoses: [{
-              diseaseName: "Viêm họng cấp",
-              icd10Code: "J02",
-            }],
-            recommendedDepartment: {
-              departmentId: DEPARTMENT_ID,
-              departmentName: "Tai Mũi Họng",
+    await page.route(`**/api/symptom-analysis/${historySessions[0].sessionId}`, async (route) => {
+      sessionDetailRequests += 1;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            sessionId: historySessions[0].sessionId,
+            inputText: historySessions[0].inputText,
+            analysis: {
+              diagnoses: [{
+                diseaseName: "Viêm họng cấp",
+                icd10Code: "J02",
+              }],
+              recommendedDepartment: {
+                departmentId: DEPARTMENT_ID,
+                departmentName: "Tai Mũi Họng",
+              },
+              recommendedFacilities: [recommendedFacility],
             },
-            recommendedFacilities: [{
-              id: FACILITY_ID,
-              facilityName: "Bệnh viện Tai Mũi Họng",
-            }],
           },
-        },
-      }),
+        }),
+      });
+    });
+    await page.route("**/api/medical-facilities/active", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [recommendedFacility] }),
+    }));
+    await page.route("**/api/facility-departments/active", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [{ facilityId: FACILITY_ID, departmentId: DEPARTMENT_ID }] }),
+    }));
+    await page.route("https://basemaps.cartocdn.com/**", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(MAP_STYLE),
     }));
 
     await openRoute(page, "/dashboard");
@@ -591,16 +615,11 @@ test.describe("patient specialty intake", () => {
     ]);
 
     await drawer.getByRole("button", { name: "Chi tiết" }).first().click();
-    const historyDetail = drawer.locator(".analysis-history-detail");
-    await expect(historyDetail).toContainText("Chuyên khoa: Tai Mũi Họng");
-    await expect(historyDetail).toContainText("Cơ sở gợi ý: Bệnh viện Tai Mũi Họng");
-    await expect(historyDetail).not.toContainText("Viêm họng cấp");
-    await expect(historyDetail).not.toContainText("J02");
-
-    await page.keyboard.press("Escape");
-    await expect(drawer).toBeHidden();
-    await expect(historyTrigger).toHaveAttribute("aria-expanded", "false");
-    await expect(historyTrigger).toBeFocused();
-    await expect(page).toHaveURL(initialUrl);
+    await expect(page).toHaveURL(new RegExp(
+      `/map\\?source=clinical&sessionId=${historySessions[0].sessionId}$`,
+    ));
+    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Tai Mũi Họng");
+    await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true }).first()).toBeVisible();
+    expect(sessionDetailRequests).toBe(1);
   });
 });
