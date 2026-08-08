@@ -325,7 +325,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
             </ul>
           </div>
         )}
-        <label className="recovery-field" htmlFor="recovery-diseaseGroup">
+        <label className="recovery-field recovery-disease-field" htmlFor="recovery-diseaseGroup">
           <span>Nhóm bệnh <small>(bắt buộc)</small></span>
           <select
             id="recovery-diseaseGroup"
@@ -344,7 +344,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
           </select>
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
-        <label className="recovery-field" htmlFor="recovery-requestNote">
+        <label className="recovery-field recovery-note-field" htmlFor="recovery-requestNote">
           <span>Điều bạn muốn bác sĩ lưu ý</span>
           <textarea
             id="recovery-requestNote"
@@ -775,7 +775,12 @@ export default function RecoveryPlanPage() {
         <div>
           <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Đồng hành sau điều trị</p>
           <h1>Kế hoạch phục hồi của bạn</h1>
-          <p>Gửi yêu cầu, theo dõi quá trình bác sĩ xây dựng và bắt đầu kế hoạch khi nội dung đã sẵn sàng.</p>
+          <p className="recovery-hero-copy">Gửi yêu cầu, theo dõi quá trình bác sĩ xây dựng và bắt đầu kế hoạch khi nội dung đã sẵn sàng.</p>
+          <ol className="recovery-process" aria-label="Quy trình nhận kế hoạch phục hồi">
+            <li><span>1</span><strong>Gửi yêu cầu</strong></li>
+            <li><span>2</span><strong>Bác sĩ xây dựng</strong></li>
+            <li><span>3</span><strong>Bắt đầu phục hồi</strong></li>
+          </ol>
         </div>
       </header>
 
@@ -784,12 +789,14 @@ export default function RecoveryPlanPage() {
 
       <div className="recovery-stats-row">
         <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
-        <StatTile icon={ListChecks} label="Tổng yêu cầu đã gửi" value={requestPage.totalCount} tone="warning" />
-        <StatTile icon={FileText} label="Tổng kế hoạch đã nhận" value={planPage.totalCount} tone="success" />
+        <div className="recovery-overview-metrics" aria-label="Tổng quan kế hoạch phục hồi">
+          <StatTile icon={ListChecks} label="Yêu cầu đã gửi" value={requestPage.totalCount} tone="warning" />
+          <StatTile icon={FileText} label="Kế hoạch đã nhận" value={planPage.totalCount} tone="success" />
+        </div>
       </div>
 
       <div className="recovery-workspace-layout">
-        <div className="recovery-workspace-sidebar recovery-request-sidebar">
+        <div className="recovery-request-sidebar">
           <CreateRequestForm
             disabled={requestCreationDisabled}
             disabledMessage={requestDisabledMessage}
@@ -940,7 +947,7 @@ export default function RecoveryPlanPage() {
           )}
         </div>
 
-        <div className="recovery-workspace-sidebar recovery-support-sidebar">
+        <div className="recovery-support-sidebar">
           <section className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
             <p className="recovery-eyebrow">Trong thời gian chờ</p>
             <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>

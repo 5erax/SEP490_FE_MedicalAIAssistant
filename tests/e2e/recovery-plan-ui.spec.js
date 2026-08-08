@@ -217,17 +217,18 @@ test("quota failure is explained once without duplicating the API error in the f
   await expect(page.getByRole("button", { name: "Gửi yêu cầu" })).toBeDisabled();
 });
 
-test("recovery workspace uses a balanced desktop layout and keyboard tabs", async ({ page }) => {
+test("recovery workspace uses a single-flow desktop layout and keyboard tabs", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await prepareRecoveryPage(page);
 
   const pageBox = await page.locator(".recovery-page").boundingBox();
   const mainBox = await page.locator(".recovery-workspace-main").boundingBox();
-  const sidebarBox = await page.locator(".recovery-request-sidebar").boundingBox();
+  const createBox = await page.locator(".recovery-create-card").boundingBox();
   expect(pageBox.width).toBeGreaterThan(1100);
-  expect(mainBox.width).toBeGreaterThan(700);
-  expect(sidebarBox.width).toBeGreaterThanOrEqual(340);
-  expect(sidebarBox.width).toBeLessThanOrEqual(370);
+  expect(mainBox.width).toBeGreaterThan(1000);
+  expect(createBox.width).toBeCloseTo(mainBox.width, 0);
+  expect(createBox.x).toBeCloseTo(mainBox.x, 0);
+  expect(createBox.y).toBeLessThan(mainBox.y);
   await expect(page.getByRole("heading", { name: "Tạo yêu cầu phục hồi" })).toBeVisible();
   await expect(page.locator(".recovery-page-header .recovery-realtime-status")).toHaveCount(0);
 
