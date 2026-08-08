@@ -796,11 +796,14 @@ export function SignupPage() {
     address: "",
     gender: "1",
     dateOfBirth: "",
+    otp: "",
   });
   const [accepted, setAccepted] = useState(false);
   const [message, setMessage] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
   const signupFormRef = useRef(null);
   const today = new Date();
   const earliestBirthDateValue =
@@ -809,15 +812,22 @@ export function SignupPage() {
     getLatestBirthDateValue(today);
 
   function update(key, value) {
+    const emailChangedAfterOtp = key === "email" && otpRequested;
+
     setForm((current) => ({
       ...current,
       [key]: value,
+      ...(emailChangedAfterOtp ? { otp: "" } : {}),
     }));
 
     setFieldErrors((current) => ({
       ...current,
       [key]: "",
     }));
+
+    if (emailChangedAfterOtp) {
+      setOtpRequested(false);
+    }
   }
 
   function updateDateOfBirth(value) {
@@ -853,6 +863,38 @@ export function SignupPage() {
     });
   }
 
+  async function sendOtp() {
+    setSendingOtp(true);
+    setMessage(null);
+
+    try {
+      const email = form.email.trim().toLowerCase();
+      const response = await authApi.sendRegisterOtp(email);
+      const text = response.message || `Đã gửi mã xác thực đến ${email}.`;
+
+      setOtpRequested(true);
+      setMessage({ type: "success", text });
+      showToast({
+        type: "success",
+        title: "Đã gửi mã xác thực",
+        message: text,
+      });
+
+      window.requestAnimationFrame(() => {
+        signupFormRef.current
+          ?.querySelector('[name="otp"]')
+          ?.focus();
+      });
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error.message,
+      });
+    } finally {
+      setSendingOtp(false);
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -865,6 +907,25 @@ export function SignupPage() {
       return;
     }
 
+    if (!otpRequested) {
+      await sendOtp();
+      return;
+    }
+
+    if (!form.otp.trim()) {
+      setMessage(null);
+      setFieldErrors((current) => ({
+        ...current,
+        otp: "Vui lòng nhập mã xác thực.",
+      }));
+      window.requestAnimationFrame(() => {
+        signupFormRef.current
+          ?.querySelector('[name="otp"]')
+          ?.focus();
+      });
+      return;
+    }
+
     setSubmitting(true);
     setMessage(null);
 
@@ -874,6 +935,7 @@ export function SignupPage() {
         email: form.email.trim().toLowerCase(),
         gender: Number(form.gender),
         dateOfBirth: form.dateOfBirth,
+        otp: form.otp.trim(),
       });
 
       showToast({
@@ -973,6 +1035,32 @@ export function SignupPage() {
               autoComplete="street-address"
             />
           </div>
+
+          {otpRequested && (
+            <div className="auth-otp-row">
+              <Field
+                label="Mã xác thực"
+                name="otp"
+                value={form.otp}
+                onChange={(event) =>
+                  update("otp", event.target.value)
+                }
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                hint={`Mã đã được gửi đến ${form.email.trim()}.`}
+                error={fieldErrors.otp}
+                required
+              />
+              <button
+                className="btn btn-ghost btn-small auth-otp-resend"
+                type="button"
+                onClick={sendOtp}
+                disabled={sendingOtp}
+              >
+                {sendingOtp ? "Đang gửi lại…" : "Gửi lại mã"}
+              </button>
+            </div>
+          )}
         </fieldset>
 
         <fieldset className="auth-field-group">
@@ -1103,11 +1191,15 @@ export function SignupPage() {
         <button
           className="btn btn-primary auth-submit"
           type="submit"
-          disabled={submitting}
+          disabled={submitting || sendingOtp}
         >
           {submitting
             ? "Đang tạo tài khoản…"
-            : "Tạo tài khoản"}
+            : sendingOtp
+              ? "Đang gửi mã…"
+              : otpRequested
+                ? "Xác nhận và tạo tài khoản"
+                : "Gửi mã xác thực"}
         </button>
 
         <div className="auth-bottom-link">

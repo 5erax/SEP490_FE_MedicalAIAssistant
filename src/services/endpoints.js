@@ -38,6 +38,7 @@ export const ENDPOINTS = {
   AUTH: {
     LOGIN: `${AUTH_BASE}/login`,
     REGISTER: `${AUTH_BASE}/register`,
+    SEND_REGISTER_OTP: `${AUTH_BASE}/send-register-otp`,
     GOOGLE: `${AUTH_BASE}/google`,
     REFRESH: `${AUTH_BASE}/refresh`,
     LOGOUT: `${AUTH_BASE}/logout`,
@@ -49,6 +50,7 @@ export const ENDPOINTS = {
     BASE: USERS_BASE,
     ME: `${USERS_BASE}/me`,
     BY_ID: (userId) => byId(USERS_BASE, userId),
+    RESTORE: (userId) => `${byId(USERS_BASE, userId)}/restore`,
   },
   MEDICAL_DEPARTMENTS: {
     BASE: DEPARTMENTS_BASE,

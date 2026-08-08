@@ -337,6 +337,11 @@ test.describe("global navigation UX", () => {
 
   test("signup sends first-login patients to profile setup before return intent", async ({ page }) => {
     await preparePage(page);
+    await page.route("**/api/authentication/send-register-otp", (route) => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, message: "Đã gửi mã xác thực." }),
+    }));
     await page.route("**/api/authentication/register", (route) => route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -346,19 +351,23 @@ test.describe("global navigation UX", () => {
           accessToken: ACCESS_TOKEN,
           roles: ["Patient"],
           isFirstLogin: true,
-          email: "new.patient@example.com",
+          email: "new.patient@gmail.com",
         },
       }),
     }));
 
     await openRoute(page, "/signup?returnTo=%2Fmap%3Fsearch%3Dtim%2520mach%23results");
-    await page.getByLabel("Email").fill("new.patient@example.com");
+    await page.getByLabel("Email").fill("new.patient@gmail.com");
     await page.getByLabel("Tên đăng nhập").fill("new-patient");
     await page.getByLabel("Tên hiển thị").fill("New Patient");
-    await page.getByLabel("Mật khẩu", { exact: true }).fill("Example123!");
-    await page.getByLabel("Nhập lại mật khẩu").fill("Example123!");
+    await page.locator('input[name="password"]').fill("Example123!");
+    await page.locator('input[name="confirmPassword"]').fill("Example123!");
+    await page.getByLabel("Ngày sinh").fill("2000-01-01");
     await page.getByRole("checkbox").check();
-    await page.getByRole("button", { name: "Tạo tài khoản" }).click();
+    await page.getByRole("button", { name: "Gửi mã xác thực" }).click();
+
+    await page.getByLabel("Mã xác thực").fill("123456");
+    await page.getByRole("button", { name: "Xác nhận và tạo tài khoản" }).click();
 
     await expect(page).toHaveURL(/\/patient\/profile\/setup\?returnTo=%2Fmap%3Fsearch%3Dtim%2520mach%23results$/);
   });

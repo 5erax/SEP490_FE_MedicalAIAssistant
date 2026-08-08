@@ -38,6 +38,13 @@ export const authApi = {
     );
   },
 
+  sendRegisterOtp(email) {
+    return apiRequest(ENDPOINTS.AUTH.SEND_REGISTER_OTP, {
+      method: "POST",
+      body: { email },
+    });
+  },
+
   async register(payload) {
     return normalizeAuthResponse(
       await apiRequest(ENDPOINTS.AUTH.REGISTER, {

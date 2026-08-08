@@ -47,4 +47,11 @@ export const usersApi = {
     });
   },
 
+  restore(userId) {
+    return apiRequest(ENDPOINTS.USERS.RESTORE(userId), {
+      method: "POST",
+      auth: true,
+    });
+  },
+
 };

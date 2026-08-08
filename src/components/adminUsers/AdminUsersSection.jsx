@@ -1,6 +1,7 @@
 import {
   ListFilter,
   RefreshCw,
+  RotateCcw,
   Search,
   ShieldCheck,
   Trash2,
@@ -30,6 +31,7 @@ export default function AdminUsersSection({
   loading,
   message,
   onDelete,
+  onRestore,
   onLoadPage,
   onPageSizeChange,
   onSearchChange,
@@ -193,16 +195,29 @@ export default function AdminUsersSection({
                 const displayName = item.displayName || item.name || item.email || "Người dùng";
                 return (
                   <div className="record-actions">
-                    <Button
-                      tone="danger"
-                      size="sm"
-                      className="admin-user-delete-btn"
-                      aria-label={`Xóa tài khoản ${displayName}`}
-                      onClick={() => onDelete(userId)}
-                    >
-                      <Trash2 size={14} aria-hidden="true" />
-                      Xóa
-                    </Button>
+                    {item.isDeleted ? (
+                      <Button
+                        tone="secondary"
+                        size="sm"
+                        className="admin-user-restore-btn"
+                        aria-label={`Khôi phục tài khoản ${displayName}`}
+                        onClick={() => onRestore(userId)}
+                      >
+                        <RotateCcw size={14} aria-hidden="true" />
+                        Khôi phục
+                      </Button>
+                    ) : (
+                      <Button
+                        tone="danger"
+                        size="sm"
+                        className="admin-user-delete-btn"
+                        aria-label={`Xóa tài khoản ${displayName}`}
+                        onClick={() => onDelete(userId)}
+                      >
+                        <Trash2 size={14} aria-hidden="true" />
+                        Xóa
+                      </Button>
+                    )}
                   </div>
                 );
               },

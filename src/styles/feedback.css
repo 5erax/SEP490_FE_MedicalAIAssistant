@@ -112,6 +112,11 @@
   color: var(--danger);
 }
 
+.confirm-primary .confirm-icon {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
 .confirm-dialog h2,
 .confirm-dialog p {
   margin: 0;
@@ -150,11 +155,18 @@
   background: #fff;
 }
 
-.confirm-actions button:last-child {
+.confirm-danger .confirm-actions button:last-child {
   border-color: rgba(180, 35, 24, 0.34);
   background: var(--danger);
   color: #fff;
   box-shadow: 0 10px 22px rgba(180, 35, 24, 0.18);
+}
+
+.confirm-primary .confirm-actions button:last-child {
+  border-color: rgba(20, 120, 90, 0.34);
+  background: var(--success);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(20, 120, 90, 0.18);
 }
 
 @media (max-width: 640px) {

@@ -1935,6 +1935,26 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     }
   }
 
+  async function handleRestoreUser(userId) {
+    const confirmed = await confirmAction({
+      title: "Khôi phục tài khoản?",
+      message: "Tài khoản sẽ được khôi phục và có thể đăng nhập trở lại bình thường.",
+      confirmLabel: "Khôi phục",
+      tone: "primary",
+    });
+    if (!confirmed) return;
+
+    setUsersMessage(null);
+    try {
+      const response = await usersApi.restore(userId);
+      setUsersMessage({ type: "success", text: response.message || "Đã khôi phục người dùng." });
+      showToast({ type: "success", title: "Đã khôi phục người dùng", message: response.message || "Danh sách đã được cập nhật." });
+      await loadUsers();
+    } catch (error) {
+      setUsersMessage({ type: "error", text: error.message });
+    }
+  }
+
   function startEditDepartment(department) {
     const nextForm = {
       departmentName: department.departmentName ?? "",
@@ -2613,6 +2633,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 loading={usersLoading}
                 message={usersMessage}
                 onDelete={handleDeleteUser}
+                onRestore={handleRestoreUser}
                 onLoadPage={loadUsers}
                 onPageSizeChange={(pageSize) => loadUsers(1, pageSize)}
                 onSearchChange={setSearch}
