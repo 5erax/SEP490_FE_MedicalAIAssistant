@@ -146,6 +146,9 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   const mapMarker = page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" });
   await mapMarker.focus();
   await mapMarker.press("Enter");
+  const viewDetailButton = page.getByRole("button", { name: "Xem chi tiết", exact: true });
+  await expect(viewDetailButton).toBeVisible();
+  await viewDetailButton.press("Enter");
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
   await expect(mapMarker).toHaveAttribute("aria-pressed", "true");
 
@@ -190,11 +193,13 @@ test("map omits the consultation assistant while preserving facility department 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await selectDepartment(page, "Tim mạch");
 
-  await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
+  const marker = page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" });
+  await expect(marker).toBeVisible();
   await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
   await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
+  await marker.click();
+  await page.getByRole("button", { name: "Xem chi tiết", exact: true }).click();
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
   await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
@@ -202,7 +207,7 @@ test("map omits the consultation assistant while preserving facility department 
   expect(requestedApiPaths).toContain("/api/facility-departments/active");
 });
 
-test("facility without coordinates stays in the list without a false marker", async ({ page }) => {
+test("facility without coordinates does not render a false marker", async ({ page }) => {
   await preparePage(page);
   await mockMapApis(page, [facility({ latitude: null, longitude: null })]);
   await mockSuccessfulMapStyle(page);
@@ -210,11 +215,7 @@ test("facility without coordinates stays in the list without a false marker", as
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await selectDepartment(page, "Tim mạch");
 
-  await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveCount(0);
-
-  const directionsButton = page.getByRole("button", { name: "Chỉ đường", exact: true });
-  await expect(directionsButton).toBeDisabled();
 });
 
 test("map department filter reveals no facility until a department is chosen, then search narrows within it", async ({ page }) => {
@@ -240,23 +241,25 @@ test("map department filter reveals no facility until a department is chosen, th
   });
   await mockSuccessfulMapStyle(page);
 
+  const heartMarker = page.getByRole("button", { name: "Chọn Bệnh viện Tim trên bản đồ" });
+  const skinMarker = page.getByRole("button", { name: "Chọn Phòng khám Da liễu trên bản đồ" });
+
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
-  // Before choosing a department, no facility is shown at all.
-  await expect(page.getByText("Bệnh viện Tim", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toHaveCount(0);
+  // Before choosing a department, no facility marker is shown at all.
+  await expect(heartMarker).toHaveCount(0);
+  await expect(skinMarker).toHaveCount(0);
 
   await selectDepartment(page, "Da liễu");
-  await expect(page.getByText("Bệnh viện Tim", { exact: true })).toBeVisible();
-  await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toBeVisible();
+  await expect(heartMarker).toBeVisible();
+  await expect(skinMarker).toBeVisible();
 
   await page.getByLabel("Tìm tên bệnh viện, phòng khám").fill("phong kham");
-  await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toBeVisible();
-  await expect(page.getByText("Bệnh viện Tim", { exact: true })).toHaveCount(0);
-  const dermatologyCard = page.locator(".facility-result-card").filter({ hasText: "Phòng khám Da liễu" });
-  await expect(dermatologyCard.getByText("Phòng khám", { exact: true })).toBeVisible();
+  await expect(skinMarker).toBeVisible();
+  await expect(heartMarker).toHaveCount(0);
 
-  await dermatologyCard.getByRole("button", { name: "Xem chi tiết Phòng khám Da liễu" }).click();
+  await skinMarker.click();
+  await page.getByRole("button", { name: "Xem chi tiết", exact: true }).click();
   const callButton = page.getByRole("button", { name: "Gọi", exact: true });
   await expect(callButton).toBeDisabled();
   await expect(callButton).toHaveAttribute("title", "Cơ sở chưa có số điện thoại");
@@ -285,10 +288,9 @@ test("map displays only facilities returned by the active API", async ({ page })
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await selectDepartment(page, "Khoa cơ - xương - khớp");
 
-  await expect(page.getByText("1 kết quả phù hợp", { exact: true })).toBeVisible();
-  await expect(page.getByText("Bệnh viện Chợ Rẫy", { exact: true })).toBeVisible();
-  await expect(page.getByText("Bệnh viện Chấn thương Chỉnh hình TP.HCM", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("Bệnh viện Phạm Ngọc Thạch", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Chọn Bệnh viện Chợ Rẫy trên bản đồ" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Chấn thương Chỉnh hình/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Phạm Ngọc Thạch/ })).toHaveCount(0);
 });
 
 test("map style failure shows a usable fallback and supports retry", async ({ page }) => {
@@ -303,8 +305,9 @@ test("map style failure shows a usable fallback and supports retry", async ({ pa
   ));
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
-  await selectDepartment(page, "Tim mạch");
 
+  // With no map, there is no pin to click, so the list falls back to
+  // showing every facility regardless of the department filter.
   await expect(page.getByText("Không thể hiển thị bản đồ lúc này", { exact: true })).toBeVisible();
   await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
 
@@ -313,6 +316,7 @@ test("map style failure shows a usable fallback and supports retry", async ({ pa
 
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
   await expect(page.getByText("Không thể hiển thị bản đồ lúc này", { exact: true })).toBeHidden();
+  await selectDepartment(page, "Tim mạch");
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toBeVisible();
 });
 
@@ -346,15 +350,15 @@ test("map refresh remains usable on mobile, dark mode and forced colors", async 
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(hasHorizontalOverflow).toBe(false);
-  await expect(page.getByRole("heading", { name: "Tìm nơi khám phù hợp" })).toBeVisible();
-  await expect(page.locator(".clinic-sidebar")).not.toHaveAttribute("aria-live");
-  await expect(page.getByText("1 kết quả phù hợp", { exact: true })).toHaveAttribute("role", "status");
+  const marker = page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" });
+  await expect(marker).toBeVisible();
   const locateButtonBox = await page.getByRole("button", { name: "Định vị tôi" }).boundingBox();
   expect(locateButtonBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.emulateMedia({ forcedColors: "active" });
-  await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" })).toBeVisible();
+  await expect(marker).toBeVisible();
+  await marker.click();
+  await expect(page.getByRole("button", { name: "Xem chi tiết", exact: true })).toBeVisible();
 });
 
 test("facility API failure uses safe Vietnamese recovery copy", async ({ page }) => {
