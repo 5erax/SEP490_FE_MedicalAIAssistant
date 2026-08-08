@@ -136,9 +136,30 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     let active = true;
+    const userRequest = authApi.me();
+    const loadPatientProfile = (userResponse) => {
+      const user = userResponse?.data ?? {};
+      const resolvedUserId = user.userId
+        ?? user.identityId
+        ?? user.id
+        ?? auth?.userId
+        ?? auth?.identityId
+        ?? "";
+
+      if (!resolvedUserId) {
+        return Promise.reject(new Error("Patient profile user id is unavailable"));
+      }
+
+      return patientProfilesApi.findByUserId(resolvedUserId);
+    };
+    const patientProfileRequest = userRequest.then(
+      loadPatientProfile,
+      () => loadPatientProfile(null),
+    );
+
     Promise.allSettled([
-      authApi.me(),
-      patientProfilesApi.list(1, 100),
+      userRequest,
+      patientProfileRequest,
       userSubscriptionsApi.me(),
       subscriptionUsageApi.getUsage(),
     ]).then(([userResult, profileResult, subscriptionResult, usageResult]) => {
@@ -169,8 +190,7 @@ export default function UserProfilePage() {
         setProfileDirty(false);
       }
 
-      const profiles = profileResult.status === "fulfilled" ? profileResult.value.data?.items ?? [] : [];
-      const patientProfile = profiles.find((item) => String(item.userId) === String(resolvedUserId)) ?? null;
+      const patientProfile = profileResult.status === "fulfilled" ? profileResult.value : null;
       if (profileResult.status === "fulfilled") {
         setPatientProfileId(patientProfile?.id ?? "");
         const nextMedical = {

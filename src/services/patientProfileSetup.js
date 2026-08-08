@@ -7,8 +7,8 @@ function numberOrNull(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-export async function findPatientProfileByUserId(userId, pageNumber = 1, pageSize = 100) {
-  return patientProfilesApi.findByUserId(userId, pageNumber, pageSize);
+export async function findPatientProfileByUserId(userId) {
+  return patientProfilesApi.findByUserId(userId);
 }
 
 export async function savePatientProfileSetup({ userId, existingProfileId, form }) {
