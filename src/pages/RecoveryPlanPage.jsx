@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
+  Bold,
   CalendarCheck,
   ChevronDown,
   ChevronLeft,
@@ -9,6 +10,8 @@ import {
   FileText,
   HeartPulse,
   Info,
+  Italic,
+  List,
   ListChecks,
   RefreshCw,
   Send,
@@ -17,6 +20,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Button, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -31,6 +35,7 @@ import {
   subscribeToRecoveryPlanEvents,
 } from "../services/recoveryPlanRealtime";
 import "../styles/recovery-plan.css";
+import "../styles/formatted-recovery-note.css";
 
 const PAGE_SIZE = 10;
 const CANCELLABLE_REQUEST_STATUSES = new Set(["waitingForDoctor", "assigned", "inReview", "needMoreInformation"]);
@@ -268,6 +273,35 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const [submitError, setSubmitError] = useState(null);
   const submissionRef = useRef(null);
   const errorSummaryRef = useRef(null);
+  const noteRef = useRef(null);
+
+  function updateNoteFromToolbar(transform, fallbackText) {
+    const textarea = noteRef.current;
+    if (!textarea || disabled) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = requestNote.slice(start, end) || fallbackText;
+    const replacement = transform(selectedText);
+    const nextValue = `${requestNote.slice(0, start)}${replacement}${requestNote.slice(end)}`.slice(0, 2000);
+    setRequestNote(nextValue);
+    setErrors((current) => ({ ...current, requestNote: "" }));
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      const selectionStart = start + replacement.indexOf(selectedText);
+      textarea.setSelectionRange(selectionStart, Math.min(selectionStart + selectedText.length, nextValue.length));
+    });
+  }
+
+  function toggleList(selectedText, ordered = false) {
+    const lines = selectedText.split(/\r?\n/);
+    const markerPattern = ordered ? /^\s*\d+[.)]\s+/ : /^\s*-\s+/;
+    const shouldRemove = lines.every((line) => !line.trim() || markerPattern.test(line));
+    return lines.map((line, index) => {
+      if (!line.trim()) return line;
+      if (shouldRemove) return line.replace(markerPattern, "");
+      return `${ordered ? `${index + 1}.` : "-"} ${line.replace(/^\s*(?:-\s+|\d+[.)]\s+)/, "")}`;
+    }).join("\n");
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -352,25 +386,35 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           </select>
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
-        <label className="recovery-field" htmlFor="recovery-requestNote">
-          <span>Điều bạn muốn bác sĩ lưu ý</span>
-          <textarea
-            id="recovery-requestNote"
-            rows="5"
-            maxLength="2000"
-            value={requestNote}
-            disabled={disabled}
-            aria-invalid={Boolean(errors.requestNote) || undefined}
-            aria-describedby="recovery-requestNote-help"
-            onChange={(event) => {
-              setRequestNote(event.target.value);
-              setErrors((current) => ({ ...current, requestNote: "" }));
-            }}
-          />
+        <div className="recovery-field recovery-note-field">
+          <label htmlFor="recovery-requestNote">Điều bạn muốn bác sĩ lưu ý</label>
+          <div className="recovery-note-editor">
+            <div className="recovery-note-toolbar" role="toolbar" aria-label="Định dạng nội dung ghi chú">
+              <button type="button" aria-label="In đậm đoạn đã chọn" disabled={disabled} onClick={() => updateNoteFromToolbar((text) => `**${text}**`, "nội dung quan trọng")}><Bold size={16} aria-hidden="true" /></button>
+              <button type="button" aria-label="In nghiêng đoạn đã chọn" disabled={disabled} onClick={() => updateNoteFromToolbar((text) => `_${text}_`, "nội dung nhấn mạnh")}><Italic size={16} aria-hidden="true" /></button>
+              <span className="recovery-note-toolbar-divider" aria-hidden="true" />
+              <button type="button" aria-label="Tạo danh sách gạch đầu dòng" disabled={disabled} onClick={() => updateNoteFromToolbar((text) => toggleList(text), "Nội dung cần lưu ý")}><List size={17} aria-hidden="true" /></button>
+              <button type="button" className="recovery-note-ordered-list" aria-label="Tạo danh sách đánh số" disabled={disabled} onClick={() => updateNoteFromToolbar((text) => toggleList(text, true), "Nội dung cần lưu ý")}>1.</button>
+            </div>
+            <textarea
+              ref={noteRef}
+              id="recovery-requestNote"
+              rows="5"
+              maxLength="2000"
+              value={requestNote}
+              disabled={disabled}
+              aria-invalid={Boolean(errors.requestNote) || undefined}
+              aria-describedby="recovery-requestNote-help"
+              onChange={(event) => {
+                setRequestNote(event.target.value);
+                setErrors((current) => ({ ...current, requestNote: "" }));
+              }}
+            />
+          </div>
           <small id="recovery-requestNote-help" className={errors.requestNote ? "recovery-field-error" : ""}>
             {errors.requestNote || `${requestNote.length}/2.000 ký tự`}
           </small>
-        </label>
+        </div>
         <div className="recovery-submit-row">
           <p role="status" aria-atomic="true">{submitError?.message ?? ""}</p>
           <Button type="submit" disabled={disabled} loading={submitting} loadingLabel="Đang gửi…">
@@ -426,7 +470,7 @@ function RequestDetail({ request, loading, onCancel, onProvideInformation, busy 
       <dl className="recovery-detail-grid">
         <div><dt>Ngày gửi</dt><dd>{formatDate(request.requestedAt, true)}</dd></div>
         <div><dt>Cập nhật gần nhất</dt><dd>{formatDate(request.reviewStartedAt || request.acceptedAt || request.requestedAt, true)}</dd></div>
-        <div className="recovery-detail-wide"><dt>Nội dung hiện tại</dt><dd>{request.requestNote || "Bạn chưa thêm ghi chú."}</dd></div>
+        <div className="recovery-detail-wide"><dt>Nội dung hiện tại</dt><dd><FormattedRecoveryNote text={request.requestNote} fallback="Bạn chưa thêm ghi chú." /></dd></div>
         {request.rejectionReason && <div className="recovery-detail-wide is-danger"><dt>Lý do không thể tiếp nhận</dt><dd>{request.rejectionReason}</dd></div>}
       </dl>
 

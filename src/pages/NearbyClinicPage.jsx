@@ -30,6 +30,7 @@ import {
   feedbackReviewsApi,
   getFeedbackReviewApiMessage,
   getStoredAuth,
+  medicalDepartmentsApi,
   medicalFacilitiesApi,
   readAnalysisPayload,
   symptomAnalysisApi,
@@ -121,6 +122,25 @@ function sanitizeDiagnosis(diagnosis, index = 0) {
   };
 }
 
+function sanitizeSymptomAsDiagnosis(symptom, index = 0) {
+  if (!symptom || typeof symptom !== "object") return null;
+
+  const diagnosis = sanitizeDiagnosis({
+    clinicalReasoning: symptom.extractedText ?? symptom.ExtractedText,
+    diseaseName: symptom.symptomName ?? symptom.SymptomName,
+    icd10Code: symptom.icd10Code ?? symptom.Icd10Code,
+    rank: index + 1,
+  }, index);
+  if (!diagnosis) return null;
+
+  return {
+    ...diagnosis,
+    confidenceScore: Number(
+      symptom.confidenceScore ?? symptom.ConfidenceScore ?? 0,
+    ) || 0,
+  };
+}
+
 function sanitizeRecommendedFacility(facility) {
   if (!facility || typeof facility !== "object") return null;
   const id = String(
@@ -161,7 +181,7 @@ function buildClinicalRecommendationContext(analysis) {
   if (!analysis || typeof analysis !== "object") return null;
   const diagnosisItems = analysis.diagnoses ?? analysis.Diagnoses;
   const primaryDiagnosis = analysis.primaryDiagnosis ?? analysis.PrimaryDiagnosis;
-  const diagnoses = (
+  let diagnoses = (
     Array.isArray(diagnosisItems) && diagnosisItems.length > 0
       ? diagnosisItems
       : primaryDiagnosis ? [primaryDiagnosis] : []
@@ -169,6 +189,14 @@ function buildClinicalRecommendationContext(analysis) {
     .map(sanitizeDiagnosis)
     .filter(Boolean)
     .sort((left, right) => left.rank - right.rank);
+  if (diagnoses.length === 0) {
+    const symptomItems = analysis.symptoms ?? analysis.Symptoms;
+    diagnoses = (Array.isArray(symptomItems) ? symptomItems : [])
+      .map(sanitizeSymptomAsDiagnosis)
+      .filter(Boolean)
+      .sort((left, right) => right.confidenceScore - left.confidenceScore)
+      .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
+  }
   const departmentItems = analysis.recommendedDepartments ?? analysis.RecommendedDepartments;
   const recommendedDepartment = sanitizeDepartment(
     analysis.recommendedDepartment
@@ -501,11 +529,8 @@ function NearbyClinicPage() {
         if (cachedContext.diagnoses.length > 0) return;
       } else {
         setRecommendationContext(null);
-        setClinicalStatus("error");
-        setClinicalNotice(
-          "Kết quả gợi ý không còn trong phiên hiện tại. Vui lòng quay lại trang chủ và gửi lại triệu chứng.",
-        );
-        return;
+        setClinicalStatus("loading");
+        setClinicalNotice("");
       }
 
       try {
@@ -516,13 +541,32 @@ function NearbyClinicPage() {
           };
         }
         const response = await clinicalRestoreRequestRef.current.promise;
-        const restoredContext = buildClinicalRecommendationContext(readAnalysisPayload(response));
-        if (!active || !restoredContext) return;
+        const analysis = readAnalysisPayload(response);
+        const restoredContext = buildClinicalRecommendationContext({
+          ...analysis,
+          sessionId: analysis?.sessionId ?? mapQuery.sessionId,
+        });
+        if (!restoredContext) {
+          if (!active) return;
+          setRecommendationContext(null);
+          setClinicalStatus("empty");
+          setClinicalNotice("Phiên này không có kết quả gợi ý chuyên khoa hoặc cơ sở y tế được lưu.");
+          return;
+        }
+        if (!active) return;
         setRecommendationContext(restoredContext);
+        setClinicalStatus("ready");
         setClinicalNotice("");
       } catch {
         if (!active) return;
-        setClinicalNotice("Chưa thể tải lại danh sách chẩn đoán tham khảo trong lần này.");
+        if (cachedContext) {
+          setClinicalStatus("ready");
+          setClinicalNotice("Chưa thể tải lại đầy đủ thông tin của phiên gợi ý này.");
+          return;
+        }
+        setRecommendationContext(null);
+        setClinicalStatus("error");
+        setClinicalNotice("Chưa thể tải lại gợi ý của phiên này. Vui lòng thử lại từ lịch sử.");
       }
     }
 
@@ -536,6 +580,46 @@ function NearbyClinicPage() {
     isClinicalFlow,
     mapQuery.sessionId,
   ]);
+
+  useEffect(() => {
+    const recommendedDepartment = recommendationContext?.recommendedDepartment;
+    const departmentId = recommendedDepartment?.departmentId;
+    if (!isClinicalFlow || !departmentId || recommendedDepartment.description) return undefined;
+
+    let active = true;
+
+    medicalDepartmentsApi.get(departmentId)
+      .then((response) => {
+        if (!active) return;
+        const department = sanitizeDepartment(getObjectData(response));
+        if (!department?.description) return;
+
+        setRecommendationContext((current) => {
+          if (
+            !current?.recommendedDepartment
+            || current.recommendedDepartment.departmentId !== departmentId
+            || current.recommendedDepartment.description
+          ) return current;
+
+          return {
+            ...current,
+            recommendedDepartment: {
+              ...current.recommendedDepartment,
+              departmentName: current.recommendedDepartment.departmentName
+                || department.departmentName,
+              description: department.description,
+            },
+          };
+        });
+      })
+      .catch(() => {
+        // Keep the recommendation usable when the department catalog is unavailable.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isClinicalFlow, recommendationContext]);
 
   useEffect(() => {
     if (mapStatus !== "loading") return undefined;
@@ -1434,8 +1518,8 @@ function NearbyClinicPage() {
             Cơ sở được gợi ý hiện không còn trong danh sách cơ sở đang hoạt động.
           </div>
         )}
-        {isClinicalFlow && clinicalStatus === "error" && clinicalNotice && (
-          <div className="sidebar-note" role="alert">{clinicalNotice}</div>
+        {isClinicalFlow && ["empty", "error"].includes(clinicalStatus) && clinicalNotice && (
+          <div className="sidebar-note" role={clinicalStatus === "error" ? "alert" : "status"}>{clinicalNotice}</div>
         )}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">

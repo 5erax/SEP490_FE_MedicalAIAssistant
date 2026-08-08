@@ -9,7 +9,8 @@ const ACCESS_TOKEN = [
   "",
 ].join(".");
 
-async function openPatientProfile(page, path = "/profile", { subscriptions = [] } = {}) {
+async function openPatientProfile(page, path = "/profile", { patientProfile = null, subscriptions = [] } = {}) {
+  const patientProfilePaths = [];
   await preparePage(page);
   await page.addInitScript(({ accessToken, userId }) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -39,18 +40,13 @@ async function openPatientProfile(page, path = "/profile", { subscriptions = [] 
         }),
       });
     }
-    if (url.pathname === "/api/patient-profiles") {
+    if (url.pathname.startsWith("/api/patient-profiles")) {
+      patientProfilePaths.push(url.pathname);
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          data: {
-            items: [],
-            pageNumber: 1,
-            pageSize: 100,
-            totalCount: 0,
-            totalPages: 0,
-          },
+          data: patientProfile,
         }),
       });
     }
@@ -68,7 +64,32 @@ async function openPatientProfile(page, path = "/profile", { subscriptions = [] 
 
   await page.goto(path, { waitUntil: "domcontentloaded" });
   await expect(page.locator("#profile-panel-info")).toBeVisible();
+  return patientProfilePaths;
 }
+
+test("patient profile loads medical data from the current user's endpoint", async ({ page }) => {
+  const patientProfilePaths = await openPatientProfile(page, "/profile", {
+    patientProfile: {
+      id: "66666666-6666-4666-8666-666666666666",
+      userId: USER_ID,
+      bloodType: "A+",
+      height: 180,
+      weight: 60,
+      allergyNote: "Dị ứng hải sản",
+      chronicDiseases: [],
+    },
+  });
+
+  expect(patientProfilePaths.length).toBeGreaterThan(0);
+  expect([...new Set(patientProfilePaths)]).toEqual([`/api/patient-profiles/by-user/${USER_ID}`]);
+  await page.getByRole("tab", { name: "Hồ sơ y tế" }).first().click();
+  await expect(page.locator("#profile-panel-medical")).toBeVisible();
+  await expect(page.getByLabel("Nhóm máu")).toHaveValue("A+");
+  await expect(page.getByLabel("Chiều cao (cm)")).toHaveValue("180");
+  await expect(page.getByLabel("Cân nặng (kg)")).toHaveValue("60");
+  await expect(page.getByLabel("Dị ứng")).toHaveValue("Dị ứng hải sản");
+  await expect(page.getByText("Không thể tải hồ sơ y tế", { exact: true })).toHaveCount(0);
+});
 
 test("patient profile stays usable at 320px without horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });

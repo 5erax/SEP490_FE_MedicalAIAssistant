@@ -119,6 +119,7 @@ export default function AnalysisHistoryPanel({
   emptyText,
   continueLabel,
   onContinue,
+  onViewSession,
 }) {
   const [sessions, setSessions] = useState([]);
   const [status, setStatus] = useState("idle");
@@ -213,6 +214,12 @@ export default function AnalysisHistoryPanel({
   function viewDetail(session) {
     const sessionId = getSessionId(session);
     if (!sessionId) return;
+
+    if (onViewSession) {
+      onViewSession({ sessionId, session });
+      return;
+    }
+
     setSelectedSessionId(sessionId);
     loadDetail(sessionId);
   }

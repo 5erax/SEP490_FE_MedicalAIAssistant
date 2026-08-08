@@ -504,6 +504,82 @@
   resize: vertical;
 }
 
+.recovery-note-editor {
+  overflow: hidden;
+  border: 1px solid var(--color-control-border);
+  border-radius: 11px;
+  background: var(--color-surface);
+  transition: border-color var(--motion-fast, 0.15s ease), box-shadow var(--motion-fast, 0.15s ease);
+}
+
+.recovery-note-editor:focus-within {
+  border-color: var(--color-info);
+  box-shadow: 0 0 0 3px var(--color-info-bg);
+}
+
+.recovery-note-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 40px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-surface-soft);
+}
+
+.recovery-note-toolbar button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.recovery-note-toolbar button:hover:not(:disabled) {
+  border-color: var(--color-line-strong);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+}
+
+.recovery-note-toolbar button:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 1px;
+}
+
+.recovery-note-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.recovery-note-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--color-line-strong);
+}
+
+.recovery-note-ordered-list {
+  font-size: 12px !important;
+}
+
+.recovery-note-editor textarea {
+  display: block;
+  border: 0;
+  border-radius: 0;
+}
+
+.recovery-note-editor textarea:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+
 .recovery-field [aria-invalid="true"] {
   border-color: var(--color-danger);
 }

@@ -9,6 +9,7 @@ import {
 import { trackUxEvent } from "../utils/analytics";
 
 const RESUMABLE_STATUSES = new Set(["idle", "questions", "no-questions", "result"]);
+const SYMPTOM_PREFILL_KEY = "medimate.symptom.prefill";
 let intakeStateCache = null;
 
 function getRecommendationErrorMessage(apiError) {
@@ -20,9 +21,7 @@ function getRecommendationErrorMessage(apiError) {
 
 function readSymptomPrefill() {
   if (typeof sessionStorage === "undefined") return "";
-  const prefill = sessionStorage.getItem("medimate.symptom.prefill") ?? "";
-  if (prefill) sessionStorage.removeItem("medimate.symptom.prefill");
-  return prefill;
+  return sessionStorage.getItem(SYMPTOM_PREFILL_KEY) ?? "";
 }
 
 function readStoredIntakeState() {
@@ -85,6 +84,13 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
     isClinicalQuestionAnswered(question, answers[question.questionId])
   )).length;
   const canSubmitAnswers = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
+
+  useEffect(() => {
+    if (typeof sessionStorage === "undefined") return;
+    if (sessionStorage.getItem(SYMPTOM_PREFILL_KEY) === initialState.input) {
+      sessionStorage.removeItem(SYMPTOM_PREFILL_KEY);
+    }
+  }, [initialState.input]);
 
   useEffect(() => {
     if (!['questions', 'submitting'].includes(status) || questions.length === 0) return;
