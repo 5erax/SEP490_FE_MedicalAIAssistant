@@ -166,7 +166,7 @@ async function prepareRecoveryPage(page, options = {}) {
   });
 
   await page.goto("/recovery-plan", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Kế hoạch phục hồi của bạn" })).toBeVisible();
+  await expect(page.locator(".recovery-page-header").getByRole("heading", { name: "Kế hoạch phục hồi", exact: true })).toBeVisible();
   return calls;
 }
 
@@ -174,7 +174,7 @@ test("user creates a recovery request with quota and an idempotency key", async 
   const calls = await prepareRecoveryPage(page);
   await expect(page.getByRole("heading", { name: "Còn 2 lượt có thể yêu cầu" })).toBeVisible();
   await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
-  await page.getByLabel("Điều bạn muốn bác sĩ lưu ý").fill("Tôi muốn kế hoạch phục hồi 14 ngày.");
+  await page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý").fill("Tôi muốn kế hoạch phục hồi 14 ngày.");
   await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
 
   await expect(page.getByText("Đang chờ bác sĩ", { exact: true }).first()).toBeVisible();
@@ -191,13 +191,31 @@ test("user creates a recovery request with quota and an idempotency key", async 
 test("user formats a recovery note with the accessible toolbar", async ({ page }) => {
   const calls = await prepareRecoveryPage(page);
   await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
-  const note = page.getByLabel("Điều bạn muốn bác sĩ lưu ý");
+  const note = page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý");
   await note.fill("Đau khi đi bộ");
   await note.selectText();
   await page.getByRole("button", { name: "In đậm đoạn đã chọn" }).click();
   await expect(note).toHaveValue("**Đau khi đi bộ**");
   await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
   expect(calls.createBody.requestNote).toBe("**Đau khi đi bộ**");
+});
+
+test("recovery request form stays full-width above the workspace", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await prepareRecoveryPage(page);
+
+  const pageBox = await page.locator(".recovery-page").boundingBox();
+  const formBox = await page.locator(".recovery-create-card").boundingBox();
+  const mainBox = await page.locator(".recovery-workspace-main").boundingBox();
+  const diseaseBox = await page.locator(".recovery-disease-field").boundingBox();
+  const noteBox = await page.locator(".recovery-note-field").boundingBox();
+
+  expect(pageBox.width).toBeGreaterThan(1100);
+  expect(formBox.y).toBeLessThan(mainBox.y);
+  expect(formBox.x).toBeCloseTo(mainBox.x, 0);
+  expect(formBox.width).toBeCloseTo(mainBox.width, 0);
+  expect(diseaseBox.x).toBeLessThan(noteBox.x);
+  await expect(page.getByRole("list", { name: "Quy trình nhận kế hoạch phục hồi" })).toBeVisible();
 });
 
 test("user replaces the current note when more information is requested", async ({ page }) => {
@@ -239,7 +257,7 @@ test("user cancels a ready-to-start plan and sees the reason afterwards", async 
   await expect(page.getByText("Không thể tiếp tục thực hiện", { exact: true })).toBeVisible();
   expect(calls.cancelPlanBody).toEqual({ cancellationReasonCode: "UNABLE_TO_FOLLOW", cancellationReason: null });
 
-  await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toBeVisible();
 });
 
 test("cancelling a plan with \"Lý do khác\" requires a note", async ({ page }) => {
@@ -381,17 +399,22 @@ test("new-request form is hidden while a plan is active", async ({ page }) => {
   await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan({ status: "active" })] });
   await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
   await expect(page.getByText("Đang thực hiện", { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toHaveCount(0);
 });
 
 test("new-request form is visible again once the plan is no longer active", async ({ page }) => {
   await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan({ status: "completed" })] });
-  await expect(page.getByRole("heading", { name: "Bạn muốn phục hồi sau nhóm bệnh nào?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toBeVisible();
 });
 
 test("recovery plan page remains accessible on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "completed" })] });
+  await prepareRecoveryPage(page, { requests: [], plans: [plan({ status: "completed" })] });
+  const formBox = await page.locator(".recovery-create-card").boundingBox();
+  const tabsBox = await page.locator(".recovery-workspace-tabs").boundingBox();
+  expect(formBox).not.toBeNull();
+  expect(tabsBox).not.toBeNull();
+  expect(formBox.y).toBeLessThan(tabsBox.y);
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);

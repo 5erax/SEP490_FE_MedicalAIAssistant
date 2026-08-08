@@ -350,13 +350,13 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       <div className="recovery-section-heading">
         <div>
           <p className="recovery-eyebrow">Yêu cầu mới</p>
-          <h2 id="recovery-create-title">Bạn muốn phục hồi sau nhóm bệnh nào?</h2>
-          <p>Mô tả ngắn mục tiêu hoặc điều bạn muốn bác sĩ lưu ý khi xây dựng kế hoạch.</p>
+          <h2 id="recovery-create-title">Gửi thông tin cho bác sĩ</h2>
+          <p>Chọn nhóm bệnh và ghi lại những điều bạn muốn bác sĩ lưu ý khi chuẩn bị kế hoạch.</p>
         </div>
         <div className="recovery-card-icon"><FileText size={22} aria-hidden="true" /></div>
       </div>
 
-      {disabled && <div className="recovery-form-blocked"><Info size={18} aria-hidden="true" /><span>{disabledMessage}</span></div>}
+      {disabled && disabledMessage && <div className="recovery-form-blocked"><Info size={18} aria-hidden="true" /><span>{disabledMessage}</span></div>}
 
       <form onSubmit={handleSubmit} noValidate>
         {Object.entries(errors).filter(([, message]) => message).length > 0 && (
@@ -369,8 +369,8 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             </ul>
           </div>
         )}
-        <label className="recovery-field" htmlFor="recovery-diseaseGroup">
-          <span>Nhóm bệnh <small>(bắt buộc)</small></span>
+        <label className="recovery-field recovery-disease-field" htmlFor="recovery-diseaseGroup">
+          <span><b className="recovery-field-step" aria-hidden="true">1</b> Nhóm bệnh <span className="recovery-required-marker" aria-hidden="true">*</span><span className="sr-only"> (bắt buộc)</span></span>
           <select
             id="recovery-diseaseGroup"
             value={diseaseGroup}
@@ -393,7 +393,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
         <div className="recovery-field recovery-note-field">
-          <label htmlFor="recovery-requestNote">Điều bạn muốn bác sĩ lưu ý</label>
+          <label htmlFor="recovery-requestNote"><span><b className="recovery-field-step" aria-hidden="true">2</b> Thông tin bạn muốn bác sĩ lưu ý</span></label>
           <div className="recovery-note-editor">
             <div className="recovery-note-toolbar" role="toolbar" aria-label="Định dạng nội dung ghi chú">
               <button type="button" aria-label="In đậm đoạn đã chọn" disabled={disabled} onClick={() => updateNoteFromToolbar((text) => `**${text}**`, "nội dung quan trọng")}><Bold size={16} aria-hidden="true" /></button>
@@ -407,10 +407,11 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
               id="recovery-requestNote"
               rows="5"
               maxLength="2000"
+              placeholder="Ví dụ: Tôi vẫn còn đau khi đi lại lâu và muốn biết những hoạt động nào nên hạn chế…"
               value={requestNote}
               disabled={disabled}
               aria-invalid={Boolean(errors.requestNote) || undefined}
-              aria-describedby="recovery-requestNote-help"
+              aria-describedby="recovery-requestNote-guidance recovery-requestNote-help"
               onChange={(event) => {
                 setRequestNote(event.target.value);
                 setErrors((current) => {
@@ -421,8 +422,9 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
               }}
             />
           </div>
-          <small id="recovery-requestNote-help" className={errors.requestNote ? "recovery-field-error" : ""}>
-            {errors.requestNote || `${requestNote.length}/2.000 ký tự`}
+          <small id="recovery-requestNote-guidance" className="recovery-field-guidance">Ghi lại những thay đổi, khó khăn hoặc vấn đề bạn muốn bác sĩ xem xét.</small>
+          <small id="recovery-requestNote-help" className={`recovery-character-count${errors.requestNote ? " recovery-field-error" : ""}`}>
+            {errors.requestNote || `${requestNote.length} / 2.000 ký tự`}
           </small>
         </div>
         <div className="recovery-submit-row">
@@ -1225,25 +1227,43 @@ export default function RecoveryPlanPage() {
       <header className="recovery-page-header">
         <HeartPulse className="recovery-hero-icon" size={160} strokeWidth={1.3} aria-hidden="true" />
         <div>
-          <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Đồng hành sau điều trị</p>
-          <h1>Kế hoạch phục hồi của bạn</h1>
-          <p>Gửi yêu cầu, theo dõi quá trình xây dựng kế hoạch và bắt đầu khi nội dung đã sẵn sàng.</p>
-        </div>
-        <div className={`recovery-realtime-status is-${connectionStatus}`}>
-          <span aria-hidden="true" />
-          <p role="status" aria-atomic="true">{realtimeLabel}</p>
+          <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Theo dõi sau điều trị</p>
+          <h2>Kế hoạch phục hồi</h2>
+          <p className="recovery-hero-copy">Theo dõi yêu cầu của bạn và xem kế hoạch sau khi bác sĩ hoàn tất.</p>
+          <ol className="recovery-process" aria-label="Quy trình nhận kế hoạch phục hồi">
+            <li><span>1</span><strong>Gửi yêu cầu</strong></li>
+            <li><span>2</span><strong>Bác sĩ xem xét</strong></li>
+            <li><span>3</span><strong>Nhận kế hoạch</strong></li>
+          </ol>
         </div>
       </header>
 
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
+      <p className="sr-only" role="status" aria-atomic="true">{realtimeLabel}</p>
 
       <div className="recovery-stats-row">
         <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
-        <StatTile icon={ListChecks} label="Tổng yêu cầu đã gửi" value={requestPage.totalCount} tone="warning" />
-        <StatTile icon={FileText} label="Tổng kế hoạch đã nhận" value={planPage.totalCount} tone="success" />
+        <div className="recovery-overview-metrics" aria-label="Tổng quan kế hoạch phục hồi">
+          <StatTile icon={ListChecks} label="Yêu cầu đã gửi" value={requestPage.totalCount} tone="warning" />
+          <StatTile icon={FileText} label="Kế hoạch đã nhận" value={planPage.totalCount} tone="success" />
+        </div>
       </div>
 
       <div className="recovery-workspace-layout">
+        {!workflowBlocked && (
+          <div className="recovery-request-sidebar">
+            <CreateRequestForm
+              disabled={requestCreationDisabled}
+              disabledMessage={requestDisabledMessage}
+              onCreated={handleCreated}
+              onWorkflowConflict={async () => {
+                setWorkflowBlocked(true);
+                await Promise.allSettled([loadRequests(1), loadPlans(1), loadWorkflowGuard()]);
+              }}
+            />
+          </div>
+        )}
+
         <div className="recovery-workspace-main">
           <div className="recovery-workspace-head">
             <div className="recovery-workspace-tabs" role="tablist" aria-label="Khu vực làm việc">
@@ -1376,18 +1396,7 @@ export default function RecoveryPlanPage() {
           )}
         </div>
 
-        <div className="recovery-workspace-sidebar">
-          {!workflowBlocked && (
-            <CreateRequestForm
-              disabled={requestCreationDisabled}
-              disabledMessage={requestDisabledMessage}
-              onCreated={handleCreated}
-              onWorkflowConflict={async () => {
-                setWorkflowBlocked(true);
-                await Promise.allSettled([loadRequests(1), loadPlans(1), loadWorkflowGuard()]);
-              }}
-            />
-          )}
+        <div className="recovery-support-sidebar">
           <section className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
             <p className="recovery-eyebrow">Trong thời gian chờ</p>
             <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>
