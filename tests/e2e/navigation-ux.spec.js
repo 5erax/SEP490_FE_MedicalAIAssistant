@@ -332,7 +332,7 @@ test.describe("global navigation UX", () => {
     await page.getByRole("searchbox", { name: "Tìm cơ sở y tế" }).press("Enter");
 
     await expect(page).toHaveURL(/\/map\?search=Ch%E1%BB%A3%20R%E1%BA%ABy$/);
-    await expect(page.getByRole("searchbox", { name: "Lọc danh sách cơ sở y tế" })).toHaveValue("Chợ Rẫy");
+    await expect(page.getByRole("searchbox", { name: "Tìm tên bệnh viện, phòng khám" })).toHaveValue("Chợ Rẫy");
   });
 
   test("signup sends first-login patients to profile setup before return intent", async ({ page }) => {
