@@ -501,11 +501,8 @@ function NearbyClinicPage() {
         if (cachedContext.diagnoses.length > 0) return;
       } else {
         setRecommendationContext(null);
-        setClinicalStatus("error");
-        setClinicalNotice(
-          "Kết quả gợi ý không còn trong phiên hiện tại. Vui lòng quay lại trang chủ và gửi lại triệu chứng.",
-        );
-        return;
+        setClinicalStatus("loading");
+        setClinicalNotice("");
       }
 
       try {
@@ -516,13 +513,26 @@ function NearbyClinicPage() {
           };
         }
         const response = await clinicalRestoreRequestRef.current.promise;
-        const restoredContext = buildClinicalRecommendationContext(readAnalysisPayload(response));
-        if (!active || !restoredContext) return;
+        const analysis = readAnalysisPayload(response);
+        const restoredContext = buildClinicalRecommendationContext({
+          ...analysis,
+          sessionId: analysis?.sessionId ?? mapQuery.sessionId,
+        });
+        if (!restoredContext) throw new Error("Clinical recommendation is unavailable");
+        if (!active) return;
         setRecommendationContext(restoredContext);
+        setClinicalStatus("ready");
         setClinicalNotice("");
       } catch {
         if (!active) return;
-        setClinicalNotice("Chưa thể tải lại danh sách chẩn đoán tham khảo trong lần này.");
+        if (cachedContext) {
+          setClinicalStatus("ready");
+          setClinicalNotice("Chưa thể tải lại đầy đủ thông tin của phiên gợi ý này.");
+          return;
+        }
+        setRecommendationContext(null);
+        setClinicalStatus("error");
+        setClinicalNotice("Chưa thể tải lại gợi ý của phiên này. Vui lòng thử lại từ lịch sử.");
       }
     }
 
