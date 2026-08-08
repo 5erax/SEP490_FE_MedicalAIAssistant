@@ -857,6 +857,29 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
   gap: 14px 12px;
 }
 
+.auth-mode-signup .auth-otp-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.auth-mode-signup .auth-otp-row .clean-field {
+  flex: 1 1 auto;
+}
+
+.auth-mode-signup .auth-otp-resend {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .auth-mode-signup .auth-otp-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .auth-mode-signup .clean-field {
   align-content: start;
   align-self: start;

@@ -214,3 +214,87 @@ test("admin user filters use consistent labelled controls and status styling", a
     .map((violation) => violation.id);
   expect(seriousViolations).toEqual([]);
 });
+
+test("admin restores a soft-deleted user account", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      email: "admin@example.com",
+      roles: ["Admin"],
+    }));
+  }, ADMIN_TOKEN);
+
+  const state = { restoredId: null };
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname;
+    const method = route.request().method();
+
+    if (pathname === "/api/users/me") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: { name: "Admin Test", roles: ["Admin"] } }),
+      });
+    }
+
+    if (pathname === "/api/users" && method === "GET") {
+      const deleted = !state.restoredId;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            items: [{
+              identityId: "deleted-1",
+              displayName: "Deleted User",
+              email: "deleted-user@example.com",
+              status: "approved",
+              isActive: true,
+              isDeleted: deleted,
+            }],
+            pageNumber: 1,
+            pageSize: 10,
+            totalCount: 1,
+            totalPages: 1,
+          },
+        }),
+      });
+    }
+
+    if (pathname === "/api/users/deleted-1/restore" && method === "POST") {
+      state.restoredId = "deleted-1";
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, message: "Đã khôi phục người dùng." }),
+      });
+    }
+
+    const pagedPaths = ["/api/doctors", "/api/ai-configs", "/api/medical-facilities"];
+    const data = pagedPaths.includes(pathname)
+      ? { items: [], pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 }
+      : [];
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+
+  await page.goto("/app/admin/users", { waitUntil: "domcontentloaded" });
+
+  const table = page.locator(".admin-users-table");
+  await expect(table.getByText("Đã xóa", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Xóa tài khoản Deleted User" })).toHaveCount(0);
+  const restoreButton = page.getByRole("button", { name: "Khôi phục tài khoản Deleted User" });
+  await expect(restoreButton).toBeVisible();
+  await restoreButton.click();
+
+  await page.getByRole("dialog").getByRole("button", { name: "Khôi phục" }).click();
+
+  await expect(page.getByText("Đã khôi phục người dùng.", { exact: true })).toBeVisible();
+  await expect(table.getByText("Hoạt động", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Xóa tài khoản Deleted User" })).toBeVisible();
+  expect(state.restoredId).toBe("deleted-1");
+});
