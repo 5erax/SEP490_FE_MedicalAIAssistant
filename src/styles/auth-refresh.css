@@ -859,7 +859,7 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
 
 .auth-mode-signup .auth-otp-row {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 10px;
   margin-top: 14px;
 }
@@ -870,6 +870,10 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
 
 .auth-mode-signup .auth-otp-resend {
   flex: 0 0 auto;
+  /* Lines the button up with the input itself (not the field's label or
+     hint/error text below it) by offsetting past the label's own height. */
+  margin-top: 24px;
+  height: 46px;
   white-space: nowrap;
 }
 
@@ -877,6 +881,11 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
   .auth-mode-signup .auth-otp-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .auth-mode-signup .auth-otp-resend {
+    margin-top: 0;
+    height: auto;
   }
 }
 
