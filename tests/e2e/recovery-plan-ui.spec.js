@@ -108,6 +108,13 @@ async function prepareRecoveryPage(page, options = {}) {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { id: USER_ID, displayName: "Nguyễn Minh", roles: ["Patient"] } }) });
     }
     if (path === "/api/me/subscription-usage") {
+      if (options.quotaError) {
+        return route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ success: false, message: "Không thể kiểm tra hạn mức lúc này." }),
+        });
+      }
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: quota }) });
     }
     if (path === "/api/recovery-plan-requests/me") {
@@ -196,9 +203,51 @@ test("user reads and starts a published recovery plan", async ({ page }) => {
   expect(calls.started).toBe(true);
 });
 
+test("quota failure is explained once without duplicating the API error in the form", async ({ page }) => {
+  await prepareRecoveryPage(page, { quotaError: true });
+
+  await expect(page.getByRole("heading", { name: "Chưa tải được hạn mức" })).toBeVisible();
+  const quotaMessage = page.locator(".recovery-quota-card.is-error p:not(.recovery-eyebrow)");
+  const blockedMessage = page.locator(".recovery-form-blocked");
+
+  await expect(quotaMessage).toHaveCount(1);
+  await expect(quotaMessage).toBeVisible();
+  await expect(blockedMessage).toContainText("Cần tải lại thông tin lượt còn lại trước khi gửi yêu cầu.");
+  await expect(blockedMessage).not.toContainText((await quotaMessage.textContent()).trim());
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu" })).toBeDisabled();
+});
+
+test("recovery workspace uses a balanced desktop layout and keyboard tabs", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await prepareRecoveryPage(page);
+
+  const pageBox = await page.locator(".recovery-page").boundingBox();
+  const mainBox = await page.locator(".recovery-workspace-main").boundingBox();
+  const sidebarBox = await page.locator(".recovery-request-sidebar").boundingBox();
+  expect(pageBox.width).toBeGreaterThan(1100);
+  expect(mainBox.width).toBeGreaterThan(700);
+  expect(sidebarBox.width).toBeGreaterThanOrEqual(340);
+  expect(sidebarBox.width).toBeLessThanOrEqual(370);
+  await expect(page.getByRole("heading", { name: "Tạo yêu cầu phục hồi" })).toBeVisible();
+  await expect(page.locator(".recovery-page-header .recovery-realtime-status")).toHaveCount(0);
+
+  const requestTab = page.getByRole("tab", { name: "Yêu cầu của bạn" });
+  const planTab = page.getByRole("tab", { name: "Kế hoạch của bạn" });
+  await requestTab.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(planTab).toBeFocused();
+  await expect(planTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tabpanel", { name: "Kế hoạch của bạn" })).toBeVisible();
+  const accessibility = await new AxeBuilder({ page }).include(".recovery-page").analyze();
+  expect(accessibility.violations).toEqual([]);
+});
+
 test("recovery plan page remains accessible on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "completed" })] });
+  const formBox = await page.locator(".recovery-create-card").boundingBox();
+  const tabsBox = await page.locator(".recovery-workspace-tabs").boundingBox();
+  expect(formBox.y).toBeLessThan(tabsBox.y);
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);

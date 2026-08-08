@@ -158,9 +158,34 @@ function Pagination({ label, page, onChange, loading }) {
   );
 }
 
+function handleWorkspaceTabKeyDown(event) {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+
+  const tabs = Array.from(event.currentTarget.querySelectorAll('[role="tab"]'));
+  const currentIndex = tabs.indexOf(document.activeElement);
+  if (currentIndex < 0) return;
+
+  event.preventDefault();
+  const nextIndex = event.key === "Home"
+    ? 0
+    : event.key === "End"
+      ? tabs.length - 1
+      : event.key === "ArrowRight"
+        ? (currentIndex + 1) % tabs.length
+        : (currentIndex - 1 + tabs.length) % tabs.length;
+
+  tabs[nextIndex]?.focus();
+  tabs[nextIndex]?.click();
+}
+
 function QuotaCard({ quota, error, loading, onRetry }) {
   if (loading) {
-    return <LoadingState label="Đang kiểm tra lượt kế hoạch…" />;
+    return (
+      <section className="recovery-quota-card" aria-label="Đang kiểm tra lượt kế hoạch">
+        <div className="recovery-card-icon"><ShieldCheck size={22} aria-hidden="true" /></div>
+        <LoadingState label="Đang kiểm tra lượt kế hoạch…" />
+      </section>
+    );
   }
 
   if (error) {
@@ -283,8 +308,8 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
       <div className="recovery-section-heading">
         <div>
           <p className="recovery-eyebrow">Yêu cầu mới</p>
-          <h2 id="recovery-create-title">Bạn muốn phục hồi sau nhóm bệnh nào?</h2>
-          <p>Mô tả ngắn mục tiêu hoặc điều bạn muốn bác sĩ lưu ý khi xây dựng kế hoạch.</p>
+          <h2 id="recovery-create-title">Tạo yêu cầu phục hồi</h2>
+          <p>Chọn nhóm bệnh và ghi lại điều bạn muốn bác sĩ lưu ý khi xây dựng kế hoạch.</p>
         </div>
         <div className="recovery-card-icon"><FileText size={22} aria-hidden="true" /></div>
       </div>
@@ -334,7 +359,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
               setErrors((current) => ({ ...current, requestNote: "" }));
             }}
           />
-          <small id="recovery-requestNote-help" className={errors.requestNote ? "recovery-field-error" : ""}>
+          <small id="recovery-requestNote-help" className={`recovery-character-count${errors.requestNote ? " recovery-field-error" : ""}`}>
             {errors.requestNote || `${requestNote.length}/2.000 ký tự`}
           </small>
         </label>
@@ -730,9 +755,10 @@ export default function RecoveryPlanPage() {
 
   const requestCreationDisabled = quotaLoading || Boolean(quotaError) || !quota || Number(quota.remainingCount) <= 0;
   const requestDisabledMessage = quotaLoading
-    ? "Đang kiểm tra lượt kế hoạch của bạn."
-    : quotaError?.message
-      ?? (!quota ? "Chưa có thông tin lượt kế hoạch." : "Bạn đã dùng hết lượt trong chu kỳ hiện tại.");
+    ? "Cần kiểm tra lượt còn lại trước khi gửi yêu cầu."
+    : quotaError
+      ? "Cần tải lại thông tin lượt còn lại trước khi gửi yêu cầu."
+      : (!quota ? "Chưa có thông tin lượt còn lại." : "Bạn đã dùng hết lượt trong chu kỳ hiện tại.");
   const realtimeLabel = connectionStatus === "connected"
     ? "Cập nhật tự động đang bật"
     : connectionStatus === "reconnecting"
@@ -749,15 +775,12 @@ export default function RecoveryPlanPage() {
         <div>
           <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Đồng hành sau điều trị</p>
           <h1>Kế hoạch phục hồi của bạn</h1>
-          <p>Gửi yêu cầu, theo dõi quá trình xây dựng kế hoạch và bắt đầu khi nội dung đã sẵn sàng.</p>
-        </div>
-        <div className={`recovery-realtime-status is-${connectionStatus}`}>
-          <span aria-hidden="true" />
-          <p role="status" aria-atomic="true">{realtimeLabel}</p>
+          <p>Gửi yêu cầu, theo dõi quá trình bác sĩ xây dựng và bắt đầu kế hoạch khi nội dung đã sẵn sàng.</p>
         </div>
       </header>
 
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
+      <p className="sr-only" role="status" aria-atomic="true">{realtimeLabel}</p>
 
       <div className="recovery-stats-row">
         <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
@@ -766,13 +789,29 @@ export default function RecoveryPlanPage() {
       </div>
 
       <div className="recovery-workspace-layout">
+        <div className="recovery-workspace-sidebar recovery-request-sidebar">
+          <CreateRequestForm
+            disabled={requestCreationDisabled}
+            disabledMessage={requestDisabledMessage}
+            onCreated={handleCreated}
+          />
+        </div>
+
         <div className="recovery-workspace-main">
           <div className="recovery-workspace-head">
-            <div className="recovery-workspace-tabs" role="tablist" aria-label="Khu vực làm việc">
+            <div
+              className="recovery-workspace-tabs"
+              role="tablist"
+              aria-label="Khu vực làm việc"
+              onKeyDown={handleWorkspaceTabKeyDown}
+            >
               <button
+                id="recovery-tab-requests"
                 type="button"
                 role="tab"
                 aria-selected={activeTab === "requests"}
+                aria-controls="recovery-panel-requests"
+                tabIndex={activeTab === "requests" ? 0 : -1}
                 className={activeTab === "requests" ? "is-active" : ""}
                 onClick={() => setActiveTab("requests")}
               >
@@ -780,9 +819,12 @@ export default function RecoveryPlanPage() {
                 {requestPage.totalCount > 0 && <span className="recovery-tab-count">{requestPage.totalCount}</span>}
               </button>
               <button
+                id="recovery-tab-plans"
                 type="button"
                 role="tab"
                 aria-selected={activeTab === "plans"}
+                aria-controls="recovery-panel-plans"
+                tabIndex={activeTab === "plans" ? 0 : -1}
                 className={activeTab === "plans" ? "is-active" : ""}
                 onClick={() => setActiveTab("plans")}
               >
@@ -802,13 +844,19 @@ export default function RecoveryPlanPage() {
           </div>
 
           {activeTab === "requests" ? (
-            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Yêu cầu của bạn">
+            <section
+              id="recovery-panel-requests"
+              className="recovery-workspace-panel"
+              role="tabpanel"
+              aria-labelledby="recovery-tab-requests"
+              tabIndex="0"
+            >
               {requestsLoading && requestItems.length === 0 ? (
                 <LoadingState label="Đang tải yêu cầu…" />
               ) : requestsError ? (
                 <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(requestPageNumber)}>Thử lại</Button>} />
               ) : requestItems.length === 0 ? (
-                <EmptyState icon={<ListChecks size={26} aria-hidden="true" />} title="Chưa có yêu cầu phục hồi" description="Yêu cầu mới của bạn sẽ xuất hiện tại đây." />
+                <EmptyState icon={<ListChecks size={26} aria-hidden="true" />} title="Chưa có yêu cầu phục hồi" description="Tạo yêu cầu mới để cung cấp thông tin cho bác sĩ khi xây dựng kế hoạch phục hồi." />
               ) : (
                 <div className="recovery-split-view">
                   <div className="recovery-item-list" role="group" aria-label="Danh sách yêu cầu phục hồi">
@@ -846,7 +894,13 @@ export default function RecoveryPlanPage() {
               )}
             </section>
           ) : (
-            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Kế hoạch của bạn">
+            <section
+              id="recovery-panel-plans"
+              className="recovery-workspace-panel"
+              role="tabpanel"
+              aria-labelledby="recovery-tab-plans"
+              tabIndex="0"
+            >
               {plansLoading && planItems.length === 0 ? (
                 <LoadingState label="Đang tải kế hoạch…" />
               ) : plansError ? (
@@ -886,12 +940,7 @@ export default function RecoveryPlanPage() {
           )}
         </div>
 
-        <div className="recovery-workspace-sidebar">
-          <CreateRequestForm
-            disabled={requestCreationDisabled}
-            disabledMessage={requestDisabledMessage}
-            onCreated={handleCreated}
-          />
+        <div className="recovery-workspace-sidebar recovery-support-sidebar">
           <section className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
             <p className="recovery-eyebrow">Trong thời gian chờ</p>
             <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>
