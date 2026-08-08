@@ -2,6 +2,7 @@
   min-height: calc(100svh - 120px);
   background: var(--color-bg);
   color: var(--color-ink);
+  font-family: var(--font-body);
   padding: clamp(var(--space-4), 3vw, var(--space-8));
 }
 
@@ -76,9 +77,9 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
 
 .lab-test-result__heading-group h1 {
   margin: var(--space-2) 0 var(--space-1);
-  font-family: "Lora", Georgia, serif;
+  font-family: var(--font-display);
   font-size: clamp(27px, 3.5vw, 38px);
-  font-style: italic;
+  font-weight: 800;
   line-height: 1.12;
   letter-spacing: -0.03em;
 }
@@ -549,8 +550,9 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
 
 .lab-test-result__loading-card > h1 {
   max-width: 560px;
-  font-family: "Lora", Georgia, serif;
+  font-family: var(--font-display);
   font-size: clamp(25px, 4vw, 38px);
+  font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.025em;
 }
