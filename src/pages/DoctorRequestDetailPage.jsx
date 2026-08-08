@@ -29,12 +29,14 @@ import {
   XCircle,
 } from "lucide-react";
 import { Badge, Button, Dialog, ErrorState, Field, LoadingState, Select, Textarea, TextInput } from "../components/ui";
+import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { doctorRecoveryPlanRequestsApi, normalizeDoctorPlanDetail } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
 import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import "../styles/doctor-request-detail.css";
+import "../styles/formatted-recovery-note.css";
 
 const MAX_REASON_LENGTH = 2000;
 
@@ -499,7 +501,7 @@ function DetailContent({ request, onReload }) {
         <div className="doctor-detail-main">
           <section className="doctor-detail-card">
             <p className="doctor-detail-card-heading">Ghi chú từ bệnh nhân</p>
-            <p className="doctor-detail-note-text">{request.requestNote || "Không có ghi chú."}</p>
+            <div className="doctor-detail-note-text"><FormattedRecoveryNote text={request.requestNote} fallback="Không có ghi chú." /></div>
           </section>
 
           {ASSIGNMENT_ACTIVE_STATUSES.has(request.status) && (
