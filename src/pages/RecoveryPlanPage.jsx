@@ -325,11 +325,13 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       {disabled && <div className="recovery-form-blocked"><Info size={18} aria-hidden="true" /><span>{disabledMessage}</span></div>}
 
       <form onSubmit={handleSubmit} noValidate>
-        {Object.keys(errors).length > 0 && (
+        {Object.entries(errors).filter(([, message]) => message).length > 0 && (
           <div ref={errorSummaryRef} className="recovery-error-summary" role="alert" tabIndex="-1">
             <strong>Kiểm tra lại thông tin yêu cầu:</strong>
             <ul>
-              {Object.entries(errors).map(([field, message]) => <li key={field}><a href={`#recovery-${field}`}>{message}</a></li>)}
+              {Object.entries(errors)
+                .filter(([, message]) => message)
+                .map(([field, message]) => <li key={field}><a href={`#recovery-${field}`}>{message}</a></li>)}
             </ul>
           </div>
         )}
@@ -344,7 +346,11 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             aria-describedby={errors.diseaseGroup ? "recovery-diseaseGroup-error" : undefined}
             onChange={(event) => {
               setDiseaseGroup(event.target.value);
-              setErrors((current) => ({ ...current, diseaseGroup: "" }));
+              setErrors((current) => {
+                const next = { ...current };
+                delete next.diseaseGroup;
+                return next;
+              });
             }}
           >
             <option value="">Chọn nhóm bệnh</option>
@@ -364,7 +370,11 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             aria-describedby="recovery-requestNote-help"
             onChange={(event) => {
               setRequestNote(event.target.value);
-              setErrors((current) => ({ ...current, requestNote: "" }));
+              setErrors((current) => {
+                const next = { ...current };
+                delete next.requestNote;
+                return next;
+              });
             }}
           />
           <small id="recovery-requestNote-help" className={errors.requestNote ? "recovery-field-error" : ""}>
@@ -651,7 +661,14 @@ function CancelPlanDialog({ plan, submitting, onClose, onSubmit }) {
         <Field label="Lý do hủy" required error={errors.reasonCode}>
           <Select
             value={reasonCode}
-            onChange={(event) => { setReasonCode(event.target.value); setErrors((current) => ({ ...current, reasonCode: "" })); }}
+            onChange={(event) => {
+              setReasonCode(event.target.value);
+              setErrors((current) => {
+                const next = { ...current };
+                delete next.reasonCode;
+                return next;
+              });
+            }}
           >
             <option value="">Chọn lý do</option>
             {RECOVERY_PLAN_CANCELLATION_REASONS.map((item) => (
@@ -665,7 +682,14 @@ function CancelPlanDialog({ plan, submitting, onClose, onSubmit }) {
             maxLength={2000}
             value={reason}
             placeholder="Chia sẻ thêm lý do bạn muốn hủy kế hoạch này."
-            onChange={(event) => { setReason(event.target.value); setErrors((current) => ({ ...current, reason: "" })); }}
+            onChange={(event) => {
+              setReason(event.target.value);
+              setErrors((current) => {
+                const next = { ...current };
+                delete next.reason;
+                return next;
+              });
+            }}
           />
         </Field>
         <div className="recovery-cancel-modal-actions">
