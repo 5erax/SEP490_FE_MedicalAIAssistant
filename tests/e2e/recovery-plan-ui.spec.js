@@ -203,6 +203,18 @@ test("user reads and starts a published recovery plan", async ({ page }) => {
   expect(calls.started).toBe(true);
 });
 
+test("user formats a recovery note with the accessible toolbar", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page);
+  await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
+  const note = page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý");
+  await note.fill("Đau khi đi bộ");
+  await note.selectText();
+  await page.getByRole("button", { name: "In đậm đoạn đã chọn" }).click();
+  await expect(note).toHaveValue("**Đau khi đi bộ**");
+  await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
+  expect(calls.createBody.requestNote).toBe("**Đau khi đi bộ**");
+});
+
 test("quota failure is explained once without duplicating the API error in the form", async ({ page }) => {
   await prepareRecoveryPage(page, { quotaError: true });
 
@@ -223,11 +235,17 @@ test("recovery workspace uses a single-flow desktop layout and keyboard tabs", a
   const pageBox = await page.locator(".recovery-page").boundingBox();
   const mainBox = await page.locator(".recovery-workspace-main").boundingBox();
   const createBox = await page.locator(".recovery-create-card").boundingBox();
+  const diseaseBox = await page.locator(".recovery-disease-field").boundingBox();
+  const noteBox = await page.locator(".recovery-note-field").boundingBox();
+  const submitBox = await page.locator(".recovery-submit-row").boundingBox();
   expect(pageBox.width).toBeGreaterThan(1100);
   expect(mainBox.width).toBeGreaterThan(1000);
   expect(createBox.width).toBeCloseTo(mainBox.width, 0);
   expect(createBox.x).toBeCloseTo(mainBox.x, 0);
   expect(createBox.y).toBeLessThan(mainBox.y);
+  expect(diseaseBox.x).toBeLessThan(noteBox.x);
+  expect(submitBox.x).toBeCloseTo(noteBox.x, 0);
+  expect(submitBox.width).toBeCloseTo(noteBox.width, 0);
   await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toBeVisible();
   await expect(page.locator(".recovery-page-header .recovery-realtime-status")).toHaveCount(0);
 

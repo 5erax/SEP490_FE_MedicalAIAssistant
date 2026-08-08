@@ -461,9 +461,9 @@
 
 .recovery-create-card > form {
   display: grid;
-  grid-template-columns: minmax(230px, 0.7fr) minmax(360px, 1.5fr) auto;
+  grid-template-columns: minmax(230px, 0.7fr) minmax(420px, 1.5fr);
   align-items: start;
-  gap: 0 20px;
+  column-gap: 20px;
 }
 
 .recovery-create-card .recovery-error-summary {
@@ -471,8 +471,9 @@
 }
 
 .recovery-create-card .recovery-submit-row {
+  grid-column: 2;
   align-self: end;
-  min-width: 168px;
+  min-width: 0;
 }
 
 .recovery-guidance-card {
@@ -570,6 +571,28 @@
   font-weight: 500;
 }
 
+.recovery-field > span,
+.recovery-field > label > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  gap: 7px;
+}
+
+.recovery-field-step {
+  display: inline-grid;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid rgba(8, 127, 140, 0.28);
+  border-radius: 50%;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .recovery-required-marker {
   color: var(--color-danger);
 }
@@ -606,6 +629,82 @@
 .recovery-field textarea {
   min-height: 104px;
   resize: vertical;
+}
+
+.recovery-note-editor {
+  overflow: hidden;
+  border: 1px solid var(--color-control-border);
+  border-radius: 11px;
+  background: var(--color-surface);
+  transition: border-color var(--motion-fast, 0.15s ease), box-shadow var(--motion-fast, 0.15s ease);
+}
+
+.recovery-note-editor:focus-within {
+  border-color: var(--color-info);
+  outline: 3px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+.recovery-note-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 40px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-surface-soft);
+}
+
+.recovery-note-toolbar button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.recovery-note-toolbar button:hover:not(:disabled) {
+  border-color: var(--color-line-strong);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+}
+
+.recovery-note-toolbar button:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 1px;
+}
+
+.recovery-note-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.recovery-note-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--color-line-strong);
+}
+
+.recovery-note-ordered-list {
+  font-size: 12px !important;
+}
+
+.recovery-note-editor textarea {
+  display: block;
+  border: 0;
+  border-radius: 0;
+}
+
+.recovery-note-editor textarea:focus-visible {
+  outline: 0;
 }
 
 .recovery-field textarea::placeholder {
@@ -1051,6 +1150,7 @@
   }
 
   .recovery-create-card .recovery-submit-row {
+    grid-column: 1;
     min-width: 0;
   }
 }
