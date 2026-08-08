@@ -35,6 +35,16 @@ async function mockMapApis(page, facilities, options = {}) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
 
+    if (url.pathname === "/api/medical-departments") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: options.departments ?? [{ id: FACILITY_DEPARTMENT_ID, departmentName: "Tim mạch" }],
+        }),
+      });
+    }
+
     if (url.pathname === "/api/medical-facilities/active") {
       return route.fulfill({
         contentType: "application/json",
@@ -116,12 +126,18 @@ async function mockSuccessfulMapStyle(page) {
   }));
 }
 
+async function selectDepartment(page, name) {
+  await page.getByRole("button", { name: "Khoa khám" }).click();
+  await page.getByRole("option", { name }).click();
+}
+
 test("map renders and facility selection works with keyboard", async ({ page }) => {
   await preparePage(page);
   await mockMapApis(page, [facility()]);
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await selectDepartment(page, "Tim mạch");
 
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toBeVisible();
@@ -172,6 +188,7 @@ test("map omits the consultation assistant while preserving facility department 
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await selectDepartment(page, "Tim mạch");
 
   await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
@@ -181,7 +198,7 @@ test("map omits the consultation assistant while preserving facility department 
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
   await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
-  expect(requestedApiPaths).not.toContain("/api/medical-departments");
+  expect(requestedApiPaths).toContain("/api/medical-departments");
   expect(requestedApiPaths).toContain("/api/facility-departments/active");
 });
 
@@ -191,6 +208,7 @@ test("facility without coordinates stays in the list without a false marker", as
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await selectDepartment(page, "Tim mạch");
 
   await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" }).click();
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveCount(0);
@@ -199,13 +217,13 @@ test("facility without coordinates stays in the list without a false marker", as
   await expect(directionsButton).toBeDisabled();
 });
 
-test("map search matches facility departments from active backend data", async ({ page }) => {
+test("map department filter reveals no facility until a department is chosen, then search narrows within it", async ({ page }) => {
   await preparePage(page);
   await mockMapApis(page, [
     facility({
       id: FACILITY_ID,
       facilityName: "Bệnh viện Tim",
-      departments: [{ departmentName: "Tim mạch" }],
+      departments: [{ departmentId: SECOND_FACILITY_DEPARTMENT_ID, departmentName: "Da liễu" }],
     }),
     facility({
       id: "22222222-2222-4222-8222-222222222222",
@@ -213,16 +231,26 @@ test("map search matches facility departments from active backend data", async (
       phone: null,
       facilityType: "Phòng khám",
       departments: [{
-        departmentId: "44444444-4444-4444-8444-444444444444",
+        departmentId: SECOND_FACILITY_DEPARTMENT_ID,
         departmentName: "Da liễu",
       }],
     }),
-  ]);
+  ], {
+    departments: [{ id: SECOND_FACILITY_DEPARTMENT_ID, departmentName: "Da liễu" }],
+  });
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
-  await page.getByLabel("Lọc danh sách cơ sở y tế").fill("da lieu");
+  // Before choosing a department, no facility is shown at all.
+  await expect(page.getByText("Bệnh viện Tim", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toHaveCount(0);
+
+  await selectDepartment(page, "Da liễu");
+  await expect(page.getByText("Bệnh viện Tim", { exact: true })).toBeVisible();
+  await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toBeVisible();
+
+  await page.getByLabel("Tìm tên bệnh viện, phòng khám").fill("phong kham");
   await expect(page.getByText("Phòng khám Da liễu", { exact: true })).toBeVisible();
   await expect(page.getByText("Bệnh viện Tim", { exact: true })).toHaveCount(0);
   const dermatologyCard = page.locator(".facility-result-card").filter({ hasText: "Phòng khám Da liễu" });
@@ -249,10 +277,13 @@ test("map displays only facilities returned by the active API", async ({ page })
         departmentName: "Khoa cơ - xương - khớp",
       }],
     }),
-  ]);
+  ], {
+    departments: [{ id: "department-musculoskeletal", departmentName: "Khoa cơ - xương - khớp" }],
+  });
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await selectDepartment(page, "Khoa cơ - xương - khớp");
 
   await expect(page.getByText("1 kết quả phù hợp", { exact: true })).toBeVisible();
   await expect(page.getByText("Bệnh viện Chợ Rẫy", { exact: true })).toBeVisible();
@@ -272,6 +303,7 @@ test("map style failure shows a usable fallback and supports retry", async ({ pa
   ));
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await selectDepartment(page, "Tim mạch");
 
   await expect(page.getByText("Không thể hiển thị bản đồ lúc này", { exact: true })).toBeVisible();
   await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
@@ -293,7 +325,7 @@ test("geolocation denial does not remove the rendered map", async ({ page, conte
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
 
-  const locateButton = page.locator(".map-page-actions").getByRole("button", { name: "Định vị tôi" });
+  const locateButton = page.getByRole("button", { name: "Định vị tôi" });
   await locateButton.click();
 
   await expect(page.getByText("Không thể lấy vị trí của bạn.", { exact: true })).toBeVisible();
@@ -308,6 +340,7 @@ test("map refresh remains usable on mobile, dark mode and forced colors", async 
   await mockSuccessfulMapStyle(page);
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await selectDepartment(page, "Tim mạch");
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -316,7 +349,8 @@ test("map refresh remains usable on mobile, dark mode and forced colors", async 
   await expect(page.getByRole("heading", { name: "Tìm nơi khám phù hợp" })).toBeVisible();
   await expect(page.locator(".clinic-sidebar")).not.toHaveAttribute("aria-live");
   await expect(page.getByText("1 kết quả phù hợp", { exact: true })).toHaveAttribute("role", "status");
-  await expect(page.locator(".map-page-actions").getByRole("button", { name: "Định vị tôi" })).toHaveCSS("min-height", "44px");
+  const locateButtonBox = await page.getByRole("button", { name: "Định vị tôi" }).boundingBox();
+  expect(locateButtonBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.emulateMedia({ forcedColors: "active" });
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toBeVisible();
