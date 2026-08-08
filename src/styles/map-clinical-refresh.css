@@ -437,8 +437,8 @@
 }
 
 .map-clinical-refresh .map-top-search {
-  flex: 1 1 320px;
-  min-width: 220px;
+  flex: 1 1 260px;
+  min-width: 140px;
   max-width: 420px;
   height: 46px;
   display: flex;

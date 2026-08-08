@@ -785,7 +785,9 @@ function NearbyClinicPage() {
   const filteredFacilities = useMemo(() => {
     if (isClinicalFlow && clinicalStatus !== "ready") return [];
     if (isClinicalFlow && recommendedFacilityOrder.size === 0) return [];
-    if (!isClinicalFlow && !effectiveDepartmentId) return [];
+    // With no working map there is no pin to click either, so fall back to
+    // showing every facility in the list regardless of department filter.
+    if (!isClinicalFlow && !effectiveDepartmentId && mapStatus !== "error") return [];
 
     const normalized = normalizeSearchText(debouncedSearch);
     const normalizedDepartmentId = String(effectiveDepartmentId).trim();
@@ -824,6 +826,7 @@ function NearbyClinicPage() {
     effectiveDepartmentId,
     facilities,
     isClinicalFlow,
+    mapStatus,
     recommendedFacilityOrder,
   ]);
 
@@ -942,12 +945,17 @@ function NearbyClinicPage() {
 
     const duration = prefersReducedMotion() ? 0 : 900;
 
+    // The floating search/department bar only exists outside the clinical
+    // flow; keep markers from landing underneath it.
+    const topClearance = isClinicalFlow ? 72 : 110;
+
     if (mappableFacilities.length === 1) {
       const [facility] = mappableFacilities;
       mapRef.current?.flyTo?.({
         center: [facility.longitude, facility.latitude],
         zoom: 14,
         duration,
+        offset: isClinicalFlow ? undefined : [0, topClearance / 2],
       });
       return;
     }
@@ -961,10 +969,10 @@ function NearbyClinicPage() {
       ],
       {
         duration,
-        padding: { top: 72, right: 72, bottom: 72, left: 72 },
+        padding: { top: topClearance, right: 72, bottom: 72, left: 72 },
       },
     );
-  }, [mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
+  }, [isClinicalFlow, mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
@@ -1431,7 +1439,9 @@ function NearbyClinicPage() {
   const showLegacyMapDetail = Boolean(0);
   const showSidebar = isClinicalFlow
     || sidebarView !== "hospital-list"
-    || Boolean(effectiveDepartmentId);
+    // If the map itself failed to load there is no pin left to click, so the
+    // list is the only way left to find and select a facility.
+    || mapStatus === "error";
 
   return (
     <main className={`clinic-page map-clinical-refresh${isClinicalFlow ? " is-clinical-map-flow" : ""}`}>
