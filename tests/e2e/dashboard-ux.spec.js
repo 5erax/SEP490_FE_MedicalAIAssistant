@@ -573,11 +573,11 @@ test.describe("patient specialty intake", () => {
                 departmentId: DEPARTMENT_ID,
                 departmentName: "Tai Mũi Họng",
             }],
-            diagnoses: [{
-              rank: 1,
-              diseaseName: "Viêm họng cấp",
-              icd10Code: "J02",
-              clinicalReasoning: "Phù hợp với triệu chứng của phiên đã lưu.",
+            symptoms: [{
+              id: "77777777-7777-4777-8777-777777777777",
+              symptomName: "Viêm họng cấp",
+              confidenceScore: 0.86,
+              extractedText: "Phù hợp với triệu chứng của phiên đã lưu.",
             }],
             recommendedFacilities: [recommendedFacility],
           },
@@ -645,8 +645,12 @@ test.describe("patient specialty intake", () => {
     const restoredRecommendation = page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" });
     await expect(restoredRecommendation).toContainText("Tai Mũi Họng");
     await expect(restoredRecommendation).toContainText("Tiếp nhận và điều trị bệnh lý tai, mũi và họng.");
-    await expect(page.getByRole("region", { name: "Các chẩn đoán được cân nhắc" }))
-      .toContainText("Viêm họng cấp");
+    const restoredDiseases = page.getByRole("region", { name: "Các chẩn đoán được cân nhắc" });
+    await expect(restoredDiseases).toContainText("Viêm họng cấp");
+    await expect(restoredDiseases).toContainText("Độ phù hợp: 86%");
+    await restoredDiseases.getByRole("button", { name: /Viêm họng cấp/ }).click();
+    await expect(restoredDiseases).toContainText("Mô tả phân tích");
+    await expect(restoredDiseases).toContainText("Phù hợp với triệu chứng của phiên đã lưu.");
     await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true }).first()).toBeVisible();
     expect(sessionDetailRequests).toBe(1);
 

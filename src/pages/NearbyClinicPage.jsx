@@ -122,6 +122,25 @@ function sanitizeDiagnosis(diagnosis, index = 0) {
   };
 }
 
+function sanitizeSymptomAsDiagnosis(symptom, index = 0) {
+  if (!symptom || typeof symptom !== "object") return null;
+
+  const diagnosis = sanitizeDiagnosis({
+    clinicalReasoning: symptom.extractedText ?? symptom.ExtractedText,
+    diseaseName: symptom.symptomName ?? symptom.SymptomName,
+    icd10Code: symptom.icd10Code ?? symptom.Icd10Code,
+    rank: index + 1,
+  }, index);
+  if (!diagnosis) return null;
+
+  return {
+    ...diagnosis,
+    confidenceScore: Number(
+      symptom.confidenceScore ?? symptom.ConfidenceScore ?? 0,
+    ) || 0,
+  };
+}
+
 function sanitizeRecommendedFacility(facility) {
   if (!facility || typeof facility !== "object") return null;
   const id = String(
@@ -162,7 +181,7 @@ function buildClinicalRecommendationContext(analysis) {
   if (!analysis || typeof analysis !== "object") return null;
   const diagnosisItems = analysis.diagnoses ?? analysis.Diagnoses;
   const primaryDiagnosis = analysis.primaryDiagnosis ?? analysis.PrimaryDiagnosis;
-  const diagnoses = (
+  let diagnoses = (
     Array.isArray(diagnosisItems) && diagnosisItems.length > 0
       ? diagnosisItems
       : primaryDiagnosis ? [primaryDiagnosis] : []
@@ -170,6 +189,14 @@ function buildClinicalRecommendationContext(analysis) {
     .map(sanitizeDiagnosis)
     .filter(Boolean)
     .sort((left, right) => left.rank - right.rank);
+  if (diagnoses.length === 0) {
+    const symptomItems = analysis.symptoms ?? analysis.Symptoms;
+    diagnoses = (Array.isArray(symptomItems) ? symptomItems : [])
+      .map(sanitizeSymptomAsDiagnosis)
+      .filter(Boolean)
+      .sort((left, right) => right.confidenceScore - left.confidenceScore)
+      .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
+  }
   const departmentItems = analysis.recommendedDepartments ?? analysis.RecommendedDepartments;
   const recommendedDepartment = sanitizeDepartment(
     analysis.recommendedDepartment
