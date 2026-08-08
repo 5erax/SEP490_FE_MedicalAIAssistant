@@ -217,7 +217,7 @@ function genderLabel(value) {
   return "Giới tính chưa xác định";
 }
 
-export default function LabTestResultPage({ sessionId }) {
+export default function LabTestResultPage({ sessionId, embedded = false, onResponse, onSessionUpdate }) {
   const [session, setSession] = useState(null);
   const [loadStatus, setLoadStatus] = useState(sessionId ? "loading" : "error");
   const [error, setError] = useState(sessionId ? "" : "Không tìm thấy mã phiên phân tích xét nghiệm.");
@@ -227,6 +227,7 @@ export default function LabTestResultPage({ sessionId }) {
     sessionId ? "Đang tải kết quả xét nghiệm." : "Không tìm thấy mã phiên phân tích xét nghiệm.",
   );
   const pageHeadingRef = useRef(null);
+  const responseNotifiedRef = useRef(false);
 
   useEffect(() => {
     if (!sessionId) return undefined;
@@ -240,8 +241,14 @@ export default function LabTestResultPage({ sessionId }) {
         const response = await labTestsApi.get(sessionId);
         if (!active) return;
 
+        if (!responseNotifiedRef.current && typeof onResponse === "function") {
+          responseNotifiedRef.current = true;
+          onResponse(response);
+        }
+
         const nextSession = unwrapData(response) ?? null;
         const nextStatus = normalizeSessionStatus(nextSession?.status);
+        if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
         setSession(nextSession);
         setLoadStatus("ready");
         setError("");
@@ -271,6 +278,7 @@ export default function LabTestResultPage({ sessionId }) {
     };
 
     startTimer = window.setTimeout(() => {
+      responseNotifiedRef.current = false;
       setSession(null);
       setLoadStatus("loading");
       setError("");
@@ -283,7 +291,7 @@ export default function LabTestResultPage({ sessionId }) {
       if (startTimer) window.clearTimeout(startTimer);
       if (pollTimer) window.clearTimeout(pollTimer);
     };
-  }, [retryKey, sessionId]);
+  }, [onResponse, onSessionUpdate, retryKey, sessionId]);
 
   const results = Array.isArray(session?.results) ? session.results : [];
   const selectedKeyExists = results.some(
@@ -335,9 +343,11 @@ export default function LabTestResultPage({ sessionId }) {
         <p>ĐANG PHÂN TÍCH PHIẾU XÉT NGHIỆM</p>
         <h1 ref={pageHeadingRef} tabIndex="-1">Hệ thống đang đọc và đối chiếu các chỉ số</h1>
         <span>Kết quả được kiểm tra tự động mỗi giây và sẽ xuất hiện ngay khi hoàn tất.</span>
-        <Button type="button" tone="secondary" onClick={() => navigate("/records")}>
-          <ArrowLeft size={17} aria-hidden="true" /> Quay lại phiếu xét nghiệm
-        </Button>
+        {!embedded && (
+          <Button type="button" tone="secondary" onClick={() => navigate("/records")}>
+            <ArrowLeft size={17} aria-hidden="true" /> Quay lại phiếu xét nghiệm
+          </Button>
+        )}
       </section>
     );
   } else if (loadStatus === "error") {
@@ -352,7 +362,7 @@ export default function LabTestResultPage({ sessionId }) {
               <Button type="button" onClick={retryLoading}>
                 <RefreshCw size={17} aria-hidden="true" /> Thử lại
               </Button>
-              <Button type="button" tone="secondary" onClick={() => navigate("/records")}>Quay lại</Button>
+              {!embedded && <Button type="button" tone="secondary" onClick={() => navigate("/records")}>Quay lại</Button>}
             </div>
           )}
         />
@@ -365,7 +375,7 @@ export default function LabTestResultPage({ sessionId }) {
         <ErrorState
           title="Phiên phân tích không hoàn tất"
           description="Hệ thống chưa thể đọc phiếu xét nghiệm này. Hãy kiểm tra độ rõ của tài liệu và gửi lại."
-          action={<Button type="button" onClick={() => navigate("/records")}>Phân tích phiếu khác</Button>}
+          action={!embedded ? <Button type="button" onClick={() => navigate("/records")}>Phân tích phiếu khác</Button> : undefined}
         />
       </section>
     );
@@ -373,10 +383,12 @@ export default function LabTestResultPage({ sessionId }) {
     content = (
       <div className="lab-test-result__container">
         <header className="lab-test-result__header">
-          <button type="button" className="lab-test-result__back-button" onClick={() => navigate("/records")}>
-            <ArrowLeft size={18} aria-hidden="true" />
-            <span>Phân tích xét nghiệm</span>
-          </button>
+          {!embedded && (
+            <button type="button" className="lab-test-result__back-button" onClick={() => navigate("/records")}>
+              <ArrowLeft size={18} aria-hidden="true" />
+              <span>Phân tích xét nghiệm</span>
+            </button>
+          )}
 
           <div className="lab-test-result__heading-group">
             <div>
@@ -458,7 +470,7 @@ export default function LabTestResultPage({ sessionId }) {
   }
 
   return (
-    <div className="lab-test-result-page">
+    <div className={`lab-test-result-page${embedded ? " is-embedded" : ""}`}>
       <div className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
         {announcement}
       </div>

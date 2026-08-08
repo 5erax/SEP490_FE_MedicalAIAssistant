@@ -255,11 +255,13 @@ test("patient-facing lab states avoid technical implementation terms", async ({ 
     detailOverrides: { status: "processing", results: [] },
   });
 
-  await expect(page.getByText("Kết quả phân tích và thông tin tham khảo sẽ hiển thị tại đây.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /1\/8\/2026/ })).toBeVisible();
   await expect(page.getByText(/backend|schema|API trả về/i)).toHaveCount(0);
 
   await page.getByRole("button", { name: /1\/8\/2026/ }).click();
-  await expect(page.getByText("Trang sẽ tự làm mới khi có kết quả.")).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "Chi tiết kết quả xét nghiệm" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("Kết quả được kiểm tra tự động mỗi giây và sẽ xuất hiện ngay khi hoàn tất.")).toBeVisible();
   await expect(page.getByText(/backend|schema|API trả về/i)).toHaveCount(0);
 });
 
@@ -277,13 +279,26 @@ test("patient opens a session detail through the account-owned history endpoint"
     }],
   });
 
-  await page.getByRole("button", { name: /1\/8\/2026/ }).click();
-  await expect(page.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeFocused();
-  await expect(page.getByText("Chỉ số trong ngưỡng tham chiếu", { exact: true })).toBeVisible();
+  const historyTrigger = page.getByRole("button", { name: /1\/8\/2026/ });
+  await historyTrigger.click();
+  const dialog = page.getByRole("dialog", { name: "Chi tiết kết quả xét nghiệm" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeFocused();
+  await expect(dialog.locator(".lab-test-result__result-card").filter({ hasText: "Hemoglobin" })).toBeVisible();
+  await expect(dialog.getByText("Chỉ số trong ngưỡng tham chiếu", { exact: true })).toBeVisible();
   await expect(page.locator(".toast-info")).toContainText("OCR xét nghiệm hoàn tất");
   expect(state.requests.some((request) => (
     request.method === "GET" && request.pathname === `/api/lab-tests/${SESSION_ID}`
   ))).toBe(true);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".records-history-dialog")
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  await expect(historyTrigger).toBeFocused();
 });
 
 test("patient records stays responsive and reports accessible validation", async ({ page }) => {

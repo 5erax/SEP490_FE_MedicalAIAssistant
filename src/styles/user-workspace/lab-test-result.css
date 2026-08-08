@@ -6,6 +6,12 @@
   padding: clamp(var(--space-4), 3vw, var(--space-8));
 }
 
+.lab-test-result-page.is-embedded {
+  min-height: 0;
+  background: transparent;
+  padding: clamp(var(--space-4), 3vw, 28px);
+}
+
 .lab-test-result-page .visually-hidden {
   position: absolute;
   width: 1px;
