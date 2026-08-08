@@ -180,6 +180,8 @@ test("facility review displays the first service error and create fallback", asy
   });
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Khoa khám" }).click();
+  await page.getByRole("option", { name: "Tất cả các khoa" }).click();
   await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Xem chi tiết" }).click();
   await page.getByRole("tab", { name: "Đánh giá" }).click();

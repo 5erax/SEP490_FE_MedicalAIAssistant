@@ -48,8 +48,8 @@ test("authenticated facility map remains a standalone full-size page", async ({ 
   await openRoute(page, "/map?search=tim%20mach");
 
   await expect(page.locator(".user-shell")).toHaveCount(0);
-  await expect(page.getByRole("searchbox", { name: "Lọc danh sách cơ sở y tế" })).toHaveValue("tim mach");
-  await expect(page.locator(".map-page-actions").getByRole("button", { name: "Trang chủ" })).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Tìm tên bệnh viện, phòng khám" })).toHaveValue("tim mach");
+  await expect(page.getByRole("button", { name: "Về trang chủ" })).toBeVisible();
   await expect(page.locator(".clinic-page")).toHaveCSS("height", "1000px");
 
   const accessibility = await new AxeBuilder({ page })
@@ -76,7 +76,7 @@ test("public facility map remains available without the private workspace", asyn
 
   await expect(page.locator(".user-shell")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Bản đồ cơ sở y tế" })).toBeVisible();
-  await expect(page.locator(".map-page-actions").getByRole("button", { name: "Trang chủ" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Về trang chủ" })).toBeVisible();
 });
 
 test("profile sections use one workspace navigation hierarchy", async ({ page }) => {
