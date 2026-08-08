@@ -82,7 +82,7 @@
   pointer-events: none;
 }
 
-.recovery-page-header h1 {
+.recovery-page-header h2 {
   margin: 8px 0 8px;
   color: #fff;
   font-size: clamp(30px, 3.2vw, 42px);
@@ -570,6 +570,17 @@
   font-weight: 500;
 }
 
+.recovery-required-marker {
+  color: var(--color-danger);
+}
+
+.recovery-field-guidance {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .recovery-field select,
 .recovery-field textarea {
   width: 100%;
@@ -595,6 +606,11 @@
 .recovery-field textarea {
   min-height: 104px;
   resize: vertical;
+}
+
+.recovery-field textarea::placeholder {
+  color: var(--color-muted);
+  opacity: 1;
 }
 
 .recovery-character-count {

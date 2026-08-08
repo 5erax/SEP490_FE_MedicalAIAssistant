@@ -38,11 +38,11 @@ const DISEASE_GROUPS = [
   { value: "infectiousDisease", label: "Bệnh truyền nhiễm" },
 ];
 const REQUEST_STATUS = {
-  waitingForDoctor: { label: "Đang chờ bác sĩ", tone: "waiting" },
+  waitingForDoctor: { label: "Đang chờ bác sĩ xem xét", tone: "waiting" },
   assigned: { label: "Bác sĩ đã tiếp nhận", tone: "progress" },
-  inReview: { label: "Đang xem xét", tone: "progress" },
+  inReview: { label: "Bác sĩ đang chuẩn bị kế hoạch", tone: "progress" },
   needMoreInformation: { label: "Cần bổ sung thông tin", tone: "attention" },
-  published: { label: "Đã có kế hoạch", tone: "success" },
+  published: { label: "Kế hoạch đã sẵn sàng", tone: "success" },
   rejected: { label: "Không thể tiếp nhận", tone: "danger" },
   cancelled: { label: "Đã hủy", tone: "muted" },
   expired: { label: "Đã hết hạn", tone: "muted" },
@@ -119,7 +119,7 @@ function getRecoveryError(error, fallback) {
     return { code, message: "Hạn mức kế hoạch phục hồi của gói hiện chưa sẵn sàng. Vui lòng thử lại sau." };
   }
   if (code === "RECOVERY_PLAN_QUOTA_EXHAUSTED") {
-    return { code, message: "Bạn đã dùng hết lượt yêu cầu kế hoạch trong chu kỳ hiện tại." };
+    return { code, message: "Bạn đã gửi hết số yêu cầu được phép trong chu kỳ hiện tại." };
   }
   if (code === "INVALID_USER_TIME_ZONE") {
     return { code, message: "Múi giờ trong tài khoản chưa hợp lệ. Hãy cập nhật hồ sơ rồi thử lại." };
@@ -181,9 +181,9 @@ function handleWorkspaceTabKeyDown(event) {
 function QuotaCard({ quota, error, loading, onRetry }) {
   if (loading) {
     return (
-      <section className="recovery-quota-card" aria-label="Đang kiểm tra lượt kế hoạch">
+      <section className="recovery-quota-card" aria-label="Đang kiểm tra số yêu cầu còn lại">
         <div className="recovery-card-icon"><ShieldCheck size={22} aria-hidden="true" /></div>
-        <LoadingState label="Đang kiểm tra lượt kế hoạch…" />
+        <LoadingState label="Đang kiểm tra số yêu cầu còn lại…" />
       </section>
     );
   }
@@ -194,9 +194,9 @@ function QuotaCard({ quota, error, loading, onRetry }) {
       <section className="recovery-quota-card is-error" aria-labelledby="recovery-quota-title">
         <div className="recovery-card-icon"><ShieldCheck size={22} aria-hidden="true" /></div>
         <div>
-          <p className="recovery-eyebrow">Lượt kế hoạch</p>
-          <h2 id="recovery-quota-title">{needsPlan ? "Chưa thể tạo yêu cầu mới" : "Chưa tải được hạn mức"}</h2>
-          <p>{error.message}</p>
+          <p className="recovery-eyebrow">Yêu cầu còn lại</p>
+          <h2 id="recovery-quota-title">{needsPlan ? "Chưa thể gửi yêu cầu mới" : "Chưa thể tải thông tin"}</h2>
+          <p>{needsPlan ? error.message : "Vui lòng thử lại để kiểm tra số yêu cầu bạn còn có thể gửi."}</p>
           <div className="recovery-inline-actions">
             {needsPlan && <Button onClick={() => navigate("/pricing?returnTo=%2Frecovery-plan")}>Xem gói dịch vụ</Button>}
             <Button tone="secondary" onClick={onRetry}><RefreshCw size={16} aria-hidden="true" /> Thử lại</Button>
@@ -219,15 +219,15 @@ function QuotaCard({ quota, error, loading, onRetry }) {
       <div className="recovery-quota-content">
         <div className="recovery-quota-heading">
           <div>
-            <p className="recovery-eyebrow">Lượt kế hoạch trong chu kỳ</p>
-            <h2 id="recovery-quota-title">Còn {remaining} lượt có thể yêu cầu</h2>
+            <p className="recovery-eyebrow">Yêu cầu còn lại</p>
+            <h2 id="recovery-quota-title">Bạn có thể gửi thêm {remaining} yêu cầu</h2>
           </div>
           <strong>{remaining}/{limit}</strong>
         </div>
         <div
           className="recovery-quota-track"
           role="progressbar"
-          aria-label="Lượt kế hoạch đã dùng hoặc đang chờ xử lý"
+          aria-label="Số yêu cầu đã dùng hoặc đang chờ bác sĩ xem xét"
           aria-valuemin="0"
           aria-valuemax={limit}
           aria-valuenow={used + reserved}
@@ -308,13 +308,13 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
       <div className="recovery-section-heading">
         <div>
           <p className="recovery-eyebrow">Yêu cầu mới</p>
-          <h2 id="recovery-create-title">Tạo yêu cầu phục hồi</h2>
-          <p>Chọn nhóm bệnh và ghi lại điều bạn muốn bác sĩ lưu ý khi xây dựng kế hoạch.</p>
+          <h2 id="recovery-create-title">Gửi thông tin cho bác sĩ</h2>
+          <p>Chọn nhóm bệnh và ghi lại những điều bạn muốn bác sĩ lưu ý khi chuẩn bị kế hoạch.</p>
         </div>
         <div className="recovery-card-icon"><FileText size={22} aria-hidden="true" /></div>
       </div>
 
-      {disabled && <div className="recovery-form-blocked"><Info size={18} aria-hidden="true" /><span>{disabledMessage}</span></div>}
+      {disabled && disabledMessage && <div className="recovery-form-blocked"><Info size={18} aria-hidden="true" /><span>{disabledMessage}</span></div>}
 
       <form onSubmit={handleSubmit} noValidate>
         {Object.keys(errors).length > 0 && (
@@ -326,7 +326,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
           </div>
         )}
         <label className="recovery-field recovery-disease-field" htmlFor="recovery-diseaseGroup">
-          <span>Nhóm bệnh <small>(bắt buộc)</small></span>
+          <span>Nhóm bệnh <span className="recovery-required-marker" aria-hidden="true">*</span><span className="sr-only"> (bắt buộc)</span></span>
           <select
             id="recovery-diseaseGroup"
             value={diseaseGroup}
@@ -345,22 +345,24 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated }) {
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
         <label className="recovery-field recovery-note-field" htmlFor="recovery-requestNote">
-          <span>Điều bạn muốn bác sĩ lưu ý</span>
+          <span>Thông tin bạn muốn bác sĩ lưu ý</span>
           <textarea
             id="recovery-requestNote"
             rows="5"
             maxLength="2000"
+            placeholder="Ví dụ: Tôi vẫn còn đau khi đi lại lâu và muốn biết những hoạt động nào nên hạn chế…"
             value={requestNote}
             disabled={disabled}
             aria-invalid={Boolean(errors.requestNote) || undefined}
-            aria-describedby="recovery-requestNote-help"
+            aria-describedby="recovery-requestNote-guidance recovery-requestNote-help"
             onChange={(event) => {
               setRequestNote(event.target.value);
               setErrors((current) => ({ ...current, requestNote: "" }));
             }}
           />
+          <small id="recovery-requestNote-guidance" className="recovery-field-guidance">Ghi lại những thay đổi, khó khăn hoặc vấn đề bạn muốn bác sĩ xem xét.</small>
           <small id="recovery-requestNote-help" className={`recovery-character-count${errors.requestNote ? " recovery-field-error" : ""}`}>
-            {errors.requestNote || `${requestNote.length}/2.000 ký tự`}
+            {errors.requestNote || `${requestNote.length} / 2.000 ký tự`}
           </small>
         </label>
         <div className="recovery-submit-row">
@@ -468,7 +470,7 @@ export function PlanDetail({ plan, loading, onStart, busy }) {
     <article className="recovery-plan-detail">
       <header className="recovery-detail-header">
         <div>
-          <p className="recovery-eyebrow">Kế hoạch của bạn</p>
+          <p className="recovery-eyebrow">Kế hoạch đã nhận</p>
           <h3>{plan.planName || "Kế hoạch phục hồi"}</h3>
         </div>
         <StatusBadge map={PLAN_STATUS} value={plan.status} />
@@ -572,7 +574,7 @@ export default function RecoveryPlanPage() {
       setQuota(normalizeQuota(response));
     } catch (error) {
       setQuota(null);
-      setQuotaError(getRecoveryError(error, "Chưa thể kiểm tra lượt kế hoạch. Vui lòng thử lại."));
+      setQuotaError(getRecoveryError(error, "Chưa thể kiểm tra số yêu cầu còn lại. Vui lòng thử lại."));
     } finally {
       setQuotaLoading(false);
     }
@@ -692,7 +694,7 @@ export default function RecoveryPlanPage() {
   }, [refetchAll]);
 
   async function handleCreated(createdRequest) {
-    showToast({ type: "success", title: "Đã gửi yêu cầu", message: "Bạn có thể theo dõi trạng thái ngay trên trang này." });
+    showToast({ type: "success", title: "Đã gửi yêu cầu", message: "Bác sĩ có thể xem thông tin bạn vừa gửi để chuẩn bị kế hoạch." });
     await Promise.allSettled([
       loadQuota(),
       loadRequests(1, createdRequest?.id),
@@ -755,10 +757,10 @@ export default function RecoveryPlanPage() {
 
   const requestCreationDisabled = quotaLoading || Boolean(quotaError) || !quota || Number(quota.remainingCount) <= 0;
   const requestDisabledMessage = quotaLoading
-    ? "Cần kiểm tra lượt còn lại trước khi gửi yêu cầu."
+    ? "Đang kiểm tra số yêu cầu còn lại."
     : quotaError
-      ? "Cần tải lại thông tin lượt còn lại trước khi gửi yêu cầu."
-      : (!quota ? "Chưa có thông tin lượt còn lại." : "Bạn đã dùng hết lượt trong chu kỳ hiện tại.");
+      ? null
+      : (!quota ? "Chưa có thông tin về số yêu cầu còn lại." : "Bạn đã gửi hết số yêu cầu trong chu kỳ hiện tại.");
   const realtimeLabel = connectionStatus === "connected"
     ? "Cập nhật tự động đang bật"
     : connectionStatus === "reconnecting"
@@ -773,13 +775,13 @@ export default function RecoveryPlanPage() {
       <header className="recovery-page-header">
         <HeartPulse className="recovery-hero-icon" size={160} strokeWidth={1.3} aria-hidden="true" />
         <div>
-          <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Đồng hành sau điều trị</p>
-          <h1>Kế hoạch phục hồi của bạn</h1>
-          <p className="recovery-hero-copy">Gửi yêu cầu, theo dõi quá trình bác sĩ xây dựng và bắt đầu kế hoạch khi nội dung đã sẵn sàng.</p>
+          <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Theo dõi sau điều trị</p>
+          <h2>Kế hoạch phục hồi</h2>
+          <p className="recovery-hero-copy">Theo dõi yêu cầu của bạn và xem kế hoạch sau khi bác sĩ hoàn tất.</p>
           <ol className="recovery-process" aria-label="Quy trình nhận kế hoạch phục hồi">
             <li><span>1</span><strong>Gửi yêu cầu</strong></li>
-            <li><span>2</span><strong>Bác sĩ xây dựng</strong></li>
-            <li><span>3</span><strong>Bắt đầu phục hồi</strong></li>
+            <li><span>2</span><strong>Bác sĩ xem xét</strong></li>
+            <li><span>3</span><strong>Nhận kế hoạch</strong></li>
           </ol>
         </div>
       </header>
@@ -822,7 +824,7 @@ export default function RecoveryPlanPage() {
                 className={activeTab === "requests" ? "is-active" : ""}
                 onClick={() => setActiveTab("requests")}
               >
-                Yêu cầu của bạn
+                Yêu cầu đã gửi
                 {requestPage.totalCount > 0 && <span className="recovery-tab-count">{requestPage.totalCount}</span>}
               </button>
               <button
@@ -835,7 +837,7 @@ export default function RecoveryPlanPage() {
                 className={activeTab === "plans" ? "is-active" : ""}
                 onClick={() => setActiveTab("plans")}
               >
-                Kế hoạch của bạn
+                Kế hoạch đã nhận
                 {planPage.totalCount > 0 && <span className="recovery-tab-count">{planPage.totalCount}</span>}
               </button>
             </div>
@@ -863,7 +865,7 @@ export default function RecoveryPlanPage() {
               ) : requestsError ? (
                 <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(requestPageNumber)}>Thử lại</Button>} />
               ) : requestItems.length === 0 ? (
-                <EmptyState icon={<ListChecks size={26} aria-hidden="true" />} title="Chưa có yêu cầu phục hồi" description="Tạo yêu cầu mới để cung cấp thông tin cho bác sĩ khi xây dựng kế hoạch phục hồi." />
+                <EmptyState icon={<ListChecks size={26} aria-hidden="true" />} title="Bạn chưa gửi yêu cầu nào" description="Sau khi gửi, bạn có thể theo dõi trạng thái yêu cầu tại đây." />
               ) : (
                 <div className="recovery-split-view">
                   <div className="recovery-item-list" role="group" aria-label="Danh sách yêu cầu phục hồi">
@@ -913,7 +915,7 @@ export default function RecoveryPlanPage() {
               ) : plansError ? (
                 <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
               ) : planItems.length === 0 ? (
-                <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
+                <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch" description="Kế hoạch do bác sĩ hoàn tất sẽ được hiển thị tại đây." />
               ) : (
                 <div className="recovery-plan-layout">
                   <div className="recovery-plan-tabs" role="group" aria-label="Danh sách kế hoạch">
