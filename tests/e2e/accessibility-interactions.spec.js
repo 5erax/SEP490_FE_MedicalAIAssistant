@@ -159,6 +159,8 @@ test("closing a map popup restores focus and detail images reserve space", async
   });
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Khoa khám" }).click();
+  await page.getByRole("option", { name: "Tất cả các khoa" }).click();
 
   const marker = page.locator(".clinic-marker");
   await expect(marker).toBeVisible();
