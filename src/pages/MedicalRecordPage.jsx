@@ -510,8 +510,9 @@ export default function MedicalRecordPage() {
         testDate,
       });
       const session = unwrapData(response) ?? null;
-      setSelectedSession(session);
-      setDetailStatus("ready");
+      if (!session?.sessionId) {
+        throw new Error("Hệ thống chưa trả về mã phiên phân tích. Vui lòng thử lại.");
+      }
       setSubmissionStatus("success");
       const successMessage = getLabTestApiMessage(
         response,
@@ -525,9 +526,7 @@ export default function MedicalRecordPage() {
         title: "Đã gửi phiếu xét nghiệm",
         message: successMessage,
       });
-      setHistoryPage(1);
-      setHistoryReloadKey((current) => current + 1);
-      window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
+      navigate(`/records/${encodeURIComponent(session.sessionId)}`);
     } catch (error) {
       const message = getLabTestApiMessage(
         error,

@@ -106,6 +106,13 @@ const BASE_ROUTES = [
     shell: "patient",
     navigation: { shell: "patient", label: "Phân tích xét nghiệm", hint: "Đọc chỉ số xét nghiệm", icon: "records", order: 50 },
   },
+  {
+    id: "patient.record-result",
+    path: "/records/:sessionId",
+    title: "Kết quả phân tích xét nghiệm | MediMate AI",
+    access: "auth",
+    shell: "patient",
+  },
   { id: "patient.recovery", path: "/recovery-plan", title: "Kế hoạch phục hồi | MediMate AI", access: "auth", shell: "patient", navigation: { shell: "patient", label: "Kế hoạch phục hồi", hint: "Theo dõi sau khám", icon: "recovery", order: 60 } },
   {
     id: "patient.medication",

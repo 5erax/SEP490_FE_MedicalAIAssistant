@@ -179,9 +179,11 @@ test("patient submits the backend lab analysis payload from profile data", async
     patientAgeAtTest: 35,
     testDate: "2026-08-01",
   });
+  await expect(page).toHaveURL(new RegExp(`/records/${SESSION_ID}$`));
   await expect(page.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeVisible();
-  await expect(page.getByText("Hemoglobin", { exact: true })).toBeVisible();
-  await expect(page.getByText("13,8 g/dL", { exact: true })).toBeVisible();
+  const hemoglobinCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Hemoglobin" });
+  await expect(hemoglobinCard).toBeVisible();
+  await expect(hemoglobinCard).toContainText("13,8 g/dL");
   await expect(page.locator(".toast-success")).toContainText("Đã xếp hàng OCR xét nghiệm");
 });
 
