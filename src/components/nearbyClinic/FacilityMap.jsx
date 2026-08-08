@@ -639,7 +639,11 @@ export default function FacilityMap({
           )}
           {clinicalStatus !== "loading" && clinicalStatus !== "ready" && clinicalNotice && (
             <div className="map-clinical-summary-state">
-              <strong>Chưa thể hiển thị gợi ý chuyên khoa</strong>
+              <strong>
+                {clinicalStatus === "empty"
+                  ? "Phiên chưa lưu kết quả gợi ý"
+                  : "Chưa thể hiển thị gợi ý chuyên khoa"}
+              </strong>
               <p>{clinicalNotice}</p>
             </div>
           )}
