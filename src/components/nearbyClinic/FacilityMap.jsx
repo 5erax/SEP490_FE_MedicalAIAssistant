@@ -148,7 +148,12 @@ function DiagnosisCrossbar({ diagnoses = [] }) {
           const expanded = key === expandedKey;
           const reasoningId = `map-diagnosis-reasoning-${index}`;
           const diseaseName = diagnosis.diseaseName || "Chưa xác định tên bệnh";
-          const icd10Code = diagnosis.icd10Code || "Chưa có mã ICD";
+          const metadata = [
+            diagnosis.icd10Code ? `ICD-10: ${diagnosis.icd10Code}` : "",
+            Number(diagnosis.confidenceScore) > 0
+              ? `Độ phù hợp: ${confidencePercent(diagnosis.confidenceScore)}%`
+              : "",
+          ].filter(Boolean).join(" · ");
 
           return (
             <li key={key}>
@@ -161,7 +166,7 @@ function DiagnosisCrossbar({ diagnoses = [] }) {
               >
                 <span>
                   <strong>{diseaseName}</strong>
-                  <small>ICD-10: {icd10Code}</small>
+                  {metadata && <small>{metadata}</small>}
                 </span>
                 <ChevronDown size={16} aria-hidden="true" />
               </button>
@@ -176,8 +181,8 @@ function DiagnosisCrossbar({ diagnoses = [] }) {
           role="region"
           aria-live="polite"
         >
-          <strong>Giải thích lâm sàng</strong>
-          <p>{expandedDiagnosis.clinicalReasoning || "Chưa có giải thích lâm sàng cho chẩn đoán này."}</p>
+          <strong>Mô tả phân tích</strong>
+          <p>{expandedDiagnosis.clinicalReasoning || "Chưa có mô tả phân tích cho bệnh được gợi ý này."}</p>
         </div>
       )}
     </section>
