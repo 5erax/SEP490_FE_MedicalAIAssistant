@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { useFeedback } from "../components/feedback/feedbackContext";
+import LabTestResultPage from "./LabTestResultPage";
 import { navigate } from "../router/navigation";
 import {
   authApi,
@@ -35,14 +36,6 @@ const STATUS_LABELS = {
   processing: "Đang phân tích",
   completed: "Đã hoàn tất",
   failed: "Không thành công",
-};
-const RESULT_STATUS_LABELS = {
-  unknown: "Chưa xác định",
-  normal: "Trong ngưỡng",
-  high: "Cao",
-  low: "Thấp",
-  criticalHigh: "Cao nguy cấp",
-  criticalLow: "Thấp nguy cấp",
 };
 const GENDER_LABELS = { male: "Nam", female: "Nữ" };
 
@@ -100,14 +93,6 @@ function formatDateTime(value) {
     : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
 }
 
-function formatNumber(value) {
-  if (value === null || value === undefined || value === "") return "—";
-  const numeric = Number(value);
-  return Number.isFinite(numeric)
-    ? new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 4 }).format(numeric)
-    : String(value);
-}
-
 function formatFileSize(bytes) {
   if (!Number.isFinite(bytes)) return "";
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -116,39 +101,6 @@ function formatFileSize(bytes) {
 
 function fileIdentity(file) {
   return file ? `${file.name}:${file.size}:${file.lastModified}` : "";
-}
-
-function formatReference(result) {
-  const range = result?.referenceRangeUsed ?? {};
-  const comparisonType = result?.comparisonTypeUsed ?? range.comparisonType;
-  const minimum = result?.referenceMinUsed ?? range.minValue;
-  const maximum = result?.referenceMaxUsed ?? range.maxValue;
-  const unit = result?.referenceUnitUsed ?? range.unit ?? result?.indicator?.unit ?? "";
-  let value = "Chưa có khoảng tham chiếu";
-
-  if (comparisonType === "lessThanOrEqual" && maximum !== null && maximum !== undefined) {
-    value = `≤ ${formatNumber(maximum)}`;
-  } else if (comparisonType === "greaterThanOrEqual" && minimum !== null && minimum !== undefined) {
-    value = `≥ ${formatNumber(minimum)}`;
-  } else if (minimum !== null && minimum !== undefined && maximum !== null && maximum !== undefined) {
-    value = `${formatNumber(minimum)} – ${formatNumber(maximum)}`;
-  } else if (minimum !== null && minimum !== undefined) {
-    value = `Từ ${formatNumber(minimum)}`;
-  } else if (maximum !== null && maximum !== undefined) {
-    value = `Đến ${formatNumber(maximum)}`;
-  }
-
-  return unit && value !== "Chưa có khoảng tham chiếu" ? `${value} ${unit}` : value;
-}
-
-function getResultName(result) {
-  return result?.indicator?.fullName || result?.rawExtractedName || "Chỉ số chưa nhận diện";
-}
-
-function getResultValue(result) {
-  const value = result?.userValue ?? result?.rawExtractedValue;
-  const unit = result?.referenceUnitUsed ?? result?.referenceRangeUsed?.unit ?? result?.indicator?.unit ?? "";
-  return `${formatNumber(value)}${unit ? ` ${unit}` : ""}`;
 }
 
 function profileProblem(profile, profileStatus) {
@@ -171,145 +123,6 @@ function SessionStatus({ status }) {
   );
 }
 
-function ResultCard({ result }) {
-  const advice = result?.advice;
-  const status = String(result?.status ?? "unknown");
-  const rawMatchConfidence = Number(result?.matchConfidence);
-  const matchConfidencePercent = Number.isFinite(rawMatchConfidence)
-    ? Math.round(rawMatchConfidence <= 1 ? rawMatchConfidence * 100 : rawMatchConfidence)
-    : null;
-  const adviceItems = [
-    ["Tóm tắt", advice?.summary],
-    ["Nguyên nhân có thể", advice?.possibleCauses],
-    ["Sinh hoạt", advice?.lifestyleAdvice],
-    ["Dinh dưỡng", advice?.nutritionalAdvice],
-    ["Dấu hiệu cảnh báo", advice?.warningSigns],
-    ["Theo dõi tiếp", advice?.followUpSuggestion],
-    ["Câu hỏi cho bác sĩ", advice?.doctorQuestions],
-  ].filter(([, value]) => String(value ?? "").trim());
-
-  return (
-    <article className={`records-result-card is-${status}`}>
-      <header>
-        <div>
-          <span>{result?.indicator?.symbol || result?.rawExtractedName || "—"}</span>
-          <div>
-            <h4>{getResultName(result)}</h4>
-            {result?.indicator?.category && <small>{result.indicator.category}</small>}
-          </div>
-        </div>
-        <span className={`records-result-status is-${status}`}>
-          {RESULT_STATUS_LABELS[status] || status}
-        </span>
-      </header>
-
-      <dl className="records-result-facts">
-        <div><dt>Kết quả</dt><dd>{getResultValue(result)}</dd></div>
-        <div><dt>Tham chiếu áp dụng</dt><dd>{formatReference(result)}</dd></div>
-        <div><dt>Đối chiếu chỉ số</dt><dd>{result?.isMatched ? "Đã nhận diện" : "Chưa nhận diện chắc chắn"}</dd></div>
-        {matchConfidencePercent !== null && (
-          <div><dt>Độ tin cậy đối chiếu</dt><dd>{matchConfidencePercent}%</dd></div>
-        )}
-      </dl>
-
-      {advice && (
-        <section className="records-advice" aria-label={`Lời khuyên cho ${getResultName(result)}`}>
-          <div className="records-advice-heading">
-            <FlaskConical size={17} aria-hidden="true" />
-            <div>
-              <strong>{advice.displayTitle || "Thông tin tham khảo"}</strong>
-              {advice.urgencyLevel && <small>Mức ưu tiên: {advice.urgencyLevel}</small>}
-            </div>
-          </div>
-          {adviceItems.length > 0 && (
-            <dl>
-              {adviceItems.map(([label, value]) => (
-                <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
-              ))}
-            </dl>
-          )}
-        </section>
-      )}
-    </article>
-  );
-}
-
-function SessionDetail({ session, status, error, onRetry, headingRef }) {
-  if (status === "loading") return <LoadingState label="Đang tải chi tiết phiên xét nghiệm…" />;
-  if (status === "error") {
-    return (
-      <ErrorState
-        title="Không thể tải chi tiết xét nghiệm"
-        description={error}
-        action={<Button onClick={onRetry}>Thử lại</Button>}
-      />
-    );
-  }
-  if (!session) {
-    return (
-      <EmptyState
-        icon={<FileCheck2 size={22} />}
-        title="Chọn một phiên để xem chi tiết"
-        description="Kết quả phân tích và thông tin tham khảo sẽ hiển thị tại đây."
-      />
-    );
-  }
-
-  const results = Array.isArray(session.results) ? session.results : [];
-  return (
-    <section className="records-session-detail" aria-labelledby="records-session-detail-title">
-      <header className="records-detail-heading">
-        <div>
-          <p>CHI TIẾT PHIÊN PHÂN TÍCH</p>
-          <h3 id="records-session-detail-title" ref={headingRef} tabIndex="-1">
-            Kết quả ngày {formatDate(session.testDate, "chưa xác định")}
-          </h3>
-          <span>{formatDateTime(session.processedAt || session.createdAt)}</span>
-        </div>
-        <SessionStatus status={session.status} />
-      </header>
-
-      <dl className="records-session-meta">
-        <div><dt>Giới tính tại thời điểm xét nghiệm</dt><dd>{GENDER_LABELS[session.patientGenderAtTest] || "Chưa có"}</dd></div>
-        <div><dt>Tuổi tại thời điểm xét nghiệm</dt><dd>{session.patientAgeAtTest ?? "Chưa có"}</dd></div>
-        <div><dt>Số chỉ số nhận được</dt><dd>{results.length}</dd></div>
-      </dl>
-
-      {session.status === "processing" && (
-        <div className="records-processing-note" role="status" aria-live="polite">
-          <RefreshCw size={18} aria-hidden="true" />
-          <div><strong>Hệ thống đang đọc phiếu xét nghiệm</strong><p>Trang sẽ tự làm mới khi có kết quả.</p></div>
-        </div>
-      )}
-      {session.status === "failed" && (
-        <div className="records-failed-note" role="alert">
-          <AlertTriangle size={18} aria-hidden="true" />
-          <div><strong>Phiên phân tích không hoàn tất</strong><p>Hãy kiểm tra độ rõ của tài liệu và gửi lại bằng một phiên mới.</p></div>
-        </div>
-      )}
-      {session.status === "completed" && results.length === 0 && (
-        <EmptyState title="Chưa nhận được chỉ số" description="Phiên đã hoàn tất nhưng chưa có chỉ số xét nghiệm để hiển thị." />
-      )}
-      {results.length > 0 && (
-        <div className="records-result-list">
-          {results.map((result, index) => (
-            <ResultCard key={result.resultDetailId || `${getResultName(result)}-${index}`} result={result} />
-          ))}
-        </div>
-      )}
-      {session.rawOcrText && (
-        <details className="records-ocr-detail">
-          <summary>Văn bản hệ thống đọc từ phiếu</summary>
-          <p>{session.rawOcrText}</p>
-        </details>
-      )}
-      <p className="records-medical-disclaimer">
-        Kết quả AI chỉ mang tính tham khảo, không thay thế chẩn đoán, kê đơn hoặc tư vấn trực tiếp từ bác sĩ.
-      </p>
-    </section>
-  );
-}
-
 export default function MedicalRecordPage() {
   const { showToast } = useFeedback();
   const [profile, setProfile] = useState(null);
@@ -328,12 +141,11 @@ export default function MedicalRecordPage() {
   const [historyFilter, setHistoryFilter] = useState("");
   const [historyInfo, setHistoryInfo] = useState({ totalCount: 0, totalPages: 1 });
   const [historyReloadKey, setHistoryReloadKey] = useState(0);
-  const [selectedSession, setSelectedSession] = useState(null);
-  const [detailStatus, setDetailStatus] = useState("idle");
-  const [detailError, setDetailError] = useState("");
+  const [activeHistorySessionId, setActiveHistorySessionId] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const errorSummaryRef = useRef(null);
-  const detailHeadingRef = useRef(null);
+  const historyDialogRef = useRef(null);
+  const historyTriggerRef = useRef(null);
 
   const gender = normalizeGender(profile?.gender);
   const currentAge = useMemo(
@@ -402,49 +214,51 @@ export default function MedicalRecordPage() {
     return () => window.clearTimeout(timer);
   }, [historyReloadKey, loadHistory]);
 
-  const loadSessionDetail = useCallback(async (sessionId, { focus = true, quiet = false } = {}) => {
-    if (!sessionId) return;
-    if (!quiet) setDetailStatus("loading");
-    setDetailError("");
-    try {
-      const response = await labTestsApi.get(sessionId);
-      setSelectedSession(unwrapData(response) ?? null);
-      setDetailStatus("ready");
-      if (!quiet && response?.message && response.message !== "OK") {
-        showToast({
-          type: "info",
-          title: "Trạng thái OCR xét nghiệm",
-          message: getLabTestApiMessage(response),
-        });
-      }
-      if (focus) window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
-    } catch (error) {
-      const message = getLabTestApiMessage(
-        error,
-        "Chưa thể tải chi tiết phiên xét nghiệm. Vui lòng thử lại.",
-      );
-      setDetailError(message);
-      setDetailStatus("error");
-      if (!quiet) {
-        showToast({
-          type: "error",
-          title: "Không thể tải chi tiết xét nghiệm",
-          message,
-        });
-      }
+  useEffect(() => {
+    const dialog = historyDialogRef.current;
+    if (!dialog) return;
+
+    if (activeHistorySessionId && !dialog.open) {
+      dialog.showModal();
+    } else if (!activeHistorySessionId && dialog.open) {
+      dialog.close();
     }
+  }, [activeHistorySessionId]);
+
+  const handleHistoryResponse = useCallback((response) => {
+    if (!response?.message || response.message === "OK") return;
+    showToast({
+      type: "info",
+      title: "Trạng thái phân tích xét nghiệm",
+      message: getLabTestApiMessage(response),
+    });
   }, [showToast]);
 
-  useEffect(() => {
-    const sessionId = selectedSession?.sessionId;
-    if (!sessionId || selectedSession?.status !== "processing") return undefined;
+  const handleHistorySessionUpdate = useCallback((session) => {
+    if (!session?.sessionId) return;
+    setSessions((current) => current.map((item) => (
+      item.sessionId === session.sessionId
+        ? { ...item, ...session }
+        : item
+    )));
+  }, []);
 
-    const timer = window.setTimeout(() => {
-      void loadSessionDetail(sessionId, { focus: false, quiet: true });
-      setHistoryReloadKey((current) => current + 1);
-    }, 3000);
-    return () => window.clearTimeout(timer);
-  }, [loadSessionDetail, selectedSession?.sessionId, selectedSession?.status]);
+  function openHistorySession(sessionId, trigger) {
+    if (!sessionId) return;
+    historyTriggerRef.current = trigger;
+    setActiveHistorySessionId(sessionId);
+  }
+
+  function closeHistorySession() {
+    const dialog = historyDialogRef.current;
+    if (dialog?.open) dialog.close();
+    else setActiveHistorySessionId("");
+  }
+
+  function handleHistoryDialogClosed() {
+    setActiveHistorySessionId("");
+    window.requestAnimationFrame(() => historyTriggerRef.current?.focus());
+  }
 
   function selectFile(file) {
     try {
@@ -720,11 +534,11 @@ export default function MedicalRecordPage() {
               <div className="records-history-list">
                 {sessions.map((session) => (
                   <button
-                    className={selectedSession?.sessionId === session.sessionId ? "is-selected" : ""}
+                    className={activeHistorySessionId === session.sessionId ? "is-selected" : ""}
                     type="button"
                     key={session.sessionId}
-                    onClick={() => loadSessionDetail(session.sessionId)}
-                    aria-pressed={selectedSession?.sessionId === session.sessionId}
+                    onClick={(event) => openHistorySession(session.sessionId, event.currentTarget)}
+                    aria-haspopup="dialog"
                   >
                     <span><strong>{formatDate(session.testDate, "Ngày chưa xác định")}</strong><small>{session.facilityName || formatDateTime(session.processedAt || session.createdAt)}</small></span>
                     <SessionStatus status={session.status} />
@@ -742,17 +556,38 @@ export default function MedicalRecordPage() {
             )}
           </div>
 
-          <div className="records-detail-panel">
-            <SessionDetail
-              session={selectedSession}
-              status={detailStatus}
-              error={detailError}
-              onRetry={() => loadSessionDetail(selectedSession?.sessionId)}
-              headingRef={detailHeadingRef}
-            />
-          </div>
         </section>
       </div>
+
+      <dialog
+        ref={historyDialogRef}
+        className="records-history-dialog"
+        aria-label="Chi tiết kết quả xét nghiệm"
+        onClose={handleHistoryDialogClosed}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeHistorySession();
+        }}
+      >
+        <div className="records-history-dialog__surface">
+          <div className="records-history-dialog__toolbar">
+            <div>
+              <p>LỊCH SỬ PHÂN TÍCH</p>
+              <strong>Chi tiết kết quả xét nghiệm</strong>
+            </div>
+            <button type="button" onClick={closeHistorySession} aria-label="Đóng chi tiết kết quả xét nghiệm">
+              <X size={21} aria-hidden="true" />
+            </button>
+          </div>
+          {activeHistorySessionId && (
+            <LabTestResultPage
+              sessionId={activeHistorySessionId}
+              embedded
+              onResponse={handleHistoryResponse}
+              onSessionUpdate={handleHistorySessionUpdate}
+            />
+          )}
+        </div>
+      </dialog>
     </div>
   );
 }
