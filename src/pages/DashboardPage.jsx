@@ -398,6 +398,12 @@ export default function DashboardPage() {
     openFacilities(completedResult, completedSessionId);
   }
 
+  function openHistoricalSuggestion({ sessionId: historicalSessionId }) {
+    if (!historicalSessionId) return;
+    setHistoryPanelOpen(false);
+    openFacilities(null, historicalSessionId);
+  }
+
   function goToPreviousQuestion() {
     setCurrentQuestionIndex((index) => Math.max(0, index - 1));
   }
@@ -797,6 +803,7 @@ export default function DashboardPage() {
         onClose={() => setHistoryPanelOpen(false)}
         sessionType="department"
         onContinue={() => setHistoryPanelOpen(false)}
+        onViewSession={openHistoricalSuggestion}
       />
     </section>
   );

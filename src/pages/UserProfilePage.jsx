@@ -141,9 +141,30 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     let active = true;
+    const userRequest = authApi.me();
+    const loadPatientProfile = (userResponse) => {
+      const user = userResponse?.data ?? {};
+      const resolvedUserId = user.userId
+        ?? user.identityId
+        ?? user.id
+        ?? auth?.userId
+        ?? auth?.identityId
+        ?? "";
+
+      if (!resolvedUserId) {
+        return Promise.reject(new Error("Patient profile user id is unavailable"));
+      }
+
+      return patientProfilesApi.findByUserId(resolvedUserId);
+    };
+    const patientProfileRequest = userRequest.then(
+      loadPatientProfile,
+      () => loadPatientProfile(null),
+    );
+
     Promise.allSettled([
-      authApi.me(),
-      patientProfilesApi.list(1, 100),
+      userRequest,
+      patientProfileRequest,
       userSubscriptionsApi.me(),
       subscriptionUsageApi.getUsage(),
     ]).then(([userResult, profileResult, subscriptionResult, usageResult]) => {
@@ -174,8 +195,7 @@ export default function UserProfilePage() {
         setProfileDirty(false);
       }
 
-      const profiles = profileResult.status === "fulfilled" ? profileResult.value.data?.items ?? [] : [];
-      const patientProfile = profiles.find((item) => String(item.userId) === String(resolvedUserId)) ?? null;
+      const patientProfile = profileResult.status === "fulfilled" ? profileResult.value : null;
       if (profileResult.status === "fulfilled") {
         setPatientProfileId(patientProfile?.id ?? "");
         const nextMedical = {
@@ -196,7 +216,11 @@ export default function UserProfilePage() {
         ? Array.isArray(subscriptionResult.value.data) ? subscriptionResult.value.data : []
         : [];
       if (subscriptionResult.status === "fulfilled") {
-        setSubscription(subscriptions.find((item) => String(item.status).toLowerCase() === "active") ?? subscriptions[0] ?? null);
+        const normalizedSubscriptions = subscriptions.map((item) => ({
+          ...item,
+          status: item.status ?? item.statusName,
+        }));
+        setSubscription(normalizedSubscriptions.find((item) => String(item.status).toLowerCase() === "active") ?? normalizedSubscriptions[0] ?? null);
       }
       // NO_ACTIVE_SUBSCRIPTION / RECOVERY_PLAN_QUOTA_NOT_CONFIGURED are
       // expected states (no plan yet), not a load failure worth warning

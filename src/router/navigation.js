@@ -13,6 +13,10 @@ const WORKSPACE_PATHS = new Set([
   "/my-medications",
 ]);
 
+function isWorkspacePath(path) {
+  return WORKSPACE_PATHS.has(path) || path.startsWith("/records/");
+}
+
 export function getLocationSnapshot() {
   return `${window.location.pathname}${window.location.search}${window.location.hash}`;
 }
@@ -38,7 +42,7 @@ function getTransitionType(destination) {
   if (currentPath === nextPath) return "route-fade";
   if (nextPath === "/") return "nav-back";
   if (currentPath === "/") return "nav-forward";
-  if (WORKSPACE_PATHS.has(currentPath) && WORKSPACE_PATHS.has(nextPath)) return "route-fade";
+  if (isWorkspacePath(currentPath) && isWorkspacePath(nextPath)) return "route-fade";
   return "nav-forward";
 }
 

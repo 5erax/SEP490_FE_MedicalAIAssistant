@@ -188,6 +188,18 @@ test("user creates a recovery request with quota and an idempotency key", async 
   expect(calls.idempotencyKey.length).toBeLessThanOrEqual(100);
 });
 
+test("user formats a recovery note with the accessible toolbar", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page);
+  await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
+  const note = page.getByLabel("Điều bạn muốn bác sĩ lưu ý");
+  await note.fill("Đau khi đi bộ");
+  await note.selectText();
+  await page.getByRole("button", { name: "In đậm đoạn đã chọn" }).click();
+  await expect(note).toHaveValue("**Đau khi đi bộ**");
+  await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
+  expect(calls.createBody.requestNote).toBe("**Đau khi đi bộ**");
+});
+
 test("user replaces the current note when more information is requested", async ({ page }) => {
   const calls = await prepareRecoveryPage(page, { requests: [request({ status: "needMoreInformation" })] });
   await expect(page.getByText("Nội dung gửi đi sẽ thay thế phần ghi chú hiện tại")).toBeVisible();

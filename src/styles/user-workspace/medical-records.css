@@ -560,15 +560,12 @@
 }
 
 .records-library {
-  display: grid;
-  grid-template-columns: minmax(280px, 0.36fr) minmax(0, 0.64fr);
   min-height: 420px;
   overflow: hidden;
 }
 
 .records-history-panel {
   min-width: 0;
-  border-right: 1px solid var(--records-line);
   background: #fbfcfa;
   padding: 22px;
 }
@@ -621,6 +618,7 @@
 
 .records-history-list {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 8px;
 }
 
@@ -720,6 +718,87 @@
 
 .records-pagination button:disabled {
   opacity: 0.45;
+}
+
+.records-history-dialog {
+  width: min(1180px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100svh - 32px);
+  overflow: hidden;
+  border: 1px solid var(--records-line);
+  border-radius: 24px;
+  background: transparent;
+  color: var(--records-ink);
+  padding: 0;
+  box-shadow: 0 28px 90px rgba(6, 31, 36, 0.28);
+}
+
+.records-history-dialog::backdrop {
+  background: rgba(6, 25, 29, 0.64);
+  backdrop-filter: blur(5px);
+}
+
+.records-history-dialog__surface {
+  max-height: calc(100svh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: inherit;
+  background: var(--color-bg);
+}
+
+.records-history-dialog__toolbar {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 72px;
+  border-bottom: 1px solid var(--records-line);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  padding: 12px clamp(16px, 3vw, 28px);
+  backdrop-filter: blur(14px);
+}
+
+.records-history-dialog__toolbar p,
+.records-history-dialog__toolbar strong {
+  display: block;
+  margin: 0;
+}
+
+.records-history-dialog__toolbar p {
+  color: var(--records-teal-dark);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+}
+
+.records-history-dialog__toolbar strong {
+  margin-top: 3px;
+  font-size: 16px;
+}
+
+.records-history-dialog__toolbar button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--records-line);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--records-ink);
+}
+
+.records-history-dialog__toolbar button:hover {
+  border-color: var(--records-teal);
+  background: var(--records-mint);
+}
+
+.records-history-dialog__toolbar button:focus-visible {
+  outline: 3px solid var(--records-teal);
+  outline-offset: 3px;
 }
 
 .records-detail-panel {
@@ -993,9 +1072,6 @@
     min-height: 330px;
   }
 
-  .records-library {
-    grid-template-columns: 300px minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 760px) {
@@ -1053,22 +1129,18 @@
     justify-content: center;
   }
 
-  .records-library {
+  .records-history-list {
     grid-template-columns: 1fr;
   }
 
-  .records-history-panel {
-    border-right: 0;
-    border-bottom: 1px solid var(--records-line);
+  .records-history-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100svh - 16px);
+    border-radius: 18px;
   }
 
-  .records-detail-panel {
-    padding: 20px 18px;
-  }
-
-  .records-advice dl > div {
-    grid-template-columns: 1fr;
-    gap: 4px;
+  .records-history-dialog__surface {
+    max-height: calc(100svh - 16px);
   }
 }
 
@@ -1113,6 +1185,10 @@
   .lab-records-page,
   .records-upload-card,
   .records-library,
+  .records-history-dialog,
+  .records-history-dialog__surface,
+  .records-history-dialog__toolbar,
+  .records-history-dialog__toolbar button,
   .records-document-panel,
   .records-profile-panel,
   .records-dropzone,
@@ -1129,6 +1205,8 @@
 
   .records-upload-card,
   .records-library,
+  .records-history-dialog,
+  .records-history-dialog__toolbar,
   .records-dropzone,
   .records-profile-facts > div,
   .records-session-meta > div,

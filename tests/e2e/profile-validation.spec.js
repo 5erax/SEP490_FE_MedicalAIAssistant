@@ -40,7 +40,7 @@ test("patient profile setup remains accessible at narrow widths", async ({ page 
     contentType: "application/json",
     body: JSON.stringify({
       success: true,
-      data: { items: [], pageNumber: 1, pageSize: 100, totalCount: 0, totalPages: 0 },
+      data: null,
     }),
   }));
 
@@ -102,7 +102,7 @@ test("patient profile setup validates contact and health values before saving", 
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        data: { items: [], pageNumber: 1, pageSize: 100, totalCount: 0, totalPages: 0 },
+        data: null,
       }),
     });
   });
@@ -190,7 +190,7 @@ test("patient profile setup submits all chronic disease fields from the Swagger 
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        data: { items: [], pageNumber: 1, pageSize: 100, totalCount: 0, totalPages: 0 },
+        data: null,
       }),
     });
   });
@@ -261,12 +261,12 @@ test("patient adds a chronic disease with one click from the read-only profile",
         }),
       });
     }
-    if (url.pathname === "/api/patient-profiles") {
+    if (url.pathname === `/api/patient-profiles/by-user/${userId}`) {
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          data: { items: [], pageNumber: 1, pageSize: 100, totalCount: 0, totalPages: 0 },
+          data: null,
         }),
       });
     }
