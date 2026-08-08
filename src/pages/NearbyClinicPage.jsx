@@ -30,6 +30,7 @@ import {
   feedbackReviewsApi,
   getFeedbackReviewApiMessage,
   getStoredAuth,
+  medicalDepartmentsApi,
   medicalFacilitiesApi,
   readAnalysisPayload,
   symptomAnalysisApi,
@@ -552,6 +553,46 @@ function NearbyClinicPage() {
     isClinicalFlow,
     mapQuery.sessionId,
   ]);
+
+  useEffect(() => {
+    const recommendedDepartment = recommendationContext?.recommendedDepartment;
+    const departmentId = recommendedDepartment?.departmentId;
+    if (!isClinicalFlow || !departmentId || recommendedDepartment.description) return undefined;
+
+    let active = true;
+
+    medicalDepartmentsApi.get(departmentId)
+      .then((response) => {
+        if (!active) return;
+        const department = sanitizeDepartment(getObjectData(response));
+        if (!department?.description) return;
+
+        setRecommendationContext((current) => {
+          if (
+            !current?.recommendedDepartment
+            || current.recommendedDepartment.departmentId !== departmentId
+            || current.recommendedDepartment.description
+          ) return current;
+
+          return {
+            ...current,
+            recommendedDepartment: {
+              ...current.recommendedDepartment,
+              departmentName: current.recommendedDepartment.departmentName
+                || department.departmentName,
+              description: department.description,
+            },
+          };
+        });
+      })
+      .catch(() => {
+        // Keep the recommendation usable when the department catalog is unavailable.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isClinicalFlow, recommendationContext]);
 
   useEffect(() => {
     if (mapStatus !== "loading") return undefined;

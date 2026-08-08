@@ -573,6 +573,12 @@ test.describe("patient specialty intake", () => {
                 departmentId: DEPARTMENT_ID,
                 departmentName: "Tai Mũi Họng",
             }],
+            diagnoses: [{
+              rank: 1,
+              diseaseName: "Viêm họng cấp",
+              icd10Code: "J02",
+              clinicalReasoning: "Phù hợp với triệu chứng của phiên đã lưu.",
+            }],
             recommendedFacilities: [recommendedFacility],
           },
         }),
@@ -598,6 +604,17 @@ test.describe("patient specialty intake", () => {
     await page.route("**/api/facility-departments/active", (route) => route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ success: true, data: [{ facilityId: FACILITY_ID, departmentId: DEPARTMENT_ID }] }),
+    }));
+    await page.route(`**/api/medical-departments/${DEPARTMENT_ID}`, (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          id: DEPARTMENT_ID,
+          departmentName: "Tai Mũi Họng",
+          description: "Tiếp nhận và điều trị bệnh lý tai, mũi và họng.",
+        },
+      }),
     }));
     await page.route("https://basemaps.cartocdn.com/**", (route) => route.fulfill({
       contentType: "application/json",
@@ -625,7 +642,11 @@ test.describe("patient specialty intake", () => {
     await expect(page).toHaveURL(new RegExp(
       `/map\\?source=clinical&sessionId=${historySessions[0].sessionId}$`,
     ));
-    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Tai Mũi Họng");
+    const restoredRecommendation = page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" });
+    await expect(restoredRecommendation).toContainText("Tai Mũi Họng");
+    await expect(restoredRecommendation).toContainText("Tiếp nhận và điều trị bệnh lý tai, mũi và họng.");
+    await expect(page.getByRole("region", { name: "Các chẩn đoán được cân nhắc" }))
+      .toContainText("Viêm họng cấp");
     await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true }).first()).toBeVisible();
     expect(sessionDetailRequests).toBe(1);
 
