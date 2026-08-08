@@ -158,18 +158,18 @@ async function prepareRecoveryPage(page, options = {}) {
   });
 
   await page.goto("/recovery-plan", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Kế hoạch phục hồi của bạn" })).toBeVisible();
+  await expect(page.locator(".recovery-page-header").getByRole("heading", { name: "Kế hoạch phục hồi", exact: true })).toBeVisible();
   return calls;
 }
 
 test("user creates a recovery request with quota and an idempotency key", async ({ page }) => {
   const calls = await prepareRecoveryPage(page);
-  await expect(page.getByRole("heading", { name: "Còn 2 lượt có thể yêu cầu" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bạn có thể gửi thêm 2 yêu cầu" })).toBeVisible();
   await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
-  await page.getByLabel("Điều bạn muốn bác sĩ lưu ý").fill("Tôi muốn kế hoạch phục hồi 14 ngày.");
+  await page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý").fill("Tôi muốn kế hoạch phục hồi 14 ngày.");
   await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
 
-  await expect(page.getByText("Đang chờ bác sĩ", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Đang chờ bác sĩ xem xét", { exact: true }).first()).toBeVisible();
   expect(calls.createBody).toEqual({
     diseaseGroup: "respiratory",
     treatmentJourneyId: null,
@@ -187,13 +187,13 @@ test("user replaces the current note when more information is requested", async 
   await field.fill("Tôi đã cập nhật kết quả xét nghiệm mới nhất.");
   await page.getByRole("button", { name: "Gửi thông tin bổ sung" }).click();
 
-  await expect(page.getByText("Đang xem xét", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Bác sĩ đang chuẩn bị kế hoạch", { exact: true }).first()).toBeVisible();
   expect(calls.provideBody).toEqual({ additionalInformation: "Tôi đã cập nhật kết quả xét nghiệm mới nhất." });
 });
 
 test("user reads and starts a published recovery plan", async ({ page }) => {
   const calls = await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan()] });
-  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("tab", { name: /Kế hoạch đã nhận/ }).click();
   await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toBeVisible();
   await expect(page.getByText("Khởi động nhẹ", { exact: true })).toBeVisible();
   await expect(page.getByText("Trứng", { exact: false })).toBeVisible();
@@ -206,14 +206,13 @@ test("user reads and starts a published recovery plan", async ({ page }) => {
 test("quota failure is explained once without duplicating the API error in the form", async ({ page }) => {
   await prepareRecoveryPage(page, { quotaError: true });
 
-  await expect(page.getByRole("heading", { name: "Chưa tải được hạn mức" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Chưa thể tải thông tin" })).toBeVisible();
   const quotaMessage = page.locator(".recovery-quota-card.is-error p:not(.recovery-eyebrow)");
   const blockedMessage = page.locator(".recovery-form-blocked");
 
   await expect(quotaMessage).toHaveCount(1);
   await expect(quotaMessage).toBeVisible();
-  await expect(blockedMessage).toContainText("Cần tải lại thông tin lượt còn lại trước khi gửi yêu cầu.");
-  await expect(blockedMessage).not.toContainText((await quotaMessage.textContent()).trim());
+  await expect(blockedMessage).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Gửi yêu cầu" })).toBeDisabled();
 });
 
@@ -229,16 +228,16 @@ test("recovery workspace uses a single-flow desktop layout and keyboard tabs", a
   expect(createBox.width).toBeCloseTo(mainBox.width, 0);
   expect(createBox.x).toBeCloseTo(mainBox.x, 0);
   expect(createBox.y).toBeLessThan(mainBox.y);
-  await expect(page.getByRole("heading", { name: "Tạo yêu cầu phục hồi" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toBeVisible();
   await expect(page.locator(".recovery-page-header .recovery-realtime-status")).toHaveCount(0);
 
-  const requestTab = page.getByRole("tab", { name: "Yêu cầu của bạn" });
-  const planTab = page.getByRole("tab", { name: "Kế hoạch của bạn" });
+  const requestTab = page.getByRole("tab", { name: "Yêu cầu đã gửi" });
+  const planTab = page.getByRole("tab", { name: "Kế hoạch đã nhận" });
   await requestTab.focus();
   await page.keyboard.press("ArrowRight");
   await expect(planTab).toBeFocused();
   await expect(planTab).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tabpanel", { name: "Kế hoạch của bạn" })).toBeVisible();
+  await expect(page.getByRole("tabpanel", { name: "Kế hoạch đã nhận" })).toBeVisible();
   const accessibility = await new AxeBuilder({ page }).include(".recovery-page").analyze();
   expect(accessibility.violations).toEqual([]);
 });
