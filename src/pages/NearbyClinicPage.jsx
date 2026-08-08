@@ -518,7 +518,13 @@ function NearbyClinicPage() {
           ...analysis,
           sessionId: analysis?.sessionId ?? mapQuery.sessionId,
         });
-        if (!restoredContext) throw new Error("Clinical recommendation is unavailable");
+        if (!restoredContext) {
+          if (!active) return;
+          setRecommendationContext(null);
+          setClinicalStatus("empty");
+          setClinicalNotice("Phiên này không có kết quả gợi ý chuyên khoa hoặc cơ sở y tế được lưu.");
+          return;
+        }
         if (!active) return;
         setRecommendationContext(restoredContext);
         setClinicalStatus("ready");
@@ -1444,8 +1450,8 @@ function NearbyClinicPage() {
             Cơ sở được gợi ý hiện không còn trong danh sách cơ sở đang hoạt động.
           </div>
         )}
-        {isClinicalFlow && clinicalStatus === "error" && clinicalNotice && (
-          <div className="sidebar-note" role="alert">{clinicalNotice}</div>
+        {isClinicalFlow && ["empty", "error"].includes(clinicalStatus) && clinicalNotice && (
+          <div className="sidebar-note" role={clinicalStatus === "error" ? "alert" : "status"}>{clinicalNotice}</div>
         )}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">

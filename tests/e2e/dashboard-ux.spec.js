@@ -569,21 +569,28 @@ test.describe("patient specialty intake", () => {
           data: {
             sessionId: historySessions[0].sessionId,
             inputText: historySessions[0].inputText,
-            analysis: {
-              diagnoses: [{
-                diseaseName: "Viêm họng cấp",
-                icd10Code: "J02",
-              }],
-              recommendedDepartment: {
+            recommendedDepartments: [{
                 departmentId: DEPARTMENT_ID,
                 departmentName: "Tai Mũi Họng",
-              },
-              recommendedFacilities: [recommendedFacility],
-            },
+            }],
+            recommendedFacilities: [recommendedFacility],
           },
         }),
       });
     });
+    await page.route(`**/api/symptom-analysis/${historySessions[1].sessionId}`, async (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          sessionId: historySessions[1].sessionId,
+          inputText: historySessions[1].inputText,
+          status: "completed",
+          recommendedDepartments: [],
+          recommendedFacilities: [],
+        },
+      }),
+    }));
     await page.route("**/api/medical-facilities/active", (route) => route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ success: true, data: [recommendedFacility] }),
@@ -621,5 +628,17 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" })).toContainText("Tai Mũi Họng");
     await expect(page.getByText("Bệnh viện Tai Mũi Họng", { exact: true }).first()).toBeVisible();
     expect(sessionDetailRequests).toBe(1);
+
+    await openRoute(page, "/dashboard");
+    await page.getByRole("button", { name: "Lịch sử gợi ý chuyên khoa" }).click();
+    const reopenedDrawer = page.getByRole("dialog", { name: "Lịch sử gợi ý chuyên khoa" });
+    await reopenedDrawer.getByRole("button", { name: "Chi tiết" }).nth(1).click();
+    await expect(page).toHaveURL(new RegExp(
+      `/map\\?source=clinical&sessionId=${historySessions[1].sessionId}$`,
+    ));
+    await expect(page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" }))
+      .toContainText("Phiên chưa lưu kết quả gợi ý");
+    await expect(page.getByText("Phiên này không có kết quả gợi ý chuyên khoa hoặc cơ sở y tế được lưu.").first())
+      .toBeVisible();
   });
 });
