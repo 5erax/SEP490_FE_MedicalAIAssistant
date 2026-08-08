@@ -128,6 +128,24 @@
   margin: 0;
 }
 
+.admin-operator .admin-user-restore-btn,
+.admin-operator .admin-user-restore-btn > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-operator .admin-user-restore-btn > span {
+  gap: 8px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-operator .admin-user-restore-btn svg {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
 .admin-operator .admin-users-filter-card {
   display: grid;
   gap: 18px;
@@ -384,6 +402,38 @@
 }
 
 .admin-operator .admin-user-card .admin-user-delete-btn svg {
+  flex: 0 0 auto;
+  margin: 0;
+  transform: none;
+}
+
+.admin-operator .admin-user-card .admin-user-restore-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  min-height: 44px;
+  border-color: var(--color-success);
+  border-radius: 11px;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  box-shadow: none;
+}
+
+.admin-operator .admin-user-card .admin-user-restore-btn:hover {
+  background: color-mix(in srgb, var(--color-success-bg) 70%, transparent);
+}
+
+.admin-operator .admin-user-card .admin-user-restore-btn > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-operator .admin-user-card .admin-user-restore-btn svg {
   flex: 0 0 auto;
   margin: 0;
   transform: none;
