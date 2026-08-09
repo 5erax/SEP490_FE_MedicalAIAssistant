@@ -101,7 +101,7 @@ function getQuestionText(question, index = 0) {
     ?? `Câu hỏi ${index + 1}`;
 }
 
-const MARKER_LABEL_MIN_ZOOM = 16;
+const MARKER_LABEL_MIN_ZOOM = 10;
 
 function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect, showLabel }) {
   return (
