@@ -140,14 +140,17 @@ function diagnosisKey(diagnosis, index) {
     .join("-");
 }
 
-function DiagnosisCrossbar({ diagnoses = [] }) {
+function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false }) {
   const [expandedKey, setExpandedKey] = useState("");
   const expandedDiagnosis = diagnoses.find((diagnosis, index) => (
     diagnosisKey(diagnosis, index) === expandedKey
   ));
 
   return (
-    <section className="map-diagnosis-crossbar" aria-labelledby="map-diagnoses-title">
+    <section
+      className={`map-diagnosis-crossbar${hasTopNotice ? " has-top-notice" : ""}`}
+      aria-labelledby="map-diagnoses-title"
+    >
       <header>
         <div>
           <small>Kết quả tham khảo</small>
@@ -596,6 +599,7 @@ export default function FacilityMap({
   clinicalNotice = "",
   clinicalStatus = "idle",
   consultationFacility = null,
+  hasTopNotice = false,
   isClinicalFlow = false,
   onAssistantLogin,
   showConsultationAssistant = false,
@@ -648,7 +652,11 @@ export default function FacilityMap({
         </aside>
       )}
       {isClinicalFlow && (
-        <aside className="map-clinical-summary" aria-label="Kết quả gợi ý chuyên khoa" aria-live="polite">
+        <aside
+          className={`map-clinical-summary${hasTopNotice ? " has-top-notice" : ""}`}
+          aria-label="Kết quả gợi ý chuyên khoa"
+          aria-live="polite"
+        >
           {clinicalStatus === "loading" && (
             <div className="map-clinical-summary-state" role="status">
               <span className="map-loading-spinner" aria-hidden="true" />
@@ -681,7 +689,7 @@ export default function FacilityMap({
       )}
 
       {isClinicalFlow && clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
-        <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} />
+        <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} hasTopNotice={hasTopNotice} />
       )}
 
       {mapStatus !== "error" && (
