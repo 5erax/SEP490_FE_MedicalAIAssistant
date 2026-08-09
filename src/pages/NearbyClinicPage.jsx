@@ -3224,7 +3224,7 @@ const styles = `
 }
 .review-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .review-form-actions button { flex: 1 1 150px; }
-.review-form-actions .secondary { background: var(--paper, #fff); box-shadow: none; }
+.review-form-actions .secondary { background: var(--paper, #fff); border-color: var(--teal); color: var(--teal); box-shadow: none; }
 .review-list { gap: 10px; }
 .review-list article {
   gap: 10px;
