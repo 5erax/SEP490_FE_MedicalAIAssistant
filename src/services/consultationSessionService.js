@@ -2,14 +2,15 @@ import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
 export const consultationSessionsApi = {
-  generateQuestions(departmentId, symptoms) {
+  generateQuestions(payloadOrDepartmentId, symptoms = "") {
+    const payload = payloadOrDepartmentId && typeof payloadOrDepartmentId === "object"
+      ? payloadOrDepartmentId
+      : { departmentId: payloadOrDepartmentId, symptoms };
+
     return apiRequest(ENDPOINTS.CONSULTATION_SESSIONS.GENERATE_QUESTIONS, {
       method: "POST",
       auth: true,
-      body: {
-        departmentId,
-        symptoms,
-      },
+      body: payload,
     });
   },
 
@@ -64,6 +65,27 @@ export const consultationSessionsApi = {
 
   get(sessionId) {
     return apiRequest(ENDPOINTS.CONSULTATION_SESSIONS.BY_ID(sessionId), {
+      auth: true,
+    });
+  },
+
+  registerReminder(sessionId, payload) {
+    return apiRequest(ENDPOINTS.CONSULTATION_SESSIONS.REGISTER_REMINDER(sessionId), {
+      method: "POST",
+      auth: true,
+      body: payload,
+    });
+  },
+
+  getSummary(sessionId) {
+    return apiRequest(ENDPOINTS.CONSULTATION_SESSIONS.SUMMARY(sessionId), {
+      auth: true,
+    });
+  },
+
+  complete(sessionId) {
+    return apiRequest(ENDPOINTS.CONSULTATION_SESSIONS.COMPLETE(sessionId), {
+      method: "POST",
       auth: true,
     });
   },

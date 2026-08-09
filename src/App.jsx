@@ -33,6 +33,7 @@ const MedicalRecordPage = lazy(() => import("./pages/MedicalRecordPage"));
 const LabTestResultPage = lazy(() => import("./pages/LabTestResultPage"));
 const MedicationScanPage = lazy(() => import("./pages/MedicationScanPage"));
 const PaymentResultPage = lazy(() => import("./pages/PaymentResultPage"));
+const PreConsultationPage = lazy(() => import("./pages/PreConsultationPage"));
 const PersonalPatientProfilePage = lazy(() => import("./pages/PersonalPatientProfilePage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const RecoveryPlanPage = lazy(() => import("./pages/RecoveryPlanPage"));
@@ -120,6 +121,8 @@ function App() {
       return userWorkspace(lazyPage(<MedicalRecordPage />));
     case "patient.record-result":
       return userWorkspace(lazyPage(<LabTestResultPage sessionId={route.params?.sessionId} />));
+    case "patient.pre-consultation":
+      return userWorkspace(lazyPage(<PreConsultationPage />));
     case "patient.recovery":
       return userWorkspace(lazyPage(<RecoveryPlanPage />));
     case "patient.medication":

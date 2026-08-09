@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Pill,
   Search,
+  Stethoscope,
   UserRound,
   X,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const PATIENT_ICONS = {
   map: MapPin,
   profile: UserRound,
   records: ClipboardList,
+  consultation: Stethoscope,
   recovery: CalendarDays,
   medications: Pill,
 };
@@ -378,7 +380,7 @@ export default function UserWorkspaceShell({ children }) {
           <X size={19} aria-hidden="true" />
         </button>
 
-        <nav className="user-shell-nav" data-onboarding="patient-nav">
+        <nav className="user-shell-nav" aria-label="Điều hướng chính" data-onboarding="patient-nav">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = isNavigationItemActive(item, path);
