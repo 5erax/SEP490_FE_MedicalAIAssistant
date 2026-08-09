@@ -24,12 +24,14 @@ async function mockPreConsultation(page) {
     complete: 0,
   };
 
-  const questions = [{
-    id: "question-1",
-    category: "tests",
-    questionText: "Tôi có cần làm xét nghiệm máu trước buổi khám không?",
-    priority: 1,
-  }];
+  const questions = [
+    { id: "question-1", category: "Diagnosis", questionText: "Bệnh lý của tôi là cấp tính hay mạn tính?", priority: 1 },
+    { id: "question-2", category: "Tests", questionText: "Tôi có cần làm xét nghiệm máu trước buổi khám không?", priority: 2 },
+    { id: "question-3", category: "TREATMENT", questionText: "Phương pháp điều trị nào phù hợp với tình trạng hiện tại?", priority: 3 },
+    { id: "question-4", category: "lifestyle", questionText: "Tôi cần điều chỉnh sinh hoạt như thế nào?", priority: 4 },
+    { id: "question-5", category: "additional-a", questionText: "Khi nào tôi cần tái khám?", priority: 5 },
+    { id: "question-6", category: "additional-b", questionText: "Dấu hiệu nào cần được khám sớm?", priority: 6 },
+  ];
   const checklist = [{
     id: "checklist-1",
     content: "Mang theo kết quả xét nghiệm gần nhất",
@@ -156,7 +158,7 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
   await expect(page.getByText("Mang theo kết quả xét nghiệm gần nhất", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
 
-  await expect(page.getByText("Tôi có cần làm xét nghiệm máu trước buổi khám không?", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bệnh lý của tôi là cấp tính hay mạn tính?", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Thiết lập nhắc lịch" }).click();
   await page.getByLabel(/Có, nhắc tôi/).check();
   await page.getByLabel("Số điện thoại nhận nhắc lịch (bắt buộc)").fill("0901234567");
@@ -194,7 +196,7 @@ test("checklist is read-only and allows the user to continue", async ({ page }) 
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await expect(page.getByText("Mang theo kết quả xét nghiệm gần nhất", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
-  await expect(page.getByText("Tôi có cần làm xét nghiệm máu trước buổi khám không?", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bệnh lý của tôi là cấp tính hay mạn tính?", { exact: true })).toBeVisible();
 });
 
 test("user reviews a saved consultation in the medical record layout", async ({ page }) => {
@@ -209,7 +211,10 @@ test("user reviews a saved consultation in the medical record layout", async ({ 
 
   await page.getByRole("button", { name: /Tim mạch.*Đau ngực khi vận động/ }).click();
   await expect(page.getByRole("heading", { name: "Tim mạch", level: 3 })).toBeVisible();
-  await expect(page.getByText("Tôi có cần làm xét nghiệm máu trước buổi khám không?", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bệnh lý của tôi là cấp tính hay mạn tính?", { exact: true })).toBeVisible();
+  await expect(page.getByText("Mang theo kết quả xét nghiệm gần nhất", { exact: true })).toBeVisible();
+  await expect(page.getByText("6 câu hỏi", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Trao đổi thêm/, level: 5 })).toHaveCount(1);
 
   if (screenshotDirectory) {
     await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-history-desktop.png`, fullPage: true });
@@ -227,6 +232,7 @@ test("user reviews a saved consultation in the medical record layout", async ({ 
     .map((violation) => violation.id)).toEqual([]);
 
   expect(calls.history).toBe(1);
+  expect(calls.checklist).toBe(1);
   expect(calls.detail).toBe(3);
 });
 

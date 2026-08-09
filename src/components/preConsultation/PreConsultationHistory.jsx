@@ -2,16 +2,14 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  CheckCircle2,
   ChevronRight,
-  Clock3,
   FileText,
   LoaderCircle,
-  MapPin,
   RefreshCw,
-  Stethoscope,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { consultationSessionsApi } from "../../services/api";
+import { checklistItemsApi, consultationSessionsApi } from "../../services/api";
 
 const PAGE_SIZE = 6;
 const CATEGORY_LABELS = {
@@ -20,6 +18,15 @@ const CATEGORY_LABELS = {
   treatment: "Điều trị",
   lifestyle: "Sinh hoạt",
   followUp: "Theo dõi",
+};
+
+const CATEGORY_ALIASES = {
+  diagnosis: "diagnosis",
+  tests: "tests",
+  test: "tests",
+  treatment: "treatment",
+  lifestyle: "lifestyle",
+  followup: "followUp",
 };
 
 const STATUS_META = {
@@ -60,12 +67,30 @@ function normalizeQuestions(value) {
   return (Array.isArray(value) ? value : [])
     .map((item, index) => ({
       id: item?.id ?? `${item?.category ?? "question"}-${index}`,
-      category: item?.category ?? "",
+      category: normalizeCategory(item?.category),
       text: item?.questionText ?? item?.question ?? "",
       priority: Number(item?.priority ?? index + 1),
     }))
     .filter((item) => item.text)
     .sort((left, right) => left.priority - right.priority);
+}
+
+function normalizeCategory(value) {
+  const key = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+  return CATEGORY_ALIASES[key] ?? "other";
+}
+
+function normalizeChecklist(value) {
+  return (Array.isArray(value) ? value : [])
+    .map((item, index) => ({
+      id: item?.id ?? `checklist-${index}`,
+      content: item?.content ?? item?.title ?? item?.name ?? "",
+      isMandatory: Boolean(item?.isMandatory),
+    }))
+    .filter((item) => item.content);
 }
 
 function getStatusMeta(status) {
@@ -82,8 +107,12 @@ export default function PreConsultationHistory({ onStartNew }) {
   const [detail, setDetail] = useState(null);
   const [detailStatus, setDetailStatus] = useState("idle");
   const [detailError, setDetailError] = useState("");
+  const [checklist, setChecklist] = useState([]);
+  const [checklistStatus, setChecklistStatus] = useState("idle");
+  const [checklistError, setChecklistError] = useState("");
   const detailHeadingRef = useRef(null);
   const detailRequestRef = useRef(0);
+  const checklistRequestRef = useRef(0);
 
   const loadSessions = useCallback(async () => {
     setListStatus("loading");
@@ -109,12 +138,37 @@ export default function PreConsultationHistory({ onStartNew }) {
     return () => window.clearTimeout(timeoutId);
   }, [loadSessions]);
 
+  const loadChecklist = useCallback(async (departmentId) => {
+    const requestId = checklistRequestRef.current + 1;
+    checklistRequestRef.current = requestId;
+    setChecklistStatus("loading");
+    setChecklistError("");
+
+    try {
+      const response = await checklistItemsApi.byDepartment(departmentId);
+      if (checklistRequestRef.current !== requestId) return;
+      setChecklist(normalizeChecklist(unwrapData(response)));
+      setChecklistStatus("ready");
+    } catch (error) {
+      if (checklistRequestRef.current !== requestId) return;
+      setChecklist([]);
+      setChecklistError(errorMessage(error, "Chưa thể tải danh sách chuẩn bị. Vui lòng thử lại."));
+      setChecklistStatus("error");
+    }
+  }, []);
+
   const loadDetail = useCallback(async (sessionId, { silent = false } = {}) => {
     const requestId = detailRequestRef.current + 1;
     detailRequestRef.current = requestId;
     setSelectedId(sessionId);
     setDetailError("");
-    if (!silent) setDetailStatus("loading");
+    if (!silent) {
+      checklistRequestRef.current += 1;
+      setDetailStatus("loading");
+      setChecklist([]);
+      setChecklistStatus("idle");
+      setChecklistError("");
+    }
 
     try {
       const response = await consultationSessionsApi.get(sessionId);
@@ -130,13 +184,14 @@ export default function PreConsultationHistory({ onStartNew }) {
         )),
       }));
       setDetailStatus("ready");
+      if (!silent && nextDetail?.departmentId) loadChecklist(nextDetail.departmentId);
       if (!silent) window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
     } catch (error) {
       if (detailRequestRef.current !== requestId) return;
       setDetailError(errorMessage(error, "Chưa thể tải chi tiết phiên tư vấn. Vui lòng thử lại."));
       setDetailStatus("error");
     }
-  }, []);
+  }, [loadChecklist]);
 
   useEffect(() => {
     if (!selectedId || String(detail?.status).toLowerCase() !== "processing") return undefined;
@@ -150,6 +205,10 @@ export default function PreConsultationHistory({ onStartNew }) {
     setDetail(null);
     setDetailStatus("idle");
     setDetailError("");
+    checklistRequestRef.current += 1;
+    setChecklist([]);
+    setChecklistStatus("idle");
+    setChecklistError("");
     setPageNumber(nextPage);
   }
 
@@ -245,24 +304,51 @@ export default function PreConsultationHistory({ onStartNew }) {
                 <div className="consultation-detail-processing" role="status"><LoaderCircle className="spin" size={18} aria-hidden="true" /><span>Đang hoàn thiện câu hỏi. Hồ sơ sẽ tự cập nhật.</span></div>
               )}
 
-              <dl className="consultation-detail-facts">
-                <div><dt><CalendarDays size={16} aria-hidden="true" /> Thời gian khám</dt><dd>{formatDateTime(detail?.appointmentTime, "Chưa có lịch hẹn")}</dd></div>
-                <div><dt><MapPin size={16} aria-hidden="true" /> Cơ sở y tế</dt><dd>{detail?.facilityName || "Chưa chọn cơ sở"}</dd></div>
-                <div><dt><Stethoscope size={16} aria-hidden="true" /> Chuyên khoa</dt><dd>{detail?.departmentName || "Chưa cập nhật"}</dd></div>
-                <div><dt><Clock3 size={16} aria-hidden="true" /> Trạng thái</dt><dd>{getStatusMeta(detail?.status).label}</dd></div>
-              </dl>
+              <div className="consultation-detail-appointment">
+                <span className="consultation-detail-appointment-icon"><CalendarDays size={20} aria-hidden="true" /></span>
+                <span><small>Lịch khám dự kiến</small><strong>{formatDateTime(detail?.appointmentTime, "Chưa có lịch hẹn")}</strong></span>
+                <span className="consultation-detail-counts" aria-label="Tổng quan hồ sơ">
+                  <strong>{checklist.length}</strong> mục chuẩn bị
+                  <i aria-hidden="true" />
+                  <strong>{normalizeQuestions(detail?.questions).length}</strong> câu hỏi
+                </span>
+              </div>
 
               <section className="consultation-detail-section">
                 <h4>Điều cần tư vấn</h4>
                 <p>{detail?.symptoms || "Chưa có nội dung cần tư vấn."}</p>
               </section>
 
+              <section className="consultation-detail-section checklist" aria-labelledby="consultation-detail-checklist-title">
+                <div className="consultation-detail-section-title">
+                  <div><span className="consultation-section-index">01</span><h4 id="consultation-detail-checklist-title">Danh sách chuẩn bị</h4></div>
+                  {checklistStatus === "ready" && <span>{checklist.length} mục</span>}
+                </div>
+                {checklistStatus === "loading" ? (
+                  <div className="consultation-inline-state" role="status"><LoaderCircle className="spin" size={18} aria-hidden="true" /> Đang tải danh sách chuẩn bị…</div>
+                ) : checklistStatus === "error" ? (
+                  <div className="consultation-inline-state error" role="alert"><span>{checklistError}</span><button type="button" onClick={() => loadChecklist(detail?.departmentId)}>Thử lại</button></div>
+                ) : checklist.length > 0 ? (
+                  <ol className="consultation-detail-checklist">
+                    {checklist.map((item, index) => (
+                      <li key={item.id}>
+                        <span className="consultation-checklist-order">{String(index + 1).padStart(2, "0")}</span>
+                        <span>{item.content}</span>
+                        <small>{item.isMandatory ? "Cần chuẩn bị" : "Nên chuẩn bị"}</small>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="consultation-detail-empty-copy">Chuyên khoa này chưa có danh sách chuẩn bị.</p>
+                )}
+              </section>
+
               <section className="consultation-detail-section questions">
-                <div className="consultation-detail-section-title"><h4>Câu hỏi dành cho bác sĩ</h4><span>{normalizeQuestions(detail?.questions).length} câu hỏi</span></div>
+                <div className="consultation-detail-section-title"><div><span className="consultation-section-index">02</span><h4>Câu hỏi dành cho bác sĩ</h4></div><span>{normalizeQuestions(detail?.questions).length} câu hỏi</span></div>
                 {groupedQuestions.length > 0 ? groupedQuestions.map(([category, questions]) => (
                   <section className="consultation-question-group" key={category}>
-                    <h5>{CATEGORY_LABELS[category] || "Trao đổi thêm"}</h5>
-                    <ol>{questions.map((question) => <li key={question.id}>{question.text}</li>)}</ol>
+                    <h5><CheckCircle2 size={15} aria-hidden="true" />{CATEGORY_LABELS[category] || "Trao đổi thêm"}<span>{questions.length}</span></h5>
+                    <ol>{questions.map((question) => <li key={question.id}><span>{String(question.priority).padStart(2, "0")}</span><p>{question.text}</p></li>)}</ol>
                   </section>
                 )) : <p className="consultation-detail-empty-copy">Phiên này chưa có câu hỏi để hiển thị.</p>}
               </section>
