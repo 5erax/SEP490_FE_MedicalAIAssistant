@@ -101,23 +101,36 @@ function getQuestionText(question, index = 0) {
     ?? `Câu hỏi ${index + 1}`;
 }
 
-function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect }) {
+const MARKER_LABEL_MIN_ZOOM = 14;
+
+function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect, showLabel }) {
   return (
-    <Marker
-      longitude={facility.longitude}
-      latitude={facility.latitude}
-    >
-      <button
-        ref={buttonRef}
-        className={`clinic-marker ${selected ? "selected" : ""}`}
-        type="button"
-        aria-label={`Chọn ${facility.facilityName} trên bản đồ`}
-        aria-pressed={selected}
-        onClick={(event) => { event.stopPropagation(); onSelect(facility); }}
-      >
-        <span aria-hidden="true">+</span>
-      </button>
-    </Marker>
+    <>
+      <Marker longitude={facility.longitude} latitude={facility.latitude}>
+        <button
+          ref={buttonRef}
+          className={`clinic-marker ${selected ? "selected" : ""}`}
+          type="button"
+          aria-label={`Chọn ${facility.facilityName} trên bản đồ`}
+          aria-pressed={selected}
+          onClick={(event) => { event.stopPropagation(); onSelect(facility); }}
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+      </Marker>
+      {showLabel && (
+        <Marker
+          longitude={facility.longitude}
+          latitude={facility.latitude}
+          anchor="left"
+          offset={[26, 0]}
+        >
+          <span className={`clinic-marker-label ${selected ? "selected" : ""}`} aria-hidden="true">
+            {facility.facilityName}
+          </span>
+        </Marker>
+      )}
+    </>
   );
 }
 
@@ -698,6 +711,7 @@ export default function FacilityMap({
                 facility={facility}
                 selected={selectedFacility?.facilityId === facility.facilityId}
                 onSelect={onViewDetail}
+                showLabel={viewState.zoom >= MARKER_LABEL_MIN_ZOOM}
               />
             ))}
             {selectedFacility?.hasValidCoordinates && !hidePopup && (
