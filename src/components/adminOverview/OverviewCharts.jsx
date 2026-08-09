@@ -1,13 +1,19 @@
-import { LineChart, PieChart, TrendingUp, Users } from "lucide-react";
+import { PieChart, TrendingUp, Users } from "lucide-react";
 import {
   buildDepartmentDistribution,
   buildPaymentStatusCounts,
   buildRevenueGrowth,
+  buildUserGrowth,
   formatCompactCurrency,
   formatCurrency,
 } from "./overviewChartUtils";
 
-export function RevenueLineChart({ series }) {
+export function RevenueLineChart({
+  series,
+  formatValue = formatCurrency,
+  formatValueCompact = formatCompactCurrency,
+  ariaLabel = "Biểu đồ doanh thu theo từng tháng",
+}) {
   const width = 720;
   const height = 220;
   const xPadding = 24;
@@ -34,7 +40,7 @@ export function RevenueLineChart({ series }) {
       viewBox={`0 0 ${width} ${height}`}
       className="overview-line-chart"
       role="img"
-      aria-label="Biểu đồ doanh thu theo từng tháng"
+      aria-label={ariaLabel}
     >
       {gridLines.map((y) => (
         <line key={y} x1={xPadding} y1={y} x2={width - xPadding} y2={y} className="overview-line-chart-grid" />
@@ -43,11 +49,11 @@ export function RevenueLineChart({ series }) {
       {points.map((point) => (
         <g key={point.label}>
           <circle cx={point.x} cy={point.y} r="3.5" className="overview-line-chart-dot">
-            <title>{`${point.label}: ${formatCurrency(point.value)}`}</title>
+            <title>{`${point.label}: ${formatValue(point.value)}`}</title>
           </circle>
           {point.value > 0 && (
             <text x={point.x} y={point.y - 10} textAnchor="middle" className="overview-line-chart-value-label">
-              {formatCompactCurrency(point.value)}
+              {formatValueCompact(point.value)}
             </text>
           )}
           <text x={point.x} y={height - 8} textAnchor="middle" className="overview-line-chart-axis-label">
@@ -188,21 +194,43 @@ export function DepartmentDistributionCard({ loading, error, facilityDepartments
   );
 }
 
-export function UserGrowthPlaceholderCard() {
+export function UserGrowthChartCard({ loading, error, users, onRetry }) {
+  const { series, total, year } = buildUserGrowth(users);
+
   return (
-    <div className="admin-overview-chart-card is-placeholder">
+    <div className="admin-overview-chart-card is-user-growth">
       <header className="admin-overview-chart-head">
         <span className="admin-overview-chart-icon" aria-hidden="true"><Users size={19} /></span>
         <div>
           <p className="eyebrow">Tài khoản người dùng</p>
-          <h3>Tăng trưởng tài khoản</h3>
+          <h3>Tăng trưởng tài khoản{year ? ` - Năm ${year}` : ""}</h3>
         </div>
       </header>
-      <div className="admin-overview-chart-empty">
-        <LineChart size={26} aria-hidden="true" />
-        <strong>Chưa có dữ liệu</strong>
-        <p>API tài khoản người dùng hiện chưa trả về thời gian tạo (createdAt), nên MediMate chưa thể vẽ biểu đồ tăng trưởng này.</p>
-      </div>
+
+      {loading ? (
+        <p className="admin-overview-chart-status">Đang tải dữ liệu tài khoản…</p>
+      ) : error ? (
+        <div className="admin-overview-chart-empty">
+          <strong>Không thể tải dữ liệu tài khoản</strong>
+          <p>{error}</p>
+          <button type="button" className="btn btn-ghost btn-small" onClick={onRetry}>Thử lại</button>
+        </div>
+      ) : total === 0 ? (
+        <div className="admin-overview-chart-empty">
+          <strong>Chưa có tài khoản nào được tạo</strong>
+          <p>Biểu đồ sẽ hiển thị khi có tài khoản mới được tạo.</p>
+        </div>
+      ) : (
+        <>
+          <p className="admin-overview-chart-total">{total} tài khoản mới</p>
+          <RevenueLineChart
+            series={series}
+            formatValue={(value) => `${value} tài khoản`}
+            formatValueCompact={(value) => String(value)}
+            ariaLabel="Biểu đồ tăng trưởng tài khoản theo từng tháng"
+          />
+        </>
+      )}
     </div>
   );
 }

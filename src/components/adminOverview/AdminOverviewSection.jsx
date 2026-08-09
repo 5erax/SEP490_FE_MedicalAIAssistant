@@ -20,7 +20,7 @@ import {
   DepartmentDistributionCard,
   PaymentStatusChartCard,
   RevenueChartCard,
-  UserGrowthPlaceholderCard,
+  UserGrowthChartCard,
 } from "./OverviewCharts";
 
 const OVERVIEW_METRICS = [
@@ -134,6 +134,10 @@ export default function AdminOverviewSection({
   paymentsLoading = false,
   onRetryPayments,
   facilityDepartments = [],
+  userGrowthUsers = [],
+  userGrowthError = "",
+  userGrowthLoading = false,
+  onRetryUserGrowth,
 }) {
   const clinicalQuestionsAvailable = operationalCounts.clinicalQuestions !== null;
   const labIndicatorsAvailable = operationalCounts.labIndicators !== null;
@@ -257,7 +261,12 @@ export default function AdminOverviewSection({
           facilityDepartments={facilityDepartments}
           onRetry={() => onRetryMetric("facilities")}
         />
-        <UserGrowthPlaceholderCard />
+        <UserGrowthChartCard
+          loading={userGrowthLoading}
+          error={userGrowthError}
+          users={userGrowthUsers}
+          onRetry={onRetryUserGrowth}
+        />
       </div>
 
       <aside className="admin-overview-scope" aria-label="Phạm vi dữ liệu tổng quan">

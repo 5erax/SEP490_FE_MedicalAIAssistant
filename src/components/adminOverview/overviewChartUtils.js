@@ -57,6 +57,30 @@ export function buildRevenueGrowth(payments) {
   return { series, total, year: targetYear };
 }
 
+// One point per calendar month (Jan-Dec) of the most recent year that has a
+// new account, each showing that month's own signups - not a running total -
+// mirroring buildRevenueGrowth() so both charts read the same way.
+export function buildUserGrowth(users) {
+  const validUsers = users.filter((user) => getYear(user?.createdAt) !== null);
+
+  const years = validUsers.map((user) => getYear(user.createdAt));
+  const targetYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
+
+  const byMonth = new Array(12).fill(0);
+  let total = 0;
+  validUsers.forEach((user) => {
+    if (getYear(user.createdAt) !== targetYear) return;
+    const month = getMonth(user.createdAt);
+    if (month === null) return;
+    byMonth[month] += 1;
+    total += 1;
+  });
+
+  const series = byMonth.map((value, month) => ({ label: `T${month + 1}`, value }));
+
+  return { series, total, year: targetYear };
+}
+
 const DEPARTMENT_CHART_PALETTE = [
   "#0d7773", "#e2574c", "#f2a340", "#5b7fdb", "#8c5fd1",
   "#2f9e97", "#c2555c", "#4f8a3d", "#d98e04", "#6a6fd1",

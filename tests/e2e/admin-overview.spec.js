@@ -164,8 +164,27 @@ test("admin overview shows the phase-2 operational attention list, including blo
   await expect(attentionList.locator("li", { hasText: "Người dùng đang dùng gói" }).getByText("Chưa khả dụng")).toBeVisible();
 });
 
-test("admin overview shows revenue growth and a payment success/failure chart", async ({ page }) => {
+test("admin overview shows revenue growth, a payment success/failure chart, and account growth", async ({ page }) => {
   await mockAdminOverview(page);
+  await page.route("**/api/users*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        items: [
+          { id: "u1", name: "User 1", createdAt: "2026-03-05T08:00:00Z" },
+          { id: "u2", name: "User 2", createdAt: "2026-03-20T08:00:00Z" },
+          { id: "u3", name: "User 3", createdAt: "2026-07-01T08:00:00Z" },
+          { id: "u4", name: "User 4", createdAt: "2026-07-15T08:00:00Z" },
+          { id: "u5", name: "User 5", createdAt: "2026-07-20T08:00:00Z" },
+        ],
+        pageNumber: 1,
+        pageSize: 100,
+        totalCount: 5,
+        totalPages: 1,
+      },
+    }),
+  }));
   await page.route("**/api/payments*", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({
@@ -188,7 +207,7 @@ test("admin overview shows revenue growth and a payment success/failure chart", 
   await page.goto("/app/admin", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("heading", { name: "Doanh thu theo tháng - Năm 2026" })).toBeVisible();
-  await expect(page.locator(".admin-overview-chart-total")).toHaveText("300.000 ₫");
+  await expect(page.locator(".admin-overview-chart-card.is-revenue .admin-overview-chart-total")).toHaveText("300.000 ₫");
 
   await expect(page.getByRole("heading", { name: "Tỉ lệ thanh toán thành công" })).toBeVisible();
   const barChartRows = page.locator(".overview-bar-chart-rows > li");
@@ -197,8 +216,12 @@ test("admin overview shows revenue growth and a payment success/failure chart", 
   await expect(barChartRows.nth(1).locator(".overview-bar-chart-fill.is-danger")).toBeVisible();
   await expect(barChartRows.nth(1).locator(".overview-bar-chart-value")).toHaveText("2 · 50%");
 
-  await expect(page.getByRole("heading", { name: "Tăng trưởng tài khoản" })).toBeVisible();
-  await expect(page.getByText("API tài khoản người dùng hiện chưa trả về thời gian tạo")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tăng trưởng tài khoản - Năm 2026" })).toBeVisible();
+  await expect(page.locator(".admin-overview-chart-card.is-user-growth .admin-overview-chart-total")).toHaveText("5 tài khoản mới");
+  const userGrowthChart = page.getByRole("img", { name: "Biểu đồ tăng trưởng tài khoản theo từng tháng" });
+  await expect(userGrowthChart).toBeVisible();
+  await expect(userGrowthChart.locator("circle.overview-line-chart-dot")).toHaveCount(12);
+  await expect(userGrowthChart.locator("text.overview-line-chart-value-label")).toHaveText(["2", "3"]);
 });
 
 test("revenue chart always plots all 12 months of the latest year with data, even ones with no revenue", async ({ page }) => {
