@@ -243,29 +243,29 @@ export default function AdminOverviewSection({
       />
 
       <div className="admin-overview-charts">
-        <RevenueChartCard
-          loading={paymentsLoading}
-          error={paymentsError}
-          payments={payments}
-          onRetry={onRetryPayments}
-        />
         <PaymentStatusChartCard
           loading={paymentsLoading}
           error={paymentsError}
           payments={payments}
           onRetry={onRetryPayments}
         />
-        <DepartmentDistributionCard
-          loading={facilitiesLoading}
-          error={facilitiesError}
-          facilityDepartments={facilityDepartments}
-          onRetry={() => onRetryMetric("facilities")}
+        <RevenueChartCard
+          loading={paymentsLoading}
+          error={paymentsError}
+          payments={payments}
+          onRetry={onRetryPayments}
         />
         <UserGrowthChartCard
           loading={userGrowthLoading}
           error={userGrowthError}
           users={userGrowthUsers}
           onRetry={onRetryUserGrowth}
+        />
+        <DepartmentDistributionCard
+          loading={facilitiesLoading}
+          error={facilitiesError}
+          facilityDepartments={facilityDepartments}
+          onRetry={() => onRetryMetric("facilities")}
         />
       </div>
 
