@@ -16,6 +16,7 @@ async function mockPreConsultation(page) {
     generateBody: null,
     checklist: 0,
     detail: 0,
+    detailTimes: [],
     userMe: 0,
     reminderBody: null,
     summary: 0,
@@ -58,7 +59,9 @@ async function mockPreConsultation(page) {
     }
     if (path === `/api/consultation-sessions/${SESSION_ID}` && method === "GET") {
       calls.detail += 1;
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { sessionId: SESSION_ID, departmentId: DEPARTMENT_ID, departmentName: "Tim mạch", appointmentTime: "2027-01-15T02:30:00Z", symptoms: "Đau ngực khi vận động", status: "completed", questions } }) });
+      calls.detailTimes.push(Date.now());
+      const completed = calls.detail >= 3;
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { sessionId: SESSION_ID, departmentId: DEPARTMENT_ID, departmentName: "Tim mạch", appointmentTime: "2027-01-15T02:30:00Z", symptoms: "Đau ngực khi vận động", status: completed ? "completed" : "processing", questions: completed ? questions : [] } }) });
     }
     if (path === `/api/consultation-sessions/${SESSION_ID}/register-reminder` && method === "POST") {
       calls.reminderBody = route.request().postDataJSON();
@@ -144,7 +147,9 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
 
   expect(calls.generateBody).toMatchObject({ departmentId: DEPARTMENT_ID, facilityId: null, symptoms: "Đau ngực khi vận động" });
   expect(calls.checklist).toBe(1);
-  expect(calls.detail).toBe(1);
+  expect(calls.detail).toBe(3);
+  expect(calls.detailTimes[1] - calls.detailTimes[0]).toBeGreaterThanOrEqual(900);
+  expect(calls.detailTimes[2] - calls.detailTimes[1]).toBeGreaterThanOrEqual(900);
   expect(calls.userMe).toBeGreaterThanOrEqual(2);
   expect(calls.reminderBody).toEqual({ enableReminder: true, phoneNumber: "0901234567" });
   expect(calls.summary).toBe(1);
@@ -161,4 +166,25 @@ test("required checklist items block the next step", async ({ page }) => {
   await page.getByRole("button", { name: "Tiếp tục" }).click();
   await expect(page.getByRole("alert")).toContainText("1 mục bắt buộc");
   await expect(page.getByRole("heading", { name: "Checklist chuẩn bị" })).toBeVisible();
+});
+
+test("technical AI wording is replaced with user-facing guidance", async ({ page }) => {
+  await openPreConsultation(page);
+  await page.route("**/api/consultation-sessions/generate-questions-for-consultant-session", (route) => route.fulfill({
+    status: 400,
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: false,
+      errors: ["Không có câu hỏi tư vấn theo khoa để gửi cho AI."],
+    }),
+  }));
+
+  await page.getByLabel("Chuyên khoa (bắt buộc)").selectOption(DEPARTMENT_ID);
+  await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
+  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn (bắt buộc)").fill("Đau ngực khi vận động");
+  await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
+
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("Chuyên khoa này chưa có bộ câu hỏi tư vấn");
+  await expect(alert).not.toContainText("AI");
 });

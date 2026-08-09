@@ -10,7 +10,6 @@ import {
   LoaderCircle,
   Phone,
   ShieldCheck,
-  Sparkles,
   Stethoscope,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -40,6 +39,14 @@ const CATEGORY_LABELS = {
 };
 
 const PHONE_PATTERN = /^(?:0\d{8,10}|\+[1-9]\d{8,14})$/;
+const SESSION_POLL_INTERVAL_MS = 1000;
+const SESSION_POLL_TIMEOUT_MS = 2 * 60 * 1000;
+const SESSION_READY_STATUSES = new Set(["complete", "completed", "ready"]);
+const SESSION_FAILED_STATUSES = new Set(["cancelled", "canceled", "error", "failed"]);
+
+function wait(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
 
 function unwrapData(response) {
   return response?.data ?? response ?? null;
@@ -69,10 +76,16 @@ function firstMessage(value) {
 }
 
 function getErrorMessage(error, fallback) {
-  return firstMessage(error?.payload?.errors)
+  const message = firstMessage(error?.payload?.errors)
     || firstMessage(error?.payload?.message)
     || firstMessage(error?.message)
     || fallback;
+
+  if (/không có câu hỏi tư vấn/i.test(message)) {
+    return "Chuyên khoa này chưa có bộ câu hỏi tư vấn. Vui lòng chọn chuyên khoa khác hoặc thử lại sau.";
+  }
+
+  return message;
 }
 
 function formatDateTime(value, fallback = "Chưa cập nhật") {
@@ -124,6 +137,14 @@ export default function PreConsultationPage() {
   const [completed, setCompleted] = useState(false);
   const headingRef = useRef(null);
   const errorRef = useRef(null);
+  const pollingActiveRef = useRef(true);
+
+  useEffect(() => {
+    pollingActiveRef.current = true;
+    return () => {
+      pollingActiveRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -243,6 +264,30 @@ export default function PreConsultationPage() {
     setError("");
   }
 
+  async function pollSessionDetail(sessionId) {
+    const deadline = Date.now() + SESSION_POLL_TIMEOUT_MS;
+
+    while (pollingActiveRef.current) {
+      const response = await consultationSessionsApi.get(sessionId);
+      const detail = unwrapData(response);
+      const status = String(detail?.status ?? "").trim().toLowerCase();
+
+      if (SESSION_FAILED_STATUSES.has(status)) {
+        throw new Error("Phiên tư vấn không thể tạo câu hỏi. Vui lòng kiểm tra thông tin và thử lại.");
+      }
+      if (SESSION_READY_STATUSES.has(status) || (!status && normalizeQuestions(detail?.questions).length > 0)) {
+        return detail;
+      }
+      if (Date.now() >= deadline) {
+        throw new Error("Phiên tư vấn đang mất nhiều thời gian hơn dự kiến. Vui lòng thử lại.");
+      }
+
+      await wait(SESSION_POLL_INTERVAL_MS);
+    }
+
+    return null;
+  }
+
   async function continueFromChecklist() {
     const missingRequired = mandatoryItems.filter((item) => !checkedItems.has(item.id));
     if (missingRequired.length > 0) {
@@ -251,15 +296,18 @@ export default function PreConsultationPage() {
     }
     setBusy("session");
     setError("");
+    setAnnouncement("Đang tổng hợp câu hỏi cho buổi khám. Thông tin sẽ tự cập nhật khi sẵn sàng.");
     try {
-      const response = await consultationSessionsApi.get(session.sessionId);
-      setSessionDetail(unwrapData(response));
+      const detail = await pollSessionDetail(session.sessionId);
+      if (!detail || !pollingActiveRef.current) return;
+      setSessionDetail(detail);
       setStep(2);
       setAnnouncement("Đã tải các câu hỏi nên trao đổi với bác sĩ.");
     } catch (loadError) {
+      if (!pollingActiveRef.current) return;
       setError(getErrorMessage(loadError, "Chưa thể tải nội dung phiên tư vấn. Vui lòng thử lại."));
     } finally {
-      setBusy("");
+      if (pollingActiveRef.current) setBusy("");
     }
   }
 
@@ -349,13 +397,13 @@ export default function PreConsultationPage() {
 
       <header className="pre-consultation-hero">
         <div>
-          <span className="pre-consultation-eyebrow"><Sparkles size={15} aria-hidden="true" /> Chuẩn bị chủ động</span>
+          <span className="pre-consultation-eyebrow">Chuẩn bị trước buổi khám</span>
           <p className="pre-consultation-title">Tư vấn trước khám</p>
-          <p>Gom thông tin quan trọng, chuẩn bị câu hỏi và thiết lập nhắc lịch trong một luồng rõ ràng.</p>
+          <p className="pre-consultation-description">Ghi lại thông tin cần thiết, xem danh sách chuẩn bị và tổng hợp câu hỏi dành cho bác sĩ.</p>
         </div>
         <div className="pre-consultation-hero-note">
           <ShieldCheck size={24} aria-hidden="true" />
-          <span><strong>Khoảng 3–5 phút</strong><small>Bạn có thể kiểm tra lại trước khi hoàn thành.</small></span>
+          <span><strong>5 bước ngắn gọn</strong><small>Bạn được kiểm tra lại thông tin trước khi hoàn thành.</small></span>
         </div>
       </header>
 
@@ -403,13 +451,14 @@ export default function PreConsultationPage() {
                   required
                   disabled={departmentsStatus === "loading"}
                   aria-invalid={Boolean(formErrors.departmentId)}
-                  aria-describedby={formErrors.departmentId ? "consultation-department-error" : undefined}
+                  aria-describedby={formErrors.departmentId ? "consultation-department-error" : "consultation-department-hint"}
                 >
                   <option value="">{departmentsStatus === "loading" ? "Đang tải chuyên khoa…" : "Chọn chuyên khoa"}</option>
                   {departments.map((department) => (
                     <option key={department.id} value={department.id}>{department.departmentName || department.name || "Chuyên khoa chưa đặt tên"}</option>
                   ))}
                 </select>
+                {!formErrors.departmentId && <small id="consultation-department-hint">Chọn chuyên khoa phù hợp với lịch khám dự kiến.</small>}
                 {formErrors.departmentId && <small id="consultation-department-error">{formErrors.departmentId}</small>}
               </label>
               <label className={formErrors.appointmentTime ? "has-error" : ""}>
@@ -437,15 +486,19 @@ export default function PreConsultationPage() {
                   aria-invalid={Boolean(formErrors.symptoms)}
                   aria-describedby={formErrors.symptoms ? "consultation-symptoms-error" : "consultation-symptoms-hint"}
                 />
-                <span className="pre-consultation-field-meta" id="consultation-symptoms-hint">Mô tả ngắn gọn, không cần tự chẩn đoán. {form.symptoms.length}/2.000 ký tự</span>
+                <span className="pre-consultation-field-meta" id="consultation-symptoms-hint">
+                  <span>Mô tả ngắn gọn, không cần tự chẩn đoán.</span>
+                  <span>{form.symptoms.length}/2.000 ký tự</span>
+                </span>
                 {formErrors.symptoms && <small id="consultation-symptoms-error">{formErrors.symptoms}</small>}
               </label>
             </div>
-            <div className="pre-consultation-tip"><Sparkles size={18} aria-hidden="true" /><span><strong>Mẹo:</strong> Nêu thời điểm bắt đầu, mức độ và điều khiến triệu chứng tốt hơn hoặc nặng hơn.</span></div>
+            <div className="pre-consultation-tip"><span><strong>Gợi ý mô tả</strong>Nêu thời điểm bắt đầu, mức độ và điều khiến triệu chứng tốt hơn hoặc nặng hơn.</span></div>
             <div className="pre-consultation-actions">
               <button className="primary" type="submit" disabled={Boolean(busy) || departmentsStatus !== "ready"}>
-                {busy === "generate" ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <Sparkles size={18} aria-hidden="true" />}
+                {busy === "generate" && <LoaderCircle className="spin" size={18} aria-hidden="true" />}
                 {busy === "generate" ? "Đang tạo phiên…" : "Bắt đầu tư vấn"}
+                {busy !== "generate" && <ArrowRight size={18} aria-hidden="true" />}
               </button>
             </div>
           </form>
@@ -478,7 +531,11 @@ export default function PreConsultationPage() {
               {error && checklistItems.length === 0 ? (
                 <button type="button" className="primary" disabled={Boolean(busy)} onClick={() => loadChecklist(session.departmentId || form.departmentId)}>Thử tải lại</button>
               ) : (
-                <button type="button" className="primary" disabled={Boolean(busy)} onClick={continueFromChecklist}>Tiếp tục <ArrowRight size={17} aria-hidden="true" /></button>
+                <button type="button" className="primary" disabled={Boolean(busy)} onClick={continueFromChecklist}>
+                  {busy === "session" ? <LoaderCircle className="spin" size={17} aria-hidden="true" /> : null}
+                  {busy === "session" ? "Đang tổng hợp câu hỏi…" : "Tiếp tục"}
+                  {busy !== "session" ? <ArrowRight size={17} aria-hidden="true" /> : null}
+                </button>
               )}
             </div>
           </section>

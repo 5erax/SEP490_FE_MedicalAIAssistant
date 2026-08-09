@@ -6,7 +6,7 @@
   --consult-ink: #102a2c;
   --consult-muted: #607477;
   --consult-line: #cbded9;
-  width: min(1120px, calc(100% - 40px));
+  width: min(1160px, calc(100% - 48px));
   margin: 0 auto;
   padding: 32px 0 72px;
   color: var(--consult-ink);
@@ -19,32 +19,22 @@
   gap: 32px;
   overflow: hidden;
   position: relative;
-  border-radius: 26px;
-  padding: 34px 38px;
+  border: 1px solid #0c7379;
+  border-radius: 20px;
+  padding: 32px 36px;
   color: #fff;
-  background: linear-gradient(125deg, #07656d 0%, #0a8990 65%, #37a8a3 100%);
-  box-shadow: 0 20px 45px rgba(7, 95, 102, 0.18);
-}
-
-.pre-consultation-hero::after {
-  content: "";
-  position: absolute;
-  width: 260px;
-  height: 260px;
-  right: -82px;
-  top: -120px;
-  border: 38px solid rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
+  background: #0b747a;
+  box-shadow: 0 14px 32px rgba(7, 95, 102, 0.14);
 }
 
 .pre-consultation-hero > * { position: relative; z-index: 1; }
-.pre-consultation-title { margin: 8px 0; color: inherit; font-size: clamp(32px, 4vw, 52px); font-weight: 800; line-height: 1.05; letter-spacing: -0.04em; }
-.pre-consultation-hero p { max-width: 650px; margin: 0; color: rgba(255, 255, 255, 0.84); font-weight: 650; line-height: 1.6; }
-.pre-consultation-eyebrow { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
-.pre-consultation-hero-note { display: flex; align-items: center; gap: 12px; min-width: 240px; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 18px; padding: 15px; background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(8px); }
+.pre-consultation-title { margin: 7px 0 10px; color: inherit; font-size: clamp(32px, 4vw, 48px); font-weight: 800; line-height: 1.05; letter-spacing: -0.035em; }
+.pre-consultation-description { max-width: 650px; margin: 0; color: #eef7f7; font-weight: 650; line-height: 1.6; }
+.pre-consultation-eyebrow { display: inline-flex; align-items: center; font-size: 12px; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.pre-consultation-hero-note { display: flex; align-items: center; gap: 12px; min-width: 250px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 14px; padding: 14px 16px; background: rgba(255, 255, 255, 0.09); }
 .pre-consultation-hero-note span { display: grid; gap: 2px; }
 .pre-consultation-hero-note strong { font-size: 14px; }
-.pre-consultation-hero-note small { color: rgba(255, 255, 255, 0.76); line-height: 1.35; }
+.pre-consultation-hero-note small { color: #fff; line-height: 1.35; }
 
 .pre-consultation-stepper {
   display: grid;
@@ -53,55 +43,59 @@
   margin: 20px 0;
   padding: 0;
   border: 1px solid var(--consult-line);
-  border-radius: 20px;
+  border-radius: 16px;
   background: var(--paper, #fff);
   list-style: none;
-  box-shadow: 0 10px 30px rgba(16, 42, 44, 0.07);
+  box-shadow: 0 7px 20px rgba(16, 42, 44, 0.055);
 }
 
-.pre-consultation-stepper li { display: flex; align-items: center; gap: 10px; position: relative; min-width: 0; padding: 16px 18px; color: var(--consult-muted); }
+.pre-consultation-stepper li { display: flex; align-items: center; gap: 10px; position: relative; min-width: 0; padding: 14px 17px; color: var(--consult-muted); }
 .pre-consultation-stepper li + li::before { content: ""; position: absolute; left: 0; top: 22%; bottom: 22%; width: 1px; background: var(--consult-line); }
 .pre-consultation-stepper li > span { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; border: 1px solid var(--consult-line); border-radius: 50%; background: #f7faf8; }
 .pre-consultation-stepper li > div { display: grid; min-width: 0; }
 .pre-consultation-stepper strong { color: inherit; font-size: 13px; }
 .pre-consultation-stepper small { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.pre-consultation-stepper li.active { color: var(--consult-teal-dark); background: var(--consult-soft); }
-.pre-consultation-stepper li.active:first-child { border-radius: 19px 0 0 19px; }
-.pre-consultation-stepper li.active:last-child { border-radius: 0 19px 19px 0; }
+.pre-consultation-stepper li.active { color: var(--consult-teal-dark); background: #f1faf7; }
+.pre-consultation-stepper li.active:first-child { border-radius: 15px 0 0 15px; }
+.pre-consultation-stepper li.active:last-child { border-radius: 0 15px 15px 0; }
 .pre-consultation-stepper li.active > span { border-color: var(--consult-teal); color: #fff; background: var(--consult-teal); box-shadow: 0 0 0 5px rgba(8, 127, 134, 0.1); }
 .pre-consultation-stepper li.done > span { border-color: #8dd9b2; color: #087945; background: var(--consult-mint); }
 
-.pre-consultation-error { display: grid; gap: 3px; margin-bottom: 16px; border: 1px solid #f0aaa5; border-left: 5px solid #c73931; border-radius: 14px; padding: 13px 16px; color: #7d211c; background: #fff5f4; }
+.pre-consultation-error { display: grid; gap: 3px; margin-bottom: 16px; border: 1px solid #e7aaa6; border-left: 4px solid #b5322b; border-radius: 12px; padding: 14px 17px; color: #74221d; background: #fff7f6; }
 .pre-consultation-error:focus { outline: 3px solid #9f2e28; outline-offset: 2px; }
 .pre-consultation-error strong { font-size: 13px; }
 .pre-consultation-error span { line-height: 1.45; }
 
-.pre-consultation-card { min-height: 420px; border: 1px solid var(--consult-line); border-radius: 26px; padding: clamp(24px, 4vw, 42px); background: var(--paper, #fff); box-shadow: 0 22px 55px rgba(16, 42, 44, 0.09); }
-.pre-consultation-card form, .pre-consultation-card > section { display: grid; gap: 26px; }
+.pre-consultation-card { min-height: 420px; border: 1px solid var(--consult-line); border-radius: 20px; padding: clamp(28px, 4vw, 44px); background: var(--paper, #fff); box-shadow: 0 14px 38px rgba(16, 42, 44, 0.07); }
+.pre-consultation-card form, .pre-consultation-card > section { display: grid; gap: 28px; }
 .pre-consultation-section-head { display: flex; align-items: flex-start; gap: 15px; }
-.pre-consultation-section-head > span { display: grid; flex: 0 0 42px; width: 42px; height: 42px; place-items: center; border-radius: 14px; color: #fff; background: var(--consult-teal); font-size: 18px; font-weight: 900; }
+.pre-consultation-section-head > span { display: grid; flex: 0 0 40px; width: 40px; height: 40px; place-items: center; border-radius: 10px; color: #fff; background: var(--consult-teal); font-size: 17px; font-weight: 900; }
 .pre-consultation-section-head h2 { margin: 0 0 5px; font-size: clamp(24px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.025em; }
 .pre-consultation-section-head h2:focus { outline: none; }
 .pre-consultation-section-head h2:focus-visible { outline: 3px solid var(--consult-teal-dark); outline-offset: 4px; border-radius: 4px; }
 .pre-consultation-section-head p { margin: 0; color: var(--consult-muted); line-height: 1.55; }
 
-.pre-consultation-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.pre-consultation-form-grid label, .pre-consultation-phone-field { display: grid; gap: 8px; color: var(--consult-ink); font-size: 13px; font-weight: 850; }
+.pre-consultation-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; column-gap: 24px; row-gap: 22px; }
+.pre-consultation-form-grid label, .pre-consultation-phone-field { display: grid; min-width: 0; gap: 8px; color: var(--consult-ink); font-size: 13px; font-weight: 850; }
+.pre-consultation-form-grid > label:not(.wide) { grid-template-rows: auto 52px minmax(18px, auto); }
 .pre-consultation-form-grid label.wide { grid-column: 1 / -1; }
-.pre-consultation-form-grid input, .pre-consultation-form-grid select, .pre-consultation-form-grid textarea, .pre-consultation-phone-field input { width: 100%; border: 1px solid #718f89; border-radius: 13px; padding: 13px 14px; color: var(--consult-ink); background: var(--paper, #fff); font: inherit; font-weight: 650; }
-.pre-consultation-form-grid textarea { min-height: 140px; resize: vertical; line-height: 1.55; }
+.pre-consultation-form-grid input, .pre-consultation-form-grid select, .pre-consultation-form-grid textarea, .pre-consultation-phone-field input { box-sizing: border-box; width: 100%; border: 1px solid #718f89; border-radius: 11px; padding: 13px 14px; color: var(--consult-ink); background: var(--paper, #fff); font: inherit; font-weight: 650; }
+.pre-consultation-form-grid input, .pre-consultation-form-grid select { height: 52px; min-height: 52px; }
+.pre-consultation-form-grid textarea { min-height: 150px; resize: vertical; line-height: 1.55; }
 .pre-consultation-form-grid input:focus, .pre-consultation-form-grid select:focus, .pre-consultation-form-grid textarea:focus, .pre-consultation-phone-field input:focus { border-color: var(--consult-teal-dark); outline: 3px solid var(--consult-teal-dark); outline-offset: 2px; }
 .pre-consultation-form-grid label.has-error input, .pre-consultation-form-grid label.has-error select, .pre-consultation-form-grid label.has-error textarea { border-color: #c73931; }
 .pre-consultation-form-grid label > small, .pre-consultation-phone-field small { color: var(--consult-muted); font-weight: 600; }
 .pre-consultation-form-grid label.has-error > small:last-child { color: #a82d27; font-weight: 800; }
-.pre-consultation-field-meta { color: var(--consult-muted); font-size: 11px; font-weight: 600; text-align: right; }
+.pre-consultation-field-meta { display: flex; justify-content: space-between; gap: 16px; color: var(--consult-muted); font-size: 11px; font-weight: 600; }
+.pre-consultation-field-meta span:last-child { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
 
-.pre-consultation-tip { display: flex; align-items: flex-start; gap: 10px; border-radius: 14px; padding: 13px 15px; color: #315e5d; background: var(--consult-soft); line-height: 1.45; }
-.pre-consultation-tip svg { flex: 0 0 auto; margin-top: 1px; color: var(--consult-teal); }
-.pre-consultation-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 4px; }
+.pre-consultation-tip { border-left: 3px solid var(--consult-teal); border-radius: 0 10px 10px 0; padding: 12px 15px; color: #315e5d; background: #f2faf8; line-height: 1.5; }
+.pre-consultation-tip span { display: flex; gap: 8px; }
+.pre-consultation-tip strong { flex: 0 0 auto; color: var(--consult-teal-dark); }
+.pre-consultation-actions { display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #e2ece9; padding-top: 22px; }
 .pre-consultation-actions.split { justify-content: space-between; }
 .pre-consultation-actions button, .pre-consultation-actions .link-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border: 1px solid var(--consult-line); border-radius: 13px; padding: 0 19px; font: inherit; font-weight: 900; cursor: pointer; text-decoration: none; }
-.pre-consultation-actions .primary { border-color: var(--consult-teal); color: #fff; background: var(--consult-teal); box-shadow: 0 9px 20px rgba(8, 127, 134, 0.18); }
+.pre-consultation-actions .primary { border-color: var(--consult-teal); color: #fff; background: var(--consult-teal); box-shadow: 0 7px 16px rgba(8, 127, 134, 0.16); }
 .pre-consultation-actions .primary:hover { background: var(--consult-teal-dark); }
 .pre-consultation-actions .secondary { color: var(--consult-ink); background: var(--paper, #fff); }
 .pre-consultation-actions button:focus-visible, .pre-consultation-actions .link-button:focus-visible { outline: 3px solid var(--consult-teal-dark); outline-offset: 3px; }
@@ -189,7 +183,10 @@
   .pre-consultation-card { border-radius: 20px; padding: 22px 17px; }
   .pre-consultation-section-head > span { width: 36px; height: 36px; flex-basis: 36px; border-radius: 11px; }
   .pre-consultation-form-grid, .pre-consultation-reminder-options, .pre-consultation-summary-grid { grid-template-columns: 1fr; }
+  .pre-consultation-form-grid > label:not(.wide) { grid-template-rows: auto 52px auto; }
   .pre-consultation-form-grid label.wide { grid-column: auto; }
+  .pre-consultation-field-meta { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .pre-consultation-tip span { flex-direction: column; gap: 2px; }
   .checklist-copy { align-items: flex-start; flex-direction: column; gap: 6px; }
   .pre-consultation-actions, .pre-consultation-actions.split { align-items: stretch; flex-direction: column-reverse; }
   .pre-consultation-actions button, .pre-consultation-actions .link-button { width: 100%; }
