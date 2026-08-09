@@ -22,6 +22,8 @@ const PAYMENTS_BASE = "/api/payments";
 const AI_CONFIGS_BASE = "/api/ai-configs";
 const WEB_CHATBOT_BASE = "/api/web-chatbot";
 const CONSULTATION_SESSIONS_BASE = "/api/consultation-sessions";
+const DEPARTMENT_CONSULTATION_QUESTIONS_BASE = "/api/department-consultation-questions";
+const CHECKLIST_ITEMS_BASE = "/api/checklist-items";
 const LAB_INDICATORS_BASE = "/api/lab-indicators";
 const LAB_TESTS_BASE = "/api/lab-tests";
 const USER_MEDICATIONS_BASE = "/api/user-medications";
@@ -153,6 +155,18 @@ export const ENDPOINTS = {
     GENERATE_QUESTIONS: `${CONSULTATION_SESSIONS_BASE}/generate-questions-for-consultant-session`,
     MY_SESSIONS: `${CONSULTATION_SESSIONS_BASE}/my-sessions`,
     BY_ID: (sessionId) => byId(CONSULTATION_SESSIONS_BASE, sessionId),
+  },
+  DEPARTMENT_CONSULTATION_QUESTIONS: {
+    BASE: DEPARTMENT_CONSULTATION_QUESTIONS_BASE,
+    BY_ID: (id) => encodedById(DEPARTMENT_CONSULTATION_QUESTIONS_BASE, id),
+    BULK: `${DEPARTMENT_CONSULTATION_QUESTIONS_BASE}/bulk`,
+  },
+  CHECKLIST_ITEMS: {
+    BASE: CHECKLIST_ITEMS_BASE,
+    BY_ID: (id) => encodedById(CHECKLIST_ITEMS_BASE, id),
+    BY_DEPARTMENT: (departmentId) => `${CHECKLIST_ITEMS_BASE}/by-department/${encodeURIComponent(departmentId)}`,
+    BY_FACILITY: (facilityId) => `${CHECKLIST_ITEMS_BASE}/by-facility/${encodeURIComponent(facilityId)}`,
+    BULK: `${CHECKLIST_ITEMS_BASE}/bulk`,
   },
   LAB_INDICATORS: {
     BASE: LAB_INDICATORS_BASE,

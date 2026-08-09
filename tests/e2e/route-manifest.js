@@ -41,6 +41,7 @@ export const APP_ROUTES = [
   { path: "/app/admin/departments", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/icd-chapters", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/clinical-questions", expectedPath: "/login", surface: "role-gate" },
+  { path: "/app/admin/consultation-checklists", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/lab-indicators", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/lab-indicators/mock-indicator-id", expectedPath: "/login", surface: "role-gate" },
   { path: "/app/admin/facilities", expectedPath: "/login", surface: "role-gate" },
