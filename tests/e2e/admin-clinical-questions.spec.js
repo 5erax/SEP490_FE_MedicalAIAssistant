@@ -177,12 +177,12 @@ test("admin creates, edits, and deletes a clinical question", async ({ page }) =
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByLabel("Chương ICD (bắt buộc)")).toBeFocused();
   await createDialog.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER.id);
-  await createDialog.getByLabel("Thứ tự").fill("2");
+  await createDialog.getByLabel("Thứ tự (bắt buộc)").fill("2");
   await createDialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có đau ngực khi vận động không?");
   await createDialog.getByLabel("Câu hỏi tiếng Anh").fill("Do you have chest pain during activity?");
   await createDialog.getByRole("button", { name: "Thêm đáp án" }).click();
-  await createDialog.getByLabel("Tiếng Việt", { exact: true }).fill("Có");
-  await createDialog.getByLabel("Tiếng Anh", { exact: true }).fill("Yes");
+  await createDialog.getByLabel("Tiếng Việt (bắt buộc)", { exact: true }).fill("Có");
+  await createDialog.getByLabel("Tiếng Anh (bắt buộc)", { exact: true }).fill("Yes");
 
   const dialogAccessibility = await new AxeBuilder({ page })
     .include(".clinical-question-modal")
@@ -242,7 +242,7 @@ test("admin creates, edits, and deletes a clinical question", async ({ page }) =
   expect(state.deletedId).toBe("clinical-question-created");
 });
 
-test("clinical question create requires only chapter and Vietnamese content", async ({ page }) => {
+test("clinical question create requires chapter, Vietnamese content, and a positive sort order", async ({ page }) => {
   await preparePage(page);
   const state = await mockClinicalQuestionAdmin(page, []);
 
@@ -253,14 +253,31 @@ test("clinical question create requires only chapter and Vietnamese content", as
   await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText("ChapterId là bắt buộc");
   await expect(dialog.getByRole("alert")).toContainText("Nội dung câu hỏi là bắt buộc");
+  await expect(dialog.getByRole("alert")).toContainText("Thứ tự là bắt buộc");
 
   await dialog.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER.id);
   await dialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có khó thở không?");
   await expect(dialog.getByLabel("Câu hỏi tiếng Anh")).not.toHaveAttribute("required", "");
-  await expect(dialog.getByLabel("Thứ tự")).toHaveValue("0");
+  const sortOrderInput = dialog.getByLabel("Thứ tự (bắt buộc)");
+  await expect(sortOrderInput).toHaveValue("");
+  await expect(sortOrderInput).toHaveAttribute("min", "1");
+  await sortOrderInput.fill("0");
+  await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Thứ tự phải là số nguyên lớn hơn 0");
+  await expect(sortOrderInput).toHaveAttribute("aria-invalid", "true");
+  await sortOrderInput.fill("1");
 
   await dialog.getByRole("button", { name: "Thêm đáp án" }).click();
-  await dialog.getByLabel("Tiếng Việt", { exact: true }).fill("Có");
+  const vietnameseAnswerInput = dialog.getByLabel("Tiếng Việt (bắt buộc)", { exact: true });
+  const englishAnswerInput = dialog.getByLabel("Tiếng Anh (bắt buộc)", { exact: true });
+  await expect(vietnameseAnswerInput).toHaveAttribute("required", "");
+  await expect(englishAnswerInput).toHaveAttribute("required", "");
+  await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Nhãn câu trả lời tiếng Việt không được để trống");
+  await expect(dialog.getByRole("alert")).toContainText("Câu trả lời phải có nhãn tiếng Anh");
+  await expect(vietnameseAnswerInput).toHaveAttribute("aria-invalid", "true");
+  await expect(englishAnswerInput).toHaveAttribute("aria-invalid", "true");
+  await vietnameseAnswerInput.fill("Có");
   await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText("Câu trả lời phải có nhãn tiếng Anh");
 
@@ -272,7 +289,7 @@ test("clinical question create requires only chapter and Vietnamese content", as
     chapterId: CHAPTER.id,
     questionVi: "Bạn có khó thở không?",
     englishPrefix: null,
-    sortOrder: 0,
+    sortOrder: 1,
     answers: {},
   });
 });
@@ -285,7 +302,7 @@ test("clinical question update sends only changed fields", async ({ page }) => {
     chapterCode: CHAPTER.chapterCode,
     questionVi: "Bạn có sốt không?",
     englishPrefix: null,
-    sortOrder: 0,
+    sortOrder: 3,
     answers: {},
   };
   const state = await mockClinicalQuestionAdmin(page, [question]);
@@ -339,6 +356,7 @@ test("clinical question form displays the standardized backend message", async (
   await page.getByRole("button", { name: "Tạo câu hỏi", exact: true }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Chương ICD (bắt buộc)").selectOption(CHAPTER.id);
+  await dialog.getByLabel("Thứ tự (bắt buộc)").fill("1");
   await dialog.getByLabel("Câu hỏi tiếng Việt (bắt buộc)").fill("Bạn có ho kéo dài không?");
   await dialog.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
 
