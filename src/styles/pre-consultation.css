@@ -235,6 +235,15 @@
 .consultation-question-group li > span { color: var(--consult-teal); font-size: 11px; font-weight: 950; font-variant-numeric: tabular-nums; }
 .consultation-question-group li p { margin: 0; }
 
+@media (min-width: 901px) {
+  .consultation-history-shell { align-items: stretch; height: clamp(570px, 68vh, 720px); }
+  .consultation-session-list, .consultation-session-detail { height: 100%; min-height: 0; }
+  .consultation-session-list { overflow: hidden; }
+  .consultation-session-cards { min-height: 0; overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; }
+  .consultation-session-detail { overflow-y: auto; scrollbar-gutter: stable; }
+  .consultation-session-cards, .consultation-session-detail { scrollbar-color: #8ab8b2 #edf5f3; scrollbar-width: thin; }
+}
+
 .pre-consultation-page :where(a, button, input, select, textarea):focus-visible {
   outline: 3px solid var(--consult-teal-dark);
   outline-offset: 2px;
@@ -253,7 +262,7 @@
   .pre-consultation-stepper li { justify-content: center; }
   .consultation-history-shell { grid-template-columns: 1fr; }
   .consultation-session-list, .consultation-session-detail { min-height: auto; }
-  .consultation-session-detail { min-height: 420px; }
+  .consultation-session-detail { min-height: 420px; overflow: visible; }
   .consultation-detail-placeholder { min-height: 350px; }
 }
 
