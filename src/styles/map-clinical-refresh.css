@@ -388,6 +388,242 @@
   box-shadow: 0 10px 26px rgba(8, 75, 72, 0.24);
 }
 
+.map-clinical-refresh .map-top-controls {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  z-index: 20;
+  display: grid;
+  gap: 10px;
+  max-width: calc(100% - 56px);
+}
+
+.map-clinical-refresh .map-top-controls-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.map-clinical-refresh .map-top-notice {
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--map-danger-line);
+  border-radius: 13px;
+  background: var(--map-danger-soft);
+  box-shadow: 0 10px 26px rgba(8, 75, 72, 0.14);
+  padding: 10px 15px;
+  color: var(--map-danger);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.map-clinical-refresh .map-top-home-button {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--map-line);
+  border-radius: 50%;
+  background: var(--map-surface);
+  color: var(--map-teal-strong);
+  box-shadow: 0 10px 26px rgba(8, 75, 72, 0.14);
+}
+
+.map-clinical-refresh .map-top-home-button:hover {
+  border-color: var(--map-teal);
+  background: var(--map-teal-soft);
+}
+
+.map-clinical-refresh .map-top-search {
+  flex: 0 1 280px;
+  min-width: 140px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--map-line);
+  border-radius: 23px;
+  background: var(--map-surface);
+  box-shadow: 0 10px 26px rgba(8, 75, 72, 0.14);
+  padding: 0 15px;
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .map-top-search:focus-within {
+  border-color: var(--map-teal);
+  box-shadow: 0 0 0 3px rgba(12, 124, 120, 0.14);
+}
+
+.map-clinical-refresh .map-top-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--map-ink);
+  font-size: 14px;
+  outline: none;
+}
+
+.map-clinical-refresh .map-top-search input::-webkit-search-cancel-button,
+.map-clinical-refresh .map-top-search input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.map-clinical-refresh .map-top-search input::placeholder {
+  color: var(--map-subtle);
+  opacity: 1;
+}
+
+.map-clinical-refresh .map-top-search button {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.map-clinical-refresh .map-department-filter {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.map-clinical-refresh .map-department-filter-trigger {
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--map-line);
+  border-radius: 23px;
+  background: var(--map-surface);
+  box-shadow: 0 10px 26px rgba(8, 75, 72, 0.14);
+  padding: 0 16px;
+  color: var(--map-ink);
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.map-clinical-refresh .map-department-filter-trigger:hover {
+  border-color: var(--map-teal);
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .map-department-filter-trigger.has-selection {
+  border-color: var(--map-teal);
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .map-department-filter-trigger span {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-clinical-refresh .map-department-filter-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 21;
+  width: min(300px, 80vw);
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--map-line);
+  border-radius: 16px;
+  background: var(--map-surface);
+  box-shadow: 0 20px 50px rgba(8, 75, 72, 0.2);
+  padding: 8px;
+}
+
+.map-clinical-refresh .map-department-filter-status {
+  margin: 0;
+  padding: 10px 8px;
+  color: var(--map-muted);
+  font-size: 13px;
+}
+
+.map-clinical-refresh .map-department-filter-panel ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-clinical-refresh .map-department-filter-panel li button {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  padding: 0 10px;
+  color: var(--map-ink);
+  font-size: 13.5px;
+  font-weight: 650;
+  text-align: left;
+}
+
+.map-clinical-refresh .map-department-filter-panel li button:hover {
+  background: var(--map-teal-soft);
+}
+
+.map-clinical-refresh .map-department-filter-panel li button.active {
+  background: var(--map-teal);
+  color: #ffffff;
+  font-weight: 750;
+}
+
+.map-clinical-refresh .map-department-filter-panel li button.map-department-filter-clear {
+  color: var(--map-danger);
+  font-weight: 750;
+}
+
+@media (max-width: 640px) {
+  .map-clinical-refresh .map-top-controls {
+    top: 18px;
+    left: 18px;
+    max-width: calc(100% - 36px);
+  }
+
+  .map-clinical-refresh .map-top-search {
+    flex-basis: 110px;
+    min-width: 110px;
+    max-width: none;
+  }
+
+  .map-clinical-refresh .map-department-filter-trigger {
+    padding: 0 10px;
+    gap: 5px;
+  }
+
+  .map-clinical-refresh .map-department-filter-trigger span {
+    max-width: 90px;
+  }
+}
+
+@media (max-width: 380px) {
+  .map-clinical-refresh .map-top-search {
+    flex-basis: 80px;
+    min-width: 80px;
+  }
+
+  .map-clinical-refresh .map-department-filter-trigger span {
+    max-width: 56px;
+  }
+}
+
 .map-clinical-refresh .clinic-popup .maplibregl-popup-content {
   border: 1px solid var(--map-line);
   border-radius: 14px;
@@ -688,7 +924,9 @@
   .map-clinical-refresh .facility-result-card,
   .map-clinical-refresh .sidebar-note,
   .map-clinical-refresh .facility-info-group,
-  .map-clinical-refresh .map-ai-panel {
+  .map-clinical-refresh .map-ai-panel,
+  .map-clinical-refresh .map-top-search,
+  .map-clinical-refresh .map-department-filter-panel {
     background: Canvas;
     color: CanvasText;
   }
@@ -715,7 +953,9 @@
   }
 
   .map-clinical-refresh .facility-type-filter button.active,
-  .map-clinical-refresh .facility-select-button[aria-pressed="true"] {
+  .map-clinical-refresh .facility-select-button[aria-pressed="true"],
+  .map-clinical-refresh .map-department-filter-trigger.has-selection,
+  .map-clinical-refresh .map-department-filter-panel li button.active {
     background: Highlight;
     color: HighlightText;
   }

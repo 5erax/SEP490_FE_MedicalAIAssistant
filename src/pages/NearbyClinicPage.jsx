@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Building2,
+  ChevronDown,
   Clock3,
   Globe2,
   House,
@@ -467,6 +468,10 @@ function NearbyClinicPage() {
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedType, setSelectedType] = useState("all");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(requestedDepartmentId || "");
+  const [departments, setDepartments] = useState([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [departmentPickerOpen, setDepartmentPickerOpen] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [sidebarView, setSidebarView] = useState("hospital-list");
   const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
@@ -495,6 +500,7 @@ function NearbyClinicPage() {
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const cardRefs = useRef({});
+  const departmentFilterRef = useRef(null);
   const sidebarTitleRef = useRef(null);
   const detailCloseButtonRef = sidebarTitleRef;
   const detailBodyRef = useRef(null);
@@ -509,6 +515,50 @@ function NearbyClinicPage() {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
     return () => window.clearTimeout(timerId);
   }, [searchText]);
+
+  useEffect(() => {
+    let active = true;
+
+    medicalDepartmentsApi.listAll()
+      .then((response) => {
+        if (!active) return;
+        const data = getArrayData(response);
+        setDepartments(data.map((department) => ({
+          id: String(department?.id ?? department?.departmentId ?? "").trim(),
+          name: department?.departmentName ?? department?.name ?? "Chuyên khoa chưa đặt tên",
+        })).filter((department) => department.id));
+      })
+      .catch(() => {
+        if (active) setDepartments([]);
+      })
+      .finally(() => {
+        if (active) setDepartmentsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!departmentPickerOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!departmentFilterRef.current?.contains(event.target)) {
+        setDepartmentPickerOpen(false);
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setDepartmentPickerOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [departmentPickerOpen]);
 
   useEffect(() => {
     if (!isClinicalFlow) return undefined;
@@ -810,11 +860,17 @@ function NearbyClinicPage() {
   ]);
   const effectiveDepartmentId = isClinicalFlow
     ? ""
-    : requestedDepartmentId;
+    : selectedDepartmentId;
+  const selectedDepartment = selectedDepartmentId === "all"
+    ? { id: "all", name: "Tất cả các khoa" }
+    : departments.find((department) => department.id === selectedDepartmentId) || null;
 
   const filteredFacilities = useMemo(() => {
     if (isClinicalFlow && clinicalStatus !== "ready") return [];
     if (isClinicalFlow && recommendedFacilityOrder.size === 0) return [];
+    // With no working map there is no pin to click either, so fall back to
+    // showing every facility in the list regardless of department filter.
+    if (!isClinicalFlow && !effectiveDepartmentId && mapStatus !== "error") return [];
 
     const normalized = normalizeSearchText(debouncedSearch);
     const normalizedDepartmentId = String(effectiveDepartmentId).trim();
@@ -835,6 +891,7 @@ function NearbyClinicPage() {
         || recommendedFacilityOrder.has(String(facility.facilityId));
       const matchDepartment = hasRecommendedFacilities
         || !normalizedDepartmentId
+        || normalizedDepartmentId === "all"
         || facility.departmentIds?.some((departmentId) => String(departmentId) === normalizedDepartmentId)
         || facility.departments.map(normalizeSearchText).some((value) => value.includes(normalizedDepartmentSearch));
       return matchSearch && matchRecommendation && matchDepartment;
@@ -852,6 +909,7 @@ function NearbyClinicPage() {
     effectiveDepartmentId,
     facilities,
     isClinicalFlow,
+    mapStatus,
     recommendedFacilityOrder,
   ]);
 
@@ -970,12 +1028,17 @@ function NearbyClinicPage() {
 
     const duration = prefersReducedMotion() ? 0 : 900;
 
+    // The floating search/department bar only exists outside the clinical
+    // flow; keep markers from landing underneath it.
+    const topClearance = isClinicalFlow ? 72 : 110;
+
     if (mappableFacilities.length === 1) {
       const [facility] = mappableFacilities;
       mapRef.current?.flyTo?.({
         center: [facility.longitude, facility.latitude],
         zoom: 14,
         duration,
+        offset: isClinicalFlow ? undefined : [0, topClearance / 2],
       });
       return;
     }
@@ -989,10 +1052,10 @@ function NearbyClinicPage() {
       ],
       {
         duration,
-        padding: { top: 72, right: 72, bottom: 72, left: 72 },
+        padding: { top: topClearance, right: 72, bottom: 72, left: 72 },
       },
     );
-  }, [mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
+  }, [isClinicalFlow, mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
@@ -1457,20 +1520,31 @@ function NearbyClinicPage() {
     };
   });
   const showLegacyMapDetail = Boolean(0);
+  const showSidebar = isClinicalFlow
+    || sidebarView !== "hospital-list"
+    // If the map itself failed to load there is no pin left to click, so the
+    // list is the only way left to find and select a facility.
+    || mapStatus === "error";
 
   return (
     <main className={`clinic-page map-clinical-refresh${isClinicalFlow ? " is-clinical-map-flow" : ""}`}>
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list">Bỏ qua bản đồ, đến danh sách cơ sở</a>
+      {showSidebar && (
       <aside className={`clinic-sidebar sidebar-view-${sidebarView}`}>
         {sidebarView === "hospital-list" && (
         <div className="map-sidebar-screen sidebar-screen-active">
         <header className="map-sidebar-head">
           <p>Cơ sở y tế</p>
           <h2>Tìm nơi khám phù hợp</h2>
-          <span>Chọn một cơ sở để xem địa chỉ, chuyên khoa và đánh giá.</span>
+          <span>
+            {!isClinicalFlow && selectedDepartment
+              ? `Đang lọc theo khoa: ${selectedDepartment.name}.`
+              : "Chọn một cơ sở để xem địa chỉ, chuyên khoa và đánh giá."}
+          </span>
         </header>
+        {isClinicalFlow && (
         <div className="map-page-actions">
           <button type="button" onClick={() => navigate("/dashboard")}>
             <House size={16} aria-hidden="true" />
@@ -1481,6 +1555,8 @@ function NearbyClinicPage() {
             Định vị tôi
           </button>
         </div>
+        )}
+        {isClinicalFlow && (
         <div className="clinic-search">
           <Search size={17} aria-hidden="true" />
           <label className="sr-only" htmlFor="facility-search">Lọc danh sách cơ sở y tế</label>
@@ -1497,6 +1573,7 @@ function NearbyClinicPage() {
             <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setSearchText(""); setSelectedFacility(null); }}>×</button>
           )}
         </div>
+        )}
 
         <div className="facility-type-filter" role="group" aria-label="Lọc loại cơ sở y tế">
           {activeTypeOptions.map(([type, label]) => (
@@ -1753,8 +1830,111 @@ function NearbyClinicPage() {
           </section>
         )}
       </aside>
+      )}
 
       <section className="map-stage">
+        {!isClinicalFlow && (
+        <div className="map-top-controls">
+        <div className="map-top-controls-row" ref={departmentFilterRef}>
+          <button
+            type="button"
+            className="map-top-home-button"
+            aria-label="Về trang chủ"
+            onClick={() => navigate("/dashboard")}
+          >
+            <House size={18} aria-hidden="true" />
+          </button>
+          <div className="map-top-search">
+            <Search size={17} aria-hidden="true" />
+            <label className="sr-only" htmlFor="facility-search">Tìm tên bệnh viện, phòng khám</label>
+            <input
+              id="facility-search"
+              name="search"
+              type="search"
+              value={searchText}
+              onChange={handleSearchChange}
+              placeholder="Tìm tên bệnh viện, phòng khám…"
+              autoComplete="off"
+            />
+            {searchText && (
+              <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setSearchText(""); setSelectedFacility(null); }}>×</button>
+            )}
+          </div>
+          <div className="map-department-filter">
+            <button
+              type="button"
+              className={`map-department-filter-trigger${selectedDepartment ? " has-selection" : ""}`}
+              aria-haspopup="listbox"
+              aria-expanded={departmentPickerOpen}
+              onClick={() => setDepartmentPickerOpen((open) => !open)}
+            >
+              <Stethoscope size={16} aria-hidden="true" />
+              <span>{selectedDepartment ? selectedDepartment.name : "Khoa khám"}</span>
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+            {departmentPickerOpen && (
+              <div className="map-department-filter-panel" role="listbox" aria-label="Chọn khoa khám">
+                {departmentsLoading ? (
+                  <p className="map-department-filter-status">Đang tải danh sách khoa…</p>
+                ) : (
+                  <ul>
+                    <li>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={selectedDepartmentId === "all"}
+                        className={selectedDepartmentId === "all" ? "active" : ""}
+                        onClick={() => {
+                          setSelectedDepartmentId("all");
+                          setDepartmentPickerOpen(false);
+                        }}
+                      >
+                        Tất cả các khoa
+                      </button>
+                    </li>
+                    {selectedDepartmentId && (
+                      <li>
+                        <button
+                          type="button"
+                          className="map-department-filter-clear"
+                          onClick={() => {
+                            setSelectedDepartmentId("");
+                            setDepartmentPickerOpen(false);
+                          }}
+                        >
+                          Xóa lựa chọn
+                        </button>
+                      </li>
+                    )}
+                    {departments.length === 0 ? (
+                      <li><p className="map-department-filter-status">Chưa có khoa khám nào được cấu hình.</p></li>
+                    ) : (
+                      departments.map((department) => (
+                        <li key={department.id}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={department.id === selectedDepartmentId}
+                            className={department.id === selectedDepartmentId ? "active" : ""}
+                            onClick={() => {
+                              setSelectedDepartmentId(department.id);
+                              setDepartmentPickerOpen(false);
+                            }}
+                          >
+                            {department.name}
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        {apiNotice && <div className="map-top-notice" role="status">{apiNotice}</div>}
+        </div>
+        )}
         <FacilityMap
           chatContext={chatContext}
           clinicalNotice={effectiveClinicalNotice}
@@ -1975,7 +2155,7 @@ const styles = `
 .clinic-popup .maplibregl-popup-content { border: 1.5px solid var(--ink); border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); padding: 12px; }
 .clinic-popup .maplibregl-popup-tip { display: none; }
 .locate-button { position: absolute; right: 18px; bottom: 18px; z-index: 2; width: 48px; height: 48px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); font-size: 22px; font-weight: 900; }
-.map-panel > .locate-button { bottom: 86px; width: 42px; height: 42px; border-radius: 50%; background: #0c7c7b; color: #fff; box-shadow: 0 12px 30px rgba(17,20,18,.2); }
+.map-panel > .locate-button { bottom: 86px; width: 44px; height: 44px; border-radius: 50%; background: #0c7c7b; color: #fff; box-shadow: 0 12px 30px rgba(17,20,18,.2); }
 .map-ai-launcher { position: absolute; right: 18px; bottom: 18px; z-index: 7; width: 64px; height: 64px; display: grid; place-items: center; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--lime); color: var(--ink); box-shadow: 5px 5px 0 var(--ink), 0 18px 42px rgba(17,20,18,.18); cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; animation: landingChatPulse 2.8s ease-in-out infinite; }
 .map-ai-launcher:hover { transform: translateY(-3px); box-shadow: 6px 6px 0 var(--ink), 0 22px 48px rgba(17,20,18,.2); }
 .map-ai-bot-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 999px; background: rgba(255,255,255,.56); color: var(--ink); font-size: 14px; font-weight: 950; letter-spacing: -.01em; }

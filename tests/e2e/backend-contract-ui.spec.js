@@ -166,6 +166,8 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   });
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Khoa khám" }).click();
+  await page.getByRole("option", { name: "Tất cả các khoa" }).click();
   await expect(page.getByText("Bệnh viện A", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Xem chi tiết" }).click();
   const sidebarLayout = await page.locator(".clinic-sidebar").evaluate((sidebar) => {
