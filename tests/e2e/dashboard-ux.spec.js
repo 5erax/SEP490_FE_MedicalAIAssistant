@@ -253,7 +253,7 @@ test.describe("patient specialty intake", () => {
     expect(mapUrl.searchParams.get("departmentId")).toBe(DEPARTMENT_ID);
     expect(mapUrl.searchParams.has("search")).toBe(false);
 
-    await expect(page.getByLabel("Lọc danh sách cơ sở y tế")).toHaveValue("");
+    await expect(page.getByLabel("Tìm tên bệnh viện, phòng khám")).toHaveValue("");
     const mapRecommendation = page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" });
     await expect(mapRecommendation).toContainText("Tai Mũi Họng");
     await expect(mapRecommendation).toContainText("Chuyên khoa được gợi ý");
@@ -270,7 +270,8 @@ test.describe("patient specialty intake", () => {
     await diagnosisButton.click();
     await expect(diagnosisButton).toHaveAttribute("aria-expanded", "true");
     await expect(diagnosisCrossbar).toContainText("Phù hợp với sốt nhẹ và đau họng.");
-    await expect(page.locator(".facility-result-card")).toHaveCount(1);
+    // The sidebar/list stays closed until a pin is clicked, matching the plain map.
+    await expect(page.locator(".facility-result-card")).toHaveCount(0);
     await expect(page.locator(".clinic-marker")).toHaveCount(1);
     await expect(page.getByText("Phòng khám Đánh Giá Cao", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Dữ liệu nội bộ không được hiển thị")).toHaveCount(0);
@@ -295,9 +296,10 @@ test.describe("patient specialty intake", () => {
     await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
     await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
     expect(consultationPayload).toBeNull();
-    await expect(page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ })).toBeVisible();
+    const clinicalMarker = page.getByRole("button", { name: "Chọn Bệnh viện Tai Mũi Họng trên bản đồ" });
+    await expect(clinicalMarker).toBeVisible();
 
-    await page.getByRole("button", { name: /Xem chi tiết Bệnh viện Tai Mũi Họng/ }).click();
+    await clinicalMarker.click();
     await expect(page).toHaveURL(/tab=overview/);
     await expect(page.locator(".facility-detail-sidebar")).toBeVisible();
 
@@ -311,7 +313,7 @@ test.describe("patient specialty intake", () => {
     await expect(page.locator(".facility-detail-sidebar")).toBeVisible();
     await page.goBack();
 
-    await page.locator(".map-page-actions").getByRole("button", { name: "Trang chủ" }).click();
+    await page.getByRole("button", { name: "Về trang chủ" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     await page.waitForTimeout(500);
     await expect(page).toHaveURL(/\/dashboard$/);
@@ -335,10 +337,10 @@ test.describe("patient specialty intake", () => {
     await expect(page.locator(".map-clinical-summary")).toContainText(
       recommendedFacility.departments[0].departmentName,
     );
-    await expect(page.locator(".facility-result-card")).toHaveCount(1);
-    await expect(page.locator(".facility-result-card")).toContainText(
-      recommendedFacility.facilityName,
-    );
+    // A fresh visit (even deep-linked) does not auto-open the sidebar/list;
+    // only the pin shows until it is clicked, matching the plain map.
+    await expect(page.locator(".facility-result-card")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: `Chọn ${recommendedFacility.facilityName} trên bản đồ` })).toBeVisible();
     await expect(page.locator(".clinic-marker")).toHaveCount(1);
     await expect(page.getByRole("region", { name: "Các chẩn đoán được cân nhắc" })).toContainText("ICD-10: J02");
     expect(sessionDetailRequests).toBe(1);

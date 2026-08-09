@@ -8,7 +8,6 @@ import {
   House,
   ImagePlus,
   Info,
-  LocateFixed,
   MapPin,
   Pencil,
   Phone,
@@ -776,9 +775,7 @@ function NearbyClinicPage() {
     isClinicalFlow,
     resolvedRecommendationContext?.recommendedFacilities,
   ]);
-  const effectiveDepartmentId = isClinicalFlow
-    ? ""
-    : selectedDepartmentId;
+  const effectiveDepartmentId = selectedDepartmentId;
   const selectedDepartment = selectedDepartmentId === "all"
     ? { id: "all", name: "Tất cả các khoa" }
     : departments.find((department) => department.id === selectedDepartmentId) || null;
@@ -807,8 +804,7 @@ function NearbyClinicPage() {
       const matchSearch = !normalized || searchable.some((value) => value.includes(normalized));
       const matchRecommendation = !hasRecommendedFacilities
         || recommendedFacilityOrder.has(String(facility.facilityId));
-      const matchDepartment = hasRecommendedFacilities
-        || !normalizedDepartmentId
+      const matchDepartment = !normalizedDepartmentId
         || normalizedDepartmentId === "all"
         || facility.departmentIds?.some((departmentId) => String(departmentId) === normalizedDepartmentId)
         || facility.departments.map(normalizeSearchText).some((value) => value.includes(normalizedDepartmentSearch));
@@ -946,9 +942,9 @@ function NearbyClinicPage() {
 
     const duration = prefersReducedMotion() ? 0 : 900;
 
-    // The floating search/department bar only exists outside the clinical
-    // flow; keep markers from landing underneath it.
-    const topClearance = isClinicalFlow ? 72 : 110;
+    // Keep markers from landing underneath the floating search/department bar,
+    // and under the recommended-department summary cards in the clinical flow.
+    const topClearance = isClinicalFlow ? 220 : 110;
 
     if (mappableFacilities.length === 1) {
       const [facility] = mappableFacilities;
@@ -956,7 +952,7 @@ function NearbyClinicPage() {
         center: [facility.longitude, facility.latitude],
         zoom: 14,
         duration,
-        offset: isClinicalFlow ? undefined : [0, topClearance / 2],
+        offset: [0, topClearance / 2],
       });
       return;
     }
@@ -1440,10 +1436,10 @@ function NearbyClinicPage() {
     };
   });
   const showLegacyMapDetail = Boolean(0);
-  const showSidebar = isClinicalFlow
+  const showSidebar =
     // Once a pin has been opened at least once, keep the sidebar available so
     // switching departments can return to its list instead of hiding it.
-    || sidebarUnlocked
+    sidebarUnlocked
     // If the map itself failed to load there is no pin left to click, so the
     // list is the only way left to find and select a facility.
     || mapStatus === "error";
@@ -1461,41 +1457,11 @@ function NearbyClinicPage() {
           <p>Cơ sở y tế</p>
           <h2>Tìm nơi khám phù hợp</h2>
           <span>
-            {!isClinicalFlow && selectedDepartment
+            {selectedDepartment
               ? `Đang lọc theo khoa: ${selectedDepartment.name}.`
               : "Chọn một cơ sở để xem địa chỉ, chuyên khoa và đánh giá."}
           </span>
         </header>
-        {isClinicalFlow && (
-        <div className="map-page-actions">
-          <button type="button" onClick={() => navigate("/dashboard")}>
-            <House size={16} aria-hidden="true" />
-            Trang chủ
-          </button>
-          <button type="button" onClick={handleLocateMe}>
-            <LocateFixed size={16} aria-hidden="true" />
-            Định vị tôi
-          </button>
-        </div>
-        )}
-        {isClinicalFlow && (
-        <div className="clinic-search">
-          <Search size={17} aria-hidden="true" />
-          <label className="sr-only" htmlFor="facility-search">Lọc danh sách cơ sở y tế</label>
-          <input
-            id="facility-search"
-            name="search"
-            type="search"
-            value={searchText}
-            onChange={handleSearchChange}
-            placeholder="Tìm tên bệnh viện, phòng khám…"
-            autoComplete="off"
-          />
-          {searchText && (
-            <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setSearchText(""); setSelectedFacility(null); }}>×</button>
-          )}
-        </div>
-        )}
 
         <div className="facility-type-filter" role="group" aria-label="Lọc loại cơ sở y tế">
           {activeTypeOptions.map(([type, label]) => (
@@ -1516,9 +1482,6 @@ function NearbyClinicPage() {
           <div className="sidebar-note" role="status">
             Cơ sở được gợi ý hiện không còn trong danh sách cơ sở đang hoạt động.
           </div>
-        )}
-        {isClinicalFlow && clinicalStatus === "error" && clinicalNotice && (
-          <div className="sidebar-note" role="alert">{clinicalNotice}</div>
         )}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
@@ -1755,7 +1718,6 @@ function NearbyClinicPage() {
       )}
 
       <section className="map-stage">
-        {!isClinicalFlow && (
         <div className="map-top-controls">
         <div className="map-top-controls-row" ref={departmentFilterRef}>
           <button
@@ -1859,7 +1821,6 @@ function NearbyClinicPage() {
         </div>
         {apiNotice && <div className="map-top-notice" role="status">{apiNotice}</div>}
         </div>
-        )}
         <FacilityMap
           chatContext={chatContext}
           clinicalNotice={effectiveClinicalNotice}
