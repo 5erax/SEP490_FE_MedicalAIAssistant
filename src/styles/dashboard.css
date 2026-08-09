@@ -742,6 +742,23 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   font-weight: 800;
 }
 
+.studio-facility-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.studio-facility-pagination .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 760px) {
   .specialty-page {
     min-height: calc(100svh - 72px);

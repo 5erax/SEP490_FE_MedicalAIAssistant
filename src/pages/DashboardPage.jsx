@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CircleAlert, ClipboardPlus, History, LocateFixed, MapPinned, Send, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleAlert, ClipboardPlus, History, LocateFixed, MapPinned, Send, ShieldCheck, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -270,6 +270,55 @@ function readProfilePromptDismissed() {
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+const FACILITY_PAGE_SIZE = 5;
+
+function FacilityResultList({ facilities, recommendedDepartment, userLocation }) {
+  const [pageNumber, setPageNumber] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(facilities.length / FACILITY_PAGE_SIZE));
+  const pagedFacilities = facilities.slice(
+    (pageNumber - 1) * FACILITY_PAGE_SIZE,
+    pageNumber * FACILITY_PAGE_SIZE,
+  );
+
+  return (
+    <>
+      <div className="studio-facility-list">
+        {pagedFacilities.map((facility, localIndex) => (
+          <article key={facility.id || facility.facilityId || facility.facilityName}>
+            <span>#{(pageNumber - 1) * FACILITY_PAGE_SIZE + localIndex + 1}</span>
+            <div>
+              <strong>{facility.facilityName || "Cơ sở y tế"}</strong>
+              <p>{facility.address || "Chưa có địa chỉ"}</p>
+              <small>{getFacilityRankingReason(facility, recommendedDepartment, userLocation)}</small>
+            </div>
+          </article>
+        ))}
+      </div>
+      {totalPages > 1 && (
+        <nav className="studio-facility-pagination" aria-label="Phân trang cơ sở y tế được gợi ý">
+          <Button
+            tone="ghost"
+            size="sm"
+            disabled={pageNumber <= 1}
+            onClick={() => setPageNumber((current) => current - 1)}
+          >
+            <ChevronLeft size={16} aria-hidden="true" /> Trang trước
+          </Button>
+          <span>Trang {pageNumber}/{totalPages}</span>
+          <Button
+            tone="ghost"
+            size="sm"
+            disabled={pageNumber >= totalPages}
+            onClick={() => setPageNumber((current) => current + 1)}
+          >
+            Trang sau <ChevronRight size={16} aria-hidden="true" />
+          </Button>
+        </nav>
+      )}
+    </>
+  );
 }
 
 export default function DashboardPage() {
@@ -774,18 +823,12 @@ export default function DashboardPage() {
               {sortedFacilities.length === 0 ? (
                 <p>Hệ thống chưa trả về cơ sở y tế cụ thể. Hãy thử lại với mô tả triệu chứng rõ hơn.</p>
               ) : (
-                <div className="studio-facility-list">
-                  {sortedFacilities.map((facility, index) => (
-                    <article key={facility.id || facility.facilityId || facility.facilityName}>
-                      <span>#{index + 1}</span>
-                      <div>
-                        <strong>{facility.facilityName || "Cơ sở y tế"}</strong>
-                        <p>{facility.address || "Chưa có địa chỉ"}</p>
-                        <small>{getFacilityRankingReason(facility, recommendedDepartment, userLocation)}</small>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                <FacilityResultList
+                  key={sessionId}
+                  facilities={sortedFacilities}
+                  recommendedDepartment={recommendedDepartment}
+                  userLocation={userLocation}
+                />
               )}
             </article>
           </section>
