@@ -510,6 +510,9 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [overviewPayments, setOverviewPayments] = useState([]);
   const [overviewPaymentsLoading, setOverviewPaymentsLoading] = useState(true);
   const [overviewPaymentsError, setOverviewPaymentsError] = useState("");
+  const [overviewUsers, setOverviewUsers] = useState([]);
+  const [overviewUsersLoading, setOverviewUsersLoading] = useState(true);
+  const [overviewUsersError, setOverviewUsersError] = useState("");
   const [overviewOperationalCounts, setOverviewOperationalCounts] = useState({
     clinicalQuestions: null,
     labIndicators: null,
@@ -550,7 +553,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   }
 
   function retryOverviewMetric(section) {
-    if (section === "users") loadUsers();
+    if (section === "users") { loadUsers(); loadOverviewUsers(); }
     else if (section === "doctors") loadDoctors();
     else if (section === "ai-configs") loadAIConfigs();
     else if (section === "facilities") loadFacilities();
@@ -581,6 +584,31 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
       }));
     } finally {
       setOverviewPaymentsLoading(false);
+    }
+  }
+
+  async function loadOverviewUsers() {
+    setOverviewUsersLoading(true);
+    setOverviewUsersError("");
+    try {
+      const pageSize = 100;
+      const firstResponse = await usersApi.list(1, pageSize);
+      const firstPage = getPagedPayload(firstResponse);
+      const allUsers = [...firstPage.items];
+
+      for (let pageNumber = 2; pageNumber <= firstPage.totalPages; pageNumber += 1) {
+        const response = await usersApi.list(pageNumber, pageSize);
+        allUsers.push(...getPagedPayload(response).items);
+      }
+
+      setOverviewUsers(allUsers);
+    } catch (error) {
+      setOverviewUsersError(translateApiMessage(error?.message, {
+        status: error?.status,
+        fallback: "Chưa thể tải dữ liệu tài khoản. Vui lòng thử lại.",
+      }));
+    } finally {
+      setOverviewUsersLoading(false);
     }
   }
 
@@ -935,6 +963,11 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   useEffect(() => {
     if (!auth) return;
     queueMicrotask(() => void loadOverviewPayments());
+  }, [auth]);
+
+  useEffect(() => {
+    if (!auth) return;
+    queueMicrotask(() => void loadOverviewUsers());
   }, [auth]);
 
   useEffect(() => {
@@ -2623,6 +2656,10 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 paymentsLoading={overviewPaymentsLoading}
                 onRetryPayments={loadOverviewPayments}
                 facilityDepartments={facilityDepartments}
+                userGrowthUsers={overviewUsers}
+                userGrowthLoading={overviewUsersLoading}
+                userGrowthError={overviewUsersError}
+                onRetryUserGrowth={loadOverviewUsers}
               />
             )}
 
