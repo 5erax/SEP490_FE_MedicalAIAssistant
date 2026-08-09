@@ -14,7 +14,7 @@ function withQuery(path, params = {}) {
 
 export const subscriptionPlansApi = {
   list() {
-    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BASE);
+    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BASE, { auth: true });
   },
 
   active() {
@@ -22,7 +22,7 @@ export const subscriptionPlansApi = {
   },
 
   get(id) {
-    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id));
+    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id), { auth: true });
   },
 
   create(payload) {

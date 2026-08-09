@@ -37,11 +37,11 @@ export const clinicalQuestionsApi = {
     const params = new URLSearchParams(withPagination(pageNumber, pageSize));
     if (filters.chapterId) params.set("chapterId", filters.chapterId);
     if (filters.search?.trim()) params.set("search", filters.search.trim());
-    return apiRequest(`${ENDPOINTS.CLINICAL_QUESTIONS.BASE}?${params.toString()}`);
+    return apiRequest(`${ENDPOINTS.CLINICAL_QUESTIONS.BASE}?${params.toString()}`, { auth: true });
   },
 
   get(id) {
-    return apiRequest(ENDPOINTS.CLINICAL_QUESTIONS.BY_ID(id));
+    return apiRequest(ENDPOINTS.CLINICAL_QUESTIONS.BY_ID(id), { auth: true });
   },
   create(payload) {
     return apiRequest(ENDPOINTS.CLINICAL_QUESTIONS.BASE, { method: "POST", body: payload, auth: true });
