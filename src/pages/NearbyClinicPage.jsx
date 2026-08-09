@@ -508,8 +508,8 @@ function NearbyClinicPage() {
   const requestedFacilityOpenedRef = useRef(false);
   const requestedDoctorOpenedRef = useRef(false);
   const lastFittedBoundsRef = useRef("");
-  const initialClinicalSelectionRef = useRef(false);
   const clinicalRestoreRequestRef = useRef({ sessionId: "", promise: null });
+  const clinicalDepartmentAutoSelectedRef = useRef(false);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -810,6 +810,17 @@ function NearbyClinicPage() {
     requestedDepartmentId,
     requestedFacilityId,
   ]);
+
+  // Once the recommended department is known, filter pins by it like the
+  // plain map's department picker - not just the AI's short facility list -
+  // so every active facility offering that department shows up, not one.
+  useEffect(() => {
+    const departmentId = resolvedRecommendationContext?.recommendedDepartment?.departmentId;
+    if (!isClinicalFlow || !departmentId || clinicalDepartmentAutoSelectedRef.current) return;
+    clinicalDepartmentAutoSelectedRef.current = true;
+    setSelectedDepartmentId(departmentId);
+  }, [isClinicalFlow, resolvedRecommendationContext?.recommendedDepartment?.departmentId]);
+
   const recommendedFacilityOrder = useMemo(() => {
     const entries = resolvedRecommendationContext?.recommendedFacilities ?? [];
     return new globalThis.Map(entries.map((facility, index) => [
@@ -858,6 +869,17 @@ function NearbyClinicPage() {
     isClinicalFlow,
     resolvedRecommendationContext?.recommendedFacilities,
   ]);
+  // AI-recommended facilities can include ones the general active-facilities
+  // list hasn't caught (e.g. a stale fetch); keep them in the pool so
+  // department-based filtering never silently drops a recommended facility.
+  const clinicalFacilityPool = useMemo(() => {
+    if (!isClinicalFlow) return facilities;
+    const activeIds = new Set(facilities.map((facility) => String(facility.facilityId)));
+    const extras = clinicalRecommendationFacilities.filter((facility) => (
+      !activeIds.has(String(facility.facilityId))
+    ));
+    return extras.length ? [...facilities, ...extras] : facilities;
+  }, [clinicalRecommendationFacilities, facilities, isClinicalFlow]);
   const effectiveDepartmentId = selectedDepartmentId;
   const selectedDepartment = selectedDepartmentId === "all"
     ? { id: "all", name: "Tất cả các khoa" }
@@ -865,7 +887,6 @@ function NearbyClinicPage() {
 
   const filteredFacilities = useMemo(() => {
     if (isClinicalFlow && clinicalStatus !== "ready") return [];
-    if (isClinicalFlow && recommendedFacilityOrder.size === 0) return [];
     // With no working map there is no pin to click either, so fall back to
     // showing every facility in the list regardless of department filter.
     if (!isClinicalFlow && !effectiveDepartmentId && mapStatus !== "error") return [];
@@ -873,9 +894,7 @@ function NearbyClinicPage() {
     const normalized = normalizeSearchText(debouncedSearch);
     const normalizedDepartmentId = String(effectiveDepartmentId).trim();
     const normalizedDepartmentSearch = normalizeSearchText(effectiveDepartmentId);
-    const hasRecommendedFacilities = isClinicalFlow;
-    const sourceFacilities = isClinicalFlow ? clinicalRecommendationFacilities : facilities;
-    const matches = sourceFacilities.filter((facility) => {
+    const matches = clinicalFacilityPool.filter((facility) => {
       const searchable = [
         facility.facilityName,
         facility.address,
@@ -885,26 +904,29 @@ function NearbyClinicPage() {
         ...facility.departments,
       ].map(normalizeSearchText);
       const matchSearch = !normalized || searchable.some((value) => value.includes(normalized));
-      const matchRecommendation = !hasRecommendedFacilities
-        || recommendedFacilityOrder.has(String(facility.facilityId));
       const matchDepartment = !normalizedDepartmentId
         || normalizedDepartmentId === "all"
         || facility.departmentIds?.some((departmentId) => String(departmentId) === normalizedDepartmentId)
         || facility.departments.map(normalizeSearchText).some((value) => value.includes(normalizedDepartmentSearch));
-      return matchSearch && matchRecommendation && matchDepartment;
+      return matchSearch && matchDepartment;
     });
-    return hasRecommendedFacilities
-      ? matches.sort((left, right) => (
-        recommendedFacilityOrder.get(String(left.facilityId))
-        - recommendedFacilityOrder.get(String(right.facilityId))
-      ))
+    // AI-recommended facilities (if any matched the department too) surface
+    // first; every other facility offering the department follows them.
+    return isClinicalFlow && recommendedFacilityOrder.size > 0
+      ? matches.sort((left, right) => {
+        const leftRank = recommendedFacilityOrder.get(String(left.facilityId));
+        const rightRank = recommendedFacilityOrder.get(String(right.facilityId));
+        if (leftRank === undefined && rightRank === undefined) return 0;
+        if (leftRank === undefined) return 1;
+        if (rightRank === undefined) return -1;
+        return leftRank - rightRank;
+      })
       : matches;
   }, [
     debouncedSearch,
+    clinicalFacilityPool,
     clinicalStatus,
-    clinicalRecommendationFacilities,
     effectiveDepartmentId,
-    facilities,
     isClinicalFlow,
     mapStatus,
     recommendedFacilityOrder,
@@ -1171,37 +1193,6 @@ function NearbyClinicPage() {
     mapQuery.tab,
     openFacilityDetail,
     requestedFacilityId,
-  ]);
-
-  useEffect(() => {
-    if (
-      !isClinicalFlow
-      || clinicalStatus !== "ready"
-      || mapStatus !== "ready"
-      || initialClinicalSelectionRef.current
-      || visibleFacilities.length === 0
-    ) return;
-
-    const matchedFacility = visibleFacilities.find((facility) => (
-      String(facility.facilityId) === String(requestedFacilityId)
-    ));
-    const targetFacility = matchedFacility ?? visibleFacilities[0];
-    initialClinicalSelectionRef.current = true;
-    const timeoutId = window.setTimeout(() => {
-      handleCardClick(targetFacility);
-      if (String(requestedFacilityId) !== String(targetFacility.facilityId)) {
-        syncMapUrl({ facilityId: targetFacility.facilityId }, "replace");
-      }
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [
-    clinicalStatus,
-    handleCardClick,
-    isClinicalFlow,
-    mapStatus,
-    requestedFacilityId,
-    syncMapUrl,
-    visibleFacilities,
   ]);
 
   useEffect(() => {
