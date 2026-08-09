@@ -599,8 +599,29 @@
   }
 
   .map-clinical-refresh .map-top-search {
-    flex-basis: 100%;
+    flex-basis: 110px;
+    min-width: 110px;
     max-width: none;
+  }
+
+  .map-clinical-refresh .map-department-filter-trigger {
+    padding: 0 10px;
+    gap: 5px;
+  }
+
+  .map-clinical-refresh .map-department-filter-trigger span {
+    max-width: 90px;
+  }
+}
+
+@media (max-width: 380px) {
+  .map-clinical-refresh .map-top-search {
+    flex-basis: 80px;
+    min-width: 80px;
+  }
+
+  .map-clinical-refresh .map-department-filter-trigger span {
+    max-width: 56px;
   }
 }
 
