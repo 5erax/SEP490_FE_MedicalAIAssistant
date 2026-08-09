@@ -365,6 +365,27 @@
   transform: scale(1.03);
 }
 
+.map-clinical-refresh .clinic-marker-label {
+  max-width: 170px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--map-surface);
+  box-shadow: 0 4px 12px rgba(8, 75, 72, 0.22);
+  padding: 5px 12px;
+  color: var(--map-ink);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.map-clinical-refresh .clinic-marker-label.selected {
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+}
+
 .map-clinical-refresh .clinic-marker:focus-visible {
   outline: 3px solid var(--map-focus);
   outline-offset: 4px;

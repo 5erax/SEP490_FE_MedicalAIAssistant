@@ -441,7 +441,7 @@ function NearbyClinicPage() {
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedType, setSelectedType] = useState("all");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState(requestedDepartmentId || "");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(requestedDepartmentId || "all");
   const [departments, setDepartments] = useState([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [departmentPickerOpen, setDepartmentPickerOpen] = useState(false);

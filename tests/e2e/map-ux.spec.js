@@ -127,7 +127,7 @@ async function mockSuccessfulMapStyle(page) {
 }
 
 async function selectDepartment(page, name) {
-  await page.getByRole("button", { name: "Khoa khám" }).click();
+  await page.locator(".map-department-filter-trigger").click();
   await page.getByRole("option", { name }).click();
 }
 
@@ -218,13 +218,13 @@ test("facility without coordinates does not render a false marker", async ({ pag
   await expect(page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" })).toHaveCount(0);
 });
 
-test("map department filter reveals no facility until a department is chosen, then search narrows within it", async ({ page }) => {
+test("map shows every facility by default, a department narrows them, then search narrows further", async ({ page }) => {
   await preparePage(page);
   await mockMapApis(page, [
     facility({
       id: FACILITY_ID,
       facilityName: "Bệnh viện Tim",
-      departments: [{ departmentId: SECOND_FACILITY_DEPARTMENT_ID, departmentName: "Da liễu" }],
+      departments: [{ departmentId: FACILITY_DEPARTMENT_ID, departmentName: "Tim mạch" }],
     }),
     facility({
       id: "22222222-2222-4222-8222-222222222222",
@@ -237,7 +237,10 @@ test("map department filter reveals no facility until a department is chosen, th
       }],
     }),
   ], {
-    departments: [{ id: SECOND_FACILITY_DEPARTMENT_ID, departmentName: "Da liễu" }],
+    departments: [
+      { id: FACILITY_DEPARTMENT_ID, departmentName: "Tim mạch" },
+      { id: SECOND_FACILITY_DEPARTMENT_ID, departmentName: "Da liễu" },
+    ],
   });
   await mockSuccessfulMapStyle(page);
 
@@ -246,13 +249,13 @@ test("map department filter reveals no facility until a department is chosen, th
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
-  // Before choosing a department, no facility marker is shown at all.
-  await expect(heartMarker).toHaveCount(0);
-  await expect(skinMarker).toHaveCount(0);
-
-  await selectDepartment(page, "Da liễu");
+  // By default ("Tất cả các khoa") every facility shows without picking anything.
   await expect(heartMarker).toBeVisible();
   await expect(skinMarker).toBeVisible();
+
+  await selectDepartment(page, "Da liễu");
+  await expect(skinMarker).toBeVisible();
+  await expect(heartMarker).toHaveCount(0);
 
   await page.getByLabel("Tìm tên bệnh viện, phòng khám").fill("phong kham");
   await expect(skinMarker).toBeVisible();

@@ -93,6 +93,9 @@ test("facility review submits the Swagger payload", async ({ page }) => {
       body: JSON.stringify({ secure_url: uploadedImageUrl, public_id: `reviews/hospital-review-${cloudinaryUploadCount}` }),
     });
   });
+  // This test only cares about the review form, not the map itself, so force
+  // the map into its error-fallback state where the facility list is always shown.
+  await page.route("https://basemaps.cartocdn.com/**", (route) => route.abort("failed"));
 
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
@@ -166,8 +169,6 @@ test("facility review submits the Swagger payload", async ({ page }) => {
   });
 
   await page.goto("/map", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Khoa khám" }).click();
-  await page.getByRole("option", { name: "Tất cả các khoa" }).click();
   await expect(page.getByText("Bệnh viện A", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Xem chi tiết" }).click();
   const sidebarLayout = await page.locator(".clinic-sidebar").evaluate((sidebar) => {
