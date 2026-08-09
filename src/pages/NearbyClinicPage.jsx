@@ -1908,6 +1908,7 @@ function NearbyClinicPage() {
           chatContext={chatContext}
           clinicalNotice={effectiveClinicalNotice}
           clinicalStatus={clinicalStatus}
+          hasTopNotice={Boolean(apiNotice)}
           isClinicalFlow={isClinicalFlow}
           facilities={mappableFacilities}
           locationError={locationError}
