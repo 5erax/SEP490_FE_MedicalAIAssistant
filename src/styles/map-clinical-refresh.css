@@ -401,7 +401,7 @@
 .map-clinical-refresh .map-top-controls-row {
   display: flex;
   align-items: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 
@@ -437,9 +437,8 @@
 }
 
 .map-clinical-refresh .map-top-search {
-  flex: 1 1 260px;
+  flex: 0 1 280px;
   min-width: 140px;
-  max-width: 420px;
   height: 46px;
   display: flex;
   align-items: center;
