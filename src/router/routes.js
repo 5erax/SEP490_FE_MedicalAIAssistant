@@ -37,7 +37,7 @@ const ADMIN_SECTION_NAVIGATION = {
   departments: { label: "Chuyên khoa", icon: "departments" },
   "icd-chapters": { label: "Chương ICD", icon: "icd" },
   "clinical-questions": { label: "Câu hỏi lâm sàng", icon: "question" },
-  "consultation-checklists": { label: "Checklist tư vấn", icon: "consultation-checklist" },
+  "consultation-checklists": { label: "Checklist và tư vấn", icon: "consultation-checklist" },
   "lab-indicators": { label: "Chỉ số xét nghiệm", icon: "lab-indicator" },
   facilities: { label: "Cơ sở y tế", icon: "facility" },
   "patient-profiles": { label: "Hồ sơ bệnh nhân", icon: "patient-profile" },
