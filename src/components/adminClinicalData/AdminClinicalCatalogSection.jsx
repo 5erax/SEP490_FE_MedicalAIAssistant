@@ -132,7 +132,6 @@ function getAnswerValidationErrors(rows) {
   rows.forEach((row, index) => {
     const vietnameseLabel = row.vietnameseLabel.trim();
     const englishLabel = row.englishLabel.trim();
-    if (!vietnameseLabel && !englishLabel) return;
     if (!vietnameseLabel) errors.push(`Đáp án ${index + 1}: Nhãn câu trả lời tiếng Việt không được để trống.`);
     if (!englishLabel) errors.push(`Đáp án ${index + 1}: Câu trả lời phải có nhãn tiếng Anh.`);
     if (vietnameseLabel) {
@@ -243,11 +242,11 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         : "Nội dung câu hỏi là bắt buộc";
     }
 
-    if (
-      form.sortOrder !== "" &&
-      (!Number.isInteger(Number(form.sortOrder)) || Number(form.sortOrder) < 0)
-    ) {
-      nextFormErrors.sortOrder = "Thứ tự phải là số nguyên không âm";
+    const normalizedSortOrder = String(form.sortOrder ?? "").trim();
+    if (!normalizedSortOrder) {
+      nextFormErrors.sortOrder = "Thứ tự là bắt buộc";
+    } else if (!Number.isInteger(Number(normalizedSortOrder)) || Number(normalizedSortOrder) <= 0) {
+      nextFormErrors.sortOrder = "Thứ tự phải là số nguyên lớn hơn 0";
     }
 
     if (answerErrors.length > 0) {
@@ -737,7 +736,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
               <h2 id="clinical-question-modal-title">
                 {editingId ? "Cập nhật câu hỏi lâm sàng" : "Tạo câu hỏi lâm sàng"}
               </h2>
-              <p id="clinical-question-modal-description">Chọn chương ICD và nhập câu hỏi tiếng Việt. Nội dung tiếng Anh, thứ tự và đáp án có thể bổ sung khi cần.</p>
+              <p id="clinical-question-modal-description">Chọn chương ICD, nhập thứ tự hiển thị và câu hỏi tiếng Việt. Nội dung tiếng Anh và đáp án có thể bổ sung khi cần.</p>
             </div>
             <button className="doctor-modal-close" type="button" aria-label="Đóng form" onClick={closeForm} disabled={status === "saving"}>×</button>
           </header>
@@ -791,7 +790,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                         <FileText size={18} aria-hidden="true" />
                         <strong id="clinical-answer-title">Danh sách đáp án</strong>
                       </div>
-                      <p>Các lựa chọn song ngữ sẽ được lưu cùng câu hỏi.</p>
+                      <p>Mỗi đáp án được thêm phải có cả nội dung tiếng Việt và bản dịch tiếng Anh.</p>
                       {formErrors.answers && (
                         <p id="clinical-answers-error" className="field-error">
                           {formErrors.answers}
@@ -813,19 +812,25 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                       </div>
                       <div className="clinical-answer-fields">
                         <label className="clinical-answer-field">
-                          <span>Tiếng Việt</span>
+                          <span>Tiếng Việt (bắt buộc)</span>
                           <input
                             value={row.vietnameseLabel}
                             onChange={(event) => updateAnswerRow(row.id, "vietnameseLabel", event.target.value)}
                             placeholder={`Nhập nội dung tiếng Việt ${index + 1}`}
+                            required
+                            aria-invalid={Boolean(formErrors.answers && !row.vietnameseLabel.trim())}
+                            aria-describedby={formErrors.answers && !row.vietnameseLabel.trim() ? "clinical-answers-error" : undefined}
                           />
                         </label>
                         <label className="clinical-answer-field">
-                          <span>Tiếng Anh</span>
+                          <span>Tiếng Anh (bắt buộc)</span>
                           <input
                             value={row.englishLabel}
                             onChange={(event) => updateAnswerRow(row.id, "englishLabel", event.target.value)}
                             placeholder={`Nhập bản dịch tiếng Anh ${index + 1}`}
+                            required
+                            aria-invalid={Boolean(formErrors.answers && !row.englishLabel.trim())}
+                            aria-describedby={formErrors.answers && !row.englishLabel.trim() ? "clinical-answers-error" : undefined}
                           />
                         </label>
                       </div>
