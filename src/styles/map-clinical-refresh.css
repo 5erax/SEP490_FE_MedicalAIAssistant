@@ -984,7 +984,8 @@
 
 .map-clinical-refresh .map-clinical-summary {
   position: absolute;
-  top: 18px;
+  /* Sits below the floating search/department bar shared with the plain map. */
+  top: 80px;
   left: 18px;
   z-index: 6;
   width: min(320px, calc(100% - 118px));
@@ -1032,7 +1033,8 @@
 
 .map-clinical-refresh .map-diagnosis-crossbar {
   position: absolute;
-  top: 18px;
+  /* Sits below the floating search/department bar shared with the plain map. */
+  top: 80px;
   left: 356px;
   z-index: 6;
   width: min(680px, calc(100% - 440px));
