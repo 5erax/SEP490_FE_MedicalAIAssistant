@@ -157,14 +157,22 @@ test("admin completes CRUD for consultation questions and checklist items", asyn
 
   await expect(page.getByRole("heading", { name: "Checklist và câu hỏi theo chuyên khoa" })).toBeVisible();
   await expect(page.getByText("Bạn có đau ngực khi vận động không?", { exact: true })).toBeVisible();
+  const questionRowHeader = page.getByRole("rowheader", { name: "Bạn có đau ngực khi vận động không?" });
+  await expect(questionRowHeader).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(questionRowHeader).toHaveCSS("color", "rgb(23, 52, 47)");
 
   await page.getByRole("button", { name: "Tạo câu hỏi", exact: true }).click();
   let dialog = page.getByRole("dialog");
   await dialog.getByLabel(/Chuyên khoa/).selectOption(department.id);
   await dialog.getByLabel(/Nội dung câu hỏi/).fill("Bạn có khó thở khi nằm không?");
+  await dialog.getByLabel(/Thứ tự hiển thị/).fill("");
+  await dialog.getByRole("button", { name: "Tạo mới" }).click();
+  await expect(dialog.locator("#consultation-order-error")).toHaveText("Thứ tự hiển thị là bắt buộc.");
+  await expect(dialog.getByLabel(/Thứ tự hiển thị/)).toHaveAttribute("aria-invalid", "true");
+  await dialog.getByLabel(/Thứ tự hiển thị/).fill("2");
   await dialog.getByRole("button", { name: "Tạo mới" }).click();
   await expect.poll(() => state.questionCreates.length).toBe(1);
-  expect(state.questionCreates[0]).toMatchObject({ departmentId: department.id, category: "diagnosis", questionText: "Bạn có khó thở khi nằm không?", sortOrder: 0, isActive: true });
+  expect(state.questionCreates[0]).toMatchObject({ departmentId: department.id, category: "diagnosis", questionText: "Bạn có khó thở khi nằm không?", sortOrder: 2, isActive: true });
 
   let questionRow = page.getByRole("row", { name: /Bạn có đau ngực khi vận động không/ });
   await questionRow.getByRole("button", { name: "Sửa" }).click();
