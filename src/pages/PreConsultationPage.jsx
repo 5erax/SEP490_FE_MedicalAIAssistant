@@ -20,7 +20,13 @@ import {
   medicalDepartmentsApi,
 } from "../services/api";
 import { normalizePhoneNumber } from "../utils/profileValidation";
+import PreConsultationHistory from "../components/preConsultation/PreConsultationHistory";
 import "../styles/pre-consultation.css";
+
+const VIEW_TABS = [
+  { id: "new", label: "Tư vấn mới" },
+  { id: "history", label: "Lịch sử tư vấn" },
+];
 
 const STEPS = [
   { label: "Thông tin", hint: "Buổi khám", icon: Stethoscope },
@@ -117,6 +123,7 @@ function normalizeQuestions(value) {
 }
 
 export default function PreConsultationPage() {
+  const [activeView, setActiveView] = useState("new");
   const [step, setStep] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [departmentsStatus, setDepartmentsStatus] = useState("loading");
@@ -124,7 +131,6 @@ export default function PreConsultationPage() {
   const [formErrors, setFormErrors] = useState({});
   const [session, setSession] = useState(null);
   const [checklistItems, setChecklistItems] = useState([]);
-  const [checkedItems, setCheckedItems] = useState(() => new Set());
   const [sessionDetail, setSessionDetail] = useState(null);
   const [reminderEnabled, setReminderEnabled] = useState(null);
   const [accountPhone, setAccountPhone] = useState("");
@@ -138,6 +144,7 @@ export default function PreConsultationPage() {
   const headingRef = useRef(null);
   const errorRef = useRef(null);
   const pollingActiveRef = useRef(true);
+  const viewTabRefs = useRef([]);
 
   useEffect(() => {
     pollingActiveRef.current = true;
@@ -178,10 +185,6 @@ export default function PreConsultationPage() {
     () => departments.find((item) => item.id === form.departmentId),
     [departments, form.departmentId],
   );
-  const mandatoryItems = useMemo(
-    () => checklistItems.filter((item) => item.isMandatory),
-    [checklistItems],
-  );
   const questions = useMemo(
     () => normalizeQuestions(sessionDetail?.questions ?? session?.questions),
     [session, sessionDetail],
@@ -212,7 +215,6 @@ export default function PreConsultationPage() {
       const response = await checklistItemsApi.byDepartment(departmentId);
       const items = unwrapList(response).filter((item) => item?.id && item?.content);
       setChecklistItems(items);
-      setCheckedItems(new Set());
       setAnnouncement(`Đã tải ${items.length} mục cần chuẩn bị.`);
       return true;
     } catch (loadError) {
@@ -254,16 +256,6 @@ export default function PreConsultationPage() {
     }
   }
 
-  function toggleChecklistItem(itemId) {
-    setCheckedItems((current) => {
-      const next = new Set(current);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
-    setError("");
-  }
-
   async function pollSessionDetail(sessionId) {
     const deadline = Date.now() + SESSION_POLL_TIMEOUT_MS;
 
@@ -289,11 +281,6 @@ export default function PreConsultationPage() {
   }
 
   async function continueFromChecklist() {
-    const missingRequired = mandatoryItems.filter((item) => !checkedItems.has(item.id));
-    if (missingRequired.length > 0) {
-      setError(`Bạn cần xác nhận ${missingRequired.length} mục bắt buộc trước khi tiếp tục.`);
-      return;
-    }
     setBusy("session");
     setError("");
     setAnnouncement("Đang tổng hợp câu hỏi cho buổi khám. Thông tin sẽ tự cập nhật khi sẵn sàng.");
@@ -391,6 +378,32 @@ export default function PreConsultationPage() {
     isReminderEnabled: reminderEnabled === true,
   };
 
+  function selectView(view, moveFocus = false) {
+    setActiveView(view);
+    setError("");
+    if (moveFocus) {
+      const index = VIEW_TABS.findIndex((tab) => tab.id === view);
+      window.requestAnimationFrame(() => viewTabRefs.current[index]?.focus());
+    }
+  }
+
+  function handleViewTabKeyDown(event, currentIndex) {
+    let nextIndex;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % VIEW_TABS.length;
+    else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + VIEW_TABS.length) % VIEW_TABS.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = VIEW_TABS.length - 1;
+    else return;
+
+    event.preventDefault();
+    selectView(VIEW_TABS[nextIndex].id, true);
+  }
+
+  function startNewFromHistory() {
+    setStep(0);
+    selectView("new", true);
+  }
+
   return (
     <div className="pre-consultation-page">
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
@@ -406,6 +419,28 @@ export default function PreConsultationPage() {
           <span><strong>5 bước ngắn gọn</strong><small>Bạn được kiểm tra lại thông tin trước khi hoàn thành.</small></span>
         </div>
       </header>
+
+      <div className="pre-consultation-view-tabs" role="tablist" aria-label="Chọn nội dung tư vấn trước khám">
+        {VIEW_TABS.map((tab, index) => (
+          <button
+            key={tab.id}
+            ref={(element) => { viewTabRefs.current[index] = element; }}
+            id={`pre-consultation-tab-${tab.id}`}
+            type="button"
+            role="tab"
+            aria-selected={activeView === tab.id}
+            aria-controls={`pre-consultation-panel-${tab.id}`}
+            tabIndex={activeView === tab.id ? 0 : -1}
+            onClick={() => selectView(tab.id)}
+            onKeyDown={(event) => handleViewTabKeyDown(event, index)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeView === "new" ? (
+        <div id="pre-consultation-panel-new" role="tabpanel" aria-labelledby="pre-consultation-tab-new">
 
       <ol className="pre-consultation-stepper" aria-label="Tiến trình tư vấn trước khám">
         {STEPS.map((item, index) => {
@@ -508,21 +543,19 @@ export default function PreConsultationPage() {
           <section>
             <section className="pre-consultation-section-head">
               <span>2</span>
-              <div><h2 ref={headingRef} tabIndex="-1">Checklist chuẩn bị</h2><p>Đánh dấu các mục bạn đã chuẩn bị. Mục “Bắt buộc” cần hoàn tất trước khi tiếp tục.</p></div>
+              <div><h2 ref={headingRef} tabIndex="-1">Danh sách chuẩn bị</h2><p>Đọc các lưu ý dưới đây để chủ động chuẩn bị trước khi đến khám.</p></div>
             </section>
             {busy === "checklist" ? (
               <div className="pre-consultation-loading"><LoaderCircle className="spin" aria-hidden="true" /><strong>Đang tải checklist theo chuyên khoa…</strong></div>
             ) : checklistItems.length > 0 ? (
-              <fieldset className="pre-consultation-checklist">
-                <legend className="sr-only">Các mục cần chuẩn bị trước khám</legend>
-                {checklistItems.map((item) => (
-                  <label key={item.id}>
-                    <input type="checkbox" checked={checkedItems.has(item.id)} onChange={() => toggleChecklistItem(item.id)} />
-                    <span className="checkmark"><Check size={16} aria-hidden="true" /></span>
-                    <span className="checklist-copy"><strong>{item.content}</strong><small>{item.isMandatory ? "Bắt buộc" : "Khuyến nghị"}</small></span>
-                  </label>
+              <ol className="pre-consultation-checklist">
+                {checklistItems.map((item, index) => (
+                  <li key={item.id}>
+                    <span className="checklist-number">{index + 1}</span>
+                    <span className="checklist-copy"><strong>{item.content}</strong><small>{item.isMandatory ? "Cần lưu ý" : "Khuyến nghị"}</small></span>
+                  </li>
                 ))}
-              </fieldset>
+              </ol>
             ) : (
               <div className="pre-consultation-empty"><ClipboardCheck size={26} aria-hidden="true" /><strong>Chuyên khoa này chưa có checklist riêng</strong><p>Bạn vẫn có thể tiếp tục để xem câu hỏi gợi ý cho buổi khám.</p></div>
             )}
@@ -622,11 +655,9 @@ export default function PreConsultationPage() {
             </dl>
             <section className="pre-consultation-summary-block"><h3>Điều cần tư vấn</h3><p>{displayedSummary?.symptoms || form.symptoms}</p></section>
             <section className="pre-consultation-summary-block">
-              <h3>Các mục đã chuẩn bị</h3>
+              <h3>Danh sách chuẩn bị</h3>
               <ul>
-                {checklistItems
-                  .filter((item) => checkedItems.has(item.id))
-                  .map((item) => <li key={item.id}><Check size={15} aria-hidden="true" /> {item.content}</li>)}
+                {checklistItems.map((item) => <li key={item.id}><Check size={15} aria-hidden="true" /> {item.content}</li>)}
               </ul>
             </section>
             <section className="pre-consultation-summary-block"><h3>Câu hỏi dành cho bác sĩ</h3><ol>{normalizeQuestions(displayedSummary?.questions ?? questions).map((question) => <li key={question.id}>{question.text}</li>)}</ol></section>
@@ -638,6 +669,12 @@ export default function PreConsultationPage() {
           </section>
         )}
       </section>
+        </div>
+      ) : (
+        <div id="pre-consultation-panel-history" role="tabpanel" aria-labelledby="pre-consultation-tab-history">
+          <PreConsultationHistory onStartNew={startNewFromHistory} />
+        </div>
+      )}
     </div>
   );
 }
