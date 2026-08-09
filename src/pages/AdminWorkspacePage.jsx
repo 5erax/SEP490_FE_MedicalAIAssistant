@@ -4,6 +4,7 @@ import {
   BookOpen,
   Building2,
   CircleHelp,
+  ClipboardCheck,
   CreditCard,
   FileHeart,
   FlaskConical,
@@ -34,6 +35,7 @@ import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitie
 import AdminPatientProfilesSection from "../components/adminPatientProfiles/AdminPatientProfilesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
 import AdminLabIndicatorsSection from "../components/adminLabIndicators/AdminLabIndicatorsSection";
+import AdminConsultationCatalogSection from "../components/adminConsultationCatalog/AdminConsultationCatalogSection";
 import {
   authApi,
   doctorInvitationsApi,
@@ -204,6 +206,7 @@ const ADMIN_NAV_ICONS = {
   departments: Layers3,
   icd: BookOpen,
   question: CircleHelp,
+  "consultation-checklist": ClipboardCheck,
   "lab-indicator": FlaskConical,
   "patient-profile": FileHeart,
 };
@@ -2810,6 +2813,10 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
             )}
             {activeSection === "clinical-questions" && (
               <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} icdChapters={icdChapters} service={clinicalQuestionsApi} />
+            )}
+
+            {activeSection === "consultation-checklists" && (
+              <AdminConsultationCatalogSection />
             )}
 
             {activeSection === "lab-indicators" && (
