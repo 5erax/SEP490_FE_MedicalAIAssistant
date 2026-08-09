@@ -6,8 +6,8 @@
   position: relative;
   overflow: clip;
   background:
-    radial-gradient(circle at 50% 12%, rgba(196, 233, 149, 0.3), transparent 32%),
-    linear-gradient(180deg, #f8fbf4 0%, #edf4e7 100%);
+    radial-gradient(circle at 50% 12%, rgba(8, 127, 140, 0.16), transparent 32%),
+    linear-gradient(180deg, #f7fbfa 0%, #e9f5f1 100%);
   color: var(--color-ink);
   padding: clamp(18px, 3vh, 32px) clamp(20px, 4vw, 48px) clamp(20px, 3vh, 34px);
 }
@@ -67,7 +67,7 @@
   place-items: center;
   border: 1.5px solid var(--color-ink);
   border-radius: var(--radius-lg);
-  background: var(--color-primary);
+  background: var(--color-info);
   color: var(--color-ink);
   box-shadow: var(--shadow-hard);
 }
@@ -90,7 +90,7 @@
 
 .studio-heading .studio-eyebrow {
   margin: 0 0 7px;
-  color: #315d18;
+  color: var(--color-info-strong);
   font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.1em;
@@ -104,7 +104,7 @@
   border: 1px solid var(--color-line-strong);
   border-radius: 24px;
   background: var(--color-surface);
-  box-shadow: 0 22px 60px rgba(34, 63, 20, 0.1);
+  box-shadow: 0 22px 60px rgba(8, 127, 140, 0.1);
   padding: clamp(20px, 2.4vw, 26px);
 }
 
@@ -124,7 +124,7 @@
 }
 
 .studio-form-heading > div:first-child > span {
-  color: #315d18;
+  color: var(--color-info-strong);
   font-size: 12px;
   font-weight: 950;
   letter-spacing: 0.08em;
@@ -149,7 +149,7 @@
   display: inline-flex;
   align-items: center;
   border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
+  background: var(--color-info-bg);
   color: var(--color-ink);
   padding: 7px 13px;
   font-size: 12px;
@@ -239,13 +239,13 @@
 .studio-prompts button:hover:not(:disabled) {
   transform: translateY(-2px);
   border-color: var(--color-ink);
-  background: var(--color-primary-soft);
+  background: var(--color-info-bg);
   color: var(--color-ink);
 }
 
 .studio-prompts button[aria-pressed="true"] {
   border-color: var(--color-ink);
-  background: var(--color-primary-soft);
+  background: var(--color-info-bg);
   color: var(--color-ink);
   box-shadow: inset 0 0 0 1px var(--color-ink);
 }
@@ -265,13 +265,13 @@
 
 html[data-theme="dark"] .specialty-page {
   background:
-    radial-gradient(circle at 50% 12%, rgba(196, 233, 149, 0.12), transparent 32%),
+    radial-gradient(circle at 50% 12%, rgba(8, 127, 140, 0.14), transparent 32%),
     linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%);
 }
 
 html[data-theme="dark"] .studio-heading .studio-eyebrow,
 html[data-theme="dark"] .studio-form-heading > div:first-child > span {
-  color: var(--color-primary);
+  color: var(--color-info);
 }
 
 .studio-diagnosis-panel,
@@ -306,10 +306,10 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
-  border: 1px solid rgba(49, 93, 24, 0.16);
+  border: 1px solid rgba(5, 97, 106, 0.16);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 16px 42px rgba(24, 54, 31, 0.09);
+  box-shadow: 0 16px 42px rgba(8, 127, 140, 0.09);
   padding: 12px 14px;
   backdrop-filter: blur(16px);
 }
@@ -319,10 +319,10 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   height: 38px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(49, 93, 24, 0.12);
+  border: 1px solid rgba(5, 97, 106, 0.12);
   border-radius: 14px;
-  background: #eef8e8;
-  color: #315d18;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
 }
 
 .profile-nudge h2,
@@ -371,7 +371,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 .studio-result-card > span {
   display: inline-block;
   margin-bottom: 6px;
-  color: #315d18;
+  color: var(--color-info-strong);
   font-size: 12px;
   font-weight: 950;
   text-transform: uppercase;
@@ -390,7 +390,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   min-width: 56px;
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
+  background: var(--color-info-bg);
   padding: 7px 10px;
   text-align: center;
 }
@@ -438,7 +438,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #087f8c, var(--color-primary));
+  background: linear-gradient(90deg, #087f8c, var(--color-info));
   transition: width var(--motion-base);
 }
 
@@ -561,7 +561,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 .specialty-result-head span {
   display: inline-block;
   margin-bottom: 6px;
-  color: #315d18;
+  color: var(--color-info-strong);
   font-size: 12px;
   font-weight: 950;
   text-transform: uppercase;
@@ -595,7 +595,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 .studio-result-card > strong {
   width: max-content;
   border-radius: var(--radius-pill);
-  background: var(--color-primary);
+  background: var(--color-info);
   color: var(--color-ink);
   padding: 7px 10px;
 }
@@ -627,7 +627,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   min-height: 300px;
   border: 1px solid var(--color-line);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(185, 239, 124, .14), rgba(255, 255, 255, .88));
+  background: linear-gradient(180deg, rgba(8, 127, 140, .14), rgba(255, 255, 255, .88));
   padding: 20px;
   overflow-x: auto;
 }
@@ -648,7 +648,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   align-items: end;
   justify-content: center;
   border-radius: 16px;
-  background: rgba(215, 223, 207, .55);
+  background: rgba(200, 221, 215, .55);
   padding: 5px;
 }
 
@@ -657,7 +657,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   min-height: 8px;
   display: block;
   border-radius: 14px 14px 8px 8px;
-  background: linear-gradient(180deg, var(--color-primary), #087f8c);
+  background: linear-gradient(180deg, var(--color-info), #087f8c);
   box-shadow: 0 12px 24px rgba(8, 127, 140, 0.18);
 }
 
@@ -668,7 +668,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   place-items: center;
   border-radius: 50%;
   background: var(--color-ink);
-  color: var(--color-primary);
+  color: var(--color-info);
   font-size: 12px;
 }
 
@@ -689,7 +689,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 
 .diagnosis-bar-column > em {
   border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
+  background: var(--color-info-bg);
   color: var(--color-ink);
   padding: 5px 9px;
   font-size: 12px;
@@ -726,7 +726,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   place-items: center;
   border-radius: 50%;
   background: var(--color-ink);
-  color: var(--color-primary);
+  color: var(--color-info);
   font-size: 12px;
   font-weight: 950;
 }
@@ -790,7 +790,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   .studio-chatbox {
     padding: 16px;
     border-radius: 20px;
-    box-shadow: 0 16px 42px rgba(34, 63, 20, 0.1);
+    box-shadow: 0 16px 42px rgba(8, 127, 140, 0.1);
   }
 
   .studio-form-heading {
@@ -916,7 +916,7 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
   border: 1px solid var(--color-line-strong);
   border-radius: 24px;
   background: var(--color-surface);
-  box-shadow: 0 22px 60px rgba(34, 63, 20, 0.1);
+  box-shadow: 0 22px 60px rgba(8, 127, 140, 0.1);
   padding: clamp(18px, 2.5vw, 26px);
 }
 
@@ -1038,13 +1038,13 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 .specialty-answer-grid button:hover {
   transform: translateY(-1px);
   border-color: var(--color-ink);
-  background: var(--color-primary-soft);
+  background: var(--color-info-bg);
 }
 
 .specialty-answer-grid button.selected.yes,
 .specialty-answer-grid button.selected.no {
   border-color: var(--color-ink);
-  background: var(--color-primary);
+  background: var(--color-info);
   color: var(--color-ink);
   box-shadow: inset 0 0 0 1px var(--color-ink);
 }
@@ -1095,28 +1095,28 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 }
 
 .studio-flow li.active span {
-  border-color: #315d18;
-  background: var(--color-primary);
+  border-color: var(--color-info-strong);
+  background: var(--color-info);
 }
 
 .studio-flow li.complete span {
   border-color: var(--color-ink);
   background: var(--color-ink);
-  color: var(--color-primary);
+  color: var(--color-info);
 }
 
 .studio-flow li.complete:not(:last-child)::after {
   background: var(--color-ink);
 }
-.studio-diagnosis-panel, .studio-result-card { border: 1px solid var(--color-line-strong); border-radius: 22px; box-shadow: 0 18px 50px rgba(34, 63, 20, .09); }
+.studio-diagnosis-panel, .studio-result-card { border: 1px solid var(--color-line-strong); border-radius: 22px; box-shadow: 0 18px 50px rgba(8, 127, 140, .09); }
 .studio-question { border-radius: 18px; padding: 20px; }
 .studio-question label { min-height: 48px; padding: 0 20px; cursor: pointer; }
-.studio-question label:has(input:checked) { border-color: #315d18; background: var(--color-primary-soft); box-shadow: inset 0 0 0 1px #315d18; }
-.studio-result-card.specialty { background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-soft) 100%); }
+.studio-question label:has(input:checked) { border-color: var(--color-info-strong); background: var(--color-info-bg); box-shadow: inset 0 0 0 1px var(--color-info-strong); }
+.studio-result-card.specialty { background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-info-bg) 100%); }
 .studio-result-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .studio-result-meta small, .studio-result-meta strong { border-radius: var(--radius-pill); background: var(--color-surface); padding: 7px 10px; font-size: 12px; }
 .studio-confidence { height: 8px; overflow: hidden; border-radius: 999px; background: var(--color-line); }
-.studio-confidence i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #087f8c, var(--color-primary)); }
+.studio-confidence i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #087f8c, var(--color-info)); }
 .studio-diagnosis-list p > strong { display: inline-flex; align-items: center; gap: 9px; }
 .studio-diagnosis-list p > strong > span { width: 26px; height: 26px; display: inline-grid; place-items: center; border-radius: 50%; background: var(--color-surface-soft); color: var(--color-muted); font-size: 11px; }
 
@@ -1231,13 +1231,13 @@ html[data-theme="dark"] .studio-form-heading > div:first-child > span {
 .studio-single-answer button:hover {
   transform: translateY(-1px);
   border-color: var(--color-ink);
-  background: var(--color-primary-soft);
+  background: var(--color-info-bg);
 }
 
 .studio-single-answer button.selected.yes,
 .studio-single-answer button.selected.no {
   border-color: var(--color-ink);
-  background: var(--color-primary);
+  background: var(--color-info);
   color: var(--color-ink);
   box-shadow: inset 0 0 0 1px var(--color-ink);
 }
