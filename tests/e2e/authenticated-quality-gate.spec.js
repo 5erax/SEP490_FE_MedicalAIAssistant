@@ -382,9 +382,8 @@ test("clinical map renders only cached recommendations with deterministic map da
 
   const clinicalSummary = page.getByRole("complementary", { name: "Kết quả gợi ý chuyên khoa" });
   await expect(clinicalSummary.getByText("Khoa Tim mạch", { exact: true })).toBeVisible();
-  const facilityCards = page.locator(".facility-result-card");
-  await expect(facilityCards).toHaveCount(1);
-  await expect(facilityCards.first()).toContainText("Bệnh viện Tim kiểm thử");
+  // The sidebar/list stays closed until a pin is clicked, matching the plain map.
+  await expect(page.locator(".facility-result-card")).toHaveCount(0);
   await expect(page.getByText("Cơ sở không được gợi ý", { exact: true })).toHaveCount(0);
   await expect(page.locator(".clinic-marker")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);

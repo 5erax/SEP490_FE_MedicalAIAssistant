@@ -656,7 +656,7 @@ export default function FacilityMap({
             </div>
           )}
           {clinicalStatus !== "loading" && clinicalStatus !== "ready" && clinicalNotice && (
-            <div className="map-clinical-summary-state">
+            <div className="map-clinical-summary-state" role={clinicalStatus === "error" ? "alert" : "status"}>
               <strong>
                 {clinicalStatus === "empty"
                   ? "Phiên chưa lưu kết quả gợi ý"
