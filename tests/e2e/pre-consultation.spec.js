@@ -216,11 +216,30 @@ test("user reviews a saved consultation in the medical record layout", async ({ 
   await expect(page.getByText("6 câu hỏi", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Trao đổi thêm/, level: 5 })).toHaveCount(1);
 
+  const desktopDetailMetrics = await page.locator(".consultation-session-detail").evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    overflowY: getComputedStyle(element).overflowY,
+  }));
+  expect(desktopDetailMetrics.clientHeight).toBeLessThanOrEqual(720);
+  expect(desktopDetailMetrics.scrollHeight).toBeGreaterThan(desktopDetailMetrics.clientHeight);
+  expect(desktopDetailMetrics.overflowY).toBe("auto");
+
+  const detailPanel = page.locator(".consultation-session-detail");
+  await detailPanel.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await expect(page.getByText("Dấu hiệu nào cần được khám sớm?", { exact: true })).toBeVisible();
+  await detailPanel.evaluate((element) => { element.scrollTop = 0; });
+
   if (screenshotDirectory) {
-    await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-history-desktop.png`, fullPage: true });
+    await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-history-desktop.png`, fullPage: false });
+    await detailPanel.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-history-desktop-end.png`, fullPage: false });
+    await detailPanel.evaluate((element) => { element.scrollTop = 0; });
     await page.setViewportSize({ width: 375, height: 812 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-history-mobile.png`, fullPage: true });
+    await expect(page.locator(".consultation-session-detail")).toHaveCSS("overflow-y", "visible");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-history-mobile.png`, fullPage: false });
   }
 
   const accessibility = await new AxeBuilder({ page })
