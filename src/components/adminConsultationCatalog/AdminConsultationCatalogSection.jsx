@@ -276,8 +276,11 @@ export default function AdminConsultationCatalogSection() {
     if (activeTab === "questions") {
       if (!form.departmentId) errors.departmentId = "Chuyên khoa là bắt buộc.";
       if (!form.questionText.trim()) errors.questionText = "Nội dung câu hỏi là bắt buộc.";
-      if (!Number.isInteger(Number(form.sortOrder)) || Number(form.sortOrder) < 0) {
-        errors.sortOrder = "Thứ tự phải là số nguyên không âm.";
+      const normalizedSortOrder = String(form.sortOrder ?? "").trim();
+      if (!normalizedSortOrder) {
+        errors.sortOrder = "Thứ tự hiển thị là bắt buộc.";
+      } else if (!Number.isInteger(Number(normalizedSortOrder)) || Number(normalizedSortOrder) < 0) {
+        errors.sortOrder = "Thứ tự hiển thị phải là số nguyên không âm.";
       }
     } else if (!form.content.trim()) {
       errors.content = "Nội dung checklist là bắt buộc.";
@@ -526,8 +529,33 @@ export default function AdminConsultationCatalogSection() {
                 <label><span>Chuyên khoa <em>(bắt buộc)</em></span><select ref={firstFieldRef} value={form.departmentId} onChange={(event) => updateForm("departmentId", event.target.value)} required aria-invalid={Boolean(formErrors.departmentId)} aria-describedby={formErrors.departmentId ? "consultation-department-error" : undefined}><option value="">Chọn chuyên khoa</option>{departments.map((item) => <option key={item.id} value={item.id}>{item.departmentName || item.name}</option>)}</select>{formErrors.departmentId && <small id="consultation-department-error" className="field-error">{formErrors.departmentId}</small>}</label>
                 <label><span>Nhóm câu hỏi <em>(bắt buộc)</em></span><select value={form.category} onChange={(event) => updateForm("category", event.target.value)} required>{CATEGORY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
                 <label className="consultation-form-wide"><span>Nội dung câu hỏi <em>(bắt buộc)</em></span><textarea value={form.questionText} onChange={(event) => updateForm("questionText", event.target.value)} rows={4} required aria-invalid={Boolean(formErrors.questionText)} aria-describedby={formErrors.questionText ? "consultation-question-error" : undefined} />{formErrors.questionText && <small id="consultation-question-error" className="field-error">{formErrors.questionText}</small>}</label>
-                <label><span>Thứ tự hiển thị</span><input type="text" inputMode="numeric" pattern="[0-9]*" value={form.sortOrder} onChange={(event) => updateForm("sortOrder", event.target.value)} aria-invalid={Boolean(formErrors.sortOrder)} aria-describedby={formErrors.sortOrder ? "consultation-order-error" : undefined} />{formErrors.sortOrder && <small id="consultation-order-error" className="field-error">{formErrors.sortOrder}</small>}</label>
-                <label className="consultation-checkbox"><input type="checkbox" checked={form.isActive} onChange={(event) => updateForm("isActive", event.target.checked)} /><span>Đang sử dụng trong luồng tư vấn</span></label>
+                <fieldset className="consultation-settings consultation-form-wide">
+                  <legend>Thiết lập hiển thị</legend>
+                  <div className="consultation-settings-grid">
+                    <label>
+                      <span>Thứ tự hiển thị <em>(bắt buộc)</em></span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={form.sortOrder}
+                        onChange={(event) => updateForm("sortOrder", event.target.value)}
+                        required
+                        aria-invalid={Boolean(formErrors.sortOrder)}
+                        aria-describedby={formErrors.sortOrder ? "consultation-order-error" : "consultation-order-help"}
+                      />
+                      <small id="consultation-order-help">Số nhỏ hơn sẽ được hiển thị trước.</small>
+                      {formErrors.sortOrder && <small id="consultation-order-error" className="field-error">{formErrors.sortOrder}</small>}
+                    </label>
+                    <div className="consultation-status-field">
+                      <span>Trạng thái sử dụng</span>
+                      <label className="consultation-checkbox">
+                        <input type="checkbox" checked={form.isActive} onChange={(event) => updateForm("isActive", event.target.checked)} />
+                        <span>Đang sử dụng trong luồng tư vấn</span>
+                      </label>
+                    </div>
+                  </div>
+                </fieldset>
               </>
             ) : (
               <>
