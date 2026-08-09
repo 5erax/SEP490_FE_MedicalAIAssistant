@@ -17,6 +17,7 @@ async function mockPreConsultation(page) {
     checklist: 0,
     detail: 0,
     detailTimes: [],
+    history: 0,
     userMe: 0,
     reminderBody: null,
     summary: 0,
@@ -56,6 +57,32 @@ async function mockPreConsultation(page) {
     if (path === `/api/checklist-items/by-department/${DEPARTMENT_ID}`) {
       calls.checklist += 1;
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: checklist }) });
+    }
+    if (path === "/api/consultation-sessions/my-sessions" && method === "GET") {
+      calls.history += 1;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            pageNumber: 1,
+            pageSize: 6,
+            totalCount: 1,
+            totalPages: 1,
+            items: [{
+              sessionId: SESSION_ID,
+              departmentId: DEPARTMENT_ID,
+              departmentName: "Tim mạch",
+              facilityId: null,
+              facilityName: null,
+              appointmentTime: "2027-01-15T02:30:00Z",
+              symptoms: "Đau ngực khi vận động",
+              status: "processing",
+              createdAt: "2027-01-10T02:30:00Z",
+            }],
+          },
+        }),
+      });
     }
     if (path === `/api/consultation-sessions/${SESSION_ID}` && method === "GET") {
       calls.detail += 1;
@@ -124,8 +151,9 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
     .map((violation) => violation.id)).toEqual([]);
 
   await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
-  await expect(page.getByRole("heading", { name: "Checklist chuẩn bị" })).toBeVisible();
-  await page.getByLabel("Mang theo kết quả xét nghiệm gần nhất").check();
+  await expect(page.getByRole("heading", { name: "Danh sách chuẩn bị" })).toBeVisible();
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await expect(page.getByText("Mang theo kết quả xét nghiệm gần nhất", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
 
   await expect(page.getByText("Tôi có cần làm xét nghiệm máu trước buổi khám không?", { exact: true })).toBeVisible();
@@ -157,15 +185,49 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
   expect(pageErrors).toEqual([]);
 });
 
-test("required checklist items block the next step", async ({ page }) => {
+test("checklist is read-only and allows the user to continue", async ({ page }) => {
   await openPreConsultation(page);
   await page.getByLabel("Chuyên khoa (bắt buộc)").selectOption(DEPARTMENT_ID);
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
   await page.getByLabel("Triệu chứng hoặc điều cần tư vấn (bắt buộc)").fill("Đau ngực khi vận động");
   await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await expect(page.getByText("Mang theo kết quả xét nghiệm gần nhất", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
-  await expect(page.getByRole("alert")).toContainText("1 mục bắt buộc");
-  await expect(page.getByRole("heading", { name: "Checklist chuẩn bị" })).toBeVisible();
+  await expect(page.getByText("Tôi có cần làm xét nghiệm máu trước buổi khám không?", { exact: true })).toBeVisible();
+});
+
+test("user reviews a saved consultation in the medical record layout", async ({ page }) => {
+  const calls = await openPreConsultation(page);
+  const screenshotDirectory = globalThis.process?.env.PRE_CONSULT_SCREENSHOT_DIR;
+  const historyTab = page.getByRole("tab", { name: "Lịch sử tư vấn" });
+
+  await historyTab.click();
+  await expect(historyTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "Lịch sử tư vấn trước khám" })).toBeVisible();
+  await expect(page.getByText("Đau ngực khi vận động", { exact: true }).first()).toBeVisible();
+
+  await page.getByRole("button", { name: /Tim mạch.*Đau ngực khi vận động/ }).click();
+  await expect(page.getByRole("heading", { name: "Tim mạch", level: 3 })).toBeVisible();
+  await expect(page.getByText("Tôi có cần làm xét nghiệm máu trước buổi khám không?", { exact: true })).toBeVisible();
+
+  if (screenshotDirectory) {
+    await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-history-desktop.png`, fullPage: true });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-history-mobile.png`, fullPage: true });
+  }
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".consultation-history")
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(accessibility.violations
+    .filter((violation) => ["critical", "serious"].includes(violation.impact))
+    .map((violation) => violation.id)).toEqual([]);
+
+  expect(calls.history).toBe(1);
+  expect(calls.detail).toBe(3);
 });
 
 test("technical AI wording is replaced with user-facing guidance", async ({ page }) => {

@@ -36,6 +36,10 @@
 .pre-consultation-hero-note strong { font-size: 14px; }
 .pre-consultation-hero-note small { color: #fff; line-height: 1.35; }
 
+.pre-consultation-view-tabs { display: inline-grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); margin-top: 20px; border: 1px solid var(--consult-line); border-radius: 13px; padding: 4px; background: #f4f8f7; }
+.pre-consultation-view-tabs button { min-height: 44px; border: 0; border-radius: 9px; padding: 0 18px; color: #49625f; background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
+.pre-consultation-view-tabs button[aria-selected="true"] { color: #fff; background: var(--consult-teal-dark); box-shadow: 0 5px 12px rgba(7, 95, 102, 0.16); }
+
 .pre-consultation-stepper {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -108,13 +112,9 @@
 .pre-consultation-empty p { margin: 5px 0 0; color: var(--consult-muted); }
 .spin { animation: consultation-spin 0.85s linear infinite; }
 
-.pre-consultation-checklist { display: grid; gap: 11px; margin: 0; padding: 0; border: 0; }
-.pre-consultation-checklist label { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 12px; position: relative; min-height: 70px; border: 1px solid var(--consult-line); border-radius: 16px; padding: 13px 15px; background: #fbfdfc; cursor: pointer; }
-.pre-consultation-checklist label:hover { border-color: var(--consult-teal); }
-.pre-consultation-checklist input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.pre-consultation-checklist .checkmark { display: grid; width: 28px; height: 28px; place-items: center; border: 2px solid #667f7a; border-radius: 9px; color: transparent; background: #fff; }
-.pre-consultation-checklist input:checked + .checkmark { border-color: var(--consult-teal); color: #fff; background: var(--consult-teal); }
-.pre-consultation-checklist input:focus-visible + .checkmark { outline: 3px solid var(--consult-teal-dark); outline-offset: 3px; box-shadow: 0 0 0 5px #fff; }
+.pre-consultation-checklist { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.pre-consultation-checklist li { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 13px; min-height: 68px; border: 1px solid var(--consult-line); border-radius: 14px; padding: 13px 15px; background: #fbfdfc; }
+.pre-consultation-checklist .checklist-number { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; color: var(--consult-teal-dark); background: var(--consult-soft); font-size: 13px; font-weight: 900; }
 .checklist-copy { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .checklist-copy small { flex: 0 0 auto; border-radius: 999px; padding: 5px 9px; color: #496661; background: #eaf2ef; font-weight: 850; }
 
@@ -155,6 +155,67 @@
 .pre-consultation-summary-block ul li { display: flex; align-items: flex-start; gap: 8px; }
 .pre-consultation-summary-block ul svg { flex: 0 0 auto; margin-top: 3px; color: var(--consult-teal); }
 
+.consultation-history { margin-top: 12px; border: 1px solid var(--consult-line); border-radius: 20px; padding: clamp(24px, 3vw, 34px); background: var(--paper, #fff); box-shadow: 0 14px 38px rgba(16, 42, 44, 0.07); }
+.consultation-history-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; border-bottom: 1px solid #e2ece9; padding-bottom: 20px; }
+.consultation-history-header h2 { margin: 5px 0 0; font-size: clamp(25px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.025em; }
+.consultation-history-kicker { color: var(--consult-teal-dark); font-size: 11px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.consultation-history-refresh, .consultation-history-state button, .consultation-history-pagination button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; border: 1px solid var(--consult-line); border-radius: 11px; padding: 0 15px; color: var(--consult-ink); background: #fff; font: inherit; font-weight: 850; cursor: pointer; }
+.consultation-history-refresh:disabled, .consultation-history-pagination button:disabled { cursor: not-allowed; opacity: 0.48; }
+.consultation-history-shell { display: grid; grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1.45fr); gap: 18px; margin-top: 20px; }
+.consultation-session-list, .consultation-session-detail { min-width: 0; min-height: 590px; border: 1px solid var(--consult-line); border-radius: 17px; background: #fbfdfc; }
+.consultation-session-list { display: flex; flex-direction: column; padding: 16px; }
+.consultation-session-list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 3px 3px 13px; }
+.consultation-session-list-head h3 { margin: 0; font-size: 16px; }
+.consultation-session-list-head span { color: var(--consult-muted); font-size: 12px; font-weight: 750; }
+.consultation-session-cards { display: grid; gap: 9px; }
+.consultation-session-card { display: grid; gap: 11px; width: 100%; border: 1px solid #d7e5e1; border-radius: 13px; padding: 14px; color: var(--consult-ink); background: #fff; text-align: left; cursor: pointer; transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+.consultation-session-card:hover { border-color: #7eb9b3; transform: translateY(-1px); }
+.consultation-session-card[aria-pressed="true"] { border-color: var(--consult-teal); background: #f1faf7; box-shadow: inset 4px 0 0 var(--consult-teal); }
+.consultation-session-card-top, .consultation-session-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.consultation-session-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.consultation-session-card p { display: -webkit-box; overflow: hidden; margin: 0; color: #405b5c; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.consultation-status { justify-self: start; border-radius: 999px; padding: 5px 8px; font-size: 10px; font-weight: 900; letter-spacing: 0.02em; }
+.consultation-status.processing { color: #765010; background: #fff1cb; }
+.consultation-status.completed { color: #12643f; background: #dff7e9; }
+.consultation-status.failed { color: #8f2924; background: #fee5e3; }
+.consultation-session-time { display: inline-flex; align-items: center; gap: 6px; color: var(--consult-muted); font-size: 12px; font-weight: 750; }
+.consultation-session-symptoms { display: -webkit-box; overflow: hidden; color: #405b5c; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.consultation-session-open { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; color: var(--consult-teal-dark); font-size: 12px; font-weight: 850; }
+.consultation-session-card-meta { color: var(--consult-muted); font-size: 11px; font-weight: 700; }
+.consultation-session-status { flex: 0 0 auto; border-radius: 999px; padding: 5px 8px; font-size: 10px; font-weight: 900; letter-spacing: 0.02em; }
+.consultation-session-status.processing { color: #765010; background: #fff1cb; }
+.consultation-session-status.completed { color: #12643f; background: #dff7e9; }
+.consultation-session-status.failed { color: #8f2924; background: #fee5e3; }
+.consultation-history-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 16px; }
+.consultation-history-pagination span { color: var(--consult-muted); font-size: 12px; font-weight: 750; }
+.consultation-session-detail { padding: clamp(20px, 3vw, 28px); background: #fff; }
+.consultation-history-state, .consultation-detail-placeholder { display: grid; min-height: 100%; place-content: center; justify-items: center; gap: 9px; padding: 30px; color: var(--consult-muted); text-align: center; }
+.consultation-history-state strong, .consultation-detail-placeholder strong { color: var(--consult-ink); }
+.consultation-history-state.error { color: #74221d; }
+.consultation-history-state.error button { margin-top: 6px; color: #74221d; border-color: #e7aaa6; }
+.consultation-history-state.empty svg, .consultation-detail-placeholder svg { color: var(--consult-teal); }
+.consultation-detail-content { display: grid; gap: 22px; }
+.consultation-detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; border-bottom: 1px solid #e2ece9; padding-bottom: 18px; }
+.consultation-detail-header h3 { margin: 5px 0 0; font-size: clamp(21px, 2.5vw, 28px); line-height: 1.2; }
+.consultation-detail-header h3:focus { outline: none; }
+.consultation-detail-header h3:focus-visible { outline: 3px solid var(--consult-teal-dark); outline-offset: 4px; border-radius: 4px; }
+.consultation-detail-processing { display: flex; align-items: center; gap: 10px; border-left: 3px solid #c88a15; border-radius: 0 10px 10px 0; padding: 11px 13px; color: #65460d; background: #fff9e8; line-height: 1.45; }
+.consultation-detail-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.consultation-detail-facts div { border: 1px solid #dce8e5; border-radius: 12px; padding: 13px; background: #f8fbfa; }
+.consultation-detail-facts dt { color: var(--consult-muted); font-size: 10px; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; }
+.consultation-detail-facts dd { margin: 6px 0 0; font-weight: 800; line-height: 1.45; }
+.consultation-detail-section { display: grid; gap: 11px; }
+.consultation-detail-section h4 { margin: 0; font-size: 16px; }
+.consultation-detail-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.consultation-detail-section-title span { color: var(--consult-muted); font-size: 12px; font-weight: 750; }
+.consultation-detail-empty-copy { border-left-color: #a9c8c1 !important; color: var(--consult-muted) !important; background: #f8fbfa !important; }
+.consultation-detail-section > p { margin: 0; border-left: 3px solid var(--consult-teal); padding: 10px 13px; color: #405b5c; background: #f2faf8; line-height: 1.6; white-space: pre-wrap; }
+.consultation-question-groups { display: grid; gap: 12px; }
+.consultation-question-group { border: 1px solid #dce8e5; border-radius: 13px; padding: 14px; }
+.consultation-question-group h5 { margin: 0 0 10px; color: var(--consult-teal-dark); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+.consultation-question-group ol { display: grid; gap: 9px; margin: 0; padding-left: 22px; }
+.consultation-question-group li { padding-left: 3px; line-height: 1.5; }
+
 .pre-consultation-page :where(a, button, input, select, textarea):focus-visible {
   outline: 3px solid var(--consult-teal-dark);
   outline-offset: 2px;
@@ -171,12 +232,18 @@
   .pre-consultation-stepper li { padding: 13px 12px; }
   .pre-consultation-stepper li > div { display: none; }
   .pre-consultation-stepper li { justify-content: center; }
+  .consultation-history-shell { grid-template-columns: 1fr; }
+  .consultation-session-list, .consultation-session-detail { min-height: auto; }
+  .consultation-session-detail { min-height: 420px; }
+  .consultation-detail-placeholder { min-height: 350px; }
 }
 
 @media (max-width: 640px) {
   .pre-consultation-page { width: calc(100% - 20px); padding: 12px 0 calc(var(--patient-safe-bottom, 82px) + 24px); }
   .pre-consultation-hero { gap: 20px; border-radius: 20px; padding: 23px 20px; }
   .pre-consultation-title { font-size: 34px; }
+  .pre-consultation-view-tabs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .pre-consultation-view-tabs button { padding: 0 10px; }
   .pre-consultation-stepper { border-radius: 16px; }
   .pre-consultation-stepper li { min-width: 62px; padding: 11px 7px; }
   .pre-consultation-stepper li > span { width: 31px; height: 31px; flex-basis: 31px; }
@@ -190,15 +257,22 @@
   .checklist-copy { align-items: flex-start; flex-direction: column; gap: 6px; }
   .pre-consultation-actions, .pre-consultation-actions.split { align-items: stretch; flex-direction: column-reverse; }
   .pre-consultation-actions button, .pre-consultation-actions .link-button { width: 100%; }
+  .consultation-history { border-radius: 18px; padding: 18px 14px; }
+  .consultation-history-header, .consultation-detail-header { align-items: stretch; flex-direction: column; }
+  .consultation-detail-header .consultation-status { align-self: flex-start; }
+  .consultation-history-refresh { width: 100%; }
+  .consultation-session-list { padding: 11px; }
+  .consultation-session-list-head { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .consultation-session-detail { min-height: 360px; padding: 18px 14px; }
+  .consultation-detail-facts { grid-template-columns: 1fr; }
+  .consultation-history-state, .consultation-detail-placeholder { padding: 24px 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .spin { animation-duration: 1.8s; }
-  .pre-consultation-actions button, .pre-consultation-stepper li { scroll-behavior: auto; transition: none; }
+  .pre-consultation-actions button, .pre-consultation-stepper li, .consultation-session-card { scroll-behavior: auto; transition: none; }
 }
 
 @media (forced-colors: active) {
-  .pre-consultation-hero, .pre-consultation-actions .primary, .pre-consultation-section-head > span, .pre-consultation-checklist input:checked + .checkmark { border: 2px solid ButtonText; }
-  .pre-consultation-checklist input { opacity: 1; position: static; width: 20px; height: 20px; }
-  .pre-consultation-checklist .checkmark { display: none; }
+  .pre-consultation-hero, .pre-consultation-actions .primary, .pre-consultation-section-head > span, .pre-consultation-view-tabs button[aria-selected="true"], .consultation-session-card[aria-pressed="true"] { border: 2px solid ButtonText; }
 }
