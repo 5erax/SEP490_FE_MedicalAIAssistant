@@ -155,6 +155,9 @@ export const ENDPOINTS = {
     GENERATE_QUESTIONS: `${CONSULTATION_SESSIONS_BASE}/generate-questions-for-consultant-session`,
     MY_SESSIONS: `${CONSULTATION_SESSIONS_BASE}/my-sessions`,
     BY_ID: (sessionId) => byId(CONSULTATION_SESSIONS_BASE, sessionId),
+    REGISTER_REMINDER: (sessionId) => `${encodedById(CONSULTATION_SESSIONS_BASE, sessionId)}/register-reminder`,
+    SUMMARY: (sessionId) => `${encodedById(CONSULTATION_SESSIONS_BASE, sessionId)}/summary`,
+    COMPLETE: (sessionId) => `${encodedById(CONSULTATION_SESSIONS_BASE, sessionId)}/complete`,
   },
   DEPARTMENT_CONSULTATION_QUESTIONS: {
     BASE: DEPARTMENT_CONSULTATION_QUESTIONS_BASE,

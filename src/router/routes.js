@@ -116,6 +116,20 @@ const BASE_ROUTES = [
     access: "auth",
     shell: "patient",
   },
+  {
+    id: "patient.pre-consultation",
+    path: "/pre-consultation",
+    title: "Tư vấn trước khám | MediMate AI",
+    access: "auth",
+    shell: "patient",
+    navigation: {
+      shell: "patient",
+      label: "Tư vấn trước khám",
+      hint: "Chuẩn bị buổi khám",
+      icon: "consultation",
+      order: 55,
+    },
+  },
   { id: "patient.recovery", path: "/recovery-plan", title: "Kế hoạch phục hồi | MediMate AI", access: "auth", shell: "patient", navigation: { shell: "patient", label: "Kế hoạch phục hồi", hint: "Theo dõi sau khám", icon: "recovery", order: 60 } },
   {
     id: "patient.medication",
