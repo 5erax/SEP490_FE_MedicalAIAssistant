@@ -474,6 +474,7 @@ function NearbyClinicPage() {
   const [departmentPickerOpen, setDepartmentPickerOpen] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [sidebarView, setSidebarView] = useState("hospital-list");
+  const [sidebarUnlocked, setSidebarUnlocked] = useState(false);
   const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
@@ -1061,6 +1062,7 @@ function NearbyClinicPage() {
     if (!facility?.facilityId) return;
     handleCardClick(facility);
     setSidebarView("hospital-detail");
+    setSidebarUnlocked(true);
     setSelectedDoctor(null);
     setDetailPanelOpen(true);
     setDetailFacility(facility);
@@ -1228,6 +1230,7 @@ function NearbyClinicPage() {
   const closeFacilityDetail = () => {
     const facilityId = detailFacility?.facilityId;
     setSidebarView("hospital-list");
+    setSidebarUnlocked(false);
     setDetailPanelOpen(false);
     setDetailFacility(null);
     setDetailError("");
@@ -1521,7 +1524,9 @@ function NearbyClinicPage() {
   });
   const showLegacyMapDetail = Boolean(0);
   const showSidebar = isClinicalFlow
-    || sidebarView !== "hospital-list"
+    // Once a pin has been opened at least once, keep the sidebar available so
+    // switching departments can return to its list instead of hiding it.
+    || sidebarUnlocked
     // If the map itself failed to load there is no pin left to click, so the
     // list is the only way left to find and select a facility.
     || mapStatus === "error";
@@ -1886,6 +1891,7 @@ function NearbyClinicPage() {
                         className={selectedDepartmentId === "all" ? "active" : ""}
                         onClick={() => {
                           setSelectedDepartmentId("all");
+                          setSidebarView("hospital-list");
                           setDepartmentPickerOpen(false);
                         }}
                       >
@@ -1899,6 +1905,7 @@ function NearbyClinicPage() {
                           className="map-department-filter-clear"
                           onClick={() => {
                             setSelectedDepartmentId("");
+                            setSidebarView("hospital-list");
                             setDepartmentPickerOpen(false);
                           }}
                         >
@@ -1918,6 +1925,7 @@ function NearbyClinicPage() {
                             className={department.id === selectedDepartmentId ? "active" : ""}
                             onClick={() => {
                               setSelectedDepartmentId(department.id);
+                              setSidebarView("hospital-list");
                               setDepartmentPickerOpen(false);
                             }}
                           >
