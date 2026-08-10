@@ -113,7 +113,10 @@
 .pre-consultation-suggestion-row > span:first-child { display: grid; gap: 2px; min-width: 0; }
 .pre-consultation-suggestion-row strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .pre-consultation-suggestion-row small { color: var(--consult-muted); font-size: 11px; font-weight: 700; }
-.pre-consultation-suggestion-empty { margin: 0; padding: 10px 6px; color: var(--consult-muted); font-size: 13px; font-weight: 650; }
+.pre-consultation-suggestion-empty-state { display: grid; gap: 10px; padding: 6px; }
+.pre-consultation-suggestion-empty { margin: 0; padding: 0; color: var(--consult-muted); font-size: 13px; font-weight: 650; }
+.pre-consultation-suggestion-empty-state a.secondary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: fit-content; border: 1px solid var(--consult-teal); border-radius: 10px; padding: 9px 14px; color: var(--consult-teal-dark); background: var(--consult-soft); font-size: 12px; font-weight: 850; text-decoration: none; cursor: pointer; }
+.pre-consultation-suggestion-empty-state a.secondary:hover { background: #e0f2ee; }
 .pre-consultation-suggestion-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px; color: #74221d; font-size: 13px; font-weight: 700; }
 .pre-consultation-suggestion-error button { flex: 0 0 auto; border: 1px solid #e7aaa6; border-radius: 9px; padding: 7px 11px; color: #74221d; background: #fff; font: inherit; font-weight: 850; cursor: pointer; }
 
