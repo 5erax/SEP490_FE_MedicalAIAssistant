@@ -370,7 +370,22 @@ function getPagedPayload(response) {
 }
 
 function formatRoles(roles) {
-  return roles.length ? roles.join(", ") : "admin";
+  if (!roles.length) return "Quản trị viên";
+
+  return roles.map((role) => {
+    const normalizedRole = String(role).trim().toLowerCase();
+    if (["admin", "administrator"].includes(normalizedRole)) return "Quản trị viên";
+    if (["systemadmin", "system-admin", "system admin"].includes(normalizedRole)) {
+      return "Quản trị viên hệ thống";
+    }
+    return role;
+  }).join(", ");
+}
+
+function localizeAdminDisplayName(value) {
+  const displayName = String(value || "").trim();
+  const normalizedName = displayName.toLowerCase().replace(/[\s_-]+/g, " ");
+  return normalizedName === "system admin" ? "Quản trị viên hệ thống" : displayName;
 }
 
 function AccessDenied({ auth, roles }) {
@@ -548,7 +563,9 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
 
   const roles = useMemo(() => normalizeRoles(profile?.roles ?? auth?.roles ?? []), [auth, profile]);
   const isAdmin = hasRole(roles, "admin");
-  const displayName = profile?.name || profile?.displayName || auth?.email?.split("@")[0] || "Admin";
+  const displayName = localizeAdminDisplayName(
+    profile?.name || profile?.displayName || auth?.email?.split("@")[0] || "Quản trị viên",
+  );
 
   function openSection(section) {
     setMobileNavOpen(false);

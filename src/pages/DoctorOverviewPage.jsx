@@ -87,10 +87,10 @@ export default function DoctorOverviewPage() {
               <span className="doctor-overview-stat-icon"><ClipboardList size={22} aria-hidden="true" /></span>
               <div>
                 <strong>{openCount ?? "—"}</strong>
-                <p>Yêu cầu đang chờ trong hàng đợi</p>
+                <p>Yêu cầu trong hàng đợi</p>
               </div>
               <button type="button" onClick={() => navigate("/app/staff/recovery-plans/queue")}>
-                Vào hàng đợi <ArrowRight size={16} aria-hidden="true" />
+                Xem hàng đợi <ArrowRight size={16} aria-hidden="true" />
               </button>
             </article>
 
@@ -98,35 +98,35 @@ export default function DoctorOverviewPage() {
               <span className="doctor-overview-stat-icon"><ListChecks size={22} aria-hidden="true" /></span>
               <div>
                 <strong>{mineCount ?? "—"}</strong>
-                <p>Yêu cầu bạn đã nhận từ trước tới nay</p>
+                <p>Yêu cầu của bệnh nhân</p>
               </div>
               <button type="button" className="doctor-overview-stat-secondary" onClick={() => navigate("/app/staff/recovery-plans/mine")}>
-                Xem yêu cầu của tôi <ArrowRight size={16} aria-hidden="true" />
+                Xem yêu cầu <ArrowRight size={16} aria-hidden="true" />
               </button>
             </article>
           </div>
         )}
 
         <aside className="doctor-overview-tips" aria-labelledby="doctor-tips-title">
-          <p className="doctor-overview-eyebrow">Trước khi bắt đầu</p>
-          <h2 id="doctor-tips-title">Quy trình xử lý 1 yêu cầu</h2>
+          <p className="doctor-overview-eyebrow">Hướng dẫn nhanh</p>
+          <h2 id="doctor-tips-title">Cách xử lý một yêu cầu</h2>
           <ul>
             <li>
               <CircleCheckBig size={18} aria-hidden="true" />
-              <span>Nhận yêu cầu ở Hàng đợi trước khi bác sĩ khác nhận.</span>
+              <span>Trong Hàng đợi, chọn yêu cầu phù hợp và nhấn Nhận yêu cầu.</span>
             </li>
             <li>
               <CircleCheckBig size={18} aria-hidden="true" />
-              <span>Bắt đầu xem xét trong thời hạn được cấp, tránh bị thu hồi tự động.</span>
+              <span>Mở yêu cầu đã nhận và nhấn Bắt đầu xem xét trước khi hết thời gian xử lý.</span>
             </li>
             <li>
               <CircleCheckBig size={18} aria-hidden="true" />
-              <span>Đọc kỹ hồ sơ lâm sàng trước khi soạn kế hoạch phục hồi.</span>
+              <span>Kiểm tra hồ sơ sức khỏe, điền nội dung tư vấn rồi gửi kế hoạch cho người dùng.</span>
             </li>
           </ul>
           <div className="doctor-overview-tips-note">
             <ShieldCheck size={16} aria-hidden="true" />
-            <span>Kế hoạch phục hồi chỉ gồm dinh dưỡng, thực phẩm gợi ý, ngủ và nghỉ — không kê thuốc.</span>
+            <span>Không kê đơn thuốc. Nội dung chỉ gồm hướng dẫn về dinh dưỡng, thực phẩm, giấc ngủ và nghỉ ngơi.</span>
           </div>
         </aside>
       </div>

@@ -13,6 +13,20 @@
   --admin-cohesion-mint: #e8f6f2;
 }
 
+/* Keep sidebar navigation scrollable without showing browser scrollbars. */
+.admin-operator .admin-sidebar,
+.admin-operator .admin-nav {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.admin-operator .admin-sidebar::-webkit-scrollbar,
+.admin-operator .admin-nav::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 /* One rhythm for every top-level management surface. */
 .admin-operator :is(
   .facility-clinical-panel,
