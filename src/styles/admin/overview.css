@@ -6,7 +6,7 @@
   --overview-line: #cfe0dc;
   --overview-surface: #ffffff;
   display: grid;
-  gap: clamp(18px, 2vw, 24px);
+  gap: clamp(16px, 1.8vw, 22px);
 }
 
 .admin-operator .admin-overview-heading {
@@ -14,14 +14,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  gap: clamp(24px, 5vw, 72px);
+  gap: clamp(20px, 3vw, 48px);
   overflow: hidden;
   border: 1px solid var(--overview-line);
   border-radius: 22px;
   background:
     linear-gradient(120deg, rgba(225, 243, 238, 0.82), rgba(255, 255, 255, 0.96) 62%),
     var(--overview-surface);
-  padding: clamp(24px, 3.5vw, 42px);
+  padding: clamp(22px, 2.6vw, 34px);
 }
 
 .admin-operator .admin-overview-heading::after {
@@ -119,15 +119,15 @@
   position: relative;
   display: grid;
   align-content: space-between;
-  gap: 28px;
+  gap: 20px;
   min-width: 0;
-  min-height: 260px;
+  min-height: 210px;
   border: 0;
   border-right: 1px solid var(--overview-line);
   border-bottom: 1px solid var(--overview-line);
   background: transparent;
   color: var(--overview-ink);
-  padding: clamp(20px, 2.4vw, 30px);
+  padding: clamp(18px, 1.8vw, 24px);
   text-align: left;
   text-decoration: none;
   transition: background 160ms ease, color 160ms ease;
@@ -348,7 +348,7 @@
 
 .admin-operator .admin-overview-charts {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(16px, 2vw, 20px);
 }
 
@@ -359,7 +359,8 @@
   border: 1px solid var(--overview-line);
   border-radius: 20px;
   background: var(--overview-surface);
-  padding: clamp(20px, 2.4vw, 26px);
+  min-width: 0;
+  padding: clamp(18px, 2vw, 24px);
 }
 
 .admin-operator .admin-overview-chart-head {
@@ -673,7 +674,11 @@
   }
 
   .admin-operator .admin-overview-card {
-    min-height: 238px;
+    min-height: 210px;
+  }
+
+  .admin-operator .admin-overview-charts {
+    grid-template-columns: 1fr;
   }
 
   .admin-operator .admin-overview-card:nth-child(odd) {

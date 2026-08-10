@@ -416,3 +416,70 @@
     min-width: 0;
   }
 }
+
+@media (min-width: 761px) {
+  .admin-operator :is(
+    .facility-clinical-panel,
+    .department-clinical-panel,
+    .icd-clinical-panel,
+    .clinical-catalog-panel,
+    .doctor-clinical-panel,
+    .admin-users-panel,
+    .ai-config-clinical-panel,
+    .patient-profile-clinical-panel
+  ) {
+    gap: 16px;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-panel,
+    .department-clinical-panel,
+    .icd-clinical-panel,
+    .clinical-catalog-panel,
+    .ai-config-clinical-panel,
+    .patient-profile-clinical-panel
+  ) {
+    padding: clamp(18px, 2vw, 26px);
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading,
+    .department-clinical-heading,
+    .icd-clinical-heading,
+    .clinical-catalog-heading,
+    .doctor-clinical-heading,
+    .admin-users-heading,
+    .ai-config-clinical-heading,
+    .patient-profile-clinical-heading
+  ) {
+    gap: clamp(18px, 3vw, 40px);
+    padding: clamp(20px, 2.2vw, 30px);
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading-copy,
+    .department-clinical-heading-copy,
+    .icd-clinical-heading-copy,
+    .clinical-catalog-heading-copy,
+    .doctor-clinical-heading-copy,
+    .admin-users-heading-copy,
+    .ai-config-clinical-heading-copy,
+    .patient-profile-clinical-heading-copy
+  ) h2 {
+    font-size: clamp(28px, 2.6vw, 40px);
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading-copy,
+    .department-clinical-heading-copy,
+    .icd-clinical-heading-copy,
+    .clinical-catalog-heading-copy,
+    .doctor-clinical-heading-copy,
+    .admin-users-heading-copy,
+    .ai-config-clinical-heading-copy,
+    .patient-profile-clinical-heading-copy
+  ) > p:last-child {
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+}
