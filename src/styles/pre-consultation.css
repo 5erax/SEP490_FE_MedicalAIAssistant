@@ -79,6 +79,25 @@
 .pre-consultation-section-head h2:focus-visible { outline: 3px solid var(--consult-teal-dark); outline-offset: 4px; border-radius: 4px; }
 .pre-consultation-section-head p { margin: 0; color: var(--consult-muted); line-height: 1.55; }
 
+.pre-consultation-suggestion-triggers { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.pre-consultation-suggestion-triggers .ghost { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; border: 1px solid var(--consult-line); border-radius: 11px; padding: 0 14px; color: var(--consult-teal-dark); background: var(--consult-soft); font: inherit; font-size: 13px; font-weight: 850; cursor: pointer; }
+.pre-consultation-suggestion-triggers .ghost:hover:not(:disabled) { border-color: var(--consult-teal); }
+.pre-consultation-suggestion-triggers .ghost:disabled { color: var(--consult-muted); background: #f4f8f7; cursor: not-allowed; opacity: 0.72; }
+.pre-consultation-selected-facility { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 12px; color: var(--consult-teal-dark); background: #eaf7f4; font-size: 13px; font-weight: 750; }
+.pre-consultation-selected-facility button { display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 50%; color: inherit; background: rgba(8, 127, 134, 0.14); font-size: 13px; line-height: 1; cursor: pointer; }
+
+.pre-consultation-suggestion-panel { border: 1px solid var(--consult-line); border-radius: 16px; padding: 14px; background: #fbfdfc; }
+.pre-consultation-suggestion-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-color: #8ab8b2 #edf5f3; scrollbar-width: thin; }
+.pre-consultation-suggestion-card { display: grid; flex: 0 0 auto; gap: 6px; width: 240px; border: 1px solid var(--consult-line); border-radius: 13px; padding: 13px 14px; color: var(--consult-ink); background: #fff; text-align: left; cursor: pointer; transition: border-color 160ms ease, box-shadow 160ms ease; }
+.pre-consultation-suggestion-card:hover:not(:disabled) { border-color: #7eb9b3; }
+.pre-consultation-suggestion-card:disabled { cursor: wait; opacity: 0.65; }
+.pre-consultation-suggestion-card.selected { border-color: var(--consult-teal); background: var(--consult-soft); box-shadow: 0 0 0 3px rgba(8, 127, 134, 0.1); }
+.pre-consultation-suggestion-card strong { overflow: hidden; display: -webkit-box; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-overflow: ellipsis; }
+.pre-consultation-suggestion-card span { color: var(--consult-muted); font-size: 12px; font-weight: 700; }
+.pre-consultation-suggestion-empty { margin: 0; color: var(--consult-muted); font-size: 13px; font-weight: 650; }
+.pre-consultation-suggestion-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #74221d; font-size: 13px; font-weight: 700; }
+.pre-consultation-suggestion-error button { flex: 0 0 auto; border: 1px solid #e7aaa6; border-radius: 9px; padding: 7px 11px; color: #74221d; background: #fff; font: inherit; font-weight: 850; cursor: pointer; }
+
 .pre-consultation-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; column-gap: 24px; row-gap: 22px; }
 .pre-consultation-form-grid label, .pre-consultation-phone-field { display: grid; min-width: 0; gap: 8px; color: var(--consult-ink); font-size: 13px; font-weight: 850; }
 .pre-consultation-form-grid > label:not(.wide) { grid-template-rows: auto 52px minmax(18px, auto); }

@@ -2,11 +2,13 @@ import {
   ArrowLeft,
   ArrowRight,
   BellRing,
+  Building2,
   CalendarClock,
   Check,
   CheckCircle2,
   ClipboardCheck,
   FileQuestion,
+  History,
   LoaderCircle,
   Phone,
   ShieldCheck,
@@ -18,6 +20,7 @@ import {
   checklistItemsApi,
   consultationSessionsApi,
   medicalDepartmentsApi,
+  symptomAnalysisApi,
 } from "../services/api";
 import { normalizePhoneNumber } from "../utils/profileValidation";
 import PreConsultationHistory from "../components/preConsultation/PreConsultationHistory";
@@ -110,6 +113,32 @@ function toLocalDateTimeMinimum() {
   return date.toISOString().slice(0, 16);
 }
 
+function getSuggestedSessionTitle(session, fallback) {
+  return session?.inputText || session?.InputText || session?.userInput || session?.symptoms || fallback;
+}
+
+function normalizeSuggestedFacilities(list) {
+  return (Array.isArray(list) ? list : [])
+    .map((facility) => ({
+      facilityId: String(facility?.facilityId ?? facility?.FacilityId ?? facility?.id ?? "").trim(),
+      facilityName: facility?.facilityName ?? facility?.FacilityName ?? facility?.name ?? "Cơ sở y tế",
+      address: facility?.address ?? facility?.Address ?? "",
+    }))
+    .filter((facility) => facility.facilityId);
+}
+
+function extractSessionRecommendation(response) {
+  const data = unwrapData(response) || {};
+  const analysis = data.analysis || data.Analysis || data;
+  const department = analysis.recommendedDepartment || analysis.RecommendedDepartment || null;
+  const departmentId = String(department?.departmentId ?? department?.DepartmentId ?? "").trim();
+  const symptomText = data.inputText ?? data.InputText ?? "";
+  const facilities = normalizeSuggestedFacilities(
+    analysis.recommendedFacilities || analysis.RecommendedFacilities,
+  );
+  return { departmentId, symptomText, facilities };
+}
+
 function normalizeQuestions(value) {
   return (Array.isArray(value) ? value : [])
     .map((item, index) => ({
@@ -127,8 +156,15 @@ export default function PreConsultationPage() {
   const [step, setStep] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [departmentsStatus, setDepartmentsStatus] = useState("loading");
-  const [form, setForm] = useState({ departmentId: "", appointmentTime: "", symptoms: "" });
+  const [form, setForm] = useState({ departmentId: "", appointmentTime: "", symptoms: "", facilityId: "", facilityName: "" });
   const [formErrors, setFormErrors] = useState({});
+  const [suggestedSessions, setSuggestedSessions] = useState([]);
+  const [suggestedSessionsStatus, setSuggestedSessionsStatus] = useState("idle");
+  const [suggestedSessionsError, setSuggestedSessionsError] = useState("");
+  const [suggestedSessionsOpen, setSuggestedSessionsOpen] = useState(false);
+  const [applyingSessionId, setApplyingSessionId] = useState("");
+  const [suggestedFacilities, setSuggestedFacilities] = useState([]);
+  const [facilityPickerOpen, setFacilityPickerOpen] = useState(false);
   const [session, setSession] = useState(null);
   const [checklistItems, setChecklistItems] = useState([]);
   const [sessionDetail, setSessionDetail] = useState(null);
@@ -196,6 +232,75 @@ export default function PreConsultationPage() {
     setFormErrors((current) => ({ ...current, [field]: "" }));
   }
 
+  async function toggleSuggestedSessions() {
+    const willOpen = !suggestedSessionsOpen;
+    setSuggestedSessionsOpen(willOpen);
+    setFacilityPickerOpen(false);
+    if (!willOpen || suggestedSessions.length > 0 || suggestedSessionsStatus === "loading") return;
+
+    setSuggestedSessionsStatus("loading");
+    setSuggestedSessionsError("");
+    try {
+      const items = await symptomAnalysisApi.listAllMySessions("department");
+      setSuggestedSessions(items);
+      setSuggestedSessionsStatus("ready");
+    } catch (loadError) {
+      setSuggestedSessionsStatus("error");
+      setSuggestedSessionsError(getErrorMessage(loadError, "Chưa thể tải danh sách phiên gợi ý chuyên khoa. Vui lòng thử lại."));
+    }
+  }
+
+  async function applySuggestedSession(sessionItem) {
+    const sessionId = sessionItem?.sessionId || sessionItem?.id;
+    if (!sessionId) return;
+
+    setApplyingSessionId(sessionId);
+    setError("");
+    try {
+      const response = await symptomAnalysisApi.get(sessionId);
+      const { departmentId, symptomText, facilities } = extractSessionRecommendation(response);
+      const matchedDepartmentId = departmentId && departments.some((item) => item.id === departmentId)
+        ? departmentId
+        : "";
+
+      setForm((current) => ({
+        ...current,
+        departmentId: matchedDepartmentId || current.departmentId,
+        symptoms: symptomText || current.symptoms,
+        facilityId: "",
+        facilityName: "",
+      }));
+      setFormErrors((current) => ({ ...current, departmentId: "", symptoms: "" }));
+      setSuggestedFacilities(facilities);
+      setFacilityPickerOpen(false);
+      setSuggestedSessionsOpen(false);
+      setAnnouncement(
+        departmentId && !matchedDepartmentId
+          ? "Đã điền triệu chứng từ phiên đã chọn. Chuyên khoa được gợi ý hiện chưa hỗ trợ tư vấn trước khám."
+          : "Đã điền thông tin từ phiên gợi ý chuyên khoa đã chọn.",
+      );
+    } catch (loadError) {
+      setError(getErrorMessage(loadError, "Chưa thể tải chi tiết phiên gợi ý. Vui lòng thử lại."));
+    } finally {
+      setApplyingSessionId("");
+    }
+  }
+
+  function toggleFacilityPicker() {
+    setFacilityPickerOpen((current) => !current);
+    setSuggestedSessionsOpen(false);
+  }
+
+  function selectSuggestedFacility(facility) {
+    setForm((current) => ({ ...current, facilityId: facility.facilityId, facilityName: facility.facilityName }));
+    setFacilityPickerOpen(false);
+    setAnnouncement(`Đã chọn cơ sở ${facility.facilityName}.`);
+  }
+
+  function clearSuggestedFacility() {
+    setForm((current) => ({ ...current, facilityId: "", facilityName: "" }));
+  }
+
   function validateIntake() {
     const errors = {};
     if (!form.departmentId) errors.departmentId = "Vui lòng chọn chuyên khoa cần tư vấn.";
@@ -239,7 +344,7 @@ export default function PreConsultationPage() {
     try {
       const response = await consultationSessionsApi.generateQuestions({
         departmentId: form.departmentId,
-        facilityId: null,
+        facilityId: form.facilityId || null,
         appointmentTime: new Date(form.appointmentTime).toISOString(),
         symptoms: form.symptoms.trim(),
       });
@@ -477,6 +582,87 @@ export default function PreConsultationPage() {
                 <p>Chọn chuyên khoa, thời gian dự kiến và mô tả điều bạn muốn bác sĩ lưu ý.</p>
               </div>
             </section>
+
+            <div className="pre-consultation-suggestion-triggers">
+              <button type="button" className="ghost" onClick={toggleSuggestedSessions} aria-expanded={suggestedSessionsOpen}>
+                <History size={16} aria-hidden="true" />
+                Danh sách phiên gợi ý chuyên khoa
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={toggleFacilityPicker}
+                aria-expanded={facilityPickerOpen}
+                disabled={suggestedFacilities.length === 0}
+                title={suggestedFacilities.length === 0 ? "Chọn một phiên gợi ý chuyên khoa trước để xem danh sách cơ sở" : undefined}
+              >
+                <Building2 size={16} aria-hidden="true" />
+                Bệnh viện gợi ý{suggestedFacilities.length > 0 ? ` (${suggestedFacilities.length})` : ""}
+              </button>
+              {form.facilityName && (
+                <span className="pre-consultation-selected-facility">
+                  Cơ sở dự kiến: <strong>{form.facilityName}</strong>
+                  <button type="button" onClick={clearSuggestedFacility} aria-label="Bỏ chọn cơ sở đã chọn">×</button>
+                </span>
+              )}
+            </div>
+
+            {suggestedSessionsOpen && (
+              <div className="pre-consultation-suggestion-panel" role="region" aria-label="Danh sách phiên gợi ý chuyên khoa trước đó">
+                {suggestedSessionsStatus === "loading" && (
+                  <div className="pre-consultation-loading compact"><LoaderCircle className="spin" aria-hidden="true" /><strong>Đang tải danh sách phiên…</strong></div>
+                )}
+                {suggestedSessionsStatus === "error" && (
+                  <div className="pre-consultation-suggestion-error">
+                    <span>{suggestedSessionsError}</span>
+                    <button type="button" className="secondary" onClick={toggleSuggestedSessions}>Thử lại</button>
+                  </div>
+                )}
+                {suggestedSessionsStatus === "ready" && suggestedSessions.length === 0 && (
+                  <p className="pre-consultation-suggestion-empty">Bạn chưa có phiên gợi ý chuyên khoa nào.</p>
+                )}
+                {suggestedSessionsStatus === "ready" && suggestedSessions.length > 0 && (
+                  <div className="pre-consultation-suggestion-scroll">
+                    {suggestedSessions.map((sessionItem, index) => {
+                      const sessionId = sessionItem.sessionId || sessionItem.id || `session-${index}`;
+                      const isApplying = applyingSessionId === sessionId;
+                      return (
+                        <button
+                          type="button"
+                          key={sessionId}
+                          className="pre-consultation-suggestion-card"
+                          disabled={Boolean(applyingSessionId)}
+                          onClick={() => applySuggestedSession(sessionItem)}
+                        >
+                          <strong>{getSuggestedSessionTitle(sessionItem, "Phiên gợi ý chuyên khoa")}</strong>
+                          <span>{formatDateTime(sessionItem.createdAt || sessionItem.createdDate)}</span>
+                          {isApplying && <LoaderCircle className="spin" size={15} aria-hidden="true" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {facilityPickerOpen && suggestedFacilities.length > 0 && (
+              <div className="pre-consultation-suggestion-panel" role="region" aria-label="Danh sách cơ sở y tế được gợi ý trong phiên đã chọn">
+                <div className="pre-consultation-suggestion-scroll">
+                  {suggestedFacilities.map((facility) => (
+                    <button
+                      type="button"
+                      key={facility.facilityId}
+                      className={`pre-consultation-suggestion-card ${form.facilityId === facility.facilityId ? "selected" : ""}`}
+                      onClick={() => selectSuggestedFacility(facility)}
+                    >
+                      <strong>{facility.facilityName}</strong>
+                      {facility.address && <span>{facility.address}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="pre-consultation-form-grid">
               <label className={formErrors.departmentId ? "has-error" : ""}>
                 <span>Chuyên khoa (bắt buộc)</span>
