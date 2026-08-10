@@ -363,6 +363,14 @@ export default function PaymentHistoryPanel() {
             <caption id="payment-history-table-caption" className="sr-only">
               Danh sách giao dịch thanh toán của tài khoản hiện tại
             </caption>
+            <colgroup>
+              <col className="payment-history-col-plan" />
+              <col className="payment-history-col-status" />
+              <col className="payment-history-col-amount" />
+              <col className="payment-history-col-provider" />
+              <col className="payment-history-col-date" />
+              <col className="payment-history-col-actions" />
+            </colgroup>
             <thead>
               <tr>
                 <th scope="col">Gói dịch vụ</th>
@@ -370,7 +378,7 @@ export default function PaymentHistoryPanel() {
                 <th scope="col">Số tiền</th>
                 <th scope="col">Thanh toán</th>
                 <th scope="col">Ngày tạo</th>
-                <th scope="col"><span className="sr-only">Thao tác</span></th>
+                <th scope="col" className="payment-history-action-heading">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -392,32 +400,34 @@ export default function PaymentHistoryPanel() {
                   <time dateTime={payment.createdAt || undefined}>{formatDateTime(payment.createdAt)}</time>
                 </td>
                 <td className="payment-history-table-action" data-label="Thao tác">
-                  <button
-                    type="button"
-                    className="payment-history-detail-button"
-                    disabled={!paymentId}
-                    onClick={(event) => {
-                      detailTriggerRef.current = event.currentTarget;
-                      setSelectedPayment(payment);
-                    }}
-                  >
-                    Xem chi tiết
-                  </button>
-                  {canReconcilePayment(payment) && (
+                  <div className="payment-history-actions">
                     <button
                       type="button"
-                      className="payment-history-reconcile-button"
-                      disabled={reconcilingOrderCode === payment.transactionReference}
-                      onClick={() => reconcileHistoryPayment(payment)}
+                      className="payment-history-detail-button"
+                      disabled={!paymentId}
+                      onClick={(event) => {
+                        detailTriggerRef.current = event.currentTarget;
+                        setSelectedPayment(payment);
+                      }}
                     >
-                      <RefreshCw
-                        size={14}
-                        aria-hidden="true"
-                        className={reconcilingOrderCode === payment.transactionReference ? "payment-history-spinner" : ""}
-                      />
-                      {reconcilingOrderCode === payment.transactionReference ? "Đang kiểm tra..." : "Kiểm tra với PayOS"}
+                      Xem chi tiết
                     </button>
-                  )}
+                    {canReconcilePayment(payment) && (
+                      <button
+                        type="button"
+                        className="payment-history-reconcile-button"
+                        disabled={reconcilingOrderCode === payment.transactionReference}
+                        onClick={() => reconcileHistoryPayment(payment)}
+                      >
+                        <RefreshCw
+                          size={14}
+                          aria-hidden="true"
+                          className={reconcilingOrderCode === payment.transactionReference ? "payment-history-spinner" : ""}
+                        />
+                        {reconcilingOrderCode === payment.transactionReference ? "Đang kiểm tra..." : "Kiểm tra với PayOS"}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             );
