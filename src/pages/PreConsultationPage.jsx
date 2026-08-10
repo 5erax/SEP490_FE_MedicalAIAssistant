@@ -622,7 +622,13 @@ export default function PreConsultationPage() {
                       </div>
                     )}
                     {suggestedSessionsStatus === "ready" && suggestedSessions.length === 0 && (
-                      <p className="pre-consultation-suggestion-empty">Bạn chưa có phiên gợi ý chuyên khoa nào.</p>
+                      <div className="pre-consultation-suggestion-empty-state">
+                        <p className="pre-consultation-suggestion-empty">Bạn chưa có phiên gợi ý chuyên khoa nào.</p>
+                        <a className="secondary" href="/dashboard">
+                          Đến trang tư vấn để được gợi ý
+                          <ArrowRight size={15} aria-hidden="true" />
+                        </a>
+                      </div>
                     )}
                     {suggestedSessionsStatus === "ready" && suggestedSessions.length > 0 && (
                       <div className="pre-consultation-suggestion-list">
