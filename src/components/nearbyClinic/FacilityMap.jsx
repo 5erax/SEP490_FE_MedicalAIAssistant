@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, ChevronDown, Clock3, LocateFixed, Send, X } from "lucide-react";
+import { ArrowRight, Bot, ChevronDown, Clock3, ClipboardCheck, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi, webChatbotApi } from "../../services/api";
@@ -140,11 +140,14 @@ function diagnosisKey(diagnosis, index) {
     .join("-");
 }
 
-function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false }) {
+function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false, sessionId = "" }) {
   const [expandedKey, setExpandedKey] = useState("");
   const expandedDiagnosis = diagnoses.find((diagnosis, index) => (
     diagnosisKey(diagnosis, index) === expandedKey
   ));
+  const preConsultationHref = sessionId
+    ? `/pre-consultation?sessionId=${encodeURIComponent(sessionId)}`
+    : "/pre-consultation";
 
   return (
     <section
@@ -201,6 +204,11 @@ function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false }) {
           <p>{expandedDiagnosis.clinicalReasoning || "Chưa có mô tả phân tích cho bệnh được gợi ý này."}</p>
         </div>
       )}
+      <a className="map-diagnosis-cta" href={preConsultationHref}>
+        <ClipboardCheck size={16} aria-hidden="true" />
+        <span>Bạn có muốn được tư vấn trước khi đến khám?</span>
+        <ArrowRight size={16} aria-hidden="true" />
+      </a>
     </section>
   );
 }
@@ -689,7 +697,7 @@ export default function FacilityMap({
       )}
 
       {isClinicalFlow && clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
-        <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} hasTopNotice={hasTopNotice} />
+        <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} hasTopNotice={hasTopNotice} sessionId={recommendationContext.sessionId} />
       )}
 
       {mapStatus !== "error" && (
