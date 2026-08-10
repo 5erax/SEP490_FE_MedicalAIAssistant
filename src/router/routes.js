@@ -127,7 +127,7 @@ const BASE_ROUTES = [
       label: "Tư vấn trước khám",
       hint: "Chuẩn bị buổi khám",
       icon: "consultation",
-      order: 55,
+      order: 20,
     },
   },
   { id: "patient.recovery", path: "/recovery-plan", title: "Kế hoạch phục hồi | MediMate AI", access: "auth", shell: "patient", navigation: { shell: "patient", label: "Kế hoạch phục hồi", hint: "Theo dõi sau khám", icon: "recovery", order: 60 } },
