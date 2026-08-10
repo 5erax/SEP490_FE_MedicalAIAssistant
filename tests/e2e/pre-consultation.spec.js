@@ -6,6 +6,7 @@ const USER_ID = "55555555-5555-4555-8555-555555555555";
 const DEPARTMENT_ID = "11111111-1111-4111-8111-111111111111";
 const SESSION_ID = "22222222-2222-4222-8222-222222222222";
 const SYMPTOM_SESSION_ID = "66666666-6666-4666-8666-666666666666";
+const SUGGESTED_FACILITY_ID = "77777777-7777-4777-8777-777777777777";
 const ACCESS_TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
@@ -116,7 +117,7 @@ async function mockPreConsultation(page) {
             sessionId: SYMPTOM_SESSION_ID,
             inputText: "Đau ngực khi vận động",
             recommendedDepartments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tim mạch", priorityRank: 1 }],
-            recommendedFacilities: [],
+            recommendedFacilities: [{ id: SUGGESTED_FACILITY_ID, facilityName: "Bệnh viện Tim Tâm Đức", address: "123 Nguyễn Trãi" }],
           },
         }),
       });
@@ -165,6 +166,8 @@ async function openPreConsultation(page) {
 async function pickSuggestedSession(page) {
   await page.getByRole("button", { name: "Danh sách phiên gợi ý chuyên khoa" }).click();
   await page.getByRole("button", { name: /Đau ngực khi vận động/ }).click();
+  await page.getByRole("button", { name: /Chọn bệnh viện gợi ý/ }).click();
+  await page.getByRole("button", { name: /Bệnh viện Tim Tâm Đức/ }).click();
 }
 
 test("user completes the guided pre-consultation flow", async ({ page }) => {
@@ -214,7 +217,7 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
     await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-mobile-summary.png`, fullPage: true });
   }
 
-  expect(calls.generateBody).toMatchObject({ departmentId: DEPARTMENT_ID, facilityId: null, symptoms: "Đau ngực khi vận động" });
+  expect(calls.generateBody).toMatchObject({ departmentId: DEPARTMENT_ID, facilityId: SUGGESTED_FACILITY_ID, symptoms: "Đau ngực khi vận động" });
   expect(calls.checklist).toBe(1);
   expect(calls.detail).toBe(3);
   expect(calls.detailTimes[1] - calls.detailTimes[0]).toBeGreaterThanOrEqual(900);
