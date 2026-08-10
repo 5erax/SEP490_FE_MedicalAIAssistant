@@ -229,7 +229,9 @@
 }
 
 .admin-operator .lab-indicator-link {
-  display: inline-grid;
+  display: grid;
+  width: 100%;
+  min-width: 0;
   gap: 6px;
   max-width: 100%;
   color: inherit;
@@ -252,12 +254,18 @@
 }
 
 .admin-operator .lab-indicator-link strong {
+  min-width: 0;
+  white-space: normal;
   overflow-wrap: anywhere;
   color: #101411;
   font-size: 14px;
   text-decoration: underline;
   text-decoration-color: rgba(12, 95, 94, 0.28);
   text-underline-offset: 3px;
+}
+
+.admin-operator .lab-indicator-table .ui-table tbody th {
+  white-space: normal;
 }
 
 .admin-operator .lab-indicator-link:hover strong {
