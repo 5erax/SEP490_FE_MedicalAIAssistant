@@ -9,10 +9,12 @@ import {
   ClipboardCheck,
   FileQuestion,
   History,
+  Lock,
   LoaderCircle,
   Phone,
   ShieldCheck,
   Stethoscope,
+  Unlock,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -168,6 +170,7 @@ export default function PreConsultationPage() {
   const [applyingSessionId, setApplyingSessionId] = useState("");
   const [suggestedFacilities, setSuggestedFacilities] = useState([]);
   const [facilityPickerOpen, setFacilityPickerOpen] = useState(false);
+  const [fieldsLocked, setFieldsLocked] = useState(true);
   const [session, setSession] = useState(null);
   const [checklistItems, setChecklistItems] = useState([]);
   const [sessionDetail, setSessionDetail] = useState(null);
@@ -277,6 +280,7 @@ export default function PreConsultationPage() {
       setSuggestedFacilities(facilities);
       setFacilityPickerOpen(false);
       setSuggestedSessionsOpen(false);
+      setFieldsLocked(false);
       setAnnouncement(
         departmentId && !matchedDepartmentId
           ? "Đã điền triệu chứng từ phiên đã chọn. Chuyên khoa được gợi ý hiện chưa hỗ trợ tư vấn trước khám."
@@ -302,6 +306,10 @@ export default function PreConsultationPage() {
 
   function clearSuggestedFacility() {
     setForm((current) => ({ ...current, facilityId: "", facilityName: "" }));
+  }
+
+  function unlockFieldsManually() {
+    setFieldsLocked(false);
   }
 
   function validateIntake() {
@@ -586,11 +594,27 @@ export default function PreConsultationPage() {
               </div>
             </section>
 
-            <div className="pre-consultation-suggestion-triggers">
+            <div className="pre-consultation-schedule-row">
+              <label className={formErrors.appointmentTime ? "has-error" : ""}>
+                <span>Thời gian dự kiến khám (bắt buộc)</span>
+                <input
+                  type="datetime-local"
+                  value={form.appointmentTime}
+                  min={toLocalDateTimeMinimum()}
+                  onChange={(event) => updateForm("appointmentTime", event.target.value)}
+                  required
+                  aria-invalid={Boolean(formErrors.appointmentTime)}
+                  aria-describedby={formErrors.appointmentTime ? "consultation-time-error" : "consultation-time-hint"}
+                />
+                <small id="consultation-time-hint">Thời gian này được dùng để thiết lập nhắc lịch ở bước sau.</small>
+                {formErrors.appointmentTime && <small id="consultation-time-error">{formErrors.appointmentTime}</small>}
+              </label>
+
               <div className="pre-consultation-suggestion-field">
+                <span className="pre-consultation-field-label">Danh sách gợi ý chuyên khoa</span>
                 <button type="button" className="ghost" onClick={toggleSuggestedSessions} aria-expanded={suggestedSessionsOpen}>
                   <History size={16} aria-hidden="true" />
-                  Danh sách phiên gợi ý chuyên khoa
+                  Danh sách gợi ý chuyên khoa
                 </button>
                 {suggestedSessionsOpen && (
                   <div className="pre-consultation-suggestion-dropdown" role="listbox" aria-label="Danh sách phiên gợi ý chuyên khoa trước đó">
@@ -632,6 +656,20 @@ export default function PreConsultationPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className={`pre-consultation-autofill-group ${fieldsLocked ? "is-locked" : ""}`}>
+              <div className="pre-consultation-autofill-head">
+                <span>
+                  {fieldsLocked ? <Lock size={15} aria-hidden="true" /> : <Unlock size={15} aria-hidden="true" />}
+                  {fieldsLocked
+                    ? "Đang khóa - chọn phiên gợi ý ở trên hoặc nhập thủ công"
+                    : "Đã mở khóa - bạn có thể chỉnh sửa"}
+                </span>
+                {fieldsLocked && (
+                  <button type="button" className="link" onClick={unlockFieldsManually}>Nhập thủ công</button>
+                )}
+              </div>
 
               <div className="pre-consultation-suggestion-field">
                 <button
@@ -643,7 +681,7 @@ export default function PreConsultationPage() {
                   title={suggestedFacilities.length === 0 ? "Chọn một phiên gợi ý chuyên khoa trước để xem danh sách cơ sở" : undefined}
                 >
                   <Building2 size={16} aria-hidden="true" />
-                  Bệnh viện gợi ý{suggestedFacilities.length > 0 ? ` (${suggestedFacilities.length})` : ""}
+                  Chọn bệnh viện gợi ý{suggestedFacilities.length > 0 ? ` (${suggestedFacilities.length})` : ""}
                 </button>
                 {facilityPickerOpen && suggestedFacilities.length > 0 && (
                   <div className="pre-consultation-suggestion-dropdown" role="listbox" aria-label="Danh sách cơ sở y tế được gợi ý trong phiên đã chọn">
@@ -664,66 +702,52 @@ export default function PreConsultationPage() {
                     </div>
                   </div>
                 )}
+                {form.facilityName && (
+                  <span className="pre-consultation-selected-facility">
+                    Cơ sở dự kiến: <strong>{form.facilityName}</strong>
+                    <button type="button" onClick={clearSuggestedFacility} aria-label="Bỏ chọn cơ sở đã chọn">×</button>
+                  </span>
+                )}
               </div>
 
-              {form.facilityName && (
-                <span className="pre-consultation-selected-facility">
-                  Cơ sở dự kiến: <strong>{form.facilityName}</strong>
-                  <button type="button" onClick={clearSuggestedFacility} aria-label="Bỏ chọn cơ sở đã chọn">×</button>
-                </span>
-              )}
-            </div>
-
-            <div className="pre-consultation-form-grid">
-              <label className={formErrors.departmentId ? "has-error" : ""}>
-                <span>Chuyên khoa (bắt buộc)</span>
-                <select
-                  value={form.departmentId}
-                  onChange={(event) => updateForm("departmentId", event.target.value)}
-                  required
-                  disabled={departmentsStatus === "loading"}
-                  aria-invalid={Boolean(formErrors.departmentId)}
-                  aria-describedby={formErrors.departmentId ? "consultation-department-error" : "consultation-department-hint"}
-                >
-                  <option value="">{departmentsStatus === "loading" ? "Đang tải chuyên khoa…" : "Chọn chuyên khoa"}</option>
-                  {departments.map((department) => (
-                    <option key={department.id} value={department.id}>{department.departmentName || department.name || "Chuyên khoa chưa đặt tên"}</option>
-                  ))}
-                </select>
-                {!formErrors.departmentId && <small id="consultation-department-hint">Chọn chuyên khoa phù hợp với lịch khám dự kiến.</small>}
-                {formErrors.departmentId && <small id="consultation-department-error">{formErrors.departmentId}</small>}
-              </label>
-              <label className={formErrors.appointmentTime ? "has-error" : ""}>
-                <span>Thời gian dự kiến khám (bắt buộc)</span>
-                <input
-                  type="datetime-local"
-                  value={form.appointmentTime}
-                  min={toLocalDateTimeMinimum()}
-                  onChange={(event) => updateForm("appointmentTime", event.target.value)}
-                  required
-                  aria-invalid={Boolean(formErrors.appointmentTime)}
-                  aria-describedby={formErrors.appointmentTime ? "consultation-time-error" : "consultation-time-hint"}
-                />
-                <small id="consultation-time-hint">Thời gian này được dùng để thiết lập nhắc lịch ở bước sau.</small>
-                {formErrors.appointmentTime && <small id="consultation-time-error">{formErrors.appointmentTime}</small>}
-              </label>
-              <label className={`wide ${formErrors.symptoms ? "has-error" : ""}`}>
-                <span>Triệu chứng hoặc điều cần tư vấn (bắt buộc)</span>
-                <textarea
-                  value={form.symptoms}
-                  onChange={(event) => updateForm("symptoms", event.target.value)}
-                  maxLength={2000}
-                  required
-                  placeholder="Ví dụ: Tôi ho kéo dài 3 ngày, sốt nhẹ và muốn biết cần chuẩn bị xét nghiệm gì…"
-                  aria-invalid={Boolean(formErrors.symptoms)}
-                  aria-describedby={formErrors.symptoms ? "consultation-symptoms-error" : "consultation-symptoms-hint"}
-                />
-                <span className="pre-consultation-field-meta" id="consultation-symptoms-hint">
-                  <span>Mô tả ngắn gọn, không cần tự chẩn đoán.</span>
-                  <span>{form.symptoms.length}/2.000 ký tự</span>
-                </span>
-                {formErrors.symptoms && <small id="consultation-symptoms-error">{formErrors.symptoms}</small>}
-              </label>
+              <div className="pre-consultation-form-grid">
+                <label className={formErrors.departmentId ? "has-error" : ""}>
+                  <span>Chuyên khoa</span>
+                  <select
+                    value={form.departmentId}
+                    onChange={(event) => updateForm("departmentId", event.target.value)}
+                    required
+                    disabled={fieldsLocked || departmentsStatus === "loading"}
+                    aria-invalid={Boolean(formErrors.departmentId)}
+                    aria-describedby={formErrors.departmentId ? "consultation-department-error" : "consultation-department-hint"}
+                  >
+                    <option value="">{departmentsStatus === "loading" ? "Đang tải chuyên khoa…" : "Chọn chuyên khoa"}</option>
+                    {departments.map((department) => (
+                      <option key={department.id} value={department.id}>{department.departmentName || department.name || "Chuyên khoa chưa đặt tên"}</option>
+                    ))}
+                  </select>
+                  {!formErrors.departmentId && <small id="consultation-department-hint">Chọn chuyên khoa phù hợp với lịch khám dự kiến.</small>}
+                  {formErrors.departmentId && <small id="consultation-department-error">{formErrors.departmentId}</small>}
+                </label>
+                <label className={`wide ${formErrors.symptoms ? "has-error" : ""}`}>
+                  <span>Triệu chứng hoặc điều cần tư vấn</span>
+                  <textarea
+                    value={form.symptoms}
+                    onChange={(event) => updateForm("symptoms", event.target.value)}
+                    maxLength={2000}
+                    required
+                    disabled={fieldsLocked}
+                    placeholder="Ví dụ: Tôi ho kéo dài 3 ngày, sốt nhẹ và muốn biết cần chuẩn bị xét nghiệm gì…"
+                    aria-invalid={Boolean(formErrors.symptoms)}
+                    aria-describedby={formErrors.symptoms ? "consultation-symptoms-error" : "consultation-symptoms-hint"}
+                  />
+                  <span className="pre-consultation-field-meta" id="consultation-symptoms-hint">
+                    <span>Mô tả ngắn gọn, không cần tự chẩn đoán.</span>
+                    <span>{form.symptoms.length}/2.000 ký tự</span>
+                  </span>
+                  {formErrors.symptoms && <small id="consultation-symptoms-error">{formErrors.symptoms}</small>}
+                </label>
+              </div>
             </div>
             <div className="pre-consultation-tip"><span><strong>Gợi ý mô tả</strong>Nêu thời điểm bắt đầu, mức độ và điều khiến triệu chứng tốt hơn hoặc nặng hơn.</span></div>
             <div className="pre-consultation-actions">

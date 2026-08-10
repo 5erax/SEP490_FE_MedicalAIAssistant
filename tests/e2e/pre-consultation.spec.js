@@ -140,9 +140,10 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
   const sidebarLink = page.getByRole("link", { name: /Tư vấn trước khám/ }).first();
   await expect(sidebarLink).toHaveAttribute("aria-current", "page");
 
-  await page.getByLabel("Chuyên khoa (bắt buộc)").selectOption(DEPARTMENT_ID);
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
-  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn (bắt buộc)").fill("Đau ngực khi vận động");
+  await page.getByRole("button", { name: "Nhập thủ công" }).click();
+  await page.getByLabel("Chuyên khoa").selectOption(DEPARTMENT_ID);
+  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn").fill("Đau ngực khi vận động");
 
   const accessibility = await new AxeBuilder({ page })
     .include(".pre-consultation-page")
@@ -189,9 +190,10 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
 
 test("checklist is read-only and allows the user to continue", async ({ page }) => {
   await openPreConsultation(page);
-  await page.getByLabel("Chuyên khoa (bắt buộc)").selectOption(DEPARTMENT_ID);
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
-  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn (bắt buộc)").fill("Đau ngực khi vận động");
+  await page.getByRole("button", { name: "Nhập thủ công" }).click();
+  await page.getByLabel("Chuyên khoa").selectOption(DEPARTMENT_ID);
+  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn").fill("Đau ngực khi vận động");
   await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await expect(page.getByText("Mang theo kết quả xét nghiệm gần nhất", { exact: true })).toBeVisible();
@@ -266,9 +268,10 @@ test("technical AI wording is replaced with user-facing guidance", async ({ page
     }),
   }));
 
-  await page.getByLabel("Chuyên khoa (bắt buộc)").selectOption(DEPARTMENT_ID);
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
-  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn (bắt buộc)").fill("Đau ngực khi vận động");
+  await page.getByRole("button", { name: "Nhập thủ công" }).click();
+  await page.getByLabel("Chuyên khoa").selectOption(DEPARTMENT_ID);
+  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn").fill("Đau ngực khi vận động");
   await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
 
   const alert = page.getByRole("alert");
