@@ -46,9 +46,35 @@
 
 .payment-history-table {
   width: 100%;
+  min-width: 840px;
   border-collapse: collapse;
+  table-layout: fixed;
   color: var(--color-ink);
   font-size: 13px;
+}
+
+.payment-history-col-plan {
+  width: 18%;
+}
+
+.payment-history-col-status {
+  width: 20%;
+}
+
+.payment-history-col-amount {
+  width: 11%;
+}
+
+.payment-history-col-provider {
+  width: 13%;
+}
+
+.payment-history-col-date {
+  width: 14%;
+}
+
+.payment-history-col-actions {
+  width: 24%;
 }
 
 .payment-history-table th,
@@ -182,12 +208,37 @@
   padding: 0 15px;
 }
 
-.payment-history-reconcile-button {
-  margin-left: 8px;
+.payment-history-table td.payment-history-table-action {
+  padding-block: 10px;
+  text-align: right;
 }
 
-.payment-history-table td.payment-history-table-action {
-  text-align: right;
+.payment-history-action-heading {
+  text-align: center !important;
+}
+
+.payment-history-actions {
+  display: flex;
+  min-width: 170px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.payment-history-actions > button {
+  width: 100%;
+  justify-content: center;
+}
+
+.payment-history-detail-button {
+  border-color: var(--color-line-strong);
+  background: var(--color-surface);
+}
+
+.payment-history-reconcile-button {
+  border-color: rgba(8, 127, 140, 0.34);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
 }
 
 .payment-history-detail-button:hover,
@@ -432,6 +483,15 @@
     width: 100%;
   }
 
+  .payment-history-table {
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .payment-history-table colgroup {
+    display: none;
+  }
+
   .payment-history-table thead {
     position: absolute;
     width: 1px;
@@ -483,7 +543,12 @@
     text-align: left;
   }
 
-  .payment-history-detail-button {
+  .payment-history-actions {
+    min-width: 0;
+  }
+
+  .payment-history-detail-button,
+  .payment-history-reconcile-button {
     width: 100%;
   }
 
@@ -520,6 +585,7 @@
 
 @media (pointer: coarse) {
   .payment-history-detail-button,
+  .payment-history-reconcile-button,
   .payment-history-state button,
   .payment-history-pagination button,
   .payment-detail-header button {
