@@ -13,8 +13,17 @@
   --admin-cohesion-mint: #e8f6f2;
 }
 
-/* Keep sidebar navigation scrollable without showing browser scrollbars. */
-.admin-operator .admin-sidebar,
+/* The desktop sidebar follows the page height and never creates its own
+ * scrolling area. */
+.admin-operator .admin-sidebar {
+  max-height: none;
+  overflow: visible;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* The collapsed mobile navigation can still overflow horizontally, but its
+ * browser scrollbar stays hidden. */
 .admin-operator .admin-nav {
   -ms-overflow-style: none;
   scrollbar-width: none;
