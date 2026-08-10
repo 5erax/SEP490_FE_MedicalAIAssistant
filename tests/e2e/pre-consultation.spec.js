@@ -5,6 +5,8 @@ import { preparePage } from "./helpers.js";
 const USER_ID = "55555555-5555-4555-8555-555555555555";
 const DEPARTMENT_ID = "11111111-1111-4111-8111-111111111111";
 const SESSION_ID = "22222222-2222-4222-8222-222222222222";
+const SYMPTOM_SESSION_ID = "66666666-6666-4666-8666-666666666666";
+const SUGGESTED_FACILITY_ID = "77777777-7777-4777-8777-777777777777";
 const ACCESS_TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
@@ -86,6 +88,40 @@ async function mockPreConsultation(page) {
         }),
       });
     }
+    if (path === "/api/symptom-analysis/my-sessions" && method === "GET") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            pageNumber: 1,
+            pageSize: 50,
+            totalCount: 1,
+            totalPages: 1,
+            items: [{
+              sessionId: SYMPTOM_SESSION_ID,
+              inputText: "Đau ngực khi vận động",
+              status: "completed",
+              createdAt: "2027-01-09T02:00:00Z",
+            }],
+          },
+        }),
+      });
+    }
+    if (path === `/api/symptom-analysis/${SYMPTOM_SESSION_ID}` && method === "GET") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            sessionId: SYMPTOM_SESSION_ID,
+            inputText: "Đau ngực khi vận động",
+            recommendedDepartments: [{ departmentId: DEPARTMENT_ID, departmentName: "Tim mạch", priorityRank: 1 }],
+            recommendedFacilities: [{ id: SUGGESTED_FACILITY_ID, facilityName: "Bệnh viện Tim Tâm Đức", address: "123 Nguyễn Trãi" }],
+          },
+        }),
+      });
+    }
     if (path === `/api/consultation-sessions/${SESSION_ID}` && method === "GET") {
       calls.detail += 1;
       calls.detailTimes.push(Date.now());
@@ -127,6 +163,13 @@ async function openPreConsultation(page) {
   return calls;
 }
 
+async function pickSuggestedSession(page) {
+  await page.getByRole("button", { name: "Danh sách phiên gợi ý chuyên khoa" }).click();
+  await page.getByRole("button", { name: /Đau ngực khi vận động/ }).click();
+  await page.getByRole("button", { name: /Chọn bệnh viện gợi ý/ }).click();
+  await page.getByRole("button", { name: /Bệnh viện Tim Tâm Đức/ }).click();
+}
+
 test("user completes the guided pre-consultation flow", async ({ page }) => {
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
@@ -140,9 +183,8 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
   const sidebarLink = page.getByRole("link", { name: /Tư vấn trước khám/ }).first();
   await expect(sidebarLink).toHaveAttribute("aria-current", "page");
 
-  await page.getByLabel("Chuyên khoa (bắt buộc)").selectOption(DEPARTMENT_ID);
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
-  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn (bắt buộc)").fill("Đau ngực khi vận động");
+  await pickSuggestedSession(page);
 
   const accessibility = await new AxeBuilder({ page })
     .include(".pre-consultation-page")
@@ -175,7 +217,7 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
     await page.screenshot({ path: `${screenshotDirectory}/pre-consultation-mobile-summary.png`, fullPage: true });
   }
 
-  expect(calls.generateBody).toMatchObject({ departmentId: DEPARTMENT_ID, facilityId: null, symptoms: "Đau ngực khi vận động" });
+  expect(calls.generateBody).toMatchObject({ departmentId: DEPARTMENT_ID, facilityId: SUGGESTED_FACILITY_ID, symptoms: "Đau ngực khi vận động" });
   expect(calls.checklist).toBe(1);
   expect(calls.detail).toBe(3);
   expect(calls.detailTimes[1] - calls.detailTimes[0]).toBeGreaterThanOrEqual(900);
@@ -189,9 +231,8 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
 
 test("checklist is read-only and allows the user to continue", async ({ page }) => {
   await openPreConsultation(page);
-  await page.getByLabel("Chuyên khoa (bắt buộc)").selectOption(DEPARTMENT_ID);
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
-  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn (bắt buộc)").fill("Đau ngực khi vận động");
+  await pickSuggestedSession(page);
   await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await expect(page.getByText("Mang theo kết quả xét nghiệm gần nhất", { exact: true })).toBeVisible();
@@ -266,9 +307,8 @@ test("technical AI wording is replaced with user-facing guidance", async ({ page
     }),
   }));
 
-  await page.getByLabel("Chuyên khoa (bắt buộc)").selectOption(DEPARTMENT_ID);
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
-  await page.getByLabel("Triệu chứng hoặc điều cần tư vấn (bắt buộc)").fill("Đau ngực khi vận động");
+  await pickSuggestedSession(page);
   await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
 
   const alert = page.getByRole("alert");
