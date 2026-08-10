@@ -284,6 +284,34 @@ test("admin creates, opens, edits, and deletes a lab indicator", async ({ page }
   expect(requestFor(state, "DELETE", "/api/lab-indicators/indicator-created")).toBeTruthy();
 });
 
+test("long lab indicator names wrap inside the indicator column", async ({ page }) => {
+  await preparePage(page);
+  await mockLabIndicatorAdmin(page, {
+    indicators: [{
+      indicatorId: "indicator-aptt",
+      symbol: "APTT",
+      fullName: "Activated Partial Thromboplastin Time",
+      description: "Thời gian thromboplastin từng phần hoạt hóa.",
+      unit: "s",
+      category: "Đông máu",
+      isActive: true,
+    }],
+  });
+  await page.setViewportSize({ width: 642, height: 480 });
+  await page.goto("/app/admin/lab-indicators", { waitUntil: "domcontentloaded" });
+
+  const name = page.getByText("Activated Partial Thromboplastin Time", { exact: true });
+  const cell = name.locator("xpath=ancestor::th[1]");
+  await expect(name).toBeVisible();
+  await expect(name).toHaveCSS("white-space", "normal");
+
+  const bounds = await Promise.all([name.boundingBox(), cell.boundingBox()]);
+  expect(bounds[0].x + bounds[0].width).toBeLessThanOrEqual(
+    bounds[1].x + bounds[1].width + 1,
+  );
+  expect(bounds[0].height).toBeGreaterThan(20);
+});
+
 test("indicator detail CRUD keeps the indicator id in every child endpoint", async ({ page }) => {
   await preparePage(page);
   const state = await mockLabIndicatorAdmin(page, {
