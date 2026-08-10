@@ -59,6 +59,12 @@ function formatCoordinatePair(facility) {
   return `${Number(facility.latitude).toFixed(5)}, ${Number(facility.longitude).toFixed(5)}`;
 }
 
+function formatFacilityType(facilityType) {
+  const normalizedType = String(facilityType || "").trim();
+  if (!normalizedType) return "Chưa cập nhật";
+  return normalizedType.toLowerCase() === "hospital" ? "Bệnh viện" : normalizedType;
+}
+
 function isSafeImageSource(value) {
   if (!value || typeof value !== "string") return false;
 
@@ -386,7 +392,7 @@ export default function AdminFacilitiesSection({
                 header: "Loại cơ sở",
                 render: (facility) => (
                   <div className="table-primary-cell">
-                    <strong>{facility.facilityType || "Chưa cập nhật"}</strong>
+                    <strong>{formatFacilityType(facility.facilityType)}</strong>
                     <small>{formatCoordinatePair(facility)}</small>
                   </div>
                 ),
