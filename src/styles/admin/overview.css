@@ -6,7 +6,7 @@
   --overview-line: #cfe0dc;
   --overview-surface: #ffffff;
   display: grid;
-  gap: clamp(16px, 1.8vw, 22px);
+  gap: clamp(14px, 1.4vw, 18px);
 }
 
 .admin-operator .admin-overview-heading {
@@ -21,7 +21,7 @@
   background:
     linear-gradient(120deg, rgba(225, 243, 238, 0.82), rgba(255, 255, 255, 0.96) 62%),
     var(--overview-surface);
-  padding: clamp(22px, 2.6vw, 34px);
+  padding: clamp(20px, 2vw, 28px);
 }
 
 .admin-operator .admin-overview-heading::after {
@@ -51,7 +51,7 @@
   max-width: 690px;
   margin-top: 8px;
   color: var(--overview-ink);
-  font-size: clamp(30px, 3.5vw, 48px);
+  font-size: clamp(28px, 3vw, 42px);
   font-weight: 790;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -60,10 +60,10 @@
 
 .admin-operator .admin-overview-heading-copy > p:last-child {
   max-width: 630px;
-  margin-top: 13px;
+  margin-top: 10px;
   color: var(--overview-muted);
   font-size: 15px;
-  line-height: 1.65;
+  line-height: 1.5;
 }
 
 .admin-operator .admin-overview-source {
@@ -119,15 +119,15 @@
   position: relative;
   display: grid;
   align-content: space-between;
-  gap: 20px;
+  gap: 14px;
   min-width: 0;
-  min-height: 210px;
+  min-height: 176px;
   border: 0;
   border-right: 1px solid var(--overview-line);
   border-bottom: 1px solid var(--overview-line);
   background: transparent;
   color: var(--overview-ink);
-  padding: clamp(18px, 1.8vw, 24px);
+  padding: clamp(16px, 1.4vw, 20px);
   text-align: left;
   text-decoration: none;
   transition: background 160ms ease, color 160ms ease;
@@ -179,8 +179,8 @@
 
 .admin-operator .admin-overview-card-icon {
   display: grid;
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   place-items: center;
   border-radius: 14px;
   background: #e5f4ef;
@@ -201,7 +201,7 @@
 }
 
 .admin-operator .admin-overview-card-copy small {
-  min-height: 36px;
+  min-height: 28px;
   color: var(--overview-teal-dark);
   font-size: 12px;
   font-weight: 850;
@@ -211,20 +211,24 @@
 }
 
 .admin-operator .admin-overview-card-copy strong {
-  margin-top: 11px;
+  margin-top: 7px;
   color: var(--overview-ink);
-  font-size: clamp(38px, 4vw, 54px);
+  font-size: clamp(34px, 3.2vw, 46px);
   font-weight: 780;
   letter-spacing: -0.05em;
   line-height: 1;
 }
 
 .admin-operator .admin-overview-card-copy > span:last-child {
-  min-height: 42px;
-  margin-top: 12px;
+  display: -webkit-box;
+  min-height: 34px;
+  margin-top: 8px;
+  overflow: hidden;
   color: var(--overview-muted);
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .admin-operator .admin-overview-loading {
@@ -280,6 +284,8 @@
 
 .admin-operator .admin-overview-attention-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
   gap: 2px;
   margin: 0;
   padding: 0;
@@ -294,7 +300,7 @@
   border-top: 1px solid var(--overview-line);
 }
 
-.admin-operator .admin-overview-attention-list li:first-child {
+.admin-operator .admin-overview-attention-list li:nth-child(-n + 2) {
   border-top: 0;
 }
 
@@ -349,18 +355,18 @@
 .admin-operator .admin-overview-charts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(16px, 2vw, 20px);
+  gap: 14px;
 }
 
 .admin-operator .admin-overview-chart-card {
   display: grid;
   align-content: start;
-  gap: 16px;
+  gap: 12px;
   border: 1px solid var(--overview-line);
   border-radius: 20px;
   background: var(--overview-surface);
   min-width: 0;
-  padding: clamp(18px, 2vw, 24px);
+  padding: clamp(16px, 1.6vw, 20px);
 }
 
 .admin-operator .admin-overview-chart-head {
@@ -562,15 +568,15 @@
 
 .admin-operator .overview-pie-chart {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(28px, 4vw, 48px);
-  padding: 8px 0;
+  gap: clamp(16px, 2vw, 24px);
+  padding: 2px 0;
 }
 
 .admin-operator .overview-pie-chart > svg {
-  width: min(320px, 100%);
+  width: min(180px, 40%);
   height: auto;
   flex: 0 0 auto;
 }
@@ -587,10 +593,10 @@
 
 .admin-operator .overview-pie-legend {
   display: grid;
-  flex: 1 1 220px;
-  min-width: 220px;
-  max-width: 280px;
-  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -674,11 +680,19 @@
   }
 
   .admin-operator .admin-overview-card {
-    min-height: 210px;
+    min-height: 176px;
   }
 
   .admin-operator .admin-overview-charts {
     grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-overview-attention-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-overview-attention-list li:nth-child(2) {
+    border-top: 1px solid var(--overview-line);
   }
 
   .admin-operator .admin-overview-card:nth-child(odd) {
@@ -712,6 +726,18 @@
 }
 
 @media (max-width: 760px) {
+  .admin-operator .overview-pie-chart {
+    flex-wrap: wrap;
+  }
+
+  .admin-operator .overview-pie-chart > svg {
+    width: min(220px, 100%);
+  }
+
+  .admin-operator .overview-pie-legend {
+    min-width: 220px;
+  }
+
   .admin-operator .overview-bar-chart {
     --bar-label-width: 84px;
     --bar-value-width: 56px;
