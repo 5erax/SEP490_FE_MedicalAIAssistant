@@ -130,7 +130,10 @@ function normalizeSuggestedFacilities(list) {
 function extractSessionRecommendation(response) {
   const data = unwrapData(response) || {};
   const analysis = data.analysis || data.Analysis || data;
-  const department = analysis.recommendedDepartment || analysis.RecommendedDepartment || null;
+  const departmentItems = analysis.recommendedDepartments || analysis.RecommendedDepartments;
+  const department = analysis.recommendedDepartment
+    || analysis.RecommendedDepartment
+    || (Array.isArray(departmentItems) ? departmentItems[0] : null);
   const departmentId = String(department?.departmentId ?? department?.DepartmentId ?? "").trim();
   const symptomText = data.inputText ?? data.InputText ?? "";
   const facilities = normalizeSuggestedFacilities(
@@ -584,21 +587,85 @@ export default function PreConsultationPage() {
             </section>
 
             <div className="pre-consultation-suggestion-triggers">
-              <button type="button" className="ghost" onClick={toggleSuggestedSessions} aria-expanded={suggestedSessionsOpen}>
-                <History size={16} aria-hidden="true" />
-                Danh sách phiên gợi ý chuyên khoa
-              </button>
-              <button
-                type="button"
-                className="ghost"
-                onClick={toggleFacilityPicker}
-                aria-expanded={facilityPickerOpen}
-                disabled={suggestedFacilities.length === 0}
-                title={suggestedFacilities.length === 0 ? "Chọn một phiên gợi ý chuyên khoa trước để xem danh sách cơ sở" : undefined}
-              >
-                <Building2 size={16} aria-hidden="true" />
-                Bệnh viện gợi ý{suggestedFacilities.length > 0 ? ` (${suggestedFacilities.length})` : ""}
-              </button>
+              <div className="pre-consultation-suggestion-field">
+                <button type="button" className="ghost" onClick={toggleSuggestedSessions} aria-expanded={suggestedSessionsOpen}>
+                  <History size={16} aria-hidden="true" />
+                  Danh sách phiên gợi ý chuyên khoa
+                </button>
+                {suggestedSessionsOpen && (
+                  <div className="pre-consultation-suggestion-dropdown" role="listbox" aria-label="Danh sách phiên gợi ý chuyên khoa trước đó">
+                    {suggestedSessionsStatus === "loading" && (
+                      <div className="pre-consultation-loading compact"><LoaderCircle className="spin" aria-hidden="true" /><strong>Đang tải danh sách phiên…</strong></div>
+                    )}
+                    {suggestedSessionsStatus === "error" && (
+                      <div className="pre-consultation-suggestion-error">
+                        <span>{suggestedSessionsError}</span>
+                        <button type="button" className="secondary" onClick={toggleSuggestedSessions}>Thử lại</button>
+                      </div>
+                    )}
+                    {suggestedSessionsStatus === "ready" && suggestedSessions.length === 0 && (
+                      <p className="pre-consultation-suggestion-empty">Bạn chưa có phiên gợi ý chuyên khoa nào.</p>
+                    )}
+                    {suggestedSessionsStatus === "ready" && suggestedSessions.length > 0 && (
+                      <div className="pre-consultation-suggestion-list">
+                        {suggestedSessions.map((sessionItem, index) => {
+                          const sessionId = sessionItem.sessionId || sessionItem.id || `session-${index}`;
+                          const isApplying = applyingSessionId === sessionId;
+                          return (
+                            <button
+                              type="button"
+                              key={sessionId}
+                              className="pre-consultation-suggestion-row"
+                              disabled={Boolean(applyingSessionId)}
+                              onClick={() => applySuggestedSession(sessionItem)}
+                            >
+                              <span>
+                                <strong>{getSuggestedSessionTitle(sessionItem, "Phiên gợi ý chuyên khoa")}</strong>
+                                <small>{formatDateTime(sessionItem.createdAt || sessionItem.createdDate)}</small>
+                              </span>
+                              {isApplying && <LoaderCircle className="spin" size={15} aria-hidden="true" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="pre-consultation-suggestion-field">
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={toggleFacilityPicker}
+                  aria-expanded={facilityPickerOpen}
+                  disabled={suggestedFacilities.length === 0}
+                  title={suggestedFacilities.length === 0 ? "Chọn một phiên gợi ý chuyên khoa trước để xem danh sách cơ sở" : undefined}
+                >
+                  <Building2 size={16} aria-hidden="true" />
+                  Bệnh viện gợi ý{suggestedFacilities.length > 0 ? ` (${suggestedFacilities.length})` : ""}
+                </button>
+                {facilityPickerOpen && suggestedFacilities.length > 0 && (
+                  <div className="pre-consultation-suggestion-dropdown" role="listbox" aria-label="Danh sách cơ sở y tế được gợi ý trong phiên đã chọn">
+                    <div className="pre-consultation-suggestion-list">
+                      {suggestedFacilities.map((facility) => (
+                        <button
+                          type="button"
+                          key={facility.facilityId}
+                          className={`pre-consultation-suggestion-row ${form.facilityId === facility.facilityId ? "selected" : ""}`}
+                          onClick={() => selectSuggestedFacility(facility)}
+                        >
+                          <span>
+                            <strong>{facility.facilityName}</strong>
+                            {facility.address && <small>{facility.address}</small>}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {form.facilityName && (
                 <span className="pre-consultation-selected-facility">
                   Cơ sở dự kiến: <strong>{form.facilityName}</strong>
@@ -606,62 +673,6 @@ export default function PreConsultationPage() {
                 </span>
               )}
             </div>
-
-            {suggestedSessionsOpen && (
-              <div className="pre-consultation-suggestion-panel" role="region" aria-label="Danh sách phiên gợi ý chuyên khoa trước đó">
-                {suggestedSessionsStatus === "loading" && (
-                  <div className="pre-consultation-loading compact"><LoaderCircle className="spin" aria-hidden="true" /><strong>Đang tải danh sách phiên…</strong></div>
-                )}
-                {suggestedSessionsStatus === "error" && (
-                  <div className="pre-consultation-suggestion-error">
-                    <span>{suggestedSessionsError}</span>
-                    <button type="button" className="secondary" onClick={toggleSuggestedSessions}>Thử lại</button>
-                  </div>
-                )}
-                {suggestedSessionsStatus === "ready" && suggestedSessions.length === 0 && (
-                  <p className="pre-consultation-suggestion-empty">Bạn chưa có phiên gợi ý chuyên khoa nào.</p>
-                )}
-                {suggestedSessionsStatus === "ready" && suggestedSessions.length > 0 && (
-                  <div className="pre-consultation-suggestion-scroll">
-                    {suggestedSessions.map((sessionItem, index) => {
-                      const sessionId = sessionItem.sessionId || sessionItem.id || `session-${index}`;
-                      const isApplying = applyingSessionId === sessionId;
-                      return (
-                        <button
-                          type="button"
-                          key={sessionId}
-                          className="pre-consultation-suggestion-card"
-                          disabled={Boolean(applyingSessionId)}
-                          onClick={() => applySuggestedSession(sessionItem)}
-                        >
-                          <strong>{getSuggestedSessionTitle(sessionItem, "Phiên gợi ý chuyên khoa")}</strong>
-                          <span>{formatDateTime(sessionItem.createdAt || sessionItem.createdDate)}</span>
-                          {isApplying && <LoaderCircle className="spin" size={15} aria-hidden="true" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {facilityPickerOpen && suggestedFacilities.length > 0 && (
-              <div className="pre-consultation-suggestion-panel" role="region" aria-label="Danh sách cơ sở y tế được gợi ý trong phiên đã chọn">
-                <div className="pre-consultation-suggestion-scroll">
-                  {suggestedFacilities.map((facility) => (
-                    <button
-                      type="button"
-                      key={facility.facilityId}
-                      className={`pre-consultation-suggestion-card ${form.facilityId === facility.facilityId ? "selected" : ""}`}
-                      onClick={() => selectSuggestedFacility(facility)}
-                    >
-                      <strong>{facility.facilityName}</strong>
-                      {facility.address && <span>{facility.address}</span>}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="pre-consultation-form-grid">
               <label className={formErrors.departmentId ? "has-error" : ""}>
