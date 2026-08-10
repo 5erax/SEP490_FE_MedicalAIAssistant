@@ -297,6 +297,7 @@ export default function PreConsultationPage() {
 
   function selectSuggestedFacility(facility) {
     setForm((current) => ({ ...current, facilityId: facility.facilityId, facilityName: facility.facilityName }));
+    setFormErrors((current) => ({ ...current, facilityId: "" }));
     setFacilityPickerOpen(false);
     setAnnouncement(`Đã chọn cơ sở ${facility.facilityName}.`);
   }
@@ -314,6 +315,7 @@ export default function PreConsultationPage() {
       errors.appointmentTime = "Thời gian khám phải ở tương lai.";
     }
     if (!form.symptoms.trim()) errors.symptoms = "Vui lòng mô tả triệu chứng hoặc điều bạn muốn hỏi bác sĩ.";
+    if (!form.facilityId) errors.facilityId = "Bạn chưa chọn bệnh viện.";
     return errors;
   }
 
@@ -659,7 +661,7 @@ export default function PreConsultationPage() {
             </div>
 
             <div className="pre-consultation-autofill-group">
-              <div className="pre-consultation-suggestion-field">
+              <div className={`pre-consultation-suggestion-field ${formErrors.facilityId ? "has-error" : ""}`}>
                 <button
                   type="button"
                   className="ghost"
@@ -697,6 +699,7 @@ export default function PreConsultationPage() {
                     <button type="button" onClick={clearSuggestedFacility} aria-label="Bỏ chọn cơ sở đã chọn">×</button>
                   </span>
                 )}
+                {formErrors.facilityId && <small className="pre-consultation-field-error">{formErrors.facilityId}</small>}
               </div>
 
               <div className="pre-consultation-form-grid">
