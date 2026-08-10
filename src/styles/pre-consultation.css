@@ -79,13 +79,22 @@
 .pre-consultation-section-head h2:focus-visible { outline: 3px solid var(--consult-teal-dark); outline-offset: 4px; border-radius: 4px; }
 .pre-consultation-section-head p { margin: 0; color: var(--consult-muted); line-height: 1.55; }
 
-.pre-consultation-suggestion-triggers { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; }
-.pre-consultation-suggestion-field { position: relative; }
-.pre-consultation-suggestion-triggers .ghost { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; border: 1px solid var(--consult-line); border-radius: 11px; padding: 0 14px; color: var(--consult-teal-dark); background: var(--consult-soft); font: inherit; font-size: 13px; font-weight: 850; cursor: pointer; }
-.pre-consultation-suggestion-triggers .ghost:hover:not(:disabled) { border-color: var(--consult-teal); }
-.pre-consultation-suggestion-triggers .ghost:disabled { color: var(--consult-muted); background: #f4f8f7; cursor: not-allowed; opacity: 0.72; }
-.pre-consultation-selected-facility { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 8px 12px; color: var(--consult-teal-dark); background: #eaf7f4; font-size: 13px; font-weight: 750; }
+.pre-consultation-schedule-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; column-gap: 24px; row-gap: 22px; }
+.pre-consultation-suggestion-field { position: relative; display: grid; gap: 8px; align-content: start; }
+.pre-consultation-field-label { color: var(--consult-ink); font-size: 13px; font-weight: 850; }
+.pre-consultation-suggestion-field .ghost { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; border: 1px solid var(--consult-line); border-radius: 11px; padding: 0 14px; color: var(--consult-teal-dark); background: var(--consult-soft); font: inherit; font-size: 13px; font-weight: 850; cursor: pointer; }
+.pre-consultation-suggestion-field .ghost:hover:not(:disabled) { border-color: var(--consult-teal); }
+.pre-consultation-suggestion-field .ghost:disabled { color: var(--consult-muted); background: #f4f8f7; cursor: not-allowed; opacity: 0.72; }
+.pre-consultation-selected-facility { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; border-radius: 999px; padding: 8px 12px; color: var(--consult-teal-dark); background: #eaf7f4; font-size: 13px; font-weight: 750; }
 .pre-consultation-selected-facility button { display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 50%; color: inherit; background: rgba(8, 127, 134, 0.14); font-size: 13px; line-height: 1; cursor: pointer; }
+
+.pre-consultation-autofill-group { display: grid; gap: 20px; border: 1px dashed #a9c8c1; border-radius: 18px; padding: 20px; background: #fbfdfc; transition: border-color 180ms ease, background-color 180ms ease; }
+.pre-consultation-autofill-group:not(.is-locked) { border-style: solid; border-color: var(--consult-line); background: var(--paper, #fff); }
+.pre-consultation-autofill-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.pre-consultation-autofill-head > span { display: inline-flex; align-items: center; gap: 7px; color: var(--consult-muted); font-size: 12px; font-weight: 800; }
+.pre-consultation-autofill-group:not(.is-locked) .pre-consultation-autofill-head > span { color: var(--consult-teal-dark); }
+.pre-consultation-autofill-head .link { border: 0; padding: 0; color: var(--consult-teal-dark); background: none; font: inherit; font-size: 12px; font-weight: 850; text-decoration: underline; cursor: pointer; }
+.pre-consultation-autofill-group select:disabled, .pre-consultation-autofill-group textarea:disabled { color: var(--consult-muted); background: #f2f6f5; cursor: not-allowed; }
 
 .pre-consultation-suggestion-dropdown { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: max(320px, 100%); max-height: 320px; overflow-y: auto; border: 1px solid var(--consult-line); border-radius: 14px; padding: 8px; background: #fff; box-shadow: 0 18px 40px rgba(16, 42, 44, 0.16); scrollbar-color: #8ab8b2 #edf5f3; scrollbar-width: thin; }
 .pre-consultation-suggestion-dropdown .pre-consultation-loading.compact { padding: 10px 6px; }
@@ -299,8 +308,10 @@
   .pre-consultation-stepper li > span { width: 31px; height: 31px; flex-basis: 31px; }
   .pre-consultation-card { border-radius: 20px; padding: 22px 17px; }
   .pre-consultation-section-head > span { width: 36px; height: 36px; flex-basis: 36px; border-radius: 11px; }
-  .pre-consultation-form-grid, .pre-consultation-reminder-options, .pre-consultation-summary-grid { grid-template-columns: 1fr; }
+  .pre-consultation-form-grid, .pre-consultation-reminder-options, .pre-consultation-summary-grid, .pre-consultation-schedule-row { grid-template-columns: 1fr; }
   .pre-consultation-suggestion-dropdown { width: max(260px, 100%); max-height: 260px; }
+  .pre-consultation-autofill-group { padding: 16px; }
+  .pre-consultation-autofill-head { flex-direction: column; align-items: flex-start; gap: 6px; }
   .pre-consultation-form-grid > label:not(.wide) { grid-template-rows: auto 52px auto; }
   .pre-consultation-form-grid label.wide { grid-column: auto; }
   .pre-consultation-field-meta { align-items: flex-start; flex-direction: column; gap: 4px; }
