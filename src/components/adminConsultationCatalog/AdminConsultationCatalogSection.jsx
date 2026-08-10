@@ -411,7 +411,7 @@ export default function AdminConsultationCatalogSection() {
         <button className="btn btn-ghost btn-small" type="button" onClick={() => void openEdit(item)}>
           <Pencil size={14} aria-hidden="true" /> Sửa
         </button>
-        <button className="btn btn-dark btn-small" type="button" onClick={() => void removeItem(item)}>
+        <button className="btn btn-dark btn-small admin-danger-btn" type="button" onClick={() => void removeItem(item)}>
           <Trash2 size={14} aria-hidden="true" /> Xóa
         </button>
       </div>

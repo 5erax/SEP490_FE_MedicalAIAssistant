@@ -1,0 +1,422 @@
+/*
+ * Admin workspace cohesion layer.
+ * Keeps every catalogue page on the same visual system without changing
+ * component behaviour or data flow.
+ */
+
+.admin-operator {
+  --admin-cohesion-ink: #102321;
+  --admin-cohesion-muted: #60716d;
+  --admin-cohesion-teal: #087f7b;
+  --admin-cohesion-line: rgba(24, 72, 65, 0.16);
+  --admin-cohesion-soft: #f8fbf9;
+  --admin-cohesion-mint: #e8f6f2;
+}
+
+/* The desktop sidebar follows the page height and never creates its own
+ * scrolling area. */
+.admin-operator .admin-sidebar {
+  max-height: none;
+  overflow: visible;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* The collapsed mobile navigation can still overflow horizontally, but its
+ * browser scrollbar stays hidden. */
+.admin-operator .admin-nav {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.admin-operator .admin-sidebar::-webkit-scrollbar,
+.admin-operator .admin-nav::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* One rhythm for every top-level management surface. */
+.admin-operator :is(
+  .facility-clinical-panel,
+  .department-clinical-panel,
+  .icd-clinical-panel,
+  .clinical-catalog-panel,
+  .doctor-clinical-panel,
+  .admin-users-panel,
+  .ai-config-clinical-panel,
+  .subscription-plan-admin-panel,
+  .consultation-catalog,
+  .lab-indicator-list,
+  .patient-profile-clinical-panel
+) {
+  min-width: 0;
+  gap: 16px;
+}
+
+.admin-operator .consultation-catalog {
+  box-sizing: border-box;
+  padding: clamp(18px, 2vw, 26px);
+}
+
+/* Shared catalogue hero. Existing coherent pages are included so they cannot
+ * drift apart when a component stylesheet changes later. */
+.admin-operator :is(
+  .facility-clinical-heading,
+  .department-clinical-heading,
+  .icd-clinical-heading,
+  .clinical-catalog-heading,
+  .doctor-clinical-heading,
+  .admin-users-heading,
+  .ai-config-clinical-heading,
+  .subscription-plan-heading,
+  .consultation-catalog-header,
+  .lab-indicator-list .lab-page-heading,
+  .patient-profile-clinical-heading
+) {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(18px, 3vw, 40px);
+  overflow: hidden;
+  min-height: 138px;
+  box-sizing: border-box;
+  border: 1px solid var(--admin-cohesion-line);
+  border-radius: 22px;
+  background:
+    linear-gradient(120deg, rgba(226, 244, 239, 0.88), rgba(255, 255, 255, 0.97) 64%),
+    #fff;
+  padding: clamp(20px, 2.2vw, 30px);
+  box-shadow: none;
+}
+
+.admin-operator :is(
+  .facility-clinical-heading,
+  .department-clinical-heading,
+  .icd-clinical-heading,
+  .clinical-catalog-heading,
+  .doctor-clinical-heading,
+  .admin-users-heading,
+  .ai-config-clinical-heading,
+  .subscription-plan-heading,
+  .consultation-catalog-header,
+  .lab-indicator-list .lab-page-heading,
+  .patient-profile-clinical-heading
+)::after {
+  position: absolute;
+  z-index: -1;
+  right: -76px;
+  bottom: -118px;
+  width: 248px;
+  height: 248px;
+  border: 34px solid rgba(8, 127, 123, 0.055);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.admin-operator :is(
+  .subscription-plan-heading,
+  .consultation-catalog-header,
+  .lab-indicator-list .lab-page-heading
+) > :first-child {
+  min-width: 0;
+  max-width: 760px;
+}
+
+.admin-operator :is(
+  .subscription-plan-heading,
+  .consultation-catalog-header,
+  .lab-indicator-list .lab-page-heading
+) h2 {
+  margin: 8px 0 0;
+  color: var(--admin-cohesion-ink);
+  font-size: clamp(28px, 2.6vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.admin-operator :is(
+  .subscription-plan-heading,
+  .consultation-catalog-header,
+  .lab-indicator-list .lab-page-heading
+) p:not(.eyebrow) {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: var(--admin-cohesion-muted);
+  font-size: 14px;
+  font-weight: 560;
+  line-height: 1.55;
+}
+
+.admin-operator :is(
+  .consultation-catalog-header,
+  .lab-indicator-list .lab-page-heading
+) > :last-child {
+  position: relative;
+  z-index: 1;
+  align-self: end;
+}
+
+/* Consultation catalogue: bring tabs, filters, summary and table into the
+ * same hierarchy used by Departments, ICD and Facilities. */
+.admin-operator .consultation-tabs {
+  border-color: var(--admin-cohesion-line);
+  border-radius: 14px;
+  background: var(--admin-cohesion-mint);
+  box-shadow: none;
+}
+
+.admin-operator .consultation-tabs button {
+  min-height: 40px;
+}
+
+.admin-operator .consultation-filter-card,
+.admin-operator .lab-indicator-list .lab-filter-card {
+  border: 1px solid var(--admin-cohesion-line);
+  border-radius: 20px;
+  background: var(--admin-cohesion-soft);
+  padding: 20px;
+  box-shadow: none;
+}
+
+.admin-operator .lab-indicator-list .lab-filter-card {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+.admin-operator .consultation-filter-title > svg,
+.admin-operator .lab-indicator-list .lab-filter-card > div > svg {
+  flex: 0 0 auto;
+  box-sizing: content-box;
+  margin: 0;
+  border-radius: 12px;
+  background: var(--admin-cohesion-mint);
+  color: var(--admin-cohesion-teal);
+  padding: 10px;
+}
+
+.admin-operator .consultation-filter-grid :is(input, select),
+.admin-operator .lab-indicator-list .lab-filter-form input {
+  min-height: 46px;
+  border-color: #c8d6d0;
+  border-radius: 12px;
+}
+
+.admin-operator .consultation-result-head,
+.admin-operator .lab-indicator-list .lab-result-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  box-sizing: border-box;
+  border: 1px solid var(--admin-cohesion-line);
+  border-radius: 16px;
+  background: #fff;
+  padding: 10px 16px;
+  color: var(--admin-cohesion-teal);
+}
+
+.admin-operator .consultation-result-head strong,
+.admin-operator .lab-indicator-list .lab-result-summary span {
+  color: var(--admin-cohesion-ink);
+  font-size: 14px;
+}
+
+.admin-operator :is(.consultation-table-wrap, .lab-indicator-list .lab-indicator-table) {
+  overflow-x: auto;
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+}
+
+.admin-operator :is(.consultation-table-wrap, .lab-indicator-list .lab-indicator-table) .ui-table thead th {
+  position: static;
+  border-bottom: 0;
+  background: #0f1715;
+  color: #fff;
+  padding: 13px 12px;
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-operator :is(.consultation-table-wrap, .lab-indicator-list .lab-indicator-table) .ui-table tbody :is(th, td) {
+  border-bottom: 1px solid rgba(16, 20, 17, 0.07);
+  background: #fff;
+  padding: 14px 12px;
+  vertical-align: middle;
+}
+
+.admin-operator .consultation-table-wrap .record-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 7px;
+  min-width: 112px;
+}
+
+.admin-operator .consultation-table-wrap .record-actions .btn {
+  width: 100%;
+  min-height: 36px;
+}
+
+/* Lab indicators keep their dense three-action row, but use the same button
+ * proportions and table framing as the other catalogues. */
+.admin-operator .lab-indicator-list .lab-indicator-table .ui-table tbody :is(th, td) {
+  height: auto;
+  min-height: 68px;
+}
+
+.admin-operator .lab-indicator-list .lab-row-actions .btn {
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+/* Subscription and payment sections should read as one workspace instead of
+ * two unrelated pages stacked together. */
+.admin-operator .subscription-plan-admin-panel {
+  padding: clamp(18px, 2vw, 26px);
+}
+
+.admin-operator .subscription-plan-kpis article {
+  border-color: var(--admin-cohesion-line);
+  background: linear-gradient(135deg, #f9fcfa, #e9f7f2);
+  box-shadow: none;
+}
+
+.admin-operator .admin-payment-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 14px;
+  border: 1px solid var(--admin-cohesion-line);
+  border-radius: 20px;
+  background: var(--admin-cohesion-soft);
+  padding: 20px;
+}
+
+.admin-operator .admin-payment-panel > .panel-title-row {
+  align-items: end;
+  margin: 0;
+  border-bottom: 1px solid var(--admin-cohesion-line);
+  padding: 0 0 16px;
+}
+
+.admin-operator .admin-payment-panel > .panel-title-row h2 {
+  margin: 6px 0 0;
+  color: var(--admin-cohesion-ink);
+  font-size: clamp(24px, 2vw, 32px);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.admin-operator .admin-payment-table {
+  overflow-x: auto;
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-operator .admin-payment-table .ui-table thead th {
+  background: #0f1715;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-operator .admin-payment-table .ui-table tbody :is(th, td) {
+  border-bottom: 1px solid rgba(16, 20, 17, 0.07);
+  padding: 14px 12px;
+  vertical-align: middle;
+}
+
+@media (max-width: 1050px) {
+  .admin-operator :is(
+    .subscription-plan-heading,
+    .consultation-catalog-header,
+    .lab-indicator-list .lab-page-heading
+  ) {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .admin-operator .lab-indicator-list .lab-filter-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .admin-operator .consultation-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-operator :is(
+    .subscription-plan-heading,
+    .consultation-catalog-header,
+    .lab-indicator-list .lab-page-heading
+  ) {
+    min-height: 0;
+    border-radius: 18px;
+    padding: 18px;
+  }
+
+  .admin-operator :is(
+    .consultation-catalog-header,
+    .lab-indicator-list .lab-page-heading
+  ) > :last-child,
+  .admin-operator .lab-page-heading-actions,
+  .admin-operator .consultation-catalog-header > .btn {
+    width: 100%;
+  }
+
+  .admin-operator .lab-page-heading-actions .btn,
+  .admin-operator .consultation-catalog-header > .btn {
+    flex: 1 1 auto;
+  }
+
+  .admin-operator .consultation-filter-card,
+  .admin-operator .lab-indicator-list .lab-filter-card,
+  .admin-operator .admin-payment-panel {
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .admin-operator .consultation-filter-grid,
+  .admin-operator .lab-indicator-list .lab-filter-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .consultation-filter-actions .btn,
+  .admin-operator .lab-indicator-list .lab-filter-form .ui-button {
+    width: 100%;
+  }
+
+  .admin-operator .admin-payment-panel > .panel-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+html[data-theme="dark"] .admin-operator :is(
+  .subscription-plan-heading,
+  .consultation-catalog-header,
+  .lab-indicator-list .lab-page-heading,
+  .consultation-filter-card,
+  .lab-indicator-list .lab-filter-card,
+  .consultation-result-head,
+  .lab-indicator-list .lab-result-summary,
+  .admin-payment-panel
+) {
+  border-color: rgba(164, 207, 195, 0.2);
+  background: #172825;
+}

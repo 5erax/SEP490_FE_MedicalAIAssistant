@@ -2,8 +2,8 @@
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 0;
-  align-items: stretch;
-  overflow: hidden;
+  align-items: start;
+  overflow: visible;
   border: 12px solid rgba(255, 255, 255, 0.38);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.58);
@@ -14,16 +14,27 @@
 .admin-operator .admin-sidebar {
   position: sticky;
   top: 26px;
+  align-self: start;
   display: grid;
   align-content: start;
   gap: 18px;
   min-height: calc(100svh - 76px);
+  max-height: calc(100svh - 52px);
+  overflow-y: auto;
   border: 0;
   border-right: 1px solid rgba(16, 20, 17, 0.08);
   border-radius: 18px 0 0 18px;
   background: rgba(248, 250, 245, 0.78);
   padding: 22px;
   box-shadow: none;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 1100px) {
+  .admin-operator .admin-sidebar {
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 .admin-operator .admin-main {
