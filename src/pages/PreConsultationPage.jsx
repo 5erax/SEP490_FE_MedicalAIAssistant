@@ -169,6 +169,7 @@ export default function PreConsultationPage() {
   const [applyingSessionId, setApplyingSessionId] = useState("");
   const [suggestedFacilities, setSuggestedFacilities] = useState([]);
   const [facilityPickerOpen, setFacilityPickerOpen] = useState(false);
+  const [autoFilledFromMap, setAutoFilledFromMap] = useState(false);
   const [session, setSession] = useState(null);
   const [checklistItems, setChecklistItems] = useState([]);
   const [sessionDetail, setSessionDetail] = useState(null);
@@ -185,6 +186,7 @@ export default function PreConsultationPage() {
   const errorRef = useRef(null);
   const pollingActiveRef = useRef(true);
   const viewTabRefs = useRef([]);
+  const autoAppliedSessionRef = useRef(false);
 
   useEffect(() => {
     pollingActiveRef.current = true;
@@ -221,6 +223,20 @@ export default function PreConsultationPage() {
     if (error) window.requestAnimationFrame(() => errorRef.current?.focus());
   }, [error]);
 
+  // Coming from the map's "Bạn có muốn được tư vấn trước khi đến khám?" CTA
+  // already carries a symptom-analysis sessionId - auto-apply it instead of
+  // making the user reopen "Danh sách phiên gợi ý chuyên khoa" and pick it
+  // again. Waits for departments to load first so the department-match
+  // check inside applySuggestedSession doesn't race against an empty list.
+  useEffect(() => {
+    if (autoAppliedSessionRef.current || departmentsStatus !== "ready") return;
+    const sessionId = new URLSearchParams(window.location.search).get("sessionId");
+    if (!sessionId) return;
+    autoAppliedSessionRef.current = true;
+    applySuggestedSession({ sessionId }, { source: "map" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [departmentsStatus]);
+
   const selectedDepartment = useMemo(
     () => departments.find((item) => item.id === form.departmentId),
     [departments, form.departmentId],
@@ -254,7 +270,7 @@ export default function PreConsultationPage() {
     }
   }
 
-  async function applySuggestedSession(sessionItem) {
+  async function applySuggestedSession(sessionItem, { source = "list" } = {}) {
     const sessionId = sessionItem?.sessionId || sessionItem?.id;
     if (!sessionId) return;
 
@@ -278,6 +294,7 @@ export default function PreConsultationPage() {
       setSuggestedFacilities(facilities);
       setFacilityPickerOpen(false);
       setSuggestedSessionsOpen(false);
+      setAutoFilledFromMap(source === "map");
       setAnnouncement(
         departmentId && !matchedDepartmentId
           ? "Đã điền triệu chứng từ phiên đã chọn. Chuyên khoa được gợi ý hiện chưa hỗ trợ tư vấn trước khám."
@@ -612,6 +629,11 @@ export default function PreConsultationPage() {
                   Danh sách phiên gợi ý chuyên khoa
                   <ChevronDown size={16} aria-hidden="true" className="pre-consultation-ghost-chevron" />
                 </button>
+                {autoFilledFromMap && (
+                  <small className="pre-consultation-autofill-note">
+                    Đã tự động điền theo kết quả gợi ý chuyên khoa từ Bản đồ.
+                  </small>
+                )}
                 {suggestedSessionsOpen && (
                   <div className="pre-consultation-suggestion-dropdown" role="listbox" aria-label="Danh sách phiên gợi ý chuyên khoa trước đó">
                     {suggestedSessionsStatus === "loading" && (

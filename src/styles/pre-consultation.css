@@ -82,6 +82,7 @@
 .pre-consultation-schedule-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; column-gap: 24px; row-gap: 22px; }
 .pre-consultation-suggestion-field { position: relative; display: grid; gap: 8px; align-content: start; }
 .pre-consultation-field-label { color: var(--consult-ink); font-size: 13px; font-weight: 850; }
+.pre-consultation-autofill-note { display: flex; align-items: center; gap: 6px; margin-top: -2px; color: var(--consult-teal-dark); font-size: 11px; font-weight: 700; }
 .pre-consultation-suggestion-field .ghost { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; border: 1px solid #718f89; border-radius: 11px; padding: 0 14px; color: var(--consult-ink); background: var(--paper, #fff); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
 .pre-consultation-suggestion-field .ghost svg { flex: 0 0 auto; color: var(--consult-teal); }
 .pre-consultation-suggestion-field .ghost:hover:not(:disabled) { border-color: var(--consult-teal-dark); }

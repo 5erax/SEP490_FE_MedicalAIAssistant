@@ -1046,7 +1046,7 @@
   left: 356px;
   z-index: 6;
   width: min(680px, calc(100% - 440px));
-  max-height: min(320px, calc(100% - 36px));
+  max-height: min(370px, calc(100% - 36px));
   display: grid;
   gap: 10px;
   overflow: hidden;
@@ -1198,6 +1198,44 @@
   line-height: 1.5;
 }
 
+.map-clinical-refresh .map-diagnosis-cta {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid var(--map-teal);
+  border-radius: 11px;
+  padding: 0 13px;
+  color: #fff;
+  background: var(--map-teal);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.3;
+  text-decoration: none;
+  box-shadow: 0 8px 18px rgba(12, 124, 120, 0.22);
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.map-clinical-refresh .map-diagnosis-cta:hover {
+  background: var(--map-teal-strong);
+  transform: translateY(-1px);
+}
+
+.map-clinical-refresh .map-diagnosis-cta:focus-visible {
+  outline: 3px solid var(--map-teal-strong);
+  outline-offset: 2px;
+}
+
+.map-clinical-refresh .map-diagnosis-cta > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.map-clinical-refresh .map-diagnosis-cta > svg {
+  flex: 0 0 auto;
+}
+
 .map-clinical-refresh .map-clinical-summary header > span,
 .map-clinical-refresh .map-clinical-summary-state p,
 .map-clinical-refresh .map-clinical-disclaimer,
@@ -1332,7 +1370,7 @@
     bottom: 18px;
     left: 18px;
     width: auto;
-    max-height: min(220px, calc(100% - 158px));
+    max-height: min(270px, calc(100% - 158px));
     transform: none;
   }
 }
@@ -1363,7 +1401,7 @@
     right: 12px;
     bottom: 18px;
     left: 12px;
-    max-height: 300px;
+    max-height: 350px;
     padding: 11px;
   }
 
@@ -1385,6 +1423,7 @@
   .map-clinical-refresh .map-diagnosis-crossbar,
   .map-clinical-refresh .map-diagnosis-list button,
   .map-clinical-refresh .map-diagnosis-reasoning,
+  .map-clinical-refresh .map-diagnosis-cta,
   .map-clinical-refresh .map-ai-department-field,
   .map-clinical-refresh .map-ai-department-field select,
   .map-clinical-refresh .map-ai-department-summary {
