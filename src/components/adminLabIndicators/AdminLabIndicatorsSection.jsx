@@ -450,7 +450,7 @@ function IndicatorListView() {
 
   return (
     <section
-      className="admin-panel lab-indicator-panel"
+      className="admin-panel lab-indicator-panel lab-indicator-list"
       aria-labelledby="admin-lab-indicators-title"
     >
       <header className="lab-page-heading">
