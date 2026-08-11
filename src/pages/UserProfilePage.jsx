@@ -32,6 +32,7 @@ const tabs = [
   ["security", ShieldCheck, "Bảo mật"],
 ];
 const TAB_IDS = new Set(tabs.map(([id]) => id));
+
 function formatPlanName(planName) {
   const normalizedName = String(planName ?? "").trim();
   if (!normalizedName) return "Miễn phí";
@@ -754,7 +755,13 @@ export default function UserProfilePage() {
                 {savingPassword ? "Đang lưu…" : "Lưu mật khẩu mới"}
               </button>
             </form>
-            <p className="security-fallback-note">Quên mật khẩu hiện tại? <button type="button" className="link-button" onClick={() => go("/forgot-password")}>Gửi mã xác thực qua email</button> để đổi mật khẩu.</p>
+            <p className="security-fallback-note">
+              Quên mật khẩu hiện tại?{" "}
+              <button type="button" className="link-button" onClick={() => go("/forgot-password")}>
+                Gửi mã xác thực qua email
+              </button>{" "}
+              để đổi mật khẩu.
+            </p>
           </section>
         )}
 

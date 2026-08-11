@@ -148,6 +148,15 @@ test("security tab blocks submit when the new password confirmation doesn't matc
   expect(updateCalled).toBe(false);
 });
 
+test("security tab: forgot-current-password link navigates to the forgot-password page", async ({ page }) => {
+  await openPatientProfile(page);
+
+  await page.getByRole("tab", { name: "Bảo mật" }).click();
+  await page.getByRole("button", { name: "Gửi mã xác thực qua email" }).click();
+
+  await expect(page).toHaveURL(/\/forgot-password$/);
+});
+
 test("patient profile has no serious automated accessibility violations", async ({ page }) => {
   await openPatientProfile(page);
 
