@@ -81,3 +81,34 @@ test("patient chat keeps controls visible in forced colors mode", async ({ page 
   await expect(page.getByRole("button", { name: "Mở công cụ nhận diện thuốc" })).toBeVisible();
   await expect(page.getByLabel("Nội dung cần hỏi")).toBeVisible();
 });
+
+test("patient chat uses the shared loading ring instead of bouncing dots", async ({ page }) => {
+  let releaseResponse;
+  await page.route("**/api/web-chatbot/message", async (route) => {
+    await new Promise((resolve) => {
+      releaseResponse = resolve;
+    });
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { answer: "OK" } }),
+    });
+  });
+  await openPatientChat(page);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+
+  await page.locator(".chatbot-composer textarea").fill("Can tu van");
+  await page.locator(".chatbot-send-button").click();
+
+  const typing = page.locator(".chatbot-typing");
+  await expect(typing).toBeVisible();
+  const loadingStyle = await typing.evaluate((element) => ({
+    animationName: getComputedStyle(element, "::after").animationName,
+    firstDotDisplay: getComputedStyle(element.querySelector("span")).display,
+  }));
+  expect(loadingStyle).toEqual({
+    animationName: "medimateSpin",
+    firstDotDisplay: "none",
+  });
+
+  releaseResponse();
+});

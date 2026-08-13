@@ -104,7 +104,6 @@ textarea:disabled {
   inset: 0;
   transform: translateX(-100%);
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
-  animation: skeletonSweep 1.2s infinite;
 }
 
 .skeleton-line {
@@ -119,9 +118,9 @@ textarea:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *:not(:where(.ui-state-spinner, .ui-button-spinner, .map-loading-spinner, .doctor-invitation-loader, .large-spinner, .spin, .care-spin, .payment-history-spinner, .records-spin, .analysis-history-spin, .lab-test-result__spinner, .is-spinning, .payment-result-icon.is-loading svg, .chat-loading span, .assistant-message.loading span, .landing-chat-typing span, .chatbot-typing span, .map-ai-message-bubble.loading span, .skeleton-line, .skeleton-card, .admin-overview-loading, .route-loading-mark, .route-loading-pulse polyline, .route-loading-state, .ui-loading)),
-  *:not(:where(.ui-state-spinner, .skeleton-line, .skeleton-card, .route-loading-state, .ui-loading))::before,
-  *:not(:where(.ui-state-spinner, .skeleton-line, .skeleton-card, .route-loading-state, .ui-loading))::after {
+  *,
+  *::before,
+  *::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
@@ -140,11 +139,5 @@ textarea:disabled {
   textarea,
   button {
     border-color: ButtonBorder;
-  }
-}
-
-@keyframes skeletonSweep {
-  to {
-    transform: translateX(100%);
   }
 }
