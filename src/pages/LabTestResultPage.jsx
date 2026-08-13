@@ -237,6 +237,8 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
     let pollTimer;
 
     const pollSession = async () => {
+      const pollStartedAt = window.performance.now();
+
       try {
         const response = await labTestsApi.get(sessionId);
         if (!active) return;
@@ -264,7 +266,9 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
           return;
         }
 
-        pollTimer = window.setTimeout(() => void pollSession(), POLL_INTERVAL_MS);
+        const requestDuration = window.performance.now() - pollStartedAt;
+        const nextPollDelay = Math.max(0, POLL_INTERVAL_MS - requestDuration);
+        pollTimer = window.setTimeout(() => void pollSession(), nextPollDelay);
       } catch (requestError) {
         if (!active) return;
         const message = getLabTestApiMessage(

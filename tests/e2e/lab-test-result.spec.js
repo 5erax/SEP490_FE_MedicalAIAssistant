@@ -74,7 +74,11 @@ function completedSession() {
   };
 }
 
-async function prepareResultPage(page, { completedOnCall = 2, forcedColors = "none" } = {}) {
+async function prepareResultPage(page, {
+  completedOnCall = 2,
+  forcedColors = "none",
+  responseDelay = 0,
+} = {}) {
   await page.emulateMedia({ forcedColors });
   await preparePage(page);
   await page.addInitScript((accessToken) => {
@@ -88,12 +92,15 @@ async function prepareResultPage(page, { completedOnCall = 2, forcedColors = "no
 
   const state = { calls: 0, requestedAt: [] };
 
-  await page.route("**/api/**", (route) => {
+  await page.route("**/api/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
 
     if (pathname === `/api/lab-tests/${SESSION_ID}`) {
       state.calls += 1;
       state.requestedAt.push(Date.now());
+      if (responseDelay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, responseDelay));
+      }
       const session = completedSession();
       if (state.calls < completedOnCall) {
         session.status = "processing";
@@ -131,7 +138,7 @@ async function prepareResultPage(page, { completedOnCall = 2, forcedColors = "no
 }
 
 test("result page polls every second, stops when completed, and displays advice", async ({ page }) => {
-  const state = await prepareResultPage(page);
+  const state = await prepareResultPage(page, { responseDelay: 300 });
   await page.goto(`/records/${SESSION_ID}`, { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("heading", { name: "Hệ thống đang đọc và đối chiếu các chỉ số" })).toBeVisible();
@@ -139,7 +146,9 @@ test("result page polls every second, stops when completed, and displays advice"
 
   await expect(page.getByRole("heading", { name: "Kết quả ngày 7/8/2026" })).toBeVisible();
   expect(state.calls).toBe(2);
-  expect(state.requestedAt[1] - state.requestedAt[0]).toBeGreaterThanOrEqual(850);
+  const pollGap = state.requestedAt[1] - state.requestedAt[0];
+  expect(pollGap).toBeGreaterThanOrEqual(850);
+  expect(pollGap).toBeLessThan(1200);
 
   const astCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Chỉ số AST (GOT)" });
   const glucoseCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Glucose huyết" });
