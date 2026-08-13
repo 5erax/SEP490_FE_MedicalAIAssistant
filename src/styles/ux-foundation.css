@@ -118,9 +118,24 @@ textarea:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
+  *:not(:where(
+    .ui-state-spinner,
+    .ui-button-spinner,
+    .map-loading-spinner,
+    .doctor-invitation-loader,
+    .large-spinner,
+    .spin,
+    .care-spin,
+    .payment-history-spinner,
+    .records-spin,
+    .analysis-history-spin,
+    .lab-test-result__spinner,
+    .is-spinning,
+    .payment-result-icon.is-loading svg,
+    .map-ai-message-bubble.bot.loading i
+  )),
   *::before,
-  *::after {
+  *:not(:where(.chat-loading, .landing-chat-typing, .chatbot-typing))::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

@@ -110,5 +110,15 @@ test("patient chat uses the shared loading ring instead of bouncing dots", async
     firstDotDisplay: "none",
   });
 
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const reducedMotionStyle = await typing.evaluate((element) => ({
+    animationDuration: getComputedStyle(element, "::after").animationDuration,
+    animationName: getComputedStyle(element, "::after").animationName,
+  }));
+  expect(reducedMotionStyle).toEqual({
+    animationDuration: "2s",
+    animationName: "medimateSpin",
+  });
+
   releaseResponse();
 });

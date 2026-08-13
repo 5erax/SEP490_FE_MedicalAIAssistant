@@ -115,11 +115,11 @@
     .payment-result-icon.is-loading svg,
     .map-ai-message-bubble.bot.loading i
   ) {
-    animation: none !important;
+    animation: medimateSpin 2s linear infinite !important;
   }
 
   :is(.chat-loading, .landing-chat-typing, .chatbot-typing)::after {
-    animation: none !important;
+    animation: medimateSpin 2s linear infinite !important;
   }
 }
 
