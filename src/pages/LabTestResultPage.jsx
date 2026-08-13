@@ -11,10 +11,15 @@ import {
 import { Button, EmptyState, ErrorState } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getLabTestApiMessage, labTestsApi } from "../services/api";
+import { useServiceCredit } from "../state/useServiceCredit";
+import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
 import "../styles/user-workspace/lab-test-result.css";
 
 const POLL_INTERVAL_MS = 1000;
-const TERMINAL_SESSION_STATUSES = new Set(["completed", "failed"]);
+const TERMINAL_SESSION_STATUSES = new Set([
+  ASYNC_SESSION_STATUS.COMPLETED,
+  ASYNC_SESSION_STATUS.FAILED,
+]);
 const ABNORMAL_RESULT_STATUSES = new Set(["high", "low", "criticalHigh", "criticalLow"]);
 
 const RESULT_STATUS_META = {
@@ -28,10 +33,6 @@ const RESULT_STATUS_META = {
 
 function unwrapData(response) {
   return response?.data ?? response?.Data ?? response;
-}
-
-function normalizeSessionStatus(value) {
-  return String(value ?? "processing").trim().toLowerCase();
 }
 
 function normalizeResultStatus(value) {
@@ -218,6 +219,7 @@ function genderLabel(value) {
 }
 
 export default function LabTestResultPage({ sessionId, embedded = false, onResponse, onSessionUpdate }) {
+  const { refresh: refreshServiceCredit } = useServiceCredit();
   const [session, setSession] = useState(null);
   const [loadStatus, setLoadStatus] = useState(sessionId ? "loading" : "error");
   const [error, setError] = useState(sessionId ? "" : "Không tìm thấy mã phiên phân tích xét nghiệm.");
@@ -228,6 +230,11 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
   );
   const pageHeadingRef = useRef(null);
   const responseNotifiedRef = useRef(false);
+  const terminalBalanceRefreshRef = useRef("");
+
+  useEffect(() => {
+    terminalBalanceRefreshRef.current = "";
+  }, [retryKey, sessionId]);
 
   useEffect(() => {
     if (!sessionId) return undefined;
@@ -237,6 +244,8 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
     let pollTimer;
 
     const pollSession = async () => {
+      const pollStartedAt = window.performance.now();
+
       try {
         const response = await labTestsApi.get(sessionId);
         if (!active) return;
@@ -247,24 +256,36 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
         }
 
         const nextSession = unwrapData(response) ?? null;
-        const nextStatus = normalizeSessionStatus(nextSession?.status);
+        const nextStatus = normalizeAsyncSessionStatus(nextSession?.status);
         if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
         setSession(nextSession);
         setLoadStatus("ready");
         setError("");
 
-        if (nextStatus === "completed") {
+        if (nextStatus === ASYNC_SESSION_STATUS.COMPLETED) {
           const resultCount = Array.isArray(nextSession?.results) ? nextSession.results.length : 0;
           setAnnouncement(`Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`);
+          const terminalKey = `${sessionId}:${nextStatus}`;
+          if (terminalBalanceRefreshRef.current !== terminalKey) {
+            terminalBalanceRefreshRef.current = terminalKey;
+            void refreshServiceCredit({ silent: true });
+          }
           return;
         }
 
-        if (nextStatus === "failed") {
+        if (nextStatus === ASYNC_SESSION_STATUS.FAILED) {
           setAnnouncement("Phiên phân tích xét nghiệm không hoàn tất.");
+          const terminalKey = `${sessionId}:${nextStatus}`;
+          if (terminalBalanceRefreshRef.current !== terminalKey) {
+            terminalBalanceRefreshRef.current = terminalKey;
+            void refreshServiceCredit({ silent: true });
+          }
           return;
         }
 
-        pollTimer = window.setTimeout(() => void pollSession(), POLL_INTERVAL_MS);
+        const requestDuration = window.performance.now() - pollStartedAt;
+        const nextPollDelay = Math.max(0, POLL_INTERVAL_MS - requestDuration);
+        pollTimer = window.setTimeout(() => void pollSession(), nextPollDelay);
       } catch (requestError) {
         if (!active) return;
         const message = getLabTestApiMessage(
@@ -291,7 +312,7 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
       if (startTimer) window.clearTimeout(startTimer);
       if (pollTimer) window.clearTimeout(pollTimer);
     };
-  }, [onResponse, onSessionUpdate, retryKey, sessionId]);
+  }, [onResponse, onSessionUpdate, refreshServiceCredit, retryKey, sessionId]);
 
   const results = Array.isArray(session?.results) ? session.results : [];
   const selectedKeyExists = results.some(
@@ -309,7 +330,7 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
   const selectedResult = results.find(
     (result, index) => getResultKey(result, index) === effectiveSelectedKey,
   ) ?? null;
-  const sessionStatus = normalizeSessionStatus(session?.status);
+  const sessionStatus = normalizeAsyncSessionStatus(session?.status);
   const isPending = loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);
   const normalCount = results.filter((result) => normalizeResultStatus(result?.status) === "normal").length;
   const warningCount = results.filter((result) => (

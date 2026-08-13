@@ -16,9 +16,11 @@ import {
   Share2,
   Star,
   Stethoscope,
+  Trash2,
   UserRound,
   X,
 } from "lucide-react";
+import { useFeedback } from "../components/feedback/feedbackContext";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import { navigate } from "../router/navigation";
@@ -318,6 +320,7 @@ function toReviewImageUrlMap(imageUrls) {
 
 function isReviewByCurrentUser(review, auth) {
   if (!review || !auth) return false;
+  if (review.isCurrentUser === true) return true;
   const currentIds = [auth.userId, auth.identityId].filter(Boolean).map(String);
   const reviewIds = [review.userId, review.reviewerId, review.identityId, review.createdBy]
     .filter(Boolean)
@@ -430,6 +433,7 @@ function normalizeFacility(facility, relationDepartments = [], relationDepartmen
 
 function NearbyClinicPage() {
   const auth = getStoredAuth();
+  const { confirmAction, showToast } = useFeedback();
   const [mapQuery, setMapQuery] = useState(readMapQuery);
   const isClinicalFlow = mapQuery.source === "clinical";
   const requestedDepartmentId = mapQuery.departmentId;
@@ -489,6 +493,7 @@ function NearbyClinicPage() {
   const [hoveredReviewRating, setHoveredReviewRating] = useState(0);
   const [reviewMessage, setReviewMessage] = useState("");
   const [savingReview, setSavingReview] = useState(false);
+  const [deletingReviewId, setDeletingReviewId] = useState("");
   const [submittedReview, setSubmittedReview] = useState(null);
   const [editingReview, setEditingReview] = useState(false);
   const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
@@ -1439,6 +1444,56 @@ function NearbyClinicPage() {
     setEditingReview(false);
   };
 
+  const deleteCurrentUserReview = async () => {
+    const reviewId = currentUserReview?.id;
+    if (!reviewId || deletingReviewId) return;
+
+    const confirmed = await confirmAction({
+      title: "Xóa đánh giá?",
+      message: "Đánh giá và ảnh minh họa sẽ không còn hiển thị. Hành động này không thể hoàn tác.",
+      confirmLabel: "Xóa đánh giá",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    const normalizedReviewId = String(reviewId);
+    setDeletingReviewId(normalizedReviewId);
+    setReviewMessage("");
+    try {
+      const response = await feedbackReviewsApi.remove(reviewId);
+      const successMessage = getFeedbackReviewApiMessage(
+        response,
+        FEEDBACK_REVIEW_MESSAGES.delete.success,
+      );
+
+      setReviews((current) => current.filter(
+        (review) => String(review.id) !== normalizedReviewId,
+      ));
+      setReviewsTotalCount((current) => Math.max(0, current - 1));
+      setSubmittedReview(null);
+      setEditingReview(false);
+      setHoveredReviewRating(0);
+      setReviewForm({ rating: "5", comment: "", imageUrls: [] });
+      setReviewMessage(successMessage);
+      showToast({ type: "success", title: "Đã xóa đánh giá" });
+    } catch (error) {
+      const message = getFeedbackReviewApiMessage(
+        error,
+        error?.status === 401
+          ? FEEDBACK_REVIEW_MESSAGES.auth.fallback
+          : FEEDBACK_REVIEW_MESSAGES.delete.failure,
+      );
+      setReviewMessage(message);
+      showToast({
+        type: "error",
+        title: "Không thể xóa đánh giá",
+        message,
+      });
+    } finally {
+      setDeletingReviewId("");
+    }
+  };
+
   const uploadReviewImage = async (event) => {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
@@ -1727,7 +1782,12 @@ function NearbyClinicPage() {
                         <strong>Bạn đã đánh giá cơ sở này</strong>
                         <p>{currentUserReview.isKnownDuplicate ? "Đánh giá hiện tại chưa xuất hiện trong danh sách công khai." : (currentUserReview.comment || "Bạn không để lại nhận xét.")}</p>
                         {getReviewImageUrls(currentUserReview).length > 0 && <div className="review-photo-grid">{getReviewImageUrls(currentUserReview).map((imageUrl, index) => <img className="review-image" key={imageUrl} src={imageUrl} alt={`Ảnh minh họa ${index + 1} trong đánh giá của bạn`} width="240" height="180" loading="lazy" decoding="async" />)}</div>}
-                        {currentUserReview.id ? <button type="button" className="review-edit-button" onClick={startEditingReview}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button> : <small>Đánh giá hiện tại chưa thể chỉnh sửa. Vui lòng thử lại sau.</small>}
+                        {currentUserReview.id ? (
+                          <div className="review-owner-actions">
+                            <button type="button" className="review-edit-button" onClick={startEditingReview} disabled={Boolean(deletingReviewId)}><Pencil size={15} aria-hidden="true" /> Chỉnh sửa đánh giá</button>
+                            <button type="button" className="review-delete-button" onClick={deleteCurrentUserReview} disabled={Boolean(deletingReviewId)}><Trash2 size={15} aria-hidden="true" /> {deletingReviewId ? "Đang xóa..." : "Xóa đánh giá"}</button>
+                          </div>
+                        ) : <small>Đánh giá hiện tại chưa thể chỉnh sửa hoặc xóa. Vui lòng thử lại sau.</small>}
                       </div>
                     ) : (
                       <form className="facility-review-form" onSubmit={submitReview}>
@@ -3123,7 +3183,13 @@ const styles = `
 .current-user-review p,
 .current-user-review small { margin: 0; color: var(--muted); line-height: 1.5; }
 .current-user-review small { font-size: 11px; font-weight: 800; }
-.review-edit-button {
+.review-owner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.review-edit-button,
+.review-delete-button {
   width: fit-content;
   min-height: 44px;
   display: inline-flex;
@@ -3133,9 +3199,24 @@ const styles = `
   border: 1px solid rgba(8, 127, 140, .24);
   border-radius: 999px;
   background: #fff;
-  color: var(--teal);
   padding: 0 12px;
   font-weight: 900;
+  cursor: pointer;
+}
+.review-edit-button { color: var(--teal); }
+.review-delete-button {
+  border-color: rgba(180, 35, 24, .24);
+  background: #fff8f7;
+  color: #b42318;
+}
+.review-edit-button:disabled,
+.review-delete-button:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+.review-owner-actions button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, .32);
+  outline-offset: 2px;
 }
 .review-image-upload {
   min-width: 0;

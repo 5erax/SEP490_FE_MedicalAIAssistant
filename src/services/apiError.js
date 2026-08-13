@@ -8,6 +8,7 @@ function normalizeErrorCode(value) {
 export function getApiErrorCode(error) {
   const payload = error?.payload ?? {};
   const candidates = [
+    error?.code,
     payload.code,
     payload.errorCode,
     payload.data?.code,

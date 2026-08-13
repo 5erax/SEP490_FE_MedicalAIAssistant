@@ -7,6 +7,8 @@ const TOKEN = [
   "",
 ].join(".");
 const FACILITY_ID = "11111111-1111-4111-8111-111111111111";
+const OWNER_REVIEW_ID = "22222222-2222-4222-8222-222222222222";
+const OTHER_REVIEW_ID = "33333333-3333-4333-8333-333333333333";
 
 const SERVICE_ERRORS = [
   "Request body là bắt buộc",
@@ -193,4 +195,144 @@ test("facility review displays the first service error and create fallback", asy
   await submit.click();
   await expect(page.getByText("Tạo feedback thất bại", { exact: true })).toBeVisible();
   expect(createAttempt).toBe(2);
+});
+
+test("a patient can confirm and delete only their own facility review", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript(({ accessToken, userId }) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken,
+      userId,
+      displayName: "Người bệnh thử nghiệm",
+      roles: ["Patient"],
+    }));
+  }, { accessToken: TOKEN, userId: "patient-1" });
+  await page.route("https://basemaps.cartocdn.com/**", (route) => route.abort("failed"));
+
+  let deleteAttempt = 0;
+  let reviewItems = [
+    {
+      id: OWNER_REVIEW_ID,
+      userId: "patient-1",
+      facilityId: FACILITY_ID,
+      reviewerName: "Người bệnh thử nghiệm",
+      rating: 5,
+      comment: "Trải nghiệm của tôi",
+      status: "Approved",
+      createdAt: "2026-08-13T08:00:00Z",
+    },
+    {
+      id: OTHER_REVIEW_ID,
+      userId: "patient-2",
+      facilityId: FACILITY_ID,
+      reviewerName: "Người dùng khác",
+      rating: 4,
+      comment: "Nhận xét vẫn còn",
+      status: "Approved",
+      createdAt: "2026-08-12T08:00:00Z",
+    },
+  ];
+
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+
+    if (url.pathname === "/api/medical-facilities/active") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: [{
+            id: FACILITY_ID,
+            facilityName: "Bệnh viện kiểm thử",
+            address: "123 Nguyễn Trãi",
+            latitude: 10.77,
+            longitude: 106.69,
+            facilityType: "Hospital",
+            isActive: true,
+          }],
+        }),
+      });
+    }
+
+    if (url.pathname === `/api/feedback-reviews/facility/${FACILITY_ID}`) {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          message: "OK",
+          data: {
+            items: reviewItems,
+            pageNumber: 1,
+            pageSize: 20,
+            totalCount: reviewItems.length,
+            totalPages: 1,
+          },
+        }),
+      });
+    }
+
+    if (url.pathname === `/api/feedback-reviews/${OWNER_REVIEW_ID}` && method === "DELETE") {
+      deleteAttempt += 1;
+      if (deleteAttempt === 1) {
+        return route.fulfill({
+          status: 403,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: false,
+            message: "Xóa feedback thất bại",
+            errors: ["Bạn chỉ có thể xóa đánh giá của mình."],
+          }),
+        });
+      }
+
+      reviewItems = reviewItems.filter((review) => review.id !== OWNER_REVIEW_ID);
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          message: "Xóa feedback thành công",
+          errors: [],
+        }),
+      });
+    }
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: [] }),
+    });
+  });
+
+  await page.goto("/map", { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("Bệnh viện kiểm thử", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Xem chi tiết" }).click();
+  await page.getByRole("tab", { name: "Đánh giá" }).click();
+
+  const deleteButton = page.getByRole("button", { name: "Xóa đánh giá", exact: true });
+  await expect(deleteButton).toHaveCount(1);
+  await expect(page.getByText("Trải nghiệm của tôi", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Nhận xét vẫn còn", { exact: true })).toBeVisible();
+  await expect(page.getByText("2 đánh giá", { exact: true })).toBeVisible();
+
+  await deleteButton.click();
+  const dialog = page.getByRole("dialog", { name: "Xóa đánh giá?" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Hủy", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  expect(deleteAttempt).toBe(0);
+
+  await deleteButton.click();
+  await dialog.getByRole("button", { name: "Xóa đánh giá", exact: true }).click();
+  await expect(page.getByText("Bạn chỉ có thể xóa đánh giá của mình.", { exact: true }).first()).toBeVisible();
+  await expect(deleteButton).toBeEnabled();
+  await expect(page.getByText("2 đánh giá", { exact: true })).toBeVisible();
+
+  await deleteButton.click();
+  await dialog.getByRole("button", { name: "Xóa đánh giá", exact: true }).click();
+  await expect(page.getByText("Xóa feedback thành công", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi đánh giá", exact: true })).toBeVisible();
+  await expect(page.getByText("Trải nghiệm của tôi", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Nhận xét vẫn còn", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 đánh giá", { exact: true })).toBeVisible();
+  expect(deleteAttempt).toBe(2);
 });

@@ -1082,6 +1082,13 @@ function translateApiErrorValue(
     );
   }
 
+  // Stable machine-readable codes are returned inside errors[] by quota
+  // workflows. Preserve them so feature-specific mappers can react to the
+  // contract independently of inconsistent HTTP statuses.
+  if (/^[A-Z][A-Z0-9_]+$/.test(String(value ?? "").trim())) {
+    return String(value).trim();
+  }
+
   const parts =
     splitCompoundMessage(value);
 

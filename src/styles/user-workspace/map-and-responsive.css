@@ -123,6 +123,22 @@
     display: none;
   }
 
+  .service-credit-badge {
+    min-width: 44px;
+    padding: 0 10px;
+  }
+
+  .service-credit-badge-label {
+    display: none;
+  }
+
+  .service-credit-badge-reserved {
+    max-width: 68px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .account-menu-panel {
     position: fixed;
     top: 62px;

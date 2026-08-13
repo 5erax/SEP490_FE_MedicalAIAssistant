@@ -2,6 +2,7 @@ import { Badge, Button, EmptyState } from "../ui";
 import { CreditCard, Gauge, Pencil, Plus } from "lucide-react";
 
 const QUOTA_LABELS = {
+  SERVICE_CREDIT: "Lượt dịch vụ dùng chung",
   RECOVERY_PLAN_REQUEST: "Kế hoạch phục hồi",
 };
 
@@ -45,13 +46,15 @@ function getQuotaTitle(quota) {
 
 function getQuotaSummary(quota) {
   const code = quota.quotaCode || quota.code;
+  if (code === "SERVICE_CREDIT") return "không hết hạn";
   if (code === "RECOVERY_PLAN_REQUEST") return "mỗi chu kỳ gói";
   return getResetPeriodLabel(quota.resetPeriod);
 }
 
 function getQuotaAmount(quota) {
   const limit = Number(quota.limitValue || 0).toLocaleString("vi-VN");
-  return `${limit} ${quota.unit || "lượt"}`;
+  const code = quota.quotaCode || quota.code;
+  return `${limit} ${code === "SERVICE_CREDIT" ? "lượt" : (quota.unit || "lượt")}`;
 }
 
 function parseFeatureLimitEntries(plan) {
@@ -124,7 +127,7 @@ export default function SubscriptionPlanTable({
     <div className="subscription-plan-card-list" role="table" aria-label="Danh sách gói dịch vụ">
       <div className="subscription-plan-list-header" role="row">
         <span>Gói dịch vụ</span>
-        <span>Thời hạn / Cập nhật</span>
+        <span>Hiệu lực / Cập nhật</span>
         <span>Quota sử dụng</span>
         <span>Trạng thái</span>
         <span>Thao tác</span>
@@ -149,8 +152,8 @@ export default function SubscriptionPlanTable({
 
             <div className="subscription-plan-card-meta" role="cell">
               <span>
-                <small>Thời hạn</small>
-                <strong>{plan.durationInDays} ngày</strong>
+                <small>Hiệu lực credit</small>
+                <strong>Không hết hạn</strong>
               </span>
               <span>
                 <small>Cập nhật</small>
@@ -186,7 +189,7 @@ export default function SubscriptionPlanTable({
                       type="button"
                     >
                       <Plus size={15} aria-hidden="true" />
-                      {isAssigning ? "Đang gán..." : "Gán 3 lượt phục hồi"}
+                      {isAssigning ? "Đang gán..." : "Gán 10 lượt dịch vụ"}
                     </Button>
                   )}
                 </div>

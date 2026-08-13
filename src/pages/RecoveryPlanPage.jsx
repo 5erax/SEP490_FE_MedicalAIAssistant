@@ -25,10 +25,11 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Button, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getApiErrorCode } from "../services/apiError";
+import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
+import { useServiceCredit } from "../state/useServiceCredit";
 import {
   recoveryPlanRequestsApi,
   recoveryPlansApi,
-  subscriptionUsageApi,
 } from "../services/api";
 import {
   ensureRecoveryPlanConnection,
@@ -104,14 +105,6 @@ function normalizePaged(response, pageNumber) {
   };
 }
 
-function normalizeQuota(response) {
-  const data = response?.data;
-  if (Array.isArray(data)) {
-    return data.find((item) => String(item.quotaCode).toLowerCase().includes("recovery")) ?? data[0] ?? null;
-  }
-  return data ?? null;
-}
-
 function getDiseaseLabel(value) {
   return DISEASE_GROUPS.find((item) => item.value === value)?.label ?? "Chưa phân loại";
 }
@@ -139,15 +132,17 @@ function createIdempotencyKey() {
 }
 
 function getRecoveryError(error, fallback) {
+  const creditError = getServiceCreditErrorPresentation(error);
+  if (creditError) return creditError;
   const code = getApiErrorCode(error);
   if (code === "NO_ACTIVE_SUBSCRIPTION") {
-    return { code, message: "Bạn cần một gói đang hoạt động để yêu cầu kế hoạch phục hồi." };
+    return { code, action: "purchase", message: "Bạn cần mua gói lượt để yêu cầu kế hoạch phục hồi." };
   }
   if (code === "RECOVERY_PLAN_QUOTA_NOT_CONFIGURED") {
-    return { code, message: "Hạn mức kế hoạch phục hồi của gói hiện chưa sẵn sàng. Vui lòng thử lại sau." };
+    return { code, action: "retry", message: "Lượt dịch vụ hiện chưa sẵn sàng. Vui lòng thử lại sau." };
   }
   if (code === "RECOVERY_PLAN_QUOTA_EXHAUSTED") {
-    return { code, message: "Bạn đã dùng hết lượt yêu cầu kế hoạch trong chu kỳ hiện tại." };
+    return { code, action: "purchase", message: "Bạn đã dùng hết lượt dịch vụ khả dụng." };
   }
   if (code === "INVALID_USER_TIME_ZONE") {
     return { code, message: "Múi giờ trong tài khoản chưa hợp lệ. Hãy cập nhật hồ sơ rồi thử lại." };
@@ -194,11 +189,13 @@ function Pagination({ label, page, onChange, loading }) {
 
 function QuotaCard({ quota, error, loading, onRetry }) {
   if (loading) {
-    return <LoadingState label="Đang kiểm tra lượt kế hoạch…" />;
+    return <LoadingState label="Đang kiểm tra lượt dịch vụ…" />;
   }
 
   if (error) {
-    const needsPlan = error.code === "NO_ACTIVE_SUBSCRIPTION" || error.code === "RECOVERY_PLAN_QUOTA_EXHAUSTED";
+    const needsPlan = error.action === "purchase"
+      || error.code === "NO_ACTIVE_SUBSCRIPTION"
+      || error.code === "RECOVERY_PLAN_QUOTA_EXHAUSTED";
     return (
       <section className="recovery-quota-card is-error" aria-labelledby="recovery-quota-title">
         <div className="recovery-card-icon"><ShieldCheck size={22} aria-hidden="true" /></div>
@@ -216,7 +213,7 @@ function QuotaCard({ quota, error, loading, onRetry }) {
   }
 
   if (!quota) return null;
-  const limit = Math.max(0, Number(quota.limitValue) || 0);
+  const limit = Math.max(0, Number(quota.grantedCount) || 0);
   const remaining = Math.max(0, Number(quota.remainingCount) || 0);
   const used = Math.max(0, Number(quota.usedCount) || 0);
   const reserved = Math.max(0, Number(quota.reservedCount) || 0);
@@ -228,8 +225,11 @@ function QuotaCard({ quota, error, loading, onRetry }) {
       <div className="recovery-quota-content">
         <div className="recovery-quota-heading">
           <div>
-            <p className="recovery-eyebrow">Lượt kế hoạch trong chu kỳ</p>
+            <p className="recovery-eyebrow">Lượt dịch vụ dùng chung</p>
             <h2 id="recovery-quota-title">Còn {remaining} lượt có thể yêu cầu</h2>
+            {remaining === 0 && (
+              <Button size="sm" onClick={() => navigate("/pricing?view=upgrade&returnTo=%2Frecovery-plan")}>Mua thêm lượt</Button>
+            )}
           </div>
           <strong>{remaining}/{limit}</strong>
         </div>
@@ -246,7 +246,7 @@ function QuotaCard({ quota, error, loading, onRetry }) {
         <dl className="recovery-quota-stats">
           <div><dt>Đã dùng</dt><dd>{used}</dd></div>
           <div><dt>Đang chờ xử lý</dt><dd>{reserved}</dd></div>
-          <div><dt>Chu kỳ</dt><dd>{formatDate(quota.cycleStart)} – {formatDate(quota.cycleEnd)}</dd></div>
+          <div><dt>Đã cấp</dt><dd>{limit}</dd></div>
         </dl>
       </div>
     </section>
@@ -433,7 +433,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             <Send size={17} aria-hidden="true" /> Gửi yêu cầu
           </Button>
         </div>
-        {submitError?.code === "NO_ACTIVE_SUBSCRIPTION" && (
+        {submitError?.action === "purchase" && (
           <Button tone="secondary" onClick={() => navigate("/pricing?returnTo=%2Frecovery-plan")}>Xem gói dịch vụ</Button>
         )}
       </form>
@@ -930,9 +930,16 @@ function RecoveryTimelineCalendar({ plan, loading }) {
 
 export default function RecoveryPlanPage() {
   const { confirmAction, showToast } = useFeedback();
-  const [quota, setQuota] = useState(null);
-  const [quotaError, setQuotaError] = useState(null);
-  const [quotaLoading, setQuotaLoading] = useState(true);
+  const {
+    balance: quota,
+    status: quotaStatus,
+    error: serviceCreditError,
+    refresh: refreshServiceCredit,
+  } = useServiceCredit();
+  const quotaLoading = quotaStatus === "idle" || quotaStatus === "loading";
+  const quotaError = serviceCreditError
+    ? getRecoveryError(serviceCreditError, "Chưa thể kiểm tra lượt dịch vụ. Vui lòng thử lại.")
+    : null;
   const [requestPageNumber, setRequestPageNumber] = useState(1);
   const [requestPage, setRequestPage] = useState(() => normalizePaged(null, 1));
   const [requestsLoading, setRequestsLoading] = useState(true);
@@ -958,18 +965,12 @@ export default function RecoveryPlanPage() {
   const refetchTimerRef = useRef(null);
 
   const loadQuota = useCallback(async () => {
-    setQuotaLoading(true);
-    setQuotaError(null);
     try {
-      const response = await subscriptionUsageApi.me();
-      setQuota(normalizeQuota(response));
-    } catch (error) {
-      setQuota(null);
-      setQuotaError(getRecoveryError(error, "Chưa thể kiểm tra lượt kế hoạch. Vui lòng thử lại."));
-    } finally {
-      setQuotaLoading(false);
+      await refreshServiceCredit();
+    } catch {
+      // Provider exposes the canonical error state to the quota card.
     }
-  }, []);
+  }, [refreshServiceCredit]);
 
   const loadRequests = useCallback(async (pageNumber = requestPageNumber, preferredId = "") => {
     setRequestsLoading(true);
@@ -1109,8 +1110,8 @@ export default function RecoveryPlanPage() {
 
   async function handleCreated(createdRequest) {
     showToast({ type: "success", title: "Đã gửi yêu cầu", message: "Bạn có thể theo dõi trạng thái ngay trên trang này." });
+    void loadQuota();
     await Promise.allSettled([
-      loadQuota(),
       loadRequests(1, createdRequest?.id),
       loadWorkflowGuard(),
     ]);
@@ -1129,7 +1130,8 @@ export default function RecoveryPlanPage() {
     try {
       await recoveryPlanRequestsApi.cancel(request.id);
       showToast({ type: "success", title: "Đã hủy yêu cầu", message: "Hạn mức đang được cập nhật lại." });
-      await Promise.allSettled([loadQuota(), loadRequests(requestPageNumber, request.id)]);
+      void loadQuota();
+      await loadRequests(requestPageNumber, request.id);
     } catch (error) {
       const mapped = getRecoveryError(error, "Chưa thể hủy yêu cầu. Vui lòng thử lại.");
       showToast({ type: "error", title: "Không thể hủy yêu cầu", message: mapped.message });
@@ -1160,7 +1162,8 @@ export default function RecoveryPlanPage() {
     try {
       await recoveryPlansApi.start(planId);
       showToast({ type: "success", title: "Kế hoạch đã bắt đầu", message: "Ngày thực hiện đã được tính theo múi giờ tài khoản của bạn." });
-      await Promise.allSettled([loadPlans(planPageNumber, planId), loadQuota()]);
+      void loadQuota();
+      await loadPlans(planPageNumber, planId);
     } catch (error) {
       const mapped = getRecoveryError(error, "Chưa thể bắt đầu kế hoạch. Vui lòng thử lại.");
       showToast({ type: "error", title: "Không thể bắt đầu kế hoạch", message: mapped.message });
@@ -1210,9 +1213,9 @@ export default function RecoveryPlanPage() {
     : workflowGuardLoading
       ? "Đang kiểm tra trạng thái kế hoạch của bạn."
       : quotaLoading
-        ? "Đang kiểm tra lượt kế hoạch của bạn."
+        ? "Đang kiểm tra lượt dịch vụ của bạn."
         : quotaError?.message
-          ?? (!quota ? "Chưa có thông tin lượt kế hoạch." : "Bạn đã dùng hết lượt trong chu kỳ hiện tại.");
+          ?? (!quota ? "Chưa có thông tin lượt dịch vụ." : "Bạn chưa có lượt dịch vụ khả dụng.");
   const realtimeLabel = connectionStatus === "connected"
     ? "Cập nhật tự động đang bật"
     : connectionStatus === "reconnecting"

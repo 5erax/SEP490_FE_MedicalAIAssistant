@@ -158,6 +158,68 @@
   min-width: 0;
 }
 
+.service-credit-badge {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--color-info) 30%, var(--workspace-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-info-bg) 72%, var(--workspace-card));
+  color: var(--color-info-strong);
+  padding: 0 13px;
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.service-credit-badge strong {
+  color: var(--workspace-ink);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.service-credit-badge-reserved {
+  border-left: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  padding-left: 7px;
+  color: var(--workspace-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.service-credit-badge:is(a, button):hover,
+.service-credit-badge:is(a, button):focus-visible {
+  border-color: var(--color-info-strong);
+  background: var(--color-info-bg);
+}
+
+.service-credit-badge.is-empty {
+  border-color: color-mix(in srgb, var(--color-warning) 36%, var(--workspace-line));
+  background: color-mix(in srgb, var(--color-warning-bg) 78%, var(--workspace-card));
+  color: var(--color-warning);
+}
+
+.service-credit-badge.is-error {
+  border-color: color-mix(in srgb, var(--color-danger) 30%, var(--workspace-line));
+  background: color-mix(in srgb, var(--color-danger-bg) 76%, var(--workspace-card));
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.service-credit-badge.is-loading {
+  color: var(--workspace-muted);
+}
+
+.service-credit-badge-spinner {
+  animation: service-credit-spin 0.85s linear infinite;
+}
+
+@keyframes service-credit-spin {
+  to { transform: rotate(360deg); }
+}
+
 .icon-btn,
 .user-chip,
 .logout-btn {

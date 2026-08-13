@@ -12,7 +12,7 @@ const SESSION_ID = "53a249cf-df0a-45a0-92e6-1efa3cb15d0b";
 function completedSession() {
   return {
     sessionId: SESSION_ID,
-    status: "completed",
+    status: 1,
     patientGenderAtTest: "male",
     patientAgeAtTest: 18,
     testDate: "2026-08-07",
@@ -74,7 +74,11 @@ function completedSession() {
   };
 }
 
-async function prepareResultPage(page, { completedOnCall = 2, forcedColors = "none" } = {}) {
+async function prepareResultPage(page, {
+  completedOnCall = 2,
+  forcedColors = "none",
+  responseDelay = 0,
+} = {}) {
   await page.emulateMedia({ forcedColors });
   await preparePage(page);
   await page.addInitScript((accessToken) => {
@@ -86,17 +90,20 @@ async function prepareResultPage(page, { completedOnCall = 2, forcedColors = "no
     }));
   }, ACCESS_TOKEN);
 
-  const state = { calls: 0, requestedAt: [] };
+  const state = { calls: 0, requestedAt: [], usageCalls: 0 };
 
-  await page.route("**/api/**", (route) => {
+  await page.route("**/api/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
 
     if (pathname === `/api/lab-tests/${SESSION_ID}`) {
       state.calls += 1;
       state.requestedAt.push(Date.now());
+      if (responseDelay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, responseDelay));
+      }
       const session = completedSession();
       if (state.calls < completedOnCall) {
-        session.status = "processing";
+        session.status = 0;
         session.processedAt = null;
         session.results = [];
       }
@@ -121,6 +128,23 @@ async function prepareResultPage(page, { completedOnCall = 2, forcedColors = "no
       });
     }
 
+    if (pathname === "/api/me/subscription-usage") {
+      state.usageCalls += 1;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            quotaCode: "SERVICE_CREDIT",
+            grantedCount: 10,
+            usedCount: 1,
+            reservedCount: state.calls > 0 && state.calls < completedOnCall ? 1 : 0,
+            remainingCount: 9,
+          },
+        }),
+      });
+    }
+
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ success: true, data: [] }),
@@ -131,7 +155,7 @@ async function prepareResultPage(page, { completedOnCall = 2, forcedColors = "no
 }
 
 test("result page polls every second, stops when completed, and displays advice", async ({ page }) => {
-  const state = await prepareResultPage(page);
+  const state = await prepareResultPage(page, { responseDelay: 300 });
   await page.goto(`/records/${SESSION_ID}`, { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("heading", { name: "Hệ thống đang đọc và đối chiếu các chỉ số" })).toBeVisible();
@@ -139,7 +163,10 @@ test("result page polls every second, stops when completed, and displays advice"
 
   await expect(page.getByRole("heading", { name: "Kết quả ngày 7/8/2026" })).toBeVisible();
   expect(state.calls).toBe(2);
-  expect(state.requestedAt[1] - state.requestedAt[0]).toBeGreaterThanOrEqual(850);
+  await expect.poll(() => state.usageCalls).toBeGreaterThanOrEqual(2);
+  const pollGap = state.requestedAt[1] - state.requestedAt[0];
+  expect(pollGap).toBeGreaterThanOrEqual(850);
+  expect(pollGap).toBeLessThan(1200);
 
   const astCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Chỉ số AST (GOT)" });
   const glucoseCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Glucose huyết" });

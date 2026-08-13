@@ -3,8 +3,10 @@ import { ArrowRight, Bot, ChevronDown, Clock3, ClipboardCheck, LocateFixed, Send
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi, webChatbotApi } from "../../services/api";
+import { navigate } from "../../router/navigation";
 
 const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+const EMPTY_ASSISTANT_ITEMS = Object.freeze([]);
 
 class MapErrorBoundary extends Component {
   constructor(props) {
@@ -238,8 +240,8 @@ function MapConsultationAssistant({
   const [departmentSelection, setDepartmentSelection] = useState({ scopeKey: "", departmentId: "" });
   const [symptoms, setSymptoms] = useState("");
   const [generalMessages, setGeneralMessages] = useState([]);
-  const [symptomMessages, setSymptomMessages] = useState([]);
-  const [questions, setQuestions] = useState([]);
+  const symptomMessages = EMPTY_ASSISTANT_ITEMS;
+  const questions = EMPTY_ASSISTANT_ITEMS;
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -250,6 +252,7 @@ function MapConsultationAssistant({
   const launcherRef = useRef(null);
   const previousOpenRef = useRef(open);
   const handledAutoOpenRequestRef = useRef(autoOpenRequestKey);
+  const createInFlightRef = useRef(false);
 
   const selectedDepartmentId = departmentSelection.scopeKey === departmentScopeKey
     ? departmentSelection.departmentId
@@ -303,31 +306,37 @@ function MapConsultationAssistant({
 
   async function handleGenerate(event) {
     event.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit || createInFlightRef.current) return;
 
     const symptomText = symptoms.trim();
-    setStatus("loading");
     setMessage("");
+
+    if (canUseConsultationFlow) {
+      const search = new URLSearchParams({
+        departmentId: selectedDepartmentId,
+        symptoms: symptomText,
+      });
+      const facilityId = String(consultationFacility?.facilityId ?? "").trim();
+      const facilityName = String(consultationFacility?.facilityName ?? "").trim();
+      if (facilityId) search.set("facilityId", facilityId);
+      if (facilityName) search.set("facilityName", facilityName);
+      navigate(`/pre-consultation?${search.toString()}`);
+      return;
+    }
+
+    createInFlightRef.current = true;
+    setStatus("loading");
     setSymptoms("");
 
     try {
-      if (canUseConsultationFlow) {
-        setQuestions([]);
-        setSymptomMessages((current) => [...current, symptomText]);
-        const response = await consultationSessionsApi.generateQuestions(selectedDepartmentId, symptomText);
-        setQuestions(getQuestionsFromResponse(response));
-        setMessage("MediMate đã tạo gợi ý câu hỏi cho chuyên khoa đã chọn.");
-      } else {
         setGeneralMessages((current) => [...current, { role: "user", content: symptomText }]);
         const response = await webChatbotApi.message(symptomText, { auth: !accessLocked });
         const answer = response?.data?.answer ?? response?.message ?? "MediMate chưa thể trả lời câu hỏi này.";
         setGeneralMessages((current) => [...current, { role: "assistant", content: answer }]);
-      }
     } catch (error) {
-      setMessage(error.message || (canUseConsultationFlow
-        ? "Không thể tạo gợi ý câu hỏi lúc này."
-        : "MediMate chưa thể phản hồi lúc này. Vui lòng thử lại."));
+      setMessage(error.message || "MediMate chưa thể phản hồi lúc này. Vui lòng thử lại.");
     } finally {
+      createInFlightRef.current = false;
       setStatus("idle");
     }
   }

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { checklistItemsApi, consultationSessionsApi } from "../../services/api";
+import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../../utils/asyncSessionStatus";
 
 const PAGE_SIZE = 6;
 const CATEGORY_LABELS = {
@@ -94,7 +95,7 @@ function normalizeChecklist(value) {
 }
 
 function getStatusMeta(status) {
-  const normalized = String(status ?? "").toLowerCase();
+  const normalized = normalizeAsyncSessionStatus(status, "");
   return STATUS_META[normalized] ?? { label: "Chưa xác định", tone: "unknown" };
 }
 
@@ -194,7 +195,7 @@ export default function PreConsultationHistory({ onStartNew }) {
   }, [loadChecklist]);
 
   useEffect(() => {
-    if (!selectedId || String(detail?.status).toLowerCase() !== "processing") return undefined;
+    if (!selectedId || normalizeAsyncSessionStatus(detail?.status, "") !== ASYNC_SESSION_STATUS.PROCESSING) return undefined;
     const intervalId = window.setInterval(() => loadDetail(selectedId, { silent: true }), 1000);
     return () => window.clearInterval(intervalId);
   }, [detail?.status, loadDetail, selectedId]);
@@ -282,7 +283,12 @@ export default function PreConsultationHistory({ onStartNew }) {
           )}
         </section>
 
-        <article className="consultation-session-detail" aria-busy={detailStatus === "loading"}>
+        <article
+          className="consultation-session-detail"
+          aria-busy={detailStatus === "loading"}
+          aria-label="Chi tiết phiên tư vấn"
+          tabIndex="0"
+        >
           {detailStatus === "idle" ? (
             <div className="consultation-detail-placeholder"><FileText size={30} aria-hidden="true" /><strong>Chọn một phiên để xem hồ sơ</strong><p>Thông tin buổi khám và câu hỏi dành cho bác sĩ sẽ hiển thị tại đây.</p></div>
           ) : detailStatus === "loading" ? (
@@ -300,7 +306,7 @@ export default function PreConsultationHistory({ onStartNew }) {
                 <span className={`consultation-status ${getStatusMeta(detail?.status).tone}`}>{getStatusMeta(detail?.status).label}</span>
               </header>
 
-              {String(detail?.status).toLowerCase() === "processing" && (
+              {normalizeAsyncSessionStatus(detail?.status, "") === ASYNC_SESSION_STATUS.PROCESSING && (
                 <div className="consultation-detail-processing" role="status"><LoaderCircle className="spin" size={18} aria-hidden="true" /><span>Đang hoàn thiện câu hỏi. Hồ sơ sẽ tự cập nhật.</span></div>
               )}
 

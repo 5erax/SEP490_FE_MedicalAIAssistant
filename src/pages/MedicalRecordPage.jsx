@@ -20,6 +20,9 @@ import { Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import LabTestResultPage from "./LabTestResultPage";
 import { navigate } from "../router/navigation";
+import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
+import { useServiceCredit } from "../state/useServiceCredit";
+import { normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
 import {
   authApi,
   getLabTestApiMessage,
@@ -112,7 +115,7 @@ function profileProblem(profile, profileStatus) {
 }
 
 function SessionStatus({ status }) {
-  const normalized = String(status ?? "processing");
+  const normalized = normalizeAsyncSessionStatus(status);
   return (
     <span className={`records-status-pill is-${normalized}`}>
       {normalized === "processing" && <Clock3 size={13} aria-hidden="true" />}
@@ -125,6 +128,7 @@ function SessionStatus({ status }) {
 
 export default function MedicalRecordPage() {
   const { showToast } = useFeedback();
+  const { refresh: refreshServiceCredit } = useServiceCredit();
   const [profile, setProfile] = useState(null);
   const [profileStatus, setProfileStatus] = useState("loading");
   const [profileReloadKey, setProfileReloadKey] = useState(0);
@@ -134,6 +138,7 @@ export default function MedicalRecordPage() {
   const [formErrors, setFormErrors] = useState({});
   const [submissionStatus, setSubmissionStatus] = useState("idle");
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const [creditFailure, setCreditFailure] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [historyStatus, setHistoryStatus] = useState("loading");
   const [historyError, setHistoryError] = useState("");
@@ -144,6 +149,7 @@ export default function MedicalRecordPage() {
   const [activeHistorySessionId, setActiveHistorySessionId] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const errorSummaryRef = useRef(null);
+  const analyzeInFlightRef = useRef(false);
   const historyDialogRef = useRef(null);
   const historyTriggerRef = useRef(null);
 
@@ -302,9 +308,12 @@ export default function MedicalRecordPage() {
 
   async function submitAnalysis(event) {
     event.preventDefault();
+    if (analyzeInFlightRef.current) return;
     if (!validateForm()) return;
 
+    analyzeInFlightRef.current = true;
     setSubmissionMessage("");
+    setCreditFailure(null);
     try {
       let documentUrl = uploadedDocument?.fileId === fileIdentity(documentFile)
         ? uploadedDocument.secureUrl
@@ -327,6 +336,7 @@ export default function MedicalRecordPage() {
       if (!session?.sessionId) {
         throw new Error("Hệ thống chưa trả về mã phiên phân tích. Vui lòng thử lại.");
       }
+      void refreshServiceCredit({ silent: true });
       setSubmissionStatus("success");
       const successMessage = getLabTestApiMessage(
         response,
@@ -342,17 +352,26 @@ export default function MedicalRecordPage() {
       });
       navigate(`/records/${encodeURIComponent(session.sessionId)}`);
     } catch (error) {
-      const message = getLabTestApiMessage(
+      const creditError = getServiceCreditErrorPresentation(error);
+      setCreditFailure(creditError);
+      const message = creditError?.message || getLabTestApiMessage(
         error,
-        "Chưa thể gửi phiếu xét nghiệm để phân tích. Vui lòng thử lại.",
+        "Chưa thể xác nhận phiếu đã được tiếp nhận. Hãy kiểm tra lịch sử trước khi thử gửi lại.",
       );
       setSubmissionStatus("error");
       setSubmissionMessage(message);
       showToast({
         type: "error",
-        title: "Không thể phân tích phiếu xét nghiệm",
+        title: creditError?.title || "Không thể phân tích phiếu xét nghiệm",
         message,
+        action: creditError?.action === "purchase"
+          ? { label: creditError.actionLabel || "Mua thêm lượt", onClick: () => navigate("/pricing?view=upgrade&returnTo=%2Frecords") }
+          : creditError?.action === "retry"
+            ? { label: creditError.actionLabel || "Thử lại", onClick: () => window.location.reload() }
+            : undefined,
       });
+    } finally {
+      analyzeInFlightRef.current = false;
     }
   }
 
@@ -496,6 +515,12 @@ export default function MedicalRecordPage() {
                 {submissionMessage || "Không tải tài liệu chứa giấy tờ tùy thân hoặc dữ liệu của người khác."}
               </div>
               <div className="records-actions">
+                {creditFailure?.action === "purchase" && (
+                  <Button type="button" tone="secondary" onClick={() => navigate("/pricing?view=upgrade&returnTo=%2Frecords")}>Mua thêm lượt</Button>
+                )}
+                {creditFailure?.action === "retry" && (
+                  <Button type="button" tone="secondary" onClick={() => window.location.reload()}>Thử lại</Button>
+                )}
                 <Button type="submit" disabled={isSubmitting || profileStatus === "loading"}>
                   {submissionStatus === "uploading" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
                   {submissionStatus === "analyzing" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
