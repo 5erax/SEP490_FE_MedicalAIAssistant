@@ -2263,7 +2263,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     event.preventDefault();
     const normalizedEmail = invitationForm.email.trim().toLowerCase();
     const registeredUser = users.find(
-      (user) => String(user.email ?? "").trim().toLowerCase() === normalizedEmail,
+      (user) => !user.isDeleted && String(user.email ?? "").trim().toLowerCase() === normalizedEmail,
     );
     const selectedDoctor = doctors.find((doctor) => doctor.id === invitationForm.doctorId);
 
