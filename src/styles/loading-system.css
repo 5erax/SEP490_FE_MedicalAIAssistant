@@ -1,0 +1,297 @@
+/*
+ * Shared loading language
+ *
+ * Loading indicators are status communication, so they keep a gentle motion
+ * even when the rest of the interface respects reduced-motion preferences.
+ */
+:root {
+  --loading-accent: var(--color-info);
+  --loading-accent-strong: var(--color-info-strong);
+  --loading-highlight: var(--color-primary);
+  --loading-ring-track: color-mix(in srgb, var(--color-info) 16%, transparent);
+  --loading-surface: color-mix(in srgb, var(--color-surface) 92%, var(--color-info-bg));
+  --loading-spin-duration: 900ms;
+  --loading-pulse-duration: 1.25s;
+}
+
+/* Full route and content loading states */
+.route-loading-state,
+.ui-loading {
+  isolation: isolate;
+}
+
+.route-loading-state::before,
+.ui-loading::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--loading-highlight) 34%, transparent), transparent 68%);
+  animation: medimateLoadingHalo 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.route-loading-state {
+  position: relative;
+}
+
+.route-loading-mark {
+  border-color: color-mix(in srgb, var(--loading-accent) 24%, transparent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--loading-highlight) 36%, transparent), color-mix(in srgb, var(--color-surface) 94%, transparent)),
+    var(--color-surface);
+  box-shadow:
+    0 18px 40px color-mix(in srgb, var(--color-ink) 10%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, #fff 58%, transparent);
+  animation: medimateLoadingFloat 1.8s ease-in-out infinite;
+}
+
+.route-loading-cross {
+  background: var(--color-ink);
+  color: var(--loading-highlight);
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--loading-highlight) 88%, transparent);
+}
+
+.route-loading-pulse {
+  color: var(--loading-accent);
+}
+
+.route-loading-pulse polyline {
+  animation: medimatePulseTrace 1.35s ease-in-out infinite;
+}
+
+.ui-loading {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--loading-accent) 22%, var(--color-line));
+  background:
+    linear-gradient(145deg, var(--loading-surface), color-mix(in srgb, var(--color-surface) 96%, var(--loading-highlight)));
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--color-ink) 7%, transparent);
+}
+
+.ui-loading::before {
+  width: 124px;
+  height: 124px;
+}
+
+.ui-loading strong {
+  color: var(--color-ink);
+}
+
+/* Ring-based indicators share the same teal + lime visual signature. */
+:is(
+  .ui-state-spinner,
+  .ui-button-spinner,
+  .map-loading-spinner,
+  .doctor-invitation-loader,
+  .large-spinner
+) {
+  border-color: var(--loading-ring-track);
+  border-top-color: var(--loading-accent);
+  border-right-color: var(--loading-highlight);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--loading-accent) 6%, transparent);
+  animation: medimateSpin var(--loading-spin-duration) linear infinite;
+}
+
+.ui-state-spinner {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-width: 4px;
+}
+
+.ui-state-spinner::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--loading-accent);
+  opacity: 0.16;
+  animation: medimateCorePulse var(--loading-pulse-duration) ease-in-out infinite;
+}
+
+.ui-button-spinner {
+  flex: 0 0 auto;
+  border-color: color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  border-right-color: var(--loading-highlight);
+}
+
+/* Icon-based spinners use the same timing and brand accent. */
+:is(
+  .spin,
+  .care-spin,
+  .payment-history-spinner,
+  .records-spin,
+  .analysis-history-spin,
+  .lab-test-result__spinner,
+  .is-spinning,
+  .payment-result-icon.is-loading svg
+) {
+  transform-origin: center;
+  animation: medimateSpin var(--loading-spin-duration) linear infinite;
+}
+
+/* Typing indicators use one consistent, staggered heartbeat. */
+:is(
+  .chat-loading,
+  .assistant-message.loading,
+  .landing-chat-typing,
+  .chatbot-typing,
+  .map-ai-message-bubble.loading
+) span {
+  background: var(--loading-accent);
+  animation: medimateTypingDot var(--loading-pulse-duration) ease-in-out infinite;
+}
+
+:is(
+  .chat-loading,
+  .assistant-message.loading,
+  .landing-chat-typing,
+  .chatbot-typing,
+  .map-ai-message-bubble.loading
+) span:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+:is(
+  .chat-loading,
+  .assistant-message.loading,
+  .landing-chat-typing,
+  .chatbot-typing,
+  .map-ai-message-bubble.loading
+) span:nth-child(3) {
+  animation-delay: 280ms;
+}
+
+/* Skeletons remain visibly active instead of looking like disabled content. */
+:is(.skeleton-line, .skeleton-card)::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--loading-highlight) 44%, #fff),
+    transparent
+  );
+  animation: medimateSkeleton 1.6s ease-in-out infinite;
+}
+
+.admin-overview-loading {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-line) 72%, var(--loading-accent)),
+    color-mix(in srgb, var(--loading-highlight) 48%, var(--color-surface)),
+    color-mix(in srgb, var(--color-line) 72%, var(--loading-accent))
+  );
+  background-size: 220% 100%;
+  animation: medimateShimmerPosition 1.6s ease-in-out infinite;
+}
+
+@keyframes medimateSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes medimateCorePulse {
+  0%, 100% { opacity: 0.1; transform: scale(0.72); }
+  50% { opacity: 0.24; transform: scale(1); }
+}
+
+@keyframes medimateTypingDot {
+  0%, 60%, 100% { opacity: 0.34; transform: translateY(0) scale(0.88); }
+  30% { opacity: 1; transform: translateY(-4px) scale(1); }
+}
+
+@keyframes medimateSkeleton {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes medimateShimmerPosition {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@keyframes medimateLoadingFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes medimateLoadingHalo {
+  0%, 100% { opacity: 0.42; transform: scale(0.84); }
+  50% { opacity: 0.72; transform: scale(1); }
+}
+
+@keyframes medimatePulseTrace {
+  0% { stroke-dashoffset: 150; opacity: 0.3; }
+  45%, 70% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -150; opacity: 0.3; }
+}
+
+/*
+ * Reduced motion keeps status indicators legible with slower, essential
+ * movement while all decorative interface motion remains minimized globally.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :is(
+    .ui-state-spinner,
+    .ui-button-spinner,
+    .map-loading-spinner,
+    .doctor-invitation-loader,
+    .large-spinner,
+    .spin,
+    .care-spin,
+    .payment-history-spinner,
+    .records-spin,
+    .analysis-history-spin,
+    .lab-test-result__spinner,
+    .is-spinning,
+    .payment-result-icon.is-loading svg
+  ) {
+    animation: medimateSpin 1.8s linear infinite;
+  }
+
+  :is(
+    .chat-loading,
+    .assistant-message.loading,
+    .landing-chat-typing,
+    .chatbot-typing,
+    .map-ai-message-bubble.loading
+  ) span,
+  .ui-state-spinner::after {
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+  }
+
+  :is(.skeleton-line, .skeleton-card)::after,
+  .admin-overview-loading {
+    animation-duration: 2.8s;
+    animation-iteration-count: infinite;
+  }
+
+  :is(.skeleton-line, .skeleton-card)::after {
+    animation: medimateSkeleton 2.8s ease-in-out infinite;
+  }
+
+  .admin-overview-loading {
+    animation-name: medimateShimmerPosition;
+  }
+
+  .route-loading-mark,
+  .route-loading-state::before,
+  .ui-loading::before {
+    animation-duration: 2.6s;
+    animation-iteration-count: infinite;
+  }
+
+  .route-loading-pulse polyline {
+    animation: medimatePulseTrace 2.2s ease-in-out infinite;
+  }
+}
+
+@media (forced-colors: active) {
+  :is(.ui-state-spinner, .ui-button-spinner, .map-loading-spinner, .doctor-invitation-loader, .large-spinner) {
+    border-color: CanvasText;
+    border-right-color: transparent;
+  }
+}
