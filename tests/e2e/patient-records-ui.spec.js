@@ -63,7 +63,7 @@ async function openPatientRecords(page, options = {}) {
     }));
   }, { accessToken: PATIENT_TOKEN, isPremium: options.isPremium ?? true });
 
-  const state = { requests: [], analyzePayload: null };
+  const state = { requests: [], analyzePayload: null, usageCalls: 0 };
   const session = detailSession(options.detailOverrides);
   const summaries = options.summaries ?? [];
 
@@ -101,6 +101,23 @@ async function openPatientRecords(page, options = {}) {
       });
     }
 
+    if (pathname === "/api/me/subscription-usage") {
+      state.usageCalls += 1;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            quotaCode: "SERVICE_CREDIT",
+            grantedCount: 10,
+            usedCount: state.analyzePayload ? 1 : 0,
+            reservedCount: state.analyzePayload ? 1 : 0,
+            remainingCount: state.analyzePayload ? 8 : 10,
+          },
+        }),
+      });
+    }
+
     if (pathname === "/api/lab-tests/my-sessions") {
       return route.fulfill({
         contentType: "application/json",
@@ -132,7 +149,12 @@ async function openPatientRecords(page, options = {}) {
         body: JSON.stringify({
           success: true,
           message: options.analyzeMessage ?? "Đã xếp hàng OCR xét nghiệm",
-          data: options.analyzeResponse ?? session,
+          data: options.analyzeResponse ?? {
+            ...session,
+            status: 0,
+            processedAt: null,
+            results: [],
+          },
         }),
       });
     }
@@ -185,6 +207,7 @@ test("patient submits the backend lab analysis payload from profile data", async
   await expect(hemoglobinCard).toBeVisible();
   await expect(hemoglobinCard).toContainText("13,8 g/dL");
   await expect(page.locator(".toast-success")).toContainText("Đã xếp hàng OCR xét nghiệm");
+  await expect.poll(() => state.usageCalls).toBeGreaterThanOrEqual(2);
 });
 
 test("patient sees the standardized analyze error message in a toast", async ({ page }) => {
@@ -214,6 +237,33 @@ test("patient sees the standardized analyze error message in a toast", async ({ 
   await expect(errorToast).toContainText("Không thể phân tích phiếu xét nghiệm");
   await expect(errorToast).toContainText("DocumentUrl không hợp lệ");
   await expect(errorToast).not.toContainText("Yêu cầu phân tích xét nghiệm thất bại");
+});
+
+test("lab analysis preserves shared credit errors and offers a purchase action", async ({ page }) => {
+  await openPatientRecords(page, {
+    analyzeError: {
+      status: 400,
+      payload: {
+        success: false,
+        message: "Lab test analysis failed.",
+        errors: ["SERVICE_CREDIT_EXHAUSTED"],
+      },
+    },
+  });
+
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "phieu-xet-nghiem.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("mock-lab-report"),
+  });
+  await page.getByLabel(/Ngày xét nghiệm/).fill("2026-08-01");
+  await page.getByRole("button", { name: "Phân tích kết quả" }).click();
+
+  const errorToast = page.locator(".toast-error");
+  await expect(errorToast).toContainText("Bạn đã dùng hết lượt");
+  await expect(errorToast).toContainText("Mua thêm lượt để tiếp tục sử dụng");
+  await page.locator(".records-actions").getByRole("button", { name: "Mua thêm lượt" }).click();
+  await expect(page).toHaveURL(/\/pricing\?view=upgrade&returnTo=%2Frecords$/);
 });
 
 test("patient age is derived from the profile birth date and selected test date", async ({ page }) => {

@@ -699,6 +699,53 @@
   line-height: 1.6;
 }
 
+.current-subscription-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.current-subscription-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--pricing-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 12px 14px;
+}
+
+.current-subscription-item div,
+.current-subscription-item strong,
+.current-subscription-item span,
+.current-subscription-item small {
+  display: block;
+}
+
+.current-subscription-item span,
+.current-subscription-item small {
+  margin-top: 3px;
+  color: var(--pricing-muted);
+  font-size: 12px;
+}
+
+.current-subscription-item button {
+  min-height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid #dca9b4;
+  border-radius: 10px;
+  background: #fff5f7;
+  color: #9f1239;
+  padding: 9px 13px;
+  font-weight: 800;
+}
+
+.current-subscription-item button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .current-subscription > button {
   min-height: 44px;
   border: 1px solid #dca9b4;
@@ -977,6 +1024,10 @@ html[data-theme="dark"] .faq-item {
 
 html[data-theme="dark"] .pricing-plan-card-premium {
   background: linear-gradient(150deg, rgba(20, 59, 57, 0.94), rgba(16, 44, 45, 0.98));
+}
+
+html[data-theme="dark"] .current-subscription-item {
+  background: rgba(10, 34, 35, 0.68);
 }
 
 html[data-theme="dark"] .auto-renew-option,

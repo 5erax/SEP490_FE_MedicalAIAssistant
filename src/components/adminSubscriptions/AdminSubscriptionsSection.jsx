@@ -6,8 +6,8 @@ import SubscriptionPlanTable from "./SubscriptionPlanTable";
 import SubscriptionPlanFormModal from "./SubscriptionPlanFormModal";
 import AdminPaymentsPanel from "./AdminPaymentsPanel";
 
-const RECOVERY_PLAN_QUOTA_CODE = "RECOVERY_PLAN_REQUEST";
-const DEFAULT_RECOVERY_PLAN_LIMIT = 3;
+const SERVICE_CREDIT_QUOTA_CODE = "SERVICE_CREDIT";
+const DEFAULT_SERVICE_CREDIT_LIMIT = 10;
 
 function readApiItems(response) {
   if (Array.isArray(response)) return response;
@@ -17,9 +17,9 @@ function readApiItems(response) {
   return [];
 }
 
-function findRecoveryPlanQuota(quotas) {
-  return quotas.find((quota) => String(quota?.code || "").toUpperCase() === RECOVERY_PLAN_QUOTA_CODE)
-    || quotas.find((quota) => String(quota?.code || quota?.name || "").toLowerCase().includes("recovery"));
+function findServiceCreditQuota(quotas) {
+  return quotas.find((quota) => String(quota?.code || "").toUpperCase() === SERVICE_CREDIT_QUOTA_CODE)
+    || quotas.find((quota) => String(quota?.code || quota?.name || "").toLowerCase().includes("service credit"));
 }
 
 export default function AdminSubscriptionsSection({
@@ -37,7 +37,7 @@ export default function AdminSubscriptionsSection({
   const [planModal, setPlanModal] = useState({ open: false, mode: "edit", plan: null });
   const [savingPlan, setSavingPlan] = useState(false);
 
-  const defaultRecoveryQuota = useMemo(() => findRecoveryPlanQuota(quotaCatalog), [quotaCatalog]);
+  const defaultServiceCreditQuota = useMemo(() => findServiceCreditQuota(quotaCatalog), [quotaCatalog]);
   const visibleMessage = quotaMessage || message;
 
   useEffect(() => {
@@ -63,11 +63,11 @@ export default function AdminSubscriptionsSection({
     };
   }, []);
 
-  async function handleAssignRecoveryQuota(plan) {
-    if (!defaultRecoveryQuota?.id) {
+  async function handleAssignServiceCredit(plan) {
+    if (!defaultServiceCreditQuota?.id) {
       setQuotaMessage({
         type: "error",
-        text: "Chưa tìm thấy quota RECOVERY_PLAN_REQUEST từ backend. Vui lòng kiểm tra danh mục quota trước.",
+        text: "Chưa tìm thấy quota SERVICE_CREDIT từ backend. Vui lòng kiểm tra danh mục quota trước.",
       });
       return;
     }
@@ -76,14 +76,14 @@ export default function AdminSubscriptionsSection({
     setQuotaMessage(null);
 
     try {
-      await adminSubscriptionPlanQuotasApi.upsert(plan.id, defaultRecoveryQuota.id, {
-        limitValue: DEFAULT_RECOVERY_PLAN_LIMIT,
+      await adminSubscriptionPlanQuotasApi.upsert(plan.id, defaultServiceCreditQuota.id, {
+        limitValue: DEFAULT_SERVICE_CREDIT_LIMIT,
         resetPeriod: "subscriptionCycle",
         isActive: true,
       });
       setQuotaMessage({
         type: "success",
-        text: `Đã gán ${DEFAULT_RECOVERY_PLAN_LIMIT} lượt yêu cầu kế hoạch phục hồi cho ${plan.planName}.`,
+        text: `Đã gán ${DEFAULT_SERVICE_CREDIT_LIMIT} lượt dịch vụ dùng chung cho ${plan.planName}.`,
       });
       await onReload?.();
     } catch (err) {
@@ -208,9 +208,9 @@ export default function AdminSubscriptionsSection({
       ) : (
         <SubscriptionPlanTable
           assigningQuotaPlanId={assigningQuotaPlanId}
-          defaultQuota={defaultRecoveryQuota}
+          defaultQuota={defaultServiceCreditQuota}
           onEdit={openEditPlan}
-          onAssignDefaultQuota={handleAssignRecoveryQuota}
+          onAssignDefaultQuota={handleAssignServiceCredit}
           plans={plans}
         />
       )}
@@ -221,7 +221,7 @@ export default function AdminSubscriptionsSection({
           plan={planModal.plan}
           saving={savingPlan}
           quotaCatalog={quotaCatalog}
-          defaultQuota={defaultRecoveryQuota}
+          defaultQuota={defaultServiceCreditQuota}
           restoreFocusRef={planModalTriggerRef}
           onClose={closePlanModal}
           onSubmit={handleSavePlan}

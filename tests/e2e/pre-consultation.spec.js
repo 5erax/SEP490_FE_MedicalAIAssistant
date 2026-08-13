@@ -24,6 +24,7 @@ async function mockPreConsultation(page) {
     reminderBody: null,
     summary: 0,
     complete: 0,
+    usage: 0,
   };
 
   const questions = [
@@ -51,12 +52,28 @@ async function mockPreConsultation(page) {
       calls.userMe += 1;
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { id: USER_ID, displayName: "Nguyễn Minh", phoneNumber: null, roles: ["Patient"] } }) });
     }
+    if (path === "/api/me/subscription-usage") {
+      calls.usage += 1;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            quotaCode: "SERVICE_CREDIT",
+            grantedCount: 10,
+            usedCount: calls.usage > 1 ? 1 : 0,
+            reservedCount: calls.usage === 2 ? 1 : 0,
+            remainingCount: 9,
+          },
+        }),
+      });
+    }
     if (path === "/api/medical-departments") {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: [{ id: DEPARTMENT_ID, departmentName: "Tim mạch" }] }) });
     }
     if (path === "/api/consultation-sessions/generate-questions-for-consultant-session" && method === "POST") {
       calls.generateBody = route.request().postDataJSON();
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { sessionId: SESSION_ID, departmentId: DEPARTMENT_ID, departmentName: "Tim mạch", appointmentTime: calls.generateBody.appointmentTime, symptoms: calls.generateBody.symptoms, status: "processing", questions: [{ category: "tests", question: questions[0].questionText }] } }) });
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { sessionId: SESSION_ID, departmentId: DEPARTMENT_ID, departmentName: "Tim mạch", appointmentTime: calls.generateBody.appointmentTime, symptoms: calls.generateBody.symptoms, status: 0, questions: [{ category: "tests", question: questions[0].questionText }] } }) });
     }
     if (path === `/api/checklist-items/by-department/${DEPARTMENT_ID}`) {
       calls.checklist += 1;
@@ -126,7 +143,7 @@ async function mockPreConsultation(page) {
       calls.detail += 1;
       calls.detailTimes.push(Date.now());
       const completed = calls.detail >= 3;
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { sessionId: SESSION_ID, departmentId: DEPARTMENT_ID, departmentName: "Tim mạch", appointmentTime: "2027-01-15T02:30:00Z", symptoms: "Đau ngực khi vận động", status: completed ? "completed" : "processing", questions: completed ? questions : [] } }) });
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { sessionId: SESSION_ID, departmentId: DEPARTMENT_ID, departmentName: "Tim mạch", appointmentTime: "2027-01-15T02:30:00Z", symptoms: "Đau ngực khi vận động", status: completed ? 1 : 0, questions: completed ? questions : [] } }) });
     }
     if (path === `/api/consultation-sessions/${SESSION_ID}/register-reminder` && method === "POST") {
       calls.reminderBody = route.request().postDataJSON();
@@ -222,6 +239,7 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
   expect(calls.detail).toBe(3);
   expect(calls.detailTimes[1] - calls.detailTimes[0]).toBeGreaterThanOrEqual(900);
   expect(calls.detailTimes[2] - calls.detailTimes[1]).toBeGreaterThanOrEqual(900);
+  expect(calls.usage).toBeGreaterThanOrEqual(2);
   expect(calls.userMe).toBeGreaterThanOrEqual(2);
   expect(calls.reminderBody).toEqual({ enableReminder: true, phoneNumber: "0901234567" });
   expect(calls.summary).toBe(1);
@@ -314,4 +332,26 @@ test("technical AI wording is replaced with user-facing guidance", async ({ page
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("Chuyên khoa này chưa có bộ câu hỏi tư vấn");
   await expect(alert).not.toContainText("AI");
+});
+
+test("shared credit exhaustion keeps the stable code and offers a purchase action", async ({ page }) => {
+  await openPreConsultation(page);
+  await page.route("**/api/consultation-sessions/generate-questions-for-consultant-session", (route) => route.fulfill({
+    status: 403,
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: false,
+      message: "Không thể tạo phiên tư vấn.",
+      errors: ["SERVICE_CREDIT_EXHAUSTED"],
+    }),
+  }));
+
+  await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
+  await pickSuggestedSession(page);
+  await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
+
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("Mua thêm lượt để tiếp tục sử dụng");
+  await page.getByRole("button", { name: "Mua thêm lượt" }).click();
+  await expect(page).toHaveURL(/\/pricing\?view=upgrade&returnTo=%2Fpre-consultation$/);
 });

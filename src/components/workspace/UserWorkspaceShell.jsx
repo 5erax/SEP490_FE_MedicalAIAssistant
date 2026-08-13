@@ -29,6 +29,7 @@ import { Dialog, useOverlayFocus } from "../ui";
 import PatientOnboardingAssistant from "./PatientOnboardingAssistant";
 import PatientProfileSetupModal from "./PatientProfileSetupModal";
 import { shouldSetupPatientProfile } from "../../utils/roles";
+import { ServiceCreditBadge } from "../subscriptions/ServiceCreditBadge";
 
 const PATIENT_ICONS = {
   dashboard: LayoutDashboard,
@@ -473,6 +474,7 @@ export default function UserWorkspaceShell({ children }) {
           </form>
 
           <div className="user-shell-actions">
+            {auth && <ServiceCreditBadge />}
             <div className="account-menu" ref={accountMenuRef}>
               <button
                 ref={accountButtonRef}

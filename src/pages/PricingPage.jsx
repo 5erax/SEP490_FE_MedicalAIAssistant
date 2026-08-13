@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
-  CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -17,14 +16,18 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import {
-  authApi,
   getStoredAuth,
-  hasPremiumAccess,
   paymentsApi,
   subscriptionPlansApi,
-  subscriptionUsageApi,
   userSubscriptionsApi,
 } from "../services/api";
+import { clearCheckoutIntent, saveCheckoutIntent } from "../services/checkoutIntent";
+import {
+  findServiceCreditQuota,
+  getServiceCreditErrorPresentation,
+  getServiceCreditLimit,
+} from "../services/serviceCredit";
+import { useServiceCredit } from "../state/useServiceCredit";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch, rememberReturnTo, withReturnTo } from "../router/returnIntent";
 import { getCheckoutErrorMessage } from "../services/apiError";
@@ -38,8 +41,8 @@ import {
 
 const FAQS = [
   [
-    "Tôi có thể hủy gia hạn không?",
-    "Có. Khi gói đang bật gia hạn tự động, bạn có thể hủy gia hạn trong phần gói hiện tại. Quyền lợi vẫn được hiển thị đến ngày kết thúc mà hệ thống trả về.",
+    "Lượt dùng trong gói có hết hạn không?",
+    "Không. Lượt dùng dịch vụ được cộng vào số dư chung của tài khoản và không hết hạn.",
   ],
   [
     "Phần miễn phí bao gồm gì?",
@@ -47,7 +50,7 @@ const FAQS = [
   ],
   [
     "Quyền lợi gói đăng ký được xác định thế nào?",
-    "Tên gói, giá, thời hạn và các hạn mức được lấy từ gói đang hoạt động trên hệ thống MediMate.",
+    "Mỗi gói cấp một số lượt dùng chung cho kế hoạch phục hồi, tư vấn trước khám và phân tích xét nghiệm.",
   ],
 ];
 
@@ -55,21 +58,36 @@ function formatPrice(value) {
   return `${value.toLocaleString("vi-VN")} ₫`;
 }
 
-function getPlanCycle(plan) {
-  return Number(plan?.durationInDays) >= 300 ? "yearly" : "monthly";
-}
-
-function getDurationLabel(durationInDays) {
-  const duration = Number(durationInDays);
-  if (!Number.isFinite(duration) || duration <= 0) return "";
-  if (duration === 365) return "1 năm";
-  if (duration === 30) return "30 ngày";
-  return `${duration.toLocaleString("vi-VN")} ngày`;
+function getSubscriptionStatus(subscription) {
+  const value = subscription?.status ?? subscription?.statusName ?? "";
+  const numericStatus = Number(value);
+  if (Number.isFinite(numericStatus) && String(value).trim() !== "") {
+    return ["pending", "active", "expired", "cancelled"][numericStatus] || "";
+  }
+  return String(value).trim().toLowerCase();
 }
 
 function isActiveSubscription(subscription) {
-  const status = String(subscription?.status ?? "").toLowerCase();
-  return status === "active" || Number(subscription?.status) === 1;
+  return getSubscriptionStatus(subscription) === "active";
+}
+
+function isPendingSubscription(subscription) {
+  return getSubscriptionStatus(subscription) === "pending";
+}
+
+function getSubscriptionStatusLabel(subscription) {
+  const status = getSubscriptionStatus(subscription);
+  if (status === "pending") return "Đang chờ thanh toán";
+  if (status === "active") return "Đang hoạt động";
+  if (status === "expired") return "Đã hết hạn";
+  if (["cancelled", "canceled"].includes(status)) return "Đã hủy";
+  return subscription?.statusName || "Chưa xác định";
+}
+
+function getSubscriptionExpiryLabel(subscription) {
+  if (!subscription?.endDate) return "Không hết hạn";
+  const endDate = new Date(subscription.endDate);
+  return Number.isNaN(endDate.getTime()) ? "Không hết hạn" : endDate.toLocaleDateString("vi-VN");
 }
 
 function isSuccessfulPayment(payment) {
@@ -84,9 +102,8 @@ function isTerminalPayment(payment) {
 
 function PricingPage() {
   const { confirmAction, showToast } = useFeedback();
+  const { refresh: refreshServiceCredit } = useServiceCredit();
   const [auth] = useState(() => getStoredAuth());
-  const [billingCycle, setBillingCycle] = useState("monthly");
-  const [autoRenew, setAutoRenew] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [apiPlans, setApiPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(true);
@@ -95,33 +112,22 @@ function PricingPage() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(Boolean(auth));
   const [subscriptionsError, setSubscriptionsError] = useState("");
-  const [checkoutState, setCheckoutState] = useState({ status: "idle", message: "", paymentId: "", orderCode: "" });
+  const [checkoutState, setCheckoutState] = useState({ status: "idle", message: "", paymentId: "", orderCode: "", planId: "" });
+  const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState("");
   const pollingRef = useRef(null);
-  const isPremium = hasPremiumAccess(auth);
-  const paidPlans = useMemo(() => apiPlans.filter((plan) => Number(plan.price) > 0), [apiPlans]);
-  const availableCycles = useMemo(
-    () => new Set(paidPlans.map(getPlanCycle)),
-    [paidPlans],
-  );
-  const selectedBillingCycle = availableCycles.has(billingCycle)
-    ? billingCycle
-    : paidPlans[0]
-      ? getPlanCycle(paidPlans[0])
-      : billingCycle;
-  const paidPlan = useMemo(
-    () => paidPlans.find((plan) => getPlanCycle(plan) === selectedBillingCycle) ?? paidPlans[0],
-    [paidPlans, selectedBillingCycle],
+  const checkoutInFlightRef = useRef(false);
+  const paidPlans = useMemo(
+    () => apiPlans.filter((plan) => Number(plan.price) > 0 && findServiceCreditQuota(plan)),
+    [apiPlans],
   );
   const freePlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) === 0), [apiPlans]);
-  const activeSubscription = useMemo(
-    () => subscriptions.find(isActiveSubscription) ?? null,
+  const visibleSubscriptions = useMemo(
+    () => subscriptions.filter((subscription) => (
+      isActiveSubscription(subscription) || isPendingSubscription(subscription)
+    )),
     [subscriptions],
   );
-  const paidBenefits = useMemo(
-    () => getPlanBenefits(paidPlan),
-    [paidPlan],
-  );
-  const currentPrice = Number(paidPlan?.price) || 0;
+  const hasActivePackage = visibleSubscriptions.some(isActiveSubscription);
   const returnTo = getReturnToFromSearch();
   const pricingSearchParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const isFocusedUpgrade = pricingSearchParams.get("view") === "upgrade";
@@ -241,10 +247,13 @@ function PricingPage() {
             if ([400, 403, 404, 409].includes(error?.status)) {
               window.clearInterval(pollingRef.current);
               pollingRef.current = null;
+              checkoutInFlightRef.current = false;
+              clearCheckoutIntent(orderCode);
               setCheckoutState({
                 status: "error",
                 paymentId,
                 orderCode,
+                planId: "",
                 message: "Giao dịch không hợp lệ hoặc không thuộc tài khoản này. Vui lòng kiểm tra lại lịch sử thanh toán.",
               });
               return true;
@@ -260,28 +269,23 @@ function PricingPage() {
         if (isSuccessfulPayment(payment)) {
           window.clearInterval(pollingRef.current);
           pollingRef.current = null;
+          checkoutInFlightRef.current = false;
+          clearCheckoutIntent(orderCode);
           setCheckoutState({
             status: "success",
             paymentId,
             orderCode,
-            message: "Thanh toán thành công. Gói MediMate Plus đang được kích hoạt.",
+            planId: "",
+            message: "Thanh toán thành công. Lượt dùng dịch vụ đã được cộng vào tài khoản.",
           });
-          await loadSubscriptions();
-          try {
-            await authApi.refresh();
-          } catch {
-            // Subscription state is still refreshed from /user-subscriptions/me.
-          }
-          try {
-            await subscriptionUsageApi.getUsage();
-          } catch {
-            // Quota is optional context here; a missing/unconfigured quota
-            // shouldn't block the success screen.
-          }
+          await Promise.allSettled([
+            loadSubscriptions(),
+            refreshServiceCredit({ silent: true }),
+          ]);
           showToast({
             type: "success",
             title: "Thanh toán thành công",
-            message: "Quyền lợi MediMate Plus đã được cập nhật.",
+            message: "Số dư lượt dùng dịch vụ đã được cập nhật.",
           });
           return true;
         }
@@ -289,10 +293,13 @@ function PricingPage() {
         if (isTerminalPayment(payment) || attempts >= 100) {
           window.clearInterval(pollingRef.current);
           pollingRef.current = null;
+          checkoutInFlightRef.current = false;
+          if (isTerminalPayment(payment)) clearCheckoutIntent(orderCode);
           setCheckoutState({
             status: "error",
             paymentId,
             orderCode,
+            planId: "",
             message: isTerminalPayment(payment)
               ? `Giao dịch ${getPaymentStatusLabel(payment?.status, "không thành công").toLowerCase()}.`
               : "Chưa nhận được xác nhận thanh toán. Bạn có thể kiểm tra lại gói đăng ký sau.",
@@ -307,10 +314,12 @@ function PricingPage() {
         if (networkErrorAttempts >= 5) {
           window.clearInterval(pollingRef.current);
           pollingRef.current = null;
+          checkoutInFlightRef.current = false;
           setCheckoutState({
             status: "error",
             paymentId,
             orderCode,
+            planId: "",
             message: "Chưa thể xác minh giao dịch lúc này. Bạn có thể kiểm tra lại lịch sử thanh toán sau.",
           });
           return true;
@@ -327,9 +336,11 @@ function PricingPage() {
     }
   }
 
-  async function startPremiumUpgrade() {
+  async function startPremiumUpgrade(paidPlan) {
+    if (checkoutInFlightRef.current || ["creating", "pending"].includes(checkoutState.status)) return;
+
     trackUxEvent("pricing_trial_clicked", {
-      billingCycle: selectedBillingCycle,
+      planId: paidPlan?.id || "",
       authenticated: Boolean(auth),
     });
 
@@ -338,25 +349,32 @@ function PricingPage() {
       return;
     }
 
-    if (activeSubscription || isPremium) {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById("current-subscription")?.scrollIntoView({
-        behavior: reduceMotion ? "auto" : "smooth",
-      });
-      return;
-    }
-
     if (!paidPlan?.id) {
       setCheckoutState({
         status: "error",
         paymentId: "",
         orderCode: "",
+        planId: "",
         message: plansLoading
           ? "Danh sách gói đang được tải."
           : "Chưa có gói trả phí khả dụng để tạo thanh toán.",
       });
       return;
     }
+
+    const creditLimit = getServiceCreditLimit(paidPlan);
+    if (!Number.isFinite(creditLimit) || creditLimit <= 0) {
+      setCheckoutState({
+        status: "error",
+        paymentId: "",
+        orderCode: "",
+        planId: "",
+        message: "Gói này chưa được cấu hình lượt dùng dịch vụ. Vui lòng chọn gói khác hoặc thử lại sau.",
+      });
+      return;
+    }
+
+    checkoutInFlightRef.current = true;
 
     const paymentWindow = window.open("about:blank", "medimate-payos");
     if (paymentWindow) paymentWindow.opener = null;
@@ -365,76 +383,78 @@ function PricingPage() {
       message: "Đang tạo liên kết thanh toán PayOS...",
       paymentId: "",
       orderCode: "",
+      planId: paidPlan.id,
     });
 
     try {
-      const response = await userSubscriptionsApi.checkout(paidPlan.id, autoRenew);
+      const response = await userSubscriptionsApi.checkout(paidPlan.id, false);
       const checkout = response.data;
-      if (!checkout?.paymentUrl || !checkout?.paymentId || !checkout?.orderCode) {
+      if (!checkout?.paymentUrl || !checkout?.subscriptionId || !checkout?.paymentId || !checkout?.orderCode) {
         paymentWindow?.close();
-        throw new Error("Backend chưa trả đủ paymentUrl, paymentId và orderCode. Vui lòng thử lại.");
+        throw new Error("Backend chưa trả đủ thông tin thanh toán. Vui lòng thử lại.");
       }
+
+      saveCheckoutIntent(checkout);
 
       setCheckoutState({
         status: "pending",
         paymentId: checkout.paymentId,
         orderCode: checkout.orderCode,
+        planId: paidPlan.id,
         message: "Trang PayOS đã được mở. Hoàn tất thanh toán ở tab mới; trang này sẽ tự cập nhật.",
       });
 
       if (paymentWindow) {
         paymentWindow.location.replace(checkout.paymentUrl);
       } else {
-        window.location.href = checkout.paymentUrl;
+        window.location.assign(checkout.paymentUrl);
         return;
       }
 
       pollPayment(checkout.paymentId, checkout.orderCode);
     } catch (error) {
+      checkoutInFlightRef.current = false;
       paymentWindow?.close();
+      const creditError = getServiceCreditErrorPresentation(error);
       setCheckoutState({
         status: "error",
         paymentId: "",
         orderCode: "",
-        message: getCheckoutErrorMessage(error, "Chưa thể tạo liên kết thanh toán lúc này. Vui lòng thử lại sau."),
+        planId: "",
+        message: creditError?.message || getCheckoutErrorMessage(error, "Chưa thể tạo liên kết thanh toán lúc này. Vui lòng thử lại sau."),
       });
     }
   }
 
-  async function cancelCurrentSubscription() {
-    if (!activeSubscription?.id) return;
+  async function cancelPendingSubscription(subscription) {
+    if (!subscription?.id || !isPendingSubscription(subscription) || cancellingSubscriptionId) return;
     const confirmed = await confirmAction({
-      title: "Hủy gia hạn MediMate Plus?",
-      message: "Bạn vẫn sử dụng quyền lợi đến ngày kết thúc hiện tại, nhưng gói sẽ không tiếp tục gia hạn.",
-      confirmLabel: "Hủy gia hạn",
+      title: "Hủy giao dịch đang chờ?",
+      message: "Liên kết thanh toán của gói này sẽ không còn được dùng. Các gói đã thanh toán và số dư hiện có không bị ảnh hưởng.",
+      confirmLabel: "Hủy giao dịch",
       tone: "danger",
     });
     if (!confirmed) return;
 
+    setCancellingSubscriptionId(subscription.id);
     try {
-      await userSubscriptionsApi.cancel(activeSubscription.id);
+      await userSubscriptionsApi.cancel(subscription.id);
       await loadSubscriptions();
       showToast({
         type: "success",
-        title: "Đã hủy gia hạn",
-        message: "Gói hiện tại vẫn có hiệu lực đến ngày kết thúc.",
+        title: "Đã hủy giao dịch",
+        message: "Gói đang chờ thanh toán đã được hủy.",
       });
-    } catch {
+    } catch (error) {
       showToast({
         type: "error",
-        title: "Không thể hủy gói",
-        message: "Vui lòng thử lại sau ít phút.",
+        title: "Không thể hủy giao dịch",
+        message: getCheckoutErrorMessage(error, "Chỉ gói đang chờ thanh toán mới có thể hủy."),
       });
+    } finally {
+      setCancellingSubscriptionId("");
     }
   }
-
-  const paidPriceLabel = plansLoading
-    ? "Đang tải giá..."
-    : currentPrice
-      ? formatPrice(currentPrice)
-      : plansError
-        ? "Không khả dụng"
-        : "Chưa có gói khả dụng";
   const paidPlanUnavailable = !plansLoading && Boolean(plansError);
 
   return (
@@ -463,50 +483,16 @@ function PricingPage() {
               </h1>
               <p className="pricing-hero-description">
                 {isFocusedUpgrade
-                  ? "Tập trung vào gói nâng cấp dành cho tài khoản của bạn. Giá, thời hạn và quyền lợi được lấy từ cấu hình đang hoạt động."
-                  : "So sánh rõ phần có thể dùng ngay và quyền lợi có hạn mức của gói đăng ký. Giá và thời hạn bên dưới được lấy từ cấu hình đang hoạt động."}
+                  ? "Chọn số lượt phù hợp để cộng vào số dư dùng chung của tài khoản. Bạn có thể mua thêm bất cứ lúc nào."
+                  : "Mỗi gói cấp lượt dùng chung cho kế hoạch phục hồi, tư vấn trước khám và phân tích xét nghiệm."}
               </p>
               {!isFocusedUpgrade && (
                 <ul className="pricing-trust-list" aria-label="Thông tin chính về gói">
                   <li><ShieldCheck size={18} aria-hidden="true" />Không yêu cầu nhập thông tin thẻ tại MediMate</li>
-                  <li><Clock3 size={18} aria-hidden="true" />Quyền lợi hiển thị theo thời hạn của từng gói</li>
+                  <li><Clock3 size={18} aria-hidden="true" />Lượt dùng được cộng dồn và không hết hạn</li>
                 </ul>
               )}
             </div>
-
-            {!isFocusedUpgrade && (plansLoading || paidPlans.length > 0) && (
-              <aside className="billing-panel" aria-labelledby="billing-panel-title">
-              <div className="billing-panel-heading">
-                <span className="billing-panel-icon" aria-hidden="true">
-                  <CalendarDays size={20} />
-                </span>
-                <div>
-                  <strong id="billing-panel-title">Chọn thời hạn</strong>
-                  <small>Chỉ chu kỳ đang được hệ thống cung cấp mới có thể chọn.</small>
-                </div>
-              </div>
-              <div className="billing-toggle" role="group" aria-label="Chu kỳ thanh toán">
-                <button
-                  className={selectedBillingCycle === "monthly" ? "active" : ""}
-                  type="button"
-                  onClick={() => setBillingCycle("monthly")}
-                  disabled={!availableCycles.has("monthly")}
-                  aria-pressed={selectedBillingCycle === "monthly"}
-                >
-                  Theo tháng
-                </button>
-                <button
-                  className={selectedBillingCycle === "yearly" ? "active" : ""}
-                  type="button"
-                  onClick={() => setBillingCycle("yearly")}
-                  disabled={!availableCycles.has("yearly")}
-                  aria-pressed={selectedBillingCycle === "yearly"}
-                >
-                  Theo năm
-                </button>
-              </div>
-              </aside>
-            )}
           </header>
 
           {!plansLoading && plansError ? (
@@ -572,80 +558,77 @@ function PricingPage() {
             </article>
             )}
 
-            <article className={`pricing-plan-card pricing-plan-card-premium ${
-              paidPlanUnavailable ? "pricing-plan-card-unavailable" : ""
-            }`}>
-              <div className="pricing-plan-card-accent" aria-hidden="true" />
-              <div className="pricing-plan-card-heading">
-                <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
-                <span className="plan-badge plan-badge-premium">Gói đăng ký</span>
-              </div>
-              <p className="plan-kicker">Quyền lợi có hạn mức</p>
-              <h2>{paidPlan ? getPlanDisplayName(paidPlan.planName) : "MediMate Plus"}</h2>
-              <div className="price-line">
-                <strong className={plansLoading ? "pricing-price-loading" : ""}>
-                  {plansLoading && <LoaderCircle className="spin" size={24} aria-hidden="true" />}
-                  {paidPriceLabel}
-                </strong>
-                {paidPlan && <span>/ {getDurationLabel(paidPlan.durationInDays)}</span>}
-              </div>
-              <p className="plan-summary">
-                {paidPlanUnavailable
-                  ? "Giá và hạn mức sẽ hiển thị lại khi kết nối được khôi phục."
-                  : "Dành cho người cần sử dụng thường xuyên các tính năng có giới hạn theo gói."}
-              </p>
-              <div className="plan-benefits">
-                <h3>Quyền lợi trong gói</h3>
-                <ul>
-                  {paidBenefits.length > 0 ? paidBenefits.map((feature) => (
-                    <li key={feature}>
-                      <Check size={18} aria-hidden="true" />
-                      <span>{feature}</span>
-                    </li>
-                  )) : (
-                    <li className="plan-benefit-unavailable">
-                      {plansLoading
-                        ? "Đang tải hạn mức quyền lợi..."
-                        : paidPlanUnavailable
-                          ? "Quyền lợi chưa khả dụng."
-                          : "Chưa có hạn mức quyền lợi được công bố."}
-                    </li>
-                  )}
-                </ul>
-              </div>
-              {auth && paidPlan && !isPremium && !activeSubscription && (
-                <label className="auto-renew-option">
-                  <input
-                    type="checkbox"
-                    checked={autoRenew}
-                    onChange={(event) => setAutoRenew(event.target.checked)}
-                  />
-                  <span>
-                    <strong>Tự động gia hạn</strong>
-                    <small>Có thể hủy gia hạn trong phần gói hiện tại.</small>
-                  </span>
-                </label>
-              )}
-              <button
-                className="plan-action plan-action-primary"
-                type="button"
-                onClick={startPremiumUpgrade}
-                disabled={
-                  ["creating", "pending"].includes(checkoutState.status)
-                  || (!paidPlan && !isPremium && !activeSubscription)
-                }
-              >
-                {checkoutState.status === "creating"
-                  ? "Đang tạo thanh toán..."
-                  : checkoutState.status === "pending"
-                    ? "Đang chờ hoàn tất thanh toán"
-                    : !paidPlan && !isPremium && !activeSubscription
-                      ? "Tạm thời chưa thể đăng ký"
-                  : auth
-                    ? (isPremium || activeSubscription ? "Quản lý gói hiện tại" : "Thanh toán qua PayOS")
-                    : "Đăng ký để nâng cấp"}
-              </button>
-            </article>
+            {paidPlans.map((paidPlan) => {
+              const paidBenefits = getPlanBenefits(paidPlan);
+              const creditLimit = getServiceCreditLimit(paidPlan);
+              const hasConfiguredCredits = Number.isFinite(creditLimit) && creditLimit > 0;
+              const isCurrentCheckout = checkoutState.planId === paidPlan.id;
+
+              return (
+                <article className="pricing-plan-card pricing-plan-card-premium" key={paidPlan.id}>
+                  <div className="pricing-plan-card-accent" aria-hidden="true" />
+                  <div className="pricing-plan-card-heading">
+                    <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
+                    <span className="plan-badge plan-badge-premium">Gói lượt dùng</span>
+                  </div>
+                  <p className="plan-kicker">
+                    {hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
+                  </p>
+                  <h2>{getPlanDisplayName(paidPlan.planName)}</h2>
+                  <div className="price-line">
+                    <strong>{formatPrice(Number(paidPlan.price) || 0)}</strong>
+                    <span>/ một lần</span>
+                  </div>
+                  <p className="plan-summary">
+                    Lượt dùng được cộng vào số dư hiện có và không hết hạn.
+                  </p>
+                  <div className="plan-benefits">
+                    <h3>Quyền lợi trong gói</h3>
+                    <ul>
+                      {paidBenefits.map((feature) => (
+                        <li key={feature}>
+                          <Check size={18} aria-hidden="true" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                      {!paidBenefits.length && (
+                        <li className="plan-benefit-unavailable">Gói này chưa sẵn sàng để thanh toán.</li>
+                      )}
+                    </ul>
+                  </div>
+                  <button
+                    className="plan-action plan-action-primary"
+                    type="button"
+                    onClick={() => startPremiumUpgrade(paidPlan)}
+                    disabled={!hasConfiguredCredits || ["creating", "pending"].includes(checkoutState.status)}
+                  >
+                    {isCurrentCheckout && checkoutState.status === "creating"
+                      ? "Đang tạo thanh toán..."
+                      : isCurrentCheckout && checkoutState.status === "pending"
+                        ? "Đang chờ hoàn tất thanh toán"
+                        : auth
+                          ? !hasConfiguredCredits
+                            ? "Gói chưa sẵn sàng"
+                            : hasActivePackage ? `Mua thêm ${creditLimit} lượt` : `Mua ${creditLimit} lượt`
+                          : "Đăng ký để mua lượt"}
+                  </button>
+                </article>
+              );
+            })}
+
+            {plansLoading && (
+              <article className="pricing-plan-card pricing-plan-card-premium" aria-busy="true">
+                <LoaderCircle className="spin" size={28} aria-hidden="true" />
+                <strong>Đang tải các gói lượt dùng...</strong>
+              </article>
+            )}
+
+            {paidPlanUnavailable && (
+              <article className="pricing-plan-card pricing-plan-card-premium pricing-plan-card-unavailable">
+                <XCircle size={28} aria-hidden="true" />
+                <strong>Thông tin gói lượt dùng chưa khả dụng.</strong>
+              </article>
+            )}
           </section>
 
           {!isFocusedUpgrade && (
@@ -694,39 +677,51 @@ function PricingPage() {
                 <ShieldCheck size={23} />
               </div>
               <div className="current-subscription-copy">
-                <p className="pricing-eyebrow">Gói của bạn</p>
+                <p className="pricing-eyebrow">Các gói của bạn</p>
                 <h2>
                   {subscriptionsLoading
                     ? "Đang kiểm tra..."
                     : subscriptionsError
                       ? "Chưa thể xác định"
-                      : activeSubscription?.planName || "Gói miễn phí"}
+                      : visibleSubscriptions.length
+                        ? `${visibleSubscriptions.length} gói đang sử dụng hoặc chờ thanh toán`
+                        : "Chưa có gói lượt dùng"}
                 </h2>
                 {subscriptionsLoading ? (
                   <p>Đang đồng bộ thông tin gói của tài khoản.</p>
                 ) : subscriptionsError ? (
                   <p>{subscriptionsError} Dữ liệu tài khoản của bạn chưa bị thay đổi.</p>
-                ) : activeSubscription ? (
-                  <p>
-                    Có hiệu lực đến{" "}
-                    <strong>
-                      {activeSubscription.endDate
-                        ? new Date(activeSubscription.endDate).toLocaleDateString("vi-VN")
-                        : "đang cập nhật"}
-                    </strong>.
-                    {" "}Gia hạn tự động: <strong>{activeSubscription.autoRenew ? "Bật" : "Tắt"}</strong>.
-                  </p>
+                ) : visibleSubscriptions.length ? (
+                  <div className="current-subscription-list">
+                    {visibleSubscriptions.map((subscription) => (
+                      <article className="current-subscription-item" key={subscription.id}>
+                        <div>
+                          <strong>{getPlanDisplayName(subscription.planName)}</strong>
+                          <span>{getSubscriptionStatusLabel(subscription)}</span>
+                          {isActiveSubscription(subscription) && (
+                            <small>Thời hạn: {getSubscriptionExpiryLabel(subscription)}</small>
+                          )}
+                        </div>
+                        {isPendingSubscription(subscription) && (
+                          <button
+                            type="button"
+                            disabled={Boolean(cancellingSubscriptionId)}
+                            onClick={() => cancelPendingSubscription(subscription)}
+                          >
+                            {cancellingSubscriptionId === subscription.id ? "Đang hủy..." : "Hủy giao dịch"}
+                          </button>
+                        )}
+                      </article>
+                    ))}
+                  </div>
                 ) : (
-                  <p>Bạn chưa có gói trả phí đang hoạt động.</p>
+                  <p>Bạn chưa có gói trả phí đang hoạt động hoặc chờ thanh toán.</p>
                 )}
               </div>
               {subscriptionsError && !subscriptionsLoading && (
                 <button className="current-subscription-retry" type="button" onClick={loadSubscriptions}>
                   Thử lại
                 </button>
-              )}
-              {!subscriptionsError && activeSubscription?.autoRenew && (
-                <button type="button" onClick={cancelCurrentSubscription}>Hủy gia hạn</button>
               )}
             </section>
           )}
@@ -736,7 +731,7 @@ function PricingPage() {
             <div className="faq-intro">
               <p className="pricing-eyebrow">Thông tin cần biết</p>
               <h2 id="pricing-faq-title">Câu hỏi về gói đăng ký</h2>
-              <p>Những thông tin quan trọng về quyền lợi, thanh toán và gia hạn.</p>
+              <p>Những thông tin quan trọng về lượt dùng, thanh toán và số dư.</p>
             </div>
             <div className="faq-list">
               {FAQS.map(([question, answer], index) => {

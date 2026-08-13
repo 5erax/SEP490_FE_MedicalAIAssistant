@@ -23,6 +23,10 @@ import {
   medicalDepartmentsApi,
   symptomAnalysisApi,
 } from "../services/api";
+import { navigate } from "../router/navigation";
+import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
+import { useServiceCredit } from "../state/useServiceCredit";
+import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
 import { normalizePhoneNumber } from "../utils/profileValidation";
 import PreConsultationHistory from "../components/preConsultation/PreConsultationHistory";
 import "../styles/pre-consultation.css";
@@ -51,8 +55,6 @@ const CATEGORY_LABELS = {
 const PHONE_PATTERN = /^(?:0\d{8,10}|\+[1-9]\d{8,14})$/;
 const SESSION_POLL_INTERVAL_MS = 1000;
 const SESSION_POLL_TIMEOUT_MS = 2 * 60 * 1000;
-const SESSION_READY_STATUSES = new Set(["complete", "completed", "ready"]);
-const SESSION_FAILED_STATUSES = new Set(["cancelled", "canceled", "error", "failed"]);
 
 function wait(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -156,6 +158,7 @@ function normalizeQuestions(value) {
 }
 
 export default function PreConsultationPage() {
+  const { refresh: refreshServiceCredit } = useServiceCredit();
   const [activeView, setActiveView] = useState("new");
   const [step, setStep] = useState(0);
   const [departments, setDepartments] = useState([]);
@@ -180,11 +183,15 @@ export default function PreConsultationPage() {
   const [summary, setSummary] = useState(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [creditFailure, setCreditFailure] = useState(null);
   const [announcement, setAnnouncement] = useState("");
   const [completed, setCompleted] = useState(false);
   const headingRef = useRef(null);
   const errorRef = useRef(null);
   const pollingActiveRef = useRef(true);
+  const createInFlightRef = useRef(false);
+  const terminalBalanceRefreshRef = useRef("");
+  const sessionPollRef = useRef({ sessionId: "", promise: null });
   const viewTabRefs = useRef([]);
   const autoAppliedSessionRef = useRef(false);
 
@@ -192,6 +199,7 @@ export default function PreConsultationPage() {
     pollingActiveRef.current = true;
     return () => {
       pollingActiveRef.current = false;
+      sessionPollRef.current = { sessionId: "", promise: null };
     };
   }, []);
 
@@ -230,10 +238,29 @@ export default function PreConsultationPage() {
   // check inside applySuggestedSession doesn't race against an empty list.
   useEffect(() => {
     if (autoAppliedSessionRef.current || departmentsStatus !== "ready") return;
-    const sessionId = new URLSearchParams(window.location.search).get("sessionId");
-    if (!sessionId) return;
+    const search = new URLSearchParams(window.location.search);
+    const sessionId = search.get("sessionId");
+    if (sessionId) {
+      autoAppliedSessionRef.current = true;
+      applySuggestedSession({ sessionId }, { source: "map" });
+      return;
+    }
+
+    const departmentId = search.get("departmentId") ?? "";
+    const symptoms = search.get("symptoms") ?? "";
+    if (!departmentId && !symptoms) return;
     autoAppliedSessionRef.current = true;
-    applySuggestedSession({ sessionId }, { source: "map" });
+    queueMicrotask(() => {
+      setForm((current) => ({
+        ...current,
+        departmentId: departments.some((item) => item.id === departmentId) ? departmentId : current.departmentId,
+        symptoms: symptoms || current.symptoms,
+        facilityId: search.get("facilityId") ?? current.facilityId,
+        facilityName: search.get("facilityName") ?? current.facilityName,
+      }));
+      setAutoFilledFromMap(true);
+      setAnnouncement("Đã điền thông tin tư vấn từ cơ sở bạn vừa chọn.");
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [departmentsStatus]);
 
@@ -355,6 +382,7 @@ export default function PreConsultationPage() {
 
   async function startConsultation(event) {
     event.preventDefault();
+    if (createInFlightRef.current) return;
     const nextErrors = validateIntake();
     if (Object.keys(nextErrors).length > 0) {
       setFormErrors(nextErrors);
@@ -362,8 +390,10 @@ export default function PreConsultationPage() {
       return;
     }
 
+    createInFlightRef.current = true;
     setBusy("generate");
     setError("");
+    setCreditFailure(null);
     try {
       const response = await consultationSessionsApi.generateQuestions({
         departmentId: form.departmentId,
@@ -374,12 +404,26 @@ export default function PreConsultationPage() {
       const nextSession = unwrapData(response);
       if (!nextSession?.sessionId) throw new Error("Phản hồi chưa có Id phiên tư vấn.");
       setSession(nextSession);
+      void refreshServiceCredit({ silent: true });
+      terminalBalanceRefreshRef.current = "";
+      sessionPollRef.current = {
+        sessionId: nextSession.sessionId,
+        promise: pollSessionDetail(nextSession.sessionId)
+          .then((detail) => ({ detail, error: null }))
+          .catch((pollError) => ({ detail: null, error: pollError })),
+      };
       setStep(1);
       setAnnouncement("Đã tạo phiên tư vấn. Đang tải checklist chuẩn bị.");
       await loadChecklist(nextSession.departmentId || form.departmentId);
     } catch (submitError) {
-      setError(getErrorMessage(submitError, "Chưa thể tạo phiên tư vấn trước khám. Vui lòng thử lại."));
+      const creditError = getServiceCreditErrorPresentation(submitError);
+      setCreditFailure(creditError);
+      setError(creditError?.message || getErrorMessage(
+        submitError,
+        "Chưa thể xác nhận phiên đã được tạo. Hãy kiểm tra lịch sử trước khi thử lại.",
+      ));
     } finally {
+      createInFlightRef.current = false;
       setBusy("");
     }
   }
@@ -388,21 +432,33 @@ export default function PreConsultationPage() {
     const deadline = Date.now() + SESSION_POLL_TIMEOUT_MS;
 
     while (pollingActiveRef.current) {
+      const pollStartedAt = window.performance.now();
       const response = await consultationSessionsApi.get(sessionId);
       const detail = unwrapData(response);
-      const status = String(detail?.status ?? "").trim().toLowerCase();
+      const status = normalizeAsyncSessionStatus(detail?.status);
 
-      if (SESSION_FAILED_STATUSES.has(status)) {
+      if (status === ASYNC_SESSION_STATUS.FAILED) {
+        const terminalKey = `${sessionId}:${status}`;
+        if (terminalBalanceRefreshRef.current !== terminalKey) {
+          terminalBalanceRefreshRef.current = terminalKey;
+          void refreshServiceCredit({ silent: true });
+        }
         throw new Error("Phiên tư vấn không thể tạo câu hỏi. Vui lòng kiểm tra thông tin và thử lại.");
       }
-      if (SESSION_READY_STATUSES.has(status) || (!status && normalizeQuestions(detail?.questions).length > 0)) {
+      if (status === ASYNC_SESSION_STATUS.COMPLETED) {
+        const terminalKey = `${sessionId}:${status}`;
+        if (terminalBalanceRefreshRef.current !== terminalKey) {
+          terminalBalanceRefreshRef.current = terminalKey;
+          void refreshServiceCredit({ silent: true });
+        }
         return detail;
       }
       if (Date.now() >= deadline) {
         throw new Error("Phiên tư vấn đang mất nhiều thời gian hơn dự kiến. Vui lòng thử lại.");
       }
 
-      await wait(SESSION_POLL_INTERVAL_MS);
+      const elapsed = window.performance.now() - pollStartedAt;
+      await wait(Math.max(0, SESSION_POLL_INTERVAL_MS - elapsed));
     }
 
     return null;
@@ -413,7 +469,16 @@ export default function PreConsultationPage() {
     setError("");
     setAnnouncement("Đang tổng hợp câu hỏi cho buổi khám. Thông tin sẽ tự cập nhật khi sẵn sàng.");
     try {
-      const detail = await pollSessionDetail(session.sessionId);
+      const existingPoll = sessionPollRef.current.sessionId === session.sessionId
+        ? sessionPollRef.current.promise
+        : null;
+      const result = existingPoll
+        ? await existingPoll
+        : await pollSessionDetail(session.sessionId)
+          .then((detail) => ({ detail, error: null }))
+          .catch((pollError) => ({ detail: null, error: pollError }));
+      if (result.error) throw result.error;
+      const { detail } = result;
       if (!detail || !pollingActiveRef.current) return;
       setSessionDetail(detail);
       setStep(2);
@@ -588,6 +653,12 @@ export default function PreConsultationPage() {
         <div className="pre-consultation-error" ref={errorRef} tabIndex="-1" role="alert">
           <strong>Chưa thể tiếp tục</strong>
           <span>{error}</span>
+          {creditFailure?.action === "purchase" && (
+            <button type="button" onClick={() => navigate("/pricing?view=upgrade&returnTo=%2Fpre-consultation")}>Mua thêm lượt</button>
+          )}
+          {creditFailure?.action === "retry" && (
+            <button type="button" onClick={() => window.location.reload()}>Thử lại</button>
+          )}
         </div>
       )}
 

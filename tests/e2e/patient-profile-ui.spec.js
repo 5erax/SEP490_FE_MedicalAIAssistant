@@ -9,7 +9,17 @@ const ACCESS_TOKEN = [
   "",
 ].join(".");
 
-async function openPatientProfile(page, path = "/profile", { patientProfile = null, subscriptions = [] } = {}) {
+async function openPatientProfile(page, path = "/profile", {
+  patientProfile = null,
+  subscriptions = [],
+  usage = {
+    quotaCode: "SERVICE_CREDIT",
+    grantedCount: 0,
+    usedCount: 0,
+    reservedCount: 0,
+    remainingCount: 0,
+  },
+} = {}) {
   const patientProfilePaths = [];
   await preparePage(page);
   await page.addInitScript(({ accessToken, userId }) => {
@@ -56,6 +66,15 @@ async function openPatientProfile(page, path = "/profile", { patientProfile = nu
         body: JSON.stringify({ success: true, data: subscriptions }),
       });
     }
+    if (url.pathname === "/api/me/subscription-usage") {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: usage,
+        }),
+      });
+    }
     return route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({ success: true, data: null }),
@@ -80,7 +99,7 @@ test("patient profile loads medical data from the current user's endpoint", asyn
     },
   });
 
-  expect(patientProfilePaths.length).toBeGreaterThan(0);
+  await expect.poll(() => patientProfilePaths.length).toBeGreaterThan(0);
   expect([...new Set(patientProfilePaths)]).toEqual([`/api/patient-profiles/by-user/${USER_ID}`]);
   await page.getByRole("tab", { name: "Hồ sơ y tế" }).first().click();
   await expect(page.locator("#profile-panel-medical")).toBeVisible();
@@ -234,6 +253,37 @@ test("patient profile localizes known plan and subscription labels", async ({ pa
   await expect(packagePanel.getByText("Miễn phí", { exact: true })).toBeVisible();
   await expect(packagePanel.getByText("Đang hoạt động", { exact: false })).toBeVisible();
   await expect(packagePanel.getByText("Free", { exact: true })).toHaveCount(0);
+});
+
+test("patient profile shows aggregate shared credits and non-expiring package history", async ({ page }) => {
+  await openPatientProfile(page, "/profile", {
+    usage: {
+      quotaCode: "SERVICE_CREDIT",
+      grantedCount: 35,
+      usedCount: 8,
+      reservedCount: 2,
+      remainingCount: 25,
+    },
+    subscriptions: [{
+      id: "subscription-active",
+      planName: "Gói 10 lượt",
+      status: 1,
+      endDate: null,
+    }, {
+      id: "subscription-pending",
+      planName: "Gói 25 lượt",
+      status: 0,
+      endDate: null,
+    }],
+  });
+
+  await page.getByRole("tab", { name: "Gói dịch vụ" }).first().click();
+  const packagePanel = page.locator("#profile-panel-package");
+  await expect(packagePanel.getByText("25 lượt", { exact: true })).toBeVisible();
+  await expect(packagePanel).toContainText("Đã cấp 35 · đã dùng 8 · đang giữ 2");
+  await expect(packagePanel.getByText("Thời hạn: Không hết hạn", { exact: true })).toBeVisible();
+  await expect(packagePanel.getByText("Chưa cấp lượt dùng cho đến khi thanh toán thành công", { exact: true })).toBeVisible();
+  await expect(packagePanel.getByRole("button", { name: "Mua thêm lượt" })).toBeVisible();
 });
 
 test("patient profile does not present failed requests as empty real data", async ({ page }) => {

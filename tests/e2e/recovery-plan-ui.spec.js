@@ -85,15 +85,11 @@ async function prepareRecoveryPage(page, options = {}) {
   let requests = [...(options.requests ?? [])];
   let plans = [...(options.plans ?? [])];
   let quota = options.quota ?? {
-    quotaCode: "recoveryPlan",
-    quotaName: "Kế hoạch phục hồi",
-    limitValue: 3,
+    quotaCode: "SERVICE_CREDIT",
+    grantedCount: 3,
     usedCount: 1,
     reservedCount: 0,
     remainingCount: 2,
-    cycleStart: "2026-08-01",
-    cycleEnd: "2026-08-31",
-    resetPeriod: "subscriptionCycle",
   };
   const calls = { createBody: null, idempotencyKey: "", provideBody: null, cancelled: false, started: false, cancelPlanBody: null };
 

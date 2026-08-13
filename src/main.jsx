@@ -6,6 +6,7 @@ import { FeedbackProvider } from './components/feedback/FeedbackProvider.jsx'
 import { installLinkNavigation } from './router/navigation.js'
 import { getGoogleClientId, isGoogleOAuthEnabledForCurrentOrigin } from './services/googleOAuthConfig.js'
 import { AuthSessionProvider } from './state/AuthSessionProvider.jsx'
+import { ServiceCreditProvider } from './state/ServiceCreditProvider.jsx'
 import SpaRoot from './SpaRoot.jsx'
 import './styles/index.css'
 
@@ -33,11 +34,13 @@ installStaleAssetRecovery()
 const appContent = (
   <FeedbackProvider>
     <AuthSessionProvider>
-      <a className="skip-link" href="#main-content">Bỏ qua đến nội dung chính</a>
-      <div id="main-content" tabIndex="-1">
-        <SpaRoot />
-      </div>
-      <SpeedInsights />
+      <ServiceCreditProvider>
+        <a className="skip-link" href="#main-content">Bỏ qua đến nội dung chính</a>
+        <div id="main-content" tabIndex="-1">
+          <SpaRoot />
+        </div>
+        <SpeedInsights />
+      </ServiceCreditProvider>
     </AuthSessionProvider>
   </FeedbackProvider>
 )

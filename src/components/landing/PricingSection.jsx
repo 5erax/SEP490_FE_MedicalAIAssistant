@@ -1,6 +1,7 @@
-import { ArrowRight, CalendarDays, Check, CircleDollarSign, Info, LoaderCircle, MapPinned, ShieldCheck, Sparkles, Stethoscope } from "lucide-react";
+import { ArrowRight, Check, CircleDollarSign, Info, LoaderCircle, MapPinned, ShieldCheck, Sparkles, Stethoscope } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { subscriptionPlansApi } from "../../services/api";
+import { findServiceCreditQuota } from "../../services/serviceCredit";
 import { getPlanBenefits, getPlanDisplayName, PUBLIC_ACCESS_BENEFITS } from "../../utils/subscriptionPlanPresentation";
 
 const FOOTER_COLUMNS = [
@@ -50,24 +51,6 @@ function formatPrice(value) {
   return `${price.toLocaleString("vi-VN")}đ`;
 }
 
-function formatDuration(value) {
-  const days = Number(value);
-  if (!Number.isInteger(days) || days <= 0) return "Chưa cập nhật thời hạn";
-  if (days % 365 === 0) return `${days / 365} năm`;
-  if (days % 30 === 0) return `${days / 30} tháng`;
-  return `${days} ngày`;
-}
-
-function formatBillingPeriod(value) {
-  const days = Number(value);
-  if (!Number.isInteger(days) || days <= 0) return "chưa cập nhật";
-  if (days === 365) return "năm";
-  if (days % 365 === 0) return `${days / 365} năm`;
-  if (days === 30) return "tháng";
-  if (days % 30 === 0) return `${days / 30} tháng`;
-  return `${days} ngày`;
-}
-
 export function PricingPreviewSection() {
   const [plans, setPlans] = useState([]);
   const [status, setStatus] = useState("loading");
@@ -93,7 +76,7 @@ export function PricingPreviewSection() {
   }, []);
 
   const previewPlans = useMemo(() => [...plans]
-    .filter((plan) => plan && (plan.id || plan.planName))
+    .filter((plan) => plan && Number(plan.price) > 0 && findServiceCreditQuota(plan))
     .sort((left, right) => Number(left.price ?? Number.MAX_SAFE_INTEGER) - Number(right.price ?? Number.MAX_SAFE_INTEGER))
     .slice(0, 2), [plans]);
 
@@ -186,11 +169,11 @@ export function PricingPreviewSection() {
                     <h3>{planName}</h3>
                     <div className="care-price-line">
                       <p className="care-price-value">{formatPrice(plan.price)}</p>
-                      <span>/ {formatBillingPeriod(plan.durationInDays)}</span>
+                      <span>/ một lần</span>
                     </div>
                     <p className="care-price-duration">
-                      <CalendarDays size={16} aria-hidden="true" />
-                      Có hiệu lực trong {formatDuration(plan.durationInDays)} sau khi kích hoạt
+                      <ShieldCheck size={16} aria-hidden="true" />
+                      Lượt dùng được cộng dồn và không hết hạn
                     </p>
                     <div className="care-price-benefits">
                       <strong>Quyền lợi trong gói</strong>

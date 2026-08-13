@@ -10,7 +10,9 @@ import {
   LogIn,
   RefreshCw,
 } from "lucide-react";
-import { authApi, getStoredAuth, paymentsApi, subscriptionUsageApi, userSubscriptionsApi } from "../services/api";
+import { authApi, getStoredAuth, paymentsApi, userSubscriptionsApi } from "../services/api";
+import { clearCheckoutIntent, getCheckoutIntent } from "../services/checkoutIntent";
+import { useServiceCredit } from "../state/useServiceCredit";
 import { getApiErrorCode, getPaymentReconcileErrorMessage } from "../services/apiError";
 import { translateApiMessage } from "../services/apiMessageTranslator";
 import { navigate } from "../router/navigation";
@@ -28,7 +30,9 @@ const AUTO_RETRY_STATUSES = new Set(["pending", "processing", "activation-pendin
 const TERMINAL_STATUSES = new Set(["success", "cancelled", "expired", "failed", "refunded"]);
 
 function getOrderCode() {
-  return new URLSearchParams(window.location.search).get("orderCode")?.trim() || "";
+  return new URLSearchParams(window.location.search).get("orderCode")?.trim()
+    || getCheckoutIntent()?.orderCode
+    || "";
 }
 
 function normalizeUpper(value) {
@@ -132,8 +136,8 @@ function getView(status, paymentDetail) {
   if (status === "success") {
     return {
       eyebrow: "Thanh toán hoàn tất",
-      title: "MediMate+ đã sẵn sàng.",
-      description: "Thanh toán đã xác nhận và gói đã được kích hoạt.",
+      title: "Lượt dùng đã được cộng vào tài khoản.",
+      description: "Thanh toán đã được xác nhận và số dư dịch vụ đã được cập nhật.",
       icon: CheckCircle2,
       tone: "success",
     };
@@ -143,7 +147,7 @@ function getView(status, paymentDetail) {
     return {
       eyebrow: "Đã nhận thanh toán",
       title: "Đã nhận thanh toán.",
-      description: "MediMate đang hoàn tất kích hoạt quyền lợi cho tài khoản.",
+      description: "MediMate đang hoàn tất cấp lượt dùng cho tài khoản.",
       icon: LoaderCircle,
       tone: "pending",
     };
@@ -239,6 +243,7 @@ function getInitialStatus(orderCode) {
 }
 
 export default function PaymentResultPage({ expectedResult }) {
+  const { balance, refresh: refreshServiceCredit } = useServiceCredit();
   const [orderCode] = useState(getOrderCode);
   const [status, setStatus] = useState(() => getInitialStatus(orderCode));
   const [message, setMessage] = useState("");
@@ -246,29 +251,18 @@ export default function PaymentResultPage({ expectedResult }) {
   const [checkingAgain, setCheckingAgain] = useState(false);
   const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
-  const [usageList, setUsageList] = useState([]);
   const view = getView(status, paymentDetail);
   const Icon = view.icon;
   const isCancelFlow = expectedResult === "cancel";
 
   const refreshPremiumState = useCallback(async () => {
     if (!hasAuth) return;
-    await userSubscriptionsApi.me();
-    try {
-      await authApi.refresh();
-    } catch {
-      // Subscription state is already refreshed even if token refresh is delayed.
-    }
-    try {
-      const usageResponse = await subscriptionUsageApi.getUsage();
-      const usageItems = usageResponse?.data ?? [];
-      setUsageList(Array.isArray(usageItems) ? usageItems : []);
-    } catch {
-      // Quota card is optional context here; NO_ACTIVE_SUBSCRIPTION or
-      // RECOVERY_PLAN_QUOTA_NOT_CONFIGURED just means nothing to show.
-      setUsageList([]);
-    }
-  }, [hasAuth]);
+    await Promise.allSettled([
+      userSubscriptionsApi.me(),
+      authApi.refresh(),
+      refreshServiceCredit({ silent: true }),
+    ]);
+  }, [hasAuth, refreshServiceCredit]);
 
   // Reconciliation replaces the old webhook-dependent flow: the backend
   // actively asks PayOS for the real status instead of only reading its
@@ -281,17 +275,25 @@ export default function PaymentResultPage({ expectedResult }) {
       return "missing";
     }
 
-    if (!hasAuth) {
+    const publicResponse = await paymentsApi.payOsStatus(orderCode);
+    let data = publicResponse.data ?? {};
+    let nextStatus = classifyPayment(data);
+
+    if (hasAuth && AUTO_RETRY_STATUSES.has(nextStatus)) {
+      const response = await paymentsApi.reconcilePayOs(orderCode);
+      data = response.data ?? data;
+      nextStatus = classifyPayment(data);
+    }
+
+    if (!hasAuth && AUTO_RETRY_STATUSES.has(nextStatus)) {
       setStatus("unauthenticated");
-      setMessage("Vui lòng đăng nhập lại để xác minh giao dịch này.");
+      setMessage("Vui lòng đăng nhập lại để tiếp tục xác minh giao dịch này.");
+      setPaymentDetail(data);
       return "unauthenticated";
     }
 
-    const response = await paymentsApi.reconcilePayOs(orderCode);
-    const data = response.data ?? {};
-    const nextStatus = classifyPayment(data);
     setStatus(nextStatus);
-    setMessage(translateApiMessage(data.message || response.message, { fallback: "" }));
+    setMessage(translateApiMessage(data.message || publicResponse.message, { fallback: "" }));
     setPaymentDetail(data);
 
     if (nextStatus === "success") await refreshPremiumState();
@@ -362,6 +364,10 @@ export default function PaymentResultPage({ expectedResult }) {
         : "Trạng thái thanh toán | MediMate AI";
   }, [status, success]);
 
+  useEffect(() => {
+    if (settled && orderCode) clearCheckoutIntent(orderCode);
+  }, [orderCode, settled]);
+
   function continueAfterPayment() {
     if (success && returnTo) {
       clearRememberedReturnTo();
@@ -413,14 +419,16 @@ export default function PaymentResultPage({ expectedResult }) {
           </dl>
         )}
 
-        {success && usageList.length > 0 && (
+        {success && balance && (
           <dl className="payment-result-reference payment-result-usage">
-            {usageList.map((item) => (
-              <div key={item.quotaCode}>
-                <dt>{item.quotaName || "Hạn mức sử dụng"}</dt>
-                <dd>{item.remainingCount ?? "—"}/{item.limitValue ?? "—"} lượt còn lại</dd>
-              </div>
-            ))}
+            <div>
+              <dt>Lượt có thể dùng</dt>
+              <dd>{balance.remainingCount.toLocaleString("vi-VN")}/{balance.grantedCount.toLocaleString("vi-VN")} lượt</dd>
+            </div>
+            <div>
+              <dt>Đang dành cho tác vụ xử lý</dt>
+              <dd>{balance.reservedCount.toLocaleString("vi-VN")} lượt</dd>
+            </div>
           </dl>
         )}
 

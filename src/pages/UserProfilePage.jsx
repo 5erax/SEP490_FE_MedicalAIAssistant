@@ -9,10 +9,10 @@ import {
   authApi,
   getStoredAuth,
   patientProfilesApi,
-  subscriptionUsageApi,
   usersApi,
   userSubscriptionsApi,
 } from "../services/api";
+import { useServiceCredit } from "../state/useServiceCredit";
 import { getSubscriptionStatusLabel } from "../services/paymentStatusLabels";
 import {
   getChronicDiseaseText,
@@ -42,7 +42,25 @@ function formatPlanName(planName) {
 function formatSubscriptionStatus(status) {
   const normalizedStatus = String(status ?? "").trim();
   if (!normalizedStatus) return "Chưa có gói trả phí";
+  if (["0", "1", "2", "3"].includes(normalizedStatus)) {
+    return ["Đang chờ kích hoạt", "Đang hoạt động", "Đã hết hạn", "Đã hủy"][Number(normalizedStatus)];
+  }
   return getSubscriptionStatusLabel(normalizedStatus, normalizedStatus);
+}
+
+function getSubscriptionStatusValue(subscription) {
+  const value = subscription?.status ?? subscription?.statusName ?? "";
+  const numericStatus = Number(value);
+  if (Number.isFinite(numericStatus) && String(value).trim() !== "") {
+    return ["pending", "active", "expired", "cancelled"][numericStatus] || "";
+  }
+  return String(value).trim().toLowerCase();
+}
+
+function getSubscriptionExpiryLabel(subscription) {
+  if (!subscription?.endDate) return "Không hết hạn";
+  const endDate = new Date(subscription.endDate);
+  return Number.isNaN(endDate.getTime()) ? "Không hết hạn" : endDate.toLocaleDateString("vi-VN");
 }
 
 function getInitialTab() {
@@ -83,6 +101,7 @@ function hasChronicDisease(disease) {
 
 export default function UserProfilePage() {
   const { showToast } = useFeedback();
+  const { balance } = useServiceCredit();
   const auth = getStoredAuth();
   const [activeTab, setActiveTab] = useState(getInitialTab);
   const [isEditing, setIsEditing] = useState(false);
@@ -106,8 +125,7 @@ export default function UserProfilePage() {
   });
   const [userId, setUserId] = useState("");
   const [patientProfileId, setPatientProfileId] = useState("");
-  const [subscription, setSubscription] = useState(null);
-  const [usageList, setUsageList] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadWarning, setLoadWarning] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -166,8 +184,7 @@ export default function UserProfilePage() {
       userRequest,
       patientProfileRequest,
       userSubscriptionsApi.me(),
-      subscriptionUsageApi.getUsage(),
-    ]).then(([userResult, profileResult, subscriptionResult, usageResult]) => {
+    ]).then(([userResult, profileResult, subscriptionResult]) => {
       if (!active) return;
 
       const unavailableSections = [];
@@ -220,13 +237,8 @@ export default function UserProfilePage() {
           ...item,
           status: item.status ?? item.statusName,
         }));
-        setSubscription(normalizedSubscriptions.find((item) => String(item.status).toLowerCase() === "active") ?? normalizedSubscriptions[0] ?? null);
+        setSubscriptions(normalizedSubscriptions);
       }
-      // NO_ACTIVE_SUBSCRIPTION / RECOVERY_PLAN_QUOTA_NOT_CONFIGURED are
-      // expected states (no plan yet), not a load failure worth warning
-      // about - the quota list just stays empty in that case.
-      const usageItems = usageResult.status === "fulfilled" ? usageResult.value?.data ?? [] : [];
-      setUsageList(Array.isArray(usageItems) ? usageItems : []);
       setSectionLoadState({
         personal: userResult.status === "fulfilled" ? "ready" : "error",
         medical: profileResult.status === "fulfilled" ? "ready" : "error",
@@ -470,6 +482,9 @@ export default function UserProfilePage() {
   const personalReady = sectionLoadState.personal === "ready";
   const medicalReady = sectionLoadState.medical === "ready";
   const subscriptionReady = sectionLoadState.subscription === "ready";
+  const activeSubscriptions = subscriptions.filter((item) => getSubscriptionStatusValue(item) === "active");
+  const pendingSubscriptions = subscriptions.filter((item) => getSubscriptionStatusValue(item) === "pending");
+  const primarySubscription = activeSubscriptions[0] ?? pendingSubscriptions[0] ?? subscriptions[0] ?? null;
 
   return (
     <div className="profile-page">
@@ -556,11 +571,15 @@ export default function UserProfilePage() {
               <strong>
                 {sectionLoadState.subscription === "loading"
                   ? "Đang tải"
-                  : subscriptionReady ? formatPlanName(subscription?.planName) : "Không khả dụng"}
+                  : subscriptionReady
+                    ? balance ? `${balance.remainingCount} lượt còn lại` : formatPlanName(primarySubscription?.planName)
+                    : "Không khả dụng"}
               </strong>
               <small>
                 {subscriptionReady
-                  ? formatSubscriptionStatus(subscription?.status)
+                  ? activeSubscriptions.length > 1
+                    ? `${activeSubscriptions.length} gói đang hoạt động`
+                    : formatSubscriptionStatus(primarySubscription?.status ?? primarySubscription?.statusName)
                   : "Chưa thể xác định gói hiện tại."}
               </small>
             </article>
@@ -809,30 +828,29 @@ export default function UserProfilePage() {
             <section id="profile-panel-package" role="tabpanel" aria-label="Gói dịch vụ" className="profile-card">
             <h1>Gói dịch vụ</h1>
             <div className="plan-box">
-              <span>Gói hiện tại</span>
-              <strong>{formatPlanName(subscription?.planName)}</strong>
+              <span>Số dư lượt dùng chung</span>
+              <strong>{balance ? `${balance.remainingCount.toLocaleString("vi-VN")} lượt` : "Chưa có dữ liệu"}</strong>
               <p>
-                {subscription
-                  ? `${formatSubscriptionStatus(subscription.status)}${subscription.endDate ? ` · hết hạn ${new Date(subscription.endDate).toLocaleDateString("vi-VN")}` : ""}`
-                  : "Bạn chưa có gói đăng ký trả phí đang hoạt động."}
+                {balance
+                  ? `Đã cấp ${balance.grantedCount.toLocaleString("vi-VN")} · đã dùng ${balance.usedCount.toLocaleString("vi-VN")}${balance.reservedCount > 0 ? ` · đang giữ ${balance.reservedCount.toLocaleString("vi-VN")}` : ""}`
+                  : "Số dư sẽ xuất hiện sau khi bạn mua gói lượt dùng."}
               </p>
             </div>
-            {usageList.length > 0 && (
+            {subscriptions.length > 0 && (
               <div className="quota-list">
-                {usageList.map((item) => (
-                  <div className="plan-box quota-box" key={item.quotaCode}>
-                    <span>{item.quotaName || "Hạn mức sử dụng"}</span>
-                    <strong>{item.remainingCount ?? "—"}/{item.limitValue ?? "—"}</strong>
-                    <p>
-                      Đã dùng {item.usedCount ?? 0}
-                      {Number(item.reservedCount) > 0 ? ` · đang giữ chỗ ${item.reservedCount}` : ""}
-                      {item.cycleEnd ? ` · làm mới vào ${new Date(item.cycleEnd).toLocaleDateString("vi-VN")}` : ""}
-                    </p>
+                {subscriptions.map((item, index) => (
+                  <div
+                    className="plan-box quota-box"
+                    key={`${item.id ?? item.subscriptionId ?? item.planId ?? item.planName ?? "subscription"}-${index}`}
+                  >
+                    <span>{formatSubscriptionStatus(item.status ?? item.statusName)}</span>
+                    <strong>{formatPlanName(item.planName)}</strong>
+                    <p>{getSubscriptionStatusValue(item) === "active" ? `Thời hạn: ${getSubscriptionExpiryLabel(item)}` : "Chưa cấp lượt dùng cho đến khi thanh toán thành công"}</p>
                   </div>
                 ))}
               </div>
             )}
-            <button className="lime" type="button" onClick={() => go("/pricing?view=upgrade&returnTo=%2Fprofile")}>Nâng cấp MediMate+</button>
+            <button className="lime" type="button" onClick={() => go("/pricing?view=upgrade&returnTo=%2Fprofile")}>Mua thêm lượt</button>
             </section>
           )
         )}

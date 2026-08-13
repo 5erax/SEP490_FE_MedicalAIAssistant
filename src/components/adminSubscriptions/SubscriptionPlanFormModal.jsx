@@ -21,7 +21,7 @@ const FEATURE_LIMIT_LABELS = {
   aiChatPerDay: "Chat AI / ngày",
 };
 
-const DEFAULT_QUOTA_LIMIT = "3";
+const DEFAULT_QUOTA_LIMIT = "10";
 const DEFAULT_QUOTA_RESET_PERIOD = "subscriptionCycle";
 
 function formatFeatureLimits(value) {
@@ -123,7 +123,7 @@ function getQuotaTitle(quota) {
 }
 
 function getQuotaUnit(quota) {
-  return quota?.unit || "lượt";
+  return String(getQuotaCode(quota)).toUpperCase() === "SERVICE_CREDIT" ? "lượt" : (quota?.unit || "lượt");
 }
 
 function findCatalogQuota(row, quotaCatalog) {
@@ -246,7 +246,7 @@ export default function SubscriptionPlanFormModal({
         <div>
           <p className="eyebrow">Quản lý gói dịch vụ</p>
           <h2 id="subscription-modal-title">{title}</h2>
-          <p>Cấu hình giá, thời hạn và giới hạn quyền lợi hiển thị trên trang đăng ký gói.</p>
+          <p>Cấu hình giá và số lượt dịch vụ dùng chung hiển thị trên trang mua gói.</p>
         </div>
         <button
           ref={closeButtonRef}
@@ -262,7 +262,7 @@ export default function SubscriptionPlanFormModal({
       <form ref={formRef} className="clean-form subscription-plan-form" onSubmit={handleSubmit} noValidate>
         <aside className="subscription-modal-warning">
           <ShieldAlert size={18} aria-hidden="true" />
-          <span>Kiểm tra giá, thời hạn và hạn mức trước khi hiển thị gói trên trang đăng ký.</span>
+          <span>Kiểm tra giá và hạn mức SERVICE_CREDIT trước khi mở bán. Credit đã mua không hết hạn.</span>
         </aside>
 
         <div className="subscription-form-sections">
@@ -271,7 +271,7 @@ export default function SubscriptionPlanFormModal({
               <span aria-hidden="true"><CreditCard size={20} /></span>
               <div>
                 <h3>Thông tin gói</h3>
-                <p>Tên, giá, thời hạn và trạng thái hiển thị của gói dịch vụ.</p>
+                <p>Tên, giá và trạng thái hiển thị của gói dịch vụ.</p>
               </div>
             </div>
 
@@ -282,7 +282,7 @@ export default function SubscriptionPlanFormModal({
                   {...getAdminFieldProps("planName", errors.planName, errors.planName ? "subscription-name-error" : "")}
                   value={form.planName}
                   onChange={(event) => update("planName", event.target.value)}
-                  placeholder="Ví dụ: MediMate+ Tháng"
+                  placeholder="Ví dụ: Gói 10 lượt"
                   required
                 />
                 {errors.planName && <small id="subscription-name-error" role="alert">{errors.planName}</small>}
@@ -304,7 +304,7 @@ export default function SubscriptionPlanFormModal({
               </label>
 
               <label className={`clean-field subscription-duration-inline ${errors.durationInDays ? "subscription-field-error" : ""}`}>
-                <span>Thời hạn (ngày)</span>
+                <span>Thời hạn legacy (ngày)</span>
                 <input
                   {...getAdminFieldProps("durationInDays", errors.durationInDays, errors.durationInDays ? "subscription-duration-error" : "")}
                   type="number"
@@ -314,6 +314,7 @@ export default function SubscriptionPlanFormModal({
                   onChange={(event) => update("durationInDays", event.target.value)}
                   required
                 />
+                <small>Chỉ giữ để tương thích backend; SERVICE_CREDIT đã mua không hết hạn.</small>
                 {errors.durationInDays && <small id="subscription-duration-error" role="alert">{errors.durationInDays}</small>}
               </label>
 
@@ -395,7 +396,7 @@ export default function SubscriptionPlanFormModal({
                     {quotaRows.map((row, index) => (
                       <span key={`${row.quotaCode || row.quotaId}-summary-${index}`}>
                         <strong>{row.name}</strong>
-                        {row.limitValue || 0} {row.unit || "lượt"} / chu kỳ
+                        {row.limitValue || 0} {row.unit || "lượt"} · không hết hạn
                       </span>
                     ))}
                   </div>
@@ -405,7 +406,7 @@ export default function SubscriptionPlanFormModal({
                     <div className="subscription-real-quota-name">
                       <span>Hạn mức</span>
                       <strong>{row.name}</strong>
-                      <small>{row.unit} - mỗi chu kỳ gói</small>
+                      <small>{row.unit} · dùng chung, không hết hạn</small>
                     </div>
                     <label className="clean-field">
                       <span>Số lượt</span>
