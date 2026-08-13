@@ -7,7 +7,7 @@ const ACCESS_TOKEN = [
   "",
 ].join(".");
 
-test("authenticated user opens PayOS and reconciles the checkout", async ({ page, context }) => {
+test("authenticated user opens PayOS and reconciles the checkout", async ({ page, context, baseURL }) => {
   await preparePage(page);
   await page.addInitScript((accessToken) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -58,7 +58,7 @@ test("authenticated user opens PayOS and reconciles the checkout", async ({ page
           paymentId: "33333333-3333-3333-3333-333333333333",
           transactionId: "44444444-4444-4444-4444-444444444444",
           orderCode: "987654321",
-          paymentUrl: "http://127.0.0.1:3001/payment/return?orderCode=987654321",
+          paymentUrl: `${baseURL}/payment/return?orderCode=987654321`,
           paymentProvider: "PayOS",
         },
       }),
