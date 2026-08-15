@@ -68,7 +68,7 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
       render: (doctor) => (
         <div className="table-primary-cell">
           <strong>{doctor.departmentName || "Chưa cập nhật khoa"}</strong>
-          <small>{doctor.departmentRoleName || DEPARTMENT_ROLE_LABELS[doctor.departmentRole] || "Chưa cập nhật vai trò"}</small>
+          <small>{DEPARTMENT_ROLE_LABELS[doctor.departmentRole] || doctor.departmentRoleName || "Chưa cập nhật vai trò"}</small>
         </div>
       ),
     },
@@ -181,7 +181,7 @@ export default function DoctorTable({ doctors, onEdit, onToggleStatus, onDelete,
               </div>
               <div>
                 <dt>Vai trò</dt>
-                <dd>{doctor.departmentRoleName || DEPARTMENT_ROLE_LABELS[doctor.departmentRole] || "Chưa cập nhật"}</dd>
+                <dd>{DEPARTMENT_ROLE_LABELS[doctor.departmentRole] || doctor.departmentRoleName || "Chưa cập nhật"}</dd>
               </div>
               <div>
                 <dt>Bệnh viện</dt>

@@ -32,6 +32,7 @@ import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
 import AdminICDChaptersSection from "../components/adminICDChapters/AdminICDChaptersSection";
 import AdminFacilitiesSection from "../components/adminFacilities/AdminFacilitiesSection";
+import AdminFacilityWorkspaceSection from "../components/adminFacilities/AdminFacilityWorkspaceSection";
 import AdminPatientProfilesSection from "../components/adminPatientProfiles/AdminPatientProfilesSection";
 import AdminClinicalCatalogSection from "../components/adminClinicalData/AdminClinicalCatalogSection";
 import AdminLabIndicatorsSection from "../components/adminLabIndicators/AdminLabIndicatorsSection";
@@ -2868,36 +2869,38 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
             )}
 
             {activeSection === "facilities" && (
-              <AdminFacilitiesSection
-                departments={departments}
-                editingFacilityId={editingFacilityId}
-                facilities={facilities}
-                facilityDepartments={facilityDepartments}
-                filters={facilityFilters}
-                form={facilityForm}
-                loadError={facilityLoadError}
-                loading={facilitiesLoading}
-                message={facilityMessage}
-                pageInfo={facilityPageInfo}
-                saving={savingFacility}
-                catalogImportProgress={facilityCatalogProgress}
-                catalogSize={HCMC_HOSPITAL_CATALOG_SIZE}
-                importingCatalog={importingFacilityCatalog}
-                onDelete={handleDeleteFacility}
-                onEdit={startEditFacility}
-                onImportCatalog={handleImportHcmcHospitalCatalog}
-                onFilterChange={updateFacilityFilter}
-                onApplyFilters={applyFacilityFilters}
-                onClearFilters={clearFacilityFilters}
-                onFormChange={(key, value) => setFacilityForm((current) => ({ ...current, [key]: value }))}
-                onLoadPage={(pageNumber) => loadFacilities(pageNumber, facilityPageInfo.pageSize)}
-                onPageSizeChange={changeFacilityPageSize}
-                onReload={() => loadFacilities(facilityPageInfo.pageNumber, facilityPageInfo.pageSize)}
-                onReset={resetFacilityForm}
-                onSubmit={handleSaveFacility}
-                onToggleDepartment={toggleFacilityDepartment}
-                onToggleStatus={handleToggleFacilityStatus}
-              />
+              <AdminFacilityWorkspaceSection facilities={facilities}>
+                <AdminFacilitiesSection
+                  departments={departments}
+                  editingFacilityId={editingFacilityId}
+                  facilities={facilities}
+                  facilityDepartments={facilityDepartments}
+                  filters={facilityFilters}
+                  form={facilityForm}
+                  loadError={facilityLoadError}
+                  loading={facilitiesLoading}
+                  message={facilityMessage}
+                  pageInfo={facilityPageInfo}
+                  saving={savingFacility}
+                  catalogImportProgress={facilityCatalogProgress}
+                  catalogSize={HCMC_HOSPITAL_CATALOG_SIZE}
+                  importingCatalog={importingFacilityCatalog}
+                  onDelete={handleDeleteFacility}
+                  onEdit={startEditFacility}
+                  onImportCatalog={handleImportHcmcHospitalCatalog}
+                  onFilterChange={updateFacilityFilter}
+                  onApplyFilters={applyFacilityFilters}
+                  onClearFilters={clearFacilityFilters}
+                  onFormChange={(key, value) => setFacilityForm((current) => ({ ...current, [key]: value }))}
+                  onLoadPage={(pageNumber) => loadFacilities(pageNumber, facilityPageInfo.pageSize)}
+                  onPageSizeChange={changeFacilityPageSize}
+                  onReload={() => loadFacilities(facilityPageInfo.pageNumber, facilityPageInfo.pageSize)}
+                  onReset={resetFacilityForm}
+                  onSubmit={handleSaveFacility}
+                  onToggleDepartment={toggleFacilityDepartment}
+                  onToggleStatus={handleToggleFacilityStatus}
+                />
+              </AdminFacilityWorkspaceSection>
             )}
 
           </div>
