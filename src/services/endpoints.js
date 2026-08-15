@@ -187,6 +187,9 @@ export const ENDPOINTS = {
     MY_SESSIONS: `${LAB_TESTS_BASE}/my-sessions`,
     SESSIONS: `${LAB_TESTS_BASE}/sessions`,
     BY_SESSION: (sessionId) => encodedById(LAB_TESTS_BASE, sessionId),
+    ANALYTICS_INDICATORS: `${LAB_TESTS_BASE}/analytics/indicators`,
+    ANALYTICS_INDICATOR_TREND: (indicatorId) =>
+      `${LAB_TESTS_BASE}/analytics/indicators/${encodeURIComponent(indicatorId)}/trend`,
   },
   USER_MEDICATIONS: {
     BASE: USER_MEDICATIONS_BASE,
@@ -208,6 +211,7 @@ export const ENDPOINTS = {
     BY_ID: (planId) => encodedById(RECOVERY_PLANS_BASE, planId),
     START: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/start`,
     CANCEL: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/cancel`,
+    FEEDBACK: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/feedback`,
   },
   DOCTOR_RECOVERY_PLAN_REQUESTS: {
     OPEN: `${DOCTOR_RECOVERY_PLAN_REQUESTS_BASE}/open`,
@@ -223,6 +227,7 @@ export const ENDPOINTS = {
   },
   DOCTOR_RECOVERY_PLANS: {
     BY_ID: (planId) => encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId),
+    FEEDBACK_ANALYTICS: `${DOCTOR_RECOVERY_PLANS_BASE}/analytics/feedback`,
     PHASES: (planId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases`,
     PHASE_BY_ID: (planId, phaseId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}`,
     NUTRIENTS: (planId, phaseId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}/nutrients`,

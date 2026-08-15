@@ -196,7 +196,7 @@ export default function PreConsultationHistory({ onStartNew }) {
 
   useEffect(() => {
     if (!selectedId || normalizeAsyncSessionStatus(detail?.status, "") !== ASYNC_SESSION_STATUS.PROCESSING) return undefined;
-    const intervalId = window.setInterval(() => loadDetail(selectedId, { silent: true }), 1000);
+    const intervalId = window.setInterval(() => loadDetail(selectedId, { silent: true }), 200);
     return () => window.clearInterval(intervalId);
   }, [detail?.status, loadDetail, selectedId]);
 

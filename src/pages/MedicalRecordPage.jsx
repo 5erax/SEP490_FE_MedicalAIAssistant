@@ -16,6 +16,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import LabTestTrendSection from "../components/lab-tests/LabTestTrendSection";
 import { Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import LabTestResultPage from "./LabTestResultPage";
@@ -146,6 +147,7 @@ export default function MedicalRecordPage() {
   const [historyFilter, setHistoryFilter] = useState("");
   const [historyInfo, setHistoryInfo] = useState({ totalCount: 0, totalPages: 1 });
   const [historyReloadKey, setHistoryReloadKey] = useState(0);
+  const [trendRefreshKey, setTrendRefreshKey] = useState(0);
   const [activeHistorySessionId, setActiveHistorySessionId] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const errorSummaryRef = useRef(null);
@@ -247,6 +249,9 @@ export default function MedicalRecordPage() {
         ? { ...item, ...session }
         : item
     )));
+    if (normalizeAsyncSessionStatus(session.status) === "completed") {
+      setTrendRefreshKey((current) => current + 1);
+    }
   }, []);
 
   function openHistorySession(sessionId, trigger) {
@@ -318,6 +323,7 @@ export default function MedicalRecordPage() {
       let documentUrl = uploadedDocument?.fileId === fileIdentity(documentFile)
         ? uploadedDocument.secureUrl
         : "";
+
       if (!documentUrl) {
         setSubmissionStatus("uploading");
         const upload = await uploadMedicalDocumentToCloudinary(documentFile);
@@ -532,11 +538,25 @@ export default function MedicalRecordPage() {
           </form>
         </section>
 
+        <LabTestTrendSection
+          refreshKey={trendRefreshKey}
+          onOpenSession={openHistorySession}
+        />
+
         <section className="records-library" aria-labelledby="records-history-title">
           <div className="records-history-panel">
             <header>
               <div><History size={19} aria-hidden="true" /><span><p>PHIÊN CỦA BẠN</p><h2 id="records-history-title">Lịch sử phân tích</h2></span></div>
-              <button type="button" onClick={() => setHistoryReloadKey((current) => current + 1)} aria-label="Tải lại lịch sử xét nghiệm"><RefreshCw size={17} aria-hidden="true" /></button>
+              <button
+                type="button"
+                onClick={() => {
+                  setHistoryReloadKey((current) => current + 1);
+                  setTrendRefreshKey((current) => current + 1);
+                }}
+                aria-label="Tải lại lịch sử và xu hướng xét nghiệm"
+              >
+                <RefreshCw size={17} aria-hidden="true" />
+              </button>
             </header>
 
             <label className="records-history-filter" htmlFor="records-status-filter">
@@ -580,7 +600,6 @@ export default function MedicalRecordPage() {
               </nav>
             )}
           </div>
-
         </section>
       </div>
 

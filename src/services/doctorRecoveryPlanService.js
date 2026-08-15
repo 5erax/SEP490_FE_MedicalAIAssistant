@@ -105,6 +105,13 @@ export const doctorRecoveryPlansApi = {
     return authenticatedRequest(ENDPOINTS.DOCTOR_RECOVERY_PLANS.BY_ID(planId));
   },
 
+  getFeedbackAnalytics({ from = "", to = "" } = {}) {
+    return authenticatedRequest(withQuery(ENDPOINTS.DOCTOR_RECOVERY_PLANS.FEEDBACK_ANALYTICS, {
+      from,
+      to,
+    }));
+  },
+
   updateHeader(planId, payload) {
     return authenticatedRequest(ENDPOINTS.DOCTOR_RECOVERY_PLANS.BY_ID(planId), {
       method: "PUT",

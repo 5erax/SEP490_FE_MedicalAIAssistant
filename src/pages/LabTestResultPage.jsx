@@ -15,7 +15,7 @@ import { useServiceCredit } from "../state/useServiceCredit";
 import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
 import "../styles/user-workspace/lab-test-result.css";
 
-const POLL_INTERVAL_MS = 1000;
+const POLL_INTERVAL_MS = 100;
 const TERMINAL_SESSION_STATUSES = new Set([
   ASYNC_SESSION_STATUS.COMPLETED,
   ASYNC_SESSION_STATUS.FAILED,
