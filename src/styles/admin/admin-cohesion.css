@@ -356,7 +356,33 @@
 }
 
 .feedback-row-actions select {
-  min-width: 128px;
+  flex: 1 1 138px;
+  min-width: 138px;
+}
+
+.feedback-admin-table td:last-child {
+  vertical-align: middle;
+}
+
+.feedback-admin-table .feedback-row-actions {
+  flex-wrap: nowrap;
+  min-width: 234px;
+}
+
+.feedback-row-actions .feedback-delete-button {
+  flex: 0 0 82px;
+  width: 82px;
+  min-width: 82px;
+  min-height: 44px;
+  padding-inline: 10px;
+}
+
+.feedback-row-actions .feedback-delete-button > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
 }
 
 .feedback-card-list {
@@ -433,6 +459,12 @@
 
   .feedback-row-actions select {
     flex: 1 1 180px;
+  }
+
+  .feedback-row-actions .feedback-delete-button {
+    flex-basis: 88px;
+    width: 88px;
+    min-width: 88px;
   }
 
   .feedback-pagination {
