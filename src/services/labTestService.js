@@ -23,6 +23,14 @@ function firstMessage(value) {
   return "";
 }
 
+function withDateRange(path, { from = "", to = "" } = {}) {
+  const query = new URLSearchParams();
+  if (from) query.set("from", from);
+  if (to) query.set("to", to);
+  const value = query.toString();
+  return value ? `${path}?${value}` : path;
+}
+
 export function getLabTestApiMessage(source, fallback = "") {
   const payload = source?.payload ?? source;
 
@@ -58,5 +66,19 @@ export const labTestsApi = {
     const query = new URLSearchParams(withPagination(pageNumber, pageSize));
     if (status) query.set("status", status);
     return apiRequest(`${ENDPOINTS.LAB_TESTS.SESSIONS}?${query}`, { auth: true });
+  },
+
+  getTrendIndicators({ from = "", to = "" } = {}) {
+    return apiRequest(
+      withDateRange(ENDPOINTS.LAB_TESTS.ANALYTICS_INDICATORS, { from, to }),
+      { auth: true },
+    );
+  },
+
+  getIndicatorTrend(indicatorId, { from = "", to = "" } = {}) {
+    return apiRequest(
+      withDateRange(ENDPOINTS.LAB_TESTS.ANALYTICS_INDICATOR_TREND(indicatorId), { from, to }),
+      { auth: true },
+    );
   },
 };

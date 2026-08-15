@@ -53,7 +53,7 @@ const CATEGORY_LABELS = {
 };
 
 const PHONE_PATTERN = /^(?:0\d{8,10}|\+[1-9]\d{8,14})$/;
-const SESSION_POLL_INTERVAL_MS = 1000;
+const SESSION_POLL_INTERVAL_MS = 200;
 const SESSION_POLL_TIMEOUT_MS = 2 * 60 * 1000;
 
 function wait(milliseconds) {
