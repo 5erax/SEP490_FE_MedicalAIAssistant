@@ -24,7 +24,7 @@ import {
 import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote";
 import RecoveryPlanFeedbackDialog from "../components/recovery/RecoveryPlanFeedbackDialog";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Button, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
+import { Button, CustomSelect, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getApiErrorCode } from "../services/apiError";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
@@ -50,6 +50,10 @@ const DISEASE_GROUPS = [
   { value: "respiratory", label: "Hô hấp" },
   { value: "musculoskeletal", label: "Cơ xương khớp" },
   { value: "infectiousDisease", label: "Bệnh truyền nhiễm" },
+];
+const REQUEST_SORT_OPTIONS = [
+  { value: "desc", label: "Mới nhất trước" },
+  { value: "asc", label: "Cũ nhất trước" },
 ];
 const REQUEST_STATUS = {
   waitingForDoctor: { label: "Đang chờ bác sĩ", tone: "waiting" },
@@ -117,6 +121,11 @@ function formatDate(value, includeTime = false) {
   return includeTime
     ? date.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })
     : date.toLocaleDateString("vi-VN");
+}
+
+function getTimeMs(value) {
+  const ms = new Date(value).getTime();
+  return Number.isNaN(ms) ? 0 : ms;
 }
 
 function getStatusDefinition(map, value) {
@@ -1002,7 +1011,8 @@ export default function RecoveryPlanPage() {
     ? getRecoveryError(serviceCreditError, "Chưa thể kiểm tra lượt dịch vụ. Vui lòng thử lại.")
     : null;
   const [requestPageNumber, setRequestPageNumber] = useState(1);
-  const [requestPage, setRequestPage] = useState(() => normalizePaged(null, 1));
+  const [allRequests, setAllRequests] = useState([]);
+  const [requestSortDirection, setRequestSortDirection] = useState("desc");
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [requestsError, setRequestsError] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -1039,23 +1049,36 @@ export default function RecoveryPlanPage() {
     setRequestsLoading(true);
     setRequestsError("");
     try {
-      const response = await recoveryPlanRequestsApi.listMine({ pageNumber, pageSize: PAGE_SIZE });
-      const nextPage = normalizePaged(response, pageNumber);
-      setRequestPage(nextPage);
-      const nextSelected = nextPage.items.find((item) => item.id === preferredId)
-        ?? nextPage.items.find((item) => item.id === selectedRequest?.id)
-        ?? nextPage.items[0]
+      // The backend paginates oldest-first with no sort param, so the newest
+      // request could be on any page - fetch every page once and sort/paginate
+      // client-side instead, matching the "newest first" order this list needs.
+      const firstResponse = await recoveryPlanRequestsApi.listMine({ pageNumber: 1, pageSize: PAGE_SIZE });
+      const firstPage = normalizePaged(firstResponse, 1);
+      const items = [...firstPage.items];
+      for (let page = 2; page <= firstPage.totalPages; page += 1) {
+        const response = await recoveryPlanRequestsApi.listMine({ pageNumber: page, pageSize: PAGE_SIZE });
+        items.push(...normalizePaged(response, page).items);
+      }
+      setAllRequests(items);
+      setRequestPageNumber(pageNumber);
+      const sortedItems = [...items].sort((a, b) => {
+        const diff = getTimeMs(a.requestedAt) - getTimeMs(b.requestedAt);
+        return requestSortDirection === "asc" ? diff : -diff;
+      });
+      const nextSelected = sortedItems.find((item) => item.id === preferredId)
+        ?? sortedItems.find((item) => item.id === selectedRequest?.id)
+        ?? sortedItems[0]
         ?? null;
       setSelectedRequest(nextSelected);
-      setStatusMessage(`Đã tải ${nextPage.items.length} yêu cầu phục hồi.`);
+      setStatusMessage(`Đã tải ${items.length} yêu cầu phục hồi.`);
     } catch {
-      setRequestPage(normalizePaged(null, pageNumber));
+      setAllRequests([]);
       setSelectedRequest(null);
       setRequestsError("Chưa thể tải các yêu cầu của bạn.");
     } finally {
       setRequestsLoading(false);
     }
-  }, [requestPageNumber, selectedRequest?.id]);
+  }, [requestPageNumber, requestSortDirection, selectedRequest?.id]);
 
   async function loadPlanDetail(planId, fallback) {
     setSelectedPlan(fallback ?? selectedPlan);
@@ -1384,6 +1407,22 @@ export default function RecoveryPlanPage() {
       ? "Đang nối lại cập nhật tự động"
       : "Bạn có thể dùng nút tải lại để xem thay đổi mới";
 
+  const requestPage = useMemo(() => {
+    const sorted = [...allRequests].sort((a, b) => {
+      const diff = getTimeMs(a.requestedAt) - getTimeMs(b.requestedAt);
+      return requestSortDirection === "asc" ? diff : -diff;
+    });
+    const totalCount = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const pageNumber = Math.min(Math.max(1, requestPageNumber), totalPages);
+    return {
+      items: sorted.slice((pageNumber - 1) * PAGE_SIZE, pageNumber * PAGE_SIZE),
+      pageNumber,
+      pageSize: PAGE_SIZE,
+      totalCount,
+      totalPages,
+    };
+  }, [allRequests, requestSortDirection, requestPageNumber]);
   const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
   const planItems = useMemo(() => planPage.items, [planPage.items]);
 
@@ -1463,9 +1502,19 @@ export default function RecoveryPlanPage() {
               </button>
             </div>
             {activeTab === "requests" ? (
-              <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
-                <RefreshCw size={16} aria-hidden="true" /> Tải lại
-              </Button>
+              <div className="recovery-workspace-head-controls">
+                <CustomSelect
+                  label="Sắp xếp"
+                  hideLabel
+                  value={requestSortDirection}
+                  options={REQUEST_SORT_OPTIONS}
+                  onChange={(value) => { setRequestSortDirection(value); setRequestPageNumber(1); }}
+                  className="recovery-request-sort-select"
+                />
+                <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
+                  <RefreshCw size={16} aria-hidden="true" /> Tải lại
+                </Button>
+              </div>
             ) : activeTab === "plans" ? (
               <Button tone="secondary" size="sm" onClick={() => loadPlans(planPageNumber, selectedPlan?.id)} disabled={plansLoading}>
                 <RefreshCw size={16} aria-hidden="true" /> Tải lại

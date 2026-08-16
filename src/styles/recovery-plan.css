@@ -389,6 +389,110 @@
   margin-bottom: 18px;
 }
 
+.recovery-workspace-head-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recovery-request-sort-select {
+  min-width: 168px;
+}
+
+/* CustomSelect is unstyled by default (per-page convention) - scope it here
+   to match the button/input styling already used on this page. */
+.recovery-page .custom-select-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recovery-page .custom-select-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.recovery-page .custom-select {
+  position: relative;
+  min-width: 0;
+}
+
+.recovery-page .custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recovery-page .custom-select-trigger svg {
+  flex: 0 0 auto;
+  color: var(--color-info-strong);
+  transition: transform var(--motion-fast);
+}
+
+.recovery-page .custom-select.is-open .custom-select-trigger,
+.recovery-page .custom-select-trigger:focus-visible {
+  border-color: var(--color-info);
+  box-shadow: 0 0 0 4px var(--color-info-bg);
+}
+
+.recovery-page .custom-select.is-open .custom-select-trigger svg {
+  transform: rotate(180deg);
+}
+
+.recovery-page .custom-select-popover {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: min(240px, 46vh);
+  overflow-y: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg, 0 16px 34px rgba(8, 75, 72, 0.18));
+  padding: 6px;
+}
+
+.recovery-page .custom-select-option {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: var(--color-ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.recovery-page .custom-select-option.is-active {
+  background: var(--color-info-bg);
+}
+
+.recovery-page .custom-select-option.is-selected {
+  background: var(--color-info);
+  color: #fff;
+}
+
+.recovery-page .custom-select-option.is-selected.is-active {
+  background: var(--color-info-strong);
+}
+
 .recovery-workspace-tabs {
   display: flex;
   gap: 6px;
