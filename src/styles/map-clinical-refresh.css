@@ -495,7 +495,7 @@
 
 .map-clinical-refresh .map-search-suggestions-panel ul {
   display: grid;
-  gap: 2px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -503,14 +503,14 @@
 
 .map-clinical-refresh .map-search-suggestions-panel li button {
   width: 100%;
-  min-height: 46px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   gap: 8px;
   border: 0;
   border-radius: 10px;
   background: transparent;
-  padding: 6px 10px;
+  padding: 9px 10px;
   color: var(--map-ink);
   text-align: left;
   cursor: pointer;
@@ -524,7 +524,7 @@
 .map-clinical-refresh .map-search-suggestions-panel li button span {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 3px;
   min-width: 0;
 }
 
