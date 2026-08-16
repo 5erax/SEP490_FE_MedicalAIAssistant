@@ -246,7 +246,7 @@ export default function AdminUsersSection({
           <span>
             Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1}
             <span aria-hidden="true"> · </span>
-            {rows.length}/{totalVisibleCount} hiển thị
+            {rows.length}/{pageInfo.totalCount} hiển thị
           </span>
           <Button
             tone="secondary"
