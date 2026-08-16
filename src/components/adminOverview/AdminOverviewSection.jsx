@@ -321,20 +321,21 @@ function OperationalAttentionSection({ operationalCounts, operationalCountsLoadi
       value: paymentIssueCount,
       loading: paymentsLoading,
     },
-  ];
-
-  const blockedItems = [
     {
       key: "doctorInvitationPending",
       icon: Stethoscope,
       label: "Lời mời bác sĩ chưa nhận",
-      reason: "Backend chưa có API liệt kê lời mời bác sĩ.",
+      reason: "Đang chờ bác sĩ xác nhận lời mời.",
+      value: operationalCounts.doctorInvitationPending,
+      loading: operationalCountsLoading,
     },
     {
       key: "subscriptionActive",
       icon: PackageCheck,
       label: "Người dùng đang dùng gói",
-      reason: "Backend chưa có API liệt kê gói đăng ký của toàn bộ người dùng.",
+      reason: "Đang có gói đăng ký còn hiệu lực.",
+      value: operationalCounts.subscriptionActive,
+      loading: operationalCountsLoading,
     },
   ];
 
@@ -358,19 +359,6 @@ function OperationalAttentionSection({ operationalCounts, operationalCountsLoadi
               <span className={`admin-overview-attention-value${unavailable ? " is-blocked" : ""}`}>
                 {item.loading ? "…" : unavailable ? "Không khả dụng" : item.value}
               </span>
-            </li>
-          );
-        })}
-        {blockedItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <li key={item.key} className="is-blocked">
-              <span className="admin-overview-attention-icon" aria-hidden="true"><Icon size={18} /></span>
-              <div>
-                <strong>{item.label}</strong>
-                <p>{item.reason}</p>
-              </div>
-              <span className="admin-overview-attention-value is-blocked">Chưa khả dụng</span>
             </li>
           );
         })}

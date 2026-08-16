@@ -107,6 +107,16 @@ export const userSubscriptionsApi = {
       auth: true,
     });
   },
+
+  // Admin-wide subscription listing (all users), used e.g. for active-user-count stats.
+  adminList(pageNumber = 1, pageSize = 1, { status = "", currentOnly = false } = {}) {
+    return apiRequest(withQuery(ENDPOINTS.USER_SUBSCRIPTIONS.ADMIN_LIST, {
+      PageNumber: pageNumber,
+      PageSize: pageSize,
+      status,
+      currentOnly: currentOnly ? "true" : "",
+    }), { auth: true });
+  },
 };
 
 export const paymentsApi = {

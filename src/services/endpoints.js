@@ -18,6 +18,7 @@ const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
 const ADMIN_QUOTAS_BASE = "/api/admin/quotas";
 const ADMIN_SUBSCRIPTION_PLANS_BASE = "/api/admin/subscription-plans";
 const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
+const ADMIN_USER_SUBSCRIPTIONS_BASE = "/api/admin/user-subscriptions";
 const PAYMENTS_BASE = "/api/payments";
 const AI_CONFIGS_BASE = "/api/ai-configs";
 const WEB_CHATBOT_BASE = "/api/web-chatbot";
@@ -77,6 +78,7 @@ export const ENDPOINTS = {
     VALIDATE: `${DOCTOR_INVITATIONS_BASE}/validate`,
     REGISTER: `${DOCTOR_INVITATIONS_BASE}/register`,
     ADMIN_CREATE: ADMIN_DOCTOR_INVITATIONS_BASE,
+    ADMIN_LIST: ADMIN_DOCTOR_INVITATIONS_BASE,
     ADMIN_REVOKE: (id) => `${ADMIN_DOCTOR_INVITATIONS_BASE}/${id}/revoke`,
   },
   FEEDBACK_REVIEWS: {
@@ -127,6 +129,7 @@ export const ENDPOINTS = {
     ME: `${USER_SUBSCRIPTIONS_BASE}/me`,
     BY_ID: (id) => byId(USER_SUBSCRIPTIONS_BASE, id),
     CANCEL: (id) => `${byId(USER_SUBSCRIPTIONS_BASE, id)}/cancel`,
+    ADMIN_LIST: ADMIN_USER_SUBSCRIPTIONS_BASE,
   },
   PAYMENTS: {
     LIST: PAYMENTS_BASE,

@@ -54,6 +54,7 @@ import {
   paymentsApi,
   subscriptionPlansApi,
   symptomAnalysisApi,
+  userSubscriptionsApi,
   usersApi,
 } from "../services/api";
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
@@ -75,10 +76,9 @@ const EMPTY_ICD_CHAPTER = { chapterCode: "", chapterName: "", keywordWeights: "{
 const EMPTY_INVITATION = { email: "", doctorId: "" };
 const LAST_INVITATION_STORAGE_KEY = "medimate.admin.lastDoctorInvitation";
 
-// BE has no GET /api/admin/doctor-invitations list endpoint yet, so the
-// "just sent" confirmation card is the only place an admin can see it.
-// Persist it to sessionStorage so a reload doesn't lose it, per the doc's
-// acceptance criterion ("Admin có thể list/revoke/resend sau khi reload trang").
+// Persist the "just sent" invitation to sessionStorage so a reload doesn't
+// lose it, per the doc's acceptance criterion ("Admin có thể list/revoke/resend
+// sau khi reload trang").
 function readStoredInvitation() {
   try {
     const raw = window.sessionStorage.getItem(LAST_INVITATION_STORAGE_KEY);
@@ -538,6 +538,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     feedbackPending: null,
     labTestNeedsAttention: null,
     symptomAnalysisFailed: null,
+    doctorInvitationPending: null,
+    subscriptionActive: null,
   });
   const [overviewOperationalLoading, setOverviewOperationalLoading] = useState(true);
 
@@ -644,6 +646,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         { key: "labTestNeedsAttention (status=processing)", request: () => labTestsApi.adminSessions(1, 1, { status: "processing" }) },
         { key: "labTestNeedsAttention (status=failed)", request: () => labTestsApi.adminSessions(1, 1, { status: "failed" }) },
         { key: "symptomAnalysisFailed", request: () => symptomAnalysisApi.adminSessions(1, 1, { status: "failed" }) },
+        { key: "doctorInvitationPending", request: () => doctorInvitationsApi.list(1, 1, { status: "Pending" }) },
+        { key: "subscriptionActive", request: () => userSubscriptionsApi.adminList(1, 1, { currentOnly: true }) },
       ];
 
       // These admin-only calls have been seen to fail intermittently under
@@ -693,6 +697,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         feedbackPending: sumTotals(["feedbackPending (status=pending)", "feedbackPending (status=hidden)"]),
         labTestNeedsAttention: sumTotals(["labTestNeedsAttention (status=processing)", "labTestNeedsAttention (status=failed)"]),
         symptomAnalysisFailed: sumTotals(["symptomAnalysisFailed"]),
+        doctorInvitationPending: sumTotals(["doctorInvitationPending"]),
+        subscriptionActive: sumTotals(["subscriptionActive"]),
       });
     } finally {
       setOverviewOperationalLoading(false);
