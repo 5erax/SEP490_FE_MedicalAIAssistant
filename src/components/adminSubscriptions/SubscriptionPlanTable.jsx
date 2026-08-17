@@ -6,21 +6,6 @@ const QUOTA_LABELS = {
   RECOVERY_PLAN_REQUEST: "Kế hoạch phục hồi",
 };
 
-const FEATURE_LIMIT_LABELS = {
-  symptomAnalysisPerMonth: {
-    title: "Phân tích triệu chứng",
-    period: "mỗi tháng",
-  },
-  aiChatPerDay: {
-    title: "Chat AI",
-    period: "mỗi ngày",
-  },
-  clinicalQuestionPerMonth: {
-    title: "Câu hỏi lâm sàng",
-    period: "mỗi tháng",
-  },
-};
-
 function formatPrice(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
 }
@@ -57,36 +42,7 @@ function getQuotaAmount(quota) {
   return `${limit} ${code === "SERVICE_CREDIT" ? "lượt" : (quota.unit || "lượt")}`;
 }
 
-function parseFeatureLimitEntries(plan) {
-  try {
-    const rawLimits = plan?.featureLimitJson;
-    const limits = typeof rawLimits === "string" ? JSON.parse(rawLimits) : rawLimits;
-    if (!limits || Array.isArray(limits) || typeof limits !== "object") return [];
-
-    return Object.entries(limits).flatMap(([key, limit]) => {
-      if (limit === null || limit === undefined || limit === "") return [];
-      const meta = FEATURE_LIMIT_LABELS[key] || {
-        title: key,
-        period: "trong gói",
-      };
-
-      return [{
-        id: `feature-${key}`,
-        title: meta.title,
-        amount: Number(limit).toLocaleString("vi-VN"),
-        unit: "lượt",
-        summary: meta.period,
-      }];
-    });
-  } catch {
-    return [];
-  }
-}
-
-function getPlanBenefitItems(plan) {
-  const featureItems = parseFeatureLimitEntries(plan);
-  if (featureItems.length) return featureItems;
-
+function getRealQuotaItems(plan) {
   return getPlanQuotas(plan).map((quota) => ({
     id: quota.id || quota.quotaId || quota.quotaCode,
     title: getQuotaTitle(quota),
@@ -96,13 +52,16 @@ function getPlanBenefitItems(plan) {
   }));
 }
 
-function getBackendQuotaNote(plan) {
-  const quotas = getPlanQuotas(plan);
-  if (!quotas.length) return "";
-  return quotas
-    .slice(0, 2)
-    .map((quota) => `${getQuotaTitle(quota)} ${getQuotaAmount(quota)}`)
-    .join(" · ");
+function QuotaChip({ item }) {
+  return (
+    <div className="subscription-quota-item">
+      <span className="subscription-quota-icon"><Gauge size={15} /></span>
+      <div className="subscription-quota-main">
+        <strong>{item.title}</strong>
+        <span>{item.amount} {item.unit} · {item.summary}</span>
+      </div>
+    </div>
+  );
 }
 
 export default function SubscriptionPlanTable({
@@ -134,8 +93,7 @@ export default function SubscriptionPlanTable({
       </div>
 
       {plans.map((plan) => {
-        const benefitItems = getPlanBenefitItems(plan);
-        const backendQuotaNote = getBackendQuotaNote(plan);
+        const realQuotaItems = getRealQuotaItems(plan);
         const isAssigning = assigningQuotaPlanId === plan.id;
 
         return (
@@ -162,21 +120,11 @@ export default function SubscriptionPlanTable({
             </div>
 
             <div className="subscription-plan-card-limits" role="cell">
-              {benefitItems.length ? (
-                <div className="subscription-quota-list" aria-label="Danh sách quyền lợi">
-                  {benefitItems.slice(0, 3).map((item) => (
-                    <div className="subscription-quota-item" key={item.id}>
-                      <span className="subscription-quota-icon"><Gauge size={15} /></span>
-                      <div className="subscription-quota-main">
-                        <strong>{item.title}</strong>
-                        <span>{item.amount} {item.unit} · {item.summary}</span>
-                      </div>
-                    </div>
+              {realQuotaItems.length ? (
+                <div className="subscription-quota-list" aria-label="Danh sách hạn mức thực tế khi mua gói">
+                  {realQuotaItems.map((item) => (
+                    <QuotaChip item={item} key={item.id} />
                   ))}
-                  {benefitItems.length > 3 && (
-                    <span className="subscription-quota-more">+{benefitItems.length - 3} quyền lợi khác</span>
-                  )}
-                  {backendQuotaNote && <small className="subscription-quota-backend">Quota backend: {backendQuotaNote}</small>}
                 </div>
               ) : (
                 <div className="subscription-quota-empty">

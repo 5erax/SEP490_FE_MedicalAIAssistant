@@ -3,35 +3,15 @@ import { Check, CreditCard, Gauge, ShieldAlert } from "lucide-react";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { Dialog } from "../ui";
 
-const DEFAULT_FEATURE_LIMITS = `{
-  "symptomAnalysisPerMonth": 30,
-  "aiChatPerDay": 20
-}`;
-
 const EMPTY_FORM = {
   planName: "",
   price: "",
   durationInDays: "30",
-  featureLimitJson: DEFAULT_FEATURE_LIMITS,
   isActive: "true",
-};
-
-const FEATURE_LIMIT_LABELS = {
-  symptomAnalysisPerMonth: "Phân tích triệu chứng / tháng",
-  aiChatPerDay: "Chat AI / ngày",
 };
 
 const DEFAULT_QUOTA_LIMIT = "10";
 const DEFAULT_QUOTA_RESET_PERIOD = "subscriptionCycle";
-
-function formatFeatureLimits(value) {
-  if (!value) return DEFAULT_FEATURE_LIMITS;
-  try {
-    return JSON.stringify(JSON.parse(value), null, 2);
-  } catch {
-    return value;
-  }
-}
 
 function toFormValue(plan) {
   if (!plan) return EMPTY_FORM;
@@ -39,7 +19,6 @@ function toFormValue(plan) {
     planName: plan.planName ?? "",
     price: plan.price ?? "",
     durationInDays: plan.durationInDays ?? "",
-    featureLimitJson: formatFeatureLimits(plan.featureLimitJson),
     isActive: String(Boolean(plan.isActive)),
   };
 }
@@ -57,61 +36,20 @@ function validate(form) {
     errors.durationInDays = "Thời hạn phải là số ngày nguyên dương.";
   }
 
-  if (form.featureLimitJson.trim()) {
-    try {
-      const parsed = JSON.parse(form.featureLimitJson);
-      if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
-        errors.featureLimitJson = "Giới hạn tính năng cần nhập theo dạng danh sách hợp lệ.";
-      }
-    } catch {
-      errors.featureLimitJson = "Giới hạn tính năng chưa đúng định dạng.";
-    }
-  }
-
   return errors;
 }
 
-function buildPayload(form) {
+// featureLimitJson isn't editable here anymore - it was never an enforced
+// limit, just marketing copy. Pass the plan's existing value through
+// unchanged so it doesn't regress the sales chatbot prompt that still reads it.
+function buildPayload(form, existingFeatureLimitJson) {
   return {
     planName: form.planName.trim(),
     price: Number(form.price),
     durationInDays: Number(form.durationInDays),
-    featureLimitJson: form.featureLimitJson.trim()
-      ? JSON.stringify(JSON.parse(form.featureLimitJson))
-      : null,
+    featureLimitJson: existingFeatureLimitJson ?? null,
     isActive: form.isActive === "true",
   };
-}
-
-function parseFeatureLimitEntries(value) {
-  try {
-    const parsed = value.trim() ? JSON.parse(value) : {};
-    if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") return [];
-    return Object.entries(parsed).map(([key, limit]) => ({
-      key,
-      limit: String(limit ?? ""),
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function stringifyFeatureLimitEntries(entries) {
-  const payload = entries.reduce((result, item) => {
-    const key = item.key.trim();
-    if (!key) return result;
-    const numericValue = Number(item.limit);
-    return {
-      ...result,
-      [key]: item.limit !== "" && !Number.isNaN(numericValue) ? numericValue : item.limit,
-    };
-  }, {});
-
-  return JSON.stringify(payload, null, 2);
-}
-
-function getFeatureLimitLabel(key) {
-  return FEATURE_LIMIT_LABELS[key] || key;
 }
 
 function getQuotaCode(quota) {
@@ -188,18 +126,10 @@ export default function SubscriptionPlanFormModal({
   const closeButtonRef = useRef(null);
   const formRef = useRef(null);
   const title = mode === "edit" ? "Cập nhật gói dịch vụ" : "Tạo gói dịch vụ";
-  const featureLimitEntries = parseFeatureLimitEntries(form.featureLimitJson);
 
   function update(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: "" }));
-  }
-
-  function updateFeatureLimit(index, key, value) {
-    const nextEntries = featureLimitEntries.map((item, itemIndex) => (
-      itemIndex === index ? { ...item, [key]: value } : item
-    ));
-    update("featureLimitJson", stringifyFeatureLimitEntries(nextEntries));
   }
 
   function updateQuotaRow(index, key, value) {
@@ -223,7 +153,7 @@ export default function SubscriptionPlanFormModal({
       focusFirstInvalidField(formRef, nextErrors);
       return;
     }
-    onSubmit(buildPayload(form), {
+    onSubmit(buildPayload(form, plan?.featureLimitJson), {
       quotaUpdates: mode === "edit" ? buildQuotaUpdates(quotaRows, quotaCatalog) : [],
     });
   }
@@ -325,52 +255,6 @@ export default function SubscriptionPlanFormModal({
                   <option value="false">Tạm ẩn</option>
                 </select>
               </label>
-            </div>
-          </section>
-
-          <section className="subscription-form-card subscription-limits-card">
-            <div className="subscription-form-card-head">
-              <span aria-hidden="true"><Gauge size={20} /></span>
-              <div>
-                <h3>Hạn mức sử dụng</h3>
-                <p>Quyền lợi chính được hiển thị cho người dùng khi xem gói.</p>
-              </div>
-            </div>
-
-            <div
-              className={`subscription-limit-editor ${errors.featureLimitJson ? "subscription-field-error" : ""}`}
-              data-error-field="featureLimitJson"
-              tabIndex={errors.featureLimitJson ? -1 : undefined}
-              aria-invalid={errors.featureLimitJson ? "true" : undefined}
-              aria-describedby="subscription-feature-help"
-            >
-              <div className="subscription-limit-editor-head">
-                <span>Quyền lợi trong gói</span>
-              </div>
-
-              <div className="subscription-limit-editor-list">
-                {featureLimitEntries.map((item, index) => (
-                  <article className="subscription-limit-editor-row" key={`${item.key}-${index}`}>
-                    <div className="subscription-limit-name">
-                      <span>Quyền lợi</span>
-                      <strong>{getFeatureLimitLabel(item.key)}</strong>
-                    </div>
-                    <label className="clean-field">
-                      <span>Số lượt</span>
-                      <input
-                        name={`featureLimit.${index}.limit`}
-                        value={item.limit}
-                        onChange={(event) => updateFeatureLimit(index, "limit", event.target.value)}
-                        placeholder="Ví dụ: 30"
-                      />
-                    </label>
-                  </article>
-                ))}
-              </div>
-
-              <small id="subscription-feature-help" role={errors.featureLimitJson ? "alert" : undefined}>
-                {errors.featureLimitJson || "Các thay đổi sẽ được lưu cùng gói khi bấm nút lưu bên dưới."}
-              </small>
             </div>
           </section>
 
