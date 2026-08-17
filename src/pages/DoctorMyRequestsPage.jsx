@@ -26,7 +26,6 @@ const STATUS_TABS = [
   { value: "", label: "Tất cả" },
   { value: "assigned", label: "Đã nhận" },
   { value: "inReview", label: "Đang xem xét" },
-  { value: "needMoreInformation", label: "Cần bổ sung" },
   { value: "published", label: "Đã xuất bản" },
   { value: "rejected", label: "Đã từ chối" },
   { value: "cancelled", label: "Đã hủy" },
@@ -63,7 +62,7 @@ function getNextStepHint(request) {
   if (status === "assigned") return "Tiếp theo: Bắt đầu xem xét";
   if (status === "inReview" && !recoveryPlanId) return "Tiếp theo: Tạo kế hoạch";
   if (status === "inReview" && recoveryPlanStatus === "draft") return "Tiếp theo: Tiếp tục soạn kế hoạch";
-  if (status === "needMoreInformation") return "Đang chờ bệnh nhân bổ sung thông tin";
+  if (status === "needMoreInformation") return "Yêu cầu thuộc quy trình cũ cần xử lý";
   if (status === "published") return "Đã gửi kế hoạch tới bệnh nhân";
   return null;
 }

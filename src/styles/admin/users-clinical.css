@@ -215,9 +215,8 @@
 }
 
 .admin-operator .admin-users-search-control:focus-within {
-  border-color: var(--users-teal);
-  outline: 3px solid rgba(13, 119, 115, 0.18);
-  outline-offset: 1px;
+  border-color: #a9bfba;
+  outline: none;
 }
 
 .admin-operator .admin-users-search-control input {

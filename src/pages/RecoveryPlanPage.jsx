@@ -84,6 +84,24 @@ const RECOVERY_PLAN_CANCELLATION_REASONS = [
 ];
 const BLOCKING_REQUEST_STATUSES = ["waitingForDoctor", "assigned", "inReview", "needMoreInformation"];
 const BLOCKING_PLAN_STATUSES = ["readyToStart", "active"];
+const PROFILE_READINESS_CODES = new Set([
+  "PATIENT_PROFILE_REQUIRED",
+  "HEIGHT_REQUIRED",
+  "HEIGHT_INVALID",
+  "WEIGHT_REQUIRED",
+  "WEIGHT_INVALID",
+]);
+const READINESS_MESSAGES = {
+  PATIENT_PROFILE_REQUIRED: "Bạn cần hoàn thành hồ sơ y tế trước khi gửi yêu cầu.",
+  HEIGHT_REQUIRED: "Vui lòng cập nhật chiều cao trong hồ sơ y tế.",
+  HEIGHT_INVALID: "Chiều cao trong hồ sơ y tế chưa hợp lệ.",
+  WEIGHT_REQUIRED: "Vui lòng cập nhật cân nặng trong hồ sơ y tế.",
+  WEIGHT_INVALID: "Cân nặng trong hồ sơ y tế chưa hợp lệ.",
+  DISEASE_GROUP_REQUIRED: "Chọn nhóm bệnh cần hỗ trợ.",
+  DISEASE_GROUP_INVALID: "Nhóm bệnh đã chọn không hợp lệ.",
+  REQUEST_NOTE_REQUIRED: "Nhập thông tin bạn muốn bác sĩ lưu ý.",
+  REQUEST_NOTE_TOO_LONG: "Nội dung không được vượt quá 2.000 ký tự.",
+};
 
 function getCancellationReasonLabel(code) {
   return RECOVERY_PLAN_CANCELLATION_REASONS.find((item) => item.value === code)?.label ?? code ?? "Không rõ lý do";
@@ -166,10 +184,41 @@ function getRecoveryError(error, fallback) {
   if (code === "RECOVERY_PLAN_WORKFLOW_ALREADY_ACTIVE") {
     return { code, message: "Bạn đang có một yêu cầu hoặc kế hoạch phục hồi chưa kết thúc." };
   }
+  if (code === "RECOVERY_PLAN_REQUEST_NOT_READY") {
+    return { code, action: "profile", message: "Hồ sơ y tế hoặc thông tin yêu cầu chưa đủ. Vui lòng kiểm tra lại." };
+  }
   if (code === "RECOVERY_PLAN_NOT_CANCELLABLE") {
     return { code, message: "Kế hoạch này không còn ở trạng thái có thể hủy." };
   }
   return { code, message: fallback };
+}
+
+function getReadinessMessage(issue) {
+  return READINESS_MESSAGES[issue?.code] ?? "Thông tin yêu cầu chưa đủ. Vui lòng kiểm tra lại.";
+}
+
+function mapReadinessIssues(issues = []) {
+  const nextErrors = {};
+  const profileIssues = [];
+
+  issues.forEach((issue) => {
+    const message = getReadinessMessage(issue);
+    if (issue?.code === "DISEASE_GROUP_REQUIRED" || issue?.code === "DISEASE_GROUP_INVALID") {
+      nextErrors.diseaseGroup = message;
+      return;
+    }
+    if (issue?.code === "REQUEST_NOTE_REQUIRED" || issue?.code === "REQUEST_NOTE_TOO_LONG") {
+      nextErrors.requestNote = message;
+      return;
+    }
+    if (PROFILE_READINESS_CODES.has(issue?.code)) {
+      profileIssues.push(message);
+      return;
+    }
+    profileIssues.push(message);
+  });
+
+  return { errors: nextErrors, profileIssues };
 }
 
 function Pagination({ label, page, onChange, loading }) {
@@ -281,6 +330,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [profileReadinessIssues, setProfileReadinessIssues] = useState([]);
   const submissionRef = useRef(null);
   const errorSummaryRef = useRef(null);
   const noteRef = useRef(null);
@@ -318,9 +368,11 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
     const nextErrors = {};
     const trimmedNote = requestNote.trim();
     if (!diseaseGroup) nextErrors.diseaseGroup = "Chọn nhóm bệnh cần hỗ trợ.";
-    if (trimmedNote.length > 2000) nextErrors.requestNote = "Nội dung không được vượt quá 2.000 ký tự.";
+    if (!trimmedNote) nextErrors.requestNote = "Nhập thông tin bạn muốn bác sĩ lưu ý.";
+    else if (trimmedNote.length > 2000) nextErrors.requestNote = "Nội dung không được vượt quá 2.000 ký tự.";
     setErrors(nextErrors);
     setSubmitError(null);
+    setProfileReadinessIssues([]);
     if (Object.keys(nextErrors).length) {
       window.setTimeout(() => errorSummaryRef.current?.focus(), 0);
       return;
@@ -330,7 +382,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       diseaseGroup,
       treatmentJourneyId: null,
       primaryLabTestSessionId: null,
-      requestNote: trimmedNote || null,
+      requestNote: trimmedNote,
     };
     const signature = JSON.stringify(payload);
     if (!submissionRef.current || submissionRef.current.signature !== signature) {
@@ -339,10 +391,26 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
 
     setSubmitting(true);
     try {
+      const readinessResponse = await recoveryPlanRequestsApi.readiness({ diseaseGroup, requestNote: trimmedNote });
+      const readiness = readinessResponse?.data;
+      if (readiness?.isReady !== true) {
+        const mappedReadiness = mapReadinessIssues(readiness?.issues ?? []);
+        setErrors(mappedReadiness.errors);
+        setProfileReadinessIssues(mappedReadiness.profileIssues);
+        setSubmitError({
+          code: "RECOVERY_PLAN_REQUEST_NOT_READY",
+          action: mappedReadiness.profileIssues.length ? "profile" : undefined,
+          message: "Hồ sơ y tế hoặc thông tin yêu cầu chưa đủ. Vui lòng kiểm tra lại.",
+        });
+        window.setTimeout(() => errorSummaryRef.current?.focus(), 0);
+        return;
+      }
+
       const response = await recoveryPlanRequestsApi.create(payload, submissionRef.current.key);
       submissionRef.current = null;
       setDiseaseGroup("");
       setRequestNote("");
+      setProfileReadinessIssues([]);
       await onCreated(response?.data);
     } catch (error) {
       const mapped = getRecoveryError(error, "Chưa thể gửi yêu cầu. Bạn có thể thử lại mà không tạo yêu cầu trùng.");
@@ -379,6 +447,18 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             </ul>
           </div>
         )}
+        {profileReadinessIssues.length > 0 && (
+          <div className="recovery-profile-readiness" role="alert">
+            <div className="recovery-form-warning">
+              <Info size={18} aria-hidden="true" />
+              <span>Hồ sơ y tế cần được cập nhật trước khi gửi yêu cầu.</span>
+            </div>
+            <ul>
+              {profileReadinessIssues.map((message) => <li key={message}>{message}</li>)}
+            </ul>
+            <Button type="button" tone="secondary" onClick={() => navigate("/profile")}>Cập nhật hồ sơ y tế</Button>
+          </div>
+        )}
         <label className="recovery-field recovery-disease-field" htmlFor="recovery-diseaseGroup">
           <span><b className="recovery-field-step" aria-hidden="true">1</b> Nhóm bệnh <span className="recovery-required-marker" aria-hidden="true">*</span><span className="sr-only"> (bắt buộc)</span></span>
           <select
@@ -403,7 +483,13 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
         <div className="recovery-field recovery-note-field">
-          <label htmlFor="recovery-requestNote"><span><b className="recovery-field-step" aria-hidden="true">2</b> Thông tin bạn muốn bác sĩ lưu ý</span></label>
+          <label htmlFor="recovery-requestNote">
+            <span>
+              <b className="recovery-field-step" aria-hidden="true">2</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
+              <span className="recovery-required-marker" aria-hidden="true">*</span>
+              <span className="sr-only"> (bắt buộc)</span>
+            </span>
+          </label>
           <div className="recovery-note-editor">
             <div className="recovery-note-toolbar" role="toolbar" aria-label="Định dạng nội dung ghi chú">
               <button type="button" aria-label="In đậm đoạn đã chọn" disabled={disabled} onClick={() => updateNoteFromToolbar((text) => `**${text}**`, "nội dung quan trọng")}><Bold size={16} aria-hidden="true" /></button>
@@ -417,6 +503,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
               id="recovery-requestNote"
               rows="5"
               maxLength="2000"
+              required
               placeholder="Ví dụ: Tôi vẫn còn đau khi đi lại lâu và muốn biết những hoạt động nào nên hạn chế…"
               value={requestNote}
               disabled={disabled}
@@ -446,39 +533,19 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
         {submitError?.action === "purchase" && (
           <Button tone="secondary" onClick={() => navigate("/pricing?returnTo=%2Frecovery-plan")}>Xem gói dịch vụ</Button>
         )}
+        {submitError?.action === "profile" && profileReadinessIssues.length === 0 && (
+          <Button type="button" tone="secondary" onClick={() => navigate("/profile")}>Cập nhật hồ sơ y tế</Button>
+        )}
       </form>
     </section>
   );
 }
 
-function RequestDetail({ request, loading, onCancel, onProvideInformation, busy }) {
-  const [additionalInformation, setAdditionalInformation] = useState(() => request?.requestNote ?? "");
-  const [informationError, setInformationError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
+function RequestDetail({ request, loading, onCancel, busy }) {
   if (loading) return <LoadingState label="Đang tải chi tiết yêu cầu…" />;
   if (!request) return null;
   const canCancel = CANCELLABLE_REQUEST_STATUSES.has(request.status);
   const needsInformation = request.status === "needMoreInformation";
-
-  async function submitInformation(event) {
-    event.preventDefault();
-    const trimmed = additionalInformation.trim();
-    if (!trimmed) {
-      setInformationError("Nhập thông tin bạn muốn gửi bổ sung.");
-      return;
-    }
-    if (trimmed.length > 2000) {
-      setInformationError("Nội dung không được vượt quá 2.000 ký tự.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await onProvideInformation(request.id, trimmed);
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   return (
     <article className="recovery-detail-card">
@@ -497,30 +564,10 @@ function RequestDetail({ request, loading, onCancel, onProvideInformation, busy 
       </dl>
 
       {needsInformation && (
-        <form className="recovery-information-form" onSubmit={submitInformation} noValidate>
-          <div className="recovery-form-warning">
-            <Info size={18} aria-hidden="true" />
-            <span>Nội dung gửi đi sẽ thay thế phần ghi chú hiện tại, không tạo thành chuỗi trò chuyện.</span>
-          </div>
-          <label className="recovery-field" htmlFor={`recovery-information-${request.id}`}>
-            <span>Thông tin bổ sung <small>(bắt buộc)</small></span>
-            <textarea
-              id={`recovery-information-${request.id}`}
-              rows="4"
-              maxLength="2000"
-              required
-              value={additionalInformation}
-              aria-invalid={Boolean(informationError) || undefined}
-              aria-describedby={informationError ? `recovery-information-error-${request.id}` : undefined}
-              onChange={(event) => {
-                setAdditionalInformation(event.target.value);
-                setInformationError("");
-              }}
-            />
-            {informationError && <small id={`recovery-information-error-${request.id}`} className="recovery-field-error">{informationError}</small>}
-          </label>
-          <Button type="submit" loading={submitting} loadingLabel="Đang gửi…">Gửi thông tin bổ sung</Button>
-        </form>
+        <div className="recovery-form-warning">
+          <Info size={18} aria-hidden="true" />
+          <span>Yêu cầu này thuộc quy trình bổ sung thông tin trước đây. Luồng bổ sung thông tin đã ngừng sử dụng, bạn có thể hủy yêu cầu hiện tại và gửi yêu cầu mới nếu cần.</span>
+        </div>
       )}
 
       {canCancel && (
@@ -1326,22 +1373,6 @@ export default function RecoveryPlanPage() {
     }
   }
 
-  async function handleProvideInformation(requestId, additionalInformation) {
-    setActionBusy(true);
-    try {
-      const response = await recoveryPlanRequestsApi.provideInformation(requestId, additionalInformation);
-      setSelectedRequest(response?.data ?? selectedRequest);
-      showToast({ type: "success", title: "Đã gửi thông tin", message: "Yêu cầu đã được chuyển lại để xem xét." });
-      await loadRequests(requestPageNumber, requestId);
-    } catch (error) {
-      const mapped = getRecoveryError(error, "Chưa thể gửi thông tin bổ sung. Vui lòng thử lại.");
-      showToast({ type: "error", title: "Không thể gửi thông tin", message: mapped.message });
-      if (["INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) await loadRequests(requestPageNumber);
-    } finally {
-      setActionBusy(false);
-    }
-  }
-
   async function handleStart(planId) {
     setActionBusy(true);
     try {
@@ -1561,7 +1592,6 @@ export default function RecoveryPlanPage() {
                     loading={requestDetailLoading}
                     busy={actionBusy}
                     onCancel={handleCancel}
-                    onProvideInformation={handleProvideInformation}
                   />
                 </div>
               )}

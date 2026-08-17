@@ -91,7 +91,16 @@ async function prepareRecoveryPage(page, options = {}) {
     reservedCount: 0,
     remainingCount: 2,
   };
-  const calls = { createBody: null, idempotencyKey: "", provideBody: null, cancelled: false, started: false, cancelPlanBody: null };
+  const calls = {
+    readinessBody: null,
+    readinessCalls: 0,
+    createBody: null,
+    createCalls: 0,
+    idempotencyKey: "",
+    cancelled: false,
+    started: false,
+    cancelPlanBody: null,
+  };
 
   await page.route("**/hubs/recovery-plans**", (route) => route.abort());
   await page.route("**/api/**", async (route) => {
@@ -110,9 +119,28 @@ async function prepareRecoveryPage(page, options = {}) {
       const filtered = statusFilter ? requests.filter((item) => item.status === statusFilter) : requests;
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { items: filtered, pageNumber: 1, pageSize: 10, totalCount: filtered.length, totalPages: 1 } }) });
     }
+    if (path === "/api/recovery-plan-requests/readiness" && method === "POST") {
+      calls.readinessCalls += 1;
+      calls.readinessBody = route.request().postDataJSON();
+      const data = options.readinessData ?? { isReady: true, issues: [] };
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data }) });
+    }
     if (path === "/api/recovery-plan-requests" && method === "POST") {
+      calls.createCalls += 1;
       calls.createBody = route.request().postDataJSON();
       calls.idempotencyKey = route.request().headers()["idempotency-key"];
+      if (options.createError) {
+        return route.fulfill({
+          status: options.createError.status ?? 400,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: false,
+            message: options.createError.message ?? "Request failed.",
+            data: null,
+            errors: [options.createError.code],
+          }),
+        });
+      }
       const created = request({ diseaseGroup: calls.createBody.diseaseGroup, requestNote: calls.createBody.requestNote });
       requests = [created, ...requests];
       quota = { ...quota, reservedCount: quota.reservedCount + 1, remainingCount: quota.remainingCount - 1 };
@@ -125,11 +153,6 @@ async function prepareRecoveryPage(page, options = {}) {
       calls.cancelled = true;
       requests = requests.map((item) => item.id === REQUEST_ID ? { ...item, status: "cancelled" } : item);
       quota = { ...quota, reservedCount: 0, remainingCount: quota.remainingCount + 1 };
-      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: requests[0] }) });
-    }
-    if (path === `/api/recovery-plan-requests/${REQUEST_ID}/provide-more-information`) {
-      calls.provideBody = route.request().postDataJSON();
-      requests = requests.map((item) => item.id === REQUEST_ID ? { ...item, status: "inReview", requestNote: calls.provideBody.additionalInformation } : item);
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: requests[0] }) });
     }
     if (path === "/api/recovery-plans/me") {
@@ -174,6 +197,12 @@ test("user creates a recovery request with quota and an idempotency key", async 
   await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
 
   await expect(page.getByText("Đang chờ bác sĩ", { exact: true }).first()).toBeVisible();
+  expect(calls.readinessCalls).toBe(1);
+  expect(calls.readinessBody).toEqual({
+    diseaseGroup: "respiratory",
+    requestNote: "Tôi muốn kế hoạch phục hồi 14 ngày.",
+  });
+  expect(calls.createCalls).toBe(1);
   expect(calls.createBody).toEqual({
     diseaseGroup: "respiratory",
     treatmentJourneyId: null,
@@ -196,6 +225,33 @@ test("user formats a recovery note with the accessible toolbar", async ({ page }
   expect(calls.createBody.requestNote).toBe("**Đau khi đi bộ**");
 });
 
+test("user cannot submit a recovery request without a note", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page);
+  await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
+  await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
+
+  await expect(page.locator("#recovery-requestNote-help")).toHaveText("Nhập thông tin bạn muốn bác sĩ lưu ý.");
+  expect(calls.readinessCalls).toBe(0);
+  expect(calls.createCalls).toBe(0);
+});
+
+test("readiness issues block request creation and link to the medical profile", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page, {
+    readinessData: {
+      isReady: false,
+      issues: [{ code: "HEIGHT_REQUIRED", field: "height", message: "Height is required." }],
+    },
+  });
+  await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
+  await page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý").fill("Tôi muốn kế hoạch phục hồi 14 ngày.");
+  await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
+
+  await expect(page.getByText("Vui lòng cập nhật chiều cao trong hồ sơ y tế.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Cập nhật hồ sơ y tế" })).toBeVisible();
+  expect(calls.readinessCalls).toBe(1);
+  expect(calls.createCalls).toBe(0);
+});
+
 test("recovery request form stays full-width above the workspace", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await prepareRecoveryPage(page);
@@ -210,19 +266,17 @@ test("recovery request form stays full-width above the workspace", async ({ page
   expect(formBox.y).toBeLessThan(mainBox.y);
   expect(formBox.x).toBeCloseTo(mainBox.x, 0);
   expect(formBox.width).toBeCloseTo(mainBox.width, 0);
-  expect(diseaseBox.x).toBeLessThan(noteBox.x);
+  expect(diseaseBox.x).toBeCloseTo(noteBox.x, 0);
+  expect(diseaseBox.y).toBeLessThan(noteBox.y);
   await expect(page.getByRole("list", { name: "Quy trình nhận kế hoạch phục hồi" })).toBeVisible();
 });
 
-test("user replaces the current note when more information is requested", async ({ page }) => {
-  const calls = await prepareRecoveryPage(page, { requests: [request({ status: "needMoreInformation" })] });
-  await expect(page.getByText("Nội dung gửi đi sẽ thay thế phần ghi chú hiện tại")).toBeVisible();
-  const field = page.getByLabel(/Thông tin bổ sung/);
-  await field.fill("Tôi đã cập nhật kết quả xét nghiệm mới nhất.");
-  await page.getByRole("button", { name: "Gửi thông tin bổ sung" }).click();
+test("legacy more-information requests render without the old patient submit form", async ({ page }) => {
+  await prepareRecoveryPage(page, { requests: [request({ status: "needMoreInformation" })] });
 
-  await expect(page.getByText("Đang xem xét", { exact: true }).first()).toBeVisible();
-  expect(calls.provideBody).toEqual({ additionalInformation: "Tôi đã cập nhật kết quả xét nghiệm mới nhất." });
+  await expect(page.getByText("Luồng bổ sung thông tin đã ngừng sử dụng")).toBeVisible();
+  await expect(page.getByLabel(/Thông tin bổ sung/)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gửi thông tin bổ sung" })).toHaveCount(0);
 });
 
 test("user reads and starts a published recovery plan", async ({ page }) => {

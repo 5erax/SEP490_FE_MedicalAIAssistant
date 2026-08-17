@@ -15,6 +15,13 @@ function withQuery(path, params = {}) {
 const authenticatedRequest = (path, options = {}) => apiRequest(path, { ...options, auth: true });
 
 export const recoveryPlanRequestsApi = {
+  readiness(payload) {
+    return authenticatedRequest(ENDPOINTS.RECOVERY_PLAN_REQUESTS.READINESS, {
+      method: "POST",
+      body: payload,
+    });
+  },
+
   create(payload, idempotencyKey) {
     return authenticatedRequest(ENDPOINTS.RECOVERY_PLAN_REQUESTS.BASE, {
       method: "POST",
@@ -38,13 +45,6 @@ export const recoveryPlanRequestsApi = {
   cancel(requestId) {
     return authenticatedRequest(ENDPOINTS.RECOVERY_PLAN_REQUESTS.CANCEL(requestId), {
       method: "POST",
-    });
-  },
-
-  provideInformation(requestId, additionalInformation) {
-    return authenticatedRequest(ENDPOINTS.RECOVERY_PLAN_REQUESTS.PROVIDE_INFORMATION(requestId), {
-      method: "POST",
-      body: { additionalInformation },
     });
   },
 };

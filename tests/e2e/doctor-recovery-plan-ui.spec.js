@@ -123,11 +123,6 @@ async function prepareDoctorPage(page, options = {}) {
         mineItems = mineItems.map((item) => (item.id === id ? { ...item, status: "rejected", ...calls.rejectBody } : item));
         return route.fulfill(ok(mineItems.find((item) => item.id === id)));
       }
-      if (sub === "/request-more-information" && method === "POST") {
-        calls.moreInfoBody = route.request().postDataJSON();
-        mineItems = mineItems.map((item) => (item.id === id ? { ...item, status: "needMoreInformation" } : item));
-        return route.fulfill(ok(mineItems.find((item) => item.id === id)));
-      }
       if (sub === "/plan" && method === "POST") {
         calls.createDraftBody = route.request().postDataJSON();
         plan = {
@@ -303,17 +298,25 @@ test.describe("doctor recovery plan workflow", () => {
     await expect(page.getByText("NOT_ELIGIBLE", { exact: true })).toHaveCount(0);
   });
 
-  test("requesting more information updates the request status", async ({ page }) => {
-    const calls = await prepareDoctorPage(page, { mineItems: [myRequest({ status: "inReview", reviewStartedAt: "2026-08-04T10:00:00Z" })] });
+  test("in-review requests no longer show the more information action", async ({ page }) => {
+    await prepareDoctorPage(page, { mineItems: [myRequest({ status: "inReview", reviewStartedAt: "2026-08-04T10:00:00Z" })] });
     await page.goto(`/app/staff/recovery-plan-requests/${REQUEST_ID}`, { waitUntil: "domcontentloaded" });
 
-    await page.getByRole("button", { name: "Yêu cầu bổ sung", exact: false }).first().click();
-    const dialog = page.getByRole("dialog");
-    await dialog.getByLabel("Nội dung cần bệnh nhân bổ sung").fill("Vui lòng bổ sung kết quả đo chức năng hô hấp gần nhất.");
-    await dialog.getByRole("button", { name: "Gửi yêu cầu" }).click();
+    await expect(page.getByText("Đang xem xét", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Yêu cầu bổ sung thông tin" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Tạo kế hoạch", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Trả lại hàng đợi", exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Từ chối yêu cầu", exact: false })).toBeVisible();
+  });
 
-    await expect(page.getByText("Cần bổ sung", { exact: true }).first()).toBeVisible();
-    expect(calls.moreInfoBody).toEqual({ reason: "Vui lòng bổ sung kết quả đo chức năng hô hấp gần nhất." });
+  test("legacy more-information requests render without the old doctor request action", async ({ page }) => {
+    await prepareDoctorPage(page, { mineItems: [myRequest({ status: "needMoreInformation" })] });
+    await page.goto(`/app/staff/recovery-plan-requests/${REQUEST_ID}`, { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText("Luồng bổ sung thông tin đã ngừng sử dụng")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Yêu cầu bổ sung thông tin" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Trả lại hàng đợi", exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Từ chối yêu cầu", exact: false })).toBeVisible();
   });
 
   test("doctor reviews a request, drafts a plan, and publishes it", async ({ page }) => {

@@ -571,25 +571,20 @@
 }
 
 .recovery-create-card {
-  padding: 26px 28px 28px;
+  padding: 28px;
   border-top: 3px solid var(--color-info);
   box-shadow: var(--shadow-card);
 }
 
 .recovery-create-card > form {
   display: grid;
-  grid-template-columns: minmax(230px, 0.7fr) minmax(420px, 1.5fr);
-  align-items: start;
-  column-gap: 20px;
-}
-
-.recovery-create-card .recovery-error-summary {
-  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  max-width: 100%;
 }
 
 .recovery-create-card .recovery-submit-row {
-  grid-column: 2;
-  align-self: end;
+  align-self: start;
   min-width: 0;
 }
 
@@ -656,10 +651,45 @@
   color: var(--color-muted);
 }
 
+.recovery-profile-readiness {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 18px;
+  align-items: center;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #f0b8ad;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff8f6 0%, #fffdfb 100%);
+}
+
+.recovery-profile-readiness .recovery-form-warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font-weight: 800;
+}
+
+.recovery-profile-readiness ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--color-danger);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.recovery-profile-readiness .ui-button {
+  justify-self: end;
+  white-space: nowrap;
+}
+
 .recovery-field {
   display: grid;
   gap: 7px;
-  margin-top: 18px;
+  margin-top: 0;
   font-size: 14px;
   font-weight: 750;
 }
@@ -708,7 +738,7 @@
   min-height: 48px;
   padding: 12px 14px;
   border: 1px solid var(--color-control-border);
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--color-surface);
   color: var(--color-ink);
   font: inherit;
@@ -725,7 +755,7 @@
 }
 
 .recovery-field textarea {
-  min-height: 104px;
+  min-height: 138px;
   resize: vertical;
 }
 
@@ -830,7 +860,7 @@
   margin-top: 18px;
   padding: 14px;
   border: 1px solid #f1b7b0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-danger-bg);
   color: var(--color-danger);
 }
@@ -845,12 +875,17 @@
 }
 
 .recovery-submit-row {
-  align-items: flex-end;
-  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 2px;
+  padding-top: 4px;
 }
 
 .recovery-submit-row > p {
   min-height: 22px;
+  margin: 0;
 }
 
 .recovery-split-view {
@@ -1527,12 +1562,19 @@
 
 @media (max-width: 760px) {
   .recovery-create-card > form,
-  .recovery-guidance-card ul {
+  .recovery-guidance-card ul,
+  .recovery-profile-readiness,
+  .recovery-submit-row {
     grid-template-columns: 1fr;
   }
 
   .recovery-create-card .recovery-submit-row {
     grid-column: 1;
+  }
+
+  .recovery-profile-readiness .ui-button,
+  .recovery-submit-row .ui-button {
+    justify-self: stretch;
   }
 }
 

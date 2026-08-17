@@ -204,10 +204,10 @@ export const ENDPOINTS = {
   },
   RECOVERY_PLAN_REQUESTS: {
     BASE: RECOVERY_PLAN_REQUESTS_BASE,
+    READINESS: `${RECOVERY_PLAN_REQUESTS_BASE}/readiness`,
     ME: `${RECOVERY_PLAN_REQUESTS_BASE}/me`,
     BY_ID: (requestId) => encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId),
     CANCEL: (requestId) => `${encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId)}/cancel`,
-    PROVIDE_INFORMATION: (requestId) => `${encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId)}/provide-more-information`,
   },
   RECOVERY_PLANS: {
     ME: `${RECOVERY_PLANS_BASE}/me`,
@@ -224,7 +224,6 @@ export const ENDPOINTS = {
     ACCEPT: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/accept`,
     START_REVIEW: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/start-review`,
     RELEASE: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/release`,
-    REQUEST_MORE_INFORMATION: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/request-more-information`,
     REJECT: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/reject`,
     CREATE_PLAN: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/plan`,
   },

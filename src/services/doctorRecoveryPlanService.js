@@ -54,13 +54,6 @@ export const doctorRecoveryPlanRequestsApi = {
     });
   },
 
-  requestMoreInformation(requestId, reason) {
-    return authenticatedRequest(ENDPOINTS.DOCTOR_RECOVERY_PLAN_REQUESTS.REQUEST_MORE_INFORMATION(requestId), {
-      method: "POST",
-      body: { reason },
-    });
-  },
-
   reject(requestId, rejectionReasonCode, rejectionReason) {
     return authenticatedRequest(ENDPOINTS.DOCTOR_RECOVERY_PLAN_REQUESTS.REJECT(requestId), {
       method: "POST",
