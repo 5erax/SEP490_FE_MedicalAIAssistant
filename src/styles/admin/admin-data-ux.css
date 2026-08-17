@@ -18,7 +18,7 @@
   .admin-operator .ui-table-wrap,
   .admin-operator .feedback-table-scroll,
   .admin-operator .subscription-plan-card-list {
-    max-height: min(62svh, 680px);
+    max-height: min(72svh, 780px);
     overflow: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
@@ -197,6 +197,102 @@
   border-color: #a42424;
   background: #fff4f2;
   color: #8f1717;
+}
+
+/* The account workspace keeps its context and controls visible without using
+ * most of the first viewport. The space recovered here is intentionally given
+ * back to the dataset below. */
+@media (min-width: 769px) {
+  .admin-operator .admin-users-panel {
+    gap: 12px;
+  }
+
+  .admin-operator .admin-users-heading {
+    align-items: center;
+    gap: 20px;
+    border-radius: 18px;
+    padding: 18px 24px;
+  }
+
+  .admin-operator .admin-users-heading::after {
+    right: -118px;
+    bottom: -180px;
+  }
+
+  .admin-operator .admin-users-heading-copy h2 {
+    margin-top: 4px;
+    font-size: clamp(28px, 2.6vw, 36px);
+    line-height: 1.05;
+  }
+
+  .admin-operator .admin-users-heading-copy > p:last-child {
+    max-width: 760px;
+    margin-top: 7px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .admin-operator .admin-users-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .admin-operator .admin-users-protection-note {
+    max-width: 190px;
+    line-height: 1.35;
+  }
+
+  .admin-operator .admin-users-filter-card {
+    gap: 12px;
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+
+  .admin-operator .admin-users-filter-heading {
+    align-items: center;
+    gap: 10px;
+  }
+
+  .admin-operator .admin-users-filter-heading > span {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .admin-operator .admin-users-filter-heading h3 {
+    font-size: 15px;
+  }
+
+  .admin-operator .admin-users-filter-heading p {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .admin-operator .admin-users-search-field {
+    gap: 5px;
+  }
+
+  .admin-operator .admin-users-search-control,
+  .admin-operator .admin-users-toolbar .custom-select-trigger {
+    min-height: 44px;
+  }
+
+  .admin-operator .admin-users-search-control input {
+    min-height: 42px;
+  }
+
+  .admin-operator .admin-users-result-summary {
+    gap: 7px;
+    padding-top: 10px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .admin-operator .admin-users-table {
+    max-height: min(74svh, 800px);
+  }
 }
 
 .admin-operator .admin-users-table .admin-user-delete-btn:not(:disabled):hover {
