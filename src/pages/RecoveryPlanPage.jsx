@@ -17,12 +17,14 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
+  Star,
   X,
   XCircle,
 } from "lucide-react";
 import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote";
+import RecoveryPlanFeedbackDialog from "../components/recovery/RecoveryPlanFeedbackDialog";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Button, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
+import { Button, CustomSelect, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getApiErrorCode } from "../services/apiError";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
@@ -35,6 +37,10 @@ import {
   ensureRecoveryPlanConnection,
   subscribeToRecoveryPlanEvents,
 } from "../services/recoveryPlanRealtime";
+import {
+  findLatestRecoveryPlanAwaitingFeedback,
+  recoveryPlanNeedsFeedback,
+} from "../utils/recoveryPlanFeedback";
 import "../styles/recovery-plan.css";
 import "../styles/formatted-recovery-note.css";
 
@@ -44,6 +50,10 @@ const DISEASE_GROUPS = [
   { value: "respiratory", label: "Hô hấp" },
   { value: "musculoskeletal", label: "Cơ xương khớp" },
   { value: "infectiousDisease", label: "Bệnh truyền nhiễm" },
+];
+const REQUEST_SORT_OPTIONS = [
+  { value: "desc", label: "Mới nhất trước" },
+  { value: "asc", label: "Cũ nhất trước" },
 ];
 const REQUEST_STATUS = {
   waitingForDoctor: { label: "Đang chờ bác sĩ", tone: "waiting" },
@@ -63,8 +73,6 @@ const PLAN_STATUS = {
   superseded: { label: "Đã thay thế", tone: "muted" },
 };
 const CANCELLABLE_PLAN_STATUSES = new Set(["readyToStart", "active"]);
-// Finished/inactive plans default to collapsed when shown in the plans
-// list, since only the current readyToStart/active plan is actionable.
 const HISTORICAL_PLAN_STATUSES = new Set(["cancelled", "completed", "superseded"]);
 const RECOVERY_PLAN_CANCELLATION_REASONS = [
   { value: "NO_LONGER_NEEDED", label: "Không còn cần thiết" },
@@ -74,11 +82,26 @@ const RECOVERY_PLAN_CANCELLATION_REASONS = [
   { value: "STARTING_OTHER_TREATMENT", label: "Bắt đầu phương pháp điều trị khác" },
   { value: "OTHER", label: "Lý do khác" },
 ];
-// Statuses that mean a user already has an open Recovery Plan workflow -
-// mirrors the backend's single-active-workflow rule so the UI can hide/
-// disable the "new request" form without waiting on a 409 first.
 const BLOCKING_REQUEST_STATUSES = ["waitingForDoctor", "assigned", "inReview", "needMoreInformation"];
 const BLOCKING_PLAN_STATUSES = ["readyToStart", "active"];
+const PROFILE_READINESS_CODES = new Set([
+  "PATIENT_PROFILE_REQUIRED",
+  "HEIGHT_REQUIRED",
+  "HEIGHT_INVALID",
+  "WEIGHT_REQUIRED",
+  "WEIGHT_INVALID",
+]);
+const READINESS_MESSAGES = {
+  PATIENT_PROFILE_REQUIRED: "Bạn cần hoàn thành hồ sơ y tế trước khi gửi yêu cầu.",
+  HEIGHT_REQUIRED: "Vui lòng cập nhật chiều cao trong hồ sơ y tế.",
+  HEIGHT_INVALID: "Chiều cao trong hồ sơ y tế chưa hợp lệ.",
+  WEIGHT_REQUIRED: "Vui lòng cập nhật cân nặng trong hồ sơ y tế.",
+  WEIGHT_INVALID: "Cân nặng trong hồ sơ y tế chưa hợp lệ.",
+  DISEASE_GROUP_REQUIRED: "Chọn nhóm bệnh cần hỗ trợ.",
+  DISEASE_GROUP_INVALID: "Nhóm bệnh đã chọn không hợp lệ.",
+  REQUEST_NOTE_REQUIRED: "Nhập thông tin bạn muốn bác sĩ lưu ý.",
+  REQUEST_NOTE_TOO_LONG: "Nội dung không được vượt quá 2.000 ký tự.",
+};
 
 function getCancellationReasonLabel(code) {
   return RECOVERY_PLAN_CANCELLATION_REASONS.find((item) => item.value === code)?.label ?? code ?? "Không rõ lý do";
@@ -116,6 +139,11 @@ function formatDate(value, includeTime = false) {
   return includeTime
     ? date.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })
     : date.toLocaleDateString("vi-VN");
+}
+
+function getTimeMs(value) {
+  const ms = new Date(value).getTime();
+  return Number.isNaN(ms) ? 0 : ms;
 }
 
 function getStatusDefinition(map, value) {
@@ -156,10 +184,41 @@ function getRecoveryError(error, fallback) {
   if (code === "RECOVERY_PLAN_WORKFLOW_ALREADY_ACTIVE") {
     return { code, message: "Bạn đang có một yêu cầu hoặc kế hoạch phục hồi chưa kết thúc." };
   }
+  if (code === "RECOVERY_PLAN_REQUEST_NOT_READY") {
+    return { code, action: "profile", message: "Hồ sơ y tế hoặc thông tin yêu cầu chưa đủ. Vui lòng kiểm tra lại." };
+  }
   if (code === "RECOVERY_PLAN_NOT_CANCELLABLE") {
     return { code, message: "Kế hoạch này không còn ở trạng thái có thể hủy." };
   }
   return { code, message: fallback };
+}
+
+function getReadinessMessage(issue) {
+  return READINESS_MESSAGES[issue?.code] ?? "Thông tin yêu cầu chưa đủ. Vui lòng kiểm tra lại.";
+}
+
+function mapReadinessIssues(issues = []) {
+  const nextErrors = {};
+  const profileIssues = [];
+
+  issues.forEach((issue) => {
+    const message = getReadinessMessage(issue);
+    if (issue?.code === "DISEASE_GROUP_REQUIRED" || issue?.code === "DISEASE_GROUP_INVALID") {
+      nextErrors.diseaseGroup = message;
+      return;
+    }
+    if (issue?.code === "REQUEST_NOTE_REQUIRED" || issue?.code === "REQUEST_NOTE_TOO_LONG") {
+      nextErrors.requestNote = message;
+      return;
+    }
+    if (PROFILE_READINESS_CODES.has(issue?.code)) {
+      profileIssues.push(message);
+      return;
+    }
+    profileIssues.push(message);
+  });
+
+  return { errors: nextErrors, profileIssues };
 }
 
 function Pagination({ label, page, onChange, loading }) {
@@ -271,6 +330,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [profileReadinessIssues, setProfileReadinessIssues] = useState([]);
   const submissionRef = useRef(null);
   const errorSummaryRef = useRef(null);
   const noteRef = useRef(null);
@@ -308,9 +368,11 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
     const nextErrors = {};
     const trimmedNote = requestNote.trim();
     if (!diseaseGroup) nextErrors.diseaseGroup = "Chọn nhóm bệnh cần hỗ trợ.";
-    if (trimmedNote.length > 2000) nextErrors.requestNote = "Nội dung không được vượt quá 2.000 ký tự.";
+    if (!trimmedNote) nextErrors.requestNote = "Nhập thông tin bạn muốn bác sĩ lưu ý.";
+    else if (trimmedNote.length > 2000) nextErrors.requestNote = "Nội dung không được vượt quá 2.000 ký tự.";
     setErrors(nextErrors);
     setSubmitError(null);
+    setProfileReadinessIssues([]);
     if (Object.keys(nextErrors).length) {
       window.setTimeout(() => errorSummaryRef.current?.focus(), 0);
       return;
@@ -320,7 +382,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       diseaseGroup,
       treatmentJourneyId: null,
       primaryLabTestSessionId: null,
-      requestNote: trimmedNote || null,
+      requestNote: trimmedNote,
     };
     const signature = JSON.stringify(payload);
     if (!submissionRef.current || submissionRef.current.signature !== signature) {
@@ -329,10 +391,26 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
 
     setSubmitting(true);
     try {
+      const readinessResponse = await recoveryPlanRequestsApi.readiness({ diseaseGroup, requestNote: trimmedNote });
+      const readiness = readinessResponse?.data;
+      if (readiness?.isReady !== true) {
+        const mappedReadiness = mapReadinessIssues(readiness?.issues ?? []);
+        setErrors(mappedReadiness.errors);
+        setProfileReadinessIssues(mappedReadiness.profileIssues);
+        setSubmitError({
+          code: "RECOVERY_PLAN_REQUEST_NOT_READY",
+          action: mappedReadiness.profileIssues.length ? "profile" : undefined,
+          message: "Hồ sơ y tế hoặc thông tin yêu cầu chưa đủ. Vui lòng kiểm tra lại.",
+        });
+        window.setTimeout(() => errorSummaryRef.current?.focus(), 0);
+        return;
+      }
+
       const response = await recoveryPlanRequestsApi.create(payload, submissionRef.current.key);
       submissionRef.current = null;
       setDiseaseGroup("");
       setRequestNote("");
+      setProfileReadinessIssues([]);
       await onCreated(response?.data);
     } catch (error) {
       const mapped = getRecoveryError(error, "Chưa thể gửi yêu cầu. Bạn có thể thử lại mà không tạo yêu cầu trùng.");
@@ -369,6 +447,18 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             </ul>
           </div>
         )}
+        {profileReadinessIssues.length > 0 && (
+          <div className="recovery-profile-readiness" role="alert">
+            <div className="recovery-form-warning">
+              <Info size={18} aria-hidden="true" />
+              <span>Hồ sơ y tế cần được cập nhật trước khi gửi yêu cầu.</span>
+            </div>
+            <ul>
+              {profileReadinessIssues.map((message) => <li key={message}>{message}</li>)}
+            </ul>
+            <Button type="button" tone="secondary" onClick={() => navigate("/profile")}>Cập nhật hồ sơ y tế</Button>
+          </div>
+        )}
         <label className="recovery-field recovery-disease-field" htmlFor="recovery-diseaseGroup">
           <span><b className="recovery-field-step" aria-hidden="true">1</b> Nhóm bệnh <span className="recovery-required-marker" aria-hidden="true">*</span><span className="sr-only"> (bắt buộc)</span></span>
           <select
@@ -393,7 +483,13 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
         <div className="recovery-field recovery-note-field">
-          <label htmlFor="recovery-requestNote"><span><b className="recovery-field-step" aria-hidden="true">2</b> Thông tin bạn muốn bác sĩ lưu ý</span></label>
+          <label htmlFor="recovery-requestNote">
+            <span>
+              <b className="recovery-field-step" aria-hidden="true">2</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
+              <span className="recovery-required-marker" aria-hidden="true">*</span>
+              <span className="sr-only"> (bắt buộc)</span>
+            </span>
+          </label>
           <div className="recovery-note-editor">
             <div className="recovery-note-toolbar" role="toolbar" aria-label="Định dạng nội dung ghi chú">
               <button type="button" aria-label="In đậm đoạn đã chọn" disabled={disabled} onClick={() => updateNoteFromToolbar((text) => `**${text}**`, "nội dung quan trọng")}><Bold size={16} aria-hidden="true" /></button>
@@ -407,6 +503,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
               id="recovery-requestNote"
               rows="5"
               maxLength="2000"
+              required
               placeholder="Ví dụ: Tôi vẫn còn đau khi đi lại lâu và muốn biết những hoạt động nào nên hạn chế…"
               value={requestNote}
               disabled={disabled}
@@ -436,39 +533,19 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
         {submitError?.action === "purchase" && (
           <Button tone="secondary" onClick={() => navigate("/pricing?returnTo=%2Frecovery-plan")}>Xem gói dịch vụ</Button>
         )}
+        {submitError?.action === "profile" && profileReadinessIssues.length === 0 && (
+          <Button type="button" tone="secondary" onClick={() => navigate("/profile")}>Cập nhật hồ sơ y tế</Button>
+        )}
       </form>
     </section>
   );
 }
 
-function RequestDetail({ request, loading, onCancel, onProvideInformation, busy }) {
-  const [additionalInformation, setAdditionalInformation] = useState(() => request?.requestNote ?? "");
-  const [informationError, setInformationError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
+function RequestDetail({ request, loading, onCancel, busy }) {
   if (loading) return <LoadingState label="Đang tải chi tiết yêu cầu…" />;
   if (!request) return null;
   const canCancel = CANCELLABLE_REQUEST_STATUSES.has(request.status);
   const needsInformation = request.status === "needMoreInformation";
-
-  async function submitInformation(event) {
-    event.preventDefault();
-    const trimmed = additionalInformation.trim();
-    if (!trimmed) {
-      setInformationError("Nhập thông tin bạn muốn gửi bổ sung.");
-      return;
-    }
-    if (trimmed.length > 2000) {
-      setInformationError("Nội dung không được vượt quá 2.000 ký tự.");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await onProvideInformation(request.id, trimmed);
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   return (
     <article className="recovery-detail-card">
@@ -487,30 +564,10 @@ function RequestDetail({ request, loading, onCancel, onProvideInformation, busy 
       </dl>
 
       {needsInformation && (
-        <form className="recovery-information-form" onSubmit={submitInformation} noValidate>
-          <div className="recovery-form-warning">
-            <Info size={18} aria-hidden="true" />
-            <span>Nội dung gửi đi sẽ thay thế phần ghi chú hiện tại, không tạo thành chuỗi trò chuyện.</span>
-          </div>
-          <label className="recovery-field" htmlFor={`recovery-information-${request.id}`}>
-            <span>Thông tin bổ sung <small>(bắt buộc)</small></span>
-            <textarea
-              id={`recovery-information-${request.id}`}
-              rows="4"
-              maxLength="2000"
-              required
-              value={additionalInformation}
-              aria-invalid={Boolean(informationError) || undefined}
-              aria-describedby={informationError ? `recovery-information-error-${request.id}` : undefined}
-              onChange={(event) => {
-                setAdditionalInformation(event.target.value);
-                setInformationError("");
-              }}
-            />
-            {informationError && <small id={`recovery-information-error-${request.id}`} className="recovery-field-error">{informationError}</small>}
-          </label>
-          <Button type="submit" loading={submitting} loadingLabel="Đang gửi…">Gửi thông tin bổ sung</Button>
-        </form>
+        <div className="recovery-form-warning">
+          <Info size={18} aria-hidden="true" />
+          <span>Yêu cầu này thuộc quy trình bổ sung thông tin trước đây. Luồng bổ sung thông tin đã ngừng sử dụng, bạn có thể hủy yêu cầu hiện tại và gửi yêu cầu mới nếu cần.</span>
+        </div>
       )}
 
       {canCancel && (
@@ -522,12 +579,78 @@ function RequestDetail({ request, loading, onCancel, onProvideInformation, busy 
   );
 }
 
-export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, busy }) {
+function RecoveryPlanFeedbackSummary({ plan, onFeedback }) {
+  if (plan?.status !== "completed") return null;
+
+  const needsFeedback = recoveryPlanNeedsFeedback(plan);
+  const submitted = Boolean(plan.feedbackSubmittedAt);
+  const rating = Number(plan.feedbackRating);
+  const validRating = Number.isInteger(rating) && rating >= 1 && rating <= 5;
+
+  return (
+    <section className="recovery-completion-feedback" aria-labelledby={`recovery-feedback-summary-${plan.id}`}>
+      <div className="recovery-completion-feedback__heading">
+        <div>
+          <p className="recovery-eyebrow">Hoàn tất kế hoạch</p>
+          <h4 id={`recovery-feedback-summary-${plan.id}`}>Kế hoạch đã hoàn thành</h4>
+        </div>
+        <CalendarCheck size={22} aria-hidden="true" />
+      </div>
+
+      <dl className="recovery-completion-feedback__meta">
+        <div>
+          <dt>Hoàn thành</dt>
+          <dd>{formatDate(plan.completedAt || plan.endDate, true)}</dd>
+        </div>
+        {submitted && (
+          <div>
+            <dt>Đánh giá lúc</dt>
+            <dd>{formatDate(plan.feedbackSubmittedAt, true)}</dd>
+          </div>
+        )}
+      </dl>
+
+      {submitted ? (
+        <div className="recovery-completion-feedback__submitted">
+          <div className="recovery-completion-feedback__rating" aria-label={validRating ? `Bạn đã đánh giá ${rating} trên 5 sao` : "Bạn đã gửi đánh giá"}>
+            <span aria-hidden="true">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <Star key={value} size={19} className={validRating && value <= rating ? "is-filled" : ""} />
+              ))}
+            </span>
+            <strong>{validRating ? `${rating}/5` : "Đã gửi đánh giá"}</strong>
+          </div>
+          {plan.feedbackNote && (
+            <div className="recovery-completion-feedback__note">
+              <strong>Ghi chú của bạn</strong>
+              <p>{plan.feedbackNote}</p>
+            </div>
+          )}
+        </div>
+      ) : needsFeedback ? (
+        <div className="recovery-completion-feedback__pending">
+          <div>
+            <strong>Bạn chưa đánh giá kế hoạch này.</strong>
+            <p>Chia sẻ mức độ hài lòng sau khi hoàn thành để phản hồi trải nghiệm của bạn.</p>
+          </div>
+          <Button type="button" tone="secondary" onClick={() => onFeedback?.(plan)}>
+            <Star size={17} aria-hidden="true" /> Đánh giá kế hoạch
+          </Button>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedback, busy }) {
   const isHistorical = plan ? HISTORICAL_PLAN_STATUSES.has(plan.status) : false;
-  const [collapsed, setCollapsed] = useState(isHistorical);
+  const shouldCollapseInitially = isHistorical && !recoveryPlanNeedsFeedback(plan);
+  const [collapsed, setCollapsed] = useState(shouldCollapseInitially);
 
   useEffect(() => {
-    queueMicrotask(() => setCollapsed(plan ? HISTORICAL_PLAN_STATUSES.has(plan.status) : false));
+    queueMicrotask(() => setCollapsed(
+      plan ? HISTORICAL_PLAN_STATUSES.has(plan.status) && !recoveryPlanNeedsFeedback(plan) : false,
+    ));
   }, [plan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return <LoadingState label="Đang tải nội dung kế hoạch…" />;
@@ -537,7 +660,7 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, busy })
   const canCancel = Boolean(onCancel) && CANCELLABLE_PLAN_STATUSES.has(plan.status);
 
   function toggleCollapsed() {
-    if (collapsed) onExpand?.(); // was collapsed, now expanding
+    if (collapsed) onExpand?.();
     setCollapsed((current) => !current);
   }
 
@@ -564,104 +687,106 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, busy })
 
       {(!isHistorical || !collapsed) && (
         <>
-      <p className="recovery-plan-summary">{plan.summary || "Nội dung tổng quan sẽ được cập nhật trong kế hoạch."}</p>
-      <dl className="recovery-detail-grid">
-        <div><dt>Thời lượng</dt><dd>{plan.durationDays || 0} ngày</dd></div>
-        <div><dt>Thời gian thực hiện</dt><dd>{plan.startDate ? `${formatDate(plan.startDate)} – ${formatDate(plan.endDate)}` : "Bắt đầu khi bạn sẵn sàng"}</dd></div>
-        {plan.recheckInstruction && <div className="recovery-detail-wide"><dt>Hướng dẫn tái khám</dt><dd>{plan.recheckInstruction}</dd></div>}
-      </dl>
-
-      {plan.status === "cancelled" && (
-        <section className="recovery-cancellation-detail">
-          <strong>Kế hoạch đã được hủy</strong>
-          <dl>
-            <div>
-              <dt>Thời điểm hủy</dt>
-              <dd>{formatDate(plan.cancelledAt, true)}</dd>
-            </div>
-            <div>
-              <dt>Lý do</dt>
-              <dd>{getCancellationReasonLabel(plan.cancellationReasonCode)}</dd>
-            </div>
-            {plan.cancellationReason && (
-              <div>
-                <dt>Ghi chú</dt>
-                <dd>{plan.cancellationReason}</dd>
-              </div>
-            )}
+          <p className="recovery-plan-summary">{plan.summary || "Nội dung tổng quan sẽ được cập nhật trong kế hoạch."}</p>
+          <dl className="recovery-detail-grid">
+            <div><dt>Thời lượng</dt><dd>{plan.durationDays || 0} ngày</dd></div>
+            <div><dt>Thời gian thực hiện</dt><dd>{plan.startDate ? `${formatDate(plan.startDate)} – ${formatDate(plan.endDate)}` : "Bắt đầu khi bạn sẵn sàng"}</dd></div>
+            {plan.recheckInstruction && <div className="recovery-detail-wide"><dt>Hướng dẫn tái khám</dt><dd>{plan.recheckInstruction}</dd></div>}
           </dl>
-        </section>
-      )}
 
-      {canStart && (
-        <div className="recovery-start-card">
-          <CalendarCheck size={22} aria-hidden="true" />
-          <div><strong>Sẵn sàng bắt đầu?</strong><p>Ngày bắt đầu và kết thúc sẽ được tính theo múi giờ trong tài khoản của bạn.</p></div>
-          <Button loading={busy} loadingLabel="Đang bắt đầu…" onClick={() => onStart(plan.id)}>Bắt đầu kế hoạch</Button>
-        </div>
-      )}
-
-      {phases.length > 0 && (
-        <section className="recovery-phases" aria-labelledby="recovery-phases-title">
-          <div className="recovery-section-heading">
-            <div><p className="recovery-eyebrow">Lộ trình</p><h4 id="recovery-phases-title">Các giai đoạn thực hiện</h4></div>
-            <span>{phases.length} giai đoạn</span>
-          </div>
-          <div className="recovery-phase-list">
-            {phases.map((phase, index) => (
-              <article className="recovery-phase-card" key={phase.id}>
-                <header>
-                  <span className="recovery-phase-step" aria-hidden="true">{index + 1}</span>
-                  <div className="recovery-phase-heading">
-                    <span>Ngày {phase.startDay}–{phase.endDay}</span>
-                    <h5>{phase.phaseName}</h5>
-                  </div>
-                </header>
-                {phase.instruction && <p>{phase.instruction}</p>}
-                <dl className="recovery-phase-rest">
-                  {phase.sleepAndRestHoursPerDay != null && (
-                    <div><dt>Ngủ nghỉ</dt><dd>{phase.sleepAndRestHoursPerDay} giờ/ngày</dd></div>
-                  )}
-                </dl>
-                {(phase.nutrientTargets ?? []).length > 0 && (
-                  <div className="recovery-nutrients">
-                    <p className="recovery-subsection-label">Dinh dưỡng gợi ý</p>
-                    <div className="recovery-nutrient-list">
-                      {(phase.nutrientTargets ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((nutrient) => (
-                        <div className="recovery-nutrient" key={nutrient.id}>
-                          <div><span>{nutrient.nutrientName}</span><b>{nutrient.amountPerDay} {nutrient.unit}/ngày</b></div>
-                          {nutrient.instruction && <p>{nutrient.instruction}</p>}
-                          {(nutrient.foodSources ?? []).length > 0 && (
-                            <>
-                              <p className="recovery-food-list-label">Bạn có thể lựa chọn một trong các thực phẩm sau:</p>
-                              <ul className="recovery-food-list">
-                                {(nutrient.foodSources ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
-                                  <li className="recovery-food-item" key={food.id}>
-                                    <strong>{food.foodName}</strong>
-                                    {(food.suggestedServing || food.note) && (
-                                      <span>{[food.suggestedServing, food.note].filter(Boolean).join(" — ")}</span>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+          {plan.status === "cancelled" && (
+            <section className="recovery-cancellation-detail">
+              <strong>Kế hoạch đã được hủy</strong>
+              <dl>
+                <div>
+                  <dt>Thời điểm hủy</dt>
+                  <dd>{formatDate(plan.cancelledAt, true)}</dd>
+                </div>
+                <div>
+                  <dt>Lý do</dt>
+                  <dd>{getCancellationReasonLabel(plan.cancellationReasonCode)}</dd>
+                </div>
+                {plan.cancellationReason && (
+                  <div>
+                    <dt>Ghi chú</dt>
+                    <dd>{plan.cancellationReason}</dd>
                   </div>
                 )}
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+              </dl>
+            </section>
+          )}
 
-      {canCancel && (
-        <footer className="recovery-detail-actions">
-          <Button tone="danger" disabled={busy} onClick={() => onCancel(plan)}>Hủy kế hoạch</Button>
-        </footer>
-      )}
+          <RecoveryPlanFeedbackSummary plan={plan} onFeedback={onFeedback} />
+
+          {canStart && (
+            <div className="recovery-start-card">
+              <CalendarCheck size={22} aria-hidden="true" />
+              <div><strong>Sẵn sàng bắt đầu?</strong><p>Ngày bắt đầu và kết thúc sẽ được tính theo múi giờ trong tài khoản của bạn.</p></div>
+              <Button loading={busy} loadingLabel="Đang bắt đầu…" onClick={() => onStart(plan.id)}>Bắt đầu kế hoạch</Button>
+            </div>
+          )}
+
+          {phases.length > 0 && (
+            <section className="recovery-phases" aria-labelledby={`recovery-phases-title-${plan.id}`}>
+              <div className="recovery-section-heading">
+                <div><p className="recovery-eyebrow">Lộ trình</p><h4 id={`recovery-phases-title-${plan.id}`}>Các giai đoạn thực hiện</h4></div>
+                <span>{phases.length} giai đoạn</span>
+              </div>
+              <div className="recovery-phase-list">
+                {phases.map((phase, index) => (
+                  <article className="recovery-phase-card" key={phase.id}>
+                    <header>
+                      <span className="recovery-phase-step" aria-hidden="true">{index + 1}</span>
+                      <div className="recovery-phase-heading">
+                        <span>Ngày {phase.startDay}–{phase.endDay}</span>
+                        <h5>{phase.phaseName}</h5>
+                      </div>
+                    </header>
+                    {phase.instruction && <p>{phase.instruction}</p>}
+                    <dl className="recovery-phase-rest">
+                      {phase.sleepAndRestHoursPerDay != null && (
+                        <div><dt>Ngủ nghỉ</dt><dd>{phase.sleepAndRestHoursPerDay} giờ/ngày</dd></div>
+                      )}
+                    </dl>
+                    {(phase.nutrientTargets ?? []).length > 0 && (
+                      <div className="recovery-nutrients">
+                        <p className="recovery-subsection-label">Dinh dưỡng gợi ý</p>
+                        <div className="recovery-nutrient-list">
+                          {(phase.nutrientTargets ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((nutrient) => (
+                            <div className="recovery-nutrient" key={nutrient.id}>
+                              <div><span>{nutrient.nutrientName}</span><b>{nutrient.amountPerDay} {nutrient.unit}/ngày</b></div>
+                              {nutrient.instruction && <p>{nutrient.instruction}</p>}
+                              {(nutrient.foodSources ?? []).length > 0 && (
+                                <>
+                                  <p className="recovery-food-list-label">Bạn có thể lựa chọn một trong các thực phẩm sau:</p>
+                                  <ul className="recovery-food-list">
+                                    {(nutrient.foodSources ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
+                                      <li className="recovery-food-item" key={food.id}>
+                                        <strong>{food.foodName}</strong>
+                                        {(food.suggestedServing || food.note) && (
+                                          <span>{[food.suggestedServing, food.note].filter(Boolean).join(" — ")}</span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {canCancel && (
+            <footer className="recovery-detail-actions">
+              <Button tone="danger" disabled={busy} onClick={() => onCancel(plan)}>Hủy kế hoạch</Button>
+            </footer>
+          )}
         </>
       )}
     </article>
@@ -770,9 +895,6 @@ function toDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-// Phases store startDay/endDay as 1-based offsets from the plan's start
-// date, not absolute dates - this turns each phase into a real [from, to]
-// calendar range so it can be painted onto a month grid.
 function getPhaseTimeline(plan) {
   const start = parseDateOnly(plan?.startDate);
   if (!start) return [];
@@ -787,17 +909,12 @@ function getPhaseTimeline(plan) {
     }));
 }
 
-// Soft, cool-toned pastel hues (teal through violet) so adjacent phases
-// stay visually distinguishable without feeling harsh - fits the calmer
-// tone expected on a medical page. Cycles if a plan ever has more phases
-// than colors. Each stop pairs a light background with a darker text of
-// the same hue, same pattern as the app's existing tone badges.
 const PHASE_COLORS = [
-  { bg: "hsl(174, 48%, 72%)", text: "hsl(174, 60%, 20%)" }, // teal
-  { bg: "hsl(206, 58%, 74%)", text: "hsl(206, 65%, 24%)" }, // blue
-  { bg: "hsl(160, 42%, 70%)", text: "hsl(160, 50%, 20%)" }, // mint
-  { bg: "hsl(230, 48%, 76%)", text: "hsl(230, 50%, 28%)" }, // indigo
-  { bg: "hsl(260, 42%, 78%)", text: "hsl(260, 40%, 30%)" }, // violet
+  { bg: "hsl(174, 48%, 72%)", text: "hsl(174, 60%, 20%)" },
+  { bg: "hsl(206, 58%, 74%)", text: "hsl(206, 65%, 24%)" },
+  { bg: "hsl(160, 42%, 70%)", text: "hsl(160, 50%, 20%)" },
+  { bg: "hsl(230, 48%, 76%)", text: "hsl(230, 50%, 28%)" },
+  { bg: "hsl(260, 42%, 78%)", text: "hsl(260, 40%, 30%)" },
 ];
 
 function getPhaseColor(index) {
@@ -820,7 +937,7 @@ function RecoveryTimelineCalendar({ plan, loading }) {
     const year = monthCursor.getFullYear();
     const month = monthCursor.getMonth();
     const firstOfMonth = new Date(year, month, 1);
-    const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // Monday = 0
+    const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
     const gridStart = addDays(firstOfMonth, -firstWeekday);
     const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
     const result = [];
@@ -941,14 +1058,12 @@ export default function RecoveryPlanPage() {
     ? getRecoveryError(serviceCreditError, "Chưa thể kiểm tra lượt dịch vụ. Vui lòng thử lại.")
     : null;
   const [requestPageNumber, setRequestPageNumber] = useState(1);
-  const [requestPage, setRequestPage] = useState(() => normalizePaged(null, 1));
+  const [allRequests, setAllRequests] = useState([]);
+  const [requestSortDirection, setRequestSortDirection] = useState("desc");
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [requestsError, setRequestsError] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestDetailLoading, setRequestDetailLoading] = useState(false);
-  // Plans are always shown as a single current-plan detail view (no
-  // selector/pagination UI), so this never changes - kept as a named
-  // constant rather than inlining `1` everywhere loadPlans is called.
   const planPageNumber = 1;
   const [planPage, setPlanPage] = useState(() => normalizePaged(null, 1));
   const [plansLoading, setPlansLoading] = useState(true);
@@ -962,6 +1077,11 @@ export default function RecoveryPlanPage() {
   const [workflowBlocked, setWorkflowBlocked] = useState(false);
   const [workflowGuardLoading, setWorkflowGuardLoading] = useState(true);
   const [cancelPlan, setCancelPlan] = useState(null);
+  const [feedbackPlan, setFeedbackPlan] = useState(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
+  const [dismissedFeedbackPlanIds, setDismissedFeedbackPlanIds] = useState(() => new Set());
+  const autoFeedbackPromptedRef = useRef(false);
   const refetchTimerRef = useRef(null);
 
   const loadQuota = useCallback(async () => {
@@ -976,23 +1096,36 @@ export default function RecoveryPlanPage() {
     setRequestsLoading(true);
     setRequestsError("");
     try {
-      const response = await recoveryPlanRequestsApi.listMine({ pageNumber, pageSize: PAGE_SIZE });
-      const nextPage = normalizePaged(response, pageNumber);
-      setRequestPage(nextPage);
-      const nextSelected = nextPage.items.find((item) => item.id === preferredId)
-        ?? nextPage.items.find((item) => item.id === selectedRequest?.id)
-        ?? nextPage.items[0]
+      // The backend paginates oldest-first with no sort param, so the newest
+      // request could be on any page - fetch every page once and sort/paginate
+      // client-side instead, matching the "newest first" order this list needs.
+      const firstResponse = await recoveryPlanRequestsApi.listMine({ pageNumber: 1, pageSize: PAGE_SIZE });
+      const firstPage = normalizePaged(firstResponse, 1);
+      const items = [...firstPage.items];
+      for (let page = 2; page <= firstPage.totalPages; page += 1) {
+        const response = await recoveryPlanRequestsApi.listMine({ pageNumber: page, pageSize: PAGE_SIZE });
+        items.push(...normalizePaged(response, page).items);
+      }
+      setAllRequests(items);
+      setRequestPageNumber(pageNumber);
+      const sortedItems = [...items].sort((a, b) => {
+        const diff = getTimeMs(a.requestedAt) - getTimeMs(b.requestedAt);
+        return requestSortDirection === "asc" ? diff : -diff;
+      });
+      const nextSelected = sortedItems.find((item) => item.id === preferredId)
+        ?? sortedItems.find((item) => item.id === selectedRequest?.id)
+        ?? sortedItems[0]
         ?? null;
       setSelectedRequest(nextSelected);
-      setStatusMessage(`Đã tải ${nextPage.items.length} yêu cầu phục hồi.`);
+      setStatusMessage(`Đã tải ${items.length} yêu cầu phục hồi.`);
     } catch {
-      setRequestPage(normalizePaged(null, pageNumber));
+      setAllRequests([]);
       setSelectedRequest(null);
       setRequestsError("Chưa thể tải các yêu cầu của bạn.");
     } finally {
       setRequestsLoading(false);
     }
-  }, [requestPageNumber, selectedRequest?.id]);
+  }, [requestPageNumber, requestSortDirection, selectedRequest?.id]);
 
   async function loadPlanDetail(planId, fallback) {
     setSelectedPlan(fallback ?? selectedPlan);
@@ -1036,10 +1169,6 @@ export default function RecoveryPlanPage() {
     }
   }, [planPageNumber, selectedPlan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Only one Recovery Plan workflow (request or plan) can be open per user.
-  // The backend is the source of truth (every mutating call still handles a
-  // 409), but probing these blocking statuses up front lets the UI hide/
-  // disable the "new request" form instead of always failing the request.
   async function loadWorkflowGuard() {
     setWorkflowGuardLoading(true);
     try {
@@ -1108,6 +1237,109 @@ export default function RecoveryPlanPage() {
     };
   }, [refetchAll]);
 
+  useEffect(() => {
+    if (plansLoading || feedbackPlan || autoFeedbackPromptedRef.current) return;
+    const candidate = findLatestRecoveryPlanAwaitingFeedback(planPage.items, dismissedFeedbackPlanIds);
+    if (!candidate) return;
+    const timer = window.setTimeout(() => {
+      autoFeedbackPromptedRef.current = true;
+      setFeedbackError("");
+      setFeedbackPlan(candidate);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [dismissedFeedbackPlanIds, feedbackPlan, planPage.items, plansLoading]);
+
+  function markFeedbackDismissed(planId) {
+    if (!planId) return;
+    setDismissedFeedbackPlanIds((previous) => {
+      const next = new Set(previous);
+      next.add(planId);
+      return next;
+    });
+  }
+
+  function openFeedbackDialog(plan) {
+    if (!recoveryPlanNeedsFeedback(plan)) return;
+    setFeedbackError("");
+    setFeedbackPlan(plan);
+  }
+
+  function handleCloseFeedback() {
+    markFeedbackDismissed(feedbackPlan?.id);
+    setFeedbackError("");
+    setFeedbackPlan(null);
+  }
+
+  async function handleSubmitFeedback({ rating, note }) {
+    if (!feedbackPlan?.id) return;
+    const numericRating = Number(rating);
+    const trimmedNote = typeof note === "string" ? note.trim() : "";
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
+      setFeedbackError("Vui lòng chọn mức đánh giá từ 1 đến 5 sao.");
+      return;
+    }
+    if (trimmedNote.length > 1000) {
+      setFeedbackError("Ghi chú không được vượt quá 1.000 ký tự.");
+      return;
+    }
+
+    const planId = feedbackPlan.id;
+    setFeedbackSubmitting(true);
+    setFeedbackError("");
+    try {
+      const response = await recoveryPlansApi.submitFeedback(planId, {
+        rating: numericRating,
+        note: trimmedNote || null,
+      });
+      const updatedPlan = response?.data ?? null;
+      if (updatedPlan?.id) {
+        setPlanPage((current) => ({
+          ...current,
+          items: current.items.map((item) => item.id === updatedPlan.id ? { ...item, ...updatedPlan } : item),
+        }));
+        setSelectedPlan((current) => current?.id === updatedPlan.id ? updatedPlan : current);
+      }
+      markFeedbackDismissed(planId);
+      setFeedbackPlan(null);
+      showToast({
+        type: "success",
+        title: "Cảm ơn bạn đã đánh giá",
+        message: "Đánh giá kế hoạch phục hồi đã được ghi nhận.",
+      });
+      await loadPlans(planPageNumber, planId);
+    } catch (error) {
+      const code = getApiErrorCode(error);
+      if (code === "RECOVERY_PLAN_FEEDBACK_ALREADY_SUBMITTED") {
+        markFeedbackDismissed(planId);
+        setFeedbackPlan(null);
+        await loadPlans(planPageNumber, planId);
+        showToast({ type: "info", title: "Đánh giá đã được ghi nhận", message: "Kế hoạch này đã được đánh giá trước đó." });
+        return;
+      }
+      if (code === "RECOVERY_PLAN_NOT_COMPLETED") {
+        markFeedbackDismissed(planId);
+        setFeedbackPlan(null);
+        await loadPlans(planPageNumber);
+        showToast({ type: "error", title: "Chưa thể đánh giá", message: "Kế hoạch này chưa ở trạng thái hoàn thành nên chưa thể đánh giá." });
+        return;
+      }
+      if (code === "NOT_FOUND" || error?.status === 404) {
+        markFeedbackDismissed(planId);
+        setFeedbackPlan(null);
+        await loadPlans(planPageNumber);
+        showToast({ type: "error", title: "Không tìm thấy kế hoạch", message: "Không tìm thấy kế hoạch phục hồi này." });
+        return;
+      }
+      if (code === "INVALID_REQUEST" || error?.status === 400) {
+        setFeedbackError("Thông tin đánh giá không hợp lệ. Vui lòng kiểm tra lại.");
+        return;
+      }
+      setFeedbackError("Chưa thể gửi đánh giá lúc này. Vui lòng thử lại.");
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  }
+
   async function handleCreated(createdRequest) {
     showToast({ type: "success", title: "Đã gửi yêu cầu", message: "Bạn có thể theo dõi trạng thái ngay trên trang này." });
     void loadQuota();
@@ -1131,27 +1363,16 @@ export default function RecoveryPlanPage() {
       await recoveryPlanRequestsApi.cancel(request.id);
       showToast({ type: "success", title: "Đã hủy yêu cầu", message: "Hạn mức đang được cập nhật lại." });
       void loadQuota();
-      await loadRequests(requestPageNumber, request.id);
+      await Promise.allSettled([
+        loadRequests(requestPageNumber, request.id),
+        loadWorkflowGuard(),
+      ]);
     } catch (error) {
       const mapped = getRecoveryError(error, "Chưa thể hủy yêu cầu. Vui lòng thử lại.");
       showToast({ type: "error", title: "Không thể hủy yêu cầu", message: mapped.message });
-      if (["INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) await loadRequests(requestPageNumber);
-    } finally {
-      setActionBusy(false);
-    }
-  }
-
-  async function handleProvideInformation(requestId, additionalInformation) {
-    setActionBusy(true);
-    try {
-      const response = await recoveryPlanRequestsApi.provideInformation(requestId, additionalInformation);
-      setSelectedRequest(response?.data ?? selectedRequest);
-      showToast({ type: "success", title: "Đã gửi thông tin", message: "Yêu cầu đã được chuyển lại để xem xét." });
-      await loadRequests(requestPageNumber, requestId);
-    } catch (error) {
-      const mapped = getRecoveryError(error, "Chưa thể gửi thông tin bổ sung. Vui lòng thử lại.");
-      showToast({ type: "error", title: "Không thể gửi thông tin", message: mapped.message });
-      if (["INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) await loadRequests(requestPageNumber);
+      if (["INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) {
+        await Promise.allSettled([loadRequests(requestPageNumber), loadWorkflowGuard()]);
+      }
     } finally {
       setActionBusy(false);
     }
@@ -1222,6 +1443,22 @@ export default function RecoveryPlanPage() {
       ? "Đang nối lại cập nhật tự động"
       : "Bạn có thể dùng nút tải lại để xem thay đổi mới";
 
+  const requestPage = useMemo(() => {
+    const sorted = [...allRequests].sort((a, b) => {
+      const diff = getTimeMs(a.requestedAt) - getTimeMs(b.requestedAt);
+      return requestSortDirection === "asc" ? diff : -diff;
+    });
+    const totalCount = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const pageNumber = Math.min(Math.max(1, requestPageNumber), totalPages);
+    return {
+      items: sorted.slice((pageNumber - 1) * PAGE_SIZE, pageNumber * PAGE_SIZE),
+      pageNumber,
+      pageSize: PAGE_SIZE,
+      totalCount,
+      totalPages,
+    };
+  }, [allRequests, requestSortDirection, requestPageNumber]);
   const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
   const planItems = useMemo(() => planPage.items, [planPage.items]);
 
@@ -1301,9 +1538,19 @@ export default function RecoveryPlanPage() {
               </button>
             </div>
             {activeTab === "requests" ? (
-              <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
-                <RefreshCw size={16} aria-hidden="true" /> Tải lại
-              </Button>
+              <div className="recovery-workspace-head-controls">
+                <CustomSelect
+                  label="Sắp xếp"
+                  hideLabel
+                  value={requestSortDirection}
+                  options={REQUEST_SORT_OPTIONS}
+                  onChange={(value) => { setRequestSortDirection(value); setRequestPageNumber(1); }}
+                  className="recovery-request-sort-select"
+                />
+                <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
+                  <RefreshCw size={16} aria-hidden="true" /> Tải lại
+                </Button>
+              </div>
             ) : activeTab === "plans" ? (
               <Button tone="secondary" size="sm" onClick={() => loadPlans(planPageNumber, selectedPlan?.id)} disabled={plansLoading}>
                 <RefreshCw size={16} aria-hidden="true" /> Tải lại
@@ -1350,7 +1597,6 @@ export default function RecoveryPlanPage() {
                     loading={requestDetailLoading}
                     busy={actionBusy}
                     onCancel={handleCancel}
-                    onProvideInformation={handleProvideInformation}
                   />
                 </div>
               )}
@@ -1364,12 +1610,6 @@ export default function RecoveryPlanPage() {
               ) : planItems.length === 0 ? (
                 <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
               ) : (
-                // Stacked list, no selector bar - PlanDetail already renders
-                // its own name/duration/status header, so a bar above it
-                // would just repeat the same line twice. Historical plans
-                // (cancelled/completed/superseded) collapse by default; the
-                // one matching selectedPlan already has full detail loaded,
-                // others only have summary data until expanded.
                 <div className="recovery-plan-list">
                   {planItems.map((item) => {
                     const isSelected = item.id === selectedPlan?.id;
@@ -1381,6 +1621,7 @@ export default function RecoveryPlanPage() {
                         busy={actionBusy}
                         onStart={handleStart}
                         onCancel={setCancelPlan}
+                        onFeedback={openFeedbackDialog}
                         onExpand={isSelected ? undefined : () => loadPlanDetail(item.id, item)}
                       />
                     );
@@ -1423,6 +1664,18 @@ export default function RecoveryPlanPage() {
           submitting={actionBusy}
           onClose={() => setCancelPlan(null)}
           onSubmit={handleCancelPlan}
+        />
+      )}
+
+      {feedbackPlan && (
+        <RecoveryPlanFeedbackDialog
+          key={feedbackPlan.id}
+          open
+          plan={feedbackPlan}
+          submitting={feedbackSubmitting}
+          errorMessage={feedbackError}
+          onClose={handleCloseFeedback}
+          onSubmit={handleSubmitFeedback}
         />
       )}
     </div>

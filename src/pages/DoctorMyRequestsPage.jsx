@@ -26,7 +26,6 @@ const STATUS_TABS = [
   { value: "", label: "Tất cả" },
   { value: "assigned", label: "Đã nhận" },
   { value: "inReview", label: "Đang xem xét" },
-  { value: "needMoreInformation", label: "Cần bổ sung" },
   { value: "published", label: "Đã xuất bản" },
   { value: "rejected", label: "Đã từ chối" },
   { value: "cancelled", label: "Đã hủy" },
@@ -58,12 +57,26 @@ function formatDate(value) {
   return date.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
 }
 
+function getRequestTime(request) {
+  const value = request?.requestedAt || request?.acceptedAt || request?.reviewStartedAt;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function sortNewestFirst(items) {
+  return [...items].sort((a, b) => {
+    const diff = getRequestTime(b) - getRequestTime(a);
+    if (diff !== 0) return diff;
+    return String(b?.id ?? "").localeCompare(String(a?.id ?? ""));
+  });
+}
+
 function getNextStepHint(request) {
   const { status, recoveryPlanId, recoveryPlanStatus } = request;
   if (status === "assigned") return "Tiếp theo: Bắt đầu xem xét";
   if (status === "inReview" && !recoveryPlanId) return "Tiếp theo: Tạo kế hoạch";
   if (status === "inReview" && recoveryPlanStatus === "draft") return "Tiếp theo: Tiếp tục soạn kế hoạch";
-  if (status === "needMoreInformation") return "Đang chờ bệnh nhân bổ sung thông tin";
+  if (status === "needMoreInformation") return "Yêu cầu thuộc quy trình cũ cần xử lý";
   if (status === "published") return "Đã gửi kế hoạch tới bệnh nhân";
   return null;
 }
@@ -73,8 +86,23 @@ function normalizePaged(response, pageNumber) {
   return {
     items: Array.isArray(data.items) ? data.items : [],
     pageNumber: Number(data.pageNumber) || pageNumber,
+    pageSize: Number(data.pageSize) || PAGE_SIZE,
     totalPages: Math.max(1, Number(data.totalPages) || 1),
     totalCount: Math.max(0, Number(data.totalCount) || 0),
+  };
+}
+
+function buildClientPage(items, targetPage) {
+  const sorted = sortNewestFirst(items);
+  const totalCount = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const pageNumber = Math.min(Math.max(1, targetPage), totalPages);
+  return {
+    items: sorted.slice((pageNumber - 1) * PAGE_SIZE, pageNumber * PAGE_SIZE),
+    pageNumber,
+    pageSize: PAGE_SIZE,
+    totalPages,
+    totalCount,
   };
 }
 
@@ -90,12 +118,27 @@ export default function DoctorMyRequestsPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await doctorRecoveryPlanRequestsApi.listMine({
-        pageNumber: targetPage,
+      const firstResponse = await doctorRecoveryPlanRequestsApi.listMine({
+        pageNumber: 1,
         pageSize: PAGE_SIZE,
         status: targetStatus,
       });
-      setPage(normalizePaged(response, targetPage));
+      const firstPage = normalizePaged(firstResponse, 1);
+      const responses = await Promise.all(
+        Array.from({ length: Math.max(0, firstPage.totalPages - 1) }, (_, index) =>
+          doctorRecoveryPlanRequestsApi.listMine({
+            pageNumber: index + 2,
+            pageSize: PAGE_SIZE,
+            status: targetStatus,
+          })),
+      );
+      const allItems = [
+        ...firstPage.items,
+        ...responses.flatMap((response, index) => normalizePaged(response, index + 2).items),
+      ];
+      const clientPage = buildClientPage(allItems, targetPage);
+      setPage(clientPage);
+      if (clientPage.pageNumber !== targetPage) setPageNumber(clientPage.pageNumber);
     } catch {
       setError("Chưa thể tải danh sách yêu cầu. Vui lòng thử lại.");
       setPage({ items: [], pageNumber: targetPage, totalPages: 1, totalCount: 0 });

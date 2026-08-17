@@ -455,9 +455,9 @@
 }
 
 .admin-operator .admin-users-search-control:focus-within {
-  border-color: var(--color-info);
-  box-shadow: 0 0 0 4px rgba(8, 127, 140, 0.1);
-  transform: translateY(-1px);
+  border-color: var(--color-control-border);
+  box-shadow: none;
+  transform: none;
 }
 
 .admin-operator .admin-users-search-control input {
@@ -469,6 +469,7 @@
   box-shadow: none;
   font-family: var(--font-body);
   font-weight: 650;
+  outline: 0;
 }
 
 .admin-operator .admin-users-search-control input::placeholder {

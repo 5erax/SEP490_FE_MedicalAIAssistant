@@ -54,13 +54,6 @@ export const doctorRecoveryPlanRequestsApi = {
     });
   },
 
-  requestMoreInformation(requestId, reason) {
-    return authenticatedRequest(ENDPOINTS.DOCTOR_RECOVERY_PLAN_REQUESTS.REQUEST_MORE_INFORMATION(requestId), {
-      method: "POST",
-      body: { reason },
-    });
-  },
-
   reject(requestId, rejectionReasonCode, rejectionReason) {
     return authenticatedRequest(ENDPOINTS.DOCTOR_RECOVERY_PLAN_REQUESTS.REJECT(requestId), {
       method: "POST",
@@ -103,6 +96,13 @@ export function normalizeDoctorPlanDetail(response) {
 export const doctorRecoveryPlansApi = {
   get(planId) {
     return authenticatedRequest(ENDPOINTS.DOCTOR_RECOVERY_PLANS.BY_ID(planId));
+  },
+
+  getFeedbackAnalytics({ from = "", to = "" } = {}) {
+    return authenticatedRequest(withQuery(ENDPOINTS.DOCTOR_RECOVERY_PLANS.FEEDBACK_ANALYTICS, {
+      from,
+      to,
+    }));
   },
 
   updateHeader(planId, payload) {

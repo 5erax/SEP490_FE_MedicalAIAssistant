@@ -333,7 +333,6 @@ function DetailContent({ request, onReload }) {
   const DiseaseIcon = disease.icon;
   const statusMeta = getStatusMeta(request.status);
   const [actionBusy, setActionBusy] = useState("");
-  const [moreInfoOpen, setMoreInfoOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [createDraftOpen, setCreateDraftOpen] = useState(false);
@@ -423,25 +422,6 @@ function DetailContent({ request, onReload }) {
       const mapped = getActionErrorMessage(requestError, "Chưa thể bắt đầu xem xét. Vui lòng thử lại.");
       showToast({ type: "error", title: "Không thể bắt đầu xem xét", message: mapped.message });
       if (["ASSIGNMENT_EXPIRED", "INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) await onReload();
-    } finally {
-      setActionBusy("");
-    }
-  }
-
-  async function handleMoreInformation(reason) {
-    setActionBusy("moreInfo");
-    try {
-      await doctorRecoveryPlanRequestsApi.requestMoreInformation(request.id, reason);
-      showToast({ type: "success", title: "Đã gửi yêu cầu bổ sung thông tin" });
-      setMoreInfoOpen(false);
-      await onReload();
-    } catch (requestError) {
-      const mapped = getActionErrorMessage(requestError, "Chưa thể gửi yêu cầu bổ sung. Vui lòng thử lại.");
-      showToast({ type: "error", title: "Không thể gửi yêu cầu bổ sung", message: mapped.message });
-      if (["ASSIGNMENT_EXPIRED", "INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) {
-        setMoreInfoOpen(false);
-        await onReload();
-      }
     } finally {
       setActionBusy("");
     }
@@ -616,13 +596,6 @@ function DetailContent({ request, onReload }) {
               )}
               <div className="doctor-action-tiles">
                 <ActionTile
-                  icon={MessageSquarePlus}
-                  title="Yêu cầu bổ sung thông tin"
-                  subtitle="Gửi yêu cầu để bệnh nhân cung cấp thêm thông tin trước khi bạn tiếp tục xử lý."
-                  disabled={Boolean(actionBusy)}
-                  onClick={() => setMoreInfoOpen(true)}
-                />
-                <ActionTile
                   icon={UndoDot}
                   title="Trả lại hàng đợi"
                   subtitle="Chuyển yêu cầu về hàng đợi chung để bác sĩ khác có thể tiếp nhận."
@@ -647,7 +620,7 @@ function DetailContent({ request, onReload }) {
             <>
               <section className="doctor-detail-plan-note">
                 <MessageSquarePlus size={16} aria-hidden="true" />
-                <span>Đang chờ bệnh nhân bổ sung thông tin. Khi bệnh nhân cập nhật, yêu cầu sẽ tự quay lại "Đang xem xét".</span>
+                <span>Yêu cầu này thuộc quy trình bổ sung thông tin trước đây. Luồng bổ sung thông tin đã ngừng sử dụng. Bạn có thể trả yêu cầu lại hàng đợi hoặc từ chối yêu cầu theo quy trình hiện tại.</span>
               </section>
               <ActionArea>
                 <div className="doctor-action-tiles">
@@ -716,20 +689,6 @@ function DetailContent({ request, onReload }) {
           </section>
         </aside>
       </div>
-
-      {moreInfoOpen && (
-        <ReasonDialog
-          title="Yêu cầu bổ sung thông tin"
-          icon={MessageSquarePlus}
-          label="Nội dung cần bệnh nhân bổ sung"
-          placeholder="Ví dụ: Vui lòng bổ sung kết quả xét nghiệm gần nhất."
-          required
-          submitLabel="Gửi yêu cầu"
-          submitting={actionBusy === "moreInfo"}
-          onClose={() => setMoreInfoOpen(false)}
-          onSubmit={handleMoreInformation}
-        />
-      )}
 
       {releaseOpen && (
         <ReasonDialog

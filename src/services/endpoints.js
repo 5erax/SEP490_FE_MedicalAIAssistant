@@ -18,6 +18,7 @@ const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
 const ADMIN_QUOTAS_BASE = "/api/admin/quotas";
 const ADMIN_SUBSCRIPTION_PLANS_BASE = "/api/admin/subscription-plans";
 const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
+const ADMIN_USER_SUBSCRIPTIONS_BASE = "/api/admin/user-subscriptions";
 const PAYMENTS_BASE = "/api/payments";
 const AI_CONFIGS_BASE = "/api/ai-configs";
 const WEB_CHATBOT_BASE = "/api/web-chatbot";
@@ -77,6 +78,7 @@ export const ENDPOINTS = {
     VALIDATE: `${DOCTOR_INVITATIONS_BASE}/validate`,
     REGISTER: `${DOCTOR_INVITATIONS_BASE}/register`,
     ADMIN_CREATE: ADMIN_DOCTOR_INVITATIONS_BASE,
+    ADMIN_LIST: ADMIN_DOCTOR_INVITATIONS_BASE,
     ADMIN_REVOKE: (id) => `${ADMIN_DOCTOR_INVITATIONS_BASE}/${id}/revoke`,
   },
   FEEDBACK_REVIEWS: {
@@ -127,6 +129,7 @@ export const ENDPOINTS = {
     ME: `${USER_SUBSCRIPTIONS_BASE}/me`,
     BY_ID: (id) => byId(USER_SUBSCRIPTIONS_BASE, id),
     CANCEL: (id) => `${byId(USER_SUBSCRIPTIONS_BASE, id)}/cancel`,
+    ADMIN_LIST: ADMIN_USER_SUBSCRIPTIONS_BASE,
   },
   PAYMENTS: {
     LIST: PAYMENTS_BASE,
@@ -187,6 +190,9 @@ export const ENDPOINTS = {
     MY_SESSIONS: `${LAB_TESTS_BASE}/my-sessions`,
     SESSIONS: `${LAB_TESTS_BASE}/sessions`,
     BY_SESSION: (sessionId) => encodedById(LAB_TESTS_BASE, sessionId),
+    ANALYTICS_INDICATORS: `${LAB_TESTS_BASE}/analytics/indicators`,
+    ANALYTICS_INDICATOR_TREND: (indicatorId) =>
+      `${LAB_TESTS_BASE}/analytics/indicators/${encodeURIComponent(indicatorId)}/trend`,
   },
   USER_MEDICATIONS: {
     BASE: USER_MEDICATIONS_BASE,
@@ -198,16 +204,17 @@ export const ENDPOINTS = {
   },
   RECOVERY_PLAN_REQUESTS: {
     BASE: RECOVERY_PLAN_REQUESTS_BASE,
+    READINESS: `${RECOVERY_PLAN_REQUESTS_BASE}/readiness`,
     ME: `${RECOVERY_PLAN_REQUESTS_BASE}/me`,
     BY_ID: (requestId) => encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId),
     CANCEL: (requestId) => `${encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId)}/cancel`,
-    PROVIDE_INFORMATION: (requestId) => `${encodedById(RECOVERY_PLAN_REQUESTS_BASE, requestId)}/provide-more-information`,
   },
   RECOVERY_PLANS: {
     ME: `${RECOVERY_PLANS_BASE}/me`,
     BY_ID: (planId) => encodedById(RECOVERY_PLANS_BASE, planId),
     START: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/start`,
     CANCEL: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/cancel`,
+    FEEDBACK: (planId) => `${encodedById(RECOVERY_PLANS_BASE, planId)}/feedback`,
   },
   DOCTOR_RECOVERY_PLAN_REQUESTS: {
     OPEN: `${DOCTOR_RECOVERY_PLAN_REQUESTS_BASE}/open`,
@@ -217,12 +224,12 @@ export const ENDPOINTS = {
     ACCEPT: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/accept`,
     START_REVIEW: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/start-review`,
     RELEASE: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/release`,
-    REQUEST_MORE_INFORMATION: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/request-more-information`,
     REJECT: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/reject`,
     CREATE_PLAN: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/plan`,
   },
   DOCTOR_RECOVERY_PLANS: {
     BY_ID: (planId) => encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId),
+    FEEDBACK_ANALYTICS: `${DOCTOR_RECOVERY_PLANS_BASE}/analytics/feedback`,
     PHASES: (planId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases`,
     PHASE_BY_ID: (planId, phaseId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}`,
     NUTRIENTS: (planId, phaseId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}/nutrients`,

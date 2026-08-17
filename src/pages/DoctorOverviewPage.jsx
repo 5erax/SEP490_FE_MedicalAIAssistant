@@ -11,6 +11,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import RecoveryPlanFeedbackAnalytics from "../components/recovery/RecoveryPlanFeedbackAnalytics";
 import { authApi, getStoredAuth, doctorRecoveryPlanRequestsApi } from "../services/api";
 import { navigate } from "../router/navigation";
 import { LoadingState } from "../components/ui";
@@ -130,6 +131,8 @@ export default function DoctorOverviewPage() {
           </div>
         </aside>
       </div>
+
+      <RecoveryPlanFeedbackAnalytics />
 
       <section className="doctor-overview-roadmap" aria-labelledby="doctor-roadmap-title">
         <div className="doctor-overview-roadmap-heading">

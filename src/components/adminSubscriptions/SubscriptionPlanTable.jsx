@@ -1,24 +1,9 @@
 import { Badge, Button, EmptyState } from "../ui";
-import { CreditCard, Gauge, Pencil, Plus } from "lucide-react";
+import { CreditCard, Gauge, Pencil, Plus, WalletCards } from "lucide-react";
 
 const QUOTA_LABELS = {
   SERVICE_CREDIT: "Lượt dịch vụ dùng chung",
   RECOVERY_PLAN_REQUEST: "Kế hoạch phục hồi",
-};
-
-const FEATURE_LIMIT_LABELS = {
-  symptomAnalysisPerMonth: {
-    title: "Phân tích triệu chứng",
-    period: "mỗi tháng",
-  },
-  aiChatPerDay: {
-    title: "Chat AI",
-    period: "mỗi ngày",
-  },
-  clinicalQuestionPerMonth: {
-    title: "Câu hỏi lâm sàng",
-    period: "mỗi tháng",
-  },
 };
 
 function formatPrice(value) {
@@ -39,70 +24,56 @@ function getResetPeriodLabel(value) {
   return value || "theo chu kỳ";
 }
 
+function getQuotaCode(quota) {
+  return quota.quotaCode || quota.code;
+}
+
 function getQuotaTitle(quota) {
-  const code = quota.quotaCode || quota.code;
+  const code = getQuotaCode(quota);
   return QUOTA_LABELS[code] || quota.quotaName || quota.name || code || "Hạn mức";
 }
 
 function getQuotaSummary(quota) {
-  const code = quota.quotaCode || quota.code;
-  if (code === "SERVICE_CREDIT") return "không hết hạn";
-  if (code === "RECOVERY_PLAN_REQUEST") return "mỗi chu kỳ gói";
+  const code = getQuotaCode(quota);
+  if (code === "SERVICE_CREDIT") return "Dùng chung cho 3 dịch vụ";
+  if (code === "RECOVERY_PLAN_REQUEST") return "Mỗi chu kỳ gói";
+  return getResetPeriodLabel(quota.resetPeriod);
+}
+
+function getQuotaDetail(quota) {
+  const code = getQuotaCode(quota);
+  if (code === "SERVICE_CREDIT") return "Kế hoạch phục hồi, tư vấn trước khám, phân tích xét nghiệm";
   return getResetPeriodLabel(quota.resetPeriod);
 }
 
 function getQuotaAmount(quota) {
   const limit = Number(quota.limitValue || 0).toLocaleString("vi-VN");
-  const code = quota.quotaCode || quota.code;
-  return `${limit} ${code === "SERVICE_CREDIT" ? "lượt" : (quota.unit || "lượt")}`;
+  const code = getQuotaCode(quota);
+  return `${limit} ${code === "SERVICE_CREDIT" ? "lượt dùng" : (quota.unit || "lượt")}`;
 }
 
-function parseFeatureLimitEntries(plan) {
-  try {
-    const rawLimits = plan?.featureLimitJson;
-    const limits = typeof rawLimits === "string" ? JSON.parse(rawLimits) : rawLimits;
-    if (!limits || Array.isArray(limits) || typeof limits !== "object") return [];
-
-    return Object.entries(limits).flatMap(([key, limit]) => {
-      if (limit === null || limit === undefined || limit === "") return [];
-      const meta = FEATURE_LIMIT_LABELS[key] || {
-        title: key,
-        period: "trong gói",
-      };
-
-      return [{
-        id: `feature-${key}`,
-        title: meta.title,
-        amount: Number(limit).toLocaleString("vi-VN"),
-        unit: "lượt",
-        summary: meta.period,
-      }];
-    });
-  } catch {
-    return [];
-  }
-}
-
-function getPlanBenefitItems(plan) {
-  const featureItems = parseFeatureLimitEntries(plan);
-  if (featureItems.length) return featureItems;
-
+function getRealQuotaItems(plan) {
   return getPlanQuotas(plan).map((quota) => ({
     id: quota.id || quota.quotaId || quota.quotaCode,
     title: getQuotaTitle(quota),
     amount: getQuotaAmount(quota),
-    unit: "",
     summary: getQuotaSummary(quota),
+    detail: getQuotaDetail(quota),
   }));
 }
 
-function getBackendQuotaNote(plan) {
-  const quotas = getPlanQuotas(plan);
-  if (!quotas.length) return "";
-  return quotas
-    .slice(0, 2)
-    .map((quota) => `${getQuotaTitle(quota)} ${getQuotaAmount(quota)}`)
-    .join(" · ");
+function QuotaChip({ item }) {
+  return (
+    <div className="subscription-quota-item">
+      <span className="subscription-quota-icon" aria-hidden="true"><Gauge size={15} /></span>
+      <div className="subscription-quota-main">
+        <small>{item.title}</small>
+        <strong>{item.amount}</strong>
+        <span>{item.summary}</span>
+        <em>{item.detail}</em>
+      </div>
+    </div>
+  );
 }
 
 export default function SubscriptionPlanTable({
@@ -127,22 +98,21 @@ export default function SubscriptionPlanTable({
     <div className="subscription-plan-card-list" role="table" aria-label="Danh sách gói dịch vụ">
       <div className="subscription-plan-list-header" role="row">
         <span>Gói dịch vụ</span>
-        <span>Hiệu lực / Cập nhật</span>
         <span>Quota sử dụng</span>
+        <span>Cập nhật</span>
         <span>Trạng thái</span>
         <span>Thao tác</span>
       </div>
 
       {plans.map((plan) => {
-        const benefitItems = getPlanBenefitItems(plan);
-        const backendQuotaNote = getBackendQuotaNote(plan);
+        const realQuotaItems = getRealQuotaItems(plan);
         const isAssigning = assigningQuotaPlanId === plan.id;
 
         return (
           <article className="subscription-plan-card" key={plan.id} role="row">
             <div className="subscription-plan-card-main" role="cell">
               <div className="subscription-plan-primary">
-                <span className="subscription-plan-icon"><CreditCard size={18} /></span>
+                <span className="subscription-plan-icon" aria-hidden="true"><WalletCards size={20} /></span>
                 <div>
                   <strong>{plan.planName || "Gói chưa đặt tên"}</strong>
                   <span>{formatPrice(plan.price)}</span>
@@ -150,33 +120,12 @@ export default function SubscriptionPlanTable({
               </div>
             </div>
 
-            <div className="subscription-plan-card-meta" role="cell">
-              <span>
-                <small>Hiệu lực credit</small>
-                <strong>Không hết hạn</strong>
-              </span>
-              <span>
-                <small>Cập nhật</small>
-                <strong>{formatDate(plan.updatedAt || plan.createdAt)}</strong>
-              </span>
-            </div>
-
             <div className="subscription-plan-card-limits" role="cell">
-              {benefitItems.length ? (
-                <div className="subscription-quota-list" aria-label="Danh sách quyền lợi">
-                  {benefitItems.slice(0, 3).map((item) => (
-                    <div className="subscription-quota-item" key={item.id}>
-                      <span className="subscription-quota-icon"><Gauge size={15} /></span>
-                      <div className="subscription-quota-main">
-                        <strong>{item.title}</strong>
-                        <span>{item.amount} {item.unit} · {item.summary}</span>
-                      </div>
-                    </div>
+              {realQuotaItems.length ? (
+                <div className="subscription-quota-list" aria-label="Danh sách hạn mức thực tế khi mua gói">
+                  {realQuotaItems.map((item) => (
+                    <QuotaChip item={item} key={item.id} />
                   ))}
-                  {benefitItems.length > 3 && (
-                    <span className="subscription-quota-more">+{benefitItems.length - 3} quyền lợi khác</span>
-                  )}
-                  {backendQuotaNote && <small className="subscription-quota-backend">Quota backend: {backendQuotaNote}</small>}
                 </div>
               ) : (
                 <div className="subscription-quota-empty">
@@ -196,6 +145,11 @@ export default function SubscriptionPlanTable({
               )}
             </div>
 
+            <div className="subscription-plan-card-meta subscription-plan-card-updated" role="cell">
+              <small>Cập nhật gần nhất</small>
+              <strong>{formatDate(plan.updatedAt || plan.createdAt)}</strong>
+            </div>
+
             <div className="subscription-plan-card-status" role="cell">
               <Badge tone={plan.isActive ? "success" : "warning"}>
                 {plan.isActive ? "Đang bán" : "Tạm ẩn"}
@@ -209,7 +163,7 @@ export default function SubscriptionPlanTable({
                 type="button"
               >
                 <Pencil size={14} aria-hidden="true" />
-                Sửa gói
+                Sửa
               </Button>
             </div>
           </article>

@@ -54,7 +54,7 @@ async function prepareDoctorPage(page, options = {}) {
   let openItems = [...(options.openItems ?? [])];
   let mineItems = [...(options.mineItems ?? [])];
   let plan = options.plan ?? null;
-  const calls = {};
+  const calls = { requestDetailGets: 0 };
 
   function ok(data, status = 200) {
     return { status, contentType: "application/json", body: JSON.stringify({ success: true, message: "OK", data, errors: [] }) };
@@ -77,7 +77,18 @@ async function prepareDoctorPage(page, options = {}) {
       return route.fulfill(ok({ items: openItems, pageNumber: 1, pageSize: 10, totalCount: openItems.length, totalPages: 1 }));
     }
     if (path === "/api/doctor/recovery-plan-requests/mine") {
-      return route.fulfill(ok({ items: mineItems, pageNumber: 1, pageSize: 10, totalCount: mineItems.length, totalPages: 1 }));
+      const requestedPage = Number(url.searchParams.get("pageNumber")) || 1;
+      const requestedPageSize = Number(url.searchParams.get("pageSize")) || 10;
+      const statusFilter = url.searchParams.get("status") || "";
+      const filtered = statusFilter ? mineItems.filter((item) => item.status === statusFilter) : mineItems;
+      const start = (requestedPage - 1) * requestedPageSize;
+      return route.fulfill(ok({
+        items: filtered.slice(start, start + requestedPageSize),
+        pageNumber: requestedPage,
+        pageSize: requestedPageSize,
+        totalCount: filtered.length,
+        totalPages: Math.max(1, Math.ceil(filtered.length / requestedPageSize)),
+      }));
     }
 
     const requestMatch = path.match(/^\/api\/doctor\/recovery-plan-requests\/([^/]+)(\/.*)?$/);
@@ -87,6 +98,7 @@ async function prepareDoctorPage(page, options = {}) {
       const current = mineItems.find((item) => item.id === id) ?? openItems.find((item) => item.id === id);
 
       if (!sub) {
+        if (method === "GET") calls.requestDetailGets += 1;
         if (!current) return route.fulfill(fail(404, "NOT_FOUND"));
         return route.fulfill(ok(current));
       }
@@ -120,11 +132,6 @@ async function prepareDoctorPage(page, options = {}) {
       if (sub === "/reject" && method === "POST") {
         calls.rejectBody = route.request().postDataJSON();
         mineItems = mineItems.map((item) => (item.id === id ? { ...item, status: "rejected", ...calls.rejectBody } : item));
-        return route.fulfill(ok(mineItems.find((item) => item.id === id)));
-      }
-      if (sub === "/request-more-information" && method === "POST") {
-        calls.moreInfoBody = route.request().postDataJSON();
-        mineItems = mineItems.map((item) => (item.id === id ? { ...item, status: "needMoreInformation" } : item));
         return route.fulfill(ok(mineItems.find((item) => item.id === id)));
       }
       if (sub === "/plan" && method === "POST") {
@@ -224,25 +231,18 @@ test.describe("doctor recovery plan workflow", () => {
     await expect(page.getByText("Không có yêu cầu đang chờ")).toBeVisible();
   });
 
-  test("the preview fetches the full note when the queue list summary omits it", async ({ page }) => {
-    // The /open list is a lightweight summary and may not carry requestNote -
-    // the preview must fall back to the by-id detail fetch instead of
-    // permanently showing "Không có ghi chú." just because the list omitted it.
-    await prepareDoctorPage(page, { openItems: [openRequest({ requestNote: "" })] });
-    await page.route(`**/api/doctor/recovery-plan-requests/${REQUEST_ID}`, (route) => {
-      if (route.request().method() !== "GET") return route.fallback();
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ success: true, data: openRequest({ requestNote: "Ho nhiều về đêm." }), errors: [] }),
-      });
-    });
+  test("the preview uses requestNote from the open queue without fetching request detail", async ({ page }) => {
+    const request = openRequest();
+    const calls = await prepareDoctorPage(page, { openItems: [request] });
     await page.goto("/app/staff/recovery-plans/queue", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("article").getByText(request.requestNote)).toBeVisible();
 
     await page.getByRole("button", { name: /Xem chi tiết yêu cầu/ }).click();
     const dialog = page.getByRole("dialog", { name: "Hô hấp" });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText("Ho nhiều về đêm.")).toBeVisible();
+    await expect(dialog.getByText(request.requestNote)).toBeVisible();
     await expect(dialog.getByText("Không có ghi chú.")).toHaveCount(0);
+    expect(calls.requestDetailGets).toBe(0);
   });
 
   test("accepting an already-claimed request removes it from the queue with an error", async ({ page }) => {
@@ -309,17 +309,43 @@ test.describe("doctor recovery plan workflow", () => {
     await expect(page.getByText("NOT_ELIGIBLE", { exact: true })).toHaveCount(0);
   });
 
-  test("requesting more information updates the request status", async ({ page }) => {
-    const calls = await prepareDoctorPage(page, { mineItems: [myRequest({ status: "inReview", reviewStartedAt: "2026-08-04T10:00:00Z" })] });
+  test("in-review requests no longer show the more information action", async ({ page }) => {
+    await prepareDoctorPage(page, { mineItems: [myRequest({ status: "inReview", reviewStartedAt: "2026-08-04T10:00:00Z" })] });
     await page.goto(`/app/staff/recovery-plan-requests/${REQUEST_ID}`, { waitUntil: "domcontentloaded" });
 
-    await page.getByRole("button", { name: "Yêu cầu bổ sung", exact: false }).first().click();
-    const dialog = page.getByRole("dialog");
-    await dialog.getByLabel("Nội dung cần bệnh nhân bổ sung").fill("Vui lòng bổ sung kết quả đo chức năng hô hấp gần nhất.");
-    await dialog.getByRole("button", { name: "Gửi yêu cầu" }).click();
+    await expect(page.getByText("Đang xem xét", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Yêu cầu bổ sung thông tin" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Tạo kế hoạch", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Trả lại hàng đợi", exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Từ chối yêu cầu", exact: false })).toBeVisible();
+  });
 
-    await expect(page.getByText("Cần bổ sung", { exact: true }).first()).toBeVisible();
-    expect(calls.moreInfoBody).toEqual({ reason: "Vui lòng bổ sung kết quả đo chức năng hô hấp gần nhất." });
+  test("legacy more-information requests render without the old doctor request action", async ({ page }) => {
+    await prepareDoctorPage(page, { mineItems: [myRequest({ status: "needMoreInformation" })] });
+    await page.goto(`/app/staff/recovery-plan-requests/${REQUEST_ID}`, { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText("Luồng bổ sung thông tin đã ngừng sử dụng")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Yêu cầu bổ sung thông tin" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Trả lại hàng đợi", exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Từ chối yêu cầu", exact: false })).toBeVisible();
+  });
+
+  test("my requests are sorted newest first across backend pages", async ({ page }) => {
+    const olderRequests = Array.from({ length: 10 }, (_, index) => myRequest({
+      id: `11111111-1111-4111-8111-${String(index + 1).padStart(12, "0")}`,
+      diseaseGroup: "musculoskeletal",
+      requestedAt: `2026-08-${String(index + 1).padStart(2, "0")}T08:00:00Z`,
+    }));
+    const newestRequest = myRequest({
+      id: "11111111-1111-4111-8111-999999999999",
+      diseaseGroup: "infectiousDisease",
+      requestedAt: "2026-08-18T10:00:00Z",
+    });
+    await prepareDoctorPage(page, { mineItems: [...olderRequests, newestRequest] });
+    await page.goto("/app/staff/recovery-plans/mine", { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator(".doctor-mine-card").first().getByText("Bệnh truyền nhiễm")).toBeVisible();
+    await expect(page.getByText("Trang 1/2")).toBeVisible();
   });
 
   test("doctor reviews a request, drafts a plan, and publishes it", async ({ page }) => {

@@ -15,6 +15,13 @@ function withQuery(path, params = {}) {
 const authenticatedRequest = (path, options = {}) => apiRequest(path, { ...options, auth: true });
 
 export const recoveryPlanRequestsApi = {
+  readiness(payload) {
+    return authenticatedRequest(ENDPOINTS.RECOVERY_PLAN_REQUESTS.READINESS, {
+      method: "POST",
+      body: payload,
+    });
+  },
+
   create(payload, idempotencyKey) {
     return authenticatedRequest(ENDPOINTS.RECOVERY_PLAN_REQUESTS.BASE, {
       method: "POST",
@@ -40,13 +47,6 @@ export const recoveryPlanRequestsApi = {
       method: "POST",
     });
   },
-
-  provideInformation(requestId, additionalInformation) {
-    return authenticatedRequest(ENDPOINTS.RECOVERY_PLAN_REQUESTS.PROVIDE_INFORMATION(requestId), {
-      method: "POST",
-      body: { additionalInformation },
-    });
-  },
 };
 
 export const recoveryPlansApi = {
@@ -70,6 +70,13 @@ export const recoveryPlansApi = {
 
   cancel(planId, payload) {
     return authenticatedRequest(ENDPOINTS.RECOVERY_PLANS.CANCEL(planId), {
+      method: "POST",
+      body: payload,
+    });
+  },
+
+  submitFeedback(planId, payload) {
+    return authenticatedRequest(ENDPOINTS.RECOVERY_PLANS.FEEDBACK(planId), {
       method: "POST",
       body: payload,
     });

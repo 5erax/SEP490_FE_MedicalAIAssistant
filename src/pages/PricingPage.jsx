@@ -231,9 +231,8 @@ function PricingPage() {
     let checking = false;
 
     // Local GET /payments/me/{id} is a cheap DB read so it can poll every
-    // 3s; the reconcile call asks PayOS directly, so it only runs on the
-    // first tick and roughly every ~12s after that to avoid hammering the
-    // provider (see the PayOS reconciliation integration guide, mục 8.3).
+    // 200ms; the reconcile call asks PayOS directly, so it only runs on the
+    // first tick and periodically after that.
     const check = async () => {
       if (checking) return false;
       checking = true;
@@ -332,7 +331,7 @@ function PricingPage() {
 
     const completed = await check();
     if (!completed) {
-      pollingRef.current = window.setInterval(check, 3000);
+      pollingRef.current = window.setInterval(check, 200);
     }
   }
 

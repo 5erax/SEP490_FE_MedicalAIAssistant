@@ -470,6 +470,7 @@ function NearbyClinicPage() {
     () => mapQuery.search,
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [selectedType, setSelectedType] = useState("all");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(requestedDepartmentId || "all");
   const [departments, setDepartments] = useState([]);
@@ -506,6 +507,7 @@ function NearbyClinicPage() {
   const mapRef = useRef(null);
   const cardRefs = useRef({});
   const departmentFilterRef = useRef(null);
+  const searchBoxRef = useRef(null);
   const sidebarTitleRef = useRef(null);
   const detailCloseButtonRef = sidebarTitleRef;
   const detailBodyRef = useRef(null);
@@ -564,6 +566,26 @@ function NearbyClinicPage() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [departmentPickerOpen]);
+
+  useEffect(() => {
+    if (!suggestionsOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!searchBoxRef.current?.contains(event.target)) {
+        setSuggestionsOpen(false);
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setSuggestionsOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [suggestionsOpen]);
 
   useEffect(() => {
     if (!isClinicalFlow) return undefined;
@@ -937,6 +959,20 @@ function NearbyClinicPage() {
     recommendedFacilityOrder,
   ]);
 
+  // Undebounced (unlike filteredFacilities' pin filter above) since this is
+  // a pure client-side filter over the already-loaded facility list - cheap
+  // enough to recompute on every keystroke for instant suggestions.
+  const searchSuggestions = useMemo(() => {
+    const normalized = normalizeSearchText(searchText);
+    if (!normalized) return [];
+    return clinicalFacilityPool
+      .filter((facility) => (
+        normalizeSearchText(facility.facilityName).includes(normalized)
+        || normalizeSearchText(facility.address).includes(normalized)
+      ))
+      .slice(0, 6);
+  }, [searchText, clinicalFacilityPool]);
+
   const typedFacilities = useMemo(
     () => filteredFacilities.filter((facility) => selectedType === "all" || facility.facilityTypeKey === selectedType),
     [filteredFacilities, selectedType],
@@ -980,6 +1016,7 @@ function NearbyClinicPage() {
 
   const handleSearchChange = (event) => {
     setSearchText(event.target.value);
+    setSuggestionsOpen(Boolean(event.target.value.trim()));
     setSelectedFacility(null);
     setSidebarView("hospital-list");
     setDetailPanelOpen(false);
@@ -1862,7 +1899,7 @@ function NearbyClinicPage() {
           >
             <House size={18} aria-hidden="true" />
           </button>
-          <div className="map-top-search">
+          <div className="map-top-search" ref={searchBoxRef}>
             <Search size={17} aria-hidden="true" />
             <label className="sr-only" htmlFor="facility-search">Tìm tên bệnh viện, phòng khám</label>
             <input
@@ -1871,11 +1908,41 @@ function NearbyClinicPage() {
               type="search"
               value={searchText}
               onChange={handleSearchChange}
+              onFocus={() => { if (searchText.trim() && searchSuggestions.length > 0) setSuggestionsOpen(true); }}
               placeholder="Tìm tên bệnh viện, phòng khám…"
               autoComplete="off"
+              role="combobox"
+              aria-expanded={suggestionsOpen && searchSuggestions.length > 0}
+              aria-controls="facility-search-suggestions"
+              aria-autocomplete="list"
             />
             {searchText && (
-              <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setSearchText(""); setSelectedFacility(null); }}>×</button>
+              <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setSearchText(""); setSelectedFacility(null); setSuggestionsOpen(false); }}>×</button>
+            )}
+            {suggestionsOpen && searchSuggestions.length > 0 && (
+              <div id="facility-search-suggestions" className="map-search-suggestions-panel" role="listbox" aria-label="Gợi ý cơ sở y tế">
+                <ul>
+                  {searchSuggestions.map((facility) => (
+                    <li key={facility.facilityId}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={selectedFacility?.facilityId === facility.facilityId}
+                        onClick={() => {
+                          setSuggestionsOpen(false);
+                          handleCardClick(facility);
+                        }}
+                      >
+                        <MapPin size={15} aria-hidden="true" />
+                        <span>
+                          <strong>{facility.facilityName}</strong>
+                          <small>{facility.address}</small>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
           <div className="map-department-filter">
