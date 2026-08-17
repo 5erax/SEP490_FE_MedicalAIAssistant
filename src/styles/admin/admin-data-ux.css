@@ -1,0 +1,265 @@
+/*
+ * Admin data-workspace UX overrides.
+ * Loaded last so table density, search focus and responsive behaviour remain
+ * consistent across all Admin catalogue surfaces without changing data flow.
+ */
+
+.admin-operator {
+  --admin-data-border: rgba(24, 72, 65, 0.16);
+  --admin-data-focus: #087f7b;
+  --admin-data-focus-soft: rgba(8, 127, 123, 0.11);
+  --admin-data-muted: #60716d;
+}
+
+/* Keep large datasets inside a usable viewport instead of making the whole
+ * Admin page several screens tall. Sticky table headers remain visible while
+ * the user scrolls the dataset itself. */
+@media (min-width: 769px) {
+  .admin-operator .ui-table-wrap,
+  .admin-operator .feedback-table-scroll,
+  .admin-operator .subscription-plan-card-list {
+    max-height: min(62svh, 680px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .admin-operator .feedback-admin-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .admin-operator .subscription-plan-list-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .admin-operator .ui-table th,
+  .admin-operator .ui-table td,
+  .admin-operator .feedback-admin-table th,
+  .admin-operator .feedback-admin-table td {
+    padding: 9px 11px;
+    vertical-align: middle;
+  }
+
+  .admin-operator .ui-table tbody tr,
+  .admin-operator .feedback-admin-table tbody tr {
+    content-visibility: auto;
+    contain-intrinsic-size: 64px;
+  }
+
+  .admin-operator .ui-table .record-actions {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .admin-operator .ui-table .record-actions :is(.btn, .ui-button),
+  .admin-operator .feedback-row-actions :is(.btn, .ui-button) {
+    min-height: 38px;
+    padding-inline: 10px;
+    white-space: nowrap;
+  }
+
+  .admin-operator .clinical-question-primary-cell > div {
+    min-width: 0;
+  }
+
+  .admin-operator .clinical-question-primary-cell strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.35;
+  }
+
+  .admin-operator .clinical-question-primary-cell small {
+    overflow: hidden;
+    max-height: 2.7em;
+    line-height: 1.35;
+  }
+}
+
+/* The enhanced shared paginator is rendered by AdminWorkspacePage for these
+ * sections. Hide the previous sequential-only controls to avoid duplicates. */
+.admin-operator :is(
+  .admin-users-pagination,
+  .doctor-pagination,
+  .ai-config-pagination,
+  .department-pagination,
+  .icd-pagination,
+  .patient-profile-pagination,
+  .facility-pagination
+) {
+  display: none;
+}
+
+/* User account search + suggestions. */
+.admin-operator .admin-users-toolbar.admin-users-toolbar--enhanced {
+  grid-template-columns:
+    minmax(300px, 1.45fr)
+    minmax(170px, 0.72fr)
+    minmax(210px, 0.85fr)
+    minmax(130px, 0.55fr);
+  align-items: end;
+}
+
+.admin-operator .admin-users-search-field {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: var(--admin-data-muted);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.admin-operator .admin-users-search-field > label {
+  color: var(--admin-data-muted);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.02em;
+}
+
+.admin-operator .admin-users-search-combobox {
+  position: relative;
+  min-width: 0;
+}
+
+.admin-operator .admin-users-search-control {
+  width: 100%;
+}
+
+.admin-operator .admin-users-search-suggestions {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 7px);
+  left: 0;
+  display: grid;
+  width: 100%;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid rgba(8, 127, 123, 0.22);
+  border-radius: 14px;
+  background: #fff;
+  padding: 5px;
+  box-shadow: 0 18px 42px rgba(16, 47, 50, 0.14);
+}
+
+.admin-operator .admin-users-search-suggestions > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #102f32;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.admin-operator .admin-users-search-suggestions > button:hover,
+.admin-operator .admin-users-search-suggestions > button.is-highlighted {
+  background: #edf7f4;
+}
+
+.admin-operator .admin-users-search-suggestions > button > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-operator .admin-users-search-suggestions strong,
+.admin-operator .admin-users-search-suggestions small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-operator .admin-users-search-suggestions strong {
+  font-size: 13px;
+}
+
+.admin-operator .admin-users-search-suggestions small {
+  color: #60716d;
+  font-size: 11px;
+}
+
+.admin-operator .admin-users-table .admin-user-delete-btn {
+  min-width: 118px;
+  border-color: #a42424;
+  background: #fff4f2;
+  color: #8f1717;
+}
+
+.admin-operator .admin-users-table .admin-user-delete-btn:not(:disabled):hover {
+  border-color: #8f1717;
+  background: #ffe8e4;
+  color: #741010;
+}
+
+.admin-operator .admin-users-table :is(.ui-badge-info, .ui-badge-warning) {
+  color: #05616a;
+}
+
+/* Search fields use a clean border/focus-within treatment. The input itself
+ * never receives the nested square focus ring shown by browsers/legacy CSS. */
+.admin-operator input[type="search"]:focus,
+.admin-operator input[type="search"]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-operator :is(
+  .admin-users-search-control,
+  .doctor-search-field,
+  .facility-search-control,
+  .department-search-control,
+  .icd-search-control,
+  .clinical-catalog-search-control,
+  .consultation-search-control
+):focus-within {
+  border-color: var(--admin-data-focus);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--admin-data-focus-soft);
+}
+
+.admin-operator .lab-filter-form input[type="search"]:focus {
+  border-color: var(--admin-data-focus);
+}
+
+@media (max-width: 1180px) {
+  .admin-operator .admin-users-toolbar.admin-users-toolbar--enhanced {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-operator .admin-users-toolbar.admin-users-toolbar--enhanced {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-users-search-suggestions {
+    max-height: min(42svh, 320px);
+  }
+
+  .admin-operator .ui-table-wrap,
+  .admin-operator .feedback-table-scroll,
+  .admin-operator .subscription-plan-card-list {
+    max-height: none;
+  }
+
+  .admin-operator .admin-users-table .record-actions .ui-button {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-operator .admin-users-search-suggestions > button {
+    transition: none;
+  }
+}

@@ -28,6 +28,7 @@ import {
   LoadingState,
 } from "../ui";
 import { LabIndicatorChildDialog, LabIndicatorFormDialog } from "./LabIndicatorDialogs";
+import AdminPagination from "../admin/AdminPagination";
 import "../../styles/admin/lab-indicators.css";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -598,42 +599,16 @@ function IndicatorListView() {
       )}
 
       {status === "ready" && pageInfo.totalPages > 1 && (
-        <nav
-          className="pagination-row lab-pagination"
-          aria-label="Phân trang chỉ số xét nghiệm"
-        >
-          <button
-            type="button"
-            disabled={pageInfo.pageNumber <= 1}
-            onClick={() =>
-              loadIndicators(
-                pageInfo.pageNumber - 1,
-                pageInfo.pageSize,
-                appliedSearch,
-              )
-            }
-          >
-            Trang trước
-          </button>
-
-          <span>
-            Trang {pageInfo.pageNumber} / {pageInfo.totalPages}
-          </span>
-
-          <button
-            type="button"
-            disabled={pageInfo.pageNumber >= pageInfo.totalPages}
-            onClick={() =>
-              loadIndicators(
-                pageInfo.pageNumber + 1,
-                pageInfo.pageSize,
-                appliedSearch,
-              )
-            }
-          >
-            Trang sau
-          </button>
-        </nav>
+        <AdminPagination
+          ariaLabel="Phân trang chỉ số xét nghiệm"
+          currentPage={pageInfo.pageNumber}
+          totalPages={pageInfo.totalPages}
+          totalCount={pageInfo.totalCount}
+          pageSize={pageInfo.pageSize}
+          itemCount={items.length}
+          itemLabel="chỉ số"
+          onPageChange={(nextPage) => loadIndicators(nextPage, pageInfo.pageSize, appliedSearch)}
+        />
       )}
 
       {dialog && (

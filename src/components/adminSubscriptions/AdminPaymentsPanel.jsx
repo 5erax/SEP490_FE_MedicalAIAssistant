@@ -4,6 +4,7 @@ import { Badge, Button, DataTable, Dialog, EmptyState, ErrorState, LoadingState 
 import { paymentsApi } from "../../services/api";
 import { translateApiMessage } from "../../services/apiMessageTranslator";
 import { getPaymentStatusLabel } from "../../services/paymentStatusLabels";
+import AdminPagination from "../admin/AdminPagination";
 
 const PAGE_SIZE = 10;
 
@@ -211,11 +212,7 @@ export default function AdminPaymentsPanel() {
       )}
 
       {paymentPage.totalPages > 1 && !error && (
-        <nav className="admin-payment-pagination" aria-label="Phân trang lịch sử thanh toán">
-          <Button tone="ghost" size="sm" disabled={loading || pageNumber <= 1} onClick={() => changePage(pageNumber - 1)}>Trang trước</Button>
-          <span>Trang {paymentPage.pageNumber}/{paymentPage.totalPages}</span>
-          <Button tone="ghost" size="sm" disabled={loading || pageNumber >= paymentPage.totalPages} onClick={() => changePage(pageNumber + 1)}>Trang sau</Button>
-        </nav>
+        <AdminPagination ariaLabel="Phân trang lịch sử thanh toán" currentPage={paymentPage.pageNumber} totalPages={paymentPage.totalPages} totalCount={paymentPage.totalCount} pageSize={paymentPage.pageSize} itemCount={paymentPage.items.length} itemLabel="giao dịch" loading={loading} onPageChange={changePage} />
       )}
 
       {selectedPayment && (

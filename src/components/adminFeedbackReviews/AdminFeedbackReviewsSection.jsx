@@ -4,6 +4,7 @@ import { useFeedback } from "../feedback/feedbackContext";
 import { feedbackReviewsApi, getFeedbackReviewApiMessage } from "../../services/feedbackReviewService";
 import { medicalFacilitiesApi } from "../../services/facilityService";
 import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../ui";
+import AdminPagination from "../admin/AdminPagination";
 
 const PAGE_SIZE = 20;
 const EMPTY_FILTERS = { facilityId: "", rating: "", status: "" };
@@ -182,7 +183,7 @@ export default function AdminFeedbackReviewsSection({ facilities }) {
             </table>
           </div>
           <div className="feedback-card-list">{reviews.map((review) => <article className="feedback-admin-card" key={review.id}><header><div><strong>{review.facilityName || "Cơ sở chưa xác định"}</strong><small>{formatDate(review.createdAt)}</small></div><Badge tone={STATUS_TONES[review.status] || "neutral"}>{getStatusLabel(review.status)}</Badge></header><Rating value={review.rating} /><p>{review.comment || "Không có nội dung"}</p><div className="feedback-row-actions"><select aria-label={`Đổi trạng thái đánh giá tại ${review.facilityName}`} value={review.status || "Pending"} disabled={busyId === review.id} onChange={(event) => updateStatus(review, event.target.value)}><option value="Approved">Đã duyệt</option><option value="Pending">Chờ duyệt</option><option value="Hidden">Đã ẩn</option><option value="Rejected">Đã từ chối</option></select><Button tone="danger" size="sm" className="admin-danger-btn feedback-delete-button" disabled={busyId === review.id} onClick={() => removeReview(review)}><Trash2 size={14} aria-hidden="true" /> Xóa</Button></div></article>)}</div>
-          <nav className="feedback-pagination" aria-label="Phân trang đánh giá"><Button tone="secondary" size="sm" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => loadReviews(pageInfo.pageNumber - 1)}>Trang trước</Button><span>Trang {pageInfo.pageNumber}/{Math.max(pageInfo.totalPages, 1)}</span><Button tone="secondary" size="sm" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => loadReviews(pageInfo.pageNumber + 1)}>Trang sau</Button></nav>
+          <AdminPagination ariaLabel="Phân trang đánh giá" currentPage={pageInfo.pageNumber} totalPages={pageInfo.totalPages} totalCount={pageInfo.totalCount} pageSize={PAGE_SIZE} itemCount={reviews.length} itemLabel="đánh giá" loading={loading} onPageChange={loadReviews} />
         </>
       )}
     </section>

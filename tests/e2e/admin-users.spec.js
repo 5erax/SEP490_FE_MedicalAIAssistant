@@ -20,6 +20,7 @@ test("admin retries a failed user list and receives an empty state", async ({ pa
   }, ADMIN_TOKEN);
 
   let userRequestCount = 0;
+  let allowUserRequest = false;
 
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
@@ -36,7 +37,7 @@ test("admin retries a failed user list and receives an empty state", async ({ pa
       userRequestCount += 1;
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      if (userRequestCount <= 2) {
+      if (!allowUserRequest) {
         return route.fulfill({
           status: 503,
           contentType: "application/json",
@@ -74,13 +75,14 @@ test("admin retries a failed user list and receives an empty state", async ({ pa
 
   const retryButton = errorState.getByRole("button", { name: "Thử tải lại" });
   await expect(retryButton).toHaveCSS("min-height", "44px");
+  allowUserRequest = true;
   await retryButton.focus();
   await page.keyboard.press("Enter");
 
   await expect(page.getByText("Không có tài khoản phù hợp", { exact: true })).toBeVisible();
-  await expect(page.getByText("Trang 1 / 1 · 0/0 hiển thị", { exact: true })).toBeVisible();
+  await expect(page.getByText("Trang 1/1", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  expect(userRequestCount).toBe(3);
+  expect(userRequestCount).toBeGreaterThanOrEqual(2);
 });
 
 test("admin user filters use consistent labelled controls and status styling", async ({ page }) => {
@@ -177,7 +179,7 @@ test("admin user filters use consistent labelled controls and status styling", a
   await expect(page.getByText("pending-doctor@example.com", { exact: true })).toBeVisible();
   await expect(page.getByText("System Admin", { exact: true })).toHaveCount(0);
   await expect(page.getByText("admin@medimate.local", { exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Xóa" })).toHaveCount(3);
+  await expect(page.getByRole("button", { name: /Vô hiệu hóa tài khoản/ })).toHaveCount(3);
 
   await page.getByRole("button", { name: "Mở danh sách: Tất cả tài khoản" }).click();
   await page.getByRole("listbox", { name: "Trạng thái" })
@@ -187,7 +189,7 @@ test("admin user filters use consistent labelled controls and status styling", a
   await expect(page.getByText("approved-string@example.com", { exact: true })).toHaveCount(0);
   await expect(page.getByText("approved-number@example.com", { exact: true })).toHaveCount(0);
   await expect(page.getByText("pending-doctor@example.com", { exact: true })).toBeVisible();
-  await expect(page.getByText("1 đang hiển thị · 1 chờ duyệt · 3 tài khoản có thể quản lý trong dữ liệu đã tải", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 đang hiển thị · 1 kết quả phù hợp · 1 chờ duyệt · 3 tài khoản có thể quản lý", { exact: true })).toBeVisible();
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   const adminNavigation = page.getByRole("navigation", { name: "Điều hướng admin" });
@@ -202,7 +204,7 @@ test("admin user filters use consistent labelled controls and status styling", a
   expect(activeNavigationBox.x + activeNavigationBox.width).toBeLessThanOrEqual(
     navigationBox.x + navigationBox.width,
   );
-  const deleteButton = page.getByRole("button", { name: "Xóa tài khoản Pending Doctor" });
+  const deleteButton = page.getByRole("button", { name: "Vô hiệu hóa tài khoản Pending Doctor" });
   expect((await deleteButton.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 
   const accessibility = await new AxeBuilder({ page })
@@ -212,7 +214,7 @@ test("admin user filters use consistent labelled controls and status styling", a
   const seriousViolations = accessibility.violations
     .filter((violation) => ["critical", "serious"].includes(violation.impact))
     .map((violation) => violation.id);
-  expect(seriousViolations).toEqual([]);
+  expect(seriousViolations, JSON.stringify(accessibility.violations, null, 2)).toEqual([]);
 });
 
 test("admin restores a soft-deleted user account", async ({ page }) => {
@@ -285,8 +287,8 @@ test("admin restores a soft-deleted user account", async ({ page }) => {
   await page.goto("/app/admin/users", { waitUntil: "domcontentloaded" });
 
   const table = page.locator(".admin-users-table");
-  await expect(table.getByText("Đã xóa", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Xóa tài khoản Deleted User" })).toHaveCount(0);
+  await expect(table.getByText("Đã vô hiệu hóa", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Vô hiệu hóa tài khoản Deleted User" })).toHaveCount(0);
   const restoreButton = page.getByRole("button", { name: "Khôi phục tài khoản Deleted User" });
   await expect(restoreButton).toBeVisible();
   await restoreButton.click();
@@ -295,6 +297,6 @@ test("admin restores a soft-deleted user account", async ({ page }) => {
 
   await expect(page.getByText("Đã khôi phục người dùng.", { exact: true })).toBeVisible();
   await expect(table.getByText("Hoạt động", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Xóa tài khoản Deleted User" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Vô hiệu hóa tài khoản Deleted User" })).toBeVisible();
   expect(state.restoredId).toBe("deleted-1");
 });

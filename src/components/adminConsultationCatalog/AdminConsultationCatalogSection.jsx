@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFeedback } from "../feedback/feedbackContext";
+import AdminPagination from "../admin/AdminPagination";
 import {
   checklistItemsApi,
   departmentConsultationQuestionsApi,
@@ -500,11 +501,17 @@ export default function AdminConsultationCatalogSection() {
       )}
 
       {status !== "loading" && status !== "error" && (
-        <nav className="pagination-row" aria-label={`Phân trang ${currentTitle.toLowerCase()}`}>
-          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => void loadItems(pageInfo.pageNumber - 1, pageInfo.pageSize)}>Trước</button>
-          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1}</span>
-          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => void loadItems(pageInfo.pageNumber + 1, pageInfo.pageSize)}>Sau</button>
-        </nav>
+        <AdminPagination
+          ariaLabel={`Phân trang ${currentTitle.toLowerCase()}`}
+          currentPage={pageInfo.pageNumber}
+          totalPages={pageInfo.totalPages}
+          totalCount={pageInfo.totalCount}
+          pageSize={pageInfo.pageSize}
+          itemCount={items.length}
+          itemLabel={activeTab === "questions" ? "câu hỏi" : "mục checklist"}
+          loading={status === "saving"}
+          onPageChange={(nextPage) => void loadItems(nextPage, pageInfo.pageSize)}
+        />
       )}
 
       {formOpen && (

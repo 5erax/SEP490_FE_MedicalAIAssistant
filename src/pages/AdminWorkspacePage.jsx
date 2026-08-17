@@ -19,6 +19,7 @@ import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import AdminSidebarNavigation from "../components/admin/AdminSidebarNavigation";
+import AdminPagination from "../components/admin/AdminPagination";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import AdminDoctorsSection from "../components/adminDoctors/AdminDoctorsSection";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
@@ -342,6 +343,35 @@ function statusLabel(user) {
   return isApprovedUser(user) ? "Đã duyệt" : "Chờ duyệt";
 }
 
+const USER_COLLATOR = new Intl.Collator("vi-VN", {
+  numeric: true,
+  sensitivity: "base",
+});
+
+function normalizeUserSearchText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .trim()
+    .toLowerCase();
+}
+
+function getManagedUserId(user) {
+  return user?.identityId || user?.userId || user?.id || "";
+}
+
+function getManagedUserDisplayName(user) {
+  return user?.displayName || user?.name || user?.email || "Người dùng";
+}
+
+function getManagedUserStatusRank(user) {
+  if (user?.isDeleted) return 2;
+  if (isPendingApprovalUser(user)) return 1;
+  return 0;
+}
+
 function parseOptionalCoordinate(value, minimum, maximum) {
   const trimmed = String(value ?? "").trim();
   if (!trimmed) return null;
@@ -476,10 +506,14 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [patientProfilePageInfo, setPatientProfilePageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const activeSection = initialSection;
   const activeAdminItem = ADMIN_NAV_ITEMS.find((item) => item.id === `admin.${activeSection}`);
+  const activeAdminLabel = activeSection === "doctors"
+    ? "Hồ sơ bác sĩ"
+    : activeAdminItem?.label;
   const adminNavRef = useRef(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [userStatusFilter, setUserStatusFilter] = useState(USER_STATUS_FILTERS.all);
+  const [userSort, setUserSort] = useState("name-asc");
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [appliedFacilityFilters, setAppliedFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [departmentFilters, setDepartmentFilters] = useState(EMPTY_DEPARTMENT_FILTERS);
@@ -727,35 +761,115 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const pendingApprovalUsers = useMemo(() => manageableUsers.filter(isPendingApprovalUser), [manageableUsers]);
 
   const filteredUsers = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    const keyword = normalizeUserSearchText(search);
+
     return manageableUsers.filter((user) => {
       const matchesStatus = userStatusFilter === USER_STATUS_FILTERS.all
         || (userStatusFilter === USER_STATUS_FILTERS.pending && isPendingApprovalUser(user))
         || (userStatusFilter === USER_STATUS_FILTERS.confirmed && !user.isDeleted && isApprovedUser(user))
         || (userStatusFilter === USER_STATUS_FILTERS.deleted && user.isDeleted);
+
       if (!matchesStatus) return false;
       if (!keyword) return true;
 
-      return [user.email, user.displayName, user.name, user.identityId, user.userId]
+      return [
+        user.email,
+        user.displayName,
+        user.name,
+        user.identityId,
+        user.userId,
+        user.id,
+      ]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword));
+        .some((value) => normalizeUserSearchText(value).includes(keyword));
     });
   }, [manageableUsers, search, userStatusFilter]);
 
-  // usersPageNumber/usersPageSize only drive this client-side slice now -
-  // search/status/paging all run over the full fetchAllUsers() result, not
-  // just whichever backend page happened to load.
+  const sortedUsers = useMemo(() => {
+    const [sortKey, direction] = userSort.split("-");
+    const directionFactor = direction === "desc" ? -1 : 1;
+
+    return [...filteredUsers].sort((left, right) => {
+      if (sortKey === "status") {
+        const statusDifference = getManagedUserStatusRank(left) - getManagedUserStatusRank(right);
+        if (statusDifference !== 0) return statusDifference * directionFactor;
+      }
+
+      const leftValue = sortKey === "email"
+        ? left.email
+        : getManagedUserDisplayName(left);
+      const rightValue = sortKey === "email"
+        ? right.email
+        : getManagedUserDisplayName(right);
+      const primaryDifference = USER_COLLATOR.compare(
+        String(leftValue ?? ""),
+        String(rightValue ?? ""),
+      );
+
+      if (primaryDifference !== 0) return primaryDifference * directionFactor;
+
+      return USER_COLLATOR.compare(
+        String(getManagedUserId(left)),
+        String(getManagedUserId(right)),
+      );
+    });
+  }, [filteredUsers, userSort]);
+
+  const userSearchSuggestions = useMemo(() => {
+    const keyword = normalizeUserSearchText(search);
+    if (!keyword) return [];
+
+    return manageableUsers
+      .map((user) => {
+        const displayName = getManagedUserDisplayName(user);
+        const email = user.email || "";
+        const userId = getManagedUserId(user);
+        const nameText = normalizeUserSearchText(displayName);
+        const emailText = normalizeUserSearchText(email);
+        const idText = normalizeUserSearchText(userId);
+        const matches = nameText.includes(keyword)
+          || emailText.includes(keyword)
+          || idText.includes(keyword);
+
+        let rank = 10;
+        if (nameText.startsWith(keyword)) rank = 0;
+        else if (emailText.startsWith(keyword)) rank = 1;
+        else if (idText.startsWith(keyword)) rank = 2;
+        else if (nameText.includes(keyword)) rank = 3;
+        else if (emailText.includes(keyword)) rank = 4;
+        else if (idText.includes(keyword)) rank = 5;
+
+        return {
+          id: userId,
+          displayName,
+          email,
+          value: email || displayName || userId,
+          rank,
+          matches,
+        };
+      })
+      .filter((item) => item.matches)
+      .sort((left, right) => (
+        left.rank - right.rank
+        || USER_COLLATOR.compare(left.displayName, right.displayName)
+        || USER_COLLATOR.compare(left.email, right.email)
+      ))
+      .slice(0, 6);
+  }, [manageableUsers, search]);
+
+  // Tài khoản đã được tải một lần vào bộ nhớ để tìm kiếm, sắp xếp và chuyển
+  // trang tức thời. Chỉ thao tác "Tải lại" mới yêu cầu lại dữ liệu từ API.
   const pageInfo = useMemo(() => {
-    const totalCount = filteredUsers.length;
+    const totalCount = sortedUsers.length;
     const totalPages = Math.max(1, Math.ceil(totalCount / usersPageSize));
     const pageNumber = Math.min(Math.max(1, usersPageNumber), totalPages);
     return { pageNumber, pageSize: usersPageSize, totalCount, totalPages };
-  }, [filteredUsers, usersPageSize, usersPageNumber]);
+  }, [sortedUsers, usersPageSize, usersPageNumber]);
 
   const pagedUsers = useMemo(() => {
-    const start = (pageInfo.pageNumber - 1) * pageInfo.pageSize;
-    return filteredUsers.slice(start, start + pageInfo.pageSize);
-  }, [filteredUsers, pageInfo]);
+    const startIndex = (pageInfo.pageNumber - 1) * pageInfo.pageSize;
+    return sortedUsers.slice(startIndex, startIndex + pageInfo.pageSize);
+  }, [pageInfo, sortedUsers]);
 
   const pendingUsers = pendingApprovalUsers.length;
   const activeAIConfigs = aiConfigs.filter((config) => config.isActive).length;
@@ -1991,16 +2105,16 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   async function handleDeleteUser(userId) {
     const targetUser = allUsers.find((user) => String(user.identityId || user.userId || user.id) === String(userId));
     if (targetUser && isProtectedAdminUser(targetUser)) {
-      const protectedMessage = "Tài khoản quản trị hệ thống được bảo vệ và không thể xóa tại màn hình này.";
+      const protectedMessage = "Tài khoản quản trị hệ thống được bảo vệ và không thể vô hiệu hóa tại màn hình này.";
       setUsersMessage({ type: "error", text: protectedMessage });
-      showToast({ type: "error", title: "Không thể xóa tài khoản quản trị", message: protectedMessage });
+      showToast({ type: "error", title: "Không thể vô hiệu hóa tài khoản quản trị", message: protectedMessage });
       return;
     }
 
     const confirmed = await confirmAction({
-      title: "Xóa người dùng?",
-      message: "Tài khoản này sẽ bị xóa khỏi danh sách quản trị. Hãy chắc chắn trước khi tiếp tục.",
-      confirmLabel: "Xóa người dùng",
+      title: "Vô hiệu hóa tài khoản?",
+      message: "Tài khoản sẽ được vô hiệu hóa và không thể sử dụng bình thường cho đến khi được khôi phục.",
+      confirmLabel: "Vô hiệu hóa",
       tone: "danger",
     });
     if (!confirmed) return;
@@ -2008,8 +2122,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     setUsersMessage(null);
     try {
       const response = await usersApi.remove(userId);
-      setUsersMessage({ type: "success", text: response.message || "Đã xóa người dùng." });
-      showToast({ type: "success", title: "Đã xóa người dùng", message: response.message || "Danh sách đã được cập nhật." });
+      setUsersMessage({ type: "success", text: response.message || "Đã vô hiệu hóa tài khoản." });
+      showToast({ type: "success", title: "Đã vô hiệu hóa tài khoản", message: response.message || "Danh sách đã được cập nhật." });
       await loadUsers();
     } catch (error) {
       setUsersMessage({ type: "error", text: error.message });
@@ -2603,7 +2717,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
               </a>
               <div className="admin-mobile-context">
                 <span>Quản trị</span>
-                <strong>{activeAdminItem?.label ?? "Tổng quan"}</strong>
+                <strong>{activeAdminLabel ?? "Tổng quan"}</strong>
               </div>
               <button
                 className="admin-mobile-nav-toggle"
@@ -2640,11 +2754,11 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
           </aside>
 
           <div className="admin-main">
-            <h1 className="sr-only">{activeAdminItem?.label ?? "Quản trị hệ thống"}</h1>
+            <h1 className="sr-only">{activeAdminLabel ?? "Quản trị hệ thống"}</h1>
             <header className="admin-topbar">
               <div className="admin-topbar-context">
                 <span>Không gian quản trị</span>
-                <strong>{activeAdminItem?.label ?? "Quản trị hệ thống"}</strong>
+                <strong>{activeAdminLabel ?? "Quản trị hệ thống"}</strong>
               </div>
               <div className="admin-top-profile">
                 <div className="admin-profile-chip">
@@ -2709,14 +2823,29 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 message={usersMessage}
                 onDelete={handleDeleteUser}
                 onRestore={handleRestoreUser}
-                onLoadPage={loadUsers}
-                onPageSizeChange={(pageSize) => loadUsers(1, pageSize)}
-                onSearchChange={(value) => { setSearch(value); setUsersPageNumber(1); }}
-                onStatusFilterChange={(value) => { setUserStatusFilter(value); setUsersPageNumber(1); }}
+                onReload={() => loadUsers()}
+                onPageSizeChange={(pageSize) => {
+                  setUsersPageSize(pageSize);
+                  setUsersPageNumber(1);
+                }}
+                onSearchChange={(value) => {
+                  setSearch(value);
+                  setUsersPageNumber(1);
+                }}
+                onSortChange={(value) => {
+                  setUserSort(value);
+                  setUsersPageNumber(1);
+                }}
+                onStatusFilterChange={(value) => {
+                  setUserStatusFilter(value);
+                  setUsersPageNumber(1);
+                }}
                 pageInfo={pageInfo}
                 pendingCount={pendingUsers}
                 rows={pagedUsers}
                 search={search}
+                searchSuggestions={userSearchSuggestions}
+                sortValue={userSort}
                 statusFilter={userStatusFilter}
                 statusLabel={statusLabel}
                 totalVisibleCount={manageableUsers.length}
@@ -2886,7 +3015,28 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
             )}
 
             {activeSection === "facilities" && (
-              <AdminFacilityWorkspaceSection facilities={facilities}>
+              <AdminFacilityWorkspaceSection
+                facilities={facilities}
+                facilityFooter={(
+                  !facilityLoadError ? (
+                    <AdminPagination
+                      ariaLabel="Phân trang cơ sở y tế"
+                      currentPage={facilityPageInfo.pageNumber}
+                      totalPages={facilityPageInfo.totalPages}
+                      totalCount={facilityPageInfo.totalCount}
+                      pageSize={facilityPageInfo.pageSize}
+                      itemCount={facilities.length}
+                      itemLabel="cơ sở y tế"
+                      loading={facilitiesLoading}
+                      onPageChange={(pageNumber) => loadFacilities(
+                        pageNumber,
+                        facilityPageInfo.pageSize,
+                        appliedFacilityFilters,
+                      )}
+                    />
+                  ) : null
+                )}
+              >
                 <AdminFacilitiesSection
                   departments={departments}
                   editingFacilityId={editingFacilityId}
@@ -2918,6 +3068,103 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                   onToggleStatus={handleToggleFacilityStatus}
                 />
               </AdminFacilityWorkspaceSection>
+            )}
+
+            {activeSection === "users" && !usersLoadError && (
+              <AdminPagination
+                ariaLabel="Phân trang tài khoản"
+                currentPage={pageInfo.pageNumber}
+                totalPages={pageInfo.totalPages}
+                totalCount={pageInfo.totalCount}
+                pageSize={pageInfo.pageSize}
+                itemCount={pagedUsers.length}
+                itemLabel="tài khoản"
+                loading={usersLoading}
+                onPageChange={setUsersPageNumber}
+              />
+            )}
+
+            {activeSection === "doctors" && !doctorLoadError && (
+              <AdminPagination
+                ariaLabel="Phân trang hồ sơ bác sĩ"
+                currentPage={doctorPageInfo.pageNumber}
+                totalPages={doctorPageInfo.totalPages}
+                totalCount={doctorPageInfo.totalCount}
+                pageSize={doctorPageInfo.pageSize}
+                itemCount={doctors.length}
+                itemLabel="hồ sơ bác sĩ"
+                loading={doctorsLoading}
+                onPageChange={(pageNumber) => navigate(
+                  getDoctorViewPath(doctorFilters, pageNumber, doctorPageInfo.pageSize),
+                )}
+              />
+            )}
+
+            {activeSection === "ai-configs" && !aiConfigLoadError && (
+              <AdminPagination
+                ariaLabel="Phân trang cấu hình AI"
+                currentPage={aiConfigPageInfo.pageNumber}
+                totalPages={aiConfigPageInfo.totalPages}
+                totalCount={aiConfigPageInfo.totalCount}
+                pageSize={aiConfigPageInfo.pageSize}
+                itemCount={filteredAIConfigs.length}
+                itemLabel="cấu hình"
+                loading={aiConfigsLoading}
+                onPageChange={(pageNumber) => loadAIConfigs(pageNumber, aiConfigPageInfo.pageSize)}
+              />
+            )}
+
+            {activeSection === "departments" && !departmentCatalogLoadError && (
+              <AdminPagination
+                ariaLabel="Phân trang chuyên khoa"
+                currentPage={departmentPageInfo.pageNumber}
+                totalPages={departmentPageInfo.totalPages}
+                totalCount={departmentPageInfo.totalCount}
+                pageSize={departmentPageInfo.pageSize}
+                itemCount={departmentCatalog.length}
+                itemLabel="chuyên khoa"
+                loading={departmentCatalogLoading}
+                onPageChange={(pageNumber) => loadDepartmentCatalog(
+                  pageNumber,
+                  departmentPageInfo.pageSize,
+                  appliedDepartmentFilters,
+                )}
+              />
+            )}
+
+            {activeSection === "icd-chapters" && !icdChapterLoadError && (
+              <AdminPagination
+                ariaLabel="Phân trang chương ICD"
+                currentPage={icdChapterPageInfo.pageNumber}
+                totalPages={icdChapterPageInfo.totalPages}
+                totalCount={icdChapterPageInfo.totalCount}
+                pageSize={icdChapterPageInfo.pageSize}
+                itemCount={icdChapters.length}
+                itemLabel="chương ICD"
+                loading={icdChaptersLoading}
+                onPageChange={(pageNumber) => loadIcdChapters(
+                  pageNumber,
+                  icdChapterPageInfo.pageSize,
+                  appliedIcdChapterFilters,
+                )}
+              />
+            )}
+
+            {activeSection === "patient-profiles" && !patientProfileLoadError && (
+              <AdminPagination
+                ariaLabel="Phân trang hồ sơ bệnh nhân"
+                currentPage={patientProfilePageInfo.pageNumber}
+                totalPages={patientProfilePageInfo.totalPages}
+                totalCount={patientProfilePageInfo.totalCount}
+                pageSize={patientProfilePageInfo.pageSize}
+                itemCount={patientProfiles.length}
+                itemLabel="hồ sơ"
+                loading={patientProfilesLoading}
+                onPageChange={(pageNumber) => loadPatientProfiles(
+                  pageNumber,
+                  patientProfilePageInfo.pageSize,
+                )}
+              />
             )}
 
           </div>

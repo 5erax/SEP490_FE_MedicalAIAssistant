@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getClinicalQuestionApiMessage } from "../../services/clinicalQuestionService";
+import AdminPagination from "../admin/AdminPagination";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 const DEFAULT_FILTERS = {
@@ -696,25 +697,18 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       </div>
 
       {status !== "loading" && status !== "error" && (
-        <nav className="pagination-row clinical-catalog-pagination" aria-label="Phân trang câu hỏi lâm sàng">
-          <button
-            className="btn btn-ghost btn-small"
-            type="button"
-            disabled={pageInfo.pageNumber <= 1 || status === "saving"}
-            onClick={() => loadItems(Math.max(1, pageInfo.pageNumber - 1), pageInfo.pageSize)}
-          >
-            Trước
-          </button>
-          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {items.length} / {pageInfo.totalCount} {config.pluralLabel}</span>
-          <button
-            className="btn btn-ghost btn-small"
-            type="button"
-            disabled={pageInfo.pageNumber >= pageInfo.totalPages || status === "saving"}
-            onClick={() => loadItems(Math.min(pageInfo.totalPages || 1, pageInfo.pageNumber + 1), pageInfo.pageSize)}
-          >
-            Sau
-          </button>
-        </nav>
+        <AdminPagination
+          ariaLabel="Phân trang câu hỏi lâm sàng"
+          className="clinical-catalog-pagination"
+          currentPage={pageInfo.pageNumber}
+          totalPages={pageInfo.totalPages}
+          totalCount={pageInfo.totalCount}
+          pageSize={pageInfo.pageSize}
+          itemCount={items.length}
+          itemLabel={config.pluralLabel}
+          loading={status === "saving"}
+          onPageChange={(pageNumber) => loadItems(pageNumber, pageInfo.pageSize)}
+        />
       )}
 
       {formOpen && (
