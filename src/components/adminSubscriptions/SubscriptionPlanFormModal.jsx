@@ -26,14 +26,10 @@ function toFormValue(plan) {
 function validate(form) {
   const errors = {};
   const price = Number(form.price);
-  const duration = Number(form.durationInDays);
 
   if (!form.planName.trim()) errors.planName = "Vui lòng nhập tên gói.";
   if (form.price === "" || Number.isNaN(price) || price < 0) {
     errors.price = "Giá gói phải là số lớn hơn hoặc bằng 0.";
-  }
-  if (!Number.isInteger(duration) || duration <= 0) {
-    errors.durationInDays = "Thời hạn phải là số ngày nguyên dương.";
   }
 
   return errors;
@@ -233,27 +229,23 @@ export default function SubscriptionPlanFormModal({
                 {errors.price && <small id="subscription-price-error" role="alert">{errors.price}</small>}
               </label>
 
-              <label className={`clean-field subscription-duration-inline ${errors.durationInDays ? "subscription-field-error" : ""}`}>
-                <span>Thời hạn legacy (ngày)</span>
-                <input
-                  {...getAdminFieldProps("durationInDays", errors.durationInDays, errors.durationInDays ? "subscription-duration-error" : "")}
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={form.durationInDays}
-                  onChange={(event) => update("durationInDays", event.target.value)}
-                  required
-                />
-                <small>Chỉ giữ để tương thích backend; SERVICE_CREDIT đã mua không hết hạn.</small>
-                {errors.durationInDays && <small id="subscription-duration-error" role="alert">{errors.durationInDays}</small>}
-              </label>
-
-              <label className="clean-field">
+              <label className="clean-field subscription-status-field">
                 <span>Trạng thái</span>
-                <select name="isActive" value={form.isActive} onChange={(event) => update("isActive", event.target.value)}>
-                  <option value="true">Đang bán</option>
-                  <option value="false">Tạm ẩn</option>
-                </select>
+                <span className="subscription-status-toggle">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-checked={form.isActive === "true"}
+                    checked={form.isActive === "true"}
+                    onChange={(event) => update("isActive", event.target.checked ? "true" : "false")}
+                  />
+                  <span className="subscription-status-toggle-track" aria-hidden="true">
+                    <span className="subscription-status-toggle-thumb" />
+                  </span>
+                  <span className="subscription-status-toggle-text">
+                    {form.isActive === "true" ? "Đang bán" : "Tạm ẩn"}
+                  </span>
+                </span>
               </label>
             </div>
           </section>
