@@ -77,7 +77,18 @@ async function prepareDoctorPage(page, options = {}) {
       return route.fulfill(ok({ items: openItems, pageNumber: 1, pageSize: 10, totalCount: openItems.length, totalPages: 1 }));
     }
     if (path === "/api/doctor/recovery-plan-requests/mine") {
-      return route.fulfill(ok({ items: mineItems, pageNumber: 1, pageSize: 10, totalCount: mineItems.length, totalPages: 1 }));
+      const requestedPage = Number(url.searchParams.get("pageNumber")) || 1;
+      const requestedPageSize = Number(url.searchParams.get("pageSize")) || 10;
+      const statusFilter = url.searchParams.get("status") || "";
+      const filtered = statusFilter ? mineItems.filter((item) => item.status === statusFilter) : mineItems;
+      const start = (requestedPage - 1) * requestedPageSize;
+      return route.fulfill(ok({
+        items: filtered.slice(start, start + requestedPageSize),
+        pageNumber: requestedPage,
+        pageSize: requestedPageSize,
+        totalCount: filtered.length,
+        totalPages: Math.max(1, Math.ceil(filtered.length / requestedPageSize)),
+      }));
     }
 
     const requestMatch = path.match(/^\/api\/doctor\/recovery-plan-requests\/([^/]+)(\/.*)?$/);
@@ -317,6 +328,24 @@ test.describe("doctor recovery plan workflow", () => {
     await expect(page.getByRole("button", { name: "Yêu cầu bổ sung thông tin" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Trả lại hàng đợi", exact: false })).toBeVisible();
     await expect(page.getByRole("button", { name: "Từ chối yêu cầu", exact: false })).toBeVisible();
+  });
+
+  test("my requests are sorted newest first across backend pages", async ({ page }) => {
+    const olderRequests = Array.from({ length: 10 }, (_, index) => myRequest({
+      id: `11111111-1111-4111-8111-${String(index + 1).padStart(12, "0")}`,
+      diseaseGroup: "musculoskeletal",
+      requestedAt: `2026-08-${String(index + 1).padStart(2, "0")}T08:00:00Z`,
+    }));
+    const newestRequest = myRequest({
+      id: "11111111-1111-4111-8111-999999999999",
+      diseaseGroup: "infectiousDisease",
+      requestedAt: "2026-08-18T10:00:00Z",
+    });
+    await prepareDoctorPage(page, { mineItems: [...olderRequests, newestRequest] });
+    await page.goto("/app/staff/recovery-plans/mine", { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator(".doctor-mine-card").first().getByText("Bệnh truyền nhiễm")).toBeVisible();
+    await expect(page.getByText("Trang 1/2")).toBeVisible();
   });
 
   test("doctor reviews a request, drafts a plan, and publishes it", async ({ page }) => {
