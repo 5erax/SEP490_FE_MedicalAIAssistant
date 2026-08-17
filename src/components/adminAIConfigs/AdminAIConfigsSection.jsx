@@ -128,7 +128,7 @@ export default function AdminAIConfigsSection({
         </div>
       )}
 
-      {loading ? (
+      {loading && !configs.length ? (
         <LoadingState
           className="ai-config-empty-state"
           label="Đang tải danh sách cấu hình AI..."

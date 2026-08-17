@@ -234,13 +234,18 @@
   border-collapse: collapse;
 }
 
-.ui-table th {
+.ui-table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
   background: var(--color-ink);
   color: #fff;
   text-align: left;
+}
+
+.ui-table tbody th {
+  position: static;
+  z-index: auto;
 }
 
 .ui-table th,

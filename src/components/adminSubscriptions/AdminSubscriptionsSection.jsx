@@ -189,7 +189,7 @@ export default function AdminSubscriptionsSection({
         </div>
       )}
 
-      {loading ? (
+      {loading && !plans.length ? (
         <LoadingState
           label="Đang tải danh sách gói dịch vụ..."
           description="Dữ liệu gói đăng ký đang được đồng bộ."

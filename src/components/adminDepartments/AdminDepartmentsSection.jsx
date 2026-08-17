@@ -172,7 +172,7 @@ export default function AdminDepartmentsSection({
       )}
 
       <div className="department-result-panel">
-        {loading ? (
+        {loading && !departments.length ? (
           <LoadingState
             label="Đang tải danh mục chuyên khoa..."
             description="Dữ liệu chuyên khoa và mã chương ICD đang được đồng bộ."

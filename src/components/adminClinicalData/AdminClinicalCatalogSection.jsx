@@ -601,7 +601,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       )}
 
       <div className="clinical-catalog-result-panel">
-        {status === "loading" ? (
+        {status === "loading" && !items.length ? (
           <LoadingState
             label="Đang tải câu hỏi lâm sàng..."
             description="Nội dung câu hỏi và liên kết chương ICD đang được đồng bộ."
@@ -696,7 +696,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         )}
       </div>
 
-      {status !== "loading" && status !== "error" && (
+      {(status !== "loading" || items.length > 0) && status !== "error" && (
         <AdminPagination
           ariaLabel="Phân trang câu hỏi lâm sàng"
           className="clinical-catalog-pagination"
@@ -706,7 +706,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
           pageSize={pageInfo.pageSize}
           itemCount={items.length}
           itemLabel={config.pluralLabel}
-          loading={status === "saving"}
+          loading={status === "loading" || status === "saving"}
           onPageChange={(pageNumber) => loadItems(pageNumber, pageInfo.pageSize)}
         />
       )}

@@ -260,7 +260,7 @@ export default function AdminUsersSection({
         </div>
       </section>
 
-      {loading ? (
+      {loading && !rows.length ? (
         <LoadingState label="Đang tải danh sách người dùng..." />
       ) : error ? (
         <ErrorState

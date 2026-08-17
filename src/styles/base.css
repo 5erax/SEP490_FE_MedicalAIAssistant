@@ -83,8 +83,7 @@ input[type="search"]:focus-visible {
 :where(
   .user-shell-search,
   .map-top-search,
-  [class$="-search-control"],
-  [class$="-search-field"]
+  [class$="-search-control"]
 ):has(input[type="search"]):focus-within {
   border-color: var(--color-info, #087f8c);
   outline: none;
@@ -95,8 +94,7 @@ input[type="search"]:focus-visible {
   :where(
     .user-shell-search,
     .map-top-search,
-    [class$="-search-control"],
-    [class$="-search-field"]
+    [class$="-search-control"]
   ):has(input[type="search"]):focus-within {
     outline: 2px solid Highlight;
     outline-offset: 2px;

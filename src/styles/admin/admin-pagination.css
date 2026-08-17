@@ -67,6 +67,13 @@
   padding: 0;
 }
 
+.admin-pagination-direction {
+  width: 40px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
 .admin-pagination-page[aria-current="page"] {
   border-color: #087f8c;
   background: #087f8c;
@@ -84,35 +91,28 @@
 }
 
 .admin-pagination-jump {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-inline: 4px;
-  white-space: nowrap;
-}
-
-.admin-pagination-jump label {
-  color: #60716d;
-  font-size: 12px;
-  font-weight: 750;
+  display: inline-flex;
+  margin: 0;
 }
 
 .admin-pagination-jump input {
-  width: 66px;
-  padding: 0 8px;
+  width: 40px;
+  padding: 0 4px;
   text-align: center;
   appearance: textfield;
+}
+
+.admin-pagination-jump input::placeholder {
+  color: #60716d;
+  opacity: 1;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .admin-pagination-jump input::-webkit-inner-spin-button,
 .admin-pagination-jump input::-webkit-outer-spin-button {
   margin: 0;
   appearance: none;
-}
-
-.admin-pagination-jump button {
-  min-width: 42px;
-  padding-inline: 10px;
 }
 
 .admin-pagination-summary {
@@ -145,19 +145,6 @@
 @media (max-width: 560px) {
   .admin-pagination {
     padding: 10px;
-  }
-
-  .admin-pagination-direction {
-    min-width: 64px;
-  }
-
-  .admin-pagination-jump label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
   }
 
   .admin-pagination-summary {

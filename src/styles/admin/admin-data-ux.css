@@ -190,7 +190,10 @@
 }
 
 .admin-operator .admin-users-table .admin-user-delete-btn {
-  min-width: 118px;
+  width: auto;
+  min-width: 136px;
+  max-width: 156px;
+  align-self: flex-end;
   border-color: #a42424;
   background: #fff4f2;
   color: #8f1717;
@@ -255,6 +258,8 @@
 
   .admin-operator .admin-users-table .record-actions .ui-button {
     min-height: 44px;
+    max-width: none;
+    align-self: stretch;
   }
 }
 

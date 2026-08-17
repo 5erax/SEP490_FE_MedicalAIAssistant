@@ -484,7 +484,7 @@ export default function AdminConsultationCatalogSection() {
         <div><strong>{currentTitle}</strong><span>{pageInfo.totalCount} mục phù hợp</span></div>
       </div>
 
-      {status === "loading" ? (
+      {status === "loading" && !items.length ? (
         <LoadingState label="Đang tải dữ liệu tư vấn..." description="Danh mục đang được đồng bộ từ hệ thống." />
       ) : status === "error" ? (
         <ErrorState title="Không thể tải danh mục" description={message} urgent action={<button className="btn btn-primary btn-small" type="button" onClick={() => void loadItems()}>Thử lại</button>} />
@@ -500,7 +500,7 @@ export default function AdminConsultationCatalogSection() {
         />
       )}
 
-      {status !== "loading" && status !== "error" && (
+      {(status !== "loading" || items.length > 0) && status !== "error" && (
         <AdminPagination
           ariaLabel={`Phân trang ${currentTitle.toLowerCase()}`}
           currentPage={pageInfo.pageNumber}
@@ -509,7 +509,7 @@ export default function AdminConsultationCatalogSection() {
           pageSize={pageInfo.pageSize}
           itemCount={items.length}
           itemLabel={activeTab === "questions" ? "câu hỏi" : "mục checklist"}
-          loading={status === "saving"}
+          loading={status === "loading" || status === "saving"}
           onPageChange={(nextPage) => void loadItems(nextPage, pageInfo.pageSize)}
         />
       )}

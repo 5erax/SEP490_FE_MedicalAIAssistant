@@ -223,7 +223,7 @@ export default function AdminPatientProfilesSection({
       )}
 
       <div className="patient-profile-result-panel">
-        {loading ? (
+        {loading && !profiles.length ? (
           <LoadingState
             label="Đang tải hồ sơ bệnh nhân..."
             description="Thông tin sức khỏe đang được đồng bộ từ hệ thống."

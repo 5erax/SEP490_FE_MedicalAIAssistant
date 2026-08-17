@@ -173,7 +173,7 @@ export default function AdminFeedbackReviewsSection({ facilities }) {
 
       {!loading && !loadError ? <div className="feedback-result-summary" role="status"><ShieldCheck size={18} aria-hidden="true" /><strong>{pageInfo.totalCount} đánh giá phù hợp</strong><span>Trang {pageInfo.pageNumber}/{Math.max(pageInfo.totalPages, 1)}</span></div> : null}
 
-      {loading ? <LoadingState label="Đang tải đánh giá..." description="Dữ liệu đánh giá đang được đồng bộ." /> : loadError ? <ErrorState title="Không thể tải đánh giá" description={loadError} action={<Button onClick={() => loadReviews(pageInfo.pageNumber)}>Thử lại</Button>} /> : reviews.length === 0 ? <EmptyState icon={<MessageSquareText size={24} />} title="Chưa có đánh giá phù hợp" description="Hãy thay đổi bộ lọc hoặc tải lại dữ liệu." /> : (
+      {loading && !reviews.length ? <LoadingState label="Đang tải đánh giá..." description="Dữ liệu đánh giá đang được đồng bộ." /> : loadError ? <ErrorState title="Không thể tải đánh giá" description={loadError} action={<Button onClick={() => loadReviews(pageInfo.pageNumber)}>Thử lại</Button>} /> : reviews.length === 0 ? <EmptyState icon={<MessageSquareText size={24} />} title="Chưa có đánh giá phù hợp" description="Hãy thay đổi bộ lọc hoặc tải lại dữ liệu." /> : (
         <>
           <div className="feedback-table-scroll">
             <table className="feedback-admin-table">

@@ -187,7 +187,7 @@ export default function AdminDoctorsSection({
         </p>
       )}
 
-      {loading ? (
+      {loading && !doctors.length ? (
         <LoadingState
           className="doctor-empty-state"
           label="Đang tải danh sách bác sĩ..."

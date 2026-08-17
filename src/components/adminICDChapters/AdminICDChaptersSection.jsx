@@ -260,7 +260,7 @@ export default function AdminICDChaptersSection({
       )}
 
       <div className="icd-result-panel">
-        {loading ? (
+        {loading && !chapters.length ? (
           <LoadingState
             label="Đang tải danh mục chương ICD..."
             description="Mã chương và trọng số từ khóa đang được đồng bộ."

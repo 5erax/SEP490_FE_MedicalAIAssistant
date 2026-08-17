@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import "../../styles/admin/admin-pagination.css";
 
 function clampPage(page, totalPages) {
@@ -11,34 +11,10 @@ function buildPageTokens(currentPage, totalPages) {
   if (totalPages <= 9) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
-
-  const pages = new Set([1, totalPages, currentPage]);
-
-  for (let offset = -2; offset <= 2; offset += 1) {
-    pages.add(currentPage + offset);
-  }
-
-  if (currentPage <= 5) {
-    for (let page = 2; page <= 6; page += 1) pages.add(page);
-  }
-
-  if (currentPage >= totalPages - 4) {
-    for (let page = totalPages - 5; page < totalPages; page += 1) pages.add(page);
-  }
-
-  const orderedPages = [...pages]
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((left, right) => left - right);
-  const tokens = [];
-
-  orderedPages.forEach((page, index) => {
-    if (index > 0 && page - orderedPages[index - 1] > 1) {
-      tokens.push(`ellipsis-${orderedPages[index - 1]}-${page}`);
-    }
-    tokens.push(page);
-  });
-
-  return tokens;
+  const start = currentPage >= totalPages - 3
+    ? totalPages - 5
+    : Math.max(1, currentPage - 1);
+  return [start, start + 1, start + 2, "jump", totalPages - 2, totalPages - 1, totalPages];
 }
 
 export default function AdminPagination({
@@ -53,10 +29,9 @@ export default function AdminPagination({
   loading = false,
   onPageChange,
 }) {
-  const jumpInputId = useId();
   const safeTotalPages = Math.max(1, Number(totalPages) || 1);
   const safeCurrentPage = clampPage(currentPage, safeTotalPages);
-  const [jumpPage, setJumpPage] = useState(String(safeCurrentPage));
+  const [jumpPage, setJumpPage] = useState("");
 
   const pageTokens = useMemo(
     () => buildPageTokens(safeCurrentPage, safeTotalPages),
@@ -73,14 +48,14 @@ export default function AdminPagination({
   function changePage(nextPage) {
     const targetPage = clampPage(nextPage, safeTotalPages);
     if (loading || targetPage === safeCurrentPage) return;
-    setJumpPage(String(targetPage));
+    setJumpPage("");
     onPageChange?.(targetPage);
   }
 
   function submitJump(event) {
     event.preventDefault();
+    if (jumpPage.trim() === "") return;
     const targetPage = clampPage(Number(jumpPage), safeTotalPages);
-    setJumpPage(String(targetPage));
     changePage(targetPage);
   }
 
@@ -95,9 +70,11 @@ export default function AdminPagination({
           className="admin-pagination-direction"
           type="button"
           disabled={loading || safeCurrentPage <= 1}
-          onClick={() => changePage(safeCurrentPage - 1)}
+          onClick={() => changePage(1)}
+          aria-label="Về trang đầu tiên"
+          title="Trang đầu"
         >
-          Trước
+          &lt;
         </button>
 
         <div className="admin-pagination-pages" aria-label="Chọn trang">
@@ -115,34 +92,33 @@ export default function AdminPagination({
                 {token}
               </button>
             ) : (
-              <span className="admin-pagination-ellipsis" key={token} aria-hidden="true">…</span>
+              <form className="admin-pagination-jump" key={token} onSubmit={submitJump}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max={safeTotalPages}
+                  value={jumpPage}
+                  placeholder="…"
+                  disabled={loading}
+                  onChange={(event) => setJumpPage(event.target.value)}
+                  aria-label={`Nhập số trang từ 1 đến ${safeTotalPages}, rồi nhấn Enter`}
+                  title="Nhập số trang và nhấn Enter"
+                />
+              </form>
             )
           ))}
         </div>
-
-        <form className="admin-pagination-jump" onSubmit={submitJump}>
-          <label htmlFor={jumpInputId}>Đến trang</label>
-          <input
-            id={jumpInputId}
-            type="number"
-            inputMode="numeric"
-            min="1"
-            max={safeTotalPages}
-            value={jumpPage}
-            disabled={loading || safeTotalPages <= 1}
-            onChange={(event) => setJumpPage(event.target.value)}
-            aria-label={`Nhập số trang từ 1 đến ${safeTotalPages}`}
-          />
-          <button type="submit" disabled={loading || safeTotalPages <= 1}>Đi</button>
-        </form>
 
         <button
           className="admin-pagination-direction"
           type="button"
           disabled={loading || safeCurrentPage >= safeTotalPages}
-          onClick={() => changePage(safeCurrentPage + 1)}
+          onClick={() => changePage(safeTotalPages)}
+          aria-label="Đến trang cuối cùng"
+          title="Trang cuối"
         >
-          Sau
+          &gt;
         </button>
       </div>
 

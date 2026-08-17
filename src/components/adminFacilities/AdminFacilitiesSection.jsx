@@ -332,7 +332,7 @@ export default function AdminFacilitiesSection({
       )}
 
       <div className="facility-result-panel">
-        {loading ? (
+        {loading && !facilities.length ? (
           <LoadingState
             label="Đang tải danh sách cơ sở y tế..."
             description="Dữ liệu cơ sở và liên kết chuyên khoa đang được đồng bộ."
