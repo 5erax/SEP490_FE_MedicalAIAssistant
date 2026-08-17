@@ -10,6 +10,13 @@ const TOAST_ICONS = {
   info: Info,
 };
 
+const CONFIRM_ICONS = {
+  danger: AlertTriangle,
+  warning: AlertTriangle,
+  primary: CheckCircle2,
+  info: Info,
+};
+
 function getFocusable(container) {
   if (!container) return [];
   return Array.from(
@@ -130,31 +137,38 @@ export function FeedbackProvider({ children }) {
 
       {confirmState && (
         <div className="confirm-backdrop" role="presentation" onMouseDown={() => closeConfirm(false)}>
-          <section
-            className={`confirm-dialog confirm-${confirmState.tone}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirm-title"
-            aria-describedby="confirm-message"
-            ref={dialogRef}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <span className="confirm-icon">
-              <AlertTriangle size={22} />
-            </span>
-            <div>
-              <h2 id="confirm-title">{confirmState.title}</h2>
-              <p id="confirm-message">{confirmState.message}</p>
-            </div>
-            <div className="confirm-actions">
-              <button type="button" onClick={() => closeConfirm(false)}>
-                {confirmState.cancelLabel}
-              </button>
-              <button type="button" onClick={() => closeConfirm(true)}>
-                {confirmState.confirmLabel}
-              </button>
-            </div>
-          </section>
+          {(() => {
+            const ConfirmIcon = CONFIRM_ICONS[confirmState.tone] ?? Info;
+            return (
+              <section
+                className={`confirm-dialog confirm-${confirmState.tone}`}
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="confirm-title"
+                aria-describedby="confirm-message"
+                ref={dialogRef}
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <header className="confirm-header">
+                  <span className="confirm-icon" aria-hidden="true">
+                    <ConfirmIcon size={22} strokeWidth={2} />
+                  </span>
+                  <div className="confirm-copy">
+                    <h2 id="confirm-title">{confirmState.title}</h2>
+                    <p id="confirm-message">{confirmState.message}</p>
+                  </div>
+                </header>
+                <div className="confirm-actions">
+                  <button className="confirm-cancel" type="button" onClick={() => closeConfirm(false)}>
+                    {confirmState.cancelLabel}
+                  </button>
+                  <button className="confirm-submit" type="button" onClick={() => closeConfirm(true)}>
+                    {confirmState.confirmLabel}
+                  </button>
+                </div>
+              </section>
+            );
+          })()}
         </div>
       )}
     </FeedbackContext.Provider>
