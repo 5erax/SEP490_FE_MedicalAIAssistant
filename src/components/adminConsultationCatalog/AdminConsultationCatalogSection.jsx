@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFeedback } from "../feedback/feedbackContext";
 import AdminPagination from "../admin/AdminPagination";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 import {
   checklistItemsApi,
   departmentConsultationQuestionsApi,
@@ -452,7 +453,7 @@ export default function AdminConsultationCatalogSection() {
         <div className="consultation-filter-grid">
           <label className="consultation-search">
             <span>Tìm nội dung</span>
-            <span className="consultation-search-control"><Search size={16} aria-hidden="true" /><input type="search" value={currentFilters.search} onChange={(event) => updateFilter("search", event.target.value)} autoComplete="off" placeholder="Nhập từ khóa" /></span>
+            <span className="consultation-search-control"><Search size={16} aria-hidden="true" /><input type="search" list="consultation-search-options" value={currentFilters.search} onChange={(event) => updateFilter("search", event.target.value)} autoComplete="off" placeholder="Nhập từ khóa" /><AdminSearchDatalist id="consultation-search-options" values={items.flatMap((item) => [item.questionText, item.content, item.category])} /></span>
           </label>
           <label>
             <span>Chuyên khoa</span>

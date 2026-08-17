@@ -4,6 +4,7 @@ import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services
 import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { Badge, Button, CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -273,9 +274,18 @@ export default function AdminFacilitiesSection({
                 <input
                   type="search"
                   autoComplete="off"
+                  list="facility-search-options"
                   value={filters.search}
                   onChange={(event) => onFilterChange("search", event.target.value)}
                   placeholder="Tên bệnh viện, phòng khám hoặc địa chỉ"
+                />
+                <AdminSearchDatalist
+                  id="facility-search-options"
+                  values={facilities.flatMap((facility) => [
+                    facility.facilityName,
+                    facility.address,
+                    facility.phoneNumber,
+                  ])}
                 />
               </span>
             </label>

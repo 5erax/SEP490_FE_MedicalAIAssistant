@@ -29,6 +29,7 @@ import {
 } from "../ui";
 import { LabIndicatorChildDialog, LabIndicatorFormDialog } from "./LabIndicatorDialogs";
 import AdminPagination from "../admin/AdminPagination";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 import "../../styles/admin/lab-indicators.css";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -514,9 +515,19 @@ function IndicatorListView() {
           <input
             id="lab-indicator-search"
             type="search"
+            list="lab-indicator-search-options"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Ví dụ: WBC hoặc huyết học"
+          />
+          <AdminSearchDatalist
+            id="lab-indicator-search-options"
+            values={items.flatMap((indicator) => [
+              indicator.symbol,
+              indicator.displayTitle,
+              indicator.fullName,
+              indicator.category,
+            ])}
           />
           <Button type="submit" size="sm">
             Tìm kiếm

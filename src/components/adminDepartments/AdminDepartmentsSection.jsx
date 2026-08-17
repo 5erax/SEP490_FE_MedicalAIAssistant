@@ -1,6 +1,7 @@
 import { BookOpen, Check, Filter, Pencil, Plus, RefreshCw, RotateCcw, Search, Stethoscope, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 
 function Field({ label, children, className = "", error, errorId, help, helpId, required = false }) {
   return (
@@ -130,9 +131,18 @@ export default function AdminDepartmentsSection({
                 <input
                   type="search"
                   autoComplete="off"
+                  list="department-search-options"
                   value={filters.search}
                   onChange={(event) => onFilterChange("search", event.target.value)}
                   placeholder="Tên hoặc mã ICD"
+                />
+                <AdminSearchDatalist
+                  id="department-search-options"
+                  values={departments.flatMap((department) => [
+                    department.departmentName,
+                    department.chapterCode,
+                    department.id,
+                  ])}
                 />
               </span>
             </label>

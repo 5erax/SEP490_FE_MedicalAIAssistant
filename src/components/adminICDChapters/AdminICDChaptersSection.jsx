@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 import { focusFirstInvalidField, getAdminFieldProps } from "../admin/adminFormUtils";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 import KeywordWeightEditor from "./KeywordWeightEditor";
@@ -218,9 +219,19 @@ export default function AdminICDChaptersSection({
                 <input
                   type="search"
                   autoComplete="off"
+                  list="icd-search-options"
                   value={filters.search}
                   onChange={(event) => onFilterChange("search", event.target.value)}
                   placeholder="Mã chương, tên chương hoặc từ khóa"
+                />
+                <AdminSearchDatalist
+                  id="icd-search-options"
+                  values={chapters.flatMap((chapter) => [
+                    chapter.chapterCode,
+                    chapter.chapterName,
+                    chapter.name,
+                    ...(chapter.keywords || []).map((keyword) => keyword.keyword || keyword.name || keyword),
+                  ])}
                 />
               </span>
             </label>

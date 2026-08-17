@@ -15,6 +15,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getClinicalQuestionApiMessage } from "../../services/clinicalQuestionService";
 import AdminPagination from "../admin/AdminPagination";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 const DEFAULT_FILTERS = {
@@ -552,9 +553,14 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                 <input
                   type="search"
                   autoComplete="off"
+                  list="clinical-question-search-options"
                   value={filters.search}
                   onChange={(event) => updateFilter("search", event.target.value)}
                   placeholder="Nội dung câu hỏi"
+                />
+                <AdminSearchDatalist
+                  id="clinical-question-search-options"
+                  values={items.flatMap((item) => [item[config.primaryField], item[config.secondaryField]])}
                 />
               </span>
             </label>

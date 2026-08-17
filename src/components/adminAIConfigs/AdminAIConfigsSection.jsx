@@ -106,6 +106,7 @@ export default function AdminAIConfigsSection({
       )}
 
       <AIConfigToolbar
+        configs={configs}
         filters={filters}
         taskTypes={taskTypes}
         models={models}

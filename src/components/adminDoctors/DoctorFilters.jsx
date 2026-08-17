@@ -1,11 +1,13 @@
 import { Filter, ListFilter, RotateCcw, Search, UsersRound } from "lucide-react";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { Button, CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 
 export default function DoctorFilters({
   filters,
   departments,
   facilities,
+  doctors = [],
   pageSize,
   resultCount,
   totalCount,
@@ -64,10 +66,15 @@ export default function DoctorFilters({
             <Search size={17} aria-hidden="true" />
             <input
               type="search"
+              list="doctor-search-options"
               value={filters.search}
               onChange={(event) => onChange("search", event.target.value)}
               placeholder="Nhập họ tên bác sĩ"
               aria-describedby="doctor-filter-result-summary"
+            />
+            <AdminSearchDatalist
+              id="doctor-search-options"
+              values={doctors.flatMap((doctor) => [doctor.fullName, doctor.email, doctor.licenseNumber])}
             />
           </span>
         </label>

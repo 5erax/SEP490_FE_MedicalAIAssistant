@@ -168,6 +168,7 @@ export default function AdminDoctorsSection({
       </section>
 
       <DoctorFilters
+        doctors={doctors}
         filters={filters}
         departments={departments}
         facilities={facilities}

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 
 const BLOOD_TYPE_OPTIONS = [
   { value: "", label: "Chưa xác định" },
@@ -181,9 +182,20 @@ export default function AdminPatientProfilesSection({
                 <input
                   type="search"
                   autoComplete="off"
+                  list="patient-profile-search-options"
                   value={search}
                   onChange={(event) => onSearchChange(event.target.value)}
                   placeholder="ID hoặc sức khỏe"
+                />
+                <AdminSearchDatalist
+                  id="patient-profile-search-options"
+                  values={profiles.flatMap((profile) => [
+                    profile.id,
+                    profile.userId,
+                    profile.bloodType,
+                    ...(profile.allergies || []).map((allergy) => allergy.name || allergy.allergyName || allergy),
+                    ...(profile.diseases || []).map((disease) => disease.name || disease.diseaseName),
+                  ])}
                 />
               </span>
             </label>

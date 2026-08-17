@@ -42,7 +42,7 @@ export default function AdminFilterDisclosure({
           onClick={() => setExpanded((current) => !current)}
         >
           <span>
-            <strong>{expanded ? "Thu gọn bộ lọc" : "Mở bộ lọc"}</strong>
+            <strong>{expanded ? "Thu gọn" : "Mở bộ lọc"}</strong>
             {summary && <small>{summary}</small>}
           </span>
           <ChevronDown size={17} aria-hidden="true" />
