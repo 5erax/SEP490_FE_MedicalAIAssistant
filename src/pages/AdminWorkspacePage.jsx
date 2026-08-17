@@ -18,6 +18,7 @@ import {
 import { Navbar } from "../components/landing/Navbar";
 import { Footer } from "../components/landing/PricingSection";
 import { useFeedback } from "../components/feedback/feedbackContext";
+import AdminSidebarNavigation from "../components/admin/AdminSidebarNavigation";
 import DoctorFormModal from "../components/adminDoctors/DoctorFormModal";
 import AdminDoctorsSection from "../components/adminDoctors/AdminDoctorsSection";
 import AIConfigDetailModal from "../components/adminAIConfigs/AIConfigDetailModal";
@@ -54,6 +55,7 @@ import {
   paymentsApi,
   subscriptionPlansApi,
   symptomAnalysisApi,
+  userSubscriptionsApi,
   usersApi,
 } from "../services/api";
 import { aiConfigManagementApi } from "../services/aiConfigManagement";
@@ -75,10 +77,9 @@ const EMPTY_ICD_CHAPTER = { chapterCode: "", chapterName: "", keywordWeights: "{
 const EMPTY_INVITATION = { email: "", doctorId: "" };
 const LAST_INVITATION_STORAGE_KEY = "medimate.admin.lastDoctorInvitation";
 
-// BE has no GET /api/admin/doctor-invitations list endpoint yet, so the
-// "just sent" confirmation card is the only place an admin can see it.
-// Persist it to sessionStorage so a reload doesn't lose it, per the doc's
-// acceptance criterion ("Admin có thể list/revoke/resend sau khi reload trang").
+// Persist the "just sent" invitation to sessionStorage so a reload doesn't
+// lose it, per the doc's acceptance criterion ("Admin có thể list/revoke/resend
+// sau khi reload trang").
 function readStoredInvitation() {
   try {
     const raw = window.sessionStorage.getItem(LAST_INVITATION_STORAGE_KEY);
@@ -302,6 +303,22 @@ function isPendingApprovalUser(user) {
   return !user?.isDeleted && !isApprovedUser(user);
 }
 
+// The users list has no server-side search/status filter, so search/filter
+// have to run over the whole dataset client-side - fetch every backend page
+// (at its max page size) once instead of only the page currently on screen.
+async function fetchAllUsers() {
+  const fetchPageSize = 100;
+  const firstResponse = await usersApi.list(1, fetchPageSize);
+  const firstData = firstResponse.data ?? {};
+  const items = [...(firstData.items ?? [])];
+  const totalPages = firstData.totalPages ?? 1;
+  for (let page = 2; page <= totalPages; page += 1) {
+    const response = await usersApi.list(page, fetchPageSize);
+    items.push(...(response.data?.items ?? []));
+  }
+  return items;
+}
+
 function isProtectedAdminUser(user) {
   const userRoles = normalizeRoles(
     user?.roles
@@ -434,7 +451,9 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const lastDoctorViewSearchRef = useRef(currentDoctorSearch);
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [profile, setProfile] = useState(null);
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [usersPageNumber, setUsersPageNumber] = useState(1);
+  const [usersPageSize, setUsersPageSize] = useState(10);
   const [departments, setDepartments] = useState([]);
   const [departmentCatalog, setDepartmentCatalog] = useState([]);
   const [icdChapters, setIcdChapters] = useState([]);
@@ -444,7 +463,6 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [doctors, setDoctors] = useState([]);
   const [aiConfigs, setAIConfigs] = useState([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
-  const [pageInfo, setPageInfo] = useState({ pageNumber: 1, pageSize: 10, totalCount: 0, totalPages: 1 });
   const [doctorPageInfo, setDoctorPageInfo] = useState({
     pageNumber: initialDoctorView.pageNumber,
     pageSize: initialDoctorView.pageSize,
@@ -538,6 +556,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     feedbackPending: null,
     labTestNeedsAttention: null,
     symptomAnalysisFailed: null,
+    doctorInvitationPending: null,
+    subscriptionActive: null,
   });
   const [overviewOperationalLoading, setOverviewOperationalLoading] = useState(true);
 
@@ -644,6 +664,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         { key: "labTestNeedsAttention (status=processing)", request: () => labTestsApi.adminSessions(1, 1, { status: "processing" }) },
         { key: "labTestNeedsAttention (status=failed)", request: () => labTestsApi.adminSessions(1, 1, { status: "failed" }) },
         { key: "symptomAnalysisFailed", request: () => symptomAnalysisApi.adminSessions(1, 1, { status: "failed" }) },
+        { key: "doctorInvitationPending", request: () => doctorInvitationsApi.list(1, 1, { status: "Pending" }) },
+        { key: "subscriptionActive", request: () => userSubscriptionsApi.adminList(1, 1, { currentOnly: true }) },
       ];
 
       // These admin-only calls have been seen to fail intermittently under
@@ -693,13 +715,15 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         feedbackPending: sumTotals(["feedbackPending (status=pending)", "feedbackPending (status=hidden)"]),
         labTestNeedsAttention: sumTotals(["labTestNeedsAttention (status=processing)", "labTestNeedsAttention (status=failed)"]),
         symptomAnalysisFailed: sumTotals(["symptomAnalysisFailed"]),
+        doctorInvitationPending: sumTotals(["doctorInvitationPending"]),
+        subscriptionActive: sumTotals(["subscriptionActive"]),
       });
     } finally {
       setOverviewOperationalLoading(false);
     }
   }
 
-  const manageableUsers = useMemo(() => users.filter((user) => !isProtectedAdminUser(user)), [users]);
+  const manageableUsers = useMemo(() => allUsers.filter((user) => !isProtectedAdminUser(user)), [allUsers]);
   const pendingApprovalUsers = useMemo(() => manageableUsers.filter(isPendingApprovalUser), [manageableUsers]);
 
   const filteredUsers = useMemo(() => {
@@ -717,6 +741,21 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         .some((value) => String(value).toLowerCase().includes(keyword));
     });
   }, [manageableUsers, search, userStatusFilter]);
+
+  // usersPageNumber/usersPageSize only drive this client-side slice now -
+  // search/status/paging all run over the full fetchAllUsers() result, not
+  // just whichever backend page happened to load.
+  const pageInfo = useMemo(() => {
+    const totalCount = filteredUsers.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / usersPageSize));
+    const pageNumber = Math.min(Math.max(1, usersPageNumber), totalPages);
+    return { pageNumber, pageSize: usersPageSize, totalCount, totalPages };
+  }, [filteredUsers, usersPageSize, usersPageNumber]);
+
+  const pagedUsers = useMemo(() => {
+    const start = (pageInfo.pageNumber - 1) * pageInfo.pageSize;
+    return filteredUsers.slice(start, start + pageInfo.pageSize);
+  }, [filteredUsers, pageInfo]);
 
   const pendingUsers = pendingApprovalUsers.length;
   const activeAIConfigs = aiConfigs.filter((config) => config.isActive).length;
@@ -784,7 +823,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
 
     Promise.allSettled([
       authApi.me(),
-      usersApi.list(1, pageInfo.pageSize),
+      fetchAllUsers(),
       medicalDepartmentsApi.listAll(),
       medicalDepartmentsApi.list(1, DEFAULT_DEPARTMENT_PAGE_SIZE, EMPTY_DEPARTMENT_FILTERS),
       icdChaptersApi.list(1, DEFAULT_ICD_CHAPTER_PAGE_SIZE, EMPTY_ICD_CHAPTER_FILTERS),
@@ -824,15 +863,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         }
 
         if (usersResult.status === "fulfilled") {
-          const data = usersResult.value.data ?? {};
           setUsersLoadError("");
-          setUsers(data.items ?? []);
-          setPageInfo({
-            pageNumber: data.pageNumber ?? 1,
-            pageSize: data.pageSize ?? pageInfo.pageSize,
-            totalCount: data.totalCount ?? 0,
-            totalPages: data.totalPages ?? 1,
-          });
+          setAllUsers(usersResult.value);
         } else {
           setUsersLoadError(USER_LOAD_ERROR_MESSAGE);
         }
@@ -979,7 +1011,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     return () => {
       active = false;
     };
-  }, [auth, initialDoctorView, pageInfo.pageSize, patientProfilePageInfo.pageSize]);
+  }, [auth, initialDoctorView, patientProfilePageInfo.pageSize]);
 
   useEffect(() => {
     if (!auth) return;
@@ -1045,20 +1077,15 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   if (!auth) return <EmptyAuth />;
   if (!loading && !isAdmin) return <AccessDenied auth={auth} roles={roles} />;
 
-  async function loadUsers(pageNumber = pageInfo.pageNumber, pageSize = pageInfo.pageSize) {
+  async function loadUsers(pageNumber = usersPageNumber, pageSize = usersPageSize) {
     setUsersLoading(true);
     setUsersMessage(null);
     setUsersLoadError("");
     try {
-      const response = await usersApi.list(pageNumber, pageSize);
-      const data = response.data ?? {};
-      setUsers(data.items ?? []);
-      setPageInfo({
-        pageNumber: data.pageNumber ?? pageNumber,
-        pageSize: data.pageSize ?? pageSize,
-        totalCount: data.totalCount ?? 0,
-        totalPages: data.totalPages ?? 1,
-      });
+      const items = await fetchAllUsers();
+      setAllUsers(items);
+      setUsersPageNumber(pageNumber);
+      setUsersPageSize(pageSize);
     } catch {
       setUsersLoadError(USER_LOAD_ERROR_MESSAGE);
       showToast({
@@ -1962,7 +1989,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   }
 
   async function handleDeleteUser(userId) {
-    const targetUser = users.find((user) => String(user.identityId || user.userId || user.id) === String(userId));
+    const targetUser = allUsers.find((user) => String(user.identityId || user.userId || user.id) === String(userId));
     if (targetUser && isProtectedAdminUser(targetUser)) {
       const protectedMessage = "Tài khoản quản trị hệ thống được bảo vệ và không thể xóa tại màn hình này.";
       setUsersMessage({ type: "error", text: protectedMessage });
@@ -2263,7 +2290,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   async function handleCreateInvitation(event) {
     event.preventDefault();
     const normalizedEmail = invitationForm.email.trim().toLowerCase();
-    const registeredUser = users.find(
+    const registeredUser = allUsers.find(
       (user) => !user.isDeleted && String(user.email ?? "").trim().toLowerCase() === normalizedEmail,
     );
     const selectedDoctor = doctors.find((doctor) => doctor.id === invitationForm.doctorId);
@@ -2592,26 +2619,16 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
 
             <nav
               ref={adminNavRef}
-              className={`admin-nav ${mobileNavOpen ? "is-open" : ""}`}
+              className={`admin-nav admin-nav--grouped ${mobileNavOpen ? "is-open" : ""}`}
               id="admin-navigation"
               aria-label="Điều hướng admin"
             >
-              {ADMIN_NAV_ITEMS.map((item) => {
-                const Icon = ADMIN_NAV_ICONS[item.icon];
-                const section = item.id.replace("admin.", "");
-                return (
-                  <button
-                    className={activeSection === section ? "active" : ""}
-                    type="button"
-                    key={item.id}
-                    aria-current={activeSection === section ? "page" : undefined}
-                    onClick={() => openSection(section)}
-                  >
-                    <span className="admin-nav-icon"><Icon size={17} /></span>
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
+              <AdminSidebarNavigation
+                activeSection={activeSection}
+                iconMap={ADMIN_NAV_ICONS}
+                items={ADMIN_NAV_ITEMS}
+                onOpenSection={openSection}
+              />
             </nav>
 
             <div className="admin-session-card">
@@ -2655,7 +2672,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 facilityTotalCount={facilityPageInfo.totalCount}
                 usersError={usersLoadError}
                 usersLoading={usersLoading}
-                userTotalCount={pageInfo.totalCount}
+                userTotalCount={allUsers.length}
                 departmentTotalCount={departmentPageInfo.totalCount}
                 departmentError={departmentCatalogLoadError}
                 departmentLoading={departmentCatalogLoading}
@@ -2694,11 +2711,11 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 onRestore={handleRestoreUser}
                 onLoadPage={loadUsers}
                 onPageSizeChange={(pageSize) => loadUsers(1, pageSize)}
-                onSearchChange={setSearch}
-                onStatusFilterChange={setUserStatusFilter}
+                onSearchChange={(value) => { setSearch(value); setUsersPageNumber(1); }}
+                onStatusFilterChange={(value) => { setUserStatusFilter(value); setUsersPageNumber(1); }}
                 pageInfo={pageInfo}
                 pendingCount={pendingUsers}
-                rows={filteredUsers}
+                rows={pagedUsers}
                 search={search}
                 statusFilter={userStatusFilter}
                 statusLabel={statusLabel}
