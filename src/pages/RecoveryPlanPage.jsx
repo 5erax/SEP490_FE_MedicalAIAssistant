@@ -1363,11 +1363,16 @@ export default function RecoveryPlanPage() {
       await recoveryPlanRequestsApi.cancel(request.id);
       showToast({ type: "success", title: "Đã hủy yêu cầu", message: "Hạn mức đang được cập nhật lại." });
       void loadQuota();
-      await loadRequests(requestPageNumber, request.id);
+      await Promise.allSettled([
+        loadRequests(requestPageNumber, request.id),
+        loadWorkflowGuard(),
+      ]);
     } catch (error) {
       const mapped = getRecoveryError(error, "Chưa thể hủy yêu cầu. Vui lòng thử lại.");
       showToast({ type: "error", title: "Không thể hủy yêu cầu", message: mapped.message });
-      if (["INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) await loadRequests(requestPageNumber);
+      if (["INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) {
+        await Promise.allSettled([loadRequests(requestPageNumber), loadWorkflowGuard()]);
+      }
     } finally {
       setActionBusy(false);
     }

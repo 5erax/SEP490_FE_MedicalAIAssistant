@@ -279,6 +279,19 @@ test("legacy more-information requests render without the old patient submit for
   await expect(page.getByRole("button", { name: "Gửi thông tin bổ sung" })).toHaveCount(0);
 });
 
+test("new-request form reappears immediately after cancelling an active request", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page, { requests: [request()] });
+  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Hủy yêu cầu" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Hủy yêu cầu" }).click();
+
+  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toBeVisible();
+  expect(calls.cancelled).toBe(true);
+});
+
 test("user reads and starts a published recovery plan", async ({ page }) => {
   const calls = await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan()] });
   await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
