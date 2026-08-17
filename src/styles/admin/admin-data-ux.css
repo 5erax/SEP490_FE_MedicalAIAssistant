@@ -44,12 +44,6 @@
     vertical-align: middle;
   }
 
-  .admin-operator .ui-table tbody tr,
-  .admin-operator .feedback-admin-table tbody tr {
-    content-visibility: auto;
-    contain-intrinsic-size: 64px;
-  }
-
   .admin-operator .ui-table .record-actions {
     flex-wrap: nowrap;
     gap: 6px;
@@ -67,17 +61,19 @@
   }
 
   .admin-operator .clinical-question-primary-cell strong {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-height: 1.35;
+    display: block;
+    overflow: visible;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
   .admin-operator .clinical-question-primary-cell small {
-    overflow: hidden;
-    max-height: 2.7em;
-    line-height: 1.35;
+    overflow: visible;
+    max-height: none;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 }
 
