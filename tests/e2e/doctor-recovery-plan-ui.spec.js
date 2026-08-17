@@ -54,7 +54,7 @@ async function prepareDoctorPage(page, options = {}) {
   let openItems = [...(options.openItems ?? [])];
   let mineItems = [...(options.mineItems ?? [])];
   let plan = options.plan ?? null;
-  const calls = {};
+  const calls = { requestDetailGets: 0 };
 
   function ok(data, status = 200) {
     return { status, contentType: "application/json", body: JSON.stringify({ success: true, message: "OK", data, errors: [] }) };
@@ -87,6 +87,7 @@ async function prepareDoctorPage(page, options = {}) {
       const current = mineItems.find((item) => item.id === id) ?? openItems.find((item) => item.id === id);
 
       if (!sub) {
+        if (method === "GET") calls.requestDetailGets += 1;
         if (!current) return route.fulfill(fail(404, "NOT_FOUND"));
         return route.fulfill(ok(current));
       }
@@ -224,25 +225,18 @@ test.describe("doctor recovery plan workflow", () => {
     await expect(page.getByText("Không có yêu cầu đang chờ")).toBeVisible();
   });
 
-  test("the preview fetches the full note when the queue list summary omits it", async ({ page }) => {
-    // The /open list is a lightweight summary and may not carry requestNote -
-    // the preview must fall back to the by-id detail fetch instead of
-    // permanently showing "Không có ghi chú." just because the list omitted it.
-    await prepareDoctorPage(page, { openItems: [openRequest({ requestNote: "" })] });
-    await page.route(`**/api/doctor/recovery-plan-requests/${REQUEST_ID}`, (route) => {
-      if (route.request().method() !== "GET") return route.fallback();
-      return route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ success: true, data: openRequest({ requestNote: "Ho nhiều về đêm." }), errors: [] }),
-      });
-    });
+  test("the preview uses requestNote from the open queue without fetching request detail", async ({ page }) => {
+    const request = openRequest();
+    const calls = await prepareDoctorPage(page, { openItems: [request] });
     await page.goto("/app/staff/recovery-plans/queue", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("article").getByText(request.requestNote)).toBeVisible();
 
     await page.getByRole("button", { name: /Xem chi tiết yêu cầu/ }).click();
     const dialog = page.getByRole("dialog", { name: "Hô hấp" });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText("Ho nhiều về đêm.")).toBeVisible();
+    await expect(dialog.getByText(request.requestNote)).toBeVisible();
     await expect(dialog.getByText("Không có ghi chú.")).toHaveCount(0);
+    expect(calls.requestDetailGets).toBe(0);
   });
 
   test("accepting an already-claimed request removes it from the queue with an error", async ({ page }) => {

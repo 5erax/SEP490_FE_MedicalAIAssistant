@@ -82,23 +82,10 @@ export default function DoctorRecoveryPlanQueuePage() {
   const [blockedMessage, setBlockedMessage] = useState("");
   const [acceptingId, setAcceptingId] = useState("");
   const [previewRequest, setPreviewRequest] = useState(null);
-  const [previewNoteLoading, setPreviewNoteLoading] = useState(false);
   const refetchTimerRef = useRef(null);
 
-  // The open-queue list keeps its payload light and may not carry the
-  // patient's free-text note - fetch the full request once the preview
-  // opens so "no note" never gets shown just because the summary omitted it.
   function openPreview(request) {
     setPreviewRequest(request);
-    setPreviewNoteLoading(true);
-    doctorRecoveryPlanRequestsApi.get(request.id)
-      .then((response) => {
-        if (response?.data) {
-          setPreviewRequest((current) => (current?.id === request.id ? { ...current, ...response.data } : current));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setPreviewNoteLoading(false));
   }
 
   const loadQueue = useCallback(async (targetPage = pageNumber, targetDiseaseGroup = diseaseGroup) => {
@@ -312,7 +299,6 @@ export default function DoctorRecoveryPlanQueuePage() {
       {previewRequest && (
         <RequestPreviewDialog
           request={previewRequest}
-          noteLoading={previewNoteLoading}
           accepting={acceptingId === previewRequest.id}
           disabled={Boolean(acceptingId) && acceptingId !== previewRequest.id}
           onClose={() => setPreviewRequest(null)}
@@ -323,7 +309,7 @@ export default function DoctorRecoveryPlanQueuePage() {
   );
 }
 
-function RequestPreviewDialog({ request, noteLoading, accepting, disabled, onClose, onAccept }) {
+function RequestPreviewDialog({ request, accepting, disabled, onClose, onAccept }) {
   const DiseaseIcon = getDiseaseGroup(request.diseaseGroup)?.icon ?? ClipboardList;
 
   return (
@@ -352,7 +338,7 @@ function RequestPreviewDialog({ request, noteLoading, accepting, disabled, onClo
             <MessageSquareText size={14} aria-hidden="true" /> Ghi chú từ bệnh nhân
           </p>
           <p className="doctor-queue-preview-note-text">
-            {noteLoading ? "Đang tải ghi chú…" : (request.requestNote || "Không có ghi chú.")}
+            {request.requestNote || "Không có ghi chú."}
           </p>
         </div>
 
