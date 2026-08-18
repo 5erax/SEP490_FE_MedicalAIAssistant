@@ -262,7 +262,7 @@ export default function AdminFacilitiesSection({
         headingClassName="ai-config-filter-card-header facility-filter-heading"
         icon={<Filter size={18} />}
         summary={`${activeFilterCount} bộ lọc · ${pageInfo.totalCount} cơ sở`}
-        title="Lọc danh sách cơ sở"
+        title="Bộ lọc cơ sở y tế"
         titleId="facility-filter-title"
       >
         <form className="ai-config-toolbar facility-filter-form" onSubmit={onApplyFilters}>

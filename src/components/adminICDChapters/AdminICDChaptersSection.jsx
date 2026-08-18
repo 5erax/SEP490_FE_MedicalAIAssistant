@@ -207,7 +207,7 @@ export default function AdminICDChaptersSection({
         headingClassName="ai-config-filter-card-header icd-filter-heading"
         icon={<Filter size={18} />}
         summary={`${filters.search ? 1 : 0} bộ lọc · ${pageInfo.totalCount} chương`}
-        title="Lọc danh mục chương ICD"
+        title="Bộ lọc chương ICD"
         titleId="icd-filter-title"
       >
         <form className="ai-config-toolbar icd-filter-form" onSubmit={onApplyFilters}>

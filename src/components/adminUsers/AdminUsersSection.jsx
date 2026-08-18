@@ -18,6 +18,7 @@ import {
   LoadingState,
   PAGE_SIZE_OPTIONS,
 } from "../ui";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Tất cả tài khoản" },
@@ -142,15 +143,15 @@ export default function AdminUsersSection({
         </div>
       )}
 
-      <section className="admin-users-filter-card" aria-labelledby="admin-users-filter-title">
-        <div className="admin-users-filter-heading">
-          <span aria-hidden="true"><ListFilter size={18} /></span>
-          <div>
-            <h3 id="admin-users-filter-title">Tìm, lọc và sắp xếp tài khoản</h3>
-            <p>Kết quả được cập nhật ngay khi nhập từ khóa hoặc thay đổi điều kiện.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="admin-users-filter-card"
+        description="Tìm kiếm, trạng thái, sắp xếp và số tài khoản hiển thị."
+        headingClassName="admin-users-filter-heading"
+        icon={<ListFilter size={18} />}
+        summary={`${statusLabel} · ${pageInfo.totalCount} kết quả`}
+        title="Bộ lọc tài khoản"
+        titleId="admin-users-filter-title"
+      >
         <div className="admin-toolbar admin-users-toolbar admin-users-toolbar--enhanced">
           <div className="clean-field admin-users-search-field">
             <label htmlFor="admin-users-search">Tìm tài khoản</label>
@@ -258,7 +259,7 @@ export default function AdminUsersSection({
             <strong>{totalVisibleCount}</strong> tài khoản có thể quản lý
           </span>
         </div>
-      </section>
+      </AdminFilterDisclosure>
 
       {loading && !rows.length ? (
         <LoadingState label="Đang tải danh sách người dùng..." />

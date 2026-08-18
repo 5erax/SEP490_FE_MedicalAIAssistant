@@ -1236,3 +1236,77 @@
     width: 100%;
   }
 }
+
+/* Compact filter launcher: every Admin page exposes one filter item and only
+ * reveals its complete criteria panel on demand. */
+.admin-operator .admin-filter-disclosure {
+  display: block !important;
+  position: relative;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden]) {
+  padding: 10px 12px;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+  .admin-filter-disclosure-heading {
+  min-height: 40px;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+  .admin-filter-disclosure-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+  .admin-filter-disclosure-copy p {
+  display: none;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+  .admin-filter-disclosure-primary-action {
+  display: none;
+}
+
+.admin-operator .admin-filter-disclosure-heading:has(.admin-filter-disclosure-primary-action):has(
+  + .admin-filter-disclosure-body[hidden]
+) {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+}
+
+.admin-operator .admin-filter-disclosure-body > form {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-operator .admin-filter-disclosure-toggle {
+  border-color: rgba(8, 127, 123, 0.3);
+  color: #075f5d;
+}
+
+.admin-operator .admin-filter-disclosure-toggle:hover {
+  border-color: #087f7b;
+  background: #e8f5f2;
+}
+
+.admin-operator .admin-filter-disclosure-toggle[aria-expanded="true"] {
+  border-color: #087f7b;
+  background: #087f7b;
+  color: #ffffff;
+}
+
+@media (max-width: 700px) {
+  .admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+    .admin-filter-disclosure-heading {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+  }
+
+  .admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+    .admin-filter-disclosure-toggle {
+    grid-column: auto;
+    width: auto;
+    min-width: 112px;
+  }
+}

@@ -16,6 +16,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getClinicalQuestionApiMessage } from "../../services/clinicalQuestionService";
 import AdminPagination from "../admin/AdminPagination";
 import AdminSearchDatalist from "../admin/AdminSearchDatalist";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 const DEFAULT_FILTERS = {
@@ -535,15 +536,15 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         </div>
       )}
 
-      <section className="ai-config-filter-card clinical-catalog-filter-card" aria-labelledby="clinical-question-filter-title">
-        <div className="ai-config-filter-card-header clinical-catalog-filter-heading">
-          <span aria-hidden="true"><Filter size={18} /></span>
-          <div>
-            <h3 id="clinical-question-filter-title">Lọc danh mục câu hỏi</h3>
-            <p>Tìm theo nội dung tiếng Việt, tiếng Anh hoặc giới hạn theo chương ICD.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="ai-config-filter-card clinical-catalog-filter-card"
+        description="Tìm nội dung song ngữ, chương ICD và số câu hỏi hiển thị."
+        headingClassName="ai-config-filter-card-header clinical-catalog-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${Number(Boolean(filters.search)) + Number(Boolean(filters.chapterId))} bộ lọc · ${pageInfo.totalCount} câu hỏi`}
+        title="Bộ lọc câu hỏi lâm sàng"
+        titleId="clinical-question-filter-title"
+      >
         <form className="ai-config-toolbar clinical-catalog-filter-form" onSubmit={applyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
             <label className="clinical-catalog-search-field">
@@ -594,7 +595,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             </div>
           </div>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       {status === "ready" && (
         <div className="clinical-catalog-result-summary" role="status" aria-live="polite">

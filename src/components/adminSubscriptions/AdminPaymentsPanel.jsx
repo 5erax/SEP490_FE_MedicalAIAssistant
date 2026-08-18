@@ -220,7 +220,7 @@ export default function AdminPaymentsPanel() {
         headingClassName="admin-payment-filter-heading"
         icon={<Filter size={18} />}
         summary={`${activeFilterCount} bộ lọc · ${filteredPayments.length} giao dịch`}
-        title="Lọc lịch sử thanh toán"
+        title="Bộ lọc lịch sử thanh toán"
         titleId="admin-payment-filter-title"
       >
         <form className="admin-payment-filter-form" onSubmit={applyFilters}>

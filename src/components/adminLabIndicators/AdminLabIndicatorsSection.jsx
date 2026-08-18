@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useFeedback } from "../feedback/feedbackContext";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { navigate } from "../../router/navigation";
 import {
   getLabIndicatorApiMessage,
@@ -496,20 +497,14 @@ function IndicatorListView() {
 
       <ApiMessage message={message} />
 
-      <section
+      <AdminFilterDisclosure
         className="lab-filter-card"
-        aria-labelledby="lab-filter-title"
+        description="Tìm theo ký hiệu, tên đầy đủ, mô tả hoặc nhóm chỉ số."
+        icon={<Search size={18} />}
+        summary={`${appliedSearch ? 1 : 0} bộ lọc · ${pageInfo.totalCount} chỉ số`}
+        title="Bộ lọc chỉ số xét nghiệm"
+        titleId="lab-filter-title"
       >
-        <div>
-          <Search size={18} aria-hidden="true" />
-          <div>
-            <h3 id="lab-filter-title">Tìm trong danh mục</h3>
-            <p>
-              Tìm theo ký hiệu, tên đầy đủ, mô tả hoặc nhóm chỉ số.
-            </p>
-          </div>
-        </div>
-
         <form className="lab-filter-form" onSubmit={applySearch}>
           <label className="sr-only" htmlFor="lab-indicator-search">Từ khóa tìm kiếm</label>
           <input
@@ -542,7 +537,7 @@ function IndicatorListView() {
             Xóa lọc
           </Button>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       <div
         className="lab-result-summary"

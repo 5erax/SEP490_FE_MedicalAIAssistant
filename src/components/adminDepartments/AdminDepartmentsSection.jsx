@@ -2,6 +2,7 @@ import { BookOpen, Check, Filter, Pencil, Plus, RefreshCw, RotateCcw, Search, St
 import { useEffect, useRef, useState } from "react";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 import AdminSearchDatalist from "../admin/AdminSearchDatalist";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 
 function Field({ label, children, className = "", error, errorId, help, helpId, required = false }) {
   return (
@@ -113,15 +114,15 @@ export default function AdminDepartmentsSection({
         </div>
       )}
 
-      <section className="ai-config-filter-card department-filter-card" aria-labelledby="department-filter-title">
-        <div className="ai-config-filter-card-header department-filter-heading">
-          <span aria-hidden="true"><Filter size={18} /></span>
-          <div>
-            <h3 id="department-filter-title">Lọc danh mục chuyên khoa</h3>
-            <p>Tìm theo tên, mô tả, mã chương ICD hoặc mã hệ thống.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="ai-config-filter-card department-filter-card"
+        description="Tìm kiếm chuyên khoa và chọn số dòng hiển thị."
+        headingClassName="ai-config-filter-card-header department-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${filters.search ? 1 : 0} bộ lọc · ${allDepartmentsCount} chuyên khoa`}
+        title="Bộ lọc chuyên khoa"
+        titleId="department-filter-title"
+      >
         <form className="ai-config-toolbar department-filter-form" onSubmit={onApplyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
             <label className="department-search-field">
@@ -169,7 +170,7 @@ export default function AdminDepartmentsSection({
             </div>
           </div>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       {!loading && !error && (
         <div className="department-result-summary" role="status" aria-live="polite">

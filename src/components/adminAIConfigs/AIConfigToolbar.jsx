@@ -43,7 +43,7 @@ export default function AIConfigToolbar({
       headingClassName="ai-config-filter-card-header ai-config-clinical-filter-heading"
       icon={<Filter size={18} />}
       summary={`${activeFilterCount} bộ lọc đang dùng`}
-      title="Lọc danh mục cấu hình"
+      title="Bộ lọc cấu hình AI"
       titleId="ai-config-filter-title"
     >
       <form className="ai-config-toolbar" onSubmit={onSubmit}>

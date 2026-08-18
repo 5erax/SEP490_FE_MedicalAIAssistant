@@ -5,6 +5,7 @@ import { feedbackReviewsApi, getFeedbackReviewApiMessage } from "../../services/
 import { medicalFacilitiesApi } from "../../services/facilityService";
 import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../ui";
 import AdminPagination from "../admin/AdminPagination";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 
 const PAGE_SIZE = 20;
 const EMPTY_FILTERS = { facilityId: "", rating: "", status: "" };
@@ -158,11 +159,15 @@ export default function AdminFeedbackReviewsSection({ facilities }) {
         </Button>
       </header>
 
-      <form className="feedback-filter-card" onSubmit={applyFilters}>
-        <div className="feedback-filter-title">
-          <Filter size={18} aria-hidden="true" />
-          <div><h3>Lọc đánh giá</h3><p>Thu hẹp theo cơ sở, số sao hoặc trạng thái kiểm duyệt.</p></div>
-        </div>
+      <AdminFilterDisclosure
+        className="feedback-filter-card"
+        description="Chọn cơ sở, số sao hoặc trạng thái kiểm duyệt."
+        icon={<Filter size={18} />}
+        summary={`${Object.values(appliedFilters).filter(Boolean).length} bộ lọc · ${pageInfo.totalCount} đánh giá`}
+        title="Bộ lọc đánh giá"
+        titleId="feedback-filter-title"
+      >
+      <form onSubmit={applyFilters}>
         <div className="feedback-filter-grid">
           <label><span>Cơ sở y tế</span><select value={filters.facilityId} onChange={(event) => setFilters((current) => ({ ...current, facilityId: event.target.value }))}><option value="">Tất cả cơ sở</option>{facilityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
           <label><span>Số sao</span><select value={filters.rating} onChange={(event) => setFilters((current) => ({ ...current, rating: event.target.value }))}><option value="">Tất cả mức sao</option>{[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} sao</option>)}</select></label>
@@ -170,6 +175,7 @@ export default function AdminFeedbackReviewsSection({ facilities }) {
         </div>
         <div className="feedback-filter-actions"><Button size="sm" type="submit"><Filter size={14} aria-hidden="true" /> Áp dụng</Button><Button tone="secondary" size="sm" type="button" onClick={clearFilters}>Xóa lọc</Button></div>
       </form>
+      </AdminFilterDisclosure>
 
       {!loading && !loadError ? <div className="feedback-result-summary" role="status"><ShieldCheck size={18} aria-hidden="true" /><strong>{pageInfo.totalCount} đánh giá phù hợp</strong><span>Trang {pageInfo.pageNumber}/{Math.max(pageInfo.totalPages, 1)}</span></div> : null}
 

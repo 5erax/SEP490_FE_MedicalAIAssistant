@@ -55,7 +55,7 @@ export default function DoctorFilters({
         </Button>
       )}
       summary={`${activeFilterCount} bộ lọc · ${totalCount} hồ sơ`}
-      title="Tìm và lọc hồ sơ bác sĩ"
+      title="Bộ lọc hồ sơ bác sĩ"
       titleId="doctor-filter-title"
     >
       <form className="doctor-filter-bar" onSubmit={onSubmit}>

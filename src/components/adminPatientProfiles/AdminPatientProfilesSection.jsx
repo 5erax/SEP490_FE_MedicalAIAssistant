@@ -16,6 +16,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 import AdminSearchDatalist from "../admin/AdminSearchDatalist";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 
 const BLOOD_TYPE_OPTIONS = [
   { value: "", label: "Chưa xác định" },
@@ -158,15 +159,15 @@ export default function AdminPatientProfilesSection({
         </div>
       )}
 
-      <section className="ai-config-filter-card patient-profile-filter-card" aria-labelledby="patient-profile-filter-title">
-        <div className="ai-config-filter-card-header patient-profile-filter-heading">
-          <span aria-hidden="true"><Filter size={18} /></span>
-          <div>
-            <h3 id="patient-profile-filter-title">Tìm hồ sơ trên trang hiện tại</h3>
-            <p>Tìm theo ID hồ sơ, ID người dùng, nhóm máu, dị ứng hoặc bệnh nền trên trang hiện tại.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="ai-config-filter-card patient-profile-filter-card"
+        description="Tìm theo ID, nhóm máu, dị ứng hoặc bệnh nền trên trang hiện tại."
+        headingClassName="ai-config-filter-card-header patient-profile-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${search ? 1 : 0} bộ lọc · ${pageInfo.totalCount} hồ sơ`}
+        title="Bộ lọc hồ sơ bệnh nhân"
+        titleId="patient-profile-filter-title"
+      >
         <form
           className="ai-config-toolbar patient-profile-filter-form"
           onSubmit={(event) => {
@@ -222,7 +223,7 @@ export default function AdminPatientProfilesSection({
             </div>
           </div>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       {!loading && !error && (
         <div className="patient-profile-result-summary" role="status" aria-live="polite">

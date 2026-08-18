@@ -2,8 +2,7 @@ import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useId, useState } from "react";
 
 function shouldStartExpanded() {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
-  return !window.matchMedia("(max-width: 700px)").matches;
+  return false;
 }
 
 export default function AdminFilterDisclosure({
@@ -48,7 +47,7 @@ export default function AdminFilterDisclosure({
           onClick={() => setExpanded((current) => !current)}
         >
           <span>
-            <strong>{expanded ? "Thu gọn" : "Mở bộ lọc"}</strong>
+            <strong>{expanded ? "Đóng bộ lọc" : "Bộ lọc"}</strong>
             {summary && <small>{summary}</small>}
           </span>
           <ChevronDown size={17} aria-hidden="true" />
