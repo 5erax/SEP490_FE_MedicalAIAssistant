@@ -22,10 +22,6 @@ export default function AdminPagination({
   className = "",
   currentPage = 1,
   totalPages = 1,
-  totalCount = 0,
-  pageSize = 10,
-  itemCount = 0,
-  itemLabel = "mục",
   loading = false,
   onPageChange,
 }) {
@@ -37,13 +33,6 @@ export default function AdminPagination({
     () => buildPageTokens(safeCurrentPage, safeTotalPages),
     [safeCurrentPage, safeTotalPages],
   );
-
-  const firstItem = totalCount > 0
-    ? ((safeCurrentPage - 1) * Math.max(1, Number(pageSize) || 1)) + 1
-    : 0;
-  const lastItem = totalCount > 0
-    ? Math.min(totalCount, firstItem + Math.max(0, Number(itemCount) || 0) - 1)
-    : 0;
 
   function changePage(nextPage) {
     const targetPage = clampPage(nextPage, safeTotalPages);
@@ -124,12 +113,6 @@ export default function AdminPagination({
 
       <p className="admin-pagination-summary" role="status" aria-live="polite">
         <strong>Trang {safeCurrentPage}/{safeTotalPages}</strong>
-        <span aria-hidden="true">·</span>
-        <span>
-          {totalCount > 0
-            ? `${firstItem}–${Math.max(firstItem, lastItem)} / ${totalCount} ${itemLabel}`
-            : `0 ${itemLabel}`}
-        </span>
       </p>
     </nav>
   );
