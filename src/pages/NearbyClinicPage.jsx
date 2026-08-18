@@ -51,7 +51,6 @@ const MAP_LOAD_TIMEOUT_MS = 12_000;
 const SIDEBAR_MAP_OFFSET = 190;
 const DETAIL_TABS = [
   ["overview", "Tổng quan"],
-  ["doctors", "Bác sĩ"],
   ["reviews", "Đánh giá"],
 ];
 
@@ -486,7 +485,7 @@ function NearbyClinicPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const [detailDoctors, setDetailDoctors] = useState([]);
-  const [detailDoctorsLoading, setDetailDoctorsLoading] = useState(false);
+  const [, setDetailDoctorsLoading] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewsTotalCount, setReviewsTotalCount] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -1311,20 +1310,6 @@ function NearbyClinicPage() {
       ?.focus();
   };
 
-  const openDoctorDetail = (doctor) => {
-    savedDetailScrollRef.current = detailBodyRef.current?.scrollTop ?? 0;
-    setSelectedDoctor(doctor);
-    setSidebarView("doctor-detail");
-    if (detailFacility?.facilityId) {
-      syncMapUrl({
-        facilityId: detailFacility.facilityId,
-        tab: "doctors",
-        doctorId: doctor.id,
-      });
-    }
-    window.setTimeout(() => sidebarTitleRef.current?.focus(), 0);
-  };
-
   const backToHospitalDetail = () => {
     setSidebarView("hospital-detail");
     setSelectedDoctor(null);
@@ -1771,34 +1756,6 @@ function NearbyClinicPage() {
                 </div>
               )}
 
-              {activeHospitalTab === "doctors" && (
-                <div
-                  id="facility-panel-doctors"
-                  className="facility-detail-tab-panel"
-                  role="tabpanel"
-                  aria-labelledby="facility-tab-doctors"
-                >
-                  <section className="facility-info-group">
-                    <h3>Danh sách bác sĩ</h3>
-                    {detailDoctorsLoading && <p className="facility-detail-status">Đang tải danh sách bác sĩ...</p>}
-                    {!detailDoctorsLoading && detailDoctors.length === 0 && <p className="facility-empty-state">Hiện chưa có bác sĩ nào được công khai cho cơ sở này.</p>}
-                    <div className="facility-detail-list facility-detail-doctor-list">
-                      {detailDoctors.map((doctor) => (
-                        <article key={doctor.id}>
-                          <span className="facility-detail-doctor-image">{getDoctorImageUrl(doctor) ? <img src={getDoctorImageUrl(doctor)} alt={`Ảnh bác sĩ ${getDoctorName(doctor)}`} width="42" height="42" loading="lazy" decoding="async" /> : <UserRound size={20} aria-hidden="true" />}</span>
-                          <div className="doctor-card-copy">
-                            <strong>{getDoctorName(doctor)}</strong>
-                            {doctor.academicTitle && <span>{doctor.academicTitle}</span>}
-                            <small>{getDoctorSpecialty(doctor)}{doctor.yearsOfExperience ? ` · ${doctor.yearsOfExperience} năm kinh nghiệm` : ""}</small>
-                          </div>
-                          <button type="button" onClick={() => openDoctorDetail(doctor)}>Xem chi tiết</button>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-              )}
-
               {activeHospitalTab === "reviews" && (
                 <div
                   id="facility-panel-reviews"
@@ -2102,33 +2059,6 @@ function NearbyClinicPage() {
               </dl>
               <div className="facility-detail-tags">
                 {detailFacility.departments.map((department) => <span key={department}>{department}</span>)}
-              </div>
-            </section>
-
-            <section className="facility-detail-card">
-              <h3>Danh sách bác sĩ</h3>
-              <div className="facility-detail-list facility-detail-doctor-list">
-                {detailDoctorsLoading && <p>Đang tải danh sách bác sĩ...</p>}
-                {!detailDoctorsLoading && detailDoctors.length === 0 && <p>Chưa có bác sĩ được liên kết với cơ sở này.</p>}
-                {detailDoctors.map((doctor) => (
-                  <article key={doctor.id}>
-                    {getDoctorImageUrl(doctor) && (
-                      <img
-                        className="facility-detail-doctor-image"
-                        src={getDoctorImageUrl(doctor)}
-                        alt={`Ảnh bác sĩ ${doctor.fullName || ""}`.trim()}
-                        width="42"
-                        height="42"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )}
-                    <div>
-                      <strong>{doctor.fullName || "Bác sĩ chưa cập nhật tên"}</strong>
-                      <span>{doctor.departmentName || doctor.specialty || "Chưa cập nhật chuyên khoa"}</span>
-                    </div>
-                  </article>
-                ))}
               </div>
             </section>
 

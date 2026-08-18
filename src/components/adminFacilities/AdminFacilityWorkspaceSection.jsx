@@ -2,7 +2,11 @@ import { Building2, MessageSquareText } from "lucide-react";
 import { useState } from "react";
 import AdminFeedbackReviewsSection from "../adminFeedbackReviews/AdminFeedbackReviewsSection";
 
-export default function AdminFacilityWorkspaceSection({ children, facilities }) {
+export default function AdminFacilityWorkspaceSection({
+  children,
+  facilities,
+  facilityFooter = null,
+}) {
   const [activeTab, setActiveTab] = useState("facilities");
 
   return (
@@ -30,7 +34,14 @@ export default function AdminFacilityWorkspaceSection({ children, facilities }) 
         </button>
       </div>
 
-      {activeTab === "facilities" ? children : <AdminFeedbackReviewsSection facilities={facilities} />}
+      {activeTab === "facilities" ? (
+        <>
+          {children}
+          {facilityFooter}
+        </>
+      ) : (
+        <AdminFeedbackReviewsSection facilities={facilities} />
+      )}
     </div>
   );
 }

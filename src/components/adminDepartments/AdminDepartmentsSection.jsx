@@ -1,6 +1,8 @@
 import { BookOpen, Check, Filter, Pencil, Plus, RefreshCw, RotateCcw, Search, Stethoscope, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 
 function Field({ label, children, className = "", error, errorId, help, helpId, required = false }) {
   return (
@@ -112,15 +114,15 @@ export default function AdminDepartmentsSection({
         </div>
       )}
 
-      <section className="ai-config-filter-card department-filter-card" aria-labelledby="department-filter-title">
-        <div className="ai-config-filter-card-header department-filter-heading">
-          <span aria-hidden="true"><Filter size={18} /></span>
-          <div>
-            <h3 id="department-filter-title">Lọc danh mục chuyên khoa</h3>
-            <p>Tìm theo tên, mô tả, mã chương ICD hoặc mã hệ thống.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="ai-config-filter-card department-filter-card"
+        description="Tìm kiếm chuyên khoa và chọn số dòng hiển thị."
+        headingClassName="ai-config-filter-card-header department-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${filters.search ? 1 : 0} bộ lọc · ${allDepartmentsCount} chuyên khoa`}
+        title="Bộ lọc chuyên khoa"
+        titleId="department-filter-title"
+      >
         <form className="ai-config-toolbar department-filter-form" onSubmit={onApplyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
             <label className="department-search-field">
@@ -130,9 +132,18 @@ export default function AdminDepartmentsSection({
                 <input
                   type="search"
                   autoComplete="off"
+                  list="department-search-options"
                   value={filters.search}
                   onChange={(event) => onFilterChange("search", event.target.value)}
                   placeholder="Tên hoặc mã ICD"
+                />
+                <AdminSearchDatalist
+                  id="department-search-options"
+                  values={departments.flatMap((department) => [
+                    department.departmentName,
+                    department.chapterCode,
+                    department.id,
+                  ])}
                 />
               </span>
             </label>
@@ -159,7 +170,7 @@ export default function AdminDepartmentsSection({
             </div>
           </div>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       {!loading && !error && (
         <div className="department-result-summary" role="status" aria-live="polite">
@@ -172,7 +183,7 @@ export default function AdminDepartmentsSection({
       )}
 
       <div className="department-result-panel">
-        {loading ? (
+        {loading && !departments.length ? (
           <LoadingState
             label="Đang tải danh mục chuyên khoa..."
             description="Dữ liệu chuyên khoa và mã chương ICD đang được đồng bộ."
@@ -215,7 +226,12 @@ export default function AdminDepartmentsSection({
                     <span className="department-primary-icon" aria-hidden="true"><Stethoscope size={18} /></span>
                     <div>
                       <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-                      <small>{department.description || "Chưa có mô tả cho chuyên khoa này."}</small>
+                      <small
+                        className="department-primary-description"
+                        title={department.description || "Chưa có mô tả cho chuyên khoa này."}
+                      >
+                        {department.description || "Chưa có mô tả cho chuyên khoa này."}
+                      </small>
                     </div>
                   </div>
                 ),
@@ -224,9 +240,11 @@ export default function AdminDepartmentsSection({
                 key: "icd",
                 header: "Chương ICD",
                 render: (department) => (
-                  <div className="table-primary-cell">
-                    <strong>{department.chapterCode || "Chưa liên kết"}</strong>
-                    <small>Mã hệ thống · {department.id || "Không có dữ liệu"}</small>
+                  <div className="table-primary-cell department-icd-cell">
+                    <strong className="department-icd-code">{department.chapterCode || "Chưa liên kết"}</strong>
+                    <small className="department-system-id" title={department.id || "Không có dữ liệu"}>
+                      ID · {department.id || "Không có dữ liệu"}
+                    </small>
                   </div>
                 ),
               },

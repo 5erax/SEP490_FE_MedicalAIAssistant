@@ -1,11 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, ReceiptText, RefreshCw, X } from "lucide-react";
-import { Badge, Button, DataTable, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
+import { Eye, Filter, ReceiptText, RefreshCw, RotateCcw, Search, X } from "lucide-react";
+import { Badge, Button, CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState } from "../ui";
 import { paymentsApi } from "../../services/api";
 import { translateApiMessage } from "../../services/apiMessageTranslator";
 import { getPaymentStatusLabel } from "../../services/paymentStatusLabels";
+import AdminPagination from "../admin/AdminPagination";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 
 const PAGE_SIZE = 10;
+const EMPTY_FILTERS = { search: "", status: "" };
+const PAYMENT_STATUS_OPTIONS = [
+  { value: "", label: "Tất cả trạng thái" },
+  { value: "paid", label: "Đã thanh toán" },
+  { value: "pending", label: "Đang chờ" },
+  { value: "failed", label: "Thất bại" },
+  { value: "cancelled", label: "Đã hủy" },
+  { value: "refunded", label: "Đã hoàn tiền" },
+];
 
 function normalizePage(response, pageNumber) {
   const data = response?.data ?? {};
@@ -115,7 +126,29 @@ export default function AdminPaymentsPanel() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const detailTriggerRef = useRef(null);
+
+  const filteredPayments = useMemo(() => {
+    const search = appliedFilters.search.trim().toLocaleLowerCase("vi");
+    return paymentPage.items.filter((payment) => {
+      const rawStatus = String(payment?.status ?? "").toLowerCase();
+      const normalizedStatus = rawStatus === "canceled" ? "cancelled" : rawStatus;
+      if (appliedFilters.status && normalizedStatus !== appliedFilters.status) return false;
+      if (!search) return true;
+      return [
+        payment.id,
+        payment.planName,
+        payment.userId,
+        payment.transactionReference,
+        payment.paymentProvider,
+        payment.provider,
+      ].some((value) => String(value ?? "").toLocaleLowerCase("vi").includes(search));
+    });
+  }, [appliedFilters, paymentPage.items]);
+
+  const activeFilterCount = Number(Boolean(appliedFilters.search.trim())) + Number(Boolean(appliedFilters.status));
 
   useEffect(() => {
     let active = true;
@@ -159,6 +192,16 @@ export default function AdminPaymentsPanel() {
     setPageNumber(nextPage);
   }
 
+  function applyFilters(event) {
+    event.preventDefault();
+    setAppliedFilters({ search: filters.search.trim(), status: filters.status });
+  }
+
+  function clearFilters() {
+    setFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+  }
+
   return (
     <section className="admin-payment-panel" aria-labelledby="admin-payments-title" aria-busy={loading}>
       <div className="panel-title-row">
@@ -171,19 +214,56 @@ export default function AdminPaymentsPanel() {
       </div>
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
 
+      <AdminFilterDisclosure
+        className="admin-payment-filter-card"
+        description="Tìm theo mã, người dùng, gói dịch vụ hoặc trạng thái giao dịch trên trang hiện tại."
+        headingClassName="admin-payment-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${activeFilterCount} bộ lọc · ${filteredPayments.length} giao dịch`}
+        title="Bộ lọc lịch sử thanh toán"
+        titleId="admin-payment-filter-title"
+      >
+        <form className="admin-payment-filter-form" onSubmit={applyFilters}>
+          <label className="admin-payment-search-field">
+            <span>Tìm giao dịch</span>
+            <span className="admin-payment-search-control">
+              <Search size={17} aria-hidden="true" />
+              <input
+                type="search"
+                autoComplete="off"
+                value={filters.search}
+                onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
+                placeholder="Mã giao dịch, người dùng hoặc gói dịch vụ"
+              />
+            </span>
+          </label>
+          <CustomSelect
+            className="clean-field admin-payment-status-field"
+            label="Trạng thái"
+            value={filters.status}
+            options={PAYMENT_STATUS_OPTIONS}
+            onChange={(status) => setFilters((current) => ({ ...current, status }))}
+          />
+          <div className="admin-payment-filter-actions">
+            <Button size="sm" type="submit" disabled={loading}><Filter size={14} aria-hidden="true" /> Áp dụng</Button>
+            <Button tone="secondary" size="sm" type="button" onClick={clearFilters} disabled={loading}><RotateCcw size={14} aria-hidden="true" /> Xóa lọc</Button>
+          </div>
+        </form>
+      </AdminFilterDisclosure>
+
       {loading && paymentPage.items.length === 0 ? (
         <LoadingState label="Đang tải lịch sử thanh toán…" />
       ) : error ? (
         <ErrorState title="Không thể tải lịch sử thanh toán" description={error} action={<Button onClick={reload}>Thử lại</Button>} />
-      ) : paymentPage.items.length === 0 ? (
-        <EmptyState icon={<ReceiptText size={26} aria-hidden="true" />} title="Chưa có giao dịch thanh toán" description="Các giao dịch đăng ký gói sẽ xuất hiện tại đây." />
+      ) : filteredPayments.length === 0 ? (
+        <EmptyState icon={<ReceiptText size={26} aria-hidden="true" />} title={activeFilterCount ? "Không có giao dịch phù hợp" : "Chưa có giao dịch thanh toán"} description={activeFilterCount ? "Hãy thay đổi hoặc xóa bộ lọc để xem giao dịch khác." : "Các giao dịch đăng ký gói sẽ xuất hiện tại đây."} />
       ) : (
         <DataTable
           className="admin-payment-table"
           caption="Danh sách giao dịch thanh toán"
           rowHeaderKey="plan"
           getRowKey={(payment) => payment.id}
-          rows={paymentPage.items}
+          rows={filteredPayments}
           columns={[
             { key: "plan", header: "Gói dịch vụ", render: (payment) => <strong>{payment.planName || "Giao dịch MediMate"}</strong> },
             { key: "user", header: "Người dùng", render: (payment) => payment.userId || "—" },
@@ -211,11 +291,7 @@ export default function AdminPaymentsPanel() {
       )}
 
       {paymentPage.totalPages > 1 && !error && (
-        <nav className="admin-payment-pagination" aria-label="Phân trang lịch sử thanh toán">
-          <Button tone="ghost" size="sm" disabled={loading || pageNumber <= 1} onClick={() => changePage(pageNumber - 1)}>Trang trước</Button>
-          <span>Trang {paymentPage.pageNumber}/{paymentPage.totalPages}</span>
-          <Button tone="ghost" size="sm" disabled={loading || pageNumber >= paymentPage.totalPages} onClick={() => changePage(pageNumber + 1)}>Trang sau</Button>
-        </nav>
+        <AdminPagination ariaLabel="Phân trang lịch sử thanh toán" currentPage={paymentPage.pageNumber} totalPages={paymentPage.totalPages} totalCount={paymentPage.totalCount} pageSize={paymentPage.pageSize} itemCount={paymentPage.items.length} itemLabel="giao dịch" loading={loading} onPageChange={changePage} />
       )}
 
       {selectedPayment && (

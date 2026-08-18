@@ -168,6 +168,7 @@ export default function AdminDoctorsSection({
       </section>
 
       <DoctorFilters
+        doctors={doctors}
         filters={filters}
         departments={departments}
         facilities={facilities}
@@ -187,7 +188,7 @@ export default function AdminDoctorsSection({
         </p>
       )}
 
-      {loading ? (
+      {loading && !doctors.length ? (
         <LoadingState
           className="doctor-empty-state"
           label="Đang tải danh sách bác sĩ..."

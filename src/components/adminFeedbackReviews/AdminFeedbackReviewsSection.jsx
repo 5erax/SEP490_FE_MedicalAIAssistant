@@ -4,6 +4,8 @@ import { useFeedback } from "../feedback/feedbackContext";
 import { feedbackReviewsApi, getFeedbackReviewApiMessage } from "../../services/feedbackReviewService";
 import { medicalFacilitiesApi } from "../../services/facilityService";
 import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../ui";
+import AdminPagination from "../admin/AdminPagination";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 
 const PAGE_SIZE = 20;
 const EMPTY_FILTERS = { facilityId: "", rating: "", status: "" };
@@ -157,11 +159,15 @@ export default function AdminFeedbackReviewsSection({ facilities }) {
         </Button>
       </header>
 
-      <form className="feedback-filter-card" onSubmit={applyFilters}>
-        <div className="feedback-filter-title">
-          <Filter size={18} aria-hidden="true" />
-          <div><h3>Lọc đánh giá</h3><p>Thu hẹp theo cơ sở, số sao hoặc trạng thái kiểm duyệt.</p></div>
-        </div>
+      <AdminFilterDisclosure
+        className="feedback-filter-card"
+        description="Chọn cơ sở, số sao hoặc trạng thái kiểm duyệt."
+        icon={<Filter size={18} />}
+        summary={`${Object.values(appliedFilters).filter(Boolean).length} bộ lọc · ${pageInfo.totalCount} đánh giá`}
+        title="Bộ lọc đánh giá"
+        titleId="feedback-filter-title"
+      >
+      <form onSubmit={applyFilters}>
         <div className="feedback-filter-grid">
           <label><span>Cơ sở y tế</span><select value={filters.facilityId} onChange={(event) => setFilters((current) => ({ ...current, facilityId: event.target.value }))}><option value="">Tất cả cơ sở</option>{facilityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
           <label><span>Số sao</span><select value={filters.rating} onChange={(event) => setFilters((current) => ({ ...current, rating: event.target.value }))}><option value="">Tất cả mức sao</option>{[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} sao</option>)}</select></label>
@@ -169,10 +175,11 @@ export default function AdminFeedbackReviewsSection({ facilities }) {
         </div>
         <div className="feedback-filter-actions"><Button size="sm" type="submit"><Filter size={14} aria-hidden="true" /> Áp dụng</Button><Button tone="secondary" size="sm" type="button" onClick={clearFilters}>Xóa lọc</Button></div>
       </form>
+      </AdminFilterDisclosure>
 
       {!loading && !loadError ? <div className="feedback-result-summary" role="status"><ShieldCheck size={18} aria-hidden="true" /><strong>{pageInfo.totalCount} đánh giá phù hợp</strong><span>Trang {pageInfo.pageNumber}/{Math.max(pageInfo.totalPages, 1)}</span></div> : null}
 
-      {loading ? <LoadingState label="Đang tải đánh giá..." description="Dữ liệu đánh giá đang được đồng bộ." /> : loadError ? <ErrorState title="Không thể tải đánh giá" description={loadError} action={<Button onClick={() => loadReviews(pageInfo.pageNumber)}>Thử lại</Button>} /> : reviews.length === 0 ? <EmptyState icon={<MessageSquareText size={24} />} title="Chưa có đánh giá phù hợp" description="Hãy thay đổi bộ lọc hoặc tải lại dữ liệu." /> : (
+      {loading && !reviews.length ? <LoadingState label="Đang tải đánh giá..." description="Dữ liệu đánh giá đang được đồng bộ." /> : loadError ? <ErrorState title="Không thể tải đánh giá" description={loadError} action={<Button onClick={() => loadReviews(pageInfo.pageNumber)}>Thử lại</Button>} /> : reviews.length === 0 ? <EmptyState icon={<MessageSquareText size={24} />} title="Chưa có đánh giá phù hợp" description="Hãy thay đổi bộ lọc hoặc tải lại dữ liệu." /> : (
         <>
           <div className="feedback-table-scroll">
             <table className="feedback-admin-table">
@@ -182,7 +189,7 @@ export default function AdminFeedbackReviewsSection({ facilities }) {
             </table>
           </div>
           <div className="feedback-card-list">{reviews.map((review) => <article className="feedback-admin-card" key={review.id}><header><div><strong>{review.facilityName || "Cơ sở chưa xác định"}</strong><small>{formatDate(review.createdAt)}</small></div><Badge tone={STATUS_TONES[review.status] || "neutral"}>{getStatusLabel(review.status)}</Badge></header><Rating value={review.rating} /><p>{review.comment || "Không có nội dung"}</p><div className="feedback-row-actions"><select aria-label={`Đổi trạng thái đánh giá tại ${review.facilityName}`} value={review.status || "Pending"} disabled={busyId === review.id} onChange={(event) => updateStatus(review, event.target.value)}><option value="Approved">Đã duyệt</option><option value="Pending">Chờ duyệt</option><option value="Hidden">Đã ẩn</option><option value="Rejected">Đã từ chối</option></select><Button tone="danger" size="sm" className="admin-danger-btn feedback-delete-button" disabled={busyId === review.id} onClick={() => removeReview(review)}><Trash2 size={14} aria-hidden="true" /> Xóa</Button></div></article>)}</div>
-          <nav className="feedback-pagination" aria-label="Phân trang đánh giá"><Button tone="secondary" size="sm" disabled={pageInfo.pageNumber <= 1 || loading} onClick={() => loadReviews(pageInfo.pageNumber - 1)}>Trang trước</Button><span>Trang {pageInfo.pageNumber}/{Math.max(pageInfo.totalPages, 1)}</span><Button tone="secondary" size="sm" disabled={pageInfo.pageNumber >= pageInfo.totalPages || loading} onClick={() => loadReviews(pageInfo.pageNumber + 1)}>Trang sau</Button></nav>
+          <AdminPagination ariaLabel="Phân trang đánh giá" currentPage={pageInfo.pageNumber} totalPages={pageInfo.totalPages} totalCount={pageInfo.totalCount} pageSize={PAGE_SIZE} itemCount={reviews.length} itemLabel="đánh giá" loading={loading} onPageChange={loadReviews} />
         </>
       )}
     </section>

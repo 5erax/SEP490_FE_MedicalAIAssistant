@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useFeedback } from "../feedback/feedbackContext";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { navigate } from "../../router/navigation";
 import {
   getLabIndicatorApiMessage,
@@ -28,6 +29,8 @@ import {
   LoadingState,
 } from "../ui";
 import { LabIndicatorChildDialog, LabIndicatorFormDialog } from "./LabIndicatorDialogs";
+import AdminPagination from "../admin/AdminPagination";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 import "../../styles/admin/lab-indicators.css";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -494,28 +497,32 @@ function IndicatorListView() {
 
       <ApiMessage message={message} />
 
-      <section
+      <AdminFilterDisclosure
         className="lab-filter-card"
-        aria-labelledby="lab-filter-title"
+        description="Tìm theo ký hiệu, tên đầy đủ, mô tả hoặc nhóm chỉ số."
+        icon={<Search size={18} />}
+        summary={`${appliedSearch ? 1 : 0} bộ lọc · ${pageInfo.totalCount} chỉ số`}
+        title="Bộ lọc chỉ số xét nghiệm"
+        titleId="lab-filter-title"
       >
-        <div>
-          <Search size={18} aria-hidden="true" />
-          <div>
-            <h3 id="lab-filter-title">Tìm trong danh mục</h3>
-            <p>
-              Tìm theo ký hiệu, tên đầy đủ, mô tả hoặc nhóm chỉ số.
-            </p>
-          </div>
-        </div>
-
         <form className="lab-filter-form" onSubmit={applySearch}>
           <label className="sr-only" htmlFor="lab-indicator-search">Từ khóa tìm kiếm</label>
           <input
             id="lab-indicator-search"
             type="search"
+            list="lab-indicator-search-options"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Ví dụ: WBC hoặc huyết học"
+          />
+          <AdminSearchDatalist
+            id="lab-indicator-search-options"
+            values={items.flatMap((indicator) => [
+              indicator.symbol,
+              indicator.displayTitle,
+              indicator.fullName,
+              indicator.category,
+            ])}
           />
           <Button type="submit" size="sm">
             Tìm kiếm
@@ -530,7 +537,7 @@ function IndicatorListView() {
             Xóa lọc
           </Button>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       <div
         className="lab-result-summary"
@@ -598,42 +605,16 @@ function IndicatorListView() {
       )}
 
       {status === "ready" && pageInfo.totalPages > 1 && (
-        <nav
-          className="pagination-row lab-pagination"
-          aria-label="Phân trang chỉ số xét nghiệm"
-        >
-          <button
-            type="button"
-            disabled={pageInfo.pageNumber <= 1}
-            onClick={() =>
-              loadIndicators(
-                pageInfo.pageNumber - 1,
-                pageInfo.pageSize,
-                appliedSearch,
-              )
-            }
-          >
-            Trang trước
-          </button>
-
-          <span>
-            Trang {pageInfo.pageNumber} / {pageInfo.totalPages}
-          </span>
-
-          <button
-            type="button"
-            disabled={pageInfo.pageNumber >= pageInfo.totalPages}
-            onClick={() =>
-              loadIndicators(
-                pageInfo.pageNumber + 1,
-                pageInfo.pageSize,
-                appliedSearch,
-              )
-            }
-          >
-            Trang sau
-          </button>
-        </nav>
+        <AdminPagination
+          ariaLabel="Phân trang chỉ số xét nghiệm"
+          currentPage={pageInfo.pageNumber}
+          totalPages={pageInfo.totalPages}
+          totalCount={pageInfo.totalCount}
+          pageSize={pageInfo.pageSize}
+          itemCount={items.length}
+          itemLabel="chỉ số"
+          onPageChange={(nextPage) => loadIndicators(nextPage, pageInfo.pageSize, appliedSearch)}
+        />
       )}
 
       {dialog && (

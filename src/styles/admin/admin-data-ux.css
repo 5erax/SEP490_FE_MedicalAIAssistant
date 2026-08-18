@@ -1,0 +1,1410 @@
+/*
+ * Admin data-workspace UX overrides.
+ * Loaded last so table density, search focus and responsive behaviour remain
+ * consistent across all Admin catalogue surfaces without changing data flow.
+ */
+
+.admin-operator {
+  --admin-data-border: rgba(24, 72, 65, 0.16);
+  --admin-data-focus: #087f7b;
+  --admin-data-focus-soft: rgba(8, 127, 123, 0.11);
+  --admin-data-muted: #60716d;
+}
+
+/* Keep large datasets inside a usable viewport instead of making the whole
+ * Admin page several screens tall. Sticky table headers remain visible while
+ * the user scrolls the dataset itself. */
+@media (min-width: 769px) {
+  .admin-operator .ui-table-wrap,
+  .admin-operator .feedback-table-scroll,
+  .admin-operator .subscription-plan-card-list {
+    max-height: min(72svh, 780px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .admin-operator .feedback-admin-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .admin-operator .subscription-plan-list-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .admin-operator .ui-table th,
+  .admin-operator .ui-table td,
+  .admin-operator .feedback-admin-table th,
+  .admin-operator .feedback-admin-table td {
+    padding: 9px 11px;
+    vertical-align: middle;
+  }
+
+  .admin-operator .ui-table .record-actions {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .admin-operator .ui-table .record-actions :is(.btn, .ui-button),
+  .admin-operator .feedback-row-actions :is(.btn, .ui-button) {
+    min-height: 38px;
+    padding-inline: 10px;
+    white-space: nowrap;
+  }
+
+  .admin-operator .clinical-question-primary-cell > div {
+    min-width: 0;
+  }
+
+  .admin-operator .clinical-question-primary-cell strong {
+    display: block;
+    overflow: visible;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .admin-operator .clinical-question-primary-cell small {
+    overflow: visible;
+    max-height: none;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+/* The enhanced shared paginator is rendered by AdminWorkspacePage for these
+ * sections. Hide the previous sequential-only controls to avoid duplicates. */
+.admin-operator :is(
+  .admin-users-pagination,
+  .doctor-pagination,
+  .ai-config-pagination,
+  .department-pagination,
+  .icd-pagination,
+  .patient-profile-pagination,
+  .facility-pagination
+) {
+  display: none;
+}
+
+/* User account search + suggestions. */
+.admin-operator .admin-users-toolbar.admin-users-toolbar--enhanced {
+  grid-template-columns:
+    minmax(300px, 1.45fr)
+    minmax(170px, 0.72fr)
+    minmax(210px, 0.85fr)
+    minmax(130px, 0.55fr);
+  align-items: end;
+}
+
+.admin-operator .admin-users-search-field {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: var(--admin-data-muted);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.admin-operator .admin-users-search-field > label {
+  color: var(--admin-data-muted);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.02em;
+}
+
+.admin-operator .admin-users-search-combobox {
+  position: relative;
+  min-width: 0;
+}
+
+.admin-operator .admin-users-search-control {
+  width: 100%;
+}
+
+.admin-operator .admin-users-search-suggestions {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 7px);
+  left: 0;
+  display: grid;
+  width: 100%;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid rgba(8, 127, 123, 0.22);
+  border-radius: 14px;
+  background: #fff;
+  padding: 5px;
+  box-shadow: 0 18px 42px rgba(16, 47, 50, 0.14);
+}
+
+.admin-operator .admin-users-search-suggestions > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #102f32;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.admin-operator .admin-users-search-suggestions > button:hover,
+.admin-operator .admin-users-search-suggestions > button.is-highlighted {
+  background: #edf7f4;
+}
+
+.admin-operator .admin-users-search-suggestions > button > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-operator .admin-users-search-suggestions strong,
+.admin-operator .admin-users-search-suggestions small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-operator .admin-users-search-suggestions strong {
+  font-size: 13px;
+}
+
+.admin-operator .admin-users-search-suggestions small {
+  color: #60716d;
+  font-size: 11px;
+}
+
+.admin-operator .admin-users-table .admin-user-delete-btn {
+  width: auto;
+  min-width: 136px;
+  max-width: 156px;
+  align-self: flex-end;
+  border-color: #a42424;
+  background: #fff4f2;
+  color: #8f1717;
+}
+
+/* One compact rhythm for every data-heavy Admin menu. Individual catalogue
+ * styles still provide their colours and content layout; this final layer
+ * prevents their outer shells, heroes and filters from drifting in size. */
+@media (min-width: 769px) {
+  .admin-operator :is(
+    .facility-clinical-panel,
+    .department-clinical-panel,
+    .icd-clinical-panel,
+    .clinical-catalog-panel,
+    .doctor-clinical-panel,
+    .admin-users-panel,
+    .ai-config-clinical-panel,
+    .patient-profile-clinical-panel,
+    .consultation-catalog,
+    .lab-indicator-list,
+    .subscription-plan-admin-panel
+  ) {
+    gap: 12px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading,
+    .department-clinical-heading,
+    .icd-clinical-heading,
+    .clinical-catalog-heading,
+    .doctor-clinical-heading,
+    .admin-users-heading,
+    .ai-config-clinical-heading,
+    .patient-profile-clinical-heading,
+    .consultation-catalog-header,
+    .lab-indicator-list .lab-page-heading,
+    .subscription-plan-heading,
+    .feedback-admin-heading
+  ) {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 0;
+    align-items: center;
+    gap: 20px;
+    overflow: hidden;
+    border: 1px solid var(--admin-data-border);
+    border-radius: 18px;
+    background:
+      linear-gradient(120deg, rgba(226, 244, 239, 0.88), rgba(255, 255, 255, 0.97) 64%),
+      #fff;
+    padding: 18px 24px;
+    box-shadow: none;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading-actions,
+    .department-clinical-heading-actions,
+    .icd-clinical-heading-actions,
+    .clinical-catalog-heading-actions,
+    .patient-profile-clinical-heading-actions
+  ) {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    align-items: center;
+    justify-content: end;
+    gap: 8px;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-context,
+    .department-clinical-context,
+    .icd-clinical-context,
+    .patient-profile-clinical-context
+  ) {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading,
+    .department-clinical-heading,
+    .icd-clinical-heading,
+    .clinical-catalog-heading,
+    .doctor-clinical-heading,
+    .admin-users-heading,
+    .ai-config-clinical-heading,
+    .patient-profile-clinical-heading,
+    .consultation-catalog-header,
+    .lab-indicator-list .lab-page-heading,
+    .subscription-plan-heading
+  )::after {
+    right: -118px;
+    bottom: -180px;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading-copy,
+    .department-clinical-heading-copy,
+    .icd-clinical-heading-copy,
+    .clinical-catalog-heading-copy,
+    .doctor-clinical-heading-copy,
+    .admin-users-heading-copy,
+    .ai-config-clinical-heading-copy,
+    .patient-profile-clinical-heading-copy,
+    .consultation-catalog-header > div:first-child,
+    .lab-page-heading-copy,
+    .subscription-plan-heading > div:first-child
+  ) h2 {
+    margin-top: 4px;
+    font-size: clamp(28px, 2.6vw, 36px);
+    line-height: 1.05;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading-copy,
+    .department-clinical-heading-copy,
+    .icd-clinical-heading-copy,
+    .clinical-catalog-heading-copy,
+    .doctor-clinical-heading-copy,
+    .admin-users-heading-copy,
+    .ai-config-clinical-heading-copy,
+    .patient-profile-clinical-heading-copy,
+    .consultation-catalog-header > div:first-child,
+    .lab-page-heading-copy,
+    .subscription-plan-heading > div:first-child
+  ) > p:last-child {
+    max-width: 760px;
+    margin-top: 7px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .admin-operator :is(
+    .doctor-clinical-heading-meta,
+    .admin-users-heading-actions,
+    .ai-config-clinical-heading-actions,
+    .lab-page-heading-actions
+  ) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .admin-operator .admin-users-protection-note {
+    max-width: 190px;
+    line-height: 1.35;
+  }
+
+  .admin-operator :is(
+    .admin-users-filter-card,
+    .ai-config-filter-card,
+    .doctor-filter-card,
+    .facility-filter-card,
+    .department-filter-card,
+    .icd-filter-card,
+    .clinical-catalog-filter-card,
+    .patient-profile-filter-card,
+    .consultation-filter-card,
+    .lab-filter-card,
+    .feedback-filter-card
+  ) {
+    gap: 12px;
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+
+  .admin-operator :is(
+    .admin-users-filter-heading,
+    .ai-config-filter-card-header,
+    .facility-filter-heading,
+    .department-filter-heading,
+    .icd-filter-heading,
+    .clinical-catalog-filter-heading,
+    .patient-profile-filter-heading
+  ) {
+    align-items: center;
+    gap: 10px;
+  }
+
+  .admin-operator :is(
+    .admin-users-filter-heading,
+    .ai-config-filter-card-header,
+    .facility-filter-heading,
+    .department-filter-heading,
+    .icd-filter-heading,
+    .clinical-catalog-filter-heading,
+    .patient-profile-filter-heading
+  ) > span {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .admin-operator :is(
+    .admin-users-filter-heading,
+    .ai-config-filter-card-header,
+    .facility-filter-heading,
+    .department-filter-heading,
+    .icd-filter-heading,
+    .clinical-catalog-filter-heading,
+    .patient-profile-filter-heading
+  ) h3 {
+    font-size: 15px;
+  }
+
+  .admin-operator :is(
+    .admin-users-filter-heading,
+    .ai-config-filter-card-header,
+    .facility-filter-heading,
+    .department-filter-heading,
+    .icd-filter-heading,
+    .clinical-catalog-filter-heading,
+    .patient-profile-filter-heading
+  ) p {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .admin-operator :is(
+    .doctor-filter-card-header,
+    .consultation-filter-title,
+    .feedback-filter-title,
+    .lab-filter-card > div:first-child
+  ) {
+    align-items: center;
+    gap: 10px;
+  }
+
+  .admin-operator :is(
+    .doctor-filter-card-header,
+    .consultation-filter-title,
+    .feedback-filter-title,
+    .lab-filter-card > div:first-child
+  ) h3 {
+    font-size: 15px;
+  }
+
+  .admin-operator :is(
+    .doctor-filter-card-header,
+    .consultation-filter-title,
+    .feedback-filter-title,
+    .lab-filter-card > div:first-child
+  ) p {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .admin-operator :is(
+    .doctor-filter-card-header > span,
+    .consultation-filter-title > svg,
+    .feedback-filter-title > svg,
+    .lab-filter-card > div:first-child > svg
+  ) {
+    box-sizing: border-box;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    border-radius: 11px;
+  }
+
+  .admin-operator .admin-users-search-field {
+    gap: 5px;
+  }
+
+  .admin-operator .admin-users-search-control,
+  .admin-operator .admin-users-toolbar .custom-select-trigger {
+    min-height: 44px;
+  }
+
+  .admin-operator .admin-users-search-control input {
+    min-height: 42px;
+  }
+
+  .admin-operator :is(
+    .admin-users-result-summary,
+    .ai-config-result-summary,
+    .doctor-filter-result-summary,
+    .facility-result-summary,
+    .department-result-summary,
+    .icd-result-summary,
+    .clinical-catalog-result-summary,
+    .patient-profile-result-summary,
+    .consultation-result-head,
+    .lab-result-summary,
+    .feedback-result-summary
+  ) {
+    gap: 7px;
+    min-height: 0;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .admin-operator .admin-users-table {
+    max-height: min(74svh, 800px);
+  }
+
+  .admin-operator .feedback-admin-panel {
+    gap: 12px;
+  }
+
+  .admin-operator .doctor-invitation-card {
+    grid-template-columns: minmax(250px, 0.35fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+
+  .admin-operator .doctor-invitation-card-heading > div > p:last-child {
+    line-height: 1.35;
+  }
+
+  .admin-operator .admin-filter-disclosure-toggle {
+    min-width: 148px;
+    padding: 7px 10px;
+  }
+
+  .admin-operator .admin-filter-disclosure-toggle strong {
+    font-size: 12px;
+  }
+
+  .admin-operator .admin-filter-disclosure-toggle small {
+    font-size: 10px;
+  }
+
+  .admin-operator :is(
+    .patient-profile-filter-form,
+    .department-filter-form,
+    .icd-filter-form,
+    .clinical-catalog-filter-form
+  ) {
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+  }
+
+  .admin-operator :is(
+    .patient-profile-filter-form,
+    .department-filter-form,
+    .icd-filter-form,
+    .clinical-catalog-filter-form
+  ) > .ai-config-toolbar-row {
+    margin: 0;
+  }
+
+  .admin-operator :is(
+    .patient-profile-filter-form,
+    .department-filter-form,
+    .icd-filter-form,
+    .clinical-catalog-filter-form
+  ) > .ai-config-toolbar-filters {
+    display: flex;
+    align-items: end;
+    gap: 10px;
+  }
+
+  .admin-operator :is(
+    .patient-profile-filter-form,
+    .department-filter-form,
+    .icd-filter-form,
+    .clinical-catalog-filter-form
+  ) .ai-config-filter-grid {
+    display: flex;
+    min-width: 180px;
+  }
+
+  .admin-operator .subscription-contract-notice {
+    min-height: 0;
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+
+  .admin-operator .subscription-plan-kpis {
+    gap: 8px;
+  }
+
+  .admin-operator .subscription-plan-kpis article {
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+
+  .admin-operator .subscription-plan-kpis strong {
+    margin-top: 2px;
+    font-size: 22px;
+  }
+
+  .admin-operator .ai-config-impact-note {
+    gap: 10px;
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+
+  .admin-operator .ai-config-clinical-panel .ai-config-kpi-grid {
+    gap: 8px;
+  }
+
+  .admin-operator .ai-config-clinical-panel .ai-config-kpi-grid article {
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+
+  .admin-operator .ai-config-kpi-grid article > span {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .admin-operator .ai-config-kpi-grid strong {
+    margin-top: 2px;
+    font-size: 20px;
+  }
+
+  .admin-operator .consultation-tabs {
+    padding: 3px;
+  }
+
+  .admin-operator .consultation-tabs button {
+    min-height: 36px;
+    padding-block: 6px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  .admin-operator :is(
+    .facility-clinical-heading,
+    .department-clinical-heading,
+    .icd-clinical-heading,
+    .clinical-catalog-heading,
+    .doctor-clinical-heading,
+    .admin-users-heading,
+    .ai-config-clinical-heading,
+    .patient-profile-clinical-heading,
+    .consultation-catalog-header,
+    .lab-indicator-list .lab-page-heading,
+    .subscription-plan-heading,
+    .feedback-admin-heading
+  ) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading-actions,
+    .department-clinical-heading-actions,
+    .icd-clinical-heading-actions,
+    .clinical-catalog-heading-actions,
+    .doctor-clinical-heading-meta,
+    .admin-users-heading-actions,
+    .ai-config-clinical-heading-actions,
+    .patient-profile-clinical-heading-actions,
+    .lab-page-heading-actions
+  ) {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+.admin-operator .admin-users-table .admin-user-delete-btn:not(:disabled):hover {
+  border-color: #8f1717;
+  background: #ffe8e4;
+  color: #741010;
+}
+
+.admin-operator .admin-users-table :is(.ui-badge-info, .ui-badge-warning) {
+  color: #05616a;
+}
+
+/* Search fields use a clean border/focus-within treatment. The input itself
+ * never receives the nested square focus ring shown by browsers/legacy CSS. */
+.admin-operator input[type="search"]:focus,
+.admin-operator input[type="search"]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-operator :is(
+  .admin-users-search-control,
+  .doctor-search-field,
+  .facility-search-control,
+  .department-search-control,
+  .icd-search-control,
+  .clinical-catalog-search-control,
+  .consultation-search-control
+):focus-within {
+  border-color: var(--admin-data-focus);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--admin-data-focus-soft);
+}
+
+.admin-operator .lab-filter-form input[type="search"]:focus {
+  border-color: var(--admin-data-focus);
+}
+
+@media (max-width: 1180px) {
+  .admin-operator .admin-users-toolbar.admin-users-toolbar--enhanced {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-operator :is(
+    .facility-clinical-panel,
+    .department-clinical-panel,
+    .icd-clinical-panel,
+    .clinical-catalog-panel,
+    .doctor-clinical-panel,
+    .admin-users-panel,
+    .ai-config-clinical-panel,
+    .patient-profile-clinical-panel,
+    .consultation-catalog,
+    .lab-indicator-list,
+    .subscription-plan-admin-panel
+  ) {
+    gap: 12px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading,
+    .department-clinical-heading,
+    .icd-clinical-heading,
+    .clinical-catalog-heading,
+    .doctor-clinical-heading,
+    .admin-users-heading,
+    .ai-config-clinical-heading,
+    .patient-profile-clinical-heading,
+    .consultation-catalog-header,
+    .lab-indicator-list .lab-page-heading,
+    .subscription-plan-heading,
+    .feedback-admin-heading
+  ) {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    align-items: stretch;
+    gap: 14px;
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading-actions,
+    .department-clinical-heading-actions,
+    .icd-clinical-heading-actions,
+    .clinical-catalog-heading-actions,
+    .doctor-clinical-heading-meta,
+    .admin-users-heading-actions,
+    .ai-config-clinical-heading-actions,
+    .patient-profile-clinical-heading-actions,
+    .lab-page-heading-actions
+  ) {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-heading-actions,
+    .department-clinical-heading-actions,
+    .icd-clinical-heading-actions,
+    .clinical-catalog-heading-actions,
+    .admin-users-heading-actions,
+    .ai-config-clinical-heading-actions,
+    .patient-profile-clinical-heading-actions,
+    .lab-page-heading-actions
+  ) :is(.btn, .ui-button) {
+    flex: 1 1 140px;
+  }
+
+  .admin-operator :is(
+    .facility-clinical-context,
+    .department-clinical-context,
+    .icd-clinical-context,
+    .patient-profile-clinical-context
+  ) {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-operator :is(
+    .admin-users-filter-card,
+    .ai-config-filter-card,
+    .doctor-filter-card,
+    .facility-filter-card,
+    .department-filter-card,
+    .icd-filter-card,
+    .clinical-catalog-filter-card,
+    .patient-profile-filter-card,
+    .consultation-filter-card,
+    .lab-filter-card,
+    .feedback-filter-card
+  ) {
+    gap: 12px;
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .admin-operator .admin-users-toolbar.admin-users-toolbar--enhanced {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-users-search-suggestions {
+    max-height: min(42svh, 320px);
+  }
+
+  .admin-operator .ui-table-wrap,
+  .admin-operator .feedback-table-scroll,
+  .admin-operator .subscription-plan-card-list {
+    max-height: none;
+  }
+
+  .admin-operator .admin-users-table .record-actions .ui-button {
+    min-height: 44px;
+    max-width: none;
+    align-self: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-operator .admin-users-search-suggestions > button {
+    transition: none;
+  }
+}
+
+/* Unified filter language across every Admin management surface. */
+.admin-operator :is(
+  .admin-users-filter-card,
+  .ai-config-filter-card,
+  .doctor-filter-card,
+  .facility-filter-card,
+  .department-filter-card,
+  .icd-filter-card,
+  .clinical-catalog-filter-card,
+  .patient-profile-filter-card,
+  .consultation-filter-card,
+  .lab-filter-card,
+  .feedback-filter-card,
+  .admin-payment-filter-card
+) {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid var(--admin-data-border);
+  border-radius: 16px;
+  background: #fbfcfa;
+  box-shadow: none;
+  padding: 16px 18px;
+}
+
+.admin-operator .admin-filter-disclosure-heading {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-operator .admin-filter-disclosure-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #e5f5f1;
+  color: var(--admin-data-focus);
+}
+
+.admin-operator .admin-filter-disclosure-copy :is(h3, p) {
+  margin: 0;
+}
+
+.admin-operator .admin-filter-disclosure-copy h3 {
+  color: #183332;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.admin-operator .admin-filter-disclosure-copy p {
+  margin-top: 2px;
+  color: var(--admin-data-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.admin-operator .admin-filter-disclosure-toggle {
+  justify-self: end;
+  min-width: 154px;
+  min-height: 42px;
+  border-color: var(--admin-data-border);
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-operator .admin-filter-disclosure-body {
+  margin-top: 14px;
+  border-top: 1px solid rgba(24, 72, 65, 0.11);
+  padding-top: 14px;
+}
+
+.admin-operator :is(
+  .admin-users-filter-card,
+  .ai-config-filter-card,
+  .doctor-filter-card,
+  .facility-filter-card,
+  .department-filter-card,
+  .icd-filter-card,
+  .clinical-catalog-filter-card,
+  .patient-profile-filter-card,
+  .consultation-filter-card,
+  .lab-filter-card,
+  .feedback-filter-card,
+  .admin-payment-filter-card
+) :is(input, select, .custom-select-trigger) {
+  box-sizing: border-box;
+  min-height: 48px;
+  border-color: rgba(24, 72, 65, 0.22);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-operator .admin-payment-panel {
+  margin-top: 0;
+}
+
+.admin-operator .admin-payment-filter-form {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(190px, 0.34fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-operator .admin-payment-search-field,
+.admin-operator .admin-payment-status-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-operator .admin-payment-search-field > span:first-child,
+.admin-operator .admin-payment-status-field > span:first-child {
+  color: #344a47;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-operator .admin-payment-search-control {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  border: 1px solid rgba(24, 72, 65, 0.22);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0 14px;
+  color: #607b78;
+}
+
+.admin-operator .admin-payment-search-control input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  padding: 0;
+  outline: 0;
+}
+
+.admin-operator .admin-payment-search-control:focus-within {
+  border-color: var(--admin-data-focus);
+  box-shadow: 0 0 0 3px var(--admin-data-focus-soft);
+}
+
+.admin-operator .admin-payment-filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-operator .admin-payment-filter-actions .ui-button {
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+@media (max-width: 960px) {
+  .admin-operator .admin-payment-filter-form {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+  }
+
+  .admin-operator .admin-payment-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-operator .admin-filter-disclosure-heading {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .admin-operator .admin-filter-disclosure-toggle {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .admin-operator .admin-payment-filter-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-payment-filter-actions {
+    grid-column: auto;
+  }
+
+  .admin-operator .admin-payment-filter-actions .ui-button {
+    flex: 1 1 0;
+  }
+}
+
+/* The native hidden state must win over legacy page-level layout rules. */
+.admin-operator .admin-filter-disclosure-body[hidden] {
+  display: none !important;
+}
+
+/* Department catalogue: keep dense management rows readable and scannable. */
+.admin-operator .department-table-wrap .ui-table {
+  min-width: 760px;
+}
+
+.admin-operator .department-table-wrap .ui-table th,
+.admin-operator .department-table-wrap .ui-table td {
+  padding: 13px 14px;
+  vertical-align: middle;
+}
+
+.admin-operator .department-table-wrap .ui-table th:nth-child(1) {
+  width: 56%;
+}
+
+.admin-operator .department-table-wrap .ui-table th:nth-child(2) {
+  width: 25%;
+}
+
+.admin-operator .department-table-wrap .ui-table th:nth-child(3) {
+  width: 19%;
+  text-align: right;
+}
+
+.admin-operator .department-table-wrap .department-primary-cell {
+  align-items: center;
+}
+
+.admin-operator .department-table-wrap .department-primary-cell > div {
+  min-width: 0;
+}
+
+.admin-operator .department-primary-description {
+  display: -webkit-box !important;
+  overflow: hidden;
+  margin-top: 4px;
+  max-width: 72ch;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.45;
+}
+
+.admin-operator .department-icd-cell {
+  min-width: 0;
+  gap: 7px;
+}
+
+.admin-operator .department-icd-code {
+  justify-self: start;
+  border: 1px solid rgba(8, 127, 123, 0.18);
+  border-radius: 999px;
+  background: #e9f6f3;
+  padding: 5px 10px;
+  color: #086d6a;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.admin-operator .department-system-id {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  color: #75807c;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-operator .department-table-wrap .record-actions {
+  flex-flow: row nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-operator .department-table-wrap .record-actions .btn {
+  width: auto;
+  min-width: 82px;
+  min-height: 38px !important;
+  padding-inline: 13px;
+}
+
+@media (max-width: 900px) {
+  .admin-operator .department-table-wrap .record-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-operator .department-table-wrap .record-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Doctor catalogue: one intentional toolbar instead of a floating create row. */
+.admin-operator .admin-filter-disclosure-heading:has(.admin-filter-disclosure-primary-action) {
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+}
+
+.admin-operator .admin-filter-disclosure-primary-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.admin-operator .doctor-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.6fr) minmax(0, 2.4fr);
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-operator .doctor-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(135px, 1fr));
+  gap: 10px;
+}
+
+.admin-operator .doctor-filter-footer {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(24, 72, 65, 0.11);
+  padding-top: 12px;
+}
+
+.admin-operator .doctor-filter-result-summary {
+  min-height: 40px;
+  border-radius: 10px;
+  background: rgba(229, 245, 241, 0.58);
+  padding: 0 12px;
+}
+
+/* One button system for Admin. Semantic danger keeps its warning colour, but
+ * every action now shares the same geometry, typography and interaction. */
+.admin-operator :is(.btn, .ui-button) {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-height: 44px !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(8, 127, 123, 0.28);
+  border-radius: 11px !important;
+  background: #ffffff;
+  color: #075f5d;
+  padding: 0 15px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 820;
+  line-height: 1;
+  box-shadow: none;
+  transform: none;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.admin-operator :is(.btn, .ui-button) > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
+}
+
+.admin-operator :is(.btn, .ui-button) svg {
+  flex: 0 0 auto;
+  margin: 0;
+  color: currentColor;
+  stroke-width: 2;
+  transform: none;
+}
+
+.admin-operator :is(
+  .btn-primary,
+  .ui-button[data-tone="primary"],
+  .doctor-add-button,
+  .doctor-invitation-submit,
+  .clinical-create-button,
+  .department-create-button,
+  .facility-create-button,
+  .patient-profile-create-button
+) {
+  border-color: #087f7b;
+  background: #087f7b;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.admin-operator :is(.btn, .ui-button):hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #086b68;
+  background: #e8f5f2;
+  color: #075f5d;
+  box-shadow: none;
+  transform: none;
+}
+
+.admin-operator :is(
+  .btn-primary,
+  .ui-button[data-tone="primary"],
+  .doctor-add-button,
+  .doctor-invitation-submit,
+  .clinical-create-button,
+  .department-create-button,
+  .facility-create-button,
+  .patient-profile-create-button
+):hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #066b68;
+  background: #066b68;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.admin-operator :is(
+  .admin-danger-btn,
+  .danger-button,
+  .department-delete-button,
+  .icd-delete-button,
+  .facility-delete-button,
+  .patient-profile-delete-button,
+  .subscription-delete-button,
+  .ai-config-delete-button,
+  .ui-button[data-tone="danger"]
+) {
+  border-color: #d5a3a3;
+  background: #fff8f7;
+  color: #a9252a;
+  box-shadow: none;
+}
+
+.admin-operator :is(
+  .admin-danger-btn,
+  .danger-button,
+  .department-delete-button,
+  .icd-delete-button,
+  .facility-delete-button,
+  .patient-profile-delete-button,
+  .subscription-delete-button,
+  .ai-config-delete-button,
+  .ui-button[data-tone="danger"]
+):hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #b83237;
+  background: #fff0ef;
+  color: #9b1f24;
+}
+
+.admin-operator :is(.btn, .ui-button):focus-visible {
+  outline: 3px solid rgba(8, 127, 123, 0.2);
+  outline-offset: 2px;
+}
+
+.admin-operator :is(.btn, .ui-button):disabled,
+.admin-operator :is(.btn, .ui-button)[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
+}
+
+.admin-operator :is(.btn-small, .ui-button[data-size="sm"]) {
+  min-height: 40px;
+  padding-inline: 13px;
+}
+
+@media (max-width: 1180px) {
+  .admin-operator .doctor-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-filter-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-operator .admin-filter-disclosure-heading:has(.admin-filter-disclosure-primary-action) {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .admin-operator .admin-filter-disclosure-primary-action,
+  .admin-operator .admin-filter-disclosure-toggle {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .admin-operator .admin-filter-disclosure-primary-action .ui-button {
+    width: 100%;
+  }
+
+  .admin-operator .doctor-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-filter-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-operator .doctor-filter-actions,
+  .admin-operator .doctor-filter-actions :is(.btn, .ui-button) {
+    width: 100%;
+  }
+}
+
+/* Compact filter launcher: every Admin page exposes one filter item and only
+ * reveals its complete criteria panel on demand. */
+.admin-operator .admin-filter-disclosure {
+  display: block !important;
+  position: relative;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden]) {
+  padding: 10px 12px;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+  .admin-filter-disclosure-heading {
+  min-height: 40px;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+  .admin-filter-disclosure-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+  .admin-filter-disclosure-copy p {
+  display: none;
+}
+
+.admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+  .admin-filter-disclosure-primary-action {
+  display: none;
+}
+
+.admin-operator .admin-filter-disclosure-heading:has(.admin-filter-disclosure-primary-action):has(
+  + .admin-filter-disclosure-body[hidden]
+) {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+}
+
+.admin-operator .admin-filter-disclosure-body > form {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-operator .admin-filter-disclosure-toggle {
+  border-color: rgba(8, 127, 123, 0.3);
+  color: #075f5d;
+}
+
+.admin-operator .admin-filter-disclosure-toggle:hover {
+  border-color: #087f7b;
+  background: #e8f5f2;
+}
+
+.admin-operator .admin-filter-disclosure-toggle[aria-expanded="true"] {
+  border-color: #087f7b;
+  background: #087f7b;
+  color: #ffffff;
+}
+
+@media (max-width: 700px) {
+  .admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+    .admin-filter-disclosure-heading {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+  }
+
+  .admin-operator .admin-filter-disclosure:has(.admin-filter-disclosure-body[hidden])
+    .admin-filter-disclosure-toggle {
+    grid-column: auto;
+    width: auto;
+    min-width: 112px;
+  }
+}

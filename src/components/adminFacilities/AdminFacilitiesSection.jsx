@@ -4,6 +4,7 @@ import { uploadImageToCloudinary, validateCloudinaryImage } from "../../services
 import AdminActionDisclosure from "../admin/AdminActionDisclosure";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { Badge, Button, CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 
 function ApiMessage({ message }) {
   if (!message) return null;
@@ -261,7 +262,7 @@ export default function AdminFacilitiesSection({
         headingClassName="ai-config-filter-card-header facility-filter-heading"
         icon={<Filter size={18} />}
         summary={`${activeFilterCount} bộ lọc · ${pageInfo.totalCount} cơ sở`}
-        title="Lọc danh sách cơ sở"
+        title="Bộ lọc cơ sở y tế"
         titleId="facility-filter-title"
       >
         <form className="ai-config-toolbar facility-filter-form" onSubmit={onApplyFilters}>
@@ -273,9 +274,18 @@ export default function AdminFacilitiesSection({
                 <input
                   type="search"
                   autoComplete="off"
+                  list="facility-search-options"
                   value={filters.search}
                   onChange={(event) => onFilterChange("search", event.target.value)}
                   placeholder="Tên bệnh viện, phòng khám hoặc địa chỉ"
+                />
+                <AdminSearchDatalist
+                  id="facility-search-options"
+                  values={facilities.flatMap((facility) => [
+                    facility.facilityName,
+                    facility.address,
+                    facility.phoneNumber,
+                  ])}
                 />
               </span>
             </label>
@@ -332,7 +342,7 @@ export default function AdminFacilitiesSection({
       )}
 
       <div className="facility-result-panel">
-        {loading ? (
+        {loading && !facilities.length ? (
           <LoadingState
             label="Đang tải danh sách cơ sở y tế..."
             description="Dữ liệu cơ sở và liên kết chuyên khoa đang được đồng bộ."

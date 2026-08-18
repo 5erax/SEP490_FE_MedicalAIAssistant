@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Info, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { adminQuotasApi, adminSubscriptionPlanQuotasApi, subscriptionPlansApi } from "../../services/api";
 import { Button, ErrorState, LoadingState } from "../ui";
 import SubscriptionPlanTable from "./SubscriptionPlanTable";
 import SubscriptionPlanFormModal from "./SubscriptionPlanFormModal";
-import AdminPaymentsPanel from "./AdminPaymentsPanel";
 
 const SERVICE_CREDIT_QUOTA_CODE = "SERVICE_CREDIT";
 const DEFAULT_SERVICE_CREDIT_LIMIT = 10;
@@ -155,13 +154,6 @@ export default function AdminSubscriptionsSection({
         </div>
       </div>
 
-      <div className="subscription-contract-notice" role="note">
-        <Info size={18} aria-hidden="true" />
-        <p>
-          <strong>Hạn mức sử dụng đã sẵn sàng.</strong> Gán số lượt thật cho từng gói khi cần.
-        </p>
-      </div>
-
       {!loading && !error && (
         <section className="subscription-plan-kpis" aria-label="Tổng quan gói dịch vụ">
           <article>
@@ -189,7 +181,7 @@ export default function AdminSubscriptionsSection({
         </div>
       )}
 
-      {loading ? (
+      {loading && !plans.length ? (
         <LoadingState
           label="Đang tải danh sách gói dịch vụ..."
           description="Dữ liệu gói đăng ký đang được đồng bộ."
@@ -227,8 +219,6 @@ export default function AdminSubscriptionsSection({
           onSubmit={handleSavePlan}
         />
       )}
-
-      <AdminPaymentsPanel />
     </section>
   );
 }

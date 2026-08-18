@@ -709,8 +709,12 @@ html[data-theme="dark"] .admin-operator .clinical-question-card-meta dd {
 
 .clinical-question-primary-cell {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+  min-width: 0;
+}
+
+.clinical-question-primary-cell > div {
   min-width: 0;
 }
 
@@ -732,15 +736,15 @@ html[data-theme="dark"] .admin-operator .clinical-question-card-meta dd {
 .clinical-question-primary-cell strong,
 .clinical-question-primary-cell small {
   display: block;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .clinical-question-primary-cell small {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   color: var(--color-muted);
   font-size: 12px;
   font-weight: 620;
+  line-height: 1.4;
 }
 
 @media (forced-colors: active) {

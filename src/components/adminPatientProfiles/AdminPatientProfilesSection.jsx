@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 
 const BLOOD_TYPE_OPTIONS = [
   { value: "", label: "Chưa xác định" },
@@ -157,15 +159,15 @@ export default function AdminPatientProfilesSection({
         </div>
       )}
 
-      <section className="ai-config-filter-card patient-profile-filter-card" aria-labelledby="patient-profile-filter-title">
-        <div className="ai-config-filter-card-header patient-profile-filter-heading">
-          <span aria-hidden="true"><Filter size={18} /></span>
-          <div>
-            <h3 id="patient-profile-filter-title">Tìm hồ sơ trên trang hiện tại</h3>
-            <p>Tìm theo ID hồ sơ, ID người dùng, nhóm máu, dị ứng hoặc bệnh nền trên trang hiện tại.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="ai-config-filter-card patient-profile-filter-card"
+        description="Tìm theo ID, nhóm máu, dị ứng hoặc bệnh nền trên trang hiện tại."
+        headingClassName="ai-config-filter-card-header patient-profile-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${search ? 1 : 0} bộ lọc · ${pageInfo.totalCount} hồ sơ`}
+        title="Bộ lọc hồ sơ bệnh nhân"
+        titleId="patient-profile-filter-title"
+      >
         <form
           className="ai-config-toolbar patient-profile-filter-form"
           onSubmit={(event) => {
@@ -181,9 +183,20 @@ export default function AdminPatientProfilesSection({
                 <input
                   type="search"
                   autoComplete="off"
+                  list="patient-profile-search-options"
                   value={search}
                   onChange={(event) => onSearchChange(event.target.value)}
                   placeholder="ID hoặc sức khỏe"
+                />
+                <AdminSearchDatalist
+                  id="patient-profile-search-options"
+                  values={profiles.flatMap((profile) => [
+                    profile.id,
+                    profile.userId,
+                    profile.bloodType,
+                    ...(profile.allergies || []).map((allergy) => allergy.name || allergy.allergyName || allergy),
+                    ...(profile.diseases || []).map((disease) => disease.name || disease.diseaseName),
+                  ])}
                 />
               </span>
             </label>
@@ -210,7 +223,7 @@ export default function AdminPatientProfilesSection({
             </div>
           </div>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       {!loading && !error && (
         <div className="patient-profile-result-summary" role="status" aria-live="polite">
@@ -223,7 +236,7 @@ export default function AdminPatientProfilesSection({
       )}
 
       <div className="patient-profile-result-panel">
-        {loading ? (
+        {loading && !profiles.length ? (
           <LoadingState
             label="Đang tải hồ sơ bệnh nhân..."
             description="Thông tin sức khỏe đang được đồng bộ từ hệ thống."

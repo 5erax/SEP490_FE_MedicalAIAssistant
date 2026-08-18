@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import "../../styles/admin/admin-navigation.css";
 
@@ -12,7 +12,7 @@ const ADMIN_NAV_LAYOUT = [
     children: [
       { section: "users", label: "Tài khoản" },
       { section: "patient-profiles" },
-      { section: "doctors" },
+      { section: "doctors", label: "Hồ sơ bác sĩ" },
     ],
   },
   {
@@ -29,7 +29,16 @@ const ADMIN_NAV_LAYOUT = [
     ],
   },
   { type: "item", section: "facilities" },
-  { type: "item", section: "subscriptions", label: "Gói & thanh toán" },
+  {
+    type: "group",
+    id: "billing",
+    label: "Gói & thanh toán",
+    icon: "subscription",
+    children: [
+      { section: "subscriptions", label: "Gói dịch vụ" },
+      { section: "payments", label: "Lịch sử thanh toán" },
+    ],
+  },
   { type: "item", section: "ai-configs" },
 ];
 
@@ -58,16 +67,6 @@ export default function AdminSidebarNavigation({
     activeGroupId ? [activeGroupId] : []
   ));
 
-  useEffect(() => {
-    if (!activeGroupId) return;
-
-    setExpandedGroups((current) => (
-      current.includes(activeGroupId)
-        ? current
-        : [...current, activeGroupId]
-    ));
-  }, [activeGroupId, activeSection]);
-
   function toggleGroup(groupId) {
     setExpandedGroups((current) => (
       current.includes(groupId)
@@ -79,7 +78,7 @@ export default function AdminSidebarNavigation({
   return ADMIN_NAV_LAYOUT.map((entry) => {
     if (entry.type === "group") {
       const GroupIcon = iconMap[entry.icon];
-      const isExpanded = expandedGroups.includes(entry.id);
+      const isExpanded = expandedGroups.includes(entry.id) || entry.id === activeGroupId;
       const hasActiveChild = entry.children.some(
         (child) => child.section === activeSection,
       );

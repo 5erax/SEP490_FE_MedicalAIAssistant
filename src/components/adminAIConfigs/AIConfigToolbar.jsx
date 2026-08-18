@@ -2,12 +2,14 @@ import { BrainCircuit, Filter, RotateCcw, Search } from "lucide-react";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 import { formatEnvironment } from "./aiConfigUtils";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 
 export default function AIConfigToolbar({
   filters,
   taskTypes,
   models,
   environments,
+  configs = [],
   pageSize,
   onChange,
   onPageSizeChange,
@@ -41,7 +43,7 @@ export default function AIConfigToolbar({
       headingClassName="ai-config-filter-card-header ai-config-clinical-filter-heading"
       icon={<Filter size={18} />}
       summary={`${activeFilterCount} bộ lọc đang dùng`}
-      title="Lọc danh mục cấu hình"
+      title="Bộ lọc cấu hình AI"
       titleId="ai-config-filter-title"
     >
       <form className="ai-config-toolbar" onSubmit={onSubmit}>
@@ -53,9 +55,21 @@ export default function AIConfigToolbar({
               <input
                 type="search"
                 autoComplete="off"
+                list="ai-config-search-options"
                 value={filters.search}
                 onChange={(event) => onChange("search", event.target.value)}
                 placeholder="Tên tính năng, mô hình hoặc nội dung prompt"
+              />
+              <AdminSearchDatalist
+                id="ai-config-search-options"
+                values={configs.flatMap((config) => [
+                  config.name,
+                  config.configName,
+                  config.featureName,
+                  config.model,
+                  config.modelName,
+                  config.taskType,
+                ])}
               />
             </span>
           </label>

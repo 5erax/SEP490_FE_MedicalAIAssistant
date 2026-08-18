@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getClinicalQuestionApiMessage } from "../../services/clinicalQuestionService";
+import AdminPagination from "../admin/AdminPagination";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { CustomSelect, DataTable, Dialog, EmptyState, ErrorState, LoadingState, PAGE_SIZE_OPTIONS } from "../ui";
 
 const DEFAULT_FILTERS = {
@@ -533,15 +536,15 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         </div>
       )}
 
-      <section className="ai-config-filter-card clinical-catalog-filter-card" aria-labelledby="clinical-question-filter-title">
-        <div className="ai-config-filter-card-header clinical-catalog-filter-heading">
-          <span aria-hidden="true"><Filter size={18} /></span>
-          <div>
-            <h3 id="clinical-question-filter-title">Lọc danh mục câu hỏi</h3>
-            <p>Tìm theo nội dung tiếng Việt, tiếng Anh hoặc giới hạn theo chương ICD.</p>
-          </div>
-        </div>
-
+      <AdminFilterDisclosure
+        className="ai-config-filter-card clinical-catalog-filter-card"
+        description="Tìm nội dung song ngữ, chương ICD và số câu hỏi hiển thị."
+        headingClassName="ai-config-filter-card-header clinical-catalog-filter-heading"
+        icon={<Filter size={18} />}
+        summary={`${Number(Boolean(filters.search)) + Number(Boolean(filters.chapterId))} bộ lọc · ${pageInfo.totalCount} câu hỏi`}
+        title="Bộ lọc câu hỏi lâm sàng"
+        titleId="clinical-question-filter-title"
+      >
         <form className="ai-config-toolbar clinical-catalog-filter-form" onSubmit={applyFilters}>
           <div className="ai-config-toolbar-row ai-config-toolbar-primary">
             <label className="clinical-catalog-search-field">
@@ -551,9 +554,14 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                 <input
                   type="search"
                   autoComplete="off"
+                  list="clinical-question-search-options"
                   value={filters.search}
                   onChange={(event) => updateFilter("search", event.target.value)}
                   placeholder="Nội dung câu hỏi"
+                />
+                <AdminSearchDatalist
+                  id="clinical-question-search-options"
+                  values={items.flatMap((item) => [item[config.primaryField], item[config.secondaryField]])}
                 />
               </span>
             </label>
@@ -587,7 +595,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
             </div>
           </div>
         </form>
-      </section>
+      </AdminFilterDisclosure>
 
       {status === "ready" && (
         <div className="clinical-catalog-result-summary" role="status" aria-live="polite">
@@ -600,7 +608,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
       )}
 
       <div className="clinical-catalog-result-panel">
-        {status === "loading" ? (
+        {status === "loading" && !items.length ? (
           <LoadingState
             label="Đang tải câu hỏi lâm sàng..."
             description="Nội dung câu hỏi và liên kết chương ICD đang được đồng bộ."
@@ -695,26 +703,19 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
         )}
       </div>
 
-      {status !== "loading" && status !== "error" && (
-        <nav className="pagination-row clinical-catalog-pagination" aria-label="Phân trang câu hỏi lâm sàng">
-          <button
-            className="btn btn-ghost btn-small"
-            type="button"
-            disabled={pageInfo.pageNumber <= 1 || status === "saving"}
-            onClick={() => loadItems(Math.max(1, pageInfo.pageNumber - 1), pageInfo.pageSize)}
-          >
-            Trước
-          </button>
-          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1} · {items.length} / {pageInfo.totalCount} {config.pluralLabel}</span>
-          <button
-            className="btn btn-ghost btn-small"
-            type="button"
-            disabled={pageInfo.pageNumber >= pageInfo.totalPages || status === "saving"}
-            onClick={() => loadItems(Math.min(pageInfo.totalPages || 1, pageInfo.pageNumber + 1), pageInfo.pageSize)}
-          >
-            Sau
-          </button>
-        </nav>
+      {(status !== "loading" || items.length > 0) && status !== "error" && (
+        <AdminPagination
+          ariaLabel="Phân trang câu hỏi lâm sàng"
+          className="clinical-catalog-pagination"
+          currentPage={pageInfo.pageNumber}
+          totalPages={pageInfo.totalPages}
+          totalCount={pageInfo.totalCount}
+          pageSize={pageInfo.pageSize}
+          itemCount={items.length}
+          itemLabel={config.pluralLabel}
+          loading={status === "loading" || status === "saving"}
+          onPageChange={(pageNumber) => loadItems(pageNumber, pageInfo.pageSize)}
+        />
       )}
 
       {formOpen && (

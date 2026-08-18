@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFeedback } from "../feedback/feedbackContext";
+import AdminPagination from "../admin/AdminPagination";
+import AdminSearchDatalist from "../admin/AdminSearchDatalist";
+import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import {
   checklistItemsApi,
   departmentConsultationQuestionsApi,
@@ -443,15 +446,19 @@ export default function AdminConsultationCatalogSection() {
       {referenceError && <div className="api-message warning" role="status">{referenceError}</div>}
       {message && status !== "error" && <div className="api-message success" role="status" aria-live="polite">{message}</div>}
 
-      <form className="consultation-filter-card" onSubmit={applyFilters}>
-        <div className="consultation-filter-title">
-          <Filter size={18} aria-hidden="true" />
-          <div><h3>Lọc {currentTitle.toLowerCase()}</h3><p>Thu hẹp danh sách theo nội dung và phạm vi áp dụng.</p></div>
-        </div>
+      <AdminFilterDisclosure
+        className="consultation-filter-card"
+        description="Chọn nội dung, phạm vi áp dụng và trạng thái cần xem."
+        icon={<Filter size={18} />}
+        summary={`${Object.values(currentFilters).filter(Boolean).length} bộ lọc · ${pageInfo.totalCount} mục`}
+        title={`Bộ lọc ${currentTitle.toLowerCase()}`}
+        titleId="consultation-filter-title"
+      >
+      <form onSubmit={applyFilters}>
         <div className="consultation-filter-grid">
           <label className="consultation-search">
             <span>Tìm nội dung</span>
-            <span className="consultation-search-control"><Search size={16} aria-hidden="true" /><input type="search" value={currentFilters.search} onChange={(event) => updateFilter("search", event.target.value)} autoComplete="off" placeholder="Nhập từ khóa" /></span>
+            <span className="consultation-search-control"><Search size={16} aria-hidden="true" /><input type="search" list="consultation-search-options" value={currentFilters.search} onChange={(event) => updateFilter("search", event.target.value)} autoComplete="off" placeholder="Nhập từ khóa" /><AdminSearchDatalist id="consultation-search-options" values={items.flatMap((item) => [item.questionText, item.content, item.category])} /></span>
           </label>
           <label>
             <span>Chuyên khoa</span>
@@ -478,12 +485,13 @@ export default function AdminConsultationCatalogSection() {
           <button className="btn btn-ghost btn-small" type="button" onClick={() => void loadItems(pageInfo.pageNumber, pageInfo.pageSize)} disabled={status === "loading"}><RefreshCw size={14} aria-hidden="true" /> Tải lại</button>
         </div>
       </form>
+      </AdminFilterDisclosure>
 
       <div className="consultation-result-head" role="status" aria-live="polite">
         <div><strong>{currentTitle}</strong><span>{pageInfo.totalCount} mục phù hợp</span></div>
       </div>
 
-      {status === "loading" ? (
+      {status === "loading" && !items.length ? (
         <LoadingState label="Đang tải dữ liệu tư vấn..." description="Danh mục đang được đồng bộ từ hệ thống." />
       ) : status === "error" ? (
         <ErrorState title="Không thể tải danh mục" description={message} urgent action={<button className="btn btn-primary btn-small" type="button" onClick={() => void loadItems()}>Thử lại</button>} />
@@ -499,12 +507,18 @@ export default function AdminConsultationCatalogSection() {
         />
       )}
 
-      {status !== "loading" && status !== "error" && (
-        <nav className="pagination-row" aria-label={`Phân trang ${currentTitle.toLowerCase()}`}>
-          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber <= 1} onClick={() => void loadItems(pageInfo.pageNumber - 1, pageInfo.pageSize)}>Trước</button>
-          <span>Trang {pageInfo.pageNumber} / {pageInfo.totalPages || 1}</span>
-          <button className="btn btn-ghost btn-small" type="button" disabled={pageInfo.pageNumber >= pageInfo.totalPages} onClick={() => void loadItems(pageInfo.pageNumber + 1, pageInfo.pageSize)}>Sau</button>
-        </nav>
+      {(status !== "loading" || items.length > 0) && status !== "error" && (
+        <AdminPagination
+          ariaLabel={`Phân trang ${currentTitle.toLowerCase()}`}
+          currentPage={pageInfo.pageNumber}
+          totalPages={pageInfo.totalPages}
+          totalCount={pageInfo.totalCount}
+          pageSize={pageInfo.pageSize}
+          itemCount={items.length}
+          itemLabel={activeTab === "questions" ? "câu hỏi" : "mục checklist"}
+          loading={status === "loading" || status === "saving"}
+          onPageChange={(nextPage) => void loadItems(nextPage, pageInfo.pageSize)}
+        />
       )}
 
       {formOpen && (
