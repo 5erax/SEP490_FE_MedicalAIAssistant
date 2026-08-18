@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Info, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { adminQuotasApi, adminSubscriptionPlanQuotasApi, subscriptionPlansApi } from "../../services/api";
 import { Button, ErrorState, LoadingState } from "../ui";
 import SubscriptionPlanTable from "./SubscriptionPlanTable";
@@ -153,13 +153,6 @@ export default function AdminSubscriptionsSection({
             <RefreshCw size={15} /> Đồng bộ
           </button>
         </div>
-      </div>
-
-      <div className="subscription-contract-notice" role="note">
-        <Info size={18} aria-hidden="true" />
-        <p>
-          <strong>Hạn mức sử dụng đã sẵn sàng.</strong> Gán số lượt thật cho từng gói khi cần.
-        </p>
       </div>
 
       {!loading && !error && (
