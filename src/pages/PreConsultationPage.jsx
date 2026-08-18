@@ -11,13 +11,11 @@ import {
   FileQuestion,
   History,
   LoaderCircle,
-  Phone,
   ShieldCheck,
   Stethoscope,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  authApi,
   checklistItemsApi,
   consultationSessionsApi,
   medicalDepartmentsApi,
@@ -27,7 +25,6 @@ import { navigate } from "../router/navigation";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
 import { useServiceCredit } from "../state/useServiceCredit";
 import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
-import { normalizePhoneNumber } from "../utils/profileValidation";
 import PreConsultationHistory from "../components/preConsultation/PreConsultationHistory";
 import "../styles/pre-consultation.css";
 
@@ -52,7 +49,6 @@ const CATEGORY_LABELS = {
   followUp: "Theo dõi",
 };
 
-const PHONE_PATTERN = /^(?:0\d{8,10}|\+[1-9]\d{8,14})$/;
 const SESSION_POLL_INTERVAL_MS = 200;
 const SESSION_POLL_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -177,9 +173,6 @@ export default function PreConsultationPage() {
   const [checklistItems, setChecklistItems] = useState([]);
   const [sessionDetail, setSessionDetail] = useState(null);
   const [reminderEnabled, setReminderEnabled] = useState(null);
-  const [accountPhone, setAccountPhone] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [phoneStatus, setPhoneStatus] = useState("idle");
   const [summary, setSummary] = useState(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -272,8 +265,6 @@ export default function PreConsultationPage() {
     () => normalizeQuestions(sessionDetail?.questions ?? session?.questions),
     [session, sessionDetail],
   );
-  const accountHasPhone = Boolean(normalizePhoneNumber(accountPhone));
-
   function updateForm(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
     setFormErrors((current) => ({ ...current, [field]: "" }));
@@ -491,24 +482,9 @@ export default function PreConsultationPage() {
     }
   }
 
-  async function chooseReminder(enabled) {
+  function chooseReminder(enabled) {
     setReminderEnabled(enabled);
     setError("");
-    if (!enabled || phoneStatus === "ready") return;
-    setPhoneStatus("loading");
-    try {
-      const response = await authApi.me();
-      const currentPhone = unwrapData(response)?.phoneNumber ?? "";
-      setAccountPhone(currentPhone);
-      setPhoneNumber(currentPhone);
-      setPhoneStatus("ready");
-      setAnnouncement(currentPhone
-        ? "Đã tìm thấy số điện thoại trong hồ sơ của bạn."
-        : "Hồ sơ chưa có số điện thoại. Vui lòng nhập số nhận nhắc lịch.");
-    } catch (loadError) {
-      setPhoneStatus("ready");
-      setError(getErrorMessage(loadError, "Chưa thể kiểm tra số điện thoại trong hồ sơ. Bạn vẫn có thể nhập số nhận nhắc lịch."));
-    }
   }
 
   async function saveReminderAndOpenSummary(event) {
@@ -518,22 +494,11 @@ export default function PreConsultationPage() {
       return;
     }
 
-    const normalizedPhone = normalizePhoneNumber(phoneNumber);
-    if (reminderEnabled && !accountHasPhone && !normalizedPhone) {
-      setError("Vui lòng nhập số điện thoại nhận nhắc lịch.");
-      return;
-    }
-    if (reminderEnabled && !accountHasPhone && !PHONE_PATTERN.test(normalizedPhone)) {
-      setError("Số điện thoại phải có 9-15 chữ số và có thể bắt đầu bằng +.");
-      return;
-    }
-
     setBusy("reminder");
     setError("");
     try {
       await consultationSessionsApi.registerReminder(session.sessionId, {
         enableReminder: reminderEnabled,
-        phoneNumber: reminderEnabled && !accountHasPhone ? normalizedPhone : null,
       });
       const response = await consultationSessionsApi.getSummary(session.sessionId);
       setSummary(unwrapData(response));
@@ -890,7 +855,7 @@ export default function PreConsultationPage() {
           <form onSubmit={saveReminderAndOpenSummary} noValidate>
             <section className="pre-consultation-section-head">
               <span>4</span>
-              <div><h2 ref={headingRef} tabIndex="-1">Bạn có muốn được nhắc lịch?</h2><p>Chúng tôi sẽ dùng số điện thoại trong hồ sơ hoặc số bạn nhập để đăng ký nhắc lịch.</p></div>
+              <div><h2 ref={headingRef} tabIndex="-1">Bạn có muốn được nhắc lịch?</h2><p>Nếu bật, thông báo nhắc lịch sẽ được gửi tới email của tài khoản này.</p></div>
             </section>
             <div className="pre-consultation-appointment"><CalendarClock size={22} aria-hidden="true" /><span><small>Lịch khám dự kiến</small><strong>{formatDateTime(sessionDetail?.appointmentTime || session?.appointmentTime)}</strong></span></div>
             <fieldset className="pre-consultation-reminder-options">
@@ -904,24 +869,9 @@ export default function PreConsultationPage() {
                 <CheckCircle2 size={20} aria-hidden="true" /><span><strong>Không cần nhắc</strong><small>Tôi sẽ tự theo dõi lịch khám.</small></span>
               </label>
             </fieldset>
-            {reminderEnabled && (
-              <div className="pre-consultation-phone-panel">
-                {phoneStatus === "loading" ? (
-                  <div className="pre-consultation-loading compact"><LoaderCircle className="spin" aria-hidden="true" /><strong>Đang kiểm tra số điện thoại trong hồ sơ…</strong></div>
-                ) : accountHasPhone ? (
-                  <div className="pre-consultation-phone-found"><Phone size={19} aria-hidden="true" /><span><strong>Sử dụng số trong hồ sơ</strong><small>{accountPhone}</small></span><CheckCircle2 size={20} aria-hidden="true" /></div>
-                ) : (
-                  <label className="pre-consultation-phone-field">
-                    <span>Số điện thoại nhận nhắc lịch (bắt buộc)</span>
-                    <input type="tel" inputMode="tel" autoComplete="tel" value={phoneNumber} onChange={(event) => { setPhoneNumber(event.target.value); setError(""); }} placeholder="Ví dụ: 0901234567" required />
-                    <small>Nhập 9–15 chữ số, có thể bắt đầu bằng +.</small>
-                  </label>
-                )}
-              </div>
-            )}
             <div className="pre-consultation-actions split">
               <button type="button" className="secondary" onClick={() => setStep(2)}><ArrowLeft size={17} aria-hidden="true" /> Quay lại</button>
-              <button type="submit" className="primary" disabled={Boolean(busy) || (reminderEnabled === true && phoneStatus === "loading")}>{busy === "reminder" ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <Check size={18} aria-hidden="true" />} Xác nhận lựa chọn</button>
+              <button type="submit" className="primary" disabled={Boolean(busy)}>{busy === "reminder" ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <Check size={18} aria-hidden="true" />} Xác nhận lựa chọn</button>
             </div>
           </form>
         )}
