@@ -1120,10 +1120,10 @@ function CreatePlanDialog({ submitting, onClose, onSubmit }) {
     const trimmedRecheckInstruction = recheckInstruction.trim();
     const days = Number(durationDays);
     const nextErrors = {};
-    if (!trimmedName) nextErrors.planName = "Tên kế hoạch là bắt buộc.";
-    if (!trimmedSummary) nextErrors.summary = "Tóm tắt là bắt buộc.";
+    if (!trimmedName) nextErrors.planName = "Bạn chưa nhập dữ liệu này";
+    if (!trimmedSummary) nextErrors.summary = "Bạn chưa nhập dữ liệu này";
     if (!Number.isInteger(days) || days <= 0) nextErrors.durationDays = "Số ngày phải là số nguyên dương.";
-    if (!trimmedRecheckInstruction) nextErrors.recheckInstruction = "Hướng dẫn tái khám là bắt buộc.";
+    if (!trimmedRecheckInstruction) nextErrors.recheckInstruction = "Bạn chưa nhập dữ liệu này";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     onSubmit({
