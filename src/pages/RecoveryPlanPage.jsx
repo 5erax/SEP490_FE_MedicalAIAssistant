@@ -7,7 +7,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
+  Eye,
   FileText,
+  FlaskConical,
   HeartPulse,
   Info,
   Italic,
@@ -23,6 +25,7 @@ import {
 } from "lucide-react";
 import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote";
 import RecoveryPlanFeedbackDialog from "../components/recovery/RecoveryPlanFeedbackDialog";
+import LabTestResultPage from "./LabTestResultPage";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { Button, CustomSelect, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -356,6 +359,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const [requestNote, setRequestNote] = useState("");
   const [labSessions, setLabSessions] = useState([]);
   const [primaryLabTestSessionId, setPrimaryLabTestSessionId] = useState("");
+  const [activeLabResultSessionId, setActiveLabResultSessionId] = useState("");
   const [labSessionsLoading, setLabSessionsLoading] = useState(false);
   const [labSessionsError, setLabSessionsError] = useState("");
   const [errors, setErrors] = useState({});
@@ -365,6 +369,11 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const submissionRef = useRef(null);
   const errorSummaryRef = useRef(null);
   const noteRef = useRef(null);
+  const labResultDialogRef = useRef(null);
+  const selectedLabSession = useMemo(
+    () => labSessions.find((session) => getLabSessionId(session) === primaryLabTestSessionId) ?? null,
+    [labSessions, primaryLabTestSessionId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -376,9 +385,6 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
         if (cancelled) return;
         const items = normalizeCompletedLabSessions(response);
         setLabSessions(items);
-        if (items.length > 0) {
-          setPrimaryLabTestSessionId((current) => current || getLabSessionId(items[0]));
-        }
       } catch {
         if (!cancelled) {
           setLabSessions([]);
@@ -422,6 +428,23 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       if (shouldRemove) return line.replace(markerPattern, "");
       return `${ordered ? `${index + 1}.` : "-"} ${line.replace(/^\s*(?:-\s+|\d+[.)]\s+)/, "")}`;
     }).join("\n");
+  }
+
+  useEffect(() => {
+    const dialog = labResultDialogRef.current;
+    if (!dialog) return;
+
+    if (activeLabResultSessionId && !dialog.open) {
+      dialog.showModal();
+    } else if (!activeLabResultSessionId && dialog.open) {
+      dialog.close();
+    }
+  }, [activeLabResultSessionId]);
+
+  function closeLabResultPreview() {
+    const dialog = labResultDialogRef.current;
+    if (dialog?.open) dialog.close();
+    else setActiveLabResultSessionId("");
   }
 
   async function handleSubmit(event) {
@@ -470,7 +493,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       const response = await recoveryPlanRequestsApi.create(payload, submissionRef.current.key);
       submissionRef.current = null;
       setDiseaseGroup("");
-      setPrimaryLabTestSessionId(getLabSessionId(labSessions[0]));
+      setPrimaryLabTestSessionId("");
       setRequestNote("");
       setProfileReadinessIssues([]);
       await onCreated(response?.data);
@@ -544,32 +567,69 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           </select>
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
-        <label className="recovery-field recovery-lab-field" htmlFor="recovery-primaryLabTestSessionId">
-          <span><b className="recovery-field-step" aria-hidden="true">2</b> Xét nghiệm đính kèm <small>(không bắt buộc)</small></span>
-          <select
-            id="recovery-primaryLabTestSessionId"
-            value={primaryLabTestSessionId}
-            disabled={disabled || labSessionsLoading}
-            onChange={(event) => setPrimaryLabTestSessionId(event.target.value)}
-          >
-            <option value="">{labSessionsLoading ? "Đang tải xét nghiệm..." : "Không đính kèm xét nghiệm"}</option>
-            {labSessions.map((session) => {
-              const sessionId = getLabSessionId(session);
-              return (
-                <option key={sessionId} value={sessionId}>
-                  {getLabSessionLabel(session)}
-                </option>
-              );
-            })}
-          </select>
+        <div className="recovery-field recovery-lab-field">
+          <label htmlFor="recovery-primaryLabTestSessionId">
+            <span><b className="recovery-field-step" aria-hidden="true">2</b> Xét nghiệm đính kèm <small>(không bắt buộc)</small></span>
+          </label>
+          <div className="recovery-lab-picker" data-empty={selectedLabSession ? "false" : "true"}>
+            <div className="recovery-lab-choice-card">
+              <div className="recovery-lab-picker-head">
+                <div>
+                  <small>Phiếu xét nghiệm gần đây</small>
+                </div>
+                <span>{labSessions.length} kết quả</span>
+              </div>
+              <div className="recovery-lab-select-row">
+                <span className="recovery-lab-picker-icon" aria-hidden="true"><FlaskConical size={20} /></span>
+                <select
+                  id="recovery-primaryLabTestSessionId"
+                  className="recovery-lab-select"
+                  value={primaryLabTestSessionId}
+                  disabled={disabled || labSessionsLoading}
+                  onChange={(event) => setPrimaryLabTestSessionId(event.target.value)}
+                >
+                  <option value="">{labSessionsLoading ? "Đang tải xét nghiệm..." : "Không đính kèm xét nghiệm"}</option>
+                  {labSessions.map((session) => {
+                    const sessionId = getLabSessionId(session);
+                    return (
+                      <option key={sessionId} value={sessionId}>
+                        {getLabSessionLabel(session)}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+            <div className="recovery-lab-preview-card">
+              <span className="recovery-lab-preview-mark" aria-hidden="true">
+                <CalendarCheck size={18} />
+              </span>
+              <div>
+                <small>{selectedLabSession ? "Đã chọn xét nghiệm" : "Chưa chọn xét nghiệm"}</small>
+                <strong>{selectedLabSession ? getLabSessionLabel(selectedLabSession) : "Không đính kèm xét nghiệm"}</strong>
+                {selectedLabSession ? <span>Bạn có thể xem lại kết quả trước khi gửi yêu cầu cho bác sĩ.</span> : null}
+              </div>
+              {selectedLabSession ? (
+                <Button
+                  type="button"
+                  tone="primary"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => setActiveLabResultSessionId(primaryLabTestSessionId)}
+                >
+                  <Eye size={16} aria-hidden="true" /> Xem lại kết quả
+                </Button>
+              ) : null}
+            </div>
+          </div>
           <small className="recovery-field-guidance">
             {labSessionsError || (
               labSessions.length > 0
-                ? "Mặc định chọn xét nghiệm đã phân tích mới nhất. Bạn có thể đổi hoặc chọn không đính kèm."
+                ? "Mặc định không đính kèm xét nghiệm. Bạn có thể chọn một ngày nếu muốn gửi kèm kết quả."
                 : "Bạn chưa có kết quả xét nghiệm đã phân tích. Bạn vẫn có thể gửi yêu cầu mà không đính kèm xét nghiệm."
             )}
           </small>
-        </label>
+        </div>
         <div className="recovery-field recovery-note-field">
           <label htmlFor="recovery-requestNote">
             <span>
@@ -625,6 +685,30 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           <Button type="button" tone="secondary" onClick={() => navigate("/profile")}>Cập nhật hồ sơ y tế</Button>
         )}
       </form>
+      <dialog
+        ref={labResultDialogRef}
+        className="recovery-lab-result-dialog"
+        aria-label="Kết quả xét nghiệm"
+        onClose={() => setActiveLabResultSessionId("")}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeLabResultPreview();
+        }}
+      >
+        <div className="recovery-lab-result-dialog__surface">
+          <div className="recovery-lab-result-dialog__toolbar">
+            <div>
+              <p>Xem trước xét nghiệm đính kèm</p>
+              <strong id="recovery-lab-result-modal-title">Kết quả xét nghiệm</strong>
+            </div>
+            <button type="button" aria-label="Đóng kết quả xét nghiệm" onClick={closeLabResultPreview}>
+              <X size={22} aria-hidden="true" />
+            </button>
+          </div>
+          {activeLabResultSessionId && (
+            <LabTestResultPage sessionId={activeLabResultSessionId} embedded />
+          )}
+        </div>
+      </dialog>
     </section>
   );
 }

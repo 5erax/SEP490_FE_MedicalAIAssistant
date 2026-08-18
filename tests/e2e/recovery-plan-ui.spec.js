@@ -102,6 +102,7 @@ async function prepareRecoveryPage(page, options = {}) {
     cancelled: false,
     started: false,
     cancelPlanBody: null,
+    labTestGets: 0,
   };
 
   await page.route("**/hubs/recovery-plans**", (route) => route.abort());
@@ -115,6 +116,40 @@ async function prepareRecoveryPage(page, options = {}) {
     }
     if (path === "/api/me/subscription-usage") {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: quota }) });
+    }
+    if (path === `/api/lab-tests/${LAB_SESSION_ID}`) {
+      calls.labTestGets += 1;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: options.labSessionDetail ?? {
+            sessionId: LAB_SESSION_ID,
+            status: "completed",
+            testDate: "2026-08-13",
+            processedAt: "2026-08-13T04:59:00Z",
+            results: [{
+              resultDetailId: "result-chol",
+              rawExtractedName: "CHOL",
+              userValue: 5.3,
+              referenceMinUsed: 3.9,
+              referenceMaxUsed: 5.2,
+              referenceUnitUsed: "mmol/L",
+              status: "high",
+              indicator: {
+                indicatorId: "indicator-chol",
+                symbol: "CHOL",
+                fullName: "Cholesterol toàn phần",
+                unit: "mmol/L",
+              },
+              advice: {
+                displayTitle: "Cholesterol toàn phần: cao hơn khoảng tham chiếu",
+                summary: "Chỉ số cholesterol cần được theo dõi cùng bác sĩ.",
+              },
+            }],
+          },
+        }),
+      });
     }
     if (path === "/api/lab-tests/my-sessions") {
       calls.labSessionsQuery = Object.fromEntries(url.searchParams.entries());
@@ -237,7 +272,7 @@ test("user formats a recovery note with the accessible toolbar", async ({ page }
   await expect.poll(() => calls.createBody?.requestNote).toBe("**Đau khi đi bộ**");
 });
 
-test("latest completed lab test is selected by default for a new recovery request", async ({ page }) => {
+test("completed lab tests are listed but not attached by default", async ({ page }) => {
   const calls = await prepareRecoveryPage(page, {
     labSessions: [
       {
@@ -258,14 +293,38 @@ test("latest completed lab test is selected by default for a new recovery reques
   });
 
   const labSelect = page.getByLabel(/Xét nghiệm đính kèm/);
-  await expect(labSelect).toHaveValue(LAB_SESSION_ID);
+  await expect(labSelect).toHaveValue("");
   expect(calls.labSessionsQuery).toMatchObject({ PageNumber: "1", PageSize: "20", status: "completed" });
 
   await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
   await page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý").fill("Tôi muốn kế hoạch phục hồi 14 ngày.");
   await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
 
-  await expect.poll(() => calls.createBody?.primaryLabTestSessionId).toBe(LAB_SESSION_ID);
+  await expect.poll(() => calls.createBody?.primaryLabTestSessionId).toBe(null);
+});
+
+test("user previews the selected lab test result before creating a recovery request", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page, {
+    labSessions: [
+      {
+        sessionId: LAB_SESSION_ID,
+        status: "completed",
+        testDate: "2026-08-13",
+        facilityName: "Phòng xét nghiệm MediLab",
+        createdAt: "2026-08-13T04:59:00Z",
+      },
+    ],
+  });
+
+  await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
+  await expect(page.getByRole("button", { name: "Xem lại kết quả" })).toBeVisible();
+  await page.getByRole("button", { name: "Xem lại kết quả" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Kết quả xét nghiệm" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: /Kết quả ngày 13\/8\/2026/ })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Cholesterol toàn phần", exact: true })).toBeVisible();
+  expect(calls.labTestGets).toBeGreaterThanOrEqual(1);
 });
 
 test("lab test session id variants from the API are attachable", async ({ page }) => {
@@ -281,6 +340,7 @@ test("lab test session id variants from the API are attachable", async ({ page }
     ],
   });
 
+  await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
   await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toHaveValue(LAB_SESSION_ID);
 
   await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
