@@ -14,6 +14,7 @@ import {
   FlaskConical,
   HeartPulse,
   History,
+  Image as ImageIcon,
   Info,
   MessageSquarePlus,
   Milestone,
@@ -340,10 +341,17 @@ function DetailContent({ request, onReload }) {
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [createDraftOpen, setCreateDraftOpen] = useState(false);
+  const [prescriptionViewerOpen, setPrescriptionViewerOpen] = useState(false);
+  const [prescriptionImageFailure, setPrescriptionImageFailure] = useState({ url: "", failed: false });
 
   const [clinicalContext, setClinicalContext] = useState(null);
   const [clinicalLoading, setClinicalLoading] = useState(true);
   const [clinicalError, setClinicalError] = useState("");
+  const prescriptionImageError = prescriptionImageFailure.failed
+    && prescriptionImageFailure.url === request.prescriptionImageUrl;
+  const markPrescriptionImageFailed = () => {
+    setPrescriptionImageFailure({ url: request.prescriptionImageUrl || "", failed: true });
+  };
 
   async function fetchClinicalContext() {
     const response = await doctorRecoveryPlanRequestsApi.getClinicalContext(request.id);
@@ -504,6 +512,38 @@ function DetailContent({ request, onReload }) {
             <p className="doctor-detail-card-heading">Ghi chú từ bệnh nhân</p>
             <div className="doctor-detail-note-text"><FormattedRecoveryNote text={request.requestNote} fallback="Không có ghi chú." /></div>
           </section>
+
+          {request.prescriptionImageUrl && (
+            <section className="doctor-detail-card doctor-prescription-card">
+              <p className="doctor-detail-card-heading">
+                <ImageIcon size={14} aria-hidden="true" /> Đơn thuốc sau khi khám
+              </p>
+              {prescriptionImageError ? (
+                <p className="doctor-prescription-error">Không thể tải ảnh đơn thuốc.</p>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="doctor-prescription-preview"
+                    onClick={() => setPrescriptionViewerOpen(true)}
+                    aria-label="Xem ảnh đơn thuốc đầy đủ"
+                  >
+                    <img
+                      src={request.prescriptionImageUrl}
+                      alt="Đơn thuốc bệnh nhân gửi"
+                      onError={markPrescriptionImageFailed}
+                    />
+                  </button>
+                  <div className="doctor-prescription-actions">
+                    <Button type="button" tone="secondary" size="sm" onClick={() => setPrescriptionViewerOpen(true)}>
+                      Xem ảnh đầy đủ
+                    </Button>
+                    <a href={request.prescriptionImageUrl} target="_blank" rel="noopener noreferrer">Mở trong tab mới</a>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
 
           {ASSIGNMENT_ACTIVE_STATUSES.has(request.status) && (
             <ClinicalContextSection
@@ -736,6 +776,35 @@ function DetailContent({ request, onReload }) {
           onClose={() => setCreateDraftOpen(false)}
           onSubmit={handleCreateDraft}
         />
+      )}
+
+      {prescriptionViewerOpen && request.prescriptionImageUrl && !prescriptionImageError && (
+        <Dialog
+          backdropClassName="doctor-prescription-modal-backdrop"
+          className="doctor-prescription-modal"
+          labelledBy="doctor-prescription-modal-title"
+          onClose={() => setPrescriptionViewerOpen(false)}
+        >
+          <header className="doctor-prescription-modal-header">
+            <div>
+              <p>Đơn thuốc sau khi khám</p>
+              <h2 id="doctor-prescription-modal-title">Ảnh bệnh nhân gửi</h2>
+            </div>
+            <button type="button" aria-label="Đóng ảnh đơn thuốc" onClick={() => setPrescriptionViewerOpen(false)}>
+              <X size={22} aria-hidden="true" />
+            </button>
+          </header>
+          <div className="doctor-prescription-modal-body">
+            <img
+              src={request.prescriptionImageUrl}
+              alt="Đơn thuốc bệnh nhân gửi"
+              onError={() => {
+                setPrescriptionViewerOpen(false);
+                markPrescriptionImageFailed();
+              }}
+            />
+          </div>
+        </Dialog>
       )}
     </>
   );

@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Eye,
+  FileImage,
   FileText,
   FlaskConical,
   HeartPulse,
@@ -37,6 +38,7 @@ import {
   recoveryPlanRequestsApi,
   recoveryPlansApi,
 } from "../services/api";
+import { uploadImageToCloudinary, validateCloudinaryImage } from "../services/cloudinaryUploadService";
 import {
   ensureRecoveryPlanConnection,
   subscribeToRecoveryPlanEvents,
@@ -357,6 +359,11 @@ function StatTile({ icon: Icon, label, value, tone = "info" }) {
 function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowConflict }) {
   const [diseaseGroup, setDiseaseGroup] = useState("");
   const [requestNote, setRequestNote] = useState("");
+  const [prescriptionFile, setPrescriptionFile] = useState(null);
+  const [prescriptionImageUrl, setPrescriptionImageUrl] = useState("");
+  const [prescriptionUploading, setPrescriptionUploading] = useState(false);
+  const [prescriptionUploadError, setPrescriptionUploadError] = useState("");
+  const [prescriptionPreviewUrl, setPrescriptionPreviewUrl] = useState("");
   const [labSessions, setLabSessions] = useState([]);
   const [primaryLabTestSessionId, setPrimaryLabTestSessionId] = useState("");
   const [activeLabResultSessionId, setActiveLabResultSessionId] = useState("");
@@ -370,6 +377,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const errorSummaryRef = useRef(null);
   const noteRef = useRef(null);
   const labResultDialogRef = useRef(null);
+  const prescriptionInputRef = useRef(null);
   const selectedLabSession = useMemo(
     () => labSessions.find((session) => getLabSessionId(session) === primaryLabTestSessionId) ?? null,
     [labSessions, primaryLabTestSessionId],
@@ -401,6 +409,49 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => () => {
+    if (prescriptionPreviewUrl) URL.revokeObjectURL(prescriptionPreviewUrl);
+  }, [prescriptionPreviewUrl]);
+
+  function clearPrescriptionPreview() {
+    if (prescriptionPreviewUrl) URL.revokeObjectURL(prescriptionPreviewUrl);
+    setPrescriptionPreviewUrl("");
+  }
+
+  function handlePrescriptionFileChange(event) {
+    const file = event.target.files?.[0] ?? null;
+    setPrescriptionUploadError("");
+    setPrescriptionImageUrl("");
+
+    if (!file) {
+      setPrescriptionFile(null);
+      clearPrescriptionPreview();
+      return;
+    }
+
+    try {
+      validateCloudinaryImage(file);
+    } catch (validationError) {
+      setPrescriptionFile(null);
+      clearPrescriptionPreview();
+      setPrescriptionUploadError(validationError?.message || "Vui lòng chọn file ảnh hợp lệ.");
+      if (prescriptionInputRef.current) prescriptionInputRef.current.value = "";
+      return;
+    }
+
+    setPrescriptionFile(file);
+    clearPrescriptionPreview();
+    setPrescriptionPreviewUrl(URL.createObjectURL(file));
+  }
+
+  function handleRemovePrescription() {
+    setPrescriptionFile(null);
+    setPrescriptionImageUrl("");
+    setPrescriptionUploadError("");
+    clearPrescriptionPreview();
+    if (prescriptionInputRef.current) prescriptionInputRef.current.value = "";
+  }
 
   function updateNoteFromToolbar(transform, fallbackText) {
     const textarea = noteRef.current;
@@ -462,18 +513,8 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       return;
     }
 
-    const payload = {
-      diseaseGroup,
-      treatmentJourneyId: null,
-      primaryLabTestSessionId: primaryLabTestSessionId || null,
-      requestNote: trimmedNote,
-    };
-    const signature = JSON.stringify(payload);
-    if (!submissionRef.current || submissionRef.current.signature !== signature) {
-      submissionRef.current = { signature, key: createIdempotencyKey() };
-    }
-
     setSubmitting(true);
+    setPrescriptionUploadError("");
     try {
       const readinessResponse = await recoveryPlanRequestsApi.readiness({ diseaseGroup, requestNote: trimmedNote });
       const readiness = readinessResponse?.data;
@@ -490,11 +531,47 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
         return;
       }
 
+      let uploadedPrescriptionUrl = prescriptionImageUrl || null;
+      if (prescriptionFile && !uploadedPrescriptionUrl) {
+        setPrescriptionUploading(true);
+        try {
+          const uploadResult = await uploadImageToCloudinary(prescriptionFile);
+          uploadedPrescriptionUrl = uploadResult?.secureUrl ?? uploadResult?.secure_url ?? null;
+          if (!uploadedPrescriptionUrl) throw new Error("Không thể lấy URL ảnh đơn thuốc.");
+          setPrescriptionImageUrl(uploadedPrescriptionUrl);
+        } catch (uploadError) {
+          setPrescriptionUploadError(
+            uploadError?.message
+              || "Không thể tải ảnh đơn thuốc lên. Vui lòng thử lại hoặc xóa ảnh để tiếp tục mà không gửi đơn thuốc.",
+          );
+          return;
+        } finally {
+          setPrescriptionUploading(false);
+        }
+      }
+
+      const payload = {
+        diseaseGroup,
+        treatmentJourneyId: null,
+        primaryLabTestSessionId: primaryLabTestSessionId || null,
+        requestNote: trimmedNote,
+        prescriptionImageUrl: uploadedPrescriptionUrl || null,
+      };
+      const signature = JSON.stringify(payload);
+      if (!submissionRef.current || submissionRef.current.signature !== signature) {
+        submissionRef.current = { signature, key: createIdempotencyKey() };
+      }
+
       const response = await recoveryPlanRequestsApi.create(payload, submissionRef.current.key);
       submissionRef.current = null;
       setDiseaseGroup("");
       setPrimaryLabTestSessionId("");
       setRequestNote("");
+      setPrescriptionFile(null);
+      setPrescriptionImageUrl("");
+      setPrescriptionUploadError("");
+      clearPrescriptionPreview();
+      if (prescriptionInputRef.current) prescriptionInputRef.current.value = "";
       setProfileReadinessIssues([]);
       await onCreated(response?.data);
     } catch (error) {
@@ -504,6 +581,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
         await onWorkflowConflict?.();
       }
     } finally {
+      setPrescriptionUploading(false);
       setSubmitting(false);
     }
   }
@@ -630,10 +708,58 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             )}
           </small>
         </div>
+        <div className="recovery-field recovery-prescription-field">
+          <label htmlFor="recovery-prescriptionImage">
+            <span><b className="recovery-field-step" aria-hidden="true">3</b> Ảnh đơn thuốc sau khi khám <small>(không bắt buộc)</small></span>
+          </label>
+          <div className="recovery-prescription-upload">
+            <div className="recovery-prescription-upload-head">
+              <span className="recovery-lab-picker-icon" aria-hidden="true"><FileImage size={20} /></span>
+              <div>
+                <strong>{prescriptionFile ? prescriptionFile.name : "Chọn ảnh đơn thuốc"}</strong>
+                <small>Ảnh giúp bác sĩ tham khảo chẩn đoán và thuốc đã được kê.</small>
+              </div>
+            </div>
+            <input
+              ref={prescriptionInputRef}
+              id="recovery-prescriptionImage"
+              className="recovery-prescription-native-input"
+              type="file"
+              accept="image/*"
+              disabled={disabled || submitting || prescriptionUploading}
+              aria-invalid={Boolean(prescriptionUploadError) || undefined}
+              aria-describedby="recovery-prescriptionImage-guidance"
+              onChange={handlePrescriptionFileChange}
+            />
+            <div className="recovery-prescription-picker">
+              <button
+                type="button"
+                disabled={disabled || submitting || prescriptionUploading}
+                onClick={() => prescriptionInputRef.current?.click()}
+              >
+                <FileImage size={17} aria-hidden="true" /> {prescriptionFile ? "Đổi ảnh" : "Chọn ảnh"}
+              </button>
+              <span>{prescriptionFile ? prescriptionFile.name : "Chưa chọn ảnh"}</span>
+            </div>
+            {prescriptionPreviewUrl && (
+              <div className="recovery-prescription-preview">
+                <img src={prescriptionPreviewUrl} alt="Xem trước đơn thuốc" />
+                <Button type="button" tone="secondary" size="sm" disabled={disabled || prescriptionUploading} onClick={handleRemovePrescription}>
+                  <X size={15} aria-hidden="true" /> Xóa ảnh
+                </Button>
+              </div>
+            )}
+          </div>
+          <small id="recovery-prescriptionImage-guidance" className="recovery-field-guidance">
+            Bạn có thể gửi ảnh đơn thuốc hoặc giấy kê thuốc sau khi khám. File sẽ được tải lên Cloudinary khi bạn nhấn gửi yêu cầu.
+          </small>
+          {prescriptionUploading && <small className="recovery-field-guidance">Đang tải ảnh đơn thuốc...</small>}
+          {prescriptionUploadError && <small className="recovery-field-error">{prescriptionUploadError}</small>}
+        </div>
         <div className="recovery-field recovery-note-field">
           <label htmlFor="recovery-requestNote">
             <span>
-              <b className="recovery-field-step" aria-hidden="true">3</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
+              <b className="recovery-field-step" aria-hidden="true">4</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
               <span className="recovery-required-marker" aria-hidden="true">*</span>
               <span className="sr-only"> (bắt buộc)</span>
             </span>
@@ -674,7 +800,12 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
         </div>
         <div className="recovery-submit-row">
           <p role="status" aria-atomic="true">{submitError?.message ?? ""}</p>
-          <Button type="submit" disabled={disabled} loading={submitting} loadingLabel="Đang gửi…">
+          <Button
+            type="submit"
+            disabled={disabled || prescriptionUploading}
+            loading={submitting || prescriptionUploading}
+            loadingLabel={prescriptionUploading ? "Đang tải ảnh..." : "Đang gửi…"}
+          >
             <Send size={17} aria-hidden="true" /> Gửi yêu cầu
           </Button>
         </div>
@@ -732,6 +863,14 @@ function RequestDetail({ request, loading, onCancel, busy }) {
         <div><dt>Ngày gửi</dt><dd>{formatDate(request.requestedAt, true)}</dd></div>
         <div><dt>Cập nhật gần nhất</dt><dd>{formatDate(request.reviewStartedAt || request.acceptedAt || request.requestedAt, true)}</dd></div>
         <div className="recovery-detail-wide"><dt>Nội dung hiện tại</dt><dd><FormattedRecoveryNote text={request.requestNote} fallback="Bạn chưa thêm ghi chú." /></dd></div>
+        {request.prescriptionImageUrl && (
+          <div className="recovery-detail-wide">
+            <dt>Đơn thuốc đã gửi</dt>
+            <dd>
+              <a href={request.prescriptionImageUrl} target="_blank" rel="noopener noreferrer">Mở ảnh đơn thuốc</a>
+            </dd>
+          </div>
+        )}
         {request.rejectionReason && <div className="recovery-detail-wide is-danger"><dt>Lý do không thể tiếp nhận</dt><dd>{request.rejectionReason}</dd></div>}
       </dl>
 

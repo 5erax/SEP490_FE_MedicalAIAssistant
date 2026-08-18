@@ -759,6 +759,128 @@
   resize: vertical;
 }
 
+.recovery-prescription-field {
+  gap: 10px;
+}
+
+.recovery-prescription-upload {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(8, 127, 140, 0.2);
+  border-radius: 18px;
+  background: var(--color-surface-soft);
+}
+
+.recovery-prescription-upload-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.recovery-prescription-upload-head > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recovery-prescription-upload-head strong {
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.recovery-prescription-upload-head small {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.recovery-prescription-native-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+  padding: 0;
+}
+
+.recovery-prescription-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  border: 1px dashed rgba(8, 127, 140, 0.38);
+  border-radius: 14px;
+  background: var(--color-surface);
+  padding: 8px 10px;
+}
+
+.recovery-prescription-picker button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid rgba(8, 127, 140, 0.32);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--color-info), var(--color-info-strong));
+  box-shadow: 0 10px 22px rgba(8, 127, 140, 0.2);
+  color: #fff;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.recovery-prescription-picker button:hover:not(:disabled),
+.recovery-prescription-picker button:focus-visible {
+  box-shadow: 0 14px 28px rgba(8, 127, 140, 0.26);
+  transform: translateY(-1px);
+}
+
+.recovery-prescription-picker button:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+.recovery-prescription-picker button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.recovery-prescription-picker span {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recovery-prescription-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 180px) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.recovery-prescription-preview img {
+  width: 100%;
+  max-height: 180px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface);
+  object-fit: contain;
+}
+
 .recovery-lab-field {
   gap: 10px;
 }
@@ -1979,6 +2101,17 @@
   .recovery-lab-preview-card .ui-button {
     width: 100%;
     justify-content: center;
+  }
+
+  .recovery-prescription-upload-head,
+  .recovery-prescription-preview,
+  .recovery-prescription-picker {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-prescription-upload-head {
+    flex-direction: column;
   }
 
   .recovery-lab-result-dialog {
