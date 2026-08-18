@@ -867,9 +867,10 @@
 
 .recovery-prescription-preview {
   display: grid;
-  grid-template-columns: minmax(0, 180px) auto;
-  align-items: end;
-  gap: 12px;
+  grid-template-columns: minmax(0, 180px) minmax(130px, max-content);
+  align-items: start;
+  justify-content: start;
+  gap: 14px;
 }
 
 .recovery-prescription-preview img {
@@ -879,6 +880,24 @@
   border-radius: 12px;
   background: var(--color-surface);
   object-fit: contain;
+}
+
+.recovery-prescription-preview .ui-button {
+  align-self: start;
+  justify-self: start;
+  width: auto;
+  min-width: 118px;
+  border-color: rgba(180, 35, 24, 0.24);
+  background: var(--color-surface);
+  color: var(--color-danger);
+  box-shadow: none;
+}
+
+.recovery-prescription-preview .ui-button:hover:not(:disabled),
+.recovery-prescription-preview .ui-button:focus-visible {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .recovery-lab-field {
@@ -2106,8 +2125,16 @@
   .recovery-prescription-upload-head,
   .recovery-prescription-preview,
   .recovery-prescription-picker {
-    align-items: stretch;
     grid-template-columns: 1fr;
+  }
+
+  .recovery-prescription-upload-head,
+  .recovery-prescription-picker {
+    align-items: stretch;
+  }
+
+  .recovery-prescription-preview {
+    align-items: start;
   }
 
   .recovery-prescription-upload-head {
