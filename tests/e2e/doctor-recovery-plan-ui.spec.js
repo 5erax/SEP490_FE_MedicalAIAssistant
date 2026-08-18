@@ -4,6 +4,7 @@ import { preparePage } from "./helpers.js";
 const DOCTOR_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
 const PLAN_ID = "22222222-2222-4222-8222-222222222222";
+const LAB_SESSION_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 const ACCESS_TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJEb2N0b3IiLCJ1c2VySWQiOiJkZGRkZGRkZC1kZGRkLTRkZGQtOGRkZC1kZGRkZGRkZGRkZGQifQ",
@@ -90,6 +91,29 @@ async function prepareDoctorPage(page, options = {}) {
         totalPages: Math.max(1, Math.ceil(filtered.length / requestedPageSize)),
       }));
     }
+    if (path === `/api/lab-tests/${LAB_SESSION_ID}`) {
+      return route.fulfill(ok(options.labSessionDetail ?? {
+        sessionId: LAB_SESSION_ID,
+        status: "completed",
+        testDate: "2026-08-17",
+        createdAt: "2026-08-17T01:00:00Z",
+        processedAt: "2026-08-17T02:00:00Z",
+        patientGenderAtTest: "male",
+        patientAgeAtTest: 24,
+        results: [
+          {
+            resultDetailId: "cre-result",
+            rawExtractedName: "CRE",
+            rawExtractedValue: 88,
+            referenceUnitUsed: "µmol/L",
+            referenceMinUsed: 62,
+            referenceMaxUsed: 120,
+            status: "normal",
+            indicator: { indicatorId: "cre", symbol: "CRE", fullName: "Creatinin", unit: "µmol/L" },
+          },
+        ],
+      }));
+    }
 
     const requestMatch = path.match(/^\/api\/doctor\/recovery-plan-requests\/([^/]+)(\/.*)?$/);
     if (requestMatch) {
@@ -103,7 +127,13 @@ async function prepareDoctorPage(page, options = {}) {
         return route.fulfill(ok(current));
       }
       if (sub === "/clinical-context") {
-        return route.fulfill(ok({ patientProfile: null, medications: [], labSessions: [], chronicDiseases: [] }));
+        return route.fulfill(ok(options.clinicalContext ?? {
+          patientProfile: null,
+          userMedications: [],
+          primaryLabTestSessionId: null,
+          primaryLabTest: null,
+          chronicDiseases: [],
+        }));
       }
       if (sub === "/accept" && method === "POST") {
         if (options.acceptError) {
@@ -334,6 +364,49 @@ test.describe("doctor recovery plan workflow", () => {
     await expect(page.getByRole("button", { name: "Tạo kế hoạch", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Trả lại hàng đợi", exact: false })).toBeVisible();
     await expect(page.getByRole("button", { name: "Từ chối yêu cầu", exact: false })).toBeVisible();
+  });
+
+  test("doctor sees the primary lab test attached to a recovery request", async ({ page }) => {
+    await prepareDoctorPage(page, {
+      mineItems: [myRequest({ status: "assigned" })],
+      clinicalContext: {
+        patientProfile: { height: 170, weight: 68, bloodType: "O+" },
+        userMedications: [],
+        primaryLabTestSessionId: LAB_SESSION_ID,
+        primaryLabTest: {
+          testSessionId: LAB_SESSION_ID,
+          testDate: "2026-08-17",
+          facilityName: "Phòng xét nghiệm MediLab",
+          createdAt: "2026-08-17T01:00:00Z",
+          results: [
+            {
+              resultDetailId: "cre-result",
+              rawExtractedName: "CRE",
+              rawExtractedValue: 88,
+              referenceUnitUsed: "µmol/L",
+              referenceMinUsed: 62,
+              referenceMaxUsed: 120,
+              status: "normal",
+              indicator: { indicatorId: "cre", symbol: "CRE", fullName: "Creatinin", unit: "µmol/L" },
+            },
+          ],
+        },
+        chronicDiseases: [],
+      },
+    });
+    await page.goto(`/app/staff/recovery-plan-requests/${REQUEST_ID}`, { waitUntil: "domcontentloaded" });
+
+    const labBlock = page.locator(".doctor-clinical-block", { hasText: "Xét nghiệm đính kèm" });
+    await expect(labBlock).toBeVisible();
+    await expect(labBlock.getByText("17/08/2026")).toBeVisible();
+    await expect(labBlock.getByText("Phòng xét nghiệm MediLab")).toBeVisible();
+    await expect(page.getByText("Bệnh nhân không đính kèm kết quả xét nghiệm.")).toHaveCount(0);
+
+    await labBlock.getByRole("button", { name: /Xem kết quả xét nghiệm/ }).click();
+    const resultDialog = page.getByRole("dialog", { name: "Kết quả xét nghiệm" });
+    await expect(resultDialog).toBeVisible();
+    await expect(resultDialog.getByRole("heading", { name: /Kết quả ngày 17\/0?8\/2026/ })).toBeVisible();
+    await expect(resultDialog.getByRole("heading", { name: "Creatinin" })).toBeVisible();
   });
 
   test("legacy more-information requests render without the old doctor request action", async ({ page }) => {

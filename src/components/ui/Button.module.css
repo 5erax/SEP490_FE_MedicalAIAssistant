@@ -84,6 +84,14 @@
   box-shadow: none;
 }
 
+.root > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .root:disabled,
 .root[aria-disabled="true"] {
   cursor: not-allowed;

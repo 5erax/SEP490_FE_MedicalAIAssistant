@@ -5,6 +5,7 @@ import { preparePage } from "./helpers.js";
 const USER_ID = "55555555-5555-4555-8555-555555555555";
 const REQUEST_ID = "11111111-1111-4111-8111-111111111111";
 const PLAN_ID = "22222222-2222-4222-8222-222222222222";
+const LAB_SESSION_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 const ACCESS_TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
@@ -92,6 +93,7 @@ async function prepareRecoveryPage(page, options = {}) {
     remainingCount: 2,
   };
   const calls = {
+    labSessionsQuery: null,
     readinessBody: null,
     readinessCalls: 0,
     createBody: null,
@@ -113,6 +115,12 @@ async function prepareRecoveryPage(page, options = {}) {
     }
     if (path === "/api/me/subscription-usage") {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: quota }) });
+    }
+    if (path === "/api/lab-tests/my-sessions") {
+      calls.labSessionsQuery = Object.fromEntries(url.searchParams.entries());
+      const items = options.labSessions ?? [];
+      const data = options.labSessionsResponseData ?? { items, pageNumber: 1, pageSize: 20, totalCount: items.length, totalPages: 1 };
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data }) });
     }
     if (path === "/api/recovery-plan-requests/me") {
       const statusFilter = url.searchParams.get("Status");
@@ -141,7 +149,11 @@ async function prepareRecoveryPage(page, options = {}) {
           }),
         });
       }
-      const created = request({ diseaseGroup: calls.createBody.diseaseGroup, requestNote: calls.createBody.requestNote });
+      const created = request({
+        diseaseGroup: calls.createBody.diseaseGroup,
+        primaryLabTestSessionId: calls.createBody.primaryLabTestSessionId,
+        requestNote: calls.createBody.requestNote,
+      });
       requests = [created, ...requests];
       quota = { ...quota, reservedCount: quota.reservedCount + 1, remainingCount: quota.remainingCount - 1 };
       return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ success: true, data: created }) });
@@ -222,7 +234,60 @@ test("user formats a recovery note with the accessible toolbar", async ({ page }
   await page.getByRole("button", { name: "In đậm đoạn đã chọn" }).click();
   await expect(note).toHaveValue("**Đau khi đi bộ**");
   await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
-  expect(calls.createBody.requestNote).toBe("**Đau khi đi bộ**");
+  await expect.poll(() => calls.createBody?.requestNote).toBe("**Đau khi đi bộ**");
+});
+
+test("latest completed lab test is selected by default for a new recovery request", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page, {
+    labSessions: [
+      {
+        sessionId: LAB_SESSION_ID,
+        status: "completed",
+        testDate: "2026-08-17",
+        facilityName: "Phòng xét nghiệm MediLab",
+        createdAt: "2026-08-17T01:00:00Z",
+      },
+      {
+        sessionId: "bbbbbbbb-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        status: "completed",
+        testDate: "2026-08-10",
+        facilityName: "Phòng xét nghiệm cũ",
+        createdAt: "2026-08-10T01:00:00Z",
+      },
+    ],
+  });
+
+  const labSelect = page.getByLabel(/Xét nghiệm đính kèm/);
+  await expect(labSelect).toHaveValue(LAB_SESSION_ID);
+  expect(calls.labSessionsQuery).toMatchObject({ PageNumber: "1", PageSize: "20", status: "completed" });
+
+  await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
+  await page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý").fill("Tôi muốn kế hoạch phục hồi 14 ngày.");
+  await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
+
+  await expect.poll(() => calls.createBody?.primaryLabTestSessionId).toBe(LAB_SESSION_ID);
+});
+
+test("lab test session id variants from the API are attachable", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page, {
+    labSessions: [
+      {
+        testSessionId: LAB_SESSION_ID,
+        status: "Completed",
+        testDate: "2026-07-31",
+        facilityName: "Phòng xét nghiệm MediLab",
+        createdAt: "2026-08-13T16:39:00Z",
+      },
+    ],
+  });
+
+  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toHaveValue(LAB_SESSION_ID);
+
+  await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
+  await page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý").fill("Tôi cần bác sĩ xem xét kết quả xét nghiệm gần nhất.");
+  await page.getByRole("button", { name: "Gửi yêu cầu" }).click();
+
+  await expect.poll(() => calls.createBody?.primaryLabTestSessionId).toBe(LAB_SESSION_ID);
 });
 
 test("user cannot submit a recovery request without a note", async ({ page }) => {

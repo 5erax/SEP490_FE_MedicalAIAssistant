@@ -30,6 +30,7 @@ import { getApiErrorCode } from "../services/apiError";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
 import { useServiceCredit } from "../state/useServiceCredit";
 import {
+  labTestsApi,
   recoveryPlanRequestsApi,
   recoveryPlansApi,
 } from "../services/api";
@@ -148,6 +149,32 @@ function getTimeMs(value) {
 
 function getStatusDefinition(map, value) {
   return map[value] ?? { label: value || "Chưa cập nhật", tone: "muted" };
+}
+
+function getLabSessionLabel(session) {
+  const dateLabel = formatDate(session?.testDate ?? session?.processedAt ?? session?.createdAt);
+  const facilityLabel = session?.facilityName ? ` - ${session.facilityName}` : "";
+  return `${dateLabel}${facilityLabel}`;
+}
+
+function getLabSessionId(session) {
+  return session?.sessionId ?? session?.testSessionId ?? session?.id ?? "";
+}
+
+function getLabSessionSortTime(session) {
+  const ms = getTimeMs(session?.createdAt ?? session?.processedAt ?? session?.testDate);
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
+function normalizeCompletedLabSessions(response) {
+  const data = response?.data;
+  const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+  return items
+    .filter((session) => {
+      const status = String(session?.status ?? "completed").toLowerCase();
+      return getLabSessionId(session) && status === "completed";
+    })
+    .sort((left, right) => getLabSessionSortTime(right) - getLabSessionSortTime(left));
 }
 
 export function StatusBadge({ map, value }) {
@@ -327,6 +354,10 @@ function StatTile({ icon: Icon, label, value, tone = "info" }) {
 function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowConflict }) {
   const [diseaseGroup, setDiseaseGroup] = useState("");
   const [requestNote, setRequestNote] = useState("");
+  const [labSessions, setLabSessions] = useState([]);
+  const [primaryLabTestSessionId, setPrimaryLabTestSessionId] = useState("");
+  const [labSessionsLoading, setLabSessionsLoading] = useState(false);
+  const [labSessionsError, setLabSessionsError] = useState("");
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -334,6 +365,36 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const submissionRef = useRef(null);
   const errorSummaryRef = useRef(null);
   const noteRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCompletedLabSessions() {
+      setLabSessionsLoading(true);
+      setLabSessionsError("");
+      try {
+        const response = await labTestsApi.mySessions(1, 20, { status: "completed" });
+        if (cancelled) return;
+        const items = normalizeCompletedLabSessions(response);
+        setLabSessions(items);
+        if (items.length > 0) {
+          setPrimaryLabTestSessionId((current) => current || getLabSessionId(items[0]));
+        }
+      } catch {
+        if (!cancelled) {
+          setLabSessions([]);
+          setPrimaryLabTestSessionId("");
+          setLabSessionsError("Không thể tải danh sách xét nghiệm. Bạn vẫn có thể gửi yêu cầu mà không đính kèm.");
+        }
+      } finally {
+        if (!cancelled) setLabSessionsLoading(false);
+      }
+    }
+
+    loadCompletedLabSessions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function updateNoteFromToolbar(transform, fallbackText) {
     const textarea = noteRef.current;
@@ -381,7 +442,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
     const payload = {
       diseaseGroup,
       treatmentJourneyId: null,
-      primaryLabTestSessionId: null,
+      primaryLabTestSessionId: primaryLabTestSessionId || null,
       requestNote: trimmedNote,
     };
     const signature = JSON.stringify(payload);
@@ -409,6 +470,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       const response = await recoveryPlanRequestsApi.create(payload, submissionRef.current.key);
       submissionRef.current = null;
       setDiseaseGroup("");
+      setPrimaryLabTestSessionId(getLabSessionId(labSessions[0]));
       setRequestNote("");
       setProfileReadinessIssues([]);
       await onCreated(response?.data);
@@ -482,10 +544,36 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           </select>
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
+        <label className="recovery-field recovery-lab-field" htmlFor="recovery-primaryLabTestSessionId">
+          <span><b className="recovery-field-step" aria-hidden="true">2</b> Xét nghiệm đính kèm <small>(không bắt buộc)</small></span>
+          <select
+            id="recovery-primaryLabTestSessionId"
+            value={primaryLabTestSessionId}
+            disabled={disabled || labSessionsLoading}
+            onChange={(event) => setPrimaryLabTestSessionId(event.target.value)}
+          >
+            <option value="">{labSessionsLoading ? "Đang tải xét nghiệm..." : "Không đính kèm xét nghiệm"}</option>
+            {labSessions.map((session) => {
+              const sessionId = getLabSessionId(session);
+              return (
+                <option key={sessionId} value={sessionId}>
+                  {getLabSessionLabel(session)}
+                </option>
+              );
+            })}
+          </select>
+          <small className="recovery-field-guidance">
+            {labSessionsError || (
+              labSessions.length > 0
+                ? "Mặc định chọn xét nghiệm đã phân tích mới nhất. Bạn có thể đổi hoặc chọn không đính kèm."
+                : "Bạn chưa có kết quả xét nghiệm đã phân tích. Bạn vẫn có thể gửi yêu cầu mà không đính kèm xét nghiệm."
+            )}
+          </small>
+        </label>
         <div className="recovery-field recovery-note-field">
           <label htmlFor="recovery-requestNote">
             <span>
-              <b className="recovery-field-step" aria-hidden="true">2</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
+              <b className="recovery-field-step" aria-hidden="true">3</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
               <span className="recovery-required-marker" aria-hidden="true">*</span>
               <span className="sr-only"> (bắt buộc)</span>
             </span>

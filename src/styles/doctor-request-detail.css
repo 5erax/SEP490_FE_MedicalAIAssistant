@@ -523,6 +523,41 @@
   font-size: 12px;
 }
 
+.doctor-clinical-lab-button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.doctor-clinical-lab-button small {
+  width: fit-content;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.doctor-clinical-lab-button:hover strong,
+.doctor-clinical-lab-button:focus-visible strong {
+  color: var(--color-info-strong);
+}
+
+.doctor-clinical-lab-button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.28);
+  outline-offset: 6px;
+}
+
 .doctor-clinical-empty {
   margin: 0;
   color: var(--color-muted);
@@ -565,6 +600,77 @@
   margin: 2px 0 0;
   color: var(--color-muted);
   font-size: 11px;
+}
+
+.doctor-lab-result-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  background: rgba(15, 31, 33, 0.56);
+  padding: clamp(16px, 3vw, 32px);
+}
+
+.doctor-lab-result-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1180px, 100%);
+  max-height: min(920px, calc(100svh - 32px));
+  overflow: hidden;
+  border: 1px solid rgba(8, 127, 140, 0.2);
+  border-radius: 22px;
+  background: var(--color-surface);
+  box-shadow: 0 30px 80px rgba(15, 31, 33, 0.28);
+}
+
+.doctor-lab-result-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 18px 22px;
+}
+
+.doctor-lab-result-modal-header p {
+  margin: 0 0 2px;
+  color: var(--color-info-strong);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.doctor-lab-result-modal-header h2 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 20px;
+}
+
+.doctor-lab-result-modal-header button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.doctor-lab-result-modal-header button:hover {
+  border-color: var(--color-info-strong);
+  color: var(--color-info-strong);
+}
+
+.doctor-lab-result-modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--color-bg);
 }
 
 /* Action area — primary hero card, secondary list, danger zone */
@@ -865,6 +971,23 @@
 }
 
 @media (max-width: 560px) {
+  .doctor-lab-result-modal-backdrop {
+    padding: 10px;
+  }
+
+  .doctor-lab-result-modal {
+    max-height: calc(100svh - 20px);
+    border-radius: 16px;
+  }
+
+  .doctor-lab-result-modal-header {
+    padding: 14px 16px;
+  }
+
+  .doctor-lab-result-modal-header h2 {
+    font-size: 17px;
+  }
+
   .doctor-action-area {
     padding: 20px;
   }

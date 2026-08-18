@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Badge, Button, Dialog, ErrorState, Field, LoadingState, Select, Textarea, TextInput } from "../components/ui";
 import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote";
+import LabTestResultPage from "./LabTestResultPage";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { doctorRecoveryPlanRequestsApi, normalizeDoctorPlanDetail } from "../services/api";
@@ -126,21 +127,20 @@ function toArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-// The doctor clinical-context endpoint has no published response schema yet,
-// so this accepts a few plausible key-name variants defensively instead of
-// assuming one exact shape. Any block whose data is missing/misnamed simply
-// falls back to its own empty state rather than breaking the page.
 function normalizeClinicalContext(data) {
   if (!data || typeof data !== "object") {
-    return { profile: null, medications: [], labSessions: [], chronicDiseases: [] };
+    return { profile: null, medications: [], primaryLabTest: null, chronicDiseases: [] };
   }
-  const profile = data.patientProfile ?? data.profile ?? data.patient ?? null;
   return {
-    profile,
-    medications: toArray(data.medications ?? data.currentMedications ?? data.userMedications ?? profile?.medications),
-    labSessions: toArray(data.labSessions ?? data.labTests ?? data.labResults ?? data.labTestSessions),
-    chronicDiseases: toArray(profile?.chronicDiseases ?? data.chronicDiseases),
+    profile: data.patientProfile ?? null,
+    medications: toArray(data.userMedications),
+    primaryLabTest: data.primaryLabTest ?? null,
+    chronicDiseases: toArray(data.chronicDiseases),
   };
+}
+
+function getPrimaryLabTestSessionId(value) {
+  return value?.testSessionId ?? value?.sessionId ?? value?.id ?? "";
 }
 
 function getBmi(height, weight) {
@@ -158,19 +158,23 @@ function getBmiCategory(bmi) {
   return { label: "Béo phì", tone: "danger" };
 }
 
-function buildJourneyEvents({ profile, medications, labSessions }) {
+function buildJourneyEvents({ profile, medications, primaryLabTest, chronicDiseases }) {
   const events = [];
-  toArray(profile?.chronicDiseases).forEach((item) => {
+  toArray(chronicDiseases ?? profile?.chronicDiseases).forEach((item) => {
     if (item.from) {
       events.push({ date: item.from, icon: HeartPulse, label: `Bắt đầu bệnh nền: ${item.diseaseName || "không rõ tên"}` });
     }
   });
-  toArray(labSessions).forEach((session) => {
-    const date = session.testDate ?? session.createdAt;
+  if (primaryLabTest) {
+    const date = primaryLabTest.testDate ?? primaryLabTest.createdAt;
     if (date) {
-      events.push({ date, icon: FlaskConical, label: `Xét nghiệm${session.facilityName ? ` tại ${session.facilityName}` : ""}` });
+      events.push({
+        date,
+        icon: FlaskConical,
+        label: `Xét nghiệm${primaryLabTest.facilityName ? ` tại ${primaryLabTest.facilityName}` : ""}`,
+      });
     }
-  });
+  }
   toArray(medications).forEach((item) => {
     if (item.startDate) {
       events.push({ date: item.startDate, icon: Pill, label: `Bắt đầu dùng thuốc: ${item.medicineName || "không rõ tên"}` });
@@ -761,6 +765,8 @@ function ProgressSteps({ status }) {
 }
 
 function ClinicalContextSection({ loading, error, data, onRetry }) {
+  const [activeLabSessionId, setActiveLabSessionId] = useState("");
+
   if (loading) {
     return (
       <section className="doctor-clinical-section">
@@ -783,35 +789,38 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
     );
   }
 
-  const { profile, medications, labSessions, chronicDiseases } = data;
+  const { profile, medications, primaryLabTest, chronicDiseases } = data;
   const bmi = getBmi(profile?.height, profile?.weight);
   const bmiCategory = getBmiCategory(bmi);
-  const journeyEvents = buildJourneyEvents({ profile, medications, labSessions });
+  const journeyEvents = buildJourneyEvents({ profile, medications, primaryLabTest, chronicDiseases });
+  const primaryLabTestSessionId = getPrimaryLabTestSessionId(primaryLabTest);
+  const primaryLabTestDate = formatDateOnly(primaryLabTest?.testDate) || formatDateOnly(primaryLabTest?.createdAt) || "Chưa rõ ngày";
 
   return (
-    <section className="doctor-clinical-section">
-      <p className="doctor-detail-card-heading">Bối cảnh lâm sàng</p>
+    <>
+      <section className="doctor-clinical-section">
+        <p className="doctor-detail-card-heading">Bối cảnh lâm sàng</p>
 
-      <div className="doctor-clinical-grid">
-        <ClinicalBlock icon={Ruler} title="Chỉ số cơ thể" isMissing={!profile?.height && !profile?.weight}>
-          {profile?.height || profile?.weight ? (
-            <>
-              <div className="doctor-clinical-metrics">
-                {profile?.height && <span><strong>{profile.height}</strong> cm</span>}
-                {profile?.weight && <span><strong>{profile.weight}</strong> kg</span>}
-              </div>
-              {bmi != null && (
-                <p className="doctor-clinical-bmi">
-                  BMI <strong>{bmi.toFixed(1)}</strong>
-                  <Badge tone={bmiCategory.tone}>{bmiCategory.label}</Badge>
-                </p>
-              )}
-              {profile?.bloodType && <p className="doctor-clinical-meta">Nhóm máu: <strong>{profile.bloodType}</strong></p>}
-            </>
-          ) : (
-            <EmptyBlockNote text="Bệnh nhân chưa cập nhật chiều cao/cân nặng." />
-          )}
-        </ClinicalBlock>
+        <div className="doctor-clinical-grid">
+          <ClinicalBlock icon={Ruler} title="Chỉ số cơ thể" isMissing={!profile?.height && !profile?.weight}>
+            {profile?.height || profile?.weight ? (
+              <>
+                <div className="doctor-clinical-metrics">
+                  {profile?.height && <span><strong>{profile.height}</strong> cm</span>}
+                  {profile?.weight && <span><strong>{profile.weight}</strong> kg</span>}
+                </div>
+                {bmi != null && (
+                  <p className="doctor-clinical-bmi">
+                    BMI <strong>{bmi.toFixed(1)}</strong>
+                    <Badge tone={bmiCategory.tone}>{bmiCategory.label}</Badge>
+                  </p>
+                )}
+                {profile?.bloodType && <p className="doctor-clinical-meta">Nhóm máu: <strong>{profile.bloodType}</strong></p>}
+              </>
+            ) : (
+              <EmptyBlockNote text="Bệnh nhân chưa cập nhật chiều cao/cân nặng." />
+            )}
+          </ClinicalBlock>
 
         <ClinicalBlock icon={ShieldAlert} title="Dị ứng" isMissing={!profile?.allergyNote}>
           {profile?.allergyNote ? (
@@ -824,8 +833,8 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
         <ClinicalBlock icon={HeartPulse} title="Bệnh nền" isMissing={chronicDiseases.length === 0}>
           {chronicDiseases.length > 0 ? (
             <ul className="doctor-clinical-list">
-              {chronicDiseases.map((item) => (
-                <li key={item.id}>
+              {chronicDiseases.map((item, index) => (
+                <li key={item.id ?? `${item.diseaseName ?? "chronic"}-${item.from ?? "unknown"}-${index}`}>
                   <strong>{item.diseaseName || "Không rõ tên bệnh"}</strong>
                   <span>{formatDateOnly(item.from) || "?"} – {item.to ? formatDateOnly(item.to) : "hiện tại"}</span>
                   {item.note && <p>{item.note}</p>}
@@ -840,8 +849,8 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
         <ClinicalBlock icon={Pill} title="Thuốc đang sử dụng" isMissing={medications.length === 0}>
           {medications.length > 0 ? (
             <ul className="doctor-clinical-list">
-              {medications.map((item) => (
-                <li key={item.id}>
+              {medications.map((item, index) => (
+                <li key={item.id ?? `${item.medicineName ?? "medication"}-${item.startDate ?? "unknown"}-${index}`}>
                   <strong>{item.medicineName || "Không rõ tên thuốc"}</strong>
                   {item.dosageInstruction && <p>{item.dosageInstruction}</p>}
                   <span>{formatDateOnly(item.startDate) || "?"}{item.endDate ? ` – ${formatDateOnly(item.endDate)}` : ""}</span>
@@ -853,20 +862,33 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
           )}
         </ClinicalBlock>
 
-        <ClinicalBlock icon={FlaskConical} title="Xét nghiệm gần đây" isMissing={labSessions.length === 0}>
-          {labSessions.length > 0 ? (
-            <ul className="doctor-clinical-list">
-              {labSessions.slice(0, 5).map((session) => (
-                <li key={session.sessionId}>
-                  <strong>{formatDateOnly(session.testDate) || formatDateOnly(session.createdAt) || "Chưa rõ ngày"}</strong>
-                  <span>{session.facilityName || "Không rõ cơ sở"}</span>
+          <ClinicalBlock icon={FlaskConical} title="Xét nghiệm đính kèm" isMissing={!primaryLabTest}>
+            {primaryLabTest ? (
+              <ul className="doctor-clinical-list">
+                <li key={primaryLabTestSessionId || "primary-lab-test"}>
+                  {primaryLabTestSessionId ? (
+                    <button
+                      type="button"
+                      className="doctor-clinical-lab-button"
+                      onClick={() => setActiveLabSessionId(primaryLabTestSessionId)}
+                      aria-label={`Xem kết quả xét nghiệm ngày ${primaryLabTestDate}`}
+                    >
+                      <strong>{primaryLabTestDate}</strong>
+                      <span>{primaryLabTest.facilityName || "Không rõ cơ sở"}</span>
+                      <small>Xem kết quả</small>
+                    </button>
+                  ) : (
+                    <>
+                      <strong>{primaryLabTestDate}</strong>
+                      <span>{primaryLabTest.facilityName || "Không rõ cơ sở"}</span>
+                    </>
+                  )}
                 </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyBlockNote text="Chưa có phiếu xét nghiệm nào được ghi nhận." />
-          )}
-        </ClinicalBlock>
+              </ul>
+            ) : (
+              <EmptyBlockNote text="Bệnh nhân không đính kèm kết quả xét nghiệm." />
+            )}
+          </ClinicalBlock>
 
         <ClinicalBlock icon={Milestone} title="Hành trình điều trị" isMissing={journeyEvents.length === 0}>
           {journeyEvents.length > 0 ? (
@@ -885,8 +907,31 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
             <EmptyBlockNote text="Chưa có đủ dữ liệu để dựng hành trình điều trị." />
           )}
         </ClinicalBlock>
-      </div>
-    </section>
+        </div>
+      </section>
+
+      {activeLabSessionId && (
+        <Dialog
+          backdropClassName="doctor-lab-result-modal-backdrop"
+          className="doctor-lab-result-modal"
+          labelledBy="doctor-lab-result-modal-title"
+          onClose={() => setActiveLabSessionId("")}
+        >
+          <header className="doctor-lab-result-modal-header">
+            <div>
+              <p>Xét nghiệm đính kèm</p>
+              <h2 id="doctor-lab-result-modal-title">Kết quả xét nghiệm</h2>
+            </div>
+            <button type="button" aria-label="Đóng kết quả xét nghiệm" onClick={() => setActiveLabSessionId("")}>
+              <X size={22} aria-hidden="true" />
+            </button>
+          </header>
+          <div className="doctor-lab-result-modal-body">
+            <LabTestResultPage sessionId={activeLabSessionId} initialSession={primaryLabTest} embedded />
+          </div>
+        </Dialog>
+      )}
+    </>
   );
 }
 

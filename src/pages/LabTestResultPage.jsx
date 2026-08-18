@@ -218,11 +218,11 @@ function genderLabel(value) {
   return "Giới tính chưa xác định";
 }
 
-export default function LabTestResultPage({ sessionId, embedded = false, onResponse, onSessionUpdate }) {
+export default function LabTestResultPage({ sessionId, initialSession = null, embedded = false, onResponse, onSessionUpdate }) {
   const { refresh: refreshServiceCredit } = useServiceCredit();
-  const [session, setSession] = useState(null);
-  const [loadStatus, setLoadStatus] = useState(sessionId ? "loading" : "error");
-  const [error, setError] = useState(sessionId ? "" : "Không tìm thấy mã phiên phân tích xét nghiệm.");
+  const [session, setSession] = useState(initialSession);
+  const [loadStatus, setLoadStatus] = useState(initialSession ? "ready" : sessionId ? "loading" : "error");
+  const [error, setError] = useState(initialSession || sessionId ? "" : "Không tìm thấy mã phiên phân tích xét nghiệm.");
   const [retryKey, setRetryKey] = useState(0);
   const [selectedResultKey, setSelectedResultKey] = useState("");
   const [announcement, setAnnouncement] = useState(
@@ -234,9 +234,24 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
 
   useEffect(() => {
     terminalBalanceRefreshRef.current = "";
-  }, [retryKey, sessionId]);
+  }, [initialSession, retryKey, sessionId]);
 
   useEffect(() => {
+    if (initialSession) {
+      const nextStatus = normalizeAsyncSessionStatus(initialSession?.status);
+      const resultCount = Array.isArray(initialSession?.results) ? initialSession.results.length : 0;
+      setSession(initialSession);
+      setLoadStatus("ready");
+      setError("");
+      setAnnouncement(
+        nextStatus === ASYNC_SESSION_STATUS.COMPLETED
+          ? `Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`
+          : "Đã tải kết quả xét nghiệm đính kèm.",
+      );
+      if (typeof onSessionUpdate === "function") onSessionUpdate(initialSession);
+      return undefined;
+    }
+
     if (!sessionId) return undefined;
 
     let active = true;
@@ -312,7 +327,7 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
       if (startTimer) window.clearTimeout(startTimer);
       if (pollTimer) window.clearTimeout(pollTimer);
     };
-  }, [onResponse, onSessionUpdate, refreshServiceCredit, retryKey, sessionId]);
+  }, [initialSession, onResponse, onSessionUpdate, refreshServiceCredit, retryKey, sessionId]);
 
   const results = Array.isArray(session?.results) ? session.results : [];
   const selectedKeyExists = results.some(
@@ -331,7 +346,7 @@ export default function LabTestResultPage({ sessionId, embedded = false, onRespo
     (result, index) => getResultKey(result, index) === effectiveSelectedKey,
   ) ?? null;
   const sessionStatus = normalizeAsyncSessionStatus(session?.status);
-  const isPending = loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);
+  const isPending = !initialSession && loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);
   const normalCount = results.filter((result) => normalizeResultStatus(result?.status) === "normal").length;
   const warningCount = results.filter((result) => (
     ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
