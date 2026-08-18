@@ -46,11 +46,14 @@ export default function AdminUsersSection({
   onReload,
   onPageSizeChange,
   onSearchChange,
+  onRoleFilterChange,
   onSortChange,
   onStatusFilterChange,
   pageInfo,
   pendingCount,
   rows,
+  roleFilter,
+  roleOptions = [],
   search,
   searchSuggestions = [],
   sortValue,
@@ -65,6 +68,10 @@ export default function AdminUsersSection({
     && search.trim()
     && searchSuggestions.length,
   );
+  const selectedStatusLabel = STATUS_OPTIONS.find((option) => option.value === statusFilter)?.label
+    || STATUS_OPTIONS[0].label;
+  const selectedRoleLabel = roleOptions.find((option) => option.value === roleFilter)?.label
+    || "Tất cả vai trò";
 
   function chooseSuggestion(suggestion) {
     onSearchChange(suggestion.value);
@@ -148,7 +155,7 @@ export default function AdminUsersSection({
         description="Tìm kiếm, trạng thái, sắp xếp và số tài khoản hiển thị."
         headingClassName="admin-users-filter-heading"
         icon={<ListFilter size={18} />}
-        summary={`${statusLabel} · ${pageInfo.totalCount} kết quả`}
+        summary={`${selectedStatusLabel} · ${selectedRoleLabel} · ${pageInfo.totalCount} kết quả`}
         title="Bộ lọc tài khoản"
         titleId="admin-users-filter-title"
       >
@@ -222,6 +229,14 @@ export default function AdminUsersSection({
             value={statusFilter}
             options={STATUS_OPTIONS}
             onChange={onStatusFilterChange}
+          />
+
+          <CustomSelect
+            className="clean-field admin-user-role-filter"
+            label="Vai trò"
+            value={roleFilter}
+            options={roleOptions}
+            onChange={onRoleFilterChange}
           />
 
           <CustomSelect

@@ -94,9 +94,10 @@
 /* User account search + suggestions. */
 .admin-operator .admin-users-toolbar.admin-users-toolbar--enhanced {
   grid-template-columns:
-    minmax(300px, 1.45fr)
-    minmax(170px, 0.72fr)
-    minmax(210px, 0.85fr)
+    minmax(260px, 1.35fr)
+    minmax(155px, 0.68fr)
+    minmax(155px, 0.68fr)
+    minmax(190px, 0.82fr)
     minmax(130px, 0.55fr);
   align-items: end;
 }
