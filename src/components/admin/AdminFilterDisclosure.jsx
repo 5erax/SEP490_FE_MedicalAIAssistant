@@ -12,6 +12,7 @@ export default function AdminFilterDisclosure({
   description,
   headingClassName = "",
   icon,
+  primaryAction,
   summary,
   title,
   titleId,
@@ -34,6 +35,11 @@ export default function AdminFilterDisclosure({
           <h3 id={resolvedTitleId}>{title}</h3>
           <p>{description}</p>
         </div>
+        {primaryAction && (
+          <div className="admin-filter-disclosure-primary-action">
+            {primaryAction}
+          </div>
+        )}
         <button
           className="admin-filter-disclosure-toggle"
           type="button"

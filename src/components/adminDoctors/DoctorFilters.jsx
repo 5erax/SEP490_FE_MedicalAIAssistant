@@ -1,4 +1,4 @@
-import { Filter, ListFilter, RotateCcw, Search, UsersRound } from "lucide-react";
+import { Filter, ListFilter, Plus, RotateCcw, Search, UsersRound } from "lucide-react";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { Button, CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 import AdminSearchDatalist from "../admin/AdminSearchDatalist";
@@ -49,16 +49,15 @@ export default function DoctorFilters({
       description="Thu hẹp danh sách theo chuyên khoa, bệnh viện hoặc trạng thái hiển thị."
       headingClassName="doctor-filter-card-header"
       icon={<ListFilter size={19} />}
+      primaryAction={(
+        <Button className="doctor-add-button" type="button" onClick={onCreate}>
+          <Plus size={16} aria-hidden="true" /> Tạo hồ sơ
+        </Button>
+      )}
       summary={`${activeFilterCount} bộ lọc · ${totalCount} hồ sơ`}
       title="Tìm và lọc hồ sơ bác sĩ"
       titleId="doctor-filter-title"
     >
-      <div className="doctor-filter-primary-action">
-        <Button className="doctor-add-button" type="button" onClick={onCreate}>
-          Tạo hồ sơ bác sĩ
-        </Button>
-      </div>
-
       <form className="doctor-filter-bar" onSubmit={onSubmit}>
         <label className="doctor-search-label">
           <span>Tìm bác sĩ</span>

@@ -1027,3 +1027,212 @@
     flex: 1 1 0;
   }
 }
+
+/* Doctor catalogue: one intentional toolbar instead of a floating create row. */
+.admin-operator .admin-filter-disclosure-heading:has(.admin-filter-disclosure-primary-action) {
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+}
+
+.admin-operator .admin-filter-disclosure-primary-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.admin-operator .doctor-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.6fr) minmax(0, 2.4fr);
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-operator .doctor-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(135px, 1fr));
+  gap: 10px;
+}
+
+.admin-operator .doctor-filter-footer {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(24, 72, 65, 0.11);
+  padding-top: 12px;
+}
+
+.admin-operator .doctor-filter-result-summary {
+  min-height: 40px;
+  border-radius: 10px;
+  background: rgba(229, 245, 241, 0.58);
+  padding: 0 12px;
+}
+
+/* One button system for Admin. Semantic danger keeps its warning colour, but
+ * every action now shares the same geometry, typography and interaction. */
+.admin-operator :is(.btn, .ui-button) {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-height: 44px !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(8, 127, 123, 0.28);
+  border-radius: 11px !important;
+  background: #ffffff;
+  color: #075f5d;
+  padding: 0 15px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 820;
+  line-height: 1;
+  box-shadow: none;
+  transform: none;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.admin-operator :is(.btn, .ui-button) > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
+}
+
+.admin-operator :is(.btn, .ui-button) svg {
+  flex: 0 0 auto;
+  margin: 0;
+  color: currentColor;
+  stroke-width: 2;
+  transform: none;
+}
+
+.admin-operator :is(
+  .btn-primary,
+  .ui-button[data-tone="primary"],
+  .doctor-add-button,
+  .doctor-invitation-submit,
+  .clinical-create-button,
+  .department-create-button,
+  .facility-create-button,
+  .patient-profile-create-button
+) {
+  border-color: #087f7b;
+  background: #087f7b;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.admin-operator :is(.btn, .ui-button):hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #086b68;
+  background: #e8f5f2;
+  color: #075f5d;
+  box-shadow: none;
+  transform: none;
+}
+
+.admin-operator :is(
+  .btn-primary,
+  .ui-button[data-tone="primary"],
+  .doctor-add-button,
+  .doctor-invitation-submit,
+  .clinical-create-button,
+  .department-create-button,
+  .facility-create-button,
+  .patient-profile-create-button
+):hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #066b68;
+  background: #066b68;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.admin-operator :is(
+  .admin-danger-btn,
+  .danger-button,
+  .department-delete-button,
+  .icd-delete-button,
+  .facility-delete-button,
+  .patient-profile-delete-button,
+  .subscription-delete-button,
+  .ai-config-delete-button,
+  .ui-button[data-tone="danger"]
+) {
+  border-color: #d5a3a3;
+  background: #fff8f7;
+  color: #a9252a;
+  box-shadow: none;
+}
+
+.admin-operator :is(
+  .admin-danger-btn,
+  .danger-button,
+  .department-delete-button,
+  .icd-delete-button,
+  .facility-delete-button,
+  .patient-profile-delete-button,
+  .subscription-delete-button,
+  .ai-config-delete-button,
+  .ui-button[data-tone="danger"]
+):hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #b83237;
+  background: #fff0ef;
+  color: #9b1f24;
+}
+
+.admin-operator :is(.btn, .ui-button):focus-visible {
+  outline: 3px solid rgba(8, 127, 123, 0.2);
+  outline-offset: 2px;
+}
+
+.admin-operator :is(.btn, .ui-button):disabled,
+.admin-operator :is(.btn, .ui-button)[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
+}
+
+.admin-operator :is(.btn-small, .ui-button[data-size="sm"]) {
+  min-height: 40px;
+  padding-inline: 13px;
+}
+
+@media (max-width: 1180px) {
+  .admin-operator .doctor-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-filter-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-operator .admin-filter-disclosure-heading:has(.admin-filter-disclosure-primary-action) {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .admin-operator .admin-filter-disclosure-primary-action,
+  .admin-operator .admin-filter-disclosure-toggle {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .admin-operator .admin-filter-disclosure-primary-action .ui-button {
+    width: 100%;
+  }
+
+  .admin-operator .doctor-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .doctor-filter-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-operator .doctor-filter-actions,
+  .admin-operator .doctor-filter-actions :is(.btn, .ui-button) {
+    width: 100%;
+  }
+}
