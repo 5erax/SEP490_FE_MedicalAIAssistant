@@ -4,7 +4,6 @@ import { adminQuotasApi, adminSubscriptionPlanQuotasApi, subscriptionPlansApi } 
 import { Button, ErrorState, LoadingState } from "../ui";
 import SubscriptionPlanTable from "./SubscriptionPlanTable";
 import SubscriptionPlanFormModal from "./SubscriptionPlanFormModal";
-import AdminPaymentsPanel from "./AdminPaymentsPanel";
 
 const SERVICE_CREDIT_QUOTA_CODE = "SERVICE_CREDIT";
 const DEFAULT_SERVICE_CREDIT_LIMIT = 10;
@@ -220,8 +219,6 @@ export default function AdminSubscriptionsSection({
           onSubmit={handleSavePlan}
         />
       )}
-
-      <AdminPaymentsPanel />
     </section>
   );
 }

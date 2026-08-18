@@ -29,7 +29,16 @@ const ADMIN_NAV_LAYOUT = [
     ],
   },
   { type: "item", section: "facilities" },
-  { type: "item", section: "subscriptions", label: "Gói & thanh toán" },
+  {
+    type: "group",
+    id: "billing",
+    label: "Gói & thanh toán",
+    icon: "subscription",
+    children: [
+      { section: "subscriptions", label: "Gói dịch vụ" },
+      { section: "payments", label: "Lịch sử thanh toán" },
+    ],
+  },
   { type: "item", section: "ai-configs" },
 ];
 

@@ -360,7 +360,7 @@
   font-weight: 800;
 }
 
-.subscription-plan-icon,
+.subscription-plan-primary .subscription-plan-icon,
 .subscription-modal-icon {
   flex: 0 0 auto;
   display: grid;
@@ -373,7 +373,7 @@
   color: #087f8c;
 }
 
-.subscription-plan-icon svg {
+.subscription-plan-primary .subscription-plan-icon svg {
   display: block;
   margin: auto;
 }

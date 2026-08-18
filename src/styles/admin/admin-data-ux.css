@@ -834,3 +834,196 @@
     transition: none;
   }
 }
+
+/* Unified filter language across every Admin management surface. */
+.admin-operator :is(
+  .admin-users-filter-card,
+  .ai-config-filter-card,
+  .doctor-filter-card,
+  .facility-filter-card,
+  .department-filter-card,
+  .icd-filter-card,
+  .clinical-catalog-filter-card,
+  .patient-profile-filter-card,
+  .consultation-filter-card,
+  .lab-filter-card,
+  .feedback-filter-card,
+  .admin-payment-filter-card
+) {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid var(--admin-data-border);
+  border-radius: 16px;
+  background: #fbfcfa;
+  box-shadow: none;
+  padding: 16px 18px;
+}
+
+.admin-operator .admin-filter-disclosure-heading {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-operator .admin-filter-disclosure-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #e5f5f1;
+  color: var(--admin-data-focus);
+}
+
+.admin-operator .admin-filter-disclosure-copy :is(h3, p) {
+  margin: 0;
+}
+
+.admin-operator .admin-filter-disclosure-copy h3 {
+  color: #183332;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.admin-operator .admin-filter-disclosure-copy p {
+  margin-top: 2px;
+  color: var(--admin-data-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.admin-operator .admin-filter-disclosure-toggle {
+  justify-self: end;
+  min-width: 154px;
+  min-height: 42px;
+  border-color: var(--admin-data-border);
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-operator .admin-filter-disclosure-body {
+  margin-top: 14px;
+  border-top: 1px solid rgba(24, 72, 65, 0.11);
+  padding-top: 14px;
+}
+
+.admin-operator :is(
+  .admin-users-filter-card,
+  .ai-config-filter-card,
+  .doctor-filter-card,
+  .facility-filter-card,
+  .department-filter-card,
+  .icd-filter-card,
+  .clinical-catalog-filter-card,
+  .patient-profile-filter-card,
+  .consultation-filter-card,
+  .lab-filter-card,
+  .feedback-filter-card,
+  .admin-payment-filter-card
+) :is(input, select, .custom-select-trigger) {
+  box-sizing: border-box;
+  min-height: 48px;
+  border-color: rgba(24, 72, 65, 0.22);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-operator .admin-payment-panel {
+  margin-top: 0;
+}
+
+.admin-operator .admin-payment-filter-form {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(190px, 0.34fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-operator .admin-payment-search-field,
+.admin-operator .admin-payment-status-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-operator .admin-payment-search-field > span:first-child,
+.admin-operator .admin-payment-status-field > span:first-child {
+  color: #344a47;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-operator .admin-payment-search-control {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  border: 1px solid rgba(24, 72, 65, 0.22);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0 14px;
+  color: #607b78;
+}
+
+.admin-operator .admin-payment-search-control input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  padding: 0;
+  outline: 0;
+}
+
+.admin-operator .admin-payment-search-control:focus-within {
+  border-color: var(--admin-data-focus);
+  box-shadow: 0 0 0 3px var(--admin-data-focus-soft);
+}
+
+.admin-operator .admin-payment-filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-operator .admin-payment-filter-actions .ui-button {
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+@media (max-width: 960px) {
+  .admin-operator .admin-payment-filter-form {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+  }
+
+  .admin-operator .admin-payment-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-operator .admin-filter-disclosure-heading {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .admin-operator .admin-filter-disclosure-toggle {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .admin-operator .admin-payment-filter-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-operator .admin-payment-filter-actions {
+    grid-column: auto;
+  }
+
+  .admin-operator .admin-payment-filter-actions .ui-button {
+    flex: 1 1 0;
+  }
+}

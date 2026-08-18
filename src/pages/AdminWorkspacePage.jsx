@@ -29,6 +29,7 @@ import AIConfigFormModal from "../components/adminAIConfigs/AIConfigFormModal";
 import AdminAIConfigsSection from "../components/adminAIConfigs/AdminAIConfigsSection";
 import { getEnvironment } from "../components/adminAIConfigs/aiConfigUtils";
 import AdminSubscriptionsSection from "../components/adminSubscriptions/AdminSubscriptionsSection";
+import AdminPaymentsPanel from "../components/adminSubscriptions/AdminPaymentsPanel";
 import AdminOverviewSection from "../components/adminOverview/AdminOverviewSection";
 import AdminUsersSection from "../components/adminUsers/AdminUsersSection";
 import AdminDepartmentsSection from "../components/adminDepartments/AdminDepartmentsSection";
@@ -2918,6 +2919,10 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 plans={subscriptionPlans}
                 onReload={loadSubscriptionPlans}
               />
+            )}
+
+            {activeSection === "payments" && (
+              <AdminPaymentsPanel />
             )}
 
             {activeSection === "departments" && (
