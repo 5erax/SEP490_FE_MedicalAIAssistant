@@ -55,7 +55,7 @@ async function prepareDoctorPage(page, options = {}) {
   let openItems = [...(options.openItems ?? [])];
   let mineItems = [...(options.mineItems ?? [])];
   let plan = options.plan ?? null;
-  const calls = { requestDetailGets: 0 };
+  const calls = { labTestGets: 0, clinicalContextGets: 0, requestDetailGets: 0 };
 
   function ok(data, status = 200) {
     return { status, contentType: "application/json", body: JSON.stringify({ success: true, message: "OK", data, errors: [] }) };
@@ -92,6 +92,7 @@ async function prepareDoctorPage(page, options = {}) {
       }));
     }
     if (path === `/api/lab-tests/${LAB_SESSION_ID}`) {
+      calls.labTestGets += 1;
       return route.fulfill(ok(options.labSessionDetail ?? {
         sessionId: LAB_SESSION_ID,
         status: "completed",
@@ -103,13 +104,12 @@ async function prepareDoctorPage(page, options = {}) {
         results: [
           {
             resultDetailId: "cre-result",
-            rawExtractedName: "CRE",
-            rawExtractedValue: 88,
-            referenceUnitUsed: "µmol/L",
+            indicatorSymbol: "AST",
+            value: 52,
+            unit: "U/L",
             referenceMinUsed: 62,
             referenceMaxUsed: 120,
             status: "normal",
-            indicator: { indicatorId: "cre", symbol: "CRE", fullName: "Creatinin", unit: "µmol/L" },
           },
         ],
       }));
@@ -127,6 +127,7 @@ async function prepareDoctorPage(page, options = {}) {
         return route.fulfill(ok(current));
       }
       if (sub === "/clinical-context") {
+        calls.clinicalContextGets += 1;
         return route.fulfill(ok(options.clinicalContext ?? {
           patientProfile: null,
           userMedications: [],
@@ -276,7 +277,7 @@ test.describe("doctor recovery plan workflow", () => {
   });
 
   test("a doctor with an unresolved request is warned and blocked from accepting another", async ({ page }) => {
-    await prepareDoctorPage(page, {
+    const calls = await prepareDoctorPage(page, {
       openItems: [openRequest()],
       mineItems: [myRequest({ id: "33333333-3333-4333-8333-333333333333", status: "assigned" })],
     });
@@ -367,7 +368,7 @@ test.describe("doctor recovery plan workflow", () => {
   });
 
   test("doctor sees the primary lab test attached to a recovery request", async ({ page }) => {
-    await prepareDoctorPage(page, {
+    const calls = await prepareDoctorPage(page, {
       mineItems: [myRequest({ status: "assigned" })],
       clinicalContext: {
         patientProfile: { height: 170, weight: 68, bloodType: "O+" },
@@ -376,18 +377,22 @@ test.describe("doctor recovery plan workflow", () => {
         primaryLabTest: {
           testSessionId: LAB_SESSION_ID,
           testDate: "2026-08-17",
-          facilityName: "Phòng xét nghiệm MediLab",
           createdAt: "2026-08-17T01:00:00Z",
-          results: [
+          resultDetails: [
             {
               resultDetailId: "cre-result",
-              rawExtractedName: "CRE",
-              rawExtractedValue: 88,
-              referenceUnitUsed: "µmol/L",
-              referenceMinUsed: 62,
-              referenceMaxUsed: 120,
-              status: "normal",
-              indicator: { indicatorId: "cre", symbol: "CRE", fullName: "Creatinin", unit: "µmol/L" },
+              symbol: "AST",
+              fullName: "Chỉ số AST (GOT)",
+              userValue: 52,
+              minReference: 0,
+              maxReference: 37,
+              unit: "U/L",
+              status: "high",
+              advice: {
+                displayTitle: "Tình trạng men gan",
+                summary: "Men gan AST đang cao hơn khoảng tham chiếu và cần được theo dõi.",
+                lifestyleAdvice: ["Hạn chế rượu bia và các chất kích thích."],
+              },
             },
           ],
         },
@@ -399,14 +404,19 @@ test.describe("doctor recovery plan workflow", () => {
     const labBlock = page.locator(".doctor-clinical-block", { hasText: "Xét nghiệm đính kèm" });
     await expect(labBlock).toBeVisible();
     await expect(labBlock.getByText("17/08/2026")).toBeVisible();
-    await expect(labBlock.getByText("Phòng xét nghiệm MediLab")).toBeVisible();
+    await expect(labBlock.getByText("Không rõ cơ sở")).toHaveCount(0);
     await expect(page.getByText("Bệnh nhân không đính kèm kết quả xét nghiệm.")).toHaveCount(0);
 
     await labBlock.getByRole("button", { name: /Xem kết quả xét nghiệm/ }).click();
     const resultDialog = page.getByRole("dialog", { name: "Kết quả xét nghiệm" });
     await expect(resultDialog).toBeVisible();
     await expect(resultDialog.getByRole("heading", { name: /Kết quả ngày 17\/0?8\/2026/ })).toBeVisible();
-    await expect(resultDialog.getByRole("heading", { name: "Creatinin" })).toBeVisible();
+    await expect(resultDialog.getByRole("heading", { name: "Chỉ số AST (GOT)" })).toBeVisible();
+    await expect(resultDialog.getByText("Tham chiếu: 0 – 37 U/L")).toBeVisible();
+    await expect(resultDialog.getByText("Men gan AST đang cao hơn khoảng tham chiếu")).toBeVisible();
+    await expect(resultDialog.getByText("Chỉ số chưa nhận diện")).toHaveCount(0);
+    expect(calls.clinicalContextGets).toBeGreaterThanOrEqual(2);
+    expect(calls.labTestGets).toBe(0);
   });
 
   test("legacy more-information requests render without the old doctor request action", async ({ page }) => {

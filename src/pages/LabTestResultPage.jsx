@@ -53,14 +53,6 @@ function formatDate(value, fallback = "chưa xác định") {
     : new Intl.DateTimeFormat("vi-VN").format(date);
 }
 
-function formatDateTime(value) {
-  if (!value) return "Chưa có thời gian xử lý";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Chưa có thời gian xử lý"
-    : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
-}
-
 function formatNumber(value) {
   if (value === null || value === undefined || value === "") return "—";
   const numeric = Number(value);
@@ -69,32 +61,133 @@ function formatNumber(value) {
     : String(value);
 }
 
+function firstMeaningfulText(...values) {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (text && text !== "-" && text !== "—") return text;
+  }
+  return "";
+}
+
+function getIndicatorSource(result) {
+  return result?.indicator
+    ?? result?.labIndicator
+    ?? result?.matchedIndicator
+    ?? result?.indicatorSnapshot
+    ?? result?.labTestIndicator
+    ?? {};
+}
+
+function getSessionResults(session) {
+  const items = session?.results
+    ?? session?.resultDetails
+    ?? session?.labResults
+    ?? session?.labTestResults
+    ?? session?.indicators
+    ?? session?.details
+    ?? [];
+  return Array.isArray(items) ? items : [];
+}
+
 function getResultName(result) {
-  return result?.indicator?.fullName || result?.rawExtractedName || "Chỉ số chưa nhận diện";
+  const indicator = getIndicatorSource(result);
+  return firstMeaningfulText(
+    indicator.fullName,
+    indicator.name,
+    indicator.displayName,
+    indicator.vietnameseName,
+    indicator.label,
+    result?.indicatorFullName,
+    result?.fullName,
+    result?.indicatorName,
+    result?.labIndicatorName,
+    result?.matchedIndicatorName,
+    result?.displayTitle,
+    result?.name,
+    result?.displayName,
+    result?.testName,
+    result?.testNameVi,
+    result?.analyteName,
+    result?.parameterName,
+    result?.rawExtractedName,
+    result?.rawName,
+    getResultSymbol(result),
+  ) || "Chỉ số chưa nhận diện";
 }
 
 function getResultSymbol(result) {
-  return result?.indicator?.symbol || result?.rawExtractedName || "—";
+  const indicator = getIndicatorSource(result);
+  return firstMeaningfulText(
+    indicator.symbol,
+    indicator.code,
+    indicator.shortName,
+    result?.indicatorSymbol,
+    result?.indicatorCode,
+    result?.labIndicatorSymbol,
+    result?.labIndicatorCode,
+    result?.symbol,
+    result?.code,
+    result?.shortName,
+    result?.rawExtractedName,
+    result?.rawName,
+  ) || "—";
 }
 
 function getResultUnit(result) {
+  const indicator = getIndicatorSource(result);
   return result?.referenceUnitUsed
     ?? result?.referenceRangeUsed?.unit
-    ?? result?.indicator?.unit
+    ?? result?.referenceRange?.unit
+    ?? result?.unit
+    ?? result?.resultUnit
+    ?? result?.valueUnit
+    ?? result?.measurementUnit
+    ?? indicator.unit
     ?? "";
 }
 
 function getResultValue(result) {
-  const value = result?.userValue ?? result?.rawExtractedValue;
+  const value = result?.userValue
+    ?? result?.rawExtractedValue
+    ?? result?.value
+    ?? result?.resultValue
+    ?? result?.displayValue
+    ?? result?.numericValue
+    ?? result?.measuredValue;
   const unit = getResultUnit(result);
   return `${formatNumber(value)}${unit ? ` ${unit}` : ""}`;
 }
 
 function formatReference(result) {
-  const range = result?.referenceRangeUsed ?? {};
+  const explicitReference = firstMeaningfulText(
+    result?.referenceText,
+    result?.referenceRangeText,
+    result?.normalRange,
+    result?.normalRangeText,
+    typeof result?.referenceRange === "string" ? result.referenceRange : "",
+  );
+  if (explicitReference) return explicitReference;
+
+  const range = result?.referenceRangeUsed ?? result?.referenceRange ?? {};
   const comparisonType = result?.comparisonTypeUsed ?? range.comparisonType;
-  const minimum = result?.referenceMinUsed ?? range.minValue;
-  const maximum = result?.referenceMaxUsed ?? range.maxValue;
+  const minimum = result?.referenceMinUsed
+    ?? result?.referenceMin
+    ?? result?.minReference
+    ?? result?.lowerBound
+    ?? result?.low
+    ?? range.minValue
+    ?? range.min
+    ?? range.minimum
+    ?? range.lowerBound;
+  const maximum = result?.referenceMaxUsed
+    ?? result?.referenceMax
+    ?? result?.maxReference
+    ?? result?.upperBound
+    ?? result?.high
+    ?? range.maxValue
+    ?? range.max
+    ?? range.maximum
+    ?? range.upperBound;
   const unit = getResultUnit(result);
   let reference = "Chưa có khoảng tham chiếu";
 
@@ -114,9 +207,23 @@ function formatReference(result) {
 }
 
 function getResultKey(result, index) {
+  const indicator = getIndicatorSource(result);
   return result?.resultDetailId
-    || result?.indicator?.indicatorId
+    || result?.id
+    || result?.detailId
+    || result?.resultId
+    || indicator.indicatorId
+    || indicator.id
     || `${getResultSymbol(result)}-${index}`;
+}
+
+function getResultAdvice(result) {
+  return result?.advice
+    ?? result?.indicatorAdvice
+    ?? result?.clinicalAdvice
+    ?? result?.analysis
+    ?? result?.interpretation
+    ?? null;
 }
 
 function toAdviceItems(value) {
@@ -159,7 +266,7 @@ function ResultAdvice({ result }) {
     );
   }
 
-  const advice = result?.advice;
+  const advice = getResultAdvice(result);
   const status = normalizeResultStatus(result?.status);
   const meta = RESULT_STATUS_META[status];
 
@@ -185,14 +292,18 @@ function ResultAdvice({ result }) {
         <div className="lab-test-result__advice-sections">
           <AdviceBlock
             title={advice.displayTitle || "Thông tin tham khảo"}
-            value={advice.summary ?? advice.description ?? advice.content}
+            value={typeof advice === "string" ? advice : advice.summary ?? advice.description ?? advice.content}
           />
-          <AdviceBlock title="Nguyên nhân có thể liên quan" value={advice.possibleCauses} />
-          <AdviceBlock title="Sinh hoạt" value={advice.lifestyleAdvice} />
-          <AdviceBlock title="Dinh dưỡng" value={advice.nutritionalAdvice} />
-          <AdviceBlock title="Dấu hiệu cần lưu ý" value={advice.warningSigns} tone="danger" />
-          <AdviceBlock title="Theo dõi tiếp" value={advice.followUpSuggestion} />
-          <AdviceBlock title="Câu hỏi có thể trao đổi với bác sĩ" value={advice.doctorQuestions} />
+          {typeof advice !== "string" && (
+            <>
+              <AdviceBlock title="Nguyên nhân có thể liên quan" value={advice.possibleCauses} />
+              <AdviceBlock title="Sinh hoạt" value={advice.lifestyleAdvice} />
+              <AdviceBlock title="Dinh dưỡng" value={advice.nutritionalAdvice} />
+              <AdviceBlock title="Dấu hiệu cần lưu ý" value={advice.warningSigns} tone="danger" />
+              <AdviceBlock title="Theo dõi tiếp" value={advice.followUpSuggestion} />
+              <AdviceBlock title="Câu hỏi có thể trao đổi với bác sĩ" value={advice.doctorQuestions} />
+            </>
+          )}
         </div>
       ) : (
         <div className="lab-test-result__no-advice">
@@ -209,13 +320,6 @@ function ResultAdvice({ result }) {
       </p>
     </div>
   );
-}
-
-function genderLabel(value) {
-  const normalized = String(value ?? "").trim().toLowerCase();
-  if (normalized === "male") return "Nam";
-  if (normalized === "female") return "Nữ";
-  return "Giới tính chưa xác định";
 }
 
 export default function LabTestResultPage({ sessionId, initialSession = null, embedded = false, onResponse, onSessionUpdate }) {
@@ -239,7 +343,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   useEffect(() => {
     if (initialSession) {
       const nextStatus = normalizeAsyncSessionStatus(initialSession?.status);
-      const resultCount = Array.isArray(initialSession?.results) ? initialSession.results.length : 0;
+      const resultCount = getSessionResults(initialSession).length;
       setSession(initialSession);
       setLoadStatus("ready");
       setError("");
@@ -278,7 +382,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
         setError("");
 
         if (nextStatus === ASYNC_SESSION_STATUS.COMPLETED) {
-          const resultCount = Array.isArray(nextSession?.results) ? nextSession.results.length : 0;
+          const resultCount = getSessionResults(nextSession).length;
           setAnnouncement(`Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`);
           const terminalKey = `${sessionId}:${nextStatus}`;
           if (terminalBalanceRefreshRef.current !== terminalKey) {
@@ -329,7 +433,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
     };
   }, [initialSession, onResponse, onSessionUpdate, refreshServiceCredit, retryKey, sessionId]);
 
-  const results = Array.isArray(session?.results) ? session.results : [];
+  const results = getSessionResults(session);
   const selectedKeyExists = results.some(
     (result, index) => getResultKey(result, index) === selectedResultKey,
   );
@@ -430,9 +534,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
             <div>
               <p>KẾT QUẢ PHÂN TÍCH</p>
               <h1 ref={pageHeadingRef} tabIndex="-1">Kết quả ngày {formatDate(session?.testDate)}</h1>
-              <span>
-                {genderLabel(session?.patientGenderAtTest)} · {formatNumber(session?.patientAgeAtTest)} tuổi · {formatDateTime(session?.processedAt || session?.createdAt)}
-              </span>
             </div>
             <div className="lab-test-result__session-badge">
               <CheckCircle2 size={17} aria-hidden="true" /> Đã hoàn tất

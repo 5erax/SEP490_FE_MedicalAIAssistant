@@ -345,17 +345,30 @@ function DetailContent({ request, onReload }) {
   const [clinicalLoading, setClinicalLoading] = useState(true);
   const [clinicalError, setClinicalError] = useState("");
 
+  async function fetchClinicalContext() {
+    const response = await doctorRecoveryPlanRequestsApi.getClinicalContext(request.id);
+    return normalizeClinicalContext(response?.data);
+  }
+
   async function loadClinicalContext() {
     setClinicalLoading(true);
     setClinicalError("");
     try {
-      const response = await doctorRecoveryPlanRequestsApi.getClinicalContext(request.id);
-      setClinicalContext(normalizeClinicalContext(response?.data));
+      const nextContext = await fetchClinicalContext();
+      setClinicalContext(nextContext);
+      return nextContext;
     } catch {
       setClinicalError("Chưa thể tải bối cảnh lâm sàng của bệnh nhân.");
+      return null;
     } finally {
       setClinicalLoading(false);
     }
+  }
+
+  async function refreshClinicalContextSilently() {
+    const nextContext = await fetchClinicalContext();
+    setClinicalContext(nextContext);
+    return nextContext;
   }
 
   useEffect(() => {
@@ -498,6 +511,7 @@ function DetailContent({ request, onReload }) {
               error={clinicalError}
               data={clinicalContext}
               onRetry={loadClinicalContext}
+              onRefreshContext={refreshClinicalContextSilently}
             />
           )}
 
@@ -764,8 +778,11 @@ function ProgressSteps({ status }) {
   );
 }
 
-function ClinicalContextSection({ loading, error, data, onRetry }) {
+function ClinicalContextSection({ loading, error, data, onRetry, onRefreshContext }) {
   const [activeLabSessionId, setActiveLabSessionId] = useState("");
+  const [activeLabTest, setActiveLabTest] = useState(null);
+  const [labResultLoading, setLabResultLoading] = useState(false);
+  const [labResultError, setLabResultError] = useState("");
 
   if (loading) {
     return (
@@ -795,6 +812,29 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
   const journeyEvents = buildJourneyEvents({ profile, medications, primaryLabTest, chronicDiseases });
   const primaryLabTestSessionId = getPrimaryLabTestSessionId(primaryLabTest);
   const primaryLabTestDate = formatDateOnly(primaryLabTest?.testDate) || formatDateOnly(primaryLabTest?.createdAt) || "Chưa rõ ngày";
+
+  async function openPrimaryLabTestResult() {
+    setActiveLabSessionId(primaryLabTestSessionId);
+    setActiveLabTest(primaryLabTest);
+    setLabResultError("");
+    setLabResultLoading(true);
+    try {
+      const latestContext = await onRefreshContext?.();
+      const latestLabTest = latestContext?.primaryLabTest ?? primaryLabTest;
+      setActiveLabTest(latestLabTest);
+    } catch {
+      setLabResultError("Chưa thể tải lại kết quả xét nghiệm mới nhất. Đang hiển thị dữ liệu đã tải trước đó.");
+    } finally {
+      setLabResultLoading(false);
+    }
+  }
+
+  function closePrimaryLabTestResult() {
+    setActiveLabSessionId("");
+    setActiveLabTest(null);
+    setLabResultError("");
+    setLabResultLoading(false);
+  }
 
   return (
     <>
@@ -870,17 +910,17 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
                     <button
                       type="button"
                       className="doctor-clinical-lab-button"
-                      onClick={() => setActiveLabSessionId(primaryLabTestSessionId)}
+                      onClick={openPrimaryLabTestResult}
                       aria-label={`Xem kết quả xét nghiệm ngày ${primaryLabTestDate}`}
                     >
                       <strong>{primaryLabTestDate}</strong>
-                      <span>{primaryLabTest.facilityName || "Không rõ cơ sở"}</span>
+                      {primaryLabTest.facilityName && <span>{primaryLabTest.facilityName}</span>}
                       <small>Xem kết quả</small>
                     </button>
                   ) : (
                     <>
                       <strong>{primaryLabTestDate}</strong>
-                      <span>{primaryLabTest.facilityName || "Không rõ cơ sở"}</span>
+                      {primaryLabTest.facilityName && <span>{primaryLabTest.facilityName}</span>}
                     </>
                   )}
                 </li>
@@ -915,19 +955,28 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
           backdropClassName="doctor-lab-result-modal-backdrop"
           className="doctor-lab-result-modal"
           labelledBy="doctor-lab-result-modal-title"
-          onClose={() => setActiveLabSessionId("")}
+          onClose={closePrimaryLabTestResult}
         >
           <header className="doctor-lab-result-modal-header">
             <div>
               <p>Xét nghiệm đính kèm</p>
               <h2 id="doctor-lab-result-modal-title">Kết quả xét nghiệm</h2>
             </div>
-            <button type="button" aria-label="Đóng kết quả xét nghiệm" onClick={() => setActiveLabSessionId("")}>
+            <button type="button" aria-label="Đóng kết quả xét nghiệm" onClick={closePrimaryLabTestResult}>
               <X size={22} aria-hidden="true" />
             </button>
           </header>
           <div className="doctor-lab-result-modal-body">
-            <LabTestResultPage sessionId={activeLabSessionId} initialSession={primaryLabTest} embedded />
+            {labResultError && (
+              <div className="doctor-lab-result-modal-note" role="status">
+                <Info size={16} aria-hidden="true" /> {labResultError}
+              </div>
+            )}
+            {labResultLoading && !activeLabTest ? (
+              <LoadingState label="Đang tải kết quả xét nghiệm…" />
+            ) : (
+              <LabTestResultPage sessionId={activeLabSessionId} initialSession={activeLabTest} embedded />
+            )}
           </div>
         </Dialog>
       )}

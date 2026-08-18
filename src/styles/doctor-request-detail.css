@@ -525,32 +525,56 @@
 
 .doctor-clinical-lab-button {
   display: grid;
-  gap: 2px;
+  gap: 4px;
   width: 100%;
   border: 0;
   border-radius: 12px;
   background: transparent;
-  padding: 0;
+  padding: 2px;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: transform var(--motion-fast);
 }
 
 .doctor-clinical-lab-button small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: fit-content;
-  margin-top: 8px;
+  min-height: 34px;
+  margin-top: 10px;
+  border: 1px solid rgba(8, 127, 140, 0.32);
   border-radius: 999px;
-  background: var(--color-info-bg);
+  background: linear-gradient(135deg, var(--color-info-bg), color-mix(in srgb, var(--color-info) 12%, var(--color-surface)));
+  box-shadow: 0 8px 18px rgba(8, 127, 140, 0.12);
   color: var(--color-info-strong);
-  padding: 5px 9px;
-  font-size: 11px;
+  padding: 0 14px;
+  font-size: 12px;
   font-weight: 800;
+  transition:
+    background var(--motion-fast),
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .doctor-clinical-lab-button:hover strong,
 .doctor-clinical-lab-button:focus-visible strong {
   color: var(--color-info-strong);
+}
+
+.doctor-clinical-lab-button:hover {
+  transform: translateY(-1px);
+}
+
+.doctor-clinical-lab-button:hover small,
+.doctor-clinical-lab-button:focus-visible small {
+  border-color: var(--color-info-strong);
+  background: linear-gradient(135deg, var(--color-info), var(--color-info-strong));
+  box-shadow: 0 12px 24px rgba(8, 127, 140, 0.22);
+  color: #fff;
 }
 
 .doctor-clinical-lab-button:focus-visible {
@@ -671,6 +695,23 @@
   min-height: 0;
   overflow-y: auto;
   background: var(--color-bg);
+}
+
+.doctor-lab-result-modal-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-warning) 26%, var(--color-line));
+  background: var(--color-warning-bg);
+  color: var(--color-ink);
+  padding: 10px 22px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.doctor-lab-result-modal-note svg {
+  flex: 0 0 auto;
+  color: var(--color-warning);
 }
 
 /* Action area — primary hero card, secondary list, danger zone */
