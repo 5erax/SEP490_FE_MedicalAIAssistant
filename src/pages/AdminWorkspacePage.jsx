@@ -367,6 +367,28 @@ function getManagedUserDisplayName(user) {
   return user?.displayName || user?.name || user?.email || "Người dùng";
 }
 
+function getManagedUserRoles(user) {
+  return normalizeRoles(
+    user?.roles
+      ?? user?.role
+      ?? user?.userRoles
+      ?? user?.Role
+      ?? [],
+  );
+}
+
+function getManagedRoleLabel(role) {
+  const labels = {
+    patient: "Bệnh nhân",
+    user: "Người dùng",
+    doctor: "Bác sĩ",
+    clinician: "Bác sĩ",
+    staff: "Nhân viên",
+    receptionist: "Lễ tân",
+  };
+  return labels[role] || role.replace(/[-_]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 function getManagedUserStatusRank(user) {
   if (user?.isDeleted) return 2;
   if (isPendingApprovalUser(user)) return 1;
@@ -514,6 +536,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [userStatusFilter, setUserStatusFilter] = useState(USER_STATUS_FILTERS.all);
+  const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [userSort, setUserSort] = useState("name-asc");
   const [facilityFilters, setFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
   const [appliedFacilityFilters, setAppliedFacilityFilters] = useState(EMPTY_FACILITY_FILTERS);
@@ -760,6 +783,15 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
 
   const manageableUsers = useMemo(() => allUsers.filter((user) => !isProtectedAdminUser(user)), [allUsers]);
   const pendingApprovalUsers = useMemo(() => manageableUsers.filter(isPendingApprovalUser), [manageableUsers]);
+  const userRoleOptions = useMemo(() => {
+    const roles = Array.from(new Set(manageableUsers.flatMap(getManagedUserRoles)))
+      .sort((left, right) => USER_COLLATOR.compare(getManagedRoleLabel(left), getManagedRoleLabel(right)));
+    const options = roles.map((role) => ({ value: role, label: getManagedRoleLabel(role) }));
+    if (manageableUsers.some((user) => getManagedUserRoles(user).length === 0)) {
+      options.push({ value: "unassigned", label: "Chưa xác định" });
+    }
+    return [{ value: "all", label: "Tất cả vai trò" }, ...options];
+  }, [manageableUsers]);
 
   const filteredUsers = useMemo(() => {
     const keyword = normalizeUserSearchText(search);
@@ -769,8 +801,11 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         || (userStatusFilter === USER_STATUS_FILTERS.pending && isPendingApprovalUser(user))
         || (userStatusFilter === USER_STATUS_FILTERS.confirmed && !user.isDeleted && isApprovedUser(user))
         || (userStatusFilter === USER_STATUS_FILTERS.deleted && user.isDeleted);
+      const roles = getManagedUserRoles(user);
+      const matchesRole = userRoleFilter === "all"
+        || (userRoleFilter === "unassigned" ? roles.length === 0 : roles.includes(userRoleFilter));
 
-      if (!matchesStatus) return false;
+      if (!matchesStatus || !matchesRole) return false;
       if (!keyword) return true;
 
       return [
@@ -784,7 +819,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         .filter(Boolean)
         .some((value) => normalizeUserSearchText(value).includes(keyword));
     });
-  }, [manageableUsers, search, userStatusFilter]);
+  }, [manageableUsers, search, userRoleFilter, userStatusFilter]);
 
   const sortedUsers = useMemo(() => {
     const [sortKey, direction] = userSort.split("-");
@@ -2833,6 +2868,10 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                   setSearch(value);
                   setUsersPageNumber(1);
                 }}
+                onRoleFilterChange={(value) => {
+                  setUserRoleFilter(value);
+                  setUsersPageNumber(1);
+                }}
                 onSortChange={(value) => {
                   setUserSort(value);
                   setUsersPageNumber(1);
@@ -2844,6 +2883,8 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 pageInfo={pageInfo}
                 pendingCount={pendingUsers}
                 rows={pagedUsers}
+                roleFilter={userRoleFilter}
+                roleOptions={userRoleOptions}
                 search={search}
                 searchSuggestions={userSearchSuggestions}
                 sortValue={userSort}
