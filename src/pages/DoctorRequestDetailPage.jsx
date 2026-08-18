@@ -1116,17 +1116,21 @@ function CreatePlanDialog({ submitting, onClose, onSubmit }) {
   function handleSubmit(event) {
     event.preventDefault();
     const trimmedName = planName.trim();
+    const trimmedSummary = summary.trim();
+    const trimmedRecheckInstruction = recheckInstruction.trim();
     const days = Number(durationDays);
     const nextErrors = {};
     if (!trimmedName) nextErrors.planName = "Tên kế hoạch là bắt buộc.";
+    if (!trimmedSummary) nextErrors.summary = "Tóm tắt là bắt buộc.";
     if (!Number.isInteger(days) || days <= 0) nextErrors.durationDays = "Số ngày phải là số nguyên dương.";
+    if (!trimmedRecheckInstruction) nextErrors.recheckInstruction = "Hướng dẫn tái khám là bắt buộc.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     onSubmit({
       planName: trimmedName,
-      summary: summary.trim() || null,
+      summary: trimmedSummary,
       durationDays: days,
-      recheckInstruction: recheckInstruction.trim() || null,
+      recheckInstruction: trimmedRecheckInstruction,
     });
   }
 
@@ -1154,13 +1158,13 @@ function CreatePlanDialog({ submitting, onClose, onSubmit }) {
             autoFocus
           />
         </Field>
-        <Field label="Tóm tắt" optional>
+        <Field label="Tóm tắt" required error={errors.summary}>
           <Textarea
             rows={3}
             maxLength={1000}
             value={summary}
             placeholder="Mô tả ngắn về mục tiêu và hướng tiếp cận của kế hoạch."
-            onChange={(event) => setSummary(event.target.value)}
+            onChange={(event) => { setSummary(event.target.value); setErrors((current) => ({ ...current, summary: "" })); }}
           />
         </Field>
         <Field label="Số ngày thực hiện" required error={errors.durationDays}>
@@ -1171,13 +1175,13 @@ function CreatePlanDialog({ submitting, onClose, onSubmit }) {
             onChange={(event) => { setDurationDays(event.target.value); setErrors((current) => ({ ...current, durationDays: "" })); }}
           />
         </Field>
-        <Field label="Hướng dẫn tái khám" optional>
+        <Field label="Hướng dẫn tái khám" required error={errors.recheckInstruction}>
           <Textarea
             rows={2}
             maxLength={500}
             value={recheckInstruction}
             placeholder="Ví dụ: Tái khám sau 14 ngày hoặc khi có dấu hiệu bất thường."
-            onChange={(event) => setRecheckInstruction(event.target.value)}
+            onChange={(event) => { setRecheckInstruction(event.target.value); setErrors((current) => ({ ...current, recheckInstruction: "" })); }}
           />
         </Field>
         <div className="doctor-action-modal-actions">
