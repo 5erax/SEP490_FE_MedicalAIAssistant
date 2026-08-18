@@ -1028,6 +1028,104 @@
   }
 }
 
+/* The native hidden state must win over legacy page-level layout rules. */
+.admin-operator .admin-filter-disclosure-body[hidden] {
+  display: none !important;
+}
+
+/* Department catalogue: keep dense management rows readable and scannable. */
+.admin-operator .department-table-wrap .ui-table {
+  min-width: 760px;
+}
+
+.admin-operator .department-table-wrap .ui-table th,
+.admin-operator .department-table-wrap .ui-table td {
+  padding: 13px 14px;
+  vertical-align: middle;
+}
+
+.admin-operator .department-table-wrap .ui-table th:nth-child(1) {
+  width: 56%;
+}
+
+.admin-operator .department-table-wrap .ui-table th:nth-child(2) {
+  width: 25%;
+}
+
+.admin-operator .department-table-wrap .ui-table th:nth-child(3) {
+  width: 19%;
+  text-align: right;
+}
+
+.admin-operator .department-table-wrap .department-primary-cell {
+  align-items: center;
+}
+
+.admin-operator .department-table-wrap .department-primary-cell > div {
+  min-width: 0;
+}
+
+.admin-operator .department-primary-description {
+  display: -webkit-box !important;
+  overflow: hidden;
+  margin-top: 4px;
+  max-width: 72ch;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.45;
+}
+
+.admin-operator .department-icd-cell {
+  min-width: 0;
+  gap: 7px;
+}
+
+.admin-operator .department-icd-code {
+  justify-self: start;
+  border: 1px solid rgba(8, 127, 123, 0.18);
+  border-radius: 999px;
+  background: #e9f6f3;
+  padding: 5px 10px;
+  color: #086d6a;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.admin-operator .department-system-id {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  color: #75807c;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-operator .department-table-wrap .record-actions {
+  flex-flow: row nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-operator .department-table-wrap .record-actions .btn {
+  width: auto;
+  min-width: 82px;
+  min-height: 38px !important;
+  padding-inline: 13px;
+}
+
+@media (max-width: 900px) {
+  .admin-operator .department-table-wrap .record-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-operator .department-table-wrap .record-actions .btn {
+    width: 100%;
+  }
+}
+
 /* Doctor catalogue: one intentional toolbar instead of a floating create row. */
 .admin-operator .admin-filter-disclosure-heading:has(.admin-filter-disclosure-primary-action) {
   grid-template-columns: 40px minmax(0, 1fr) auto auto;

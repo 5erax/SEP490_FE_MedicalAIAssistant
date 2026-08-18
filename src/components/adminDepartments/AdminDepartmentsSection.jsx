@@ -226,7 +226,12 @@ export default function AdminDepartmentsSection({
                     <span className="department-primary-icon" aria-hidden="true"><Stethoscope size={18} /></span>
                     <div>
                       <strong>{department.departmentName || "Chưa đặt tên"}</strong>
-                      <small>{department.description || "Chưa có mô tả cho chuyên khoa này."}</small>
+                      <small
+                        className="department-primary-description"
+                        title={department.description || "Chưa có mô tả cho chuyên khoa này."}
+                      >
+                        {department.description || "Chưa có mô tả cho chuyên khoa này."}
+                      </small>
                     </div>
                   </div>
                 ),
@@ -235,9 +240,11 @@ export default function AdminDepartmentsSection({
                 key: "icd",
                 header: "Chương ICD",
                 render: (department) => (
-                  <div className="table-primary-cell">
-                    <strong>{department.chapterCode || "Chưa liên kết"}</strong>
-                    <small>Mã hệ thống · {department.id || "Không có dữ liệu"}</small>
+                  <div className="table-primary-cell department-icd-cell">
+                    <strong className="department-icd-code">{department.chapterCode || "Chưa liên kết"}</strong>
+                    <small className="department-system-id" title={department.id || "Không có dữ liệu"}>
+                      ID · {department.id || "Không có dữ liệu"}
+                    </small>
                   </div>
                 ),
               },
