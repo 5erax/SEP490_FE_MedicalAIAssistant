@@ -124,13 +124,13 @@
 .pre-consultation-suggestion-error button { flex: 0 0 auto; border: 1px solid #e7aaa6; border-radius: 9px; padding: 7px 11px; color: #74221d; background: #fff; font: inherit; font-weight: 850; cursor: pointer; }
 
 .pre-consultation-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; column-gap: 24px; row-gap: 22px; }
-.pre-consultation-schedule-row label, .pre-consultation-phone-field { display: grid; min-width: 0; gap: 8px; color: var(--consult-ink); font-size: 13px; font-weight: 850; }
+.pre-consultation-schedule-row label { display: grid; min-width: 0; gap: 8px; color: var(--consult-ink); font-size: 13px; font-weight: 850; }
 .pre-consultation-schedule-row > label { grid-template-rows: auto 52px minmax(18px, auto); }
-.pre-consultation-schedule-row input, .pre-consultation-phone-field input { box-sizing: border-box; width: 100%; border: 1px solid #718f89; border-radius: 11px; padding: 13px 14px; color: var(--consult-ink); background: var(--paper, #fff); font: inherit; font-weight: 650; }
+.pre-consultation-schedule-row input { box-sizing: border-box; width: 100%; border: 1px solid #718f89; border-radius: 11px; padding: 13px 14px; color: var(--consult-ink); background: var(--paper, #fff); font: inherit; font-weight: 650; }
 .pre-consultation-schedule-row input { height: 52px; min-height: 52px; }
-.pre-consultation-schedule-row input:focus, .pre-consultation-phone-field input:focus { border-color: var(--consult-teal-dark); outline: 3px solid var(--consult-teal-dark); outline-offset: 2px; }
+.pre-consultation-schedule-row input:focus { border-color: var(--consult-teal-dark); outline: 3px solid var(--consult-teal-dark); outline-offset: 2px; }
 .pre-consultation-schedule-row label.has-error input { border-color: #c73931; }
-.pre-consultation-schedule-row label > small, .pre-consultation-phone-field small { color: var(--consult-muted); font-weight: 600; }
+.pre-consultation-schedule-row label > small { color: var(--consult-muted); font-weight: 600; }
 
 .pre-consultation-tip { border-left: 3px solid var(--consult-teal); border-radius: 0 10px 10px 0; padding: 12px 15px; color: #315e5d; background: #f2faf8; line-height: 1.5; }
 .pre-consultation-tip span { display: flex; gap: 8px; }
@@ -164,10 +164,10 @@
 .pre-consultation-questions small { color: var(--consult-teal); font-size: 11px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
 .pre-consultation-questions strong { line-height: 1.5; }
 
-.pre-consultation-appointment, .pre-consultation-phone-found { display: flex; align-items: center; gap: 12px; border: 1px solid var(--consult-line); border-radius: 16px; padding: 15px 17px; background: var(--consult-soft); }
-.pre-consultation-appointment svg, .pre-consultation-phone-found svg { flex: 0 0 auto; color: var(--consult-teal); }
-.pre-consultation-appointment span, .pre-consultation-phone-found span { display: grid; gap: 3px; }
-.pre-consultation-appointment small, .pre-consultation-phone-found small { color: var(--consult-muted); }
+.pre-consultation-appointment { display: flex; align-items: center; gap: 12px; border: 1px solid var(--consult-line); border-radius: 16px; padding: 15px 17px; background: var(--consult-soft); }
+.pre-consultation-appointment svg { flex: 0 0 auto; color: var(--consult-teal); }
+.pre-consultation-appointment span { display: grid; gap: 3px; }
+.pre-consultation-appointment small { color: var(--consult-muted); }
 .pre-consultation-reminder-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 0; padding: 0; border: 0; }
 .pre-consultation-reminder-options legend { grid-column: 1 / -1; margin-bottom: 2px; font-weight: 900; }
 .pre-consultation-reminder-options label { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 12px; border: 1px solid var(--consult-line); border-radius: 16px; padding: 17px; cursor: pointer; }
@@ -176,8 +176,6 @@
 .pre-consultation-reminder-options label > svg { color: var(--consult-teal); }
 .pre-consultation-reminder-options label > span { display: grid; gap: 3px; }
 .pre-consultation-reminder-options small { color: var(--consult-muted); line-height: 1.4; }
-.pre-consultation-phone-panel { border: 1px solid var(--consult-line); border-radius: 18px; padding: 17px; background: #fbfdfc; }
-.pre-consultation-phone-found > svg:last-child { margin-left: auto; }
 
 .pre-consultation-success { display: flex; align-items: center; gap: 14px; border: 1px solid #96d8b3; border-radius: 18px; padding: 18px; color: #115b38; background: #ebfbf2; }
 .pre-consultation-success p { margin: 3px 0 0; }
