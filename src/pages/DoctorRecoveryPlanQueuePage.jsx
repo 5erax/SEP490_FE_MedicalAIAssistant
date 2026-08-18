@@ -13,13 +13,17 @@ import {
   X,
 } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState } from "../components/ui";
+import { Alert, Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { doctorRecoveryPlanRequestsApi } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
 import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import "../styles/doctor-recovery-plan.css";
 
 const PAGE_SIZE = 10;
+// A doctor may only work one recovery-plan request at a time; these are the
+// statuses that count as "still open" for them - anything else (published,
+// rejected, cancelled, expired) has been resolved and frees them up again.
+const ACTIVE_REQUEST_STATUSES = ["assigned", "inReview", "needMoreInformation"];
 const DISEASE_GROUPS = [
   { value: "", label: "Tất cả nhóm bệnh" },
   { value: "respiratory", label: "Hô hấp", icon: Wind },
@@ -82,11 +86,25 @@ export default function DoctorRecoveryPlanQueuePage() {
   const [blockedMessage, setBlockedMessage] = useState("");
   const [acceptingId, setAcceptingId] = useState("");
   const [previewRequest, setPreviewRequest] = useState(null);
+  const [activeRequestCount, setActiveRequestCount] = useState(0);
   const refetchTimerRef = useRef(null);
 
   function openPreview(request) {
     setPreviewRequest(request);
   }
+
+  const loadActiveRequestCount = useCallback(async () => {
+    try {
+      const responses = await Promise.all(
+        ACTIVE_REQUEST_STATUSES.map((status) => doctorRecoveryPlanRequestsApi.listMine({ pageNumber: 1, pageSize: 1, status })),
+      );
+      const total = responses.reduce((sum, response) => sum + (Number(response?.data?.totalCount) || 0), 0);
+      setActiveRequestCount(total);
+    } catch {
+      // Non-critical - the queue itself still loads, and the accept
+      // endpoint's own capacity check still applies either way.
+    }
+  }, []);
 
   const loadQueue = useCallback(async (targetPage = pageNumber, targetDiseaseGroup = diseaseGroup) => {
     setLoading(true);
@@ -129,6 +147,10 @@ export default function DoctorRecoveryPlanQueuePage() {
   }, [diseaseGroup]);
 
   useEffect(() => {
+    queueMicrotask(() => void loadActiveRequestCount());
+  }, [loadActiveRequestCount]);
+
+  useEffect(() => {
     // The doctor workspace shell owns the actual SignalR connection; this
     // page just listens and debounces a refetch so an "Added"/claimed event
     // from another doctor (or this page's own accept action elsewhere)
@@ -138,6 +160,7 @@ export default function DoctorRecoveryPlanQueuePage() {
         window.clearTimeout(refetchTimerRef.current);
         refetchTimerRef.current = window.setTimeout(() => {
           void loadQueue(pageNumber, diseaseGroup);
+          void loadActiveRequestCount();
         }, 250);
       }
     });
@@ -146,14 +169,24 @@ export default function DoctorRecoveryPlanQueuePage() {
       unsubscribe();
       window.clearTimeout(refetchTimerRef.current);
     };
-  }, [loadQueue, pageNumber, diseaseGroup]);
+  }, [loadQueue, loadActiveRequestCount, pageNumber, diseaseGroup]);
 
   async function handleAccept(request) {
+    if (activeRequestCount > 0) {
+      showToast({
+        type: "error",
+        title: "Bạn đang có yêu cầu chưa hoàn tất",
+        message: "Hoàn tất yêu cầu đang xử lý (trong mục \"Yêu cầu của tôi\") trước khi nhận yêu cầu mới.",
+      });
+      return;
+    }
+
     setAcceptingId(request.id);
     try {
       await doctorRecoveryPlanRequestsApi.accept(request.id);
       showToast({ type: "success", title: "Đã nhận yêu cầu", message: "Yêu cầu đã được chuyển vào danh sách của bạn." });
       setPage((current) => ({ ...current, items: current.items.filter((item) => item.id !== request.id) }));
+      setActiveRequestCount((current) => current + 1);
     } catch (requestError) {
       const mapped = getAcceptErrorMessage(requestError);
       showToast({ type: "error", title: "Không thể nhận yêu cầu", message: mapped.message });
@@ -192,6 +225,13 @@ export default function DoctorRecoveryPlanQueuePage() {
           <RefreshCw size={16} aria-hidden="true" /> Tải lại
         </Button>
       </header>
+
+      {activeRequestCount > 0 && (
+        <Alert tone="warning" title="Bạn đang có yêu cầu chưa hoàn tất">
+          Hoàn tất yêu cầu đang xử lý trước khi nhận yêu cầu mới từ hàng đợi.{" "}
+          <a href="/app/staff/recovery-plans/mine">Xem yêu cầu của tôi</a>.
+        </Alert>
+      )}
 
       <div className="doctor-recovery-toolbar">
         <CustomSelect

@@ -245,6 +245,22 @@ test.describe("doctor recovery plan workflow", () => {
     expect(calls.requestDetailGets).toBe(0);
   });
 
+  test("a doctor with an unresolved request is warned and blocked from accepting another", async ({ page }) => {
+    await prepareDoctorPage(page, {
+      openItems: [openRequest()],
+      mineItems: [myRequest({ id: "33333333-3333-4333-8333-333333333333", status: "assigned" })],
+    });
+    await page.goto("/app/staff/recovery-plans/queue", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText("Bạn đang có yêu cầu chưa hoàn tất")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Xem yêu cầu của tôi" })).toHaveAttribute("href", "/app/staff/recovery-plans/mine");
+
+    await page.getByRole("button", { name: "Nhận yêu cầu" }).click();
+    await expect(page.locator(".toast-region").getByText("Bạn đang có yêu cầu chưa hoàn tất")).toBeVisible();
+    // Still in the queue - the accept call never went through.
+    await expect(page.getByRole("article").getByText("Hô hấp")).toBeVisible();
+  });
+
   test("accepting an already-claimed request removes it from the queue with an error", async ({ page }) => {
     await prepareDoctorPage(page, {
       openItems: [openRequest()],
