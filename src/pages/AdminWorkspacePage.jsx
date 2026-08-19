@@ -377,16 +377,16 @@ function getManagedUserRoles(user) {
   );
 }
 
-function getManagedRoleLabel(role) {
-  const labels = {
-    patient: "Bệnh nhân",
-    user: "Người dùng",
-    doctor: "Bác sĩ",
-    clinician: "Bác sĩ",
-    staff: "Nhân viên",
-    receptionist: "Lễ tân",
-  };
-  return labels[role] || role.replace(/[-_]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+const MANAGED_USER_ROLE_OPTIONS = [
+  { value: "all", label: "Tất cả vai trò" },
+  { value: "patient", label: "Bệnh nhân" },
+  { value: "doctor", label: "Bác sĩ" },
+];
+
+function matchesManagedUserRole(roles, roleFilter) {
+  if (roleFilter === "all") return true;
+  if (roleFilter === "doctor") return roles.some((role) => ["doctor", "clinician"].includes(role));
+  return roles.includes("patient");
 }
 
 function getManagedUserStatusRank(user) {
@@ -783,15 +783,6 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
 
   const manageableUsers = useMemo(() => allUsers.filter((user) => !isProtectedAdminUser(user)), [allUsers]);
   const pendingApprovalUsers = useMemo(() => manageableUsers.filter(isPendingApprovalUser), [manageableUsers]);
-  const userRoleOptions = useMemo(() => {
-    const roles = Array.from(new Set(manageableUsers.flatMap(getManagedUserRoles)))
-      .sort((left, right) => USER_COLLATOR.compare(getManagedRoleLabel(left), getManagedRoleLabel(right)));
-    const options = roles.map((role) => ({ value: role, label: getManagedRoleLabel(role) }));
-    if (manageableUsers.some((user) => getManagedUserRoles(user).length === 0)) {
-      options.push({ value: "unassigned", label: "Chưa xác định" });
-    }
-    return [{ value: "all", label: "Tất cả vai trò" }, ...options];
-  }, [manageableUsers]);
 
   const filteredUsers = useMemo(() => {
     const keyword = normalizeUserSearchText(search);
@@ -802,8 +793,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         || (userStatusFilter === USER_STATUS_FILTERS.confirmed && !user.isDeleted && isApprovedUser(user))
         || (userStatusFilter === USER_STATUS_FILTERS.deleted && user.isDeleted);
       const roles = getManagedUserRoles(user);
-      const matchesRole = userRoleFilter === "all"
-        || (userRoleFilter === "unassigned" ? roles.length === 0 : roles.includes(userRoleFilter));
+      const matchesRole = matchesManagedUserRole(roles, userRoleFilter);
 
       if (!matchesStatus || !matchesRole) return false;
       if (!keyword) return true;
@@ -2884,7 +2874,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
                 pendingCount={pendingUsers}
                 rows={pagedUsers}
                 roleFilter={userRoleFilter}
-                roleOptions={userRoleOptions}
+                roleOptions={MANAGED_USER_ROLE_OPTIONS}
                 search={search}
                 searchSuggestions={userSearchSuggestions}
                 sortValue={userSort}
