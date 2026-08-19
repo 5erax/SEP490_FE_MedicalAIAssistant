@@ -383,10 +383,19 @@ const MANAGED_USER_ROLE_OPTIONS = [
   { value: "doctor", label: "Bác sĩ" },
 ];
 
+const MANAGED_DOCTOR_ROLES = new Set(["doctor", "clinician"]);
+const MANAGED_PATIENT_ROLES = new Set(["patient", "user", "member"]);
+
 function matchesManagedUserRole(roles, roleFilter) {
   if (roleFilter === "all") return true;
-  if (roleFilter === "doctor") return roles.some((role) => ["doctor", "clinician"].includes(role));
-  return roles.includes("patient");
+  if (roleFilter === "doctor") return roles.some((role) => MANAGED_DOCTOR_ROLES.has(role));
+  if (roleFilter !== "patient") return false;
+
+  // Older patient accounts returned by /api/users may omit roles entirely.
+  // The admin list already removes protected system accounts, so role-less
+  // manageable accounts are patients unless they carry a doctor role.
+  if (roles.some((role) => MANAGED_DOCTOR_ROLES.has(role))) return false;
+  return roles.length === 0 || roles.some((role) => MANAGED_PATIENT_ROLES.has(role));
 }
 
 function getManagedUserStatusRank(user) {
