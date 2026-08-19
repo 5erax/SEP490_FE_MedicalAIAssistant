@@ -421,6 +421,9 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
   }
 
   const chapterField = config.fields.find((field) => field.name === "chapterId");
+  const suggestionItems = items.filter((item) => (
+    !filters.chapterId || String(item.chapterId) === String(filters.chapterId)
+  ));
   const sortOrderField = config.fields.find((field) => field.name === "sortOrder");
   const questionViField = config.fields.find((field) => field.name === "questionVi");
   const englishPrefixField = config.fields.find((field) => field.name === "englishPrefix");
@@ -561,7 +564,7 @@ export default function AdminClinicalCatalogSection({ config, icdChapters = [], 
                 />
                 <AdminSearchDatalist
                   id="clinical-question-search-options"
-                  values={items.flatMap((item) => [item[config.primaryField], item[config.secondaryField]])}
+                  values={suggestionItems.flatMap((item) => [item[config.primaryField], item[config.secondaryField]])}
                 />
               </span>
             </label>

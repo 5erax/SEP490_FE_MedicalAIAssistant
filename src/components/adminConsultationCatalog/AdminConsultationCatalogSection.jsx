@@ -357,6 +357,17 @@ export default function AdminConsultationCatalogSection() {
   const currentFilters = filters[activeTab];
   const currentTitle = activeTab === "questions" ? "Câu hỏi tư vấn theo chuyên khoa" : "Checklist chuẩn bị tư vấn";
   const categoryLabel = (value) => CATEGORY_OPTIONS.find((option) => option.value === value)?.label ?? value ?? "Chưa phân loại";
+  const suggestionItems = items.filter((item) => {
+    if (currentFilters.departmentId && String(item.departmentId) !== String(currentFilters.departmentId)) return false;
+    if (activeTab === "questions") {
+      if (currentFilters.category && item.category !== currentFilters.category) return false;
+      if (currentFilters.isActive && String(item.isActive !== false) !== currentFilters.isActive) return false;
+      return true;
+    }
+    if (currentFilters.facilityId && String(item.facilityId) !== String(currentFilters.facilityId)) return false;
+    if (currentFilters.isMandatory && String(Boolean(item.isMandatory)) !== currentFilters.isMandatory) return false;
+    return true;
+  });
 
   const columns = activeTab === "questions"
     ? [
@@ -458,7 +469,7 @@ export default function AdminConsultationCatalogSection() {
         <div className="consultation-filter-grid">
           <label className="consultation-search">
             <span>Tìm nội dung</span>
-            <span className="consultation-search-control"><Search size={16} aria-hidden="true" /><input type="search" list="consultation-search-options" value={currentFilters.search} onChange={(event) => updateFilter("search", event.target.value)} autoComplete="off" placeholder="Nhập từ khóa" /><AdminSearchDatalist id="consultation-search-options" values={items.flatMap((item) => [item.questionText, item.content, item.category])} /></span>
+            <span className="consultation-search-control"><Search size={16} aria-hidden="true" /><input type="search" list="consultation-search-options" value={currentFilters.search} onChange={(event) => updateFilter("search", event.target.value)} autoComplete="off" placeholder="Nhập từ khóa" /><AdminSearchDatalist id="consultation-search-options" values={suggestionItems.flatMap((item) => [item.questionText, item.content, item.category])} /></span>
           </label>
           <label>
             <span>Chuyên khoa</span>

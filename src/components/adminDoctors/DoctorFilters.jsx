@@ -42,6 +42,11 @@ export default function DoctorFilters({
     filters.facilityId,
     filters.isActive,
   ].filter(Boolean).length;
+  const suggestionDoctors = doctors.filter((doctor) => (
+    (!filters.departmentId || String(doctor.departmentId) === String(filters.departmentId))
+    && (!filters.facilityId || String(doctor.facilityId) === String(filters.facilityId))
+    && (!filters.isActive || String(doctor.isActive !== false) === filters.isActive)
+  ));
 
   return (
     <AdminFilterDisclosure
@@ -73,7 +78,7 @@ export default function DoctorFilters({
             />
             <AdminSearchDatalist
               id="doctor-search-options"
-              values={doctors.flatMap((doctor) => [doctor.fullName, doctor.email, doctor.licenseNumber])}
+              values={suggestionDoctors.flatMap((doctor) => [doctor.fullName, doctor.email, doctor.licenseNumber])}
             />
           </span>
         </label>

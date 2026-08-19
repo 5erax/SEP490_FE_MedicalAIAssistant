@@ -855,6 +855,14 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     if (!keyword) return [];
 
     return manageableUsers
+      .filter((user) => {
+        const matchesStatus = userStatusFilter === USER_STATUS_FILTERS.all
+          || (userStatusFilter === USER_STATUS_FILTERS.pending && isPendingApprovalUser(user))
+          || (userStatusFilter === USER_STATUS_FILTERS.confirmed && !user.isDeleted && isApprovedUser(user))
+          || (userStatusFilter === USER_STATUS_FILTERS.deleted && user.isDeleted);
+        const matchesRole = matchesManagedUserRole(getManagedUserRoles(user), userRoleFilter);
+        return matchesStatus && matchesRole;
+      })
       .map((user) => {
         const displayName = getManagedUserDisplayName(user);
         const email = user.email || "";
@@ -890,7 +898,7 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
         || USER_COLLATOR.compare(left.email, right.email)
       ))
       .slice(0, 6);
-  }, [manageableUsers, search]);
+  }, [manageableUsers, search, userRoleFilter, userStatusFilter]);
 
   // Tài khoản đã được tải một lần vào bộ nhớ để tìm kiếm, sắp xếp và chuyển
   // trang tức thời. Chỉ thao tác "Tải lại" mới yêu cầu lại dữ liệu từ API.
