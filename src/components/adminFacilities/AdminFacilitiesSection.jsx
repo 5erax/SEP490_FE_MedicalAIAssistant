@@ -55,6 +55,25 @@ function isFacilityActive(facility) {
   return facility?.isActive !== false;
 }
 
+function facilityMatchesSuggestionFilters(facility, filters, facilityDepartments) {
+  if (filters.isActive && String(isFacilityActive(facility)) !== filters.isActive) return false;
+  if (!filters.departmentId) return true;
+
+  const directDepartmentIds = [
+    ...(Array.isArray(facility.departmentIds) ? facility.departmentIds : []),
+    ...(Array.isArray(facility.departments)
+      ? facility.departments.map((department) => department.departmentId ?? department.id)
+      : []),
+    ...facilityDepartments
+      .filter((relation) => String(relation.facilityId) === String(facility.id))
+      .map((relation) => relation.departmentId),
+  ];
+
+  return directDepartmentIds.some((departmentId) => (
+    String(departmentId) === String(filters.departmentId)
+  ));
+}
+
 function formatCoordinatePair(facility) {
   if (!hasValidCoordinatePair(facility)) return "Chưa có tọa độ hợp lệ";
   return `${Number(facility.latitude).toFixed(5)}, ${Number(facility.longitude).toFixed(5)}`;
@@ -110,6 +129,9 @@ export default function AdminFacilitiesSection({
   onToggleDepartment,
   onToggleStatus,
 }) {
+  const suggestionFacilities = facilities.filter((facility) => (
+    facilityMatchesSuggestionFilters(facility, filters, facilityDepartments)
+  ));
   const [formOpen, setFormOpen] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadMessage, setImageUploadMessage] = useState(null);
@@ -281,7 +303,7 @@ export default function AdminFacilitiesSection({
                 />
                 <AdminSearchDatalist
                   id="facility-search-options"
-                  values={facilities.flatMap((facility) => [
+                  values={suggestionFacilities.flatMap((facility) => [
                     facility.facilityName,
                     facility.address,
                     facility.phoneNumber,

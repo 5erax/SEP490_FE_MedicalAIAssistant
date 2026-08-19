@@ -1,7 +1,7 @@
 import { BrainCircuit, Filter, RotateCcw, Search } from "lucide-react";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
-import { formatEnvironment } from "./aiConfigUtils";
+import { formatEnvironment, getEnvironment } from "./aiConfigUtils";
 import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 
 export default function AIConfigToolbar({
@@ -35,6 +35,12 @@ export default function AIConfigToolbar({
     ...environments.map((environment) => ({ value: environment, label: formatEnvironment(environment) })),
   ];
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const suggestionConfigs = configs.filter((config) => (
+    (!filters.status || (filters.status === "active" ? config.isActive : !config.isActive))
+    && (!filters.taskType || config.taskType === filters.taskType)
+    && (!filters.model || config.model === filters.model)
+    && (!filters.environment || getEnvironment(config) === filters.environment)
+  ));
 
   return (
     <AdminFilterDisclosure
@@ -62,7 +68,7 @@ export default function AIConfigToolbar({
               />
               <AdminSearchDatalist
                 id="ai-config-search-options"
-                values={configs.flatMap((config) => [
+                values={suggestionConfigs.flatMap((config) => [
                   config.name,
                   config.configName,
                   config.featureName,
