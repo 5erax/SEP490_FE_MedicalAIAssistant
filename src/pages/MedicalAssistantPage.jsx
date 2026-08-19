@@ -446,6 +446,11 @@ function QuestionsPage({ sessionId }) {
   )).length;
   const canSubmit = questions.length > 0 && answeredCount === questions.length && status !== "submitting";
 
+  function returnToSymptomInput() {
+    saveDraft(session?.userInput ?? "");
+    navigate("/symptom");
+  }
+
   function updateAnswer(questionId, answerKey) {
     setSession((current) => {
       const next = {
@@ -652,9 +657,10 @@ function QuestionsPage({ sessionId }) {
           <Button
             type="button"
             tone="ghost"
-            onClick={() => navigate("/symptom")}
+            onClick={returnToSymptomInput}
           >
-            Quay lại biểu mẫu
+            <ArrowLeft size={17} aria-hidden="true" />
+            Nhập lại triệu chứng
           </Button>
 
           <Button
