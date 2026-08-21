@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  Bot,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
@@ -9,10 +10,13 @@ import {
   FileCheck2,
   FileScan,
   FlaskConical,
+  HeartPulse,
   History,
   Hourglass,
   IdCard,
+  ListChecks,
   RefreshCw,
+  ScanSearch,
   ShieldCheck,
   UploadCloud,
   UserRound,
@@ -538,6 +542,38 @@ export default function MedicalRecordPage() {
               </div>
             </footer>
           </form>
+        </section>
+
+        <section className="records-guide" aria-labelledby="records-guide-title">
+          <header>
+            <p><ListChecks size={16} aria-hidden="true" /> HƯỚNG DẪN SỬ DỤNG</p>
+            <h2 id="records-guide-title">4 bước để hiểu rõ kết quả xét nghiệm của bạn</h2>
+          </header>
+          <div className="records-guide-rail-wrap">
+            <span className="records-guide-rail" aria-hidden="true" />
+            <ol className="records-guide-steps">
+              <li>
+                <span className="records-guide-icon"><UploadCloud size={20} aria-hidden="true" /></span>
+                <strong>Tải ảnh phiếu xét nghiệm</strong>
+                <p>Chọn ảnh hoặc PDF phiếu xét nghiệm sinh hóa để bắt đầu.</p>
+              </li>
+              <li>
+                <span className="records-guide-icon"><ScanSearch size={20} aria-hidden="true" /></span>
+                <strong>Hệ thống phân tích chỉ số</strong>
+                <p>Dữ liệu được chuẩn hoá và đối chiếu để đánh giá trạng thái từng chỉ số.</p>
+              </li>
+              <li>
+                <span className="records-guide-icon"><HeartPulse size={20} aria-hidden="true" /></span>
+                <strong>Nhận lời khuyên phù hợp</strong>
+                <p>Xem thông tin cần thiết cùng gợi ý về dinh dưỡng, luyện tập.</p>
+              </li>
+              <li>
+                <span className="records-guide-icon"><Bot size={20} aria-hidden="true" /></span>
+                <strong>Tóm tắt nhanh với AI</strong>
+                <p>Trò chuyện với AI để tóm tắt sơ bộ kết quả sau khi phân tích.</p>
+              </li>
+            </ol>
+          </div>
         </section>
 
         <LabTestTrendSection
