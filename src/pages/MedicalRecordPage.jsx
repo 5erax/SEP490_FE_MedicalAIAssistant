@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  BadgeCheck,
+  CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -9,10 +11,13 @@ import {
   FileScan,
   FlaskConical,
   History,
+  Hourglass,
+  IdCard,
   RefreshCw,
   ShieldCheck,
   UploadCloud,
   UserRound,
+  VenusAndMars,
   X,
 } from "lucide-react";
 import LabTestTrendSection from "../components/lab-tests/LabTestTrendSection";
@@ -106,6 +111,10 @@ function fileIdentity(file) {
   return file ? `${file.name}:${file.size}:${file.lastModified}` : "";
 }
 
+function isImageFile(file) {
+  return Boolean(file && /^image\//.test(file.type));
+}
+
 function profileProblem(profile, profileStatus) {
   if (profileStatus === "error") return "Không thể tải hồ sơ cá nhân để chuẩn bị dữ liệu phân tích.";
   if (profileStatus !== "ready") return "Đang tải hồ sơ cá nhân.";
@@ -148,6 +157,7 @@ export default function MedicalRecordPage() {
   const [trendRefreshKey, setTrendRefreshKey] = useState(0);
   const [activeHistorySessionId, setActiveHistorySessionId] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [filePreviewUrl, setFilePreviewUrl] = useState("");
   const errorSummaryRef = useRef(null);
   const analyzeInFlightRef = useRef(false);
   const historyDialogRef = useRef(null);
@@ -180,6 +190,16 @@ export default function MedicalRecordPage() {
       window.clearTimeout(timer);
     };
   }, [profileReloadKey]);
+
+  useEffect(() => {
+    if (!isImageFile(documentFile)) {
+      setFilePreviewUrl("");
+      return undefined;
+    }
+    const url = URL.createObjectURL(documentFile);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [documentFile]);
 
   const loadHistory = useCallback(async ({ quiet = false } = {}) => {
     if (!quiet) setHistoryStatus("loading");
@@ -414,13 +434,22 @@ export default function MedicalRecordPage() {
               <section className="records-document-panel" aria-labelledby="records-document-title">
                 <div
                   id="records-document"
-                  className={`records-dropzone ${dragActive ? "is-dragging" : ""} ${formErrors.document ? "has-error" : ""}`}
+                  className={`records-dropzone ${dragActive ? "is-dragging" : ""} ${formErrors.document ? "has-error" : ""} ${documentFile ? "has-file" : ""}`}
                   onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
                   onDragOver={(event) => event.preventDefault()}
                   onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragActive(false); }}
                   onDrop={handleDrop}
                 >
-                  <div className="records-scan-frame" aria-hidden="true"><FileScan size={64} /></div>
+                  <div className="records-scan-frame" aria-hidden="true">
+                    {filePreviewUrl ? (
+                      <img className="records-preview-image" src={filePreviewUrl} alt="" />
+                    ) : (
+                      <>
+                        <FileScan size={64} />
+                        {!documentFile && <span className="records-scan-line" />}
+                      </>
+                    )}
+                  </div>
                   <h3 id="records-document-title">Phiếu xét nghiệm</h3>
                   <p>Kéo thả tài liệu vào đây hoặc chọn file từ thiết bị.</p>
                   <label className="records-file-button">
@@ -435,7 +464,12 @@ export default function MedicalRecordPage() {
                       disabled={isSubmitting}
                     />
                   </label>
-                  <small id="records-file-hint">Hỗ trợ JPG, PNG, PDF · tối đa 10 MB</small>
+                  <div id="records-file-hint" className="records-file-types">
+                    <span className="records-file-chip">JPG</span>
+                    <span className="records-file-chip">PNG</span>
+                    <span className="records-file-chip">PDF</span>
+                    <span className="records-file-types-note">tối đa 10 MB</span>
+                  </div>
                 </div>
 
                 {documentFile && (
@@ -452,6 +486,9 @@ export default function MedicalRecordPage() {
                 <header>
                   <span><UserRound size={21} aria-hidden="true" /></span>
                   <div><h3 id="records-profile-title">Thông tin từ hồ sơ</h3><p>Không chỉnh sửa tại màn hình phân tích</p></div>
+                  {profileStatus === "ready" && !currentProfileProblem && (
+                    <span className="records-profile-verified"><BadgeCheck size={13} aria-hidden="true" /> Đã xác thực</span>
+                  )}
                 </header>
 
                 {profileStatus === "loading" && <LoadingState label="Đang tải hồ sơ cá nhân…" />}
@@ -465,11 +502,11 @@ export default function MedicalRecordPage() {
                 {profileStatus === "ready" && (
                   <>
                     <dl className="records-profile-facts">
-                      <div><dt>Họ và tên</dt><dd>{profile?.displayName || profile?.name || "Chưa cập nhật"}</dd></div>
-                      <div><dt>Giới tính</dt><dd>{GENDER_LABELS[gender] || "Chưa hỗ trợ"}</dd></div>
-                      <div><dt>Ngày sinh</dt><dd>{formatDate(profile?.dateOfBirth)}</dd></div>
+                      <div><dt><IdCard size={13} aria-hidden="true" /> Họ và tên</dt><dd>{profile?.displayName || profile?.name || "Chưa cập nhật"}</dd></div>
+                      <div><dt><VenusAndMars size={13} aria-hidden="true" /> Giới tính</dt><dd>{GENDER_LABELS[gender] || "Chưa hỗ trợ"}</dd></div>
+                      <div><dt><CalendarDays size={13} aria-hidden="true" /> Ngày sinh</dt><dd>{formatDate(profile?.dateOfBirth)}</dd></div>
                       <div>
-                        <dt>Tuổi hiện tại</dt>
+                        <dt><Hourglass size={13} aria-hidden="true" /> Tuổi hiện tại</dt>
                         <dd aria-live="polite">{currentAge === null ? "Chưa thể tính" : `${currentAge} tuổi`}</dd>
                       </div>
                     </dl>
