@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
-  CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -133,7 +132,6 @@ export default function MedicalRecordPage() {
   const [profile, setProfile] = useState(null);
   const [profileStatus, setProfileStatus] = useState("loading");
   const [profileReloadKey, setProfileReloadKey] = useState(0);
-  const [testDate, setTestDate] = useState("");
   const [documentFile, setDocumentFile] = useState(null);
   const [uploadedDocument, setUploadedDocument] = useState(null);
   const [formErrors, setFormErrors] = useState({});
@@ -160,11 +158,6 @@ export default function MedicalRecordPage() {
     () => calculateAgeAtTest(profile?.dateOfBirth, todayInputValue()),
     [profile?.dateOfBirth],
   );
-  const ageAtTest = useMemo(
-    () => calculateAgeAtTest(profile?.dateOfBirth, testDate),
-    [profile?.dateOfBirth, testDate],
-  );
-  const displayedAge = testDate ? ageAtTest : currentAge;
   const currentProfileProblem = profileProblem(profile, profileStatus);
   const isSubmitting = ["uploading", "analyzing"].includes(submissionStatus);
 
@@ -300,9 +293,6 @@ export default function MedicalRecordPage() {
     const nextErrors = {};
     if (currentProfileProblem) nextErrors.profile = currentProfileProblem;
     if (!documentFile) nextErrors.document = "Hãy chọn ảnh hoặc PDF phiếu xét nghiệm.";
-    if (!testDate) nextErrors.testDate = "Hãy nhập ngày xét nghiệm.";
-    else if (testDate > todayInputValue()) nextErrors.testDate = "Ngày xét nghiệm không được ở tương lai.";
-    else if (ageAtTest === null) nextErrors.testDate = "Ngày xét nghiệm phải sau ngày sinh trong hồ sơ.";
     setFormErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       window.requestAnimationFrame(() => errorSummaryRef.current?.focus());
@@ -335,8 +325,7 @@ export default function MedicalRecordPage() {
       const response = await labTestsApi.analyze({
         documentUrl,
         patientGenderAtTest: gender,
-        patientAgeAtTest: ageAtTest,
-        testDate,
+        patientAgeAtTest: currentAge,
       });
       const session = unwrapData(response) ?? null;
       if (!session?.sessionId) {
@@ -407,7 +396,7 @@ export default function MedicalRecordPage() {
         <section className="records-upload-card" aria-labelledby="records-upload-title">
           <header>
             <div className="records-section-icon"><FileScan size={22} aria-hidden="true" /></div>
-            <div><p>BẮT ĐẦU PHIÊN MỚI</p><h2 id="records-upload-title">Tải phiếu xét nghiệm sinh hóa</h2><span>Thông tin cá nhân được lấy từ hồ sơ; bạn chỉ cần nhập ngày xét nghiệm.</span></div>
+            <div><p>BẮT ĐẦU PHIÊN MỚI</p><h2 id="records-upload-title">Tải phiếu xét nghiệm sinh hóa</h2><span>Thông tin cá nhân được lấy từ hồ sơ; bạn chỉ cần tải phiếu xét nghiệm.</span></div>
           </header>
 
           <form onSubmit={submitAnalysis} noValidate aria-busy={isSubmitting}>
@@ -416,7 +405,6 @@ export default function MedicalRecordPage() {
                 <strong id="records-error-title">Cần kiểm tra {errorEntries.length} mục trước khi gửi</strong>
                 <ul>
                   {formErrors.document && <li><a href="#records-document">{formErrors.document}</a></li>}
-                  {formErrors.testDate && <li><a href="#records-test-date">{formErrors.testDate}</a></li>}
                   {formErrors.profile && <li><a href="/profile">{formErrors.profile}</a></li>}
                 </ul>
               </div>
@@ -481,8 +469,8 @@ export default function MedicalRecordPage() {
                       <div><dt>Giới tính</dt><dd>{GENDER_LABELS[gender] || "Chưa hỗ trợ"}</dd></div>
                       <div><dt>Ngày sinh</dt><dd>{formatDate(profile?.dateOfBirth)}</dd></div>
                       <div>
-                        <dt>{testDate ? "Tuổi tại ngày xét nghiệm" : "Tuổi hiện tại"}</dt>
-                        <dd aria-live="polite">{displayedAge === null ? "Chưa thể tính" : `${displayedAge} tuổi`}</dd>
+                        <dt>Tuổi hiện tại</dt>
+                        <dd aria-live="polite">{currentAge === null ? "Chưa thể tính" : `${currentAge} tuổi`}</dd>
                       </div>
                     </dl>
                     {currentProfileProblem && (
@@ -494,25 +482,6 @@ export default function MedicalRecordPage() {
                   </>
                 )}
 
-                <label className="records-date-field" htmlFor="records-test-date">
-                  <span>Ngày xét nghiệm <b>(bắt buộc)</b></span>
-                  <span className="records-date-control">
-                    <CalendarDays size={18} aria-hidden="true" />
-                    <input
-                      id="records-test-date"
-                      type="date"
-                      value={testDate}
-                      max={todayInputValue()}
-                      onChange={(event) => { setTestDate(event.target.value); setFormErrors((current) => ({ ...current, testDate: "" })); }}
-                      aria-invalid={Boolean(formErrors.testDate)}
-                      aria-describedby={formErrors.testDate ? "records-test-date-error" : "records-test-date-hint"}
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </span>
-                  <small id="records-test-date-hint">Nhập đúng ngày được in trên phiếu xét nghiệm.</small>
-                </label>
-                {formErrors.testDate && <p id="records-test-date-error" className="records-field-error">{formErrors.testDate}</p>}
               </section>
             </div>
 
