@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -300,6 +300,17 @@ export default function PaymentResultPage({ expectedResult }) {
     return nextStatus;
   }, [hasAuth, orderCode, refreshPremiumState]);
 
+  // checkStatus is recreated whenever refreshPremiumState triggers an auth
+  // token refresh (accessToken changes -> refreshServiceCredit reference
+  // changes). Reading it through a ref keeps the polling effect below from
+  // restarting on every reference change, which previously caused it to
+  // call checkStatus again right after a successful payment and loop
+  // indefinitely (visible as constant flicker/lag on this page).
+  const checkStatusRef = useRef(checkStatus);
+  useEffect(() => {
+    checkStatusRef.current = checkStatus;
+  }, [checkStatus]);
+
   useEffect(() => {
     if (!orderCode) return undefined;
 
@@ -310,7 +321,7 @@ export default function PaymentResultPage({ expectedResult }) {
     const verify = async () => {
       attempts += 1;
       try {
-        const nextStatus = await checkStatus();
+        const nextStatus = await checkStatusRef.current();
         if (!active || !AUTO_RETRY_STATUSES.has(nextStatus)) return;
         if (attempts >= MAX_RECONCILE_ATTEMPTS) {
           setStatus("error");
@@ -331,7 +342,7 @@ export default function PaymentResultPage({ expectedResult }) {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [checkStatus, orderCode]);
+  }, [orderCode]);
 
   async function handleCheckAgain() {
     if (!orderCode) {
