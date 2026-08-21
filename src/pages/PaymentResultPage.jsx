@@ -238,14 +238,27 @@ function getStatusLabel(status) {
   return "Đang xác minh";
 }
 
-function getInitialStatus(orderCode) {
-  return orderCode ? "checking" : "missing";
+// PayOS's own redirect query params are a strong, synchronous signal that
+// the payment already succeeded, so /payment/return can render the success
+// view immediately instead of a "checking" spinner while the reconciliation
+// call runs in the background.
+function isPayOsSuccessRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("cancel") === "false"
+    && params.get("code") === "00"
+    && normalizeUpper(params.get("status")) === "PAID";
+}
+
+function getInitialStatus(orderCode, expectedResult) {
+  if (!orderCode) return "missing";
+  if (expectedResult === "return" && isPayOsSuccessRedirect()) return "success";
+  return "checking";
 }
 
 export default function PaymentResultPage({ expectedResult }) {
   const { balance, refresh: refreshServiceCredit } = useServiceCredit();
   const [orderCode] = useState(getOrderCode);
-  const [status, setStatus] = useState(() => getInitialStatus(orderCode));
+  const [status, setStatus] = useState(() => getInitialStatus(orderCode, expectedResult));
   const [message, setMessage] = useState("");
   const [paymentDetail, setPaymentDetail] = useState(null);
   const [checkingAgain, setCheckingAgain] = useState(false);
@@ -254,6 +267,16 @@ export default function PaymentResultPage({ expectedResult }) {
   const view = getView(status, paymentDetail);
   const Icon = view.icon;
   const isCancelFlow = expectedResult === "cancel";
+
+  // Guards the optimistic "success" render above: once shown, a background
+  // reconciliation call that still reports an in-progress status (pending,
+  // processing, activation-pending) must not regress the UI back to a
+  // loading state - that would flicker success -> pending -> success. A
+  // genuine terminal correction (failed/cancelled/expired) still applies.
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   const refreshPremiumState = useCallback(async () => {
     if (!hasAuth) return;
@@ -292,9 +315,12 @@ export default function PaymentResultPage({ expectedResult }) {
       return "unauthenticated";
     }
 
-    setStatus(nextStatus);
-    setMessage(translateApiMessage(data.message || publicResponse.message, { fallback: "" }));
-    setPaymentDetail(data);
+    const alreadyShowingSuccess = statusRef.current === "success" && AUTO_RETRY_STATUSES.has(nextStatus);
+    if (!alreadyShowingSuccess) {
+      setStatus(nextStatus);
+      setMessage(translateApiMessage(data.message || publicResponse.message, { fallback: "" }));
+      setPaymentDetail(data);
+    }
 
     if (nextStatus === "success") await refreshPremiumState();
     return nextStatus;
