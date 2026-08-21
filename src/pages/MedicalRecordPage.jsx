@@ -519,26 +519,26 @@ export default function MedicalRecordPage() {
                   </>
                 )}
 
+                <div className="records-actions">
+                  {creditFailure?.action === "purchase" && (
+                    <Button type="button" tone="secondary" onClick={() => navigate("/pricing?view=upgrade&returnTo=%2Frecords")}>Mua thêm lượt</Button>
+                  )}
+                  {creditFailure?.action === "retry" && (
+                    <Button type="button" tone="secondary" onClick={() => window.location.reload()}>Thử lại</Button>
+                  )}
+                  <Button type="submit" disabled={isSubmitting || profileStatus === "loading"}>
+                    {submissionStatus === "uploading" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
+                    {submissionStatus === "analyzing" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
+                    {!isSubmitting && <FileScan size={17} aria-hidden="true" />}
+                    {submissionStatus === "uploading" ? "Đang tải tài liệu…" : submissionStatus === "analyzing" ? "Đang gửi phân tích…" : "Phân tích kết quả"}
+                  </Button>
+                </div>
               </section>
             </div>
 
             <footer className="records-submit-row">
               <div aria-live="polite" role={submissionStatus === "error" ? "alert" : "status"}>
                 {submissionMessage || "Không tải tài liệu chứa giấy tờ tùy thân hoặc dữ liệu của người khác."}
-              </div>
-              <div className="records-actions">
-                {creditFailure?.action === "purchase" && (
-                  <Button type="button" tone="secondary" onClick={() => navigate("/pricing?view=upgrade&returnTo=%2Frecords")}>Mua thêm lượt</Button>
-                )}
-                {creditFailure?.action === "retry" && (
-                  <Button type="button" tone="secondary" onClick={() => window.location.reload()}>Thử lại</Button>
-                )}
-                <Button type="submit" disabled={isSubmitting || profileStatus === "loading"}>
-                  {submissionStatus === "uploading" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
-                  {submissionStatus === "analyzing" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
-                  {!isSubmitting && <FileScan size={17} aria-hidden="true" />}
-                  {submissionStatus === "uploading" ? "Đang tải tài liệu…" : submissionStatus === "analyzing" ? "Đang gửi phân tích…" : "Phân tích kết quả"}
-                </Button>
               </div>
             </footer>
           </form>

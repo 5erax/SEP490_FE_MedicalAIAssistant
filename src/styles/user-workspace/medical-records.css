@@ -418,12 +418,19 @@
 
 .records-profile-panel > header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 11px;
+  row-gap: 8px;
+}
+
+.records-profile-panel > header > div {
+  min-width: 0;
 }
 
 .records-profile-verified {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 4px;
   margin-left: auto;
@@ -549,13 +556,9 @@
 }
 
 .records-submit-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
   border-top: 1px solid var(--records-line);
   background: #fff;
-  padding: 16px clamp(20px, 3vw, 30px);
+  padding: 14px clamp(20px, 3vw, 30px);
 }
 
 .records-submit-row > div:first-child {
@@ -565,10 +568,17 @@
 }
 
 .records-actions {
-  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  border-top: 1px dashed var(--records-line);
+  padding-top: 18px;
 }
 
 .records-actions .ui-button {
+  width: 100%;
+  justify-content: center;
   min-height: 46px;
   border-color: var(--records-teal-dark);
   border-radius: 12px;
@@ -1145,18 +1155,7 @@
   }
 
   .records-submit-row {
-    align-items: stretch;
-    flex-direction: column;
     padding: 15px 18px;
-  }
-
-  .records-actions,
-  .records-actions .ui-button {
-    width: 100%;
-  }
-
-  .records-actions .ui-button {
-    justify-content: center;
   }
 
   .records-history-list {
