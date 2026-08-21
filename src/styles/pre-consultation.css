@@ -83,8 +83,9 @@
 .pre-consultation-suggestion-field { position: relative; display: grid; gap: 8px; align-content: start; }
 .pre-consultation-field-label { color: var(--consult-ink); font-size: 13px; font-weight: 850; }
 .pre-consultation-autofill-note { display: flex; align-items: center; gap: 6px; margin-top: -2px; color: var(--consult-teal-dark); font-size: 11px; font-weight: 700; }
-.pre-consultation-suggestion-field .ghost { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; border: 1px solid #718f89; border-radius: 11px; padding: 0 14px; color: var(--consult-ink); background: var(--paper, #fff); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.pre-consultation-suggestion-field .ghost { display: inline-flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; min-height: 52px; border: 1px solid #718f89; border-radius: 11px; padding: 0 14px; color: var(--consult-ink); background: var(--paper, #fff); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
 .pre-consultation-suggestion-field .ghost svg { flex: 0 0 auto; color: var(--consult-teal); }
+.pre-consultation-ghost-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 .pre-consultation-suggestion-field .ghost:hover:not(:disabled) { border-color: var(--consult-teal-dark); }
 .pre-consultation-suggestion-field .ghost:focus-visible { border-color: var(--consult-teal-dark); outline: 3px solid var(--consult-teal-dark); outline-offset: 2px; }
 .pre-consultation-suggestion-field .ghost:disabled { color: var(--consult-muted); background: #f4f8f7; border-color: var(--consult-line); cursor: not-allowed; opacity: 0.72; }

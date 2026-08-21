@@ -166,6 +166,7 @@ export default function PreConsultationPage() {
   const [suggestedSessionsError, setSuggestedSessionsError] = useState("");
   const [suggestedSessionsOpen, setSuggestedSessionsOpen] = useState(false);
   const [applyingSessionId, setApplyingSessionId] = useState("");
+  const [appliedSessionTitle, setAppliedSessionTitle] = useState("");
   const [suggestedFacilities, setSuggestedFacilities] = useState([]);
   const [facilityPickerOpen, setFacilityPickerOpen] = useState(false);
   const [autoFilledFromMap, setAutoFilledFromMap] = useState(false);
@@ -297,6 +298,7 @@ export default function PreConsultationPage() {
     try {
       const response = await symptomAnalysisApi.get(sessionId);
       const { departmentId, symptomText, facilities } = extractSessionRecommendation(response);
+      setAppliedSessionTitle(getSuggestedSessionTitle(unwrapData(response), "Phiên gợi ý đã chọn"));
       const matchedDepartmentId = departmentId && departments.some((item) => item.id === departmentId)
         ? departmentId
         : "";
@@ -662,7 +664,7 @@ export default function PreConsultationPage() {
                 <span className="pre-consultation-field-label">Danh sách phiên gợi ý chuyên khoa</span>
                 <button type="button" className="ghost" onClick={toggleSuggestedSessions} aria-expanded={suggestedSessionsOpen}>
                   <History size={16} aria-hidden="true" />
-                  Danh sách phiên gợi ý chuyên khoa
+                  <span className="pre-consultation-ghost-label">{appliedSessionTitle || "Danh sách phiên gợi ý chuyên khoa"}</span>
                   <ChevronDown size={16} aria-hidden="true" className="pre-consultation-ghost-chevron" />
                 </button>
                 {autoFilledFromMap && (
