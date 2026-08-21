@@ -479,6 +479,20 @@ export default function MedicalRecordPage() {
                         <span>{currentProfileProblem} <button type="button" onClick={() => navigate("/profile")}>Cập nhật hồ sơ</button></span>
                       </div>
                     )}
+                    {!currentProfileProblem && (
+                      <div className="records-analysis-ready" aria-label="Trạng thái dữ liệu phân tích">
+                        <span aria-hidden="true"><ShieldCheck size={20} /></span>
+                        <div>
+                          <strong>Sẵn sàng phân tích</strong>
+                          <p>Hồ sơ cá nhân đã đủ thông tin nền để hệ thống đối chiếu phiếu xét nghiệm.</p>
+                        </div>
+                        <ul>
+                          <li><CheckCircle2 size={14} aria-hidden="true" /> Hồ sơ hợp lệ</li>
+                          <li><FileCheck2 size={14} aria-hidden="true" /> Tệp xét nghiệm</li>
+                          <li><ShieldCheck size={14} aria-hidden="true" /> Dữ liệu riêng tư</li>
+                        </ul>
+                      </div>
+                    )}
                   </>
                 )}
 
