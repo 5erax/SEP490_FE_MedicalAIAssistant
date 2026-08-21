@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
-  BadgeCheck,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
@@ -486,9 +485,6 @@ export default function MedicalRecordPage() {
                 <header>
                   <span><UserRound size={21} aria-hidden="true" /></span>
                   <div><h3 id="records-profile-title">Thông tin từ hồ sơ</h3><p>Không chỉnh sửa tại màn hình phân tích</p></div>
-                  {profileStatus === "ready" && !currentProfileProblem && (
-                    <span className="records-profile-verified"><BadgeCheck size={13} aria-hidden="true" /> Đã xác thực</span>
-                  )}
                 </header>
 
                 {profileStatus === "loading" && <LoadingState label="Đang tải hồ sơ cá nhân…" />}

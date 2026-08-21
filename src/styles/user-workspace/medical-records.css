@@ -428,22 +428,6 @@
   min-width: 0;
 }
 
-.records-profile-verified {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  border: 1px solid #b9d9ce;
-  border-radius: 999px;
-  background: #fff;
-  padding: 4px 10px;
-  color: var(--records-teal-dark);
-  font-size: 10px;
-  font-weight: 850;
-  white-space: nowrap;
-}
-
 .records-profile-panel > header > span {
   display: grid;
   place-items: center;
