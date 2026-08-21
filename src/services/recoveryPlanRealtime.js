@@ -22,8 +22,27 @@ function getRealtimeBaseUrl() {
   const configured = String(import.meta.env.VITE_REALTIME_BASE_URL || "").trim();
   if (configured) return configured.replace(/\/$/, "");
 
-  if (import.meta.env.DEV) {
-    return String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
+  const currentOrigin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const currentProtocol =
+    typeof window !== "undefined" ? window.location.protocol : "";
+  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (apiBaseUrl) {
+    try {
+      const resolvedApiUrl = new URL(apiBaseUrl, currentOrigin || undefined);
+      const isMixedContent =
+        currentProtocol === "https:" && resolvedApiUrl.protocol === "http:";
+
+      if (!isMixedContent) {
+        return resolvedApiUrl.origin.replace(/\/$/, "");
+      }
+    } catch {
+      return apiBaseUrl.replace(/\/$/, "");
+    }
+  }
+
+  if (currentOrigin) {
+    return currentOrigin.replace(/\/$/, "");
   }
 
   return "";

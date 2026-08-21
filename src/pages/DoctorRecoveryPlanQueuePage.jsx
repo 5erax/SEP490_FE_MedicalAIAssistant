@@ -48,8 +48,18 @@ function formatDate(value) {
 
 function normalizePaged(response, pageNumber) {
   const data = response?.data ?? {};
+  const items = Array.isArray(data.items)
+    ? [...data.items].sort((left, right) => {
+        const leftTime = Date.parse(left?.requestedAt ?? "");
+        const rightTime = Date.parse(right?.requestedAt ?? "");
+
+        return (Number.isNaN(rightTime) ? 0 : rightTime)
+          - (Number.isNaN(leftTime) ? 0 : leftTime);
+      })
+    : [];
+
   return {
-    items: Array.isArray(data.items) ? data.items : [],
+    items,
     pageNumber: Number(data.pageNumber) || pageNumber,
     totalPages: Math.max(1, Number(data.totalPages) || 1),
     totalCount: Math.max(0, Number(data.totalCount) || 0),
@@ -156,7 +166,7 @@ export default function DoctorRecoveryPlanQueuePage() {
     // from another doctor (or this page's own accept action elsewhere)
     // keeps the queue in sync without a manual reload.
     const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
-      if (event.type === "queue" || event.type === "request" || event.refetch) {
+      if (event.type === "queue" || event.type === "request" || event.type === "access" || event.refetch) {
         window.clearTimeout(refetchTimerRef.current);
         refetchTimerRef.current = window.setTimeout(() => {
           void loadQueue(pageNumber, diseaseGroup);

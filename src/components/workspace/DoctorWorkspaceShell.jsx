@@ -76,10 +76,13 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
       if (event.type === "connection" && event.status === "connected") {
         void refreshDoctorMembership();
       }
-      if (event.type === "queue" || event.refetch) {
+      if (event.type === "access") {
+        void refreshDoctorMembership();
+      }
+      if (event.type === "queue" || event.type === "access" || event.refetch) {
         void loadOpenCount();
       }
-      if (event.type === "request" || event.refetch) {
+      if (event.type === "request" || event.type === "access" || event.refetch) {
         void loadMineCount();
       }
     });
