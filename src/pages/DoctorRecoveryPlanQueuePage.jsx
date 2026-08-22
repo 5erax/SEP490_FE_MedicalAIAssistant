@@ -102,6 +102,21 @@ export default function DoctorRecoveryPlanQueuePage() {
   const [activeRequestCount, setActiveRequestCount] = useState(0);
   const refetchTimerRef = useRef(null);
 
+  const removeQueuedRequest = useCallback((requestId) => {
+    if (!requestId) return;
+
+    setPage((current) => {
+      const nextItems = current.items.filter((item) => String(item.id) !== String(requestId));
+      if (nextItems.length === current.items.length) return current;
+
+      return {
+        ...current,
+        items: nextItems,
+        totalCount: Math.max(0, current.totalCount - 1),
+      };
+    });
+  }, []);
+
   function openPreview(request) {
     setPreviewRequest(request);
   }
@@ -170,6 +185,12 @@ export default function DoctorRecoveryPlanQueuePage() {
     // keeps the queue in sync without a manual reload.
     const unsubscribe = subscribeToRecoveryPlanEvents((event) => {
       if (event.type === "queue" || event.type === "request" || event.type === "access" || event.refetch) {
+        const requestId = event.payload?.requestId ?? event.payload?.id ?? event.requestId;
+        const changeType = String(event.payload?.changeType ?? event.changeType ?? "").toLowerCase();
+        if (requestId && ["removed", "assigned", "claimed", "accepted"].includes(changeType)) {
+          removeQueuedRequest(requestId);
+        }
+
         window.clearTimeout(refetchTimerRef.current);
         refetchTimerRef.current = window.setTimeout(() => {
           void loadQueue(pageNumber, diseaseGroup);
@@ -182,7 +203,7 @@ export default function DoctorRecoveryPlanQueuePage() {
       unsubscribe();
       window.clearTimeout(refetchTimerRef.current);
     };
-  }, [loadQueue, loadActiveRequestCount, pageNumber, diseaseGroup]);
+  }, [loadQueue, loadActiveRequestCount, pageNumber, diseaseGroup, removeQueuedRequest]);
 
   async function handleAccept(request) {
     if (activeRequestCount > 0) {
@@ -198,7 +219,7 @@ export default function DoctorRecoveryPlanQueuePage() {
     try {
       await doctorRecoveryPlanRequestsApi.accept(request.id);
       showToast({ type: "success", title: "Đã nhận yêu cầu", message: "Yêu cầu đã được chuyển vào danh sách của bạn." });
-      setPage((current) => ({ ...current, items: current.items.filter((item) => item.id !== request.id) }));
+      removeQueuedRequest(request.id);
       setActiveRequestCount((current) => current + 1);
       publishRecoveryPlanEvent({
         type: "queue",
@@ -214,11 +235,7 @@ export default function DoctorRecoveryPlanQueuePage() {
       const mapped = getAcceptErrorMessage(requestError);
       showToast({ type: "error", title: "Không thể nhận yêu cầu", message: mapped.message });
       if (mapped.code === "RECOVERY_PLAN_REQUEST_ALREADY_CLAIMED") {
-        setPage((current) => ({
-          ...current,
-          items: current.items.filter((item) => item.id !== request.id),
-          totalCount: Math.max(0, current.totalCount - 1),
-        }));
+        removeQueuedRequest(request.id);
         publishRecoveryPlanEvent({
           type: "queue",
           payload: { requestId: request.id, changeType: "removed" },
