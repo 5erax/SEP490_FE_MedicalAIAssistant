@@ -64,6 +64,8 @@ function getApiBaseUrl() {
 }
 
 export default async function handler(request, response) {
+  response.setHeader("Cache-Control", "no-store, max-age=0");
+
   const baseUrl = getApiBaseUrl();
   if (!baseUrl) {
     response.status(500).json({ success: false, message: "API_BASE_URL is not configured." });

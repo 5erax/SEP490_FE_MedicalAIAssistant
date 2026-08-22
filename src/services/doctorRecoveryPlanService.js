@@ -20,7 +20,7 @@ export const doctorRecoveryPlanRequestsApi = {
       pageNumber,
       pageSize,
       diseaseGroup,
-    }));
+    }), { cache: "no-store" });
   },
 
   listMine({ pageNumber = 1, pageSize = 10, status = "" } = {}) {
@@ -28,7 +28,7 @@ export const doctorRecoveryPlanRequestsApi = {
       pageNumber,
       pageSize,
       status,
-    }));
+    }), { cache: "no-store" });
   },
 
   get(requestId) {
