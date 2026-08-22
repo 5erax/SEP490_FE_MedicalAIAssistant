@@ -2,6 +2,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   ListChecks,
+  NotebookTabs,
   LogOut,
   Menu,
   X,
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { key: "overview", path: "/app/staff", label: "Tổng quan", icon: LayoutDashboard },
   { key: "queue", path: "/app/staff/recovery-plans/queue", label: "Hàng đợi", icon: ClipboardList, countKey: "open" },
   { key: "mine", path: "/app/staff/recovery-plans/mine", label: "Yêu cầu của tôi", icon: ListChecks, countKey: "mine" },
+  { key: "templates", path: "/app/staff/recovery-plan-templates", label: "Kế hoạch mẫu", icon: NotebookTabs },
 ];
 const COUNT_REFRESH_INTERVAL_MS = 1500;
 

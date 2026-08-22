@@ -33,6 +33,7 @@ const RECOVERY_PLAN_REQUESTS_BASE = "/api/recovery-plan-requests";
 const RECOVERY_PLANS_BASE = "/api/recovery-plans";
 const DOCTOR_RECOVERY_PLAN_REQUESTS_BASE = "/api/doctor/recovery-plan-requests";
 const DOCTOR_RECOVERY_PLANS_BASE = "/api/doctor/recovery-plans";
+const DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE = "/api/doctor/recovery-plan-templates";
 
 const encodedById = (base, id) => `${base}/${encodeURIComponent(id)}`;
 const labIndicatorChild = (indicatorId, child) => `${encodedById(LAB_INDICATORS_BASE, indicatorId)}/${child}`;
@@ -226,6 +227,7 @@ export const ENDPOINTS = {
     RELEASE: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/release`,
     REJECT: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/reject`,
     CREATE_PLAN: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/plan`,
+    CREATE_PLAN_FROM_TEMPLATE: (requestId) => `${encodedById(DOCTOR_RECOVERY_PLAN_REQUESTS_BASE, requestId)}/plan/from-template`,
   },
   DOCTOR_RECOVERY_PLANS: {
     BY_ID: (planId) => encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId),
@@ -237,5 +239,15 @@ export const ENDPOINTS = {
     FOODS: (planId, phaseId, nutrientId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}/nutrients/${encodeURIComponent(nutrientId)}/foods`,
     FOOD_BY_ID: (planId, phaseId, nutrientId, foodSourceId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/phases/${encodeURIComponent(phaseId)}/nutrients/${encodeURIComponent(nutrientId)}/foods/${encodeURIComponent(foodSourceId)}`,
     PUBLISH: (planId) => `${encodedById(DOCTOR_RECOVERY_PLANS_BASE, planId)}/publish`,
+  },
+  DOCTOR_RECOVERY_PLAN_TEMPLATES: {
+    BASE: DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE,
+    BY_ID: (templateId) => encodedById(DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE, templateId),
+    PHASES: (templateId) => `${encodedById(DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE, templateId)}/phases`,
+    PHASE_BY_ID: (templateId, phaseId) => `${encodedById(DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE, templateId)}/phases/${encodeURIComponent(phaseId)}`,
+    NUTRIENTS: (templateId, phaseId) => `${encodedById(DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE, templateId)}/phases/${encodeURIComponent(phaseId)}/nutrients`,
+    NUTRIENT_BY_ID: (templateId, phaseId, nutrientId) => `${encodedById(DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE, templateId)}/phases/${encodeURIComponent(phaseId)}/nutrients/${encodeURIComponent(nutrientId)}`,
+    FOODS: (templateId, phaseId, nutrientId) => `${encodedById(DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE, templateId)}/phases/${encodeURIComponent(phaseId)}/nutrients/${encodeURIComponent(nutrientId)}/foods`,
+    FOOD_BY_ID: (templateId, phaseId, nutrientId, foodSourceId) => `${encodedById(DOCTOR_RECOVERY_PLAN_TEMPLATES_BASE, templateId)}/phases/${encodeURIComponent(phaseId)}/nutrients/${encodeURIComponent(nutrientId)}/foods/${encodeURIComponent(foodSourceId)}`,
   },
 };

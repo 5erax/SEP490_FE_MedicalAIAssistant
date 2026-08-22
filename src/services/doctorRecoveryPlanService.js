@@ -67,6 +67,13 @@ export const doctorRecoveryPlanRequestsApi = {
       body: payload,
     });
   },
+
+  createDraftFromTemplate(requestId, templateId) {
+    return authenticatedRequest(ENDPOINTS.DOCTOR_RECOVERY_PLAN_REQUESTS.CREATE_PLAN_FROM_TEMPLATE(requestId), {
+      method: "POST",
+      body: { templateId },
+    });
+  },
 };
 
 // GET /api/doctor/recovery-plans/{planId} wraps the plan tree in

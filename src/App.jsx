@@ -29,6 +29,8 @@ const DoctorRecoveryPlanQueuePage = lazy(() => import("./pages/DoctorRecoveryPla
 const DoctorMyRequestsPage = lazy(() => import("./pages/DoctorMyRequestsPage"));
 const DoctorRequestDetailPage = lazy(() => import("./pages/DoctorRequestDetailPage"));
 const DoctorPlanEditorPage = lazy(() => import("./pages/DoctorPlanEditorPage"));
+const DoctorRecoveryPlanTemplatesPage = lazy(() => import("./pages/DoctorRecoveryPlanTemplatesPage"));
+const DoctorRecoveryPlanTemplateEditorPage = lazy(() => import("./pages/DoctorRecoveryPlanTemplateEditorPage"));
 const MedicalRecordPage = lazy(() => import("./pages/MedicalRecordPage"));
 const LabTestResultPage = lazy(() => import("./pages/LabTestResultPage"));
 const MedicationScanPage = lazy(() => import("./pages/MedicationScanPage"));
@@ -153,6 +155,10 @@ function App() {
       return doctorWorkspace("mine", lazyPage(<DoctorMyRequestsPage />));
     case "doctor.recovery-plan-request-detail":
       return doctorWorkspace("mine", lazyPage(<DoctorRequestDetailPage requestId={route.params?.requestId} />));
+    case "doctor.recovery-plan-templates":
+      return doctorWorkspace("templates", lazyPage(<DoctorRecoveryPlanTemplatesPage />));
+    case "doctor.recovery-plan-template-editor":
+      return doctorWorkspace("templates", lazyPage(<DoctorRecoveryPlanTemplateEditorPage templateId={route.params?.templateId} />));
     case "doctor.recovery-plan-editor":
       return doctorWorkspace("mine", lazyPage(<DoctorPlanEditorPage planId={route.params?.planId} />));
     case "assessment.session":

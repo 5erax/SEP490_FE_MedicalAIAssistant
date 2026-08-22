@@ -31,10 +31,16 @@ import {
 } from "lucide-react";
 import { Badge, Button, Dialog, ErrorState, Field, LoadingState, Select, Textarea, TextInput } from "../components/ui";
 import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote";
+import CreateRecoveryPlanMethodDialog from "../components/recovery/CreateRecoveryPlanMethodDialog";
+import RecoveryPlanTemplatePickerDialog from "../components/recovery/RecoveryPlanTemplatePickerDialog";
 import LabTestResultPage from "./LabTestResultPage";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
-import { doctorRecoveryPlanRequestsApi, normalizeDoctorPlanDetail } from "../services/api";
+import {
+  doctorRecoveryPlanRequestsApi,
+  getRecoveryPlanTemplateErrorMessage,
+  normalizeDoctorPlanDetail,
+} from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
 import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
 import "../styles/doctor-request-detail.css";
@@ -340,7 +346,10 @@ function DetailContent({ request, onReload }) {
   const [actionBusy, setActionBusy] = useState("");
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [createPlanMethodOpen, setCreatePlanMethodOpen] = useState(false);
   const [createDraftOpen, setCreateDraftOpen] = useState(false);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [templatePickerRefreshKey, setTemplatePickerRefreshKey] = useState(0);
   const [prescriptionViewerOpen, setPrescriptionViewerOpen] = useState(false);
   const [prescriptionImageFailure, setPrescriptionImageFailure] = useState({ url: "", failed: false });
 
@@ -430,6 +439,39 @@ function DetailContent({ request, onReload }) {
       showToast({ type: "error", title: "Không thể tạo kế hoạch", message: mapped.message });
       if (["ASSIGNMENT_EXPIRED", "INVALID_REQUEST_STATE", "NOT_FOUND"].includes(mapped.code)) {
         setCreateDraftOpen(false);
+        await onReload();
+      }
+    } finally {
+      setActionBusy("");
+    }
+  }
+
+  async function handleApplyTemplate(templateId) {
+    if (actionBusy) return;
+    setActionBusy("applyTemplate");
+    try {
+      const response = await doctorRecoveryPlanRequestsApi.createDraftFromTemplate(request.id, templateId);
+      const { plan } = normalizeDoctorPlanDetail(response);
+      setTemplatePickerOpen(false);
+      if (plan?.id) {
+        navigate(`/app/staff/recovery-plans/${plan.id}`);
+        return;
+      }
+      showToast({ type: "success", title: "Đã tạo bản nháp từ kế hoạch mẫu" });
+      await onReload();
+    } catch (requestError) {
+      const code = getApiErrorCode(requestError);
+      let message = getRecoveryPlanTemplateErrorMessage(requestError, "Chưa thể tạo kế hoạch từ mẫu. Vui lòng thử lại.");
+      if (code === "INVALID_REQUEST") {
+        message = "Kế hoạch mẫu không phù hợp với nhóm bệnh của yêu cầu này.";
+      }
+      if (code === "NOT_FOUND") {
+        message = "Không tìm thấy kế hoạch mẫu. Danh sách sẽ được cập nhật.";
+        setTemplatePickerRefreshKey((current) => current + 1);
+      }
+      showToast({ type: "error", title: "Không thể sử dụng kế hoạch mẫu", message });
+      if (["ASSIGNMENT_EXPIRED", "INVALID_REQUEST_STATE"].includes(code)) {
+        setTemplatePickerOpen(false);
         await onReload();
       }
     } finally {
@@ -646,10 +688,10 @@ function DetailContent({ request, onReload }) {
                   title="Tạo kế hoạch"
                   subtitle="Bắt đầu soạn kế hoạch phục hồi dinh dưỡng cho bệnh nhân dựa trên bối cảnh lâm sàng ở trên."
                   buttonLabel="Tạo kế hoạch"
-                  loading={actionBusy === "createDraft"}
+                  loading={["createDraft", "applyTemplate"].includes(actionBusy)}
                   loadingLabel="Đang tạo…"
                   disabled={Boolean(actionBusy)}
-                  onClick={() => setCreateDraftOpen(true)}
+                  onClick={() => setCreatePlanMethodOpen(true)}
                 />
               )}
               <div className="doctor-action-tiles">
@@ -775,6 +817,38 @@ function DetailContent({ request, onReload }) {
           submitting={actionBusy === "createDraft"}
           onClose={() => setCreateDraftOpen(false)}
           onSubmit={handleCreateDraft}
+        />
+      )}
+
+      {createPlanMethodOpen && (
+        <CreateRecoveryPlanMethodDialog
+          onClose={() => setCreatePlanMethodOpen(false)}
+          onCreateNew={() => {
+            setCreatePlanMethodOpen(false);
+            setCreateDraftOpen(true);
+          }}
+          onUseTemplate={() => {
+            setCreatePlanMethodOpen(false);
+            setTemplatePickerOpen(true);
+          }}
+        />
+      )}
+
+      {templatePickerOpen && (
+        <RecoveryPlanTemplatePickerDialog
+          diseaseGroup={request.diseaseGroup}
+          submitting={actionBusy === "applyTemplate"}
+          refreshKey={templatePickerRefreshKey}
+          onClose={() => setTemplatePickerOpen(false)}
+          onSelect={handleApplyTemplate}
+          onCreateNew={() => {
+            setTemplatePickerOpen(false);
+            setCreateDraftOpen(true);
+          }}
+          onGoToLibrary={() => {
+            setTemplatePickerOpen(false);
+            navigate("/app/staff/recovery-plan-templates");
+          }}
         />
       )}
 

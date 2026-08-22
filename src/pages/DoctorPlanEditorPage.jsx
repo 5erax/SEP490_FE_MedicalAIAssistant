@@ -797,7 +797,7 @@ function PlanContent({
   );
 }
 
-function PhaseRow({
+export function PhaseRow({
   phase,
   isDraft,
   phaseBusy,
@@ -1060,7 +1060,15 @@ function EditPlanDialog({ plan, submitting, onClose, onSubmit }) {
   );
 }
 
-function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
+export function PhaseFormDialog({
+  plan,
+  phase,
+  submitting,
+  onClose,
+  onSubmit,
+  phaseNameMaxLength = 150,
+  instructionMaxLength = 1000,
+}) {
   const isEditing = Boolean(phase);
   const [phaseName, setPhaseName] = useState(phase?.phaseName ?? "");
   const [startDay, setStartDay] = useState(String(phase?.startDay ?? ""));
@@ -1133,7 +1141,7 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
         <Field label="Tên giai đoạn" required error={errors.phaseName}>
           <TextInput
             value={phaseName}
-            maxLength={150}
+            maxLength={phaseNameMaxLength}
             onChange={(event) => { setPhaseName(event.target.value); setErrors((current) => ({ ...current, phaseName: "" })); }}
             autoFocus
           />
@@ -1175,7 +1183,7 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
           />
         </Field>
         <Field label="Hướng dẫn" optional>
-          <Textarea rows={3} maxLength={1000} value={instruction} onChange={(event) => setInstruction(event.target.value)} />
+          <Textarea rows={3} maxLength={instructionMaxLength} value={instruction} onChange={(event) => setInstruction(event.target.value)} />
         </Field>
         <div className="doctor-plan-modal-actions">
           <Button type="button" tone="secondary" onClick={onClose} disabled={submitting}>Hủy</Button>
@@ -1188,7 +1196,7 @@ function PhaseFormDialog({ plan, phase, submitting, onClose, onSubmit }) {
   );
 }
 
-function NutrientFormDialog({ nutrient, existingCount, submitting, onClose, onSubmit }) {
+export function NutrientFormDialog({ nutrient, existingCount, submitting, onClose, onSubmit }) {
   const isEditing = Boolean(nutrient);
   const [nutrientName, setNutrientName] = useState(nutrient?.nutrientName ?? "");
   const [amountPerDay, setAmountPerDay] = useState(nutrient?.amountPerDay != null ? String(nutrient.amountPerDay) : "");
@@ -1274,7 +1282,7 @@ function NutrientFormDialog({ nutrient, existingCount, submitting, onClose, onSu
   );
 }
 
-function FoodFormDialog({ food, existingCount, submitting, onClose, onSubmit }) {
+export function FoodFormDialog({ food, existingCount, submitting, onClose, onSubmit }) {
   const isEditing = Boolean(food);
   const [foodName, setFoodName] = useState(food?.foodName ?? "");
   const [suggestedServing, setSuggestedServing] = useState(food?.suggestedServing ?? "");

@@ -62,6 +62,11 @@ export {
   doctorRecoveryPlansApi,
   normalizeDoctorPlanDetail,
 } from "./doctorRecoveryPlanService";
+export {
+  doctorRecoveryPlanTemplatesApi,
+  getRecoveryPlanTemplateErrorMessage,
+  RECOVERY_PLAN_DISEASE_GROUPS,
+} from "./doctorRecoveryPlanTemplateService";
 export { aiConfigsApi } from "./aiConfigService";
 export { webChatbotApi } from "./chatbotService";
 export { consultationSessionsApi } from "./consultationSessionService";

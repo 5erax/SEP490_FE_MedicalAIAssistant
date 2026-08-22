@@ -190,6 +190,22 @@ const BASE_ROUTES = [
     shell: "staff",
   },
   {
+    id: "doctor.recovery-plan-templates",
+    path: "/app/staff/recovery-plan-templates",
+    title: "Kế hoạch mẫu | MediMate AI",
+    access: "role",
+    roles: ["doctor"],
+    shell: "staff",
+  },
+  {
+    id: "doctor.recovery-plan-template-editor",
+    path: "/app/staff/recovery-plan-templates/:templateId",
+    title: "Soạn kế hoạch mẫu | MediMate AI",
+    access: "role",
+    roles: ["doctor"],
+    shell: "staff",
+  },
+  {
     id: "doctor.recovery-plan-editor",
     path: "/app/staff/recovery-plans/:planId",
     title: "Soạn kế hoạch phục hồi | MediMate AI",
