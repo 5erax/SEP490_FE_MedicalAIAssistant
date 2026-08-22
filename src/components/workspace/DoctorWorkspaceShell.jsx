@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { key: "queue", path: "/app/staff/recovery-plans/queue", label: "Hàng đợi", icon: ClipboardList, countKey: "open" },
   { key: "mine", path: "/app/staff/recovery-plans/mine", label: "Yêu cầu của tôi", icon: ListChecks, countKey: "mine" },
 ];
-const COUNT_REFRESH_INTERVAL_MS = 4000;
+const COUNT_REFRESH_INTERVAL_MS = 1500;
 
 function getInitials(name) {
   return String(name ?? "").split(" ").filter(Boolean).slice(-2).map((part) => part[0]).join("").toUpperCase() || "BS";

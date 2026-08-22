@@ -23,7 +23,7 @@ import {
 import "../styles/doctor-recovery-plan.css";
 
 const PAGE_SIZE = 10;
-const BACKGROUND_REFRESH_INTERVAL_MS = 4000;
+const BACKGROUND_REFRESH_INTERVAL_MS = 1500;
 // A doctor may only work one recovery-plan request at a time; these are the
 // statuses that count as "still open" for them - anything else (published,
 // rejected, cancelled, expired) has been resolved and frees them up again.
