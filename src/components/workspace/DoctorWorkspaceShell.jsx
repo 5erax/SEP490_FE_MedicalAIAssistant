@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { key: "queue", path: "/app/staff/recovery-plans/queue", label: "Hàng đợi", icon: ClipboardList, countKey: "open" },
   { key: "mine", path: "/app/staff/recovery-plans/mine", label: "Yêu cầu của tôi", icon: ListChecks, countKey: "mine" },
 ];
+const COUNT_REFRESH_INTERVAL_MS = 4000;
 
 function getInitials(name) {
   return String(name ?? "").split(" ").filter(Boolean).slice(-2).map((part) => part[0]).join("").toUpperCase() || "BS";
@@ -92,6 +93,26 @@ export default function DoctorWorkspaceShell({ activeKey, children }) {
     });
 
     return unsubscribe;
+  }, [loadOpenCount, loadMineCount]);
+
+  useEffect(() => {
+    function refreshCounts() {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      void loadOpenCount();
+      void loadMineCount();
+    }
+
+    const intervalId = window.setInterval(refreshCounts, COUNT_REFRESH_INTERVAL_MS);
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") refreshCounts();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [loadOpenCount, loadMineCount]);
 
   const displayName = profile?.displayName || profile?.fullName || profile?.name

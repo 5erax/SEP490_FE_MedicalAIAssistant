@@ -23,6 +23,7 @@ import {
 import "../styles/doctor-recovery-plan.css";
 
 const PAGE_SIZE = 10;
+const BACKGROUND_REFRESH_INTERVAL_MS = 4000;
 // A doctor may only work one recovery-plan request at a time; these are the
 // statuses that count as "still open" for them - anything else (published,
 // rejected, cancelled, expired) has been resolved and frees them up again.
@@ -134,8 +135,8 @@ export default function DoctorRecoveryPlanQueuePage() {
     }
   }, []);
 
-  const loadQueue = useCallback(async (targetPage = pageNumber, targetDiseaseGroup = diseaseGroup) => {
-    setLoading(true);
+  const loadQueue = useCallback(async (targetPage = pageNumber, targetDiseaseGroup = diseaseGroup, options = {}) => {
+    if (!options.silent) setLoading(true);
     setError("");
     try {
       const response = await doctorRecoveryPlanRequestsApi.listOpen({
@@ -158,7 +159,7 @@ export default function DoctorRecoveryPlanQueuePage() {
       }
       setPage({ items: [], pageNumber: targetPage, totalPages: 1, totalCount: 0 });
     } finally {
-      setLoading(false);
+      if (!options.silent) setLoading(false);
     }
   }, [pageNumber, diseaseGroup]);
 
@@ -204,6 +205,26 @@ export default function DoctorRecoveryPlanQueuePage() {
       window.clearTimeout(refetchTimerRef.current);
     };
   }, [loadQueue, loadActiveRequestCount, pageNumber, diseaseGroup, removeQueuedRequest]);
+
+  useEffect(() => {
+    function refreshInBackground() {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      void loadQueue(pageNumber, diseaseGroup, { silent: true });
+      void loadActiveRequestCount();
+    }
+
+    const intervalId = window.setInterval(refreshInBackground, BACKGROUND_REFRESH_INTERVAL_MS);
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") refreshInBackground();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [loadQueue, loadActiveRequestCount, pageNumber, diseaseGroup]);
 
   async function handleAccept(request) {
     if (activeRequestCount > 0) {
