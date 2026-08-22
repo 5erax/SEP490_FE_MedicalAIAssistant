@@ -16,7 +16,10 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Alert, Badge, Button, CustomSelect, Dialog, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { doctorRecoveryPlanRequestsApi } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
-import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
+import {
+  publishRecoveryPlanEvent,
+  subscribeToRecoveryPlanEvents,
+} from "../services/recoveryPlanRealtime";
 import "../styles/doctor-recovery-plan.css";
 
 const PAGE_SIZE = 10;
@@ -197,6 +200,16 @@ export default function DoctorRecoveryPlanQueuePage() {
       showToast({ type: "success", title: "Đã nhận yêu cầu", message: "Yêu cầu đã được chuyển vào danh sách của bạn." });
       setPage((current) => ({ ...current, items: current.items.filter((item) => item.id !== request.id) }));
       setActiveRequestCount((current) => current + 1);
+      publishRecoveryPlanEvent({
+        type: "queue",
+        payload: { requestId: request.id, changeType: "removed" },
+        refetch: true,
+      });
+      publishRecoveryPlanEvent({
+        type: "request",
+        payload: { requestId: request.id, changeType: "assigned" },
+        refetch: true,
+      });
     } catch (requestError) {
       const mapped = getAcceptErrorMessage(requestError);
       showToast({ type: "error", title: "Không thể nhận yêu cầu", message: mapped.message });
@@ -206,6 +219,11 @@ export default function DoctorRecoveryPlanQueuePage() {
           items: current.items.filter((item) => item.id !== request.id),
           totalCount: Math.max(0, current.totalCount - 1),
         }));
+        publishRecoveryPlanEvent({
+          type: "queue",
+          payload: { requestId: request.id, changeType: "removed" },
+          refetch: true,
+        });
       }
       if (["DOCTOR_NOT_ACTIVE", "DOCTOR_NOT_ACCEPTING_REQUESTS"].includes(mapped.code)) {
         void loadQueue(pageNumber, diseaseGroup);

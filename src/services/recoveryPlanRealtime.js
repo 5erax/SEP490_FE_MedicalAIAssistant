@@ -11,12 +11,19 @@ const QUEUE_EVENT = "RecoveryPlanQueueChanged";
 const ACCESS_CHANGED_EVENT = "RecoveryPlanRealtimeAccessChanged";
 const REFRESH_DOCTOR_MEMBERSHIP_METHOD = "RefreshDoctorMembershipAsync";
 const HUB_PATH = "/hubs/recovery-plans";
+const CROSS_TAB_CHANNEL = "medimate.recovery-plan-realtime";
+const CROSS_TAB_STORAGE_KEY = "medimate.recovery-plan-realtime-event";
 
 const listeners = new Set();
 let connection = null;
 let connectionToken = "";
 let startPromise = null;
 let lastStartFailureAt = 0;
+let crossTabChannel = null;
+let crossTabListening = false;
+const tabId = typeof crypto !== "undefined" && crypto.randomUUID
+  ? crypto.randomUUID()
+  : `${Date.now()}:${Math.random()}`;
 
 function getRealtimeBaseUrl() {
   const configured = String(import.meta.env.VITE_REALTIME_BASE_URL || "").trim();
@@ -52,6 +59,64 @@ function emit(event) {
   listeners.forEach((listener) => listener(event));
 }
 
+function emitAndBroadcast(event) {
+  emit(event);
+  broadcastRecoveryPlanEvent(event);
+}
+
+function receiveCrossTabEvent(message) {
+  if (!message || message.sourceId === tabId || !message.event) return;
+  emit({ ...message.event, crossTab: true });
+}
+
+function setupCrossTabSync() {
+  if (crossTabListening || typeof window === "undefined") return;
+  crossTabListening = true;
+
+  if ("BroadcastChannel" in window) {
+    crossTabChannel = new BroadcastChannel(CROSS_TAB_CHANNEL);
+    crossTabChannel.onmessage = (message) => {
+      receiveCrossTabEvent(message.data);
+    };
+  }
+
+  window.addEventListener("storage", (event) => {
+    if (event.key !== CROSS_TAB_STORAGE_KEY || !event.newValue) return;
+    try {
+      receiveCrossTabEvent(JSON.parse(event.newValue));
+    } catch {
+      // Ignore malformed cross-tab payloads from older app versions.
+    }
+  });
+}
+
+export function broadcastRecoveryPlanEvent(event) {
+  if (typeof window === "undefined") return;
+
+  const message = {
+    sourceId: tabId,
+    event,
+    occurredAt: Date.now(),
+  };
+
+  try {
+    crossTabChannel?.postMessage(message);
+  } catch {
+    // Storage fallback below keeps same-browser tabs in sync.
+  }
+
+  try {
+    window.localStorage.setItem(CROSS_TAB_STORAGE_KEY, JSON.stringify(message));
+    window.localStorage.removeItem(CROSS_TAB_STORAGE_KEY);
+  } catch {
+    // Best-effort only; SignalR and local state updates still continue.
+  }
+}
+
+export function publishRecoveryPlanEvent(event) {
+  emitAndBroadcast(event);
+}
+
 function buildConnection(accessToken) {
   const realtimeBaseUrl = getRealtimeBaseUrl();
   if (!realtimeBaseUrl) return null;
@@ -65,16 +130,16 @@ function buildConnection(accessToken) {
     .build();
 
   nextConnection.on(REQUEST_EVENT, (payload) => {
-    emit({ type: "request", payload });
+    emitAndBroadcast({ type: "request", payload });
   });
   nextConnection.on(PLAN_EVENT, (payload) => {
-    emit({ type: "plan", payload });
+    emitAndBroadcast({ type: "plan", payload });
   });
   nextConnection.on(QUEUE_EVENT, (payload) => {
-    emit({ type: "queue", payload });
+    emitAndBroadcast({ type: "queue", payload });
   });
   nextConnection.on(ACCESS_CHANGED_EVENT, (payload) => {
-    emit({ type: "access", payload });
+    emitAndBroadcast({ type: "access", payload });
   });
   nextConnection.onreconnecting(() => {
     emit({ type: "connection", status: "reconnecting" });
@@ -90,6 +155,7 @@ function buildConnection(accessToken) {
 }
 
 export function subscribeToRecoveryPlanEvents(listener) {
+  setupCrossTabSync();
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
