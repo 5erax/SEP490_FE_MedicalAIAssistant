@@ -56,8 +56,8 @@ function normalizePaged(response, pageNumber) {
         const leftTime = Date.parse(left?.requestedAt ?? "");
         const rightTime = Date.parse(right?.requestedAt ?? "");
 
-        return (Number.isNaN(rightTime) ? 0 : rightTime)
-          - (Number.isNaN(leftTime) ? 0 : leftTime);
+        return (Number.isNaN(leftTime) ? 0 : leftTime)
+          - (Number.isNaN(rightTime) ? 0 : rightTime);
       })
     : [];
 
