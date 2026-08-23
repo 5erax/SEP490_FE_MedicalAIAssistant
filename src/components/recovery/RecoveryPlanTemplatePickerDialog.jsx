@@ -17,6 +17,7 @@ import {
   getRecoveryPlanTemplateErrorMessage,
   RECOVERY_PLAN_DISEASE_GROUPS,
 } from "../../services/api";
+import "../../styles/doctor-plan-editor.css";
 import "../../styles/doctor-recovery-plan-template.css";
 
 const PAGE_SIZE = 20;

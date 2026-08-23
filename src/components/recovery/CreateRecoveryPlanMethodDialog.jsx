@@ -1,5 +1,6 @@
 import { FilePlus2, Files, X } from "lucide-react";
 import { Dialog } from "../ui";
+import "../../styles/doctor-plan-editor.css";
 import "../../styles/doctor-recovery-plan-template.css";
 
 export default function CreateRecoveryPlanMethodDialog({ onClose, onCreateNew, onUseTemplate }) {
