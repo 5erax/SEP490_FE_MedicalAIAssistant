@@ -131,11 +131,14 @@ function getPublishChecklist(plan) {
 
   const missingSleepRest = phases.filter((phase) => phase.sleepAndRestHoursPerDay == null);
   const phasesWithoutNutrients = phases.filter((phase) => getSortedItems(phase.nutrientTargets).length === 0);
+  const allNutrients = [];
   const nutrientsWithoutFood = [];
   phases.forEach((phase) => {
     getSortedItems(phase.nutrientTargets).forEach((nutrient) => {
+      allNutrients.push(nutrient);
       if (getSortedItems(nutrient.foodSources).length === 0) {
         nutrientsWithoutFood.push({
+          type: "food",
           phaseId: phase.id,
           nutrient,
           label: nutrient.nutrientName || "dưỡng chất chưa đặt tên",
@@ -176,8 +179,10 @@ function getPublishChecklist(plan) {
     {
       key: "foods",
       label: "Mỗi dưỡng chất có ít nhất 1 nguồn thực phẩm",
-      done: nutrientsWithoutFood.length === 0,
-      target: nutrientsWithoutFood[0] || null,
+      done: allNutrients.length > 0 && nutrientsWithoutFood.length === 0,
+      target: nutrientsWithoutFood[0] || (phasesWithoutNutrients[0]
+        ? { type: "nutrient", phase: phasesWithoutNutrients[0] }
+        : null),
       detail: nutrientsWithoutFood.length > 0
         ? `Còn thiếu ở: ${nutrientsWithoutFood.map((item) => item.label).join(", ")}`
         : null,
@@ -673,12 +678,21 @@ function PlanContent({
       return;
     }
 
-    if (item.key === "foods" && item.target) {
-      onAddFood(
-        item.target.phaseId,
-        item.target.nutrient.id,
-        getSortedItems(item.target.nutrient.foodSources).length,
-      );
+    if (item.key === "foods") {
+      if (!item.target) {
+        onAddPhase();
+      } else if (item.target.type === "nutrient") {
+        onAddNutrient(
+          item.target.phase.id,
+          getSortedItems(item.target.phase.nutrientTargets).length,
+        );
+      } else {
+        onAddFood(
+          item.target.phaseId,
+          item.target.nutrient.id,
+          getSortedItems(item.target.nutrient.foodSources).length,
+        );
+      }
     }
   }
 
