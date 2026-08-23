@@ -1180,9 +1180,6 @@ export function PhaseFormDialog({
             label="Ngày bắt đầu"
             required
             error={errors.startDay}
-            hint={!errors.startDay
-              ? (isEditing ? `Trong khoảng 1–${plan?.durationDays}` : "Tự động chọn ngày trống tiếp theo để tránh chồng lấn.")
-              : undefined}
           >
             <TextInput
               type="number"
@@ -1198,9 +1195,6 @@ export function PhaseFormDialog({
             label="Ngày kết thúc"
             required
             error={errors.endDay}
-            hint={!errors.endDay
-              ? `Có thể chọn đến ngày ${isEditing ? plan?.durationDays : automaticRange.maxEndDay}`
-              : undefined}
           >
             <TextInput
               type="number"
@@ -1216,7 +1210,6 @@ export function PhaseFormDialog({
           label="Tổng giờ ngủ nghỉ / ngày"
           required
           error={errors.sleepAndRestHoursPerDay}
-          hint={!errors.sleepAndRestHoursPerDay ? "Mặc định 8 giờ; bác sĩ có thể điều chỉnh theo tình trạng người bệnh." : undefined}
         >
           <TextInput
             type="number"
