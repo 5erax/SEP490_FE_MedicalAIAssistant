@@ -344,10 +344,15 @@
   box-shadow: 0 26px 66px rgba(20, 125, 120, 0.14);
 }
 
-.pricing-plan-card-accent {
+.pricing-plan-card::before {
   position: absolute;
   inset: 0 0 auto;
-  height: 5px;
+  height: 4px;
+  background: var(--pricing-line-strong);
+  content: "";
+}
+
+.pricing-plan-card-premium::before {
   background: var(--pricing-teal);
 }
 
@@ -373,20 +378,16 @@
 .plan-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
-  border: 1px solid var(--pricing-line);
+  margin-left: auto;
+  border: 1px solid var(--pricing-line-strong);
   border-radius: 999px;
-  background: var(--pricing-badge-bg);
-  color: var(--pricing-muted);
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.plan-badge-premium {
-  border-color: #9ccdc6;
-  background: var(--pricing-teal-soft);
+  background: var(--pricing-teal-pale);
   color: var(--pricing-teal-dark);
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .plan-kicker {
@@ -426,12 +427,6 @@
 .price-line .pricing-price-loading {
   font-size: clamp(22px, 2.6vw, 30px);
   letter-spacing: -0.02em;
-}
-
-.price-line > span {
-  color: var(--pricing-muted);
-  font-size: 13px;
-  font-weight: 650;
 }
 
 .plan-summary {
