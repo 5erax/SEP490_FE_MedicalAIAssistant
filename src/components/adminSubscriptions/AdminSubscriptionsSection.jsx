@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { adminQuotasApi, adminSubscriptionPlanQuotasApi, subscriptionPlansApi } from "../../services/api";
 import { Button, ErrorState, LoadingState } from "../ui";
 import SubscriptionPlanTable from "./SubscriptionPlanTable";
@@ -95,6 +95,11 @@ export default function AdminSubscriptionsSection({
     }
   }
 
+  function openCreatePlan() {
+    planModalTriggerRef.current = document.activeElement;
+    setPlanModal({ open: true, mode: "create", plan: null });
+  }
+
   function openEditPlan(plan) {
     planModalTriggerRef.current = document.activeElement;
     setPlanModal({ open: true, mode: "edit", plan });
@@ -106,17 +111,21 @@ export default function AdminSubscriptionsSection({
   }
 
   async function handleSavePlan(payload, options = {}) {
-    if (!planModal.plan?.id) return;
+    const isCreate = planModal.mode === "create";
+    if (!isCreate && !planModal.plan?.id) return;
 
     setSavingPlan(true);
     setQuotaMessage(null);
 
     try {
-      await subscriptionPlansApi.update(planModal.plan.id, payload);
+      const savedPlan = isCreate
+        ? await subscriptionPlansApi.create(payload)
+        : await subscriptionPlansApi.update(planModal.plan.id, payload);
       const quotaUpdates = Array.isArray(options.quotaUpdates) ? options.quotaUpdates : [];
-      if (quotaUpdates.length) {
+      const planId = isCreate ? (savedPlan?.data?.id ?? savedPlan?.id) : planModal.plan.id;
+      if (quotaUpdates.length && planId) {
         await Promise.all(quotaUpdates.map((quota) => (
-          adminSubscriptionPlanQuotasApi.upsert(planModal.plan.id, quota.quotaId, {
+          adminSubscriptionPlanQuotasApi.upsert(planId, quota.quotaId, {
             limitValue: quota.limitValue,
             resetPeriod: quota.resetPeriod,
             isActive: quota.isActive,
@@ -125,14 +134,16 @@ export default function AdminSubscriptionsSection({
       }
       setQuotaMessage({
         type: "success",
-        text: quotaUpdates.length ? "Đã cập nhật gói dịch vụ và hạn mức sử dụng." : "Đã cập nhật gói dịch vụ.",
+        text: isCreate
+          ? "Đã tạo gói dịch vụ mới."
+          : quotaUpdates.length ? "Đã cập nhật gói dịch vụ và hạn mức sử dụng." : "Đã cập nhật gói dịch vụ.",
       });
       setPlanModal({ open: false, mode: "edit", plan: null });
       await onReload?.();
     } catch (err) {
       setQuotaMessage({
         type: "error",
-        text: err?.message || "Không thể cập nhật gói dịch vụ.",
+        text: err?.message || (isCreate ? "Không thể tạo gói dịch vụ." : "Không thể cập nhật gói dịch vụ."),
       });
     } finally {
       setSavingPlan(false);
@@ -150,6 +161,9 @@ export default function AdminSubscriptionsSection({
         <div className="record-actions">
           <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>
             <RefreshCw size={15} /> Đồng bộ
+          </button>
+          <button className="btn btn-primary btn-small" type="button" onClick={openCreatePlan}>
+            <Plus size={15} /> Thêm gói
           </button>
         </div>
       </div>
