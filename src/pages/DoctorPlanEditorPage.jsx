@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Bone,
   Check,
+  ChevronRight,
   ClipboardList,
   Edit3,
   Eye,
@@ -134,7 +135,11 @@ function getPublishChecklist(plan) {
   phases.forEach((phase) => {
     getSortedItems(phase.nutrientTargets).forEach((nutrient) => {
       if (getSortedItems(nutrient.foodSources).length === 0) {
-        nutrientsWithoutFood.push(nutrient.nutrientName || "dưỡng chất chưa đặt tên");
+        nutrientsWithoutFood.push({
+          phaseId: phase.id,
+          nutrient,
+          label: nutrient.nutrientName || "dưỡng chất chưa đặt tên",
+        });
       }
     });
   });
@@ -154,6 +159,7 @@ function getPublishChecklist(plan) {
       key: "sleep-rest",
       label: "Mỗi giai đoạn có tổng giờ ngủ nghỉ",
       done: phases.length > 0 && missingSleepRest.length === 0,
+      target: missingSleepRest[0] || null,
       detail: missingSleepRest.length > 0
         ? `Còn thiếu ở: ${missingSleepRest.map(phaseLabel).join(", ")}`
         : null,
@@ -162,6 +168,7 @@ function getPublishChecklist(plan) {
       key: "nutrients",
       label: "Mỗi giai đoạn có ít nhất 1 dưỡng chất",
       done: phases.length > 0 && phasesWithoutNutrients.length === 0,
+      target: phasesWithoutNutrients[0] || null,
       detail: phasesWithoutNutrients.length > 0
         ? `Còn thiếu ở: ${phasesWithoutNutrients.map(phaseLabel).join(", ")}`
         : null,
@@ -170,8 +177,9 @@ function getPublishChecklist(plan) {
       key: "foods",
       label: "Mỗi dưỡng chất có ít nhất 1 nguồn thực phẩm",
       done: nutrientsWithoutFood.length === 0,
+      target: nutrientsWithoutFood[0] || null,
       detail: nutrientsWithoutFood.length > 0
-        ? `Còn thiếu ở: ${nutrientsWithoutFood.join(", ")}`
+        ? `Còn thiếu ở: ${nutrientsWithoutFood.map((item) => item.label).join(", ")}`
         : null,
     },
   ];
@@ -639,6 +647,41 @@ function PlanContent({
   const publishChecklist = getPublishChecklist(plan);
   const canPublish = publishChecklist.every((item) => item.done);
 
+  function openMissingItemForm(item) {
+    if (item.done) return;
+
+    if (item.key === "summary") {
+      onEdit();
+      return;
+    }
+
+    if (item.key === "coverage") {
+      onAddPhase();
+      return;
+    }
+
+    if (item.key === "sleep-rest") {
+      item.target ? onEditPhase(item.target) : onAddPhase();
+      return;
+    }
+
+    if (item.key === "nutrients") {
+      const targetPhase = item.target;
+      targetPhase
+        ? onAddNutrient(targetPhase.id, getSortedItems(targetPhase.nutrientTargets).length)
+        : onAddPhase();
+      return;
+    }
+
+    if (item.key === "foods" && item.target) {
+      onAddFood(
+        item.target.phaseId,
+        item.target.nutrient.id,
+        getSortedItems(item.target.nutrient.foodSources).length,
+      );
+    }
+  }
+
   return (
     <>
       <header className="doctor-plan-header">
@@ -740,13 +783,21 @@ function PlanContent({
               <ul className="doctor-plan-checklist">
                 {publishChecklist.map((item) => (
                   <li key={item.key} className={item.done ? "is-done" : "is-blocked"}>
-                    <span className="doctor-plan-checklist-icon" aria-hidden="true">
-                      {item.done ? <Check size={13} /> : <X size={13} />}
-                    </span>
-                    <span>
-                      {item.label}
-                      {!item.done && item.detail && <em>{item.detail}</em>}
-                    </span>
+                    {item.done ? (
+                      <>
+                        <span className="doctor-plan-checklist-icon" aria-hidden="true"><Check size={13} /></span>
+                        <span>{item.label}</span>
+                      </>
+                    ) : (
+                      <button type="button" onClick={() => openMissingItemForm(item)} aria-label={`Bổ sung: ${item.label}`}>
+                        <span className="doctor-plan-checklist-icon" aria-hidden="true"><X size={13} /></span>
+                        <span className="doctor-plan-checklist-content">
+                          <span>{item.label}</span>
+                          {item.detail && <em>{item.detail}</em>}
+                        </span>
+                        <ChevronRight className="doctor-plan-checklist-arrow" size={17} aria-hidden="true" />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
