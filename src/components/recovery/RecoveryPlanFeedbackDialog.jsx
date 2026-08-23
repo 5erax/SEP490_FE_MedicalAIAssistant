@@ -29,6 +29,7 @@ export default function RecoveryPlanFeedbackDialog({
   onSubmit,
 }) {
   const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
   const [note, setNote] = useState("");
   const ratingRefs = useRef([]);
   const firstRatingRef = useRef(null);
@@ -115,9 +116,15 @@ export default function RecoveryPlanFeedbackDialog({
 
         <fieldset className="recovery-feedback-rating" disabled={submitting}>
           <legend>Mức độ hài lòng <span aria-hidden="true">*</span></legend>
-          <div className="recovery-feedback-rating__controls" role="radiogroup" aria-label="Chọn mức đánh giá từ 1 đến 5 sao">
+          <div
+            className="recovery-feedback-rating__controls"
+            role="radiogroup"
+            aria-label="Chọn mức đánh giá từ 1 đến 5 sao"
+            onMouseLeave={() => setHoveredRating(0)}
+          >
             {RATING_OPTIONS.map((option, index) => {
               const checked = rating === option.value;
+              const isActive = option.value <= (hoveredRating || rating);
               return (
                 <button
                   key={option.value}
@@ -129,10 +136,11 @@ export default function RecoveryPlanFeedbackDialog({
                   role="radio"
                   aria-checked={checked}
                   aria-label={`${option.value} sao - ${option.label}`}
-                  className={checked ? "is-selected" : ""}
+                  className={[checked ? "is-selected" : "", isActive ? "is-active" : ""].filter(Boolean).join(" ")}
                   tabIndex={rating === 0 ? (index === 0 ? 0 : -1) : (checked ? 0 : -1)}
                   onClick={() => selectRating(option.value)}
                   onKeyDown={(event) => handleRatingKeyDown(event, index)}
+                  onMouseEnter={() => setHoveredRating(option.value)}
                 >
                   <Star size={23} aria-hidden="true" />
                   <span>{option.value}</span>

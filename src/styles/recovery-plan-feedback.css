@@ -154,7 +154,7 @@
   background: #fff8e5;
 }
 
-.recovery-feedback-rating__controls button.is-selected svg {
+.recovery-feedback-rating__controls button.is-active svg {
   fill: currentColor;
 }
 
