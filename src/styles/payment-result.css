@@ -112,11 +112,6 @@
   margin: 26px 0 0;
 }
 
-.payment-result-reference.payment-result-usage {
-  grid-template-columns: 1fr;
-  margin-top: 12px;
-}
-
 .payment-result-reference div {
   min-width: 0;
   border: 1px solid var(--care-line);
