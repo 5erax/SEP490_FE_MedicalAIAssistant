@@ -6,6 +6,7 @@ import {
   Clock3,
   Edit3,
   Files,
+  Layers,
   Plus,
   RefreshCw,
   Search,
@@ -25,7 +26,7 @@ import {
 import "../styles/doctor-plan-editor.css";
 import "../styles/doctor-recovery-plan-template.css";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 
 const DISEASE_OPTIONS = [
   { value: "", label: "Tất cả nhóm bệnh" },
@@ -205,31 +206,34 @@ export default function DoctorRecoveryPlanTemplatesPage() {
             {templates.map((template) => {
               const DiseaseIcon = getDiseaseIcon(template.diseaseGroup);
               return (
-                <li key={template.id} className="doctor-template-card">
-                  <span className="doctor-template-card-icon" aria-hidden="true"><DiseaseIcon size={22} /></span>
-                  <div className="doctor-template-card-main">
-                    <div className="doctor-template-card-title-row">
+                <li key={template.id} className="doctor-template-card" data-disease-group={template.diseaseGroup}>
+                  <div className="doctor-template-card-head">
+                    <span className="doctor-template-card-icon" aria-hidden="true"><DiseaseIcon size={22} /></span>
+                    <div className="doctor-template-card-heading-group">
                       <h2>{template.templateName || "Chưa đặt tên mẫu"}</h2>
-                      <Badge tone={template.isComplete ? "success" : "warning"}>
-                        {template.isComplete ? "Hoàn chỉnh" : "Đang soạn"}
-                      </Badge>
+                      <span className="doctor-template-card-disease">
+                        {RECOVERY_PLAN_DISEASE_GROUPS[template.diseaseGroup] || "Chưa phân loại"}
+                      </span>
                     </div>
-                    <div className="doctor-template-card-tags">
-                      <span>{RECOVERY_PLAN_DISEASE_GROUPS[template.diseaseGroup] || "Chưa phân loại"}</span>
-                    </div>
+                    <Badge tone={template.isComplete ? "success" : "warning"}>
+                      {template.isComplete ? "Hoàn chỉnh" : "Đang soạn"}
+                    </Badge>
+                  </div>
+                  <div className="doctor-template-card-main">
                     <p className="doctor-template-plan-name">{template.planName || "Chưa đặt tên kế hoạch"}</p>
                     <div className="doctor-template-card-meta">
                       <span><Clock3 size={14} aria-hidden="true" /> {template.durationDays || 0} ngày</span>
-                      <span>{template.phaseCount || 0} giai đoạn</span>
-                      <span>Cập nhật: {formatDate(template.updatedAt || template.createdAt)}</span>
+                      <span><Layers size={14} aria-hidden="true" /> {template.phaseCount || 0} giai đoạn</span>
                     </div>
+                    <p className="doctor-template-card-updated">Cập nhật {formatDate(template.updatedAt || template.createdAt)}</p>
                   </div>
                   <div className="doctor-template-card-actions">
-                    <Button tone="secondary" size="sm" onClick={() => navigate(`/app/staff/recovery-plan-templates/${template.id}`)}>
-                      <Edit3 size={15} aria-hidden="true" /> Xem / Chỉnh sửa
+                    <Button className="doctor-template-open-action" size="sm" onClick={() => navigate(`/app/staff/recovery-plan-templates/${template.id}`)}>
+                      <Edit3 size={15} aria-hidden="true" /> Mở kế hoạch
                     </Button>
                     <Button
-                      tone="danger"
+                      className="doctor-template-delete-action"
+                      tone="ghost"
                       size="sm"
                       disabled={busy === `delete-${template.id}`}
                       loading={busy === `delete-${template.id}`}
