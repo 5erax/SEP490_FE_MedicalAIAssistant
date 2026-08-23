@@ -18,7 +18,7 @@
 .care-price-card-head,
 .care-price-line,
 .care-price-duration,
-.care-price-card > a,
+.care-price-card > .care-price-cta,
 .care-pricing-state {
   display: flex;
   align-items: center;
@@ -525,7 +525,7 @@
   line-height: 1.55;
 }
 
-.care-price-card > a {
+.care-price-card > .care-price-cta {
   justify-content: space-between;
   gap: 10px;
   min-height: 48px;
@@ -539,18 +539,18 @@
   font-weight: 800;
 }
 
-.care-price-card > a:hover {
+.care-price-card > .care-price-cta:hover {
   border-color: var(--care-teal);
   background: var(--care-mint);
 }
 
-.care-price-card > a svg {
+.care-price-card > .care-price-cta svg {
   flex-shrink: 0;
   margin-left: 16px;
   transition: transform 180ms ease;
 }
 
-.care-price-card > a:hover svg {
+.care-price-card > .care-price-cta:hover svg {
   transform: translateX(3px);
 }
 
@@ -565,7 +565,7 @@
   background: #0a5158;
 }
 
-.care-price-card > a:focus-visible {
+.care-price-card > .care-price-cta:focus-visible {
   outline: 3px solid #f2b84b;
   outline-offset: 3px;
 }
@@ -663,7 +663,7 @@ html[data-theme="dark"] .care-map-preview-foot {
 
 html[data-theme="dark"] .care-map-count,
 html[data-theme="dark"] .care-pricing-state > a,
-html[data-theme="dark"] .care-price-card > a {
+html[data-theme="dark"] .care-price-card > .care-price-cta {
   border-color: var(--care-line);
   background: #193032;
   color: var(--care-teal-dark);
@@ -767,7 +767,7 @@ html[data-contrast="more"] .care-pricing-state {
     animation: none;
   }
 
-  .care-price-card > a svg {
+  .care-price-card > .care-price-cta svg {
     transition: none;
   }
 }

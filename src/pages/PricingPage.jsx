@@ -117,7 +117,9 @@ function PricingPage() {
   const pollingRef = useRef(null);
   const checkoutInFlightRef = useRef(false);
   const paidPlans = useMemo(
-    () => apiPlans.filter((plan) => Number(plan.price) > 0 && findServiceCreditQuota(plan)),
+    () => [...apiPlans]
+      .filter((plan) => Number(plan.price) > 0 && findServiceCreditQuota(plan))
+      .sort((left, right) => Number(left.price ?? Number.MAX_SAFE_INTEGER) - Number(right.price ?? Number.MAX_SAFE_INTEGER)),
     [apiPlans],
   );
   const freePlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) === 0), [apiPlans]);
@@ -529,13 +531,11 @@ function PricingPage() {
             <article className="pricing-plan-card pricing-plan-card-basic">
               <div className="pricing-plan-card-heading">
                 <span className="plan-icon" aria-hidden="true"><Sparkles size={22} /></span>
-                <span className="plan-badge">Không cần mua gói</span>
               </div>
               <p className="plan-kicker">Truy cập công khai</p>
               <h2>{freePlan?.planName || "Miễn phí"}</h2>
               <div className="price-line">
                 <strong>0 ₫</strong>
-                <span>Không giới hạn thời gian</span>
               </div>
               <p className="plan-summary">
                 Phù hợp để tìm hiểu MediMate và chuẩn bị thông tin cơ bản trước khi đi khám.
@@ -557,18 +557,18 @@ function PricingPage() {
             </article>
             )}
 
-            {paidPlans.map((paidPlan) => {
+            {paidPlans.map((paidPlan, paidPlanIndex) => {
               const paidBenefits = getPlanBenefits(paidPlan);
               const creditLimit = getServiceCreditLimit(paidPlan);
               const hasConfiguredCredits = Number.isFinite(creditLimit) && creditLimit > 0;
               const isCurrentCheckout = checkoutState.planId === paidPlan.id;
+              const badgeText = paidPlanIndex === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất";
 
               return (
                 <article className="pricing-plan-card pricing-plan-card-premium" key={paidPlan.id}>
-                  <div className="pricing-plan-card-accent" aria-hidden="true" />
                   <div className="pricing-plan-card-heading">
                     <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
-                    <span className="plan-badge plan-badge-premium">Gói lượt dùng</span>
+                    <span className="plan-badge">{badgeText}</span>
                   </div>
                   <p className="plan-kicker">
                     {hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
@@ -576,7 +576,6 @@ function PricingPage() {
                   <h2>{getPlanDisplayName(paidPlan.planName)}</h2>
                   <div className="price-line">
                     <strong>{formatPrice(Number(paidPlan.price) || 0)}</strong>
-                    <span>/ một lần</span>
                   </div>
                   <p className="plan-summary">
                     Lượt dùng được cộng vào số dư hiện có và không hết hạn.

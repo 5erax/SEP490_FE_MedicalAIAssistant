@@ -99,7 +99,6 @@ export function PricingPreviewSection() {
             <h3>Miễn phí</h3>
             <div className="care-price-line">
               <p className="care-price-value">0đ</p>
-              <span>/ tháng</span>
             </div>
             <p className="care-price-duration">
               <ShieldCheck size={16} aria-hidden="true" />
@@ -155,21 +154,21 @@ export function PricingPreviewSection() {
 
           {previewPlans.length > 0 && (
             <>
-              {previewPlans.map((plan) => {
+              {previewPlans.map((plan, index) => {
                 const benefits = getPlanBenefits(plan);
                 const planName = getPlanDisplayName(plan.planName);
+                const badgeText = index === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất";
 
                 return (
                   <article className="care-price-card care-price-card-paid" key={plan.id || plan.planName}>
                     <div className="care-price-card-head">
                       <span className="care-price-icon"><CircleDollarSign size={21} aria-hidden="true" /></span>
-                      <span className="care-plan-badge">Dành cho nhu cầu thường xuyên</span>
+                      <span className="care-plan-badge">{badgeText}</span>
                     </div>
                     <p className="care-price-kicker">Quyền lợi có hạn mức</p>
                     <h3>{planName}</h3>
                     <div className="care-price-line">
                       <p className="care-price-value">{formatPrice(plan.price)}</p>
-                      <span>/ một lần</span>
                     </div>
                     <p className="care-price-duration">
                       <ShieldCheck size={16} aria-hidden="true" />
