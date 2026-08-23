@@ -138,7 +138,7 @@ export default function SubscriptionPlanFormModal({
   function handleSubmit(event) {
     event.preventDefault();
     const nextErrors = validate(form);
-    if (mode === "edit" && quotaRows.some((row) => {
+    if (quotaRows.some((row) => {
       const limit = Number(row.limitValue);
       return row.limitValue === "" || !Number.isFinite(limit) || limit < 0;
     })) {
@@ -150,7 +150,7 @@ export default function SubscriptionPlanFormModal({
       return;
     }
     onSubmit(buildPayload(form, plan?.featureLimitJson), {
-      quotaUpdates: mode === "edit" ? buildQuotaUpdates(quotaRows, quotaCatalog) : [],
+      quotaUpdates: buildQuotaUpdates(quotaRows, quotaCatalog),
     });
   }
 
@@ -250,62 +250,60 @@ export default function SubscriptionPlanFormModal({
             </div>
           </section>
 
-          {mode === "edit" && (
-            <section className="subscription-form-card subscription-real-quota-card">
-              <div className="subscription-form-card-head">
-                <span aria-hidden="true"><Gauge size={20} /></span>
-                <div>
-                  <h3>Lượt sử dụng thực tế</h3>
-                  <p>Số lượt hệ thống ghi nhận cho gói này.</p>
-                </div>
+          <section className="subscription-form-card subscription-real-quota-card">
+            <div className="subscription-form-card-head">
+              <span aria-hidden="true"><Gauge size={20} /></span>
+              <div>
+                <h3>Lượt sử dụng thực tế</h3>
+                <p>Số lượt hệ thống ghi nhận cho gói này.</p>
               </div>
+            </div>
 
-              <div
-                className={`subscription-real-quota-list ${errors.quotaRows ? "subscription-field-error" : ""}`}
-                data-error-field="quotaRows"
-                tabIndex={errors.quotaRows ? -1 : undefined}
-                aria-invalid={errors.quotaRows ? "true" : undefined}
-                aria-describedby="subscription-quota-help"
-              >
-                {quotaRows.length > 0 && (
-                  <div className="subscription-real-quota-summary" aria-label="Hạn mức đang áp dụng">
-                    {quotaRows.map((row, index) => (
-                      <span key={`${row.quotaCode || row.quotaId}-summary-${index}`}>
-                        <strong>{row.name}</strong>
-                        {row.limitValue || 0} {row.unit || "lượt"} · không hết hạn
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {quotaRows.length ? quotaRows.map((row, index) => (
-                  <article className="subscription-real-quota-row" key={`${row.quotaCode || row.quotaId}-${index}`}>
-                    <div className="subscription-real-quota-name">
-                      <span>Hạn mức</span>
+            <div
+              className={`subscription-real-quota-list ${errors.quotaRows ? "subscription-field-error" : ""}`}
+              data-error-field="quotaRows"
+              tabIndex={errors.quotaRows ? -1 : undefined}
+              aria-invalid={errors.quotaRows ? "true" : undefined}
+              aria-describedby="subscription-quota-help"
+            >
+              {quotaRows.length > 0 && (
+                <div className="subscription-real-quota-summary" aria-label="Hạn mức đang áp dụng">
+                  {quotaRows.map((row, index) => (
+                    <span key={`${row.quotaCode || row.quotaId}-summary-${index}`}>
                       <strong>{row.name}</strong>
-                      <small>{row.unit} · dùng chung, không hết hạn</small>
-                    </div>
-                    <label className="clean-field">
-                      <span>Số lượt</span>
-                      <input
-                        name={`quota.${index}.limitValue`}
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={row.limitValue}
-                        onChange={(event) => updateQuotaRow(index, "limitValue", event.target.value)}
-                        placeholder="Ví dụ: 3"
-                      />
-                    </label>
-                  </article>
-                )) : (
-                  <p className="subscription-quota-modal-empty">Chưa có hạn mức khả dụng cho gói này.</p>
-                )}
-                <small id="subscription-quota-help" role={errors.quotaRows ? "alert" : undefined}>
-                  {errors.quotaRows || "Hạn mức sẽ được lưu cùng lần cập nhật gói."}
-                </small>
-              </div>
-            </section>
-          )}
+                      {row.limitValue || 0} {row.unit || "lượt"} · không hết hạn
+                    </span>
+                  ))}
+                </div>
+              )}
+              {quotaRows.length ? quotaRows.map((row, index) => (
+                <article className="subscription-real-quota-row" key={`${row.quotaCode || row.quotaId}-${index}`}>
+                  <div className="subscription-real-quota-name">
+                    <span>Hạn mức</span>
+                    <strong>{row.name}</strong>
+                    <small>{row.unit} · dùng chung, không hết hạn</small>
+                  </div>
+                  <label className="clean-field">
+                    <span>Số lượt</span>
+                    <input
+                      name={`quota.${index}.limitValue`}
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={row.limitValue}
+                      onChange={(event) => updateQuotaRow(index, "limitValue", event.target.value)}
+                      placeholder="Ví dụ: 3"
+                    />
+                  </label>
+                </article>
+              )) : (
+                <p className="subscription-quota-modal-empty">Chưa có hạn mức khả dụng cho gói này.</p>
+              )}
+              <small id="subscription-quota-help" role={errors.quotaRows ? "alert" : undefined}>
+                {errors.quotaRows || "Hạn mức sẽ được lưu cùng lần cập nhật gói."}
+              </small>
+            </div>
+          </section>
         </div>
 
         <div className="doctor-modal-actions">
