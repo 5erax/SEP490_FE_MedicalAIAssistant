@@ -35,10 +35,6 @@ async function mockRefreshPremium(page) {
       },
     }),
   }));
-  await page.route("**/api/me/subscription-usage", (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({ success: true, data: { quotaCode: "SERVICE_CREDIT", grantedCount: 3, usedCount: 0, reservedCount: 0, remainingCount: 3 } }),
-  }));
 }
 
 function paymentStatus(overrides = {}) {
@@ -56,6 +52,7 @@ function paymentStatus(overrides = {}) {
 test("payment return reconciles the order and opens the activated experience", async ({ page }) => {
   let statusRequests = 0;
   let reconcileRequests = 0;
+  let quotaRequests = 0;
   await page.route("**/api/payments/payos-status/987654321", (route) => {
     statusRequests += 1;
     return route.fulfill({
@@ -78,19 +75,74 @@ test("payment return reconciles the order and opens the activated experience", a
       }),
     });
   });
+  await page.route("**/api/me/subscription-usage", (route) => {
+    quotaRequests += 1;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { quotaCode: "SERVICE_CREDIT", grantedCount: 3, usedCount: 0, reservedCount: 0, remainingCount: 3 } }),
+    });
+  });
   await mockRefreshPremium(page);
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => {
     sessionStorage.setItem("medimate.returnTo", "/map?search=tim%20mach#results");
   });
+  quotaRequests = 0;
   await page.goto("/payment/return?orderCode=987654321", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Lượt dùng đã được cộng vào tài khoản." })).toBeVisible();
-  await expect(page.getByText("3/3 lượt", { exact: true })).toBeVisible();
+  await expect(page.locator(".payment-result-usage")).toHaveCount(0);
   expect(statusRequests).toBeGreaterThan(0);
   expect(reconcileRequests).toBeGreaterThan(0);
+  expect(quotaRequests).toBe(0);
   await page.getByRole("button", { name: "Tiếp tục tác vụ" }).click();
   await expect(page).toHaveURL(/\/map\?search=tim%20mach#results$/);
+});
+
+test("payment return does not call or render quota", async ({ page }) => {
+  let quotaRequests = 0;
+
+  await page.route("**/api/payments/payos-status/987654321", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: paymentStatus({
+        paymentStatus: "Paid",
+        subscriptionStatus: "Active",
+        isPaid: true,
+        isActive: true,
+      }),
+    }),
+  }));
+  await page.route("**/api/user-subscriptions/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: [{ status: 1, statusName: "Active" }] }),
+  }));
+  await page.route("**/api/authentication/refresh", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({
+      success: true,
+      data: {
+        accessToken: ACCESS_TOKEN,
+        email: "patient@example.com",
+        roles: ["Patient"],
+        subscriptionStatus: "Active",
+      },
+    }),
+  }));
+  await page.route("**/api/me/subscription-usage", (route) => {
+    quotaRequests += 1;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data: { quotaCode: "SERVICE_CREDIT", grantedCount: 3, usedCount: 0, reservedCount: 0, remainingCount: 3 } }),
+    });
+  });
+
+  await page.goto("/payment/return?orderCode=987654321&cancel=false&code=00&status=PAID", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".payment-result-usage")).toHaveCount(0);
+  await page.waitForTimeout(250);
+  await expect(page.locator(".payment-result-usage")).toHaveCount(0);
+  expect(quotaRequests).toBe(0);
 });
 
 test("payment cancel trusts the public payment status before showing retry actions", async ({ page }) => {

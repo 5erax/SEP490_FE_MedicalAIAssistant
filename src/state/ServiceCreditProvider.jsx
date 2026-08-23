@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getLocationSnapshot, subscribeToLocation } from "../router/navigation";
 import { subscriptionUsageApi } from "../services/api";
 import { normalizeServiceCreditBalance } from "../services/serviceCredit";
 import { ServiceCreditContext } from "./serviceCreditContext";
 import { useAuthSession } from "./useAuthSession";
 
 const inFlightBalanceRequests = new Map();
+
+function isPaymentResultPath(locationSnapshot) {
+  const pathname = String(locationSnapshot ?? "").split(/[?#]/)[0];
+  return pathname === "/payment/return" || pathname === "/payment/cancel";
+}
 
 function requestBalance(accessToken) {
   const existingRequest = inFlightBalanceRequests.get(accessToken);
@@ -39,8 +45,14 @@ export function ServiceCreditProvider({ children }) {
   const { auth } = useAuthSession();
   const accessToken = auth?.accessToken ?? "";
   const accessTokenRef = useRef(accessToken);
+  const [locationSnapshot, setLocationSnapshot] = useState(() => getLocationSnapshot());
   const [creditState, setCreditState] = useState(EMPTY_STATE);
+  const skipAutoRefresh = isPaymentResultPath(locationSnapshot);
   accessTokenRef.current = accessToken;
+
+  useEffect(() => subscribeToLocation(() => {
+    setLocationSnapshot(getLocationSnapshot());
+  }), []);
 
   const refresh = useCallback(async ({ silent = false } = {}) => {
     const requestAccessToken = accessToken;
@@ -86,11 +98,20 @@ export function ServiceCreditProvider({ children }) {
       return;
     }
 
+    if (skipAutoRefresh) {
+      setCreditState((current) => (
+        current.accessToken === accessToken
+          ? current
+          : { ...EMPTY_STATE, accessToken }
+      ));
+      return;
+    }
+
     void refresh();
-  }, [accessToken, refresh]);
+  }, [accessToken, refresh, skipAutoRefresh]);
 
   useEffect(() => {
-    if (!accessToken) return undefined;
+    if (!accessToken || skipAutoRefresh) return undefined;
 
     const refreshWhenVisible = () => {
       if (document.visibilityState === "hidden") return;
@@ -103,7 +124,7 @@ export function ServiceCreditProvider({ children }) {
       window.removeEventListener("focus", refreshWhenVisible);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, [accessToken, refresh]);
+  }, [accessToken, refresh, skipAutoRefresh]);
 
   const stateMatchesSession = creditState.accessToken === accessToken;
   const value = useMemo(() => ({

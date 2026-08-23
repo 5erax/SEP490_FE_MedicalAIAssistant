@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { authApi, getStoredAuth, paymentsApi, userSubscriptionsApi } from "../services/api";
 import { clearCheckoutIntent, getCheckoutIntent } from "../services/checkoutIntent";
-import { useServiceCredit } from "../state/useServiceCredit";
 import { getApiErrorCode, getPaymentReconcileErrorMessage } from "../services/apiError";
 import { translateApiMessage } from "../services/apiMessageTranslator";
 import { navigate } from "../router/navigation";
@@ -240,8 +239,8 @@ function getStatusLabel(status) {
 
 // PayOS's own redirect query params are a strong, synchronous signal that
 // the payment already succeeded, so /payment/return can render the success
-// view immediately instead of a "checking" spinner while the reconciliation
-// call runs in the background.
+// view immediately while reconciliation refreshes account state in the
+// background.
 function isPayOsSuccessRedirect() {
   const params = new URLSearchParams(window.location.search);
   return params.get("cancel") === "false"
@@ -256,13 +255,12 @@ function getInitialStatus(orderCode, expectedResult) {
 }
 
 export default function PaymentResultPage({ expectedResult }) {
-  const { balance, refresh: refreshServiceCredit } = useServiceCredit();
   const [orderCode] = useState(getOrderCode);
+  const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [status, setStatus] = useState(() => getInitialStatus(orderCode, expectedResult));
   const [message, setMessage] = useState("");
   const [paymentDetail, setPaymentDetail] = useState(null);
   const [checkingAgain, setCheckingAgain] = useState(false);
-  const [hasAuth] = useState(() => Boolean(getStoredAuth()));
   const [returnTo] = useState(() => getReturnToFromSearch() || getRememberedReturnTo());
   const view = getView(status, paymentDetail);
   const Icon = view.icon;
@@ -283,9 +281,8 @@ export default function PaymentResultPage({ expectedResult }) {
     await Promise.allSettled([
       userSubscriptionsApi.me(),
       authApi.refresh(),
-      refreshServiceCredit({ silent: true }),
     ]);
-  }, [hasAuth, refreshServiceCredit]);
+  }, [hasAuth]);
 
   // Reconciliation replaces the old webhook-dependent flow: the backend
   // actively asks PayOS for the real status instead of only reading its
@@ -326,12 +323,8 @@ export default function PaymentResultPage({ expectedResult }) {
     return nextStatus;
   }, [hasAuth, orderCode, refreshPremiumState]);
 
-  // checkStatus is recreated whenever refreshPremiumState triggers an auth
-  // token refresh (accessToken changes -> refreshServiceCredit reference
-  // changes). Reading it through a ref keeps the polling effect below from
-  // restarting on every reference change, which previously caused it to
-  // call checkStatus again right after a successful payment and loop
-  // indefinitely (visible as constant flicker/lag on this page).
+  // Reading checkStatus through a ref keeps the polling effect below from
+  // restarting whenever account refresh changes auth state.
   const checkStatusRef = useRef(checkStatus);
   useEffect(() => {
     checkStatusRef.current = checkStatus;
@@ -441,7 +434,7 @@ export default function PaymentResultPage({ expectedResult }) {
 
         <p className="payment-result-eyebrow">{view.eyebrow}</p>
         <h1>{view.title}</h1>
-        {message && <p className="payment-result-description">{message}</p>}
+        {message && !success && <p className="payment-result-description">{message}</p>}
 
         {orderCode && (
           <dl className="payment-result-reference">
@@ -452,19 +445,6 @@ export default function PaymentResultPage({ expectedResult }) {
             <div>
               <dt>Trạng thái</dt>
               <dd>{getStatusLabel(status)}</dd>
-            </div>
-          </dl>
-        )}
-
-        {success && balance && (
-          <dl className="payment-result-reference payment-result-usage">
-            <div>
-              <dt>Lượt có thể dùng</dt>
-              <dd>{balance.remainingCount.toLocaleString("vi-VN")}/{balance.grantedCount.toLocaleString("vi-VN")} lượt</dd>
-            </div>
-            <div>
-              <dt>Đang dành cho tác vụ xử lý</dt>
-              <dd>{balance.reservedCount.toLocaleString("vi-VN")} lượt</dd>
             </div>
           </dl>
         )}
