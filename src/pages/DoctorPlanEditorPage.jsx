@@ -5,8 +5,6 @@ import {
   Apple,
   ArrowLeft,
   Bone,
-  Check,
-  ChevronRight,
   ClipboardList,
   Edit3,
   Eye,
@@ -23,10 +21,12 @@ import {
 } from "lucide-react";
 import { Badge, Button, Dialog, ErrorState, Field, LoadingState, Textarea, TextInput } from "../components/ui";
 import { useFeedback } from "../components/feedback/feedbackContext";
+import PlanCompletionChecklist from "../components/recovery/PlanCompletionChecklist";
 import { navigate } from "../router/navigation";
 import { doctorRecoveryPlansApi, normalizeDoctorPlanDetail } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
 import { subscribeToRecoveryPlanEvents } from "../services/recoveryPlanRealtime";
+import { findCoverageGaps, getPlanCompletionChecklist } from "../utils/planCompletion";
 import { PlanDetail } from "./RecoveryPlanPage";
 import "../styles/recovery-plan.css";
 import "../styles/doctor-plan-editor.css";
@@ -92,102 +92,10 @@ function formatDayRange(startDay, endDay) {
   return startDay === endDay ? `Ngày ${startDay}` : `Ngày ${startDay} – ${endDay}`;
 }
 
-function findCoverageGaps(phases, durationDays) {
-  if (!durationDays) return [];
-  const sorted = phases
-    .filter((item) => item.startDay != null && item.endDay != null)
-    .slice()
-    .sort((a, b) => a.startDay - b.startDay);
-
-  const gaps = [];
-  let cursor = 1;
-  for (const phase of sorted) {
-    if (phase.startDay > cursor) {
-      gaps.push({ start: cursor, end: phase.startDay - 1 });
-    }
-    cursor = Math.max(cursor, phase.endDay + 1);
-  }
-  if (cursor <= durationDays) {
-    gaps.push({ start: cursor, end: durationDays });
-  }
-  return gaps;
-}
-
 function getSortedItems(list) {
   return toArray(list)
     .slice()
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-}
-
-// Mirrors the backend's ValidateCompletePlan rules (RecoveryPlanValidation.cs)
-// so the doctor sees exactly what's missing before hitting a 400 on publish,
-// instead of just "có giai đoạn + phủ kín ngày" which isn't the full picture:
-// every phase also needs sleep/rest hours + >=1 nutrient, and every nutrient
-// needs >=1 food source.
-function getPublishChecklist(plan) {
-  const phases = getSortedPhases(plan);
-  const gaps = findCoverageGaps(phases, plan.durationDays);
-  const phaseLabel = (phase, index) => phase.phaseName || `giai đoạn ${index + 1}`;
-
-  const missingSleepRest = phases.filter((phase) => phase.sleepAndRestHoursPerDay == null);
-  const phasesWithoutNutrients = phases.filter((phase) => getSortedItems(phase.nutrientTargets).length === 0);
-  const allNutrients = [];
-  const nutrientsWithoutFood = [];
-  phases.forEach((phase) => {
-    getSortedItems(phase.nutrientTargets).forEach((nutrient) => {
-      allNutrients.push(nutrient);
-      if (getSortedItems(nutrient.foodSources).length === 0) {
-        nutrientsWithoutFood.push({
-          type: "food",
-          phaseId: phase.id,
-          nutrient,
-          label: nutrient.nutrientName || "dưỡng chất chưa đặt tên",
-        });
-      }
-    });
-  });
-
-  return [
-    {
-      key: "summary",
-      label: "Có tóm tắt và hướng dẫn tái khám",
-      done: Boolean(plan.summary?.trim()) && Boolean(plan.recheckInstruction?.trim()),
-    },
-    {
-      key: "coverage",
-      label: `Có ít nhất 1 giai đoạn, phủ kín ${plan.durationDays ? `${plan.durationDays} ngày` : "toàn bộ thời lượng"} của kế hoạch`,
-      done: phases.length > 0 && gaps.length === 0,
-    },
-    {
-      key: "sleep-rest",
-      label: "Mỗi giai đoạn có tổng giờ ngủ nghỉ",
-      done: phases.length > 0 && missingSleepRest.length === 0,
-      target: missingSleepRest[0] || null,
-      detail: missingSleepRest.length > 0
-        ? `Còn thiếu ở: ${missingSleepRest.map(phaseLabel).join(", ")}`
-        : null,
-    },
-    {
-      key: "nutrients",
-      label: "Mỗi giai đoạn có ít nhất 1 dưỡng chất",
-      done: phases.length > 0 && phasesWithoutNutrients.length === 0,
-      target: phasesWithoutNutrients[0] || null,
-      detail: phasesWithoutNutrients.length > 0
-        ? `Còn thiếu ở: ${phasesWithoutNutrients.map(phaseLabel).join(", ")}`
-        : null,
-    },
-    {
-      key: "foods",
-      label: "Mỗi dưỡng chất có ít nhất 1 nguồn thực phẩm",
-      done: allNutrients.length > 0 && nutrientsWithoutFood.length === 0,
-      target: nutrientsWithoutFood[0] || (phasesWithoutNutrients[0]
-        ? { type: "nutrient", phase: phasesWithoutNutrients[0] }
-        : null),
-      detail: nutrientsWithoutFood.length > 0
-        ? `Còn thiếu ở: ${nutrientsWithoutFood.map((item) => item.label).join(", ")}`
-        : null,
-    },
-  ];
 }
 
 function findOverlappingPhase(phases, start, end, excludeId) {
@@ -649,52 +557,8 @@ function PlanContent({
   const isDraft = plan.status === "draft";
   const phases = getSortedPhases(plan);
   const gaps = findCoverageGaps(phases, plan.durationDays);
-  const publishChecklist = getPublishChecklist(plan);
+  const publishChecklist = getPlanCompletionChecklist(plan);
   const canPublish = publishChecklist.every((item) => item.done);
-
-  function openMissingItemForm(item) {
-    if (item.done) return;
-
-    if (item.key === "summary") {
-      onEdit();
-      return;
-    }
-
-    if (item.key === "coverage") {
-      onAddPhase();
-      return;
-    }
-
-    if (item.key === "sleep-rest") {
-      item.target ? onEditPhase(item.target) : onAddPhase();
-      return;
-    }
-
-    if (item.key === "nutrients") {
-      const targetPhase = item.target;
-      targetPhase
-        ? onAddNutrient(targetPhase.id, getSortedItems(targetPhase.nutrientTargets).length)
-        : onAddPhase();
-      return;
-    }
-
-    if (item.key === "foods") {
-      if (!item.target) {
-        onAddPhase();
-      } else if (item.target.type === "nutrient") {
-        onAddNutrient(
-          item.target.phase.id,
-          getSortedItems(item.target.phase.nutrientTargets).length,
-        );
-      } else {
-        onAddFood(
-          item.target.phaseId,
-          item.target.nutrient.id,
-          getSortedItems(item.target.nutrient.foodSources).length,
-        );
-      }
-    }
-  }
 
   return (
     <>
@@ -794,27 +658,14 @@ function PlanContent({
           {isDraft && (
             <section className="doctor-plan-card doctor-plan-publish-card">
               <p className="doctor-plan-card-heading">Xuất bản kế hoạch</p>
-              <ul className="doctor-plan-checklist">
-                {publishChecklist.map((item) => (
-                  <li key={item.key} className={item.done ? "is-done" : "is-blocked"}>
-                    {item.done ? (
-                      <>
-                        <span className="doctor-plan-checklist-icon" aria-hidden="true"><Check size={13} /></span>
-                        <span>{item.label}</span>
-                      </>
-                    ) : (
-                      <button type="button" onClick={() => openMissingItemForm(item)} aria-label={`Bổ sung: ${item.label}`}>
-                        <span className="doctor-plan-checklist-icon" aria-hidden="true"><X size={13} /></span>
-                        <span className="doctor-plan-checklist-content">
-                          <span>{item.label}</span>
-                          {item.detail && <em>{item.detail}</em>}
-                        </span>
-                        <ChevronRight className="doctor-plan-checklist-arrow" size={17} aria-hidden="true" />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <PlanCompletionChecklist
+                plan={plan}
+                onEditPlan={onEdit}
+                onAddPhase={onAddPhase}
+                onEditPhase={onEditPhase}
+                onAddNutrient={onAddNutrient}
+                onAddFood={onAddFood}
+              />
               <div className="doctor-plan-publish-actions">
                 <Button tone="ghost" onClick={onPreview}>
                   <Eye size={16} aria-hidden="true" /> Xem trước

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   Activity,
+  AlertTriangle,
   ArrowLeft,
   Bone,
   Edit3,
+  Eye,
   Files,
   Info,
   Layers,
@@ -12,9 +14,12 @@ import {
   Thermometer,
   Trash2,
   Wind,
+  X,
 } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Badge, Button, ErrorState, LoadingState } from "../components/ui";
+import { Badge, Button, Dialog, ErrorState, LoadingState } from "../components/ui";
+import { TemplatePreview } from "../components/recovery/RecoveryPlanTemplatePickerDialog";
+import PlanCompletionChecklist from "../components/recovery/PlanCompletionChecklist";
 import { navigate } from "../router/navigation";
 import {
   doctorRecoveryPlanTemplatesApi,
@@ -22,6 +27,7 @@ import {
   RECOVERY_PLAN_DISEASE_GROUPS,
 } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
+import { findCoverageGaps } from "../utils/planCompletion";
 import {
   FoodFormDialog,
   NutrientFormDialog,
@@ -69,6 +75,7 @@ export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
   const [editingNutrient, setEditingNutrient] = useState(null);
   const [createFoodFor, setCreateFoodFor] = useState(null);
   const [editingFood, setEditingFood] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   async function refreshTemplate() {
     const response = await doctorRecoveryPlanTemplatesApi.get(templateId);
@@ -291,6 +298,7 @@ export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
   }
 
   const phases = sortedPhases(template);
+  const gaps = findCoverageGaps(phases, template.durationDays);
   const canAddPhase = hasAvailablePhaseDay(template);
   const DiseaseIcon = DISEASE_ICONS[template.diseaseGroup] ?? Files;
 
@@ -308,6 +316,9 @@ export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
           <p>{template.planName || "Chưa đặt tên kế hoạch"}</p>
         </div>
         <Badge tone={template.isComplete ? "success" : "warning"}>{template.isComplete ? "Hoàn chỉnh" : "Đang soạn"}</Badge>
+        <button type="button" className="doctor-plan-preview-trigger" onClick={() => setPreviewOpen(true)}>
+          <Eye size={15} aria-hidden="true" /> Xem trước
+        </button>
         <button type="button" className="doctor-plan-refresh" aria-label="Tải lại" onClick={load}>
           <RefreshCw size={16} aria-hidden="true" />
         </button>
@@ -332,7 +343,7 @@ export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
 
           <section className="doctor-plan-card">
             <div className="doctor-plan-card-head">
-              <p className="doctor-plan-card-heading">Các giai đoạn</p>
+              <p className="doctor-plan-card-heading">Giai đoạn điều trị</p>
               <Button
                 tone="ghost"
                 size="sm"
@@ -370,11 +381,38 @@ export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
                 ))}
               </ul>
             )}
+
+            {phases.length > 0 && gaps.length > 0 && (
+              <div className="doctor-plan-phase-gaps">
+                <AlertTriangle size={14} aria-hidden="true" />
+                <span>
+                  Chưa phủ hết {template.durationDays} ngày của kế hoạch mẫu — còn thiếu:{" "}
+                  {gaps.map((gap) => (gap.start === gap.end ? `ngày ${gap.start}` : `ngày ${gap.start}–${gap.end}`)).join(", ")}.
+                </span>
+              </div>
+            )}
+          </section>
+
+          <section className="doctor-plan-card doctor-plan-publish-card">
+            <p className="doctor-plan-card-heading">Mức độ hoàn thiện</p>
+            <PlanCompletionChecklist
+              plan={template}
+              onEditPlan={() => setEditOpen(true)}
+              onAddPhase={() => setCreatePhaseOpen(true)}
+              onEditPhase={setEditingPhase}
+              onAddNutrient={(phaseId, existingCount) => setCreateNutrientFor({ phaseId, existingCount })}
+              onAddFood={(phaseId, nutrientId, existingCount) => setCreateFoodFor({ phaseId, nutrientId, existingCount })}
+            />
+            <div className="doctor-plan-publish-actions">
+              <Button tone="ghost" onClick={() => setPreviewOpen(true)}>
+                <Eye size={16} aria-hidden="true" /> Xem trước
+              </Button>
+            </div>
           </section>
 
           <div className="doctor-plan-danger-zone">
             <div className="doctor-plan-danger-header">
-              <Trash2 size={15} aria-hidden="true" />
+              <AlertTriangle size={15} aria-hidden="true" />
               <div>
                 <p className="doctor-plan-danger-title">Xóa kế hoạch mẫu</p>
                 <p className="doctor-plan-danger-desc">Kế hoạch bệnh nhân đã tạo từ mẫu sẽ không bị thay đổi.</p>
@@ -403,6 +441,25 @@ export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
           </section>
         </aside>
       </div>
+
+      {previewOpen && (
+        <Dialog
+          backdropClassName="doctor-plan-modal-backdrop"
+          className="doctor-template-picker-modal"
+          labelledBy="doctor-template-editor-preview-title"
+          onClose={() => setPreviewOpen(false)}
+        >
+          <header className="doctor-plan-modal-header doctor-template-picker-header">
+            <span aria-hidden="true"><Eye size={20} /></span>
+            <div>
+              <h2 id="doctor-template-editor-preview-title">Xem trước kế hoạch mẫu</h2>
+              <p>{template.templateName || "Chưa đặt tên mẫu"}</p>
+            </div>
+            <button type="button" aria-label="Đóng" onClick={() => setPreviewOpen(false)}><X size={20} aria-hidden="true" /></button>
+          </header>
+          <TemplatePreview template={template} onBack={() => setPreviewOpen(false)} />
+        </Dialog>
+      )}
 
       {editOpen && <TemplateHeaderDialog template={template} submitting={busy === "update-header"} onClose={() => setEditOpen(false)} onSubmit={handleUpdateHeader} />}
       {createPhaseOpen && <PhaseFormDialog plan={template} submitting={busy === "create-phase"} phaseNameMaxLength={200} instructionMaxLength={2000} onClose={() => setCreatePhaseOpen(false)} onSubmit={handleCreatePhase} />}

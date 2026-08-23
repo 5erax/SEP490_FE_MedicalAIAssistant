@@ -196,7 +196,7 @@ export default function RecoveryPlanTemplatePickerDialog({
   );
 }
 
-function TemplatePreview({ template, submitting, onBack, onSelect }) {
+export function TemplatePreview({ template, submitting = false, onBack, onSelect }) {
   const phases = sorted(template.phases);
   return (
     <>
@@ -236,7 +236,9 @@ function TemplatePreview({ template, submitting, onBack, onSelect }) {
       </div>
       <footer className="doctor-template-preview-actions">
         <Button tone="secondary" disabled={submitting} onClick={onBack}><ArrowLeft size={15} aria-hidden="true" /> Quay lại</Button>
-        <Button loading={submitting} loadingLabel="Đang tạo kế hoạch…" disabled={submitting} onClick={onSelect}>Sử dụng mẫu này</Button>
+        {onSelect && (
+          <Button loading={submitting} loadingLabel="Đang tạo kế hoạch…" disabled={submitting} onClick={onSelect}>Sử dụng mẫu này</Button>
+        )}
       </footer>
     </>
   );
