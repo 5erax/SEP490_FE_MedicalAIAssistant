@@ -48,6 +48,13 @@ function sortedPhases(template) {
     : [];
 }
 
+function hasAvailablePhaseDay(template) {
+  const durationDays = Number(template?.durationDays) || 0;
+  const phases = sortedPhases(template);
+  return Array.from({ length: durationDays }, (_, index) => index + 1)
+    .some((day) => !phases.some((phase) => phase.startDay <= day && phase.endDay >= day));
+}
+
 export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
   const { showToast, confirmAction } = useFeedback();
   const [template, setTemplate] = useState(null);
@@ -284,6 +291,7 @@ export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
   }
 
   const phases = sortedPhases(template);
+  const canAddPhase = hasAvailablePhaseDay(template);
   const DiseaseIcon = DISEASE_ICONS[template.diseaseGroup] ?? Files;
 
   return (
@@ -325,7 +333,13 @@ export default function DoctorRecoveryPlanTemplateEditorPage({ templateId }) {
           <section className="doctor-plan-card">
             <div className="doctor-plan-card-head">
               <p className="doctor-plan-card-heading">Các giai đoạn</p>
-              <Button tone="ghost" size="sm" onClick={() => setCreatePhaseOpen(true)}>
+              <Button
+                tone="ghost"
+                size="sm"
+                disabled={!canAddPhase}
+                title={canAddPhase ? undefined : "Mọi ngày trong kế hoạch đã được phân vào giai đoạn."}
+                onClick={() => setCreatePhaseOpen(true)}
+              >
                 <Plus size={15} aria-hidden="true" /> Thêm giai đoạn
               </Button>
             </div>

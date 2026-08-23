@@ -285,6 +285,8 @@ export function TemplateHeaderDialog({ template, submitting, onClose, onSubmit }
     const nextErrors = {};
     if (!templateName.trim()) nextErrors.templateName = "Tên mẫu là bắt buộc.";
     if (!planName.trim()) nextErrors.planName = "Tên kế hoạch là bắt buộc.";
+    if (!summary.trim()) nextErrors.summary = "Tóm tắt là bắt buộc.";
+    if (!recheckInstruction.trim()) nextErrors.recheckInstruction = "Hướng dẫn tái khám là bắt buộc.";
     if (!RECOVERY_PLAN_DISEASE_GROUPS[diseaseGroup]) nextErrors.diseaseGroup = "Nhóm bệnh chưa hợp lệ.";
     if (!Number.isInteger(days) || days < 1 || days > 365) nextErrors.durationDays = "Số ngày phải là số nguyên từ 1 đến 365.";
     setErrors(nextErrors);
@@ -294,8 +296,8 @@ export function TemplateHeaderDialog({ template, submitting, onClose, onSubmit }
       diseaseGroup,
       planName: planName.trim(),
       durationDays: days,
-      summary: summary.trim() || null,
-      recheckInstruction: recheckInstruction.trim() || null,
+      summary: summary.trim(),
+      recheckInstruction: recheckInstruction.trim(),
     });
   }
 
@@ -315,7 +317,13 @@ export function TemplateHeaderDialog({ template, submitting, onClose, onSubmit }
       </header>
       <form onSubmit={handleSubmit} noValidate>
         <Field label="Tên mẫu" required error={errors.templateName}>
-          <TextInput value={templateName} maxLength={200} autoFocus onChange={(event) => { setTemplateName(event.target.value); setErrors((current) => ({ ...current, templateName: "" })); }} />
+          <TextInput
+            value={templateName}
+            maxLength={200}
+            placeholder="Ví dụ: Hô hấp nhẹ - người lớn - 14 ngày"
+            autoFocus
+            onChange={(event) => { setTemplateName(event.target.value); setErrors((current) => ({ ...current, templateName: "" })); }}
+          />
         </Field>
         <Field label="Nhóm bệnh" required error={errors.diseaseGroup}>
           <Select value={diseaseGroup} onChange={(event) => { setDiseaseGroup(event.target.value); setErrors((current) => ({ ...current, diseaseGroup: "" })); }}>
@@ -323,16 +331,33 @@ export function TemplateHeaderDialog({ template, submitting, onClose, onSubmit }
           </Select>
         </Field>
         <Field label="Tên kế hoạch" required error={errors.planName}>
-          <TextInput value={planName} maxLength={200} onChange={(event) => { setPlanName(event.target.value); setErrors((current) => ({ ...current, planName: "" })); }} />
+          <TextInput
+            value={planName}
+            maxLength={200}
+            placeholder="Ví dụ: Kế hoạch phục hồi hô hấp 14 ngày"
+            onChange={(event) => { setPlanName(event.target.value); setErrors((current) => ({ ...current, planName: "" })); }}
+          />
         </Field>
         <Field label="Số ngày thực hiện" required error={errors.durationDays}>
           <TextInput type="number" min="1" max="365" value={durationDays} onChange={(event) => { setDurationDays(event.target.value); setErrors((current) => ({ ...current, durationDays: "" })); }} />
         </Field>
-        <Field label="Tóm tắt" optional>
-          <Textarea rows={3} maxLength={2000} value={summary} onChange={(event) => setSummary(event.target.value)} />
+        <Field label="Tóm tắt" required error={errors.summary}>
+          <Textarea
+            rows={3}
+            maxLength={2000}
+            value={summary}
+            placeholder="Ví dụ: Mục tiêu phục hồi, chế độ dinh dưỡng và mức độ vận động phù hợp trong thời gian thực hiện."
+            onChange={(event) => { setSummary(event.target.value); setErrors((current) => ({ ...current, summary: "" })); }}
+          />
         </Field>
-        <Field label="Hướng dẫn tái khám" optional>
-          <Textarea rows={3} maxLength={2000} value={recheckInstruction} onChange={(event) => setRecheckInstruction(event.target.value)} />
+        <Field label="Hướng dẫn tái khám" required error={errors.recheckInstruction}>
+          <Textarea
+            rows={3}
+            maxLength={2000}
+            value={recheckInstruction}
+            placeholder="Ví dụ: Tái khám sau 14 ngày hoặc sớm hơn nếu khó thở tăng, sốt kéo dài hay xuất hiện dấu hiệu bất thường."
+            onChange={(event) => { setRecheckInstruction(event.target.value); setErrors((current) => ({ ...current, recheckInstruction: "" })); }}
+          />
         </Field>
         <div className="doctor-plan-modal-actions">
           <Button type="button" tone="secondary" onClick={onClose} disabled={submitting}>Hủy</Button>

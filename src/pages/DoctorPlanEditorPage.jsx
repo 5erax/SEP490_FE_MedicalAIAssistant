@@ -67,6 +67,25 @@ function getSortedPhases(plan) {
     .sort((a, b) => (a.startDay ?? 0) - (b.startDay ?? 0));
 }
 
+function getNextAvailablePhaseRange(plan) {
+  const durationDays = Number(plan?.durationDays) || 0;
+  const phases = getSortedPhases(plan)
+    .filter((item) => Number.isInteger(item.startDay) && Number.isInteger(item.endDay));
+  let nextDay = 1;
+
+  for (const item of phases) {
+    if (item.startDay > nextDay) {
+      return { startDay: nextDay, maxEndDay: item.startDay - 1 };
+    }
+    nextDay = Math.max(nextDay, item.endDay + 1);
+  }
+
+  return {
+    startDay: nextDay,
+    maxEndDay: durationDays || nextDay,
+  };
+}
+
 function formatDayRange(startDay, endDay) {
   if (startDay == null || endDay == null) return "Chưa đặt ngày";
   return startDay === endDay ? `Ngày ${startDay}` : `Ngày ${startDay} – ${endDay}`;
@@ -1070,11 +1089,13 @@ export function PhaseFormDialog({
   instructionMaxLength = 1000,
 }) {
   const isEditing = Boolean(phase);
+  const automaticRange = getNextAvailablePhaseRange(plan);
+  const initialStartDay = phase?.startDay ?? automaticRange.startDay;
   const [phaseName, setPhaseName] = useState(phase?.phaseName ?? "");
-  const [startDay, setStartDay] = useState(String(phase?.startDay ?? ""));
-  const [endDay, setEndDay] = useState(String(phase?.endDay ?? ""));
+  const [startDay, setStartDay] = useState(String(initialStartDay));
+  const [endDay, setEndDay] = useState(String(phase?.endDay ?? initialStartDay));
   const [sleepAndRestHoursPerDay, setSleepAndRestHoursPerDay] = useState(
-    phase?.sleepAndRestHoursPerDay != null ? String(phase.sleepAndRestHoursPerDay) : "",
+    phase?.sleepAndRestHoursPerDay != null ? String(phase.sleepAndRestHoursPerDay) : "8",
   );
   const [instruction, setInstruction] = useState(phase?.instruction ?? "");
   const [errors, setErrors] = useState({});
@@ -1091,6 +1112,11 @@ export function PhaseFormDialog({
     if (!nextErrors.startDay && !nextErrors.endDay && start > end) {
       nextErrors.endDay = "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.";
     }
+    if (!isEditing && !nextErrors.endDay && end > automaticRange.maxEndDay) {
+      nextErrors.endDay = automaticRange.maxEndDay < (plan?.durationDays || automaticRange.maxEndDay)
+        ? `Khoảng trống hiện tại chỉ còn đến ngày ${automaticRange.maxEndDay}.`
+        : `Kế hoạch chỉ dài ${plan?.durationDays} ngày.`;
+    }
     if (!nextErrors.endDay && plan?.durationDays && end > plan.durationDays) {
       nextErrors.endDay = `Kế hoạch chỉ dài ${plan.durationDays} ngày.`;
     }
@@ -1103,11 +1129,10 @@ export function PhaseFormDialog({
 
     const hoursText = sleepAndRestHoursPerDay.trim();
     const hours = hoursText === "" ? null : Number(hoursText);
-    if (
-      hours !== null
-      && (!Number.isFinite(hours) || hours < 0 || hours > 24 || !/^\d+(\.\d{1,2})?$/.test(hoursText))
-    ) {
-      nextErrors.sleepAndRestHoursPerDay = "Tổng giờ ngủ nghỉ phải từ 0 đến 24 và tối đa 2 chữ số thập phân.";
+    if (hours === null) {
+      nextErrors.sleepAndRestHoursPerDay = "Tổng giờ ngủ nghỉ là bắt buộc.";
+    } else if (!Number.isFinite(hours) || hours <= 0 || hours > 24 || !/^\d+(\.\d{1,2})?$/.test(hoursText)) {
+      nextErrors.sleepAndRestHoursPerDay = "Tổng giờ ngủ nghỉ phải lớn hơn 0, không quá 24 giờ và tối đa 2 chữ số thập phân.";
     }
 
     setErrors(nextErrors);
@@ -1142,6 +1167,7 @@ export function PhaseFormDialog({
           <TextInput
             value={phaseName}
             maxLength={phaseNameMaxLength}
+            placeholder="Ví dụ: Giai đoạn ổn định và phục hồi ban đầu"
             onChange={(event) => { setPhaseName(event.target.value); setErrors((current) => ({ ...current, phaseName: "" })); }}
             autoFocus
           />
@@ -1150,32 +1176,55 @@ export function PhaseFormDialog({
           Ngày bắt đầu/kết thúc là <strong>ngày thứ mấy trong kế hoạch</strong> (ví dụ 1 = ngày đầu tiên), không phải ngày dương lịch.
         </p>
         <div className="doctor-plan-modal-row">
-          <Field label="Ngày bắt đầu" required error={errors.startDay} hint={!errors.startDay && plan?.durationDays ? `Trong khoảng 1–${plan.durationDays}` : undefined}>
+          <Field
+            label="Ngày bắt đầu"
+            required
+            error={errors.startDay}
+            hint={!errors.startDay
+              ? (isEditing ? `Trong khoảng 1–${plan?.durationDays}` : "Tự động chọn ngày trống tiếp theo để tránh chồng lấn.")
+              : undefined}
+          >
             <TextInput
               type="number"
               min="1"
               max={plan?.durationDays || undefined}
               value={startDay}
+              readOnly={!isEditing}
+              aria-readonly={!isEditing}
               onChange={(event) => { setStartDay(event.target.value); setErrors((current) => ({ ...current, startDay: "" })); }}
             />
           </Field>
-          <Field label="Ngày kết thúc" required error={errors.endDay} hint={!errors.endDay && plan?.durationDays ? `Trong khoảng 1–${plan.durationDays}` : undefined}>
+          <Field
+            label="Ngày kết thúc"
+            required
+            error={errors.endDay}
+            hint={!errors.endDay
+              ? `Có thể chọn đến ngày ${isEditing ? plan?.durationDays : automaticRange.maxEndDay}`
+              : undefined}
+          >
             <TextInput
               type="number"
-              min="1"
-              max={plan?.durationDays || undefined}
+              min={startDay || "1"}
+              max={isEditing ? (plan?.durationDays || undefined) : automaticRange.maxEndDay}
               value={endDay}
+              placeholder={String(initialStartDay)}
               onChange={(event) => { setEndDay(event.target.value); setErrors((current) => ({ ...current, endDay: "" })); }}
             />
           </Field>
         </div>
-        <Field label="Tổng giờ ngủ nghỉ / ngày" optional error={errors.sleepAndRestHoursPerDay}>
+        <Field
+          label="Tổng giờ ngủ nghỉ / ngày"
+          required
+          error={errors.sleepAndRestHoursPerDay}
+          hint={!errors.sleepAndRestHoursPerDay ? "Mặc định 8 giờ; bác sĩ có thể điều chỉnh theo tình trạng người bệnh." : undefined}
+        >
           <TextInput
             type="number"
-            min="0"
+            min="0.01"
             max="24"
-            step="0.01"
+            step="0.5"
             value={sleepAndRestHoursPerDay}
+            placeholder="8"
             onChange={(event) => {
               setSleepAndRestHoursPerDay(event.target.value);
               setErrors((current) => ({ ...current, sleepAndRestHoursPerDay: "" }));
@@ -1183,7 +1232,13 @@ export function PhaseFormDialog({
           />
         </Field>
         <Field label="Hướng dẫn" optional>
-          <Textarea rows={3} maxLength={instructionMaxLength} value={instruction} onChange={(event) => setInstruction(event.target.value)} />
+          <Textarea
+            rows={3}
+            maxLength={instructionMaxLength}
+            value={instruction}
+            placeholder="Ví dụ: Nghỉ ngơi đầy đủ, vận động nhẹ và theo dõi các dấu hiệu bất thường."
+            onChange={(event) => setInstruction(event.target.value)}
+          />
         </Field>
         <div className="doctor-plan-modal-actions">
           <Button type="button" tone="secondary" onClick={onClose} disabled={submitting}>Hủy</Button>
@@ -1245,6 +1300,7 @@ export function NutrientFormDialog({ nutrient, existingCount, submitting, onClos
           <TextInput
             value={nutrientName}
             maxLength={200}
+            placeholder="Ví dụ: Protein"
             onChange={(event) => { setNutrientName(event.target.value); setErrors((current) => ({ ...current, nutrientName: "" })); }}
             autoFocus
           />
@@ -1256,6 +1312,7 @@ export function NutrientFormDialog({ nutrient, existingCount, submitting, onClos
               min="0"
               step="0.01"
               value={amountPerDay}
+              placeholder="Ví dụ: 70"
               onChange={(event) => { setAmountPerDay(event.target.value); setErrors((current) => ({ ...current, amountPerDay: "" })); }}
             />
           </Field>
@@ -1269,7 +1326,13 @@ export function NutrientFormDialog({ nutrient, existingCount, submitting, onClos
           </Field>
         </div>
         <Field label="Hướng dẫn" optional>
-          <Textarea rows={3} maxLength={1000} value={instruction} onChange={(event) => setInstruction(event.target.value)} />
+          <Textarea
+            rows={3}
+            maxLength={1000}
+            value={instruction}
+            placeholder="Ví dụ: Chia đều lượng dưỡng chất trong các bữa ăn trong ngày."
+            onChange={(event) => setInstruction(event.target.value)}
+          />
         </Field>
         <div className="doctor-plan-modal-actions">
           <Button type="button" tone="secondary" onClick={onClose} disabled={submitting}>Hủy</Button>
@@ -1324,6 +1387,7 @@ export function FoodFormDialog({ food, existingCount, submitting, onClose, onSub
           <TextInput
             value={foodName}
             maxLength={256}
+            placeholder="Ví dụ: Ức gà"
             onChange={(event) => { setFoodName(event.target.value); setErrors((current) => ({ ...current, foodName: "" })); }}
             autoFocus
           />
@@ -1332,7 +1396,13 @@ export function FoodFormDialog({ food, existingCount, submitting, onClose, onSub
           <TextInput value={suggestedServing} maxLength={256} placeholder="Ví dụ: 150 g mỗi bữa" onChange={(event) => setSuggestedServing(event.target.value)} />
         </Field>
         <Field label="Ghi chú" optional>
-          <Textarea rows={3} maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} />
+          <Textarea
+            rows={3}
+            maxLength={1000}
+            value={note}
+            placeholder="Ví dụ: Ưu tiên hấp hoặc luộc, hạn chế chiên nhiều dầu."
+            onChange={(event) => setNote(event.target.value)}
+          />
         </Field>
         <div className="doctor-plan-modal-actions">
           <Button type="button" tone="secondary" onClick={onClose} disabled={submitting}>Hủy</Button>
