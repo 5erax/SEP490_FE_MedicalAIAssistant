@@ -1,4 +1,4 @@
-import { BrainCircuit, Filter, RotateCcw, Search } from "lucide-react";
+import { Filter, RotateCcw, Search } from "lucide-react";
 import AdminFilterDisclosure from "../admin/AdminFilterDisclosure";
 import { CustomSelect, PAGE_SIZE_OPTIONS } from "../ui";
 import { formatEnvironment, getEnvironment } from "./aiConfigUtils";
@@ -15,7 +15,6 @@ export default function AIConfigToolbar({
   onPageSizeChange,
   onSubmit,
   onReset,
-  onCreate,
 }) {
   const statusOptions = [
     { value: "", label: "Tất cả trạng thái" },
@@ -79,9 +78,6 @@ export default function AIConfigToolbar({
               />
             </span>
           </label>
-          <button className="btn btn-primary btn-small ai-config-add-button" type="button" onClick={onCreate}>
-            <BrainCircuit size={15} aria-hidden="true" /> Tạo cấu hình
-          </button>
         </div>
 
         <div className="ai-config-toolbar-row ai-config-toolbar-filters">

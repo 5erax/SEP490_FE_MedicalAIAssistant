@@ -24,6 +24,7 @@ const ADMIN_NAV_LAYOUT = [
       { section: "departments" },
       { section: "icd-chapters" },
       { section: "clinical-questions" },
+      { section: "consultation-questions" },
       { section: "consultation-checklists" },
       { section: "lab-indicators" },
     ],

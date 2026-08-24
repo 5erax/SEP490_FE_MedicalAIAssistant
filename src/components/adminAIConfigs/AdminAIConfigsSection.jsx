@@ -50,9 +50,14 @@ export default function AdminAIConfigsSection({
             <ShieldAlert size={18} aria-hidden="true" />
             Chỉ quản trị viên được thay đổi cấu hình
           </span>
-          <button className="btn btn-ghost btn-small" type="button" onClick={() => onLoadPage()}>
-            <RefreshCw size={15} aria-hidden="true" /> Tải lại
-          </button>
+          <div className="ai-config-clinical-heading-buttons">
+            <button className="btn btn-primary btn-small" type="button" onClick={onCreate}>
+              <BrainCircuit size={15} aria-hidden="true" /> Tạo cấu hình
+            </button>
+            <button className="btn btn-ghost btn-small" type="button" onClick={() => onLoadPage()}>
+              <RefreshCw size={15} aria-hidden="true" /> Tải lại
+            </button>
+          </div>
         </div>
       </header>
 
@@ -116,7 +121,6 @@ export default function AdminAIConfigsSection({
         onPageSizeChange={onPageSizeChange}
         onSubmit={onFilterSubmit}
         onReset={onFilterReset}
-        onCreate={onCreate}
       />
 
       {!loading && !error && (

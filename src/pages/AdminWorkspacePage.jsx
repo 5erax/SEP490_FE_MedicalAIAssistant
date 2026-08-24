@@ -210,6 +210,7 @@ const ADMIN_NAV_ICONS = {
   departments: Layers3,
   icd: BookOpen,
   question: CircleHelp,
+  "consultation-question": CircleHelp,
   "consultation-checklist": ClipboardCheck,
   "lab-indicator": FlaskConical,
   "patient-profile": FileHeart,
@@ -3032,8 +3033,12 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
               <AdminClinicalCatalogSection config={QUESTION_CATALOG_CONFIG} icdChapters={icdChapters} service={clinicalQuestionsApi} />
             )}
 
+            {activeSection === "consultation-questions" && (
+              <AdminConsultationCatalogSection key="questions" initialTab="questions" showTabs={false} />
+            )}
+
             {activeSection === "consultation-checklists" && (
-              <AdminConsultationCatalogSection />
+              <AdminConsultationCatalogSection key="checklist" initialTab="checklist" showTabs={false} />
             )}
 
             {activeSection === "lab-indicators" && (

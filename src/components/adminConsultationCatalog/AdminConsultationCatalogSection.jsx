@@ -127,9 +127,9 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
 }
 
-export default function AdminConsultationCatalogSection() {
+export default function AdminConsultationCatalogSection({ initialTab = "questions", showTabs = true }) {
   const { confirmAction, showToast } = useFeedback();
-  const [activeTab, setActiveTab] = useState("questions");
+  const [activeTab, setActiveTab] = useState(initialTab === "checklist" ? "checklist" : "questions");
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
@@ -356,6 +356,9 @@ export default function AdminConsultationCatalogSection() {
 
   const currentFilters = filters[activeTab];
   const currentTitle = activeTab === "questions" ? "Câu hỏi tư vấn theo chuyên khoa" : "Checklist chuẩn bị tư vấn";
+  const pageDescription = activeTab === "questions"
+    ? "Quản lý các câu hỏi định hướng trước khi tư vấn tại từng chuyên khoa."
+    : "Quản lý các mục cần kiểm tra hoặc chuẩn bị trước khi tư vấn tại từng chuyên khoa, cơ sở.";
   const categoryLabel = (value) => CATEGORY_OPTIONS.find((option) => option.value === value)?.label ?? value ?? "Chưa phân loại";
   const suggestionItems = items.filter((item) => {
     if (currentFilters.departmentId && String(item.departmentId) !== String(currentFilters.departmentId)) return false;
@@ -437,22 +440,24 @@ export default function AdminConsultationCatalogSection() {
       <header className="consultation-catalog-header">
         <div>
           <p className="eyebrow">Nội dung tư vấn</p>
-          <h2 id="consultation-catalog-title">Checklist và câu hỏi theo chuyên khoa</h2>
-          <p>Quản lý các câu hỏi định hướng và mục cần kiểm tra trước khi tư vấn tại từng chuyên khoa, cơ sở.</p>
+          <h2 id="consultation-catalog-title">{showTabs ? "Checklist và câu hỏi theo chuyên khoa" : currentTitle}</h2>
+          <p>{showTabs ? "Quản lý các câu hỏi định hướng và mục cần kiểm tra trước khi tư vấn tại từng chuyên khoa, cơ sở." : pageDescription}</p>
         </div>
         <button ref={createButtonRef} className="btn btn-primary" type="button" onClick={openCreate}>
           <Plus size={17} aria-hidden="true" /> {activeTab === "questions" ? "Tạo câu hỏi" : "Tạo checklist"}
         </button>
       </header>
 
-      <div className="consultation-tabs" role="tablist" aria-label="Loại nội dung tư vấn">
-        <button type="button" role="tab" aria-selected={activeTab === "questions"} className={activeTab === "questions" ? "is-active" : ""} onClick={() => switchTab("questions")}>
-          <HelpCircle size={17} aria-hidden="true" /> Câu hỏi tư vấn
-        </button>
-        <button type="button" role="tab" aria-selected={activeTab === "checklist"} className={activeTab === "checklist" ? "is-active" : ""} onClick={() => switchTab("checklist")}>
-          <ClipboardCheck size={17} aria-hidden="true" /> Checklist chuẩn bị
-        </button>
-      </div>
+      {showTabs && (
+        <div className="consultation-tabs" role="tablist" aria-label="Loại nội dung tư vấn">
+          <button type="button" role="tab" aria-selected={activeTab === "questions"} className={activeTab === "questions" ? "is-active" : ""} onClick={() => switchTab("questions")}>
+            <HelpCircle size={17} aria-hidden="true" /> Câu hỏi tư vấn
+          </button>
+          <button type="button" role="tab" aria-selected={activeTab === "checklist"} className={activeTab === "checklist" ? "is-active" : ""} onClick={() => switchTab("checklist")}>
+            <ClipboardCheck size={17} aria-hidden="true" /> Checklist chuẩn bị
+          </button>
+        </div>
+      )}
 
       {referenceError && <div className="api-message warning" role="status">{referenceError}</div>}
       {message && status !== "error" && <div className="api-message success" role="status" aria-live="polite">{message}</div>}

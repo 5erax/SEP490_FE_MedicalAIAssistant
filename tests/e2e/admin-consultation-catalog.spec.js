@@ -153,9 +153,9 @@ async function mockConsultationCatalog(page) {
 test("admin completes CRUD for consultation questions and checklist items", async ({ page }) => {
   const state = await mockConsultationCatalog(page);
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/app/admin/consultation-checklists", { waitUntil: "domcontentloaded" });
+  await page.goto("/app/admin/consultation-questions", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { name: "Checklist và câu hỏi theo chuyên khoa" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Câu hỏi tư vấn theo chuyên khoa" })).toBeVisible();
   await expect(page.getByText("Bạn có đau ngực khi vận động không?", { exact: true })).toBeVisible();
   const questionRowHeader = page.getByRole("rowheader", { name: "Bạn có đau ngực khi vận động không?" });
   await expect(questionRowHeader).toHaveCSS("background-color", "rgb(255, 255, 255)");
@@ -187,7 +187,9 @@ test("admin completes CRUD for consultation questions and checklist items", asyn
   await page.getByRole("dialog", { name: "Xóa câu hỏi tư vấn?" }).getByRole("button", { name: "Xóa" }).click();
   await expect.poll(() => state.questionDeletes).toContain("question-1");
 
-  await page.getByRole("tab", { name: "Checklist chuẩn bị" }).click();
+  await page.getByRole("button", { name: "Checklist chuẩn bị", exact: true }).click();
+  await expect(page).toHaveURL(/\/app\/admin\/consultation-checklists$/);
+  await expect(page.getByRole("heading", { name: "Checklist chuẩn bị tư vấn" })).toBeVisible();
   await expect(page.getByText("Chuẩn bị danh sách thuốc đang sử dụng", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Tạo checklist", exact: true }).click();
   dialog = page.getByRole("dialog");
@@ -217,7 +219,7 @@ test("admin consultation catalog remains accessible on mobile", async ({ page })
   await mockConsultationCatalog(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/app/admin/consultation-checklists", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Checklist và câu hỏi theo chuyên khoa" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Checklist chuẩn bị tư vấn" })).toBeVisible();
   const results = await new AxeBuilder({ page }).include(".consultation-catalog").analyze();
   expect(results.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);

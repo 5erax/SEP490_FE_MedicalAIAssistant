@@ -92,6 +92,13 @@
   color: var(--ai-config-teal);
 }
 
+.admin-operator .ai-config-clinical-heading-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .admin-operator .ai-config-clinical-heading-actions .btn {
   min-height: 44px;
 }
