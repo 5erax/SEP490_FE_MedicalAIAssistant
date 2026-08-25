@@ -5,7 +5,7 @@ import { useFeedback } from "../feedback/feedbackContext";
 import { Button } from "../ui";
 
 const CATALOG_FORMAT = "medimate.lab-indicator-curation.v1";
-const EXPORT_PAGE_SIZE = 250;
+const EXPORT_PAGE_SIZE = 100;
 const SUPPORTED_STATUSES = new Set(["normal", "high", "low"]);
 
 function unwrapData(response) {
@@ -29,6 +29,22 @@ function getAliasId(alias) {
 
 function getAdviceId(advice) {
   return advice?.cacheId ?? advice?.adviceId ?? advice?.id ?? "";
+}
+
+async function listAllIndicators() {
+  const allItems = [];
+  let pageNumber = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await labIndicatorsApi.list(pageNumber, EXPORT_PAGE_SIZE, {});
+    const data = unwrapData(response) ?? {};
+    allItems.push(...unwrapList(response));
+    totalPages = Math.max(1, Number(data.totalPages) || 1);
+    pageNumber += 1;
+  } while (pageNumber <= totalPages);
+
+  return allItems;
 }
 
 function normalizeKey(value) {
@@ -84,8 +100,7 @@ function downloadJson(payload) {
 }
 
 async function collectCatalog(onProgress) {
-  const listResponse = await labIndicatorsApi.list(1, EXPORT_PAGE_SIZE, {});
-  const indicators = unwrapList(listResponse);
+  const indicators = await listAllIndicators();
   const records = [];
 
   for (let index = 0; index < indicators.length; index += 1) {
@@ -225,8 +240,7 @@ export default function LabIndicatorCatalogTransfer({ onApplied }) {
     let updated = 0;
     let skipped = 0;
     try {
-      const liveResponse = await labIndicatorsApi.list(1, EXPORT_PAGE_SIZE, {});
-      const liveIndicators = unwrapList(liveResponse);
+      const liveIndicators = await listAllIndicators();
       const liveBySymbol = new Map(liveIndicators.map((item) => [normalizeKey(item.symbol), item]));
 
       for (let index = 0; index < catalog.indicators.length; index += 1) {
