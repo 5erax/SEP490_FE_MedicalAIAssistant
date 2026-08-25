@@ -247,9 +247,16 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
   margin: 0;
   color: var(--color-ink);
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.75;
-  white-space: pre-line;
+}
+
+.lab-test-result__overview-summary-label {
+  color: var(--color-muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 .lab-test-result__summary-state {
@@ -485,6 +492,94 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
   font-size: 10px;
   font-weight: 650;
   line-height: 1.55;
+}
+
+.lab-test-result__full-summary {
+  border-top: 1px solid var(--color-line);
+  padding-top: var(--space-4);
+}
+
+.lab-test-result__full-summary > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-info-strong);
+  padding: 0 15px;
+  font-size: 12px;
+  font-weight: 800;
+  list-style: none;
+  cursor: pointer;
+}
+
+.lab-test-result__full-summary > summary::-webkit-details-marker {
+  display: none;
+}
+
+.lab-test-result__full-summary > summary::after {
+  margin-left: 2px;
+  font-size: 15px;
+  line-height: 1;
+  content: "+";
+}
+
+.lab-test-result__full-summary[open] > summary::after {
+  content: "−";
+}
+
+.lab-test-result__full-summary > summary:hover {
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+.lab-test-result__formatted-summary {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 1000px;
+  margin-top: var(--space-4);
+  border-left: 3px solid var(--color-info);
+  background: color-mix(in srgb, var(--color-surface-soft) 70%, var(--color-surface));
+  padding: clamp(var(--space-4), 2.5vw, var(--space-5));
+}
+
+.lab-test-result__formatted-summary h4,
+.lab-test-result__formatted-summary p,
+.lab-test-result__formatted-summary ul {
+  margin: 0;
+}
+
+.lab-test-result__formatted-summary h4 {
+  color: var(--color-info-strong);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.lab-test-result__formatted-summary h4:not(:first-child) {
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--color-line);
+  padding-top: var(--space-4);
+}
+
+.lab-test-result__formatted-summary p,
+.lab-test-result__formatted-summary li {
+  overflow-wrap: anywhere;
+  color: var(--color-subtle);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.75;
+}
+
+.lab-test-result__formatted-summary ul {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: 19px;
+}
+
+.lab-test-result__formatted-summary li::marker {
+  color: var(--color-info);
 }
 
 .lab-test-result__content-grid {
@@ -1014,6 +1109,7 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
   .lab-test-result__result-card,
   .lab-test-result__priority-item,
   .lab-test-result__summary-state button,
+  .lab-test-result__full-summary > summary,
   .lab-test-result__back-button,
   .lab-test-result-page .ui-button {
     min-height: 44px;
@@ -1047,6 +1143,7 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
   .lab-test-result__overview-counts > div,
   .lab-test-result__priority-item,
   .lab-test-result__overview-action,
+  .lab-test-result__formatted-summary,
   .lab-test-result__result-card,
   .lab-test-result__selected-summary > div,
   .lab-test-result__no-advice,
