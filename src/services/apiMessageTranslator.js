@@ -172,6 +172,22 @@ const EXACT_MESSAGES = Object.freeze({
   "User approved.":
     "Tài khoản đã được phê duyệt.",
 
+  // Hồ sơ người dùng hiện tại
+  "Profile updated.":
+    "Hồ sơ cá nhân đã được cập nhật.",
+  "Update profile failed.":
+    "Không thể cập nhật hồ sơ cá nhân.",
+  "Date of birth is required.":
+    "Vui lòng nhập ngày sinh.",
+  "User must be at least 16 years old.":
+    "Bạn phải đủ ít nhất 16 tuổi để sử dụng hệ thống.",
+  "Date of birth cannot be in the future.":
+    "Ngày sinh không thể nằm trong tương lai.",
+  "Date of birth must be on or after January 1, 1890.":
+    "Ngày sinh phải từ ngày 01/01/1890 trở đi.",
+  "User not found.":
+    "Không tìm thấy tài khoản. Vui lòng đăng nhập lại.",
+
   // Trợ lý AI và phân tích y tế
   "Send message failed.":
     "Không thể gửi tin nhắn.",

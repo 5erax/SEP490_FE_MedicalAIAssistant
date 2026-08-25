@@ -5,9 +5,12 @@ import { Footer } from "../components/landing/PricingSection";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch } from "../router/returnIntent";
-import { authApi, getStoredAuth, setStoredAuth } from "../services/api";
+import { authApi, getStoredAuth, mergeAuthWithCurrentUser, setStoredAuth } from "../services/api";
 import { findPatientProfileByUserId, savePatientProfileSetup } from "../services/patientProfileSetup";
 import {
+  getLatestAllowedBirthDate,
+  MINIMUM_DATE_OF_BIRTH,
+  normalizeGender,
   validateMedicalProfile,
   validatePersonalProfile,
 } from "../utils/profileValidation";
@@ -41,7 +44,7 @@ function createInitialForm() {
   return {
     displayName: "",
     dateOfBirth: "",
-    gender: "1",
+    gender: "male",
     phoneNumber: "",
     address: "",
     bloodType: "",
@@ -210,13 +213,10 @@ export default function PersonalPatientProfilePage() {
         if (!active) return;
 
         if (matchedProfile) {
-          const nextAuth = {
-            ...auth,
-            firstLogin: false,
-            isFirstLogin: false,
+          const nextAuth = mergeAuthWithCurrentUser(auth, {
+            ...resolvedUser,
             isProfileCompleted: true,
-            patientOnboardingPending: auth.patientOnboardingPending ?? true,
-          };
+          });
           setStoredAuth(nextAuth);
           setAuth(nextAuth);
           navigate(getReturnToFromSearch() || getWorkspacePath(nextAuth));
@@ -231,7 +231,7 @@ export default function PersonalPatientProfilePage() {
         ...current,
         displayName: resolvedUser?.displayName ?? resolvedUser?.name ?? "",
         dateOfBirth: toDateInput(resolvedUser?.dateOfBirth),
-        gender: String(resolvedUser?.gender ?? "1"),
+        gender: normalizeGender(resolvedUser?.gender) || "male",
         phoneNumber: resolvedUser?.phoneNumber ?? "",
         address: resolvedUser?.address ?? "",
       }));
@@ -310,18 +310,12 @@ export default function PersonalPatientProfilePage() {
     setMessage(null);
 
     try {
-      await savePatientProfileSetup({
+      const { currentUser } = await savePatientProfileSetup({
         userId: currentUserId,
         form,
       });
 
-      const nextAuth = {
-        ...auth,
-        firstLogin: false,
-        isFirstLogin: false,
-        isProfileCompleted: true,
-        patientOnboardingPending: true,
-      };
+      const nextAuth = mergeAuthWithCurrentUser(auth, currentUser);
       setStoredAuth(nextAuth);
       setAuth(nextAuth);
       setDirty(false);
@@ -421,12 +415,12 @@ export default function PersonalPatientProfilePage() {
                   <input name="displayName" autoComplete="name" value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field id="patient-profile-dateOfBirth" label="Ngày sinh" error={errors.dateOfBirth} required>
-                  <input name="dateOfBirth" type="date" autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
+                  <input name="dateOfBirth" type="date" min={MINIMUM_DATE_OF_BIRTH} max={getLatestAllowedBirthDate()} autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field id="patient-profile-gender" label="Giới tính" error={errors.gender} required>
                   <select name="gender" autoComplete="sex" value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>
-                    <option value="1">Nam</option>
-                    <option value="2">Nữ</option>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
                   </select>
                 </Field>
                 <Field id="patient-profile-phoneNumber" label="Số điện thoại" error={errors.phoneNumber} required>
