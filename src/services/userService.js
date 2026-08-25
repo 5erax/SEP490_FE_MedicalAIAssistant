@@ -14,6 +14,32 @@ export function normalizeUserRecord(user) {
   };
 }
 
+export function mergeAuthWithCurrentUser(auth, user) {
+  const normalizedUser = normalizeUserRecord(user) ?? {};
+  const roles = normalizedUser.roles ?? normalizedUser.role ?? auth?.roles ?? auth?.role ?? [];
+  const isProfileCompleted = normalizedUser.isProfileCompleted === true;
+
+  return {
+    ...auth,
+    userId: normalizedUser.userId || auth?.userId,
+    identityId: normalizedUser.identityId || auth?.identityId,
+    email: normalizedUser.email ?? auth?.email,
+    username: normalizedUser.userName ?? normalizedUser.username ?? auth?.username,
+    displayName: normalizedUser.displayName ?? normalizedUser.name ?? auth?.displayName,
+    name: normalizedUser.name ?? normalizedUser.displayName ?? auth?.name,
+    roles: Array.isArray(roles) ? roles : [roles].filter(Boolean),
+    role: normalizedUser.role ?? auth?.role,
+    address: normalizedUser.address ?? null,
+    gender: normalizedUser.gender ?? null,
+    dateOfBirth: normalizedUser.dateOfBirth ?? null,
+    phoneNumber: normalizedUser.phoneNumber ?? null,
+    firstLogin: isProfileCompleted ? false : (normalizedUser.firstLogin ?? auth?.firstLogin),
+    isFirstLogin: isProfileCompleted ? false : (normalizedUser.isFirstLogin ?? auth?.isFirstLogin),
+    isProfileCompleted,
+    patientOnboardingPending: isProfileCompleted ? false : auth?.patientOnboardingPending,
+  };
+}
+
 function normalizePagedUsers(response) {
   const data = response?.data;
   if (!data?.items) return response;
@@ -34,6 +60,22 @@ export const usersApi = {
 
   update(userId, payload) {
     return apiRequest(ENDPOINTS.USERS.BY_ID(userId), {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  updateMe(payload) {
+    return apiRequest(ENDPOINTS.USERS.ME, {
+      method: "PUT",
+      body: payload,
+      auth: true,
+    });
+  },
+
+  updatePhone(payload) {
+    return apiRequest(ENDPOINTS.USERS.PHONE, {
       method: "PUT",
       body: payload,
       auth: true,

@@ -8,21 +8,28 @@ import { navigate as go } from "../router/navigation";
 import {
   authApi,
   getStoredAuth,
+  mergeAuthWithCurrentUser,
   patientProfilesApi,
+  setStoredAuth,
   usersApi,
   userSubscriptionsApi,
 } from "../services/api";
 import { useServiceCredit } from "../state/useServiceCredit";
 import { getSubscriptionStatusLabel } from "../services/paymentStatusLabels";
 import {
+  getLatestAllowedBirthDate,
   getChronicDiseaseText,
+  MINIMUM_DATE_OF_BIRTH,
   normalizeChronicDiseases,
+  normalizeGender,
   normalizePersonalProfile,
+  normalizePhoneNumber,
+  normalizePhoneProfile,
   validateMedicalProfile,
   validatePersonalProfile,
 } from "../utils/profileValidation";
 
-const EMPTY_USER = { displayName: "", email: "", phoneNumber: "", address: "", gender: "1", dateOfBirth: "" };
+const EMPTY_USER = { displayName: "", email: "", phoneNumber: "", address: "", gender: "male", dateOfBirth: "" };
 const EMPTY_DISEASE = { diseaseName: "", from: "", to: "", note: "" };
 const tabs = [
   ["info", User, "Thông tin cá nhân"],
@@ -204,7 +211,7 @@ export default function UserProfilePage() {
           email: user.email ?? "",
           phoneNumber: user.phoneNumber ?? "",
           address: user.address ?? "",
-          gender: String(user.gender ?? "1"),
+          gender: normalizeGender(user.gender) || "male",
           dateOfBirth: user.dateOfBirth ? String(user.dateOfBirth).slice(0, 10) : "",
         };
         setProfileForm(nextProfile);
@@ -375,7 +382,7 @@ export default function UserProfilePage() {
   }
 
   function validateProfile() {
-    const next = validatePersonalProfile(profileForm);
+    const next = validatePersonalProfile(profileForm, { requireDateOfBirth: true });
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -395,14 +402,34 @@ export default function UserProfilePage() {
     }
     setSavingProfile(true);
     try {
-      await usersApi.update(userId, normalizePersonalProfile(profileForm));
+      await usersApi.updateMe(normalizePersonalProfile(profileForm));
+      if (
+        normalizePhoneNumber(profileForm.phoneNumber)
+        !== normalizePhoneNumber(profileSnapshot.phoneNumber)
+      ) {
+        await usersApi.updatePhone(normalizePhoneProfile(profileForm));
+      }
+      const userResponse = await authApi.me();
+      const refreshedUser = userResponse.data ?? {};
+      const nextProfile = {
+        displayName: refreshedUser.displayName ?? refreshedUser.name ?? profileForm.displayName,
+        email: refreshedUser.email ?? profileForm.email,
+        phoneNumber: refreshedUser.phoneNumber ?? "",
+        address: refreshedUser.address ?? "",
+        gender: normalizeGender(refreshedUser.gender) || profileForm.gender,
+        dateOfBirth: refreshedUser.dateOfBirth
+          ? String(refreshedUser.dateOfBirth).slice(0, 10)
+          : profileForm.dateOfBirth,
+      };
+      setStoredAuth(mergeAuthWithCurrentUser(auth, refreshedUser));
       setIsEditing(false);
-      setProfileSnapshot(profileForm);
+      setProfileForm(nextProfile);
+      setProfileSnapshot(nextProfile);
       setProfileDirty(false);
       setToast("Đã lưu thông tin!");
       showToast({ type: "success", title: "Đã lưu thông tin", message: "Hồ sơ cá nhân đã được cập nhật." });
-    } catch {
-      setToast("Không thể lưu thông tin cá nhân lúc này. Vui lòng thử lại.");
+    } catch (error) {
+      setToast(error.message || "Không thể lưu thông tin cá nhân lúc này. Vui lòng thử lại.");
     } finally {
       setSavingProfile(false);
     }
@@ -622,8 +649,8 @@ export default function UserProfilePage() {
             <div className="form-grid">
               <Field label="Họ và tên" error={errors.displayName} wide><input name="displayName" autoComplete="name" value={profileForm.displayName} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("displayName", e.target.value)} /></Field>
               <Field label="Email" wide><input name="email" type="email" autoComplete="email" value={profileForm.email} disabled /><em>Không thể đổi</em></Field>
-              <Field label="Giới tính" error={errors.gender}><select name="gender" autoComplete="sex" value={profileForm.gender} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("gender", e.target.value)}><option value="1">Nam</option><option value="2">Nữ</option><option value="0">Khác</option></select></Field>
-              <Field label="Ngày sinh" error={errors.dateOfBirth}><input name="dateOfBirth" type="date" autoComplete="bday" value={profileForm.dateOfBirth} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
+              <Field label="Giới tính" error={errors.gender}><select name="gender" autoComplete="sex" value={profileForm.gender} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("gender", e.target.value)}><option value="male">Nam</option><option value="female">Nữ</option></select></Field>
+              <Field label="Ngày sinh" error={errors.dateOfBirth}><input name="dateOfBirth" type="date" min={MINIMUM_DATE_OF_BIRTH} max={getLatestAllowedBirthDate()} autoComplete="bday" value={profileForm.dateOfBirth} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
               <Field label="Số điện thoại" error={errors.phoneNumber}><input name="phoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={profileForm.phoneNumber} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
               <Field label="Địa chỉ" error={errors.address} wide><input name="address" autoComplete="street-address" value={profileForm.address} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
             </div>

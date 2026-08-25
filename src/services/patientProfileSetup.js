@@ -1,5 +1,9 @@
-import { authApi, patientProfilesApi } from "./api";
-import { normalizeChronicDiseases, normalizePersonalProfile } from "../utils/profileValidation";
+import { authApi, patientProfilesApi, usersApi } from "./api";
+import {
+  normalizeChronicDiseases,
+  normalizePersonalProfile,
+  normalizePhoneProfile,
+} from "../utils/profileValidation";
 
 function numberOrNull(value) {
   if (value === "" || value === null || value === undefined) return null;
@@ -12,7 +16,8 @@ export async function findPatientProfileByUserId(userId) {
 }
 
 export async function savePatientProfileSetup({ userId, existingProfileId, form }) {
-  await authApi.updateUser(userId, normalizePersonalProfile(form));
+  await usersApi.updateMe(normalizePersonalProfile(form));
+  await usersApi.updatePhone(normalizePhoneProfile(form));
 
   const chronicDiseases = Array.isArray(form.chronicDiseases)
     ? form.chronicDiseases
@@ -34,12 +39,17 @@ export async function savePatientProfileSetup({ userId, existingProfileId, form 
     chronicDiseases,
   };
 
-  if (existingProfileId) {
-    return patientProfilesApi.update(existingProfileId, patientPayload);
-  }
+  const profileResponse = existingProfileId
+    ? await patientProfilesApi.update(existingProfileId, patientPayload)
+    : await patientProfilesApi.create({
+      ...patientPayload,
+      userId,
+    });
 
-  return patientProfilesApi.create({
-    ...patientPayload,
-    userId,
-  });
+  const currentUserResponse = await authApi.me();
+
+  return {
+    profileResponse,
+    currentUser: currentUserResponse.data ?? {},
+  };
 }

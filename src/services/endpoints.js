@@ -53,6 +53,7 @@ export const ENDPOINTS = {
   USERS: {
     BASE: USERS_BASE,
     ME: `${USERS_BASE}/me`,
+    PHONE: `${USERS_BASE}/me/phone`,
     BY_ID: (userId) => byId(USERS_BASE, userId),
     RESTORE: (userId) => `${byId(USERS_BASE, userId)}/restore`,
   },
