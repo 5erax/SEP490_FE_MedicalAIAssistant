@@ -22,8 +22,8 @@ import { authApi, clearStoredAuth, setStoredAuth } from "../services/api";
 import { isGoogleOAuthEnabledForCurrentOrigin } from "../services/googleOAuthConfig";
 import { findPatientProfileByUserId } from "../services/patientProfileSetup";
 import {
+  getEarliestAllowedBirthDate,
   getLatestAllowedBirthDate,
-  MINIMUM_DATE_OF_BIRTH,
   normalizeGender,
   validateDateOfBirth,
 } from "../utils/profileValidation";
@@ -706,7 +706,7 @@ export function SignupPage() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const signupFormRef = useRef(null);
   const today = new Date();
-  const earliestBirthDateValue = MINIMUM_DATE_OF_BIRTH;
+  const earliestBirthDateValue = getEarliestAllowedBirthDate(today);
   const latestBirthDateValue = getLatestAllowedBirthDate(today);
 
   function update(key, value) {

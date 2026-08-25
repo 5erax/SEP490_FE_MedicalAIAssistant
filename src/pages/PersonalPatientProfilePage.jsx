@@ -8,8 +8,8 @@ import { getReturnToFromSearch } from "../router/returnIntent";
 import { authApi, getStoredAuth, mergeAuthWithCurrentUser, setStoredAuth } from "../services/api";
 import { findPatientProfileByUserId, savePatientProfileSetup } from "../services/patientProfileSetup";
 import {
+  getEarliestAllowedBirthDate,
   getLatestAllowedBirthDate,
-  MINIMUM_DATE_OF_BIRTH,
   normalizeGender,
   validateMedicalProfile,
   validatePersonalProfile,
@@ -415,7 +415,7 @@ export default function PersonalPatientProfilePage() {
                   <input name="displayName" autoComplete="name" value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field id="patient-profile-dateOfBirth" label="Ngày sinh" error={errors.dateOfBirth} required>
-                  <input name="dateOfBirth" type="date" min={MINIMUM_DATE_OF_BIRTH} max={getLatestAllowedBirthDate()} autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
+                  <input name="dateOfBirth" type="date" min={getEarliestAllowedBirthDate()} max={getLatestAllowedBirthDate()} autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
                 </Field>
                 <Field id="patient-profile-gender" label="Giới tính" error={errors.gender} required>
                   <select name="gender" autoComplete="sex" value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>

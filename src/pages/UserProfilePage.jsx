@@ -17,9 +17,9 @@ import {
 import { useServiceCredit } from "../state/useServiceCredit";
 import { getSubscriptionStatusLabel } from "../services/paymentStatusLabels";
 import {
+  getEarliestAllowedBirthDate,
   getLatestAllowedBirthDate,
   getChronicDiseaseText,
-  MINIMUM_DATE_OF_BIRTH,
   normalizeChronicDiseases,
   normalizeGender,
   normalizePersonalProfile,
@@ -650,7 +650,7 @@ export default function UserProfilePage() {
               <Field label="Họ và tên" error={errors.displayName} wide><input name="displayName" autoComplete="name" value={profileForm.displayName} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("displayName", e.target.value)} /></Field>
               <Field label="Email" wide><input name="email" type="email" autoComplete="email" value={profileForm.email} disabled /><em>Không thể đổi</em></Field>
               <Field label="Giới tính" error={errors.gender}><select name="gender" autoComplete="sex" value={profileForm.gender} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("gender", e.target.value)}><option value="male">Nam</option><option value="female">Nữ</option></select></Field>
-              <Field label="Ngày sinh" error={errors.dateOfBirth}><input name="dateOfBirth" type="date" min={MINIMUM_DATE_OF_BIRTH} max={getLatestAllowedBirthDate()} autoComplete="bday" value={profileForm.dateOfBirth} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
+              <Field label="Ngày sinh" error={errors.dateOfBirth}><input name="dateOfBirth" type="date" min={getEarliestAllowedBirthDate()} max={getLatestAllowedBirthDate()} autoComplete="bday" value={profileForm.dateOfBirth} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("dateOfBirth", e.target.value)} /></Field>
               <Field label="Số điện thoại" error={errors.phoneNumber}><input name="phoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={profileForm.phoneNumber} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("phoneNumber", e.target.value)} /></Field>
               <Field label="Địa chỉ" error={errors.address} wide><input name="address" autoComplete="street-address" value={profileForm.address} disabled={!isEditing || savingProfile} onChange={(e) => updateProfile("address", e.target.value)} /></Field>
             </div>

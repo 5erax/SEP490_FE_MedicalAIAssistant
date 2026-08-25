@@ -3,8 +3,8 @@ import { HeartPulse, Plus, Trash2 } from "lucide-react";
 import { authApi, mergeAuthWithCurrentUser, setStoredAuth } from "../../services/api";
 import { findPatientProfileByUserId, savePatientProfileSetup } from "../../services/patientProfileSetup";
 import {
+  getEarliestAllowedBirthDate,
   getLatestAllowedBirthDate,
-  MINIMUM_DATE_OF_BIRTH,
   normalizeGender,
   validateMedicalProfile,
   validatePersonalProfile,
@@ -264,7 +264,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
               <input ref={firstFieldRef} name="displayName" autoComplete="name" value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
             </SetupField>
             <SetupField label="Ngày sinh" error={errors.dateOfBirth}>
-              <input name="dateOfBirth" type="date" min={MINIMUM_DATE_OF_BIRTH} max={getLatestAllowedBirthDate()} autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
+              <input name="dateOfBirth" type="date" min={getEarliestAllowedBirthDate()} max={getLatestAllowedBirthDate()} autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
             </SetupField>
             <SetupField label="Giới tính" error={errors.gender}>
               <select name="gender" autoComplete="sex" value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>

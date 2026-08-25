@@ -2,6 +2,7 @@ const PHONE_PATTERN = /^(?:0\d{8,10}|\+[1-9]\d{8,14})$/;
 const MAX_NOTE_LENGTH = 1000;
 export const MINIMUM_DATE_OF_BIRTH = "1890-01-01";
 export const MINIMUM_PATIENT_AGE = 16;
+export const MAXIMUM_PATIENT_AGE = 100;
 
 export function getChronicDiseaseText(profile) {
   if (Array.isArray(profile?.chronicDiseases) && profile.chronicDiseases.length > 0) {
@@ -67,6 +68,36 @@ export function getLatestAllowedBirthDate(today = new Date()) {
   ));
 }
 
+function calculateAge(dateOfBirth, today) {
+  let age = today.getFullYear() - dateOfBirth.getFullYear();
+  const birthdayHasNotOccurred = (
+    today.getMonth() < dateOfBirth.getMonth()
+    || (
+      today.getMonth() === dateOfBirth.getMonth()
+      && today.getDate() < dateOfBirth.getDate()
+    )
+  );
+
+  if (birthdayHasNotOccurred) age -= 1;
+  return age;
+}
+
+export function getEarliestAllowedBirthDate(today = new Date()) {
+  const targetYear = today.getFullYear() - MAXIMUM_PATIENT_AGE - 1;
+  const lastDayOfTargetMonth = new Date(
+    targetYear,
+    today.getMonth() + 1,
+    0,
+  ).getDate();
+  const cutoff = new Date(
+    targetYear,
+    today.getMonth(),
+    Math.min(today.getDate(), lastDayOfTargetMonth),
+  );
+  cutoff.setDate(cutoff.getDate() + 1);
+  return formatDateInputValue(cutoff);
+}
+
 export function normalizeGender(value) {
   const normalized = String(value ?? "").trim().toLowerCase();
   if (["male", "1"].includes(normalized)) return "male";
@@ -88,8 +119,13 @@ export function validateDateOfBirth(value, { today = new Date() } = {}) {
   const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   if (dateOfBirth > todayAtMidnight) return "Ngày sinh không thể nằm trong tương lai.";
 
-  if (value > getLatestAllowedBirthDate(todayAtMidnight)) {
+  const age = calculateAge(dateOfBirth, todayAtMidnight);
+  if (age < MINIMUM_PATIENT_AGE) {
     return "Bạn phải đủ ít nhất 16 tuổi để sử dụng hệ thống.";
+  }
+
+  if (age > MAXIMUM_PATIENT_AGE) {
+    return "Tuổi không được vượt quá 100. Vui lòng kiểm tra lại ngày sinh.";
   }
 
   return "";
