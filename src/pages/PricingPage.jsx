@@ -9,7 +9,6 @@ import {
   CreditCard,
   LoaderCircle,
   ShieldCheck,
-  Sparkles,
   XCircle,
 } from "lucide-react";
 import { Navbar } from "../components/landing/Navbar";
@@ -530,7 +529,7 @@ function PricingPage() {
             {!isFocusedUpgrade && (
             <article className="pricing-plan-card pricing-plan-card-basic">
               <div className="pricing-plan-card-heading">
-                <span className="plan-icon" aria-hidden="true"><Sparkles size={22} /></span>
+                <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
               </div>
               <p className="plan-kicker">Truy cập công khai</p>
               <h2>{freePlan?.planName || "Miễn phí"}</h2>

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Check, FlaskConical, Languages, Ruler, Sparkles, X } from "lucide-react";
+import { Check, FlaskConical, Languages, MessageSquareText, Ruler, X } from "lucide-react";
 import { Button, Dialog, Field, Select, Textarea, TextInput } from "../ui";
 
 const DEFAULT_ADVICE_SEVERITY = "info";
@@ -75,7 +75,7 @@ const CHILD_DIALOG_META = {
     noun: "khoảng tham chiếu",
   },
   advice: {
-    icon: Sparkles,
+    icon: MessageSquareText,
     eyebrow: "Nội dung hướng dẫn",
     noun: "lời khuyên",
   },

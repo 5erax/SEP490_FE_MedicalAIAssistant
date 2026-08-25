@@ -1,4 +1,4 @@
-import { ArrowRight, Check, CircleDollarSign, Info, LoaderCircle, MapPinned, ShieldCheck, Sparkles, Stethoscope } from "lucide-react";
+import { ArrowRight, Check, CircleDollarSign, Info, LoaderCircle, MapPinned, ShieldCheck, Stethoscope } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { subscriptionPlansApi } from "../../services/api";
 import { findServiceCreditQuota } from "../../services/serviceCredit";
@@ -93,7 +93,7 @@ export function PricingPreviewSection() {
         <div className="care-pricing-grid" id="pricing-plans">
           <article className="care-price-card care-price-card-free">
             <div className="care-price-card-head">
-              <span className="care-price-icon"><Sparkles size={21} aria-hidden="true" /></span>
+              <span className="care-price-icon"><CircleDollarSign size={21} aria-hidden="true" /></span>
             </div>
             <p className="care-price-kicker">Truy cập công khai</p>
             <h3>Miễn phí</h3>

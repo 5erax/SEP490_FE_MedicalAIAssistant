@@ -4,13 +4,13 @@ import {
   ArrowRight,
   CheckCircle2,
   CircleAlert,
+  ClipboardCheck,
   FileText,
   HeartPulse,
   ListChecks,
   LoaderCircle,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   TriangleAlert,
 } from "lucide-react";
 import { Button, EmptyState, ErrorState } from "../components/ui";
@@ -513,7 +513,7 @@ function ResultOverview({
     <section className="lab-test-result__overview" aria-labelledby="lab-overview-title">
       <header className="lab-test-result__overview-header">
         <span className="lab-test-result__overview-icon" data-tone={tone} aria-hidden="true">
-          <Sparkles size={22} />
+          <ClipboardCheck size={22} />
         </span>
         <div>
           <p>TỔNG QUAN KẾT QUẢ</p>
