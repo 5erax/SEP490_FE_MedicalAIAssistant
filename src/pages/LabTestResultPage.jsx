@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   CircleAlert,
   FileText,
+  HeartPulse,
+  ListChecks,
   LoaderCircle,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
+  TriangleAlert,
 } from "lucide-react";
 import { Button, EmptyState, ErrorState } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -256,6 +261,243 @@ function AdviceBlock({ title, value, tone = "default" }) {
   );
 }
 
+function getResultPriority(result) {
+  const status = normalizeResultStatus(result?.status);
+  if (status === "criticalHigh" || status === "criticalLow") return 0;
+  if (status === "high" || status === "low") return 1;
+  if (status === "unknown") return 2;
+  return 3;
+}
+
+function getDeviationMagnitude(result) {
+  const deviation = Number(result?.deviationPercent);
+  return Number.isFinite(deviation) ? Math.abs(deviation) : -1;
+}
+
+function getPriorityResults(results) {
+  return results
+    .filter((result) => ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status)))
+    .map((result, index) => ({ result, index }))
+    .sort((left, right) => (
+      getResultPriority(left.result) - getResultPriority(right.result)
+      || getDeviationMagnitude(right.result) - getDeviationMagnitude(left.result)
+      || left.index - right.index
+    ))
+    .slice(0, 3);
+}
+
+function uniqueAdviceItems(values, limit = 3) {
+  const seen = new Set();
+  const items = [];
+
+  for (const value of values) {
+    for (const item of toAdviceItems(value)) {
+      const key = item.normalize("NFKC").toLocaleLowerCase("vi-VN").replace(/\s+/g, " ").trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      items.push(item);
+      if (items.length >= limit) return items;
+    }
+  }
+
+  return items;
+}
+
+function getOverviewActions(results) {
+  const abnormalResults = results.filter((result) => (
+    ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
+  ));
+  const actionSources = abnormalResults.length > 0 ? abnormalResults : results;
+  const adviceItems = actionSources.map(getResultAdvice).filter(Boolean);
+
+  return {
+    urgent: uniqueAdviceItems(adviceItems.map((advice) => (
+      typeof advice === "object" ? advice.warningSigns : null
+    ))),
+    followUp: uniqueAdviceItems(adviceItems.flatMap((advice) => (
+      typeof advice === "object"
+        ? [advice.followUpSuggestion, advice.followUpAdvice, advice.monitoringAdvice]
+        : []
+    ))),
+    habits: uniqueAdviceItems(adviceItems.flatMap((advice) => (
+      typeof advice === "object"
+        ? [advice.lifestyleAdvice, advice.nutritionalAdvice]
+        : []
+    ))),
+  };
+}
+
+function getFallbackOverviewSummary({ criticalCount, attentionCount, normalCount, unknownCount, totalCount }) {
+  if (totalCount === 0) {
+    return "Phiên phân tích đã hoàn tất nhưng chưa có đủ chỉ số để tạo nhận định tổng quan.";
+  }
+  if (criticalCount > 0) {
+    return `Có ${criticalCount} chỉ số ở mức cần ưu tiên xem xét. Hãy đọc phần điểm cần chú ý và trao đổi với nhân viên y tế, đặc biệt khi bạn đang có triệu chứng bất thường.`;
+  }
+  if (attentionCount > 0) {
+    return `Có ${attentionCount} chỉ số nằm ngoài khoảng tham chiếu và cần được chú ý. Các chỉ số còn lại nên được xem cùng triệu chứng và tiền sử sức khỏe của bạn.`;
+  }
+  if (normalCount > 0 && unknownCount === 0) {
+    return "Các chỉ số đã nhận diện đều nằm trong khoảng tham chiếu. Bạn vẫn nên theo dõi sức khỏe và thực hiện theo hướng dẫn của bác sĩ nếu có.";
+  }
+  if (unknownCount > 0) {
+    return `Có ${unknownCount} chỉ số chưa đủ dữ liệu để đánh giá. Những chỉ số này không được xem là bình thường và có thể cần được đối chiếu thêm.`;
+  }
+  return "Kết quả đã được hệ thống tổng hợp. Hãy xem từng chỉ số để biết giá trị và khoảng tham chiếu tương ứng.";
+}
+
+function OverviewActionGroup({ icon, title, items, tone = "default" }) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="lab-test-result__overview-action" data-tone={tone}>
+      <span aria-hidden="true">{icon}</span>
+      <div>
+        <h3>{title}</h3>
+        <ul>
+          {items.map((item) => <li key={`${title}-${item}`}>{item}</li>)}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function ResultOverview({
+  results,
+  summary,
+  summaryStatus,
+  summaryError,
+  normalCount,
+  attentionCount,
+  criticalCount,
+  unknownCount,
+  onRetrySummary,
+  onSelectResult,
+}) {
+  const totalCount = results.length;
+  const priorityResults = getPriorityResults(results);
+  const actions = getOverviewActions(results);
+  const headline = criticalCount > 0
+    ? "Có chỉ số cần ưu tiên xem xét"
+    : attentionCount > 0
+      ? "Có một số chỉ số cần chú ý"
+      : normalCount > 0 && unknownCount === 0
+        ? "Các chỉ số đã nhận diện đang ổn định"
+        : "Kết quả cần được đối chiếu thêm";
+  const tone = criticalCount > 0 ? "danger" : attentionCount > 0 ? "warning" : "success";
+  const fallbackSummary = getFallbackOverviewSummary({
+    criticalCount,
+    attentionCount,
+    normalCount,
+    unknownCount,
+    totalCount,
+  });
+  const hasActions = actions.urgent.length + actions.followUp.length + actions.habits.length > 0;
+
+  return (
+    <section className="lab-test-result__overview" aria-labelledby="lab-overview-title">
+      <header className="lab-test-result__overview-header">
+        <span className="lab-test-result__overview-icon" data-tone={tone} aria-hidden="true">
+          <Sparkles size={22} />
+        </span>
+        <div>
+          <p>TỔNG QUAN KẾT QUẢ</p>
+          <h2 id="lab-overview-title">{headline}</h2>
+        </div>
+      </header>
+
+      <div className="lab-test-result__overview-summary" data-tone={tone}>
+        <p>{summary || fallbackSummary}</p>
+        {summaryStatus === "loading" && (
+          <span className="lab-test-result__summary-state">
+            <LoaderCircle className="lab-test-result__spinner" size={15} aria-hidden="true" />
+            Đang hoàn thiện phần tóm tắt…
+          </span>
+        )}
+        {summaryStatus === "error" && (
+          <span className="lab-test-result__summary-state is-error">
+            {summaryError || "Chưa thể tải tóm tắt tự động."}
+            <button type="button" onClick={onRetrySummary}>
+              <RefreshCw size={14} aria-hidden="true" /> Thử lại
+            </button>
+          </span>
+        )}
+      </div>
+
+      <div className="lab-test-result__overview-counts" aria-label={`Tổng cộng ${totalCount} chỉ số`}>
+        <div data-tone="danger"><strong>{criticalCount}</strong><span>Nguy cấp</span></div>
+        <div data-tone="warning"><strong>{attentionCount}</strong><span>Cần chú ý</span></div>
+        <div data-tone="success"><strong>{normalCount}</strong><span>Bình thường</span></div>
+        <div data-tone="neutral"><strong>{unknownCount}</strong><span>Chưa xác định</span></div>
+      </div>
+
+      {priorityResults.length > 0 && (
+        <section className="lab-test-result__priority-section" aria-labelledby="lab-priority-title">
+          <div className="lab-test-result__section-title">
+            <TriangleAlert size={18} aria-hidden="true" />
+            <h3 id="lab-priority-title">Điểm cần chú ý trước</h3>
+          </div>
+          <div className="lab-test-result__priority-list">
+            {priorityResults.map(({ result, index }) => {
+              const key = getResultKey(result, index);
+              const meta = RESULT_STATUS_META[normalizeResultStatus(result?.status)];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="lab-test-result__priority-item"
+                  data-tone={meta.tone}
+                  onClick={() => onSelectResult(key, result)}
+                >
+                  <span>
+                    <strong>{getResultName(result)}</strong>
+                    <small>{getResultValue(result)} · {meta.label}</small>
+                  </span>
+                  <span className="lab-test-result__priority-link">
+                    Xem chi tiết <ArrowRight size={15} aria-hidden="true" />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {hasActions && (
+        <section className="lab-test-result__actions-section" aria-labelledby="lab-actions-title">
+          <div className="lab-test-result__section-title">
+            <ListChecks size={18} aria-hidden="true" />
+            <h3 id="lab-actions-title">Việc nên làm tiếp theo</h3>
+          </div>
+          <div className="lab-test-result__overview-actions">
+            <OverviewActionGroup
+              icon={<TriangleAlert size={18} />}
+              title="Dấu hiệu cần lưu ý"
+              items={actions.urgent}
+              tone="danger"
+            />
+            <OverviewActionGroup
+              icon={<HeartPulse size={18} />}
+              title="Nên theo dõi"
+              items={actions.followUp}
+            />
+            <OverviewActionGroup
+              icon={<CheckCircle2 size={18} />}
+              title="Sinh hoạt và dinh dưỡng"
+              items={actions.habits}
+              tone="success"
+            />
+          </div>
+        </section>
+      )}
+
+      <p className="lab-test-result__overview-disclaimer">
+        Tổng quan giúp bạn đọc kết quả dễ hơn, không thay thế chẩn đoán hoặc tư vấn trực tiếp từ bác sĩ.
+      </p>
+    </section>
+  );
+}
+
 function ResultAdvice({ result }) {
   if (!result) {
     return (
@@ -328,6 +570,8 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const [loadStatus, setLoadStatus] = useState(initialSession ? "ready" : sessionId ? "loading" : "error");
   const [error, setError] = useState(initialSession || sessionId ? "" : "Không tìm thấy mã phiên phân tích xét nghiệm.");
   const [retryKey, setRetryKey] = useState(0);
+  const [summaryRetryKey, setSummaryRetryKey] = useState(0);
+  const [summaryState, setSummaryState] = useState({ sessionId: "", status: "idle", error: "" });
   const [selectedResultKey, setSelectedResultKey] = useState("");
   const [announcement, setAnnouncement] = useState(
     sessionId ? "Đang tải kết quả xét nghiệm." : "Không tìm thấy mã phiên phân tích xét nghiệm.",
@@ -335,25 +579,29 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const pageHeadingRef = useRef(null);
   const responseNotifiedRef = useRef(false);
   const terminalBalanceRefreshRef = useRef("");
+  const summaryRequestedRef = useRef("");
 
   useEffect(() => {
     terminalBalanceRefreshRef.current = "";
-  }, [initialSession, retryKey, sessionId]);
+    summaryRequestedRef.current = "";
+  }, [initialSession?.sessionId, retryKey, sessionId]);
 
   useEffect(() => {
     if (initialSession) {
-      const nextStatus = normalizeAsyncSessionStatus(initialSession?.status);
-      const resultCount = getSessionResults(initialSession).length;
-      setSession(initialSession);
-      setLoadStatus("ready");
-      setError("");
-      setAnnouncement(
-        nextStatus === ASYNC_SESSION_STATUS.COMPLETED
-          ? `Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`
-          : "Đã tải kết quả xét nghiệm đính kèm.",
-      );
-      if (typeof onSessionUpdate === "function") onSessionUpdate(initialSession);
-      return undefined;
+      const initialSessionTimer = window.setTimeout(() => {
+        const nextStatus = normalizeAsyncSessionStatus(initialSession?.status);
+        const resultCount = getSessionResults(initialSession).length;
+        setSession(initialSession);
+        setLoadStatus("ready");
+        setError("");
+        setAnnouncement(
+          nextStatus === ASYNC_SESSION_STATUS.COMPLETED
+            ? `Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`
+            : "Đã tải kết quả xét nghiệm đính kèm.",
+        );
+        if (typeof onSessionUpdate === "function") onSessionUpdate(initialSession);
+      }, 0);
+      return () => window.clearTimeout(initialSessionTimer);
     }
 
     if (!sessionId) return undefined;
@@ -452,10 +700,80 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const sessionStatus = normalizeAsyncSessionStatus(session?.status);
   const isPending = !initialSession && loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);
   const normalCount = results.filter((result) => normalizeResultStatus(result?.status) === "normal").length;
-  const warningCount = results.filter((result) => (
-    ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
+  const criticalCount = results.filter((result) => (
+    ["criticalHigh", "criticalLow"].includes(normalizeResultStatus(result?.status))
   )).length;
+  const attentionCount = results.filter((result) => (
+    ["high", "low"].includes(normalizeResultStatus(result?.status))
+  )).length;
+  const warningCount = criticalCount + attentionCount;
   const unknownCount = results.length - normalCount - warningCount;
+  const summarySessionId = session?.sessionId ?? sessionId;
+  const summaryText = firstMeaningfulText(session?.aiSummary);
+  const summaryStatus = summaryText
+    ? "ready"
+    : summaryState.sessionId === summarySessionId
+      ? summaryState.status
+      : "idle";
+  const summaryError = summaryState.sessionId === summarySessionId ? summaryState.error : "";
+
+  useEffect(() => {
+    if (
+      sessionStatus !== ASYNC_SESSION_STATUS.COMPLETED
+      || !summarySessionId
+      || results.length === 0
+    ) return undefined;
+
+    if (summaryText) return undefined;
+
+    const requestKey = `${summarySessionId}:${summaryRetryKey}`;
+    if (summaryRequestedRef.current === requestKey) return undefined;
+    summaryRequestedRef.current = requestKey;
+
+    let active = true;
+
+    const loadSummary = async () => {
+      setSummaryState({ sessionId: summarySessionId, status: "loading", error: "" });
+      try {
+        const response = await labTestsApi.summarize(summarySessionId);
+        if (!active) return;
+
+        const generatedSummary = firstMeaningfulText(unwrapData(response));
+        if (!generatedSummary) {
+          throw new Error("API chưa trả về nội dung tóm tắt.");
+        }
+
+        const nextSession = { ...session, aiSummary: generatedSummary };
+        setSession(nextSession);
+        setSummaryState({ sessionId: summarySessionId, status: "ready", error: "" });
+        setAnnouncement("Đã hoàn thiện phần tổng quan kết quả xét nghiệm.");
+        if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
+      } catch (requestError) {
+        if (!active) return;
+        setSummaryState({
+          sessionId: summarySessionId,
+          status: "error",
+          error: getLabTestApiMessage(
+            requestError,
+            "Chưa thể tải tóm tắt tự động. Bạn vẫn có thể xem tổng quan theo trạng thái chỉ số.",
+          ),
+        });
+      }
+    };
+
+    void loadSummary();
+    return () => {
+      active = false;
+    };
+  }, [
+    onSessionUpdate,
+    results.length,
+    session,
+    sessionStatus,
+    summaryRetryKey,
+    summarySessionId,
+    summaryText,
+  ]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => pageHeadingRef.current?.focus());
@@ -472,6 +790,20 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
     setError("");
     setAnnouncement("Đang tải lại kết quả xét nghiệm.");
     setRetryKey((current) => current + 1);
+  }
+
+  function retrySummary() {
+    summaryRequestedRef.current = "";
+    setSummaryRetryKey((current) => current + 1);
+  }
+
+  function selectOverviewResult(key, result) {
+    selectResult(key, result);
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById("lab-result-advice");
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      target?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    });
   }
 
   let content;
@@ -546,6 +878,19 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
           </div>
         </header>
 
+        <ResultOverview
+          results={results}
+          summary={summaryText}
+          summaryStatus={summaryStatus}
+          summaryError={summaryError}
+          normalCount={normalCount}
+          attentionCount={attentionCount}
+          criticalCount={criticalCount}
+          unknownCount={unknownCount}
+          onRetrySummary={retrySummary}
+          onSelectResult={selectOverviewResult}
+        />
+
         <div className="lab-test-result__content-grid">
           <section className="lab-test-result__results-panel" aria-labelledby="lab-results-title">
             <header className="lab-test-result__results-header">
@@ -554,7 +899,8 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
                 <h2 id="lab-results-title">Các chỉ số được nhận diện</h2>
               </div>
               <div className="lab-test-result__counts" aria-label="Tóm tắt trạng thái chỉ số">
-                {warningCount > 0 && <span data-tone="warning">{warningCount} cảnh báo</span>}
+                {criticalCount > 0 && <span data-tone="danger">{criticalCount} nguy cấp</span>}
+                {attentionCount > 0 && <span data-tone="warning">{attentionCount} cần chú ý</span>}
                 <span data-tone="success">{normalCount} bình thường</span>
                 {unknownCount > 0 && <span data-tone="neutral">{unknownCount} chưa xác định</span>}
               </div>
