@@ -191,6 +191,7 @@ export const ENDPOINTS = {
     MY_SESSIONS: `${LAB_TESTS_BASE}/my-sessions`,
     SESSIONS: `${LAB_TESTS_BASE}/sessions`,
     BY_SESSION: (sessionId) => encodedById(LAB_TESTS_BASE, sessionId),
+    SUMMARY: (sessionId) => `${encodedById(LAB_TESTS_BASE, sessionId)}/summary`,
     ANALYTICS_INDICATORS: `${LAB_TESTS_BASE}/analytics/indicators`,
     ANALYTICS_INDICATOR_TREND: (indicatorId) =>
       `${LAB_TESTS_BASE}/analytics/indicators/${encodeURIComponent(indicatorId)}/trend`,
