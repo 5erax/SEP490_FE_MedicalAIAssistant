@@ -34,8 +34,6 @@ const EMPTY_ADVICE_FORM = {
   urgencyLevel: "",
   severityLevel: DEFAULT_ADVICE_SEVERITY,
   warningSigns: "",
-  followUpSuggestion: "",
-  doctorQuestions: "",
 };
 
 const GENDER_OPTIONS = [
@@ -55,12 +53,15 @@ const COMPARISON_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: "unknown", label: "Chưa xác định" },
   { value: "normal", label: "Bình thường" },
   { value: "high", label: "Cao" },
   { value: "low", label: "Thấp" },
-  { value: "criticalHigh", label: "Cao nguy cấp" },
-  { value: "criticalLow", label: "Thấp nguy cấp" },
+];
+
+const SEVERITY_OPTIONS = [
+  { value: "info", label: "Thông tin" },
+  { value: "warning", label: "Cần chú ý" },
+  { value: "critical", label: "Khẩn cấp" },
 ];
 
 const CHILD_DIALOG_META = {
@@ -161,8 +162,6 @@ function childToForm(kind, item) {
     urgencyLevel: item?.urgencyLevel ?? "",
     severityLevel: item?.severityLevel || DEFAULT_ADVICE_SEVERITY,
     warningSigns: item?.warningSigns ?? "",
-    followUpSuggestion: item?.followUpSuggestion ?? "",
-    doctorQuestions: item?.doctorQuestions ?? "",
   };
 }
 
@@ -412,6 +411,19 @@ function AdviceFields({ form, errors, update, firstInputRef }) {
       <Field id="lab-displayTitle" label="Tiêu đề hiển thị" optional>
         <TextInput name="displayTitle" value={form.displayTitle} onChange={(event) => update("displayTitle", event.target.value)} />
       </Field>
+      <Field id="lab-severityLevel" label="Mức độ" required>
+        <Select name="severityLevel" value={form.severityLevel} onChange={(event) => update("severityLevel", event.target.value)}>
+          {SEVERITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </Select>
+      </Field>
+      <Field id="lab-urgencyLevel" label="Mức ưu tiên" optional>
+        <TextInput
+          name="urgencyLevel"
+          value={form.urgencyLevel}
+          placeholder="Ví dụ: Trao đổi với bác sĩ trong lần khám tới"
+          onChange={(event) => update("urgencyLevel", event.target.value)}
+        />
+      </Field>
       <Field id="lab-summary" label="Tóm tắt" optional className="lab-form-span-2">
         <Textarea name="summary" rows="3" value={form.summary} onChange={(event) => update("summary", event.target.value)} />
       </Field>
@@ -426,9 +438,6 @@ function AdviceFields({ form, errors, update, firstInputRef }) {
       </Field>
       <Field id="lab-nutritionalAdvice" label="Lời khuyên dinh dưỡng" optional>
         <Textarea name="nutritionalAdvice" rows="4" value={form.nutritionalAdvice} onChange={(event) => update("nutritionalAdvice", event.target.value)} />
-      </Field>
-      <Field id="lab-followUpSuggestion" label="Đề xuất theo dõi" optional className="lab-form-span-2">
-        <Textarea name="followUpSuggestion" rows="3" value={form.followUpSuggestion} onChange={(event) => update("followUpSuggestion", event.target.value)} />
       </Field>
     </div>
   );
@@ -490,8 +499,6 @@ function childPayload(kind, form) {
     urgencyLevel: nullableText(form.urgencyLevel),
     severityLevel: form.severityLevel || DEFAULT_ADVICE_SEVERITY,
     warningSigns: nullableText(form.warningSigns),
-    followUpSuggestion: nullableText(form.followUpSuggestion),
-    doctorQuestions: nullableText(form.doctorQuestions),
   };
 }
 

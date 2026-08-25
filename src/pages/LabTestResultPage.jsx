@@ -163,18 +163,19 @@ function getResultValue(result) {
   return `${formatNumber(value)}${unit ? ` ${unit}` : ""}`;
 }
 
-function formatReference(result) {
-  const explicitReference = firstMeaningfulText(
-    result?.referenceText,
-    result?.referenceRangeText,
-    result?.normalRange,
-    result?.normalRangeText,
-    typeof result?.referenceRange === "string" ? result.referenceRange : "",
-  );
-  if (explicitReference) return explicitReference;
+function getResultNumericValue(result) {
+  const value = result?.userValue
+    ?? result?.rawExtractedValue
+    ?? result?.value
+    ?? result?.resultValue
+    ?? result?.numericValue
+    ?? result?.measuredValue;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
 
+function getReferenceValues(result) {
   const range = result?.referenceRangeUsed ?? result?.referenceRange ?? {};
-  const comparisonType = result?.comparisonTypeUsed ?? range.comparisonType;
   const minimum = result?.referenceMinUsed
     ?? result?.referenceMin
     ?? result?.minReference
@@ -193,6 +194,28 @@ function formatReference(result) {
     ?? range.max
     ?? range.maximum
     ?? range.upperBound;
+
+  const normalizedMinimum = minimum === null || minimum === undefined || minimum === "" ? null : Number(minimum);
+  const normalizedMaximum = maximum === null || maximum === undefined || maximum === "" ? null : Number(maximum);
+
+  return {
+    comparisonType: result?.comparisonTypeUsed ?? range.comparisonType,
+    minimum: Number.isFinite(normalizedMinimum) ? normalizedMinimum : null,
+    maximum: Number.isFinite(normalizedMaximum) ? normalizedMaximum : null,
+  };
+}
+
+function formatReference(result) {
+  const explicitReference = firstMeaningfulText(
+    result?.referenceText,
+    result?.referenceRangeText,
+    result?.normalRange,
+    result?.normalRangeText,
+    typeof result?.referenceRange === "string" ? result.referenceRange : "",
+  );
+  if (explicitReference) return explicitReference;
+
+  const { comparisonType, minimum, maximum } = getReferenceValues(result);
   const unit = getResultUnit(result);
   let reference = "Chưa có khoảng tham chiếu";
 
@@ -209,6 +232,70 @@ function formatReference(result) {
   }
 
   return unit && reference !== "Chưa có khoảng tham chiếu" ? `${reference} ${unit}` : reference;
+}
+
+function getResultDeviation(result) {
+  const value = getResultNumericValue(result);
+  const status = normalizeResultStatus(result?.status);
+  const { minimum, maximum } = getReferenceValues(result);
+  const unit = getResultUnit(result);
+  const boundary = status === "low" || status === "criticalLow" ? minimum : maximum;
+  if (value === null || !Number.isFinite(boundary) || !ABNORMAL_RESULT_STATUSES.has(status)) return null;
+
+  const difference = Math.abs(value - boundary);
+  const percentage = boundary !== 0 ? (difference / Math.abs(boundary)) * 100 : null;
+  const direction = status === "low" || status === "criticalLow" ? "thấp hơn" : "cao hơn";
+  const boundaryLabel = status === "low" || status === "criticalLow" ? "giới hạn dưới" : "giới hạn trên";
+  const percentageText = Number.isFinite(percentage)
+    ? ` (${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(percentage)}%)`
+    : "";
+
+  return {
+    value: `${direction} ${formatNumber(difference)}${unit ? ` ${unit}` : ""}${percentageText}`,
+    note: `So với ${boundaryLabel} ${formatNumber(boundary)}${unit ? ` ${unit}` : ""}`,
+  };
+}
+
+function normalizeIndicatorKey(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+const LIPID_RELATED_INDICATORS = [
+  { label: "LDL-C", keys: ["LDL", "LDLC", "CHOLESTEROLLDL"] },
+  { label: "HDL-C", keys: ["HDL", "HDLC", "CHOLESTEROLHDL"] },
+  { label: "Triglyceride", keys: ["TG", "TRIGLYCERIDE", "TRIGLYCERIDES"] },
+  { label: "Non-HDL", keys: ["NONHDL", "NONHDLCHOLESTEROL"] },
+];
+
+function getLipidContext(result, results) {
+  const currentKeys = [getResultSymbol(result), getResultName(result)].map(normalizeIndicatorKey);
+  const isTotalCholesterol = currentKeys.some((key) => (
+    key === "CHOL" || key.includes("CHOLESTEROLTOANPHAN") || key.includes("TOTALCHOLESTEROL")
+  ));
+  if (!isTotalCholesterol) return null;
+
+  const related = LIPID_RELATED_INDICATORS.map((definition) => {
+    const match = results.find((candidate) => {
+      if (candidate === result) return false;
+      const candidateKeys = [getResultSymbol(candidate), getResultName(candidate)].map(normalizeIndicatorKey);
+      return candidateKeys.some((key) => definition.keys.some((expected) => key === expected || key.includes(expected)));
+    });
+    return match ? {
+      label: definition.label,
+      value: getResultValue(match),
+      status: RESULT_STATUS_META[normalizeResultStatus(match?.status)]?.label ?? "Chưa xác định",
+      tone: RESULT_STATUS_META[normalizeResultStatus(match?.status)]?.tone ?? "neutral",
+    } : { label: definition.label, value: "Chưa nhận diện", status: "", tone: "neutral" };
+  });
+
+  return {
+    description: "Tổng cholesterol chưa đủ để tự kết luận nguy cơ tim mạch. Cần đọc cùng LDL-C, HDL-C, triglyceride, non-HDL và các yếu tố nguy cơ cá nhân.",
+    related,
+  };
 }
 
 function getResultKey(result, index) {
@@ -247,11 +334,20 @@ function AdviceBlock({ title, value, tone = "default", collapsible = false }) {
   const items = toAdviceItems(value);
   if (items.length === 0) return null;
 
+  const renderItem = (item) => {
+    const parts = item.split(/(https?:\/\/[^\s]+)/g);
+    return parts.map((part, index) => (
+      /^https?:\/\//.test(part)
+        ? <a key={`${part}-${index}`} href={part.replace(/[.,;:]$/, "")} target="_blank" rel="noreferrer">Nguồn tham khảo</a>
+        : part
+    ));
+  };
+
   const content = items.length === 1 ? (
-    <p>{items[0]}</p>
+    <p>{renderItem(items[0])}</p>
   ) : (
     <ul>
-      {items.map((item, index) => <li key={`${title}-${index}`}>{item}</li>)}
+      {items.map((item, index) => <li key={`${title}-${index}`}>{renderItem(item)}</li>)}
     </ul>
   );
 
@@ -624,7 +720,7 @@ function ResultOverview({
   );
 }
 
-function ResultAdvice({ result }) {
+function ResultAdvice({ result, results = [] }) {
   if (!result) {
     return (
       <EmptyState
@@ -637,6 +733,8 @@ function ResultAdvice({ result }) {
   const advice = getResultAdvice(result);
   const status = normalizeResultStatus(result?.status);
   const meta = RESULT_STATUS_META[status];
+  const deviation = getResultDeviation(result);
+  const lipidContext = getLipidContext(result, results);
 
   return (
     <div className="lab-test-result__advice-content">
@@ -654,7 +752,30 @@ function ResultAdvice({ result }) {
       <div className="lab-test-result__selected-summary" data-tone={meta.tone}>
         <div><span>Trạng thái</span><strong>{meta.label}</strong></div>
         <div><span>Khoảng tham chiếu</span><strong>{formatReference(result)}</strong></div>
+        {deviation && (
+          <div className="lab-test-result__deviation">
+            <span>Mức sai lệch</span>
+            <strong>{deviation.value}</strong>
+            <small>{deviation.note}</small>
+          </div>
+        )}
       </div>
+
+      {lipidContext && (
+        <section className="lab-test-result__related-context" aria-labelledby="lab-related-title">
+          <h3 id="lab-related-title">Cần đối chiếu cùng bộ mỡ máu</h3>
+          <p>{lipidContext.description}</p>
+          <div className="lab-test-result__related-list">
+            {lipidContext.related.map((item) => (
+              <div key={item.label} data-tone={item.tone}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                {item.status && <small>{item.status}</small>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {advice ? (
         <div className="lab-test-result__advice-sections">
@@ -667,7 +788,12 @@ function ResultAdvice({ result }) {
               <AdviceBlock title="Nguyên nhân có thể liên quan" value={advice.possibleCauses} collapsible />
               <AdviceBlock title="Sinh hoạt" value={advice.lifestyleAdvice} collapsible />
               <AdviceBlock title="Dinh dưỡng" value={advice.nutritionalAdvice} collapsible />
-              <AdviceBlock title="Dấu hiệu cần lưu ý" value={advice.warningSigns} tone="danger" />
+              <AdviceBlock
+                title="Khi nào cần khám ngay"
+                value={advice.warningSigns}
+                tone="danger"
+                collapsible={advice.severityLevel !== "critical"}
+              />
               <AdviceBlock title="Theo dõi tiếp" value={advice.followUpSuggestion} collapsible />
               <AdviceBlock title="Câu hỏi có thể trao đổi với bác sĩ" value={advice.doctorQuestions} collapsible />
             </>
@@ -1170,7 +1296,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
           </section>
 
           <aside id="lab-result-advice" className="lab-test-result__advice-panel" aria-label="Phân tích chi tiết chỉ số đã chọn">
-            <ResultAdvice result={selectedResult} />
+            <ResultAdvice result={selectedResult} results={results} />
           </aside>
         </div>
       </div>
