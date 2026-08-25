@@ -29,6 +29,7 @@ import {
   LoadingState,
 } from "../ui";
 import { LabIndicatorChildDialog, LabIndicatorFormDialog } from "./LabIndicatorDialogs";
+import LabIndicatorCatalogTransfer from "./LabIndicatorCatalogTransfer";
 import AdminPagination from "../admin/AdminPagination";
 import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 import "../../styles/admin/lab-indicators.css";
@@ -496,6 +497,10 @@ function IndicatorListView() {
       </header>
 
       <ApiMessage message={message} />
+
+      <LabIndicatorCatalogTransfer
+        onApplied={() => loadIndicators(pageInfo.pageNumber, pageInfo.pageSize, appliedSearch)}
+      />
 
       <AdminFilterDisclosure
         className="lab-filter-card"
