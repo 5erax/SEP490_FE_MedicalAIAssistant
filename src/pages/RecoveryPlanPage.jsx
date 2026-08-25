@@ -19,7 +19,6 @@ import {
   RefreshCw,
   Send,
   ShieldCheck,
-  Sparkles,
   Star,
   X,
   XCircle,
@@ -312,7 +311,7 @@ function QuotaCard({ quota, error, loading, onRetry }) {
 
   return (
     <section className="recovery-quota-card" aria-labelledby="recovery-quota-title">
-      <div className="recovery-card-icon"><Sparkles size={22} aria-hidden="true" /></div>
+      <div className="recovery-card-icon"><CalendarCheck size={22} aria-hidden="true" /></div>
       <div className="recovery-quota-content">
         <div className="recovery-quota-heading">
           <div>
