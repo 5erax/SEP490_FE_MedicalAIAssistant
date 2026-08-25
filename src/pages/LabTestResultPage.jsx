@@ -346,6 +346,125 @@ function getFallbackOverviewSummary({ criticalCount, attentionCount, normalCount
   return "Kết quả đã được hệ thống tổng hợp. Hãy xem từng chỉ số để biết giá trị và khoảng tham chiếu tương ứng.";
 }
 
+function stripSummaryFormatting(value) {
+  return String(value ?? "")
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/\[([^\]]+)]\(([^)]+)\)/g, "$1 ($2)")
+    .replace(/[*_`~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseSummaryBlocks(value) {
+  const blocks = [];
+  let paragraphLines = [];
+  let listItems = [];
+
+  function flushParagraph() {
+    const text = stripSummaryFormatting(paragraphLines.join(" "));
+    if (text) blocks.push({ type: "paragraph", text });
+    paragraphLines = [];
+  }
+
+  function flushList() {
+    if (listItems.length > 0) blocks.push({ type: "list", items: listItems });
+    listItems = [];
+  }
+
+  for (const sourceLine of String(value ?? "").split(/\r?\n/)) {
+    const rawLine = sourceLine.trim();
+    if (!rawLine) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const isMarkdownHeading = /^#{1,6}\s+/.test(rawLine);
+    const isBullet = /^[-*•]\s+/.test(rawLine);
+    const content = stripSummaryFormatting(rawLine.replace(/^[-*•]\s+/, ""));
+    if (!content) continue;
+
+    if (/^chào\s+(bạn|anh|chị)\b/i.test(content) || /tôi là trợ lý y khoa/i.test(content)) {
+      continue;
+    }
+
+    const isNumberedHeading = /^\d+[.)]\s+/.test(content) && content.length <= 100;
+    const isSummaryTitle = /^(tóm tắt|bản tóm tắt)\s+kết quả xét nghiệm/i.test(content);
+
+    if (isMarkdownHeading || isNumberedHeading || isSummaryTitle) {
+      flushParagraph();
+      flushList();
+      if (!isSummaryTitle) {
+        blocks.push({ type: "heading", text: content.replace(/^\d+[.)]\s*/, "").replace(/:$/, "") });
+      }
+      continue;
+    }
+
+    if (isBullet) {
+      flushParagraph();
+      listItems.push(content);
+      continue;
+    }
+
+    flushList();
+    paragraphLines.push(content);
+  }
+
+  flushParagraph();
+  flushList();
+  return blocks;
+}
+
+function truncateSummary(value, maximumLength = 360) {
+  const text = String(value ?? "").trim();
+  if (text.length <= maximumLength) return text;
+
+  const candidate = text.slice(0, maximumLength + 1);
+  const sentenceEnd = Math.max(candidate.lastIndexOf(". "), candidate.lastIndexOf("! "), candidate.lastIndexOf("? "));
+  const wordEnd = candidate.lastIndexOf(" ");
+  const cutAt = sentenceEnd >= maximumLength * 0.6 ? sentenceEnd + 1 : wordEnd;
+  return `${candidate.slice(0, cutAt > 0 ? cutAt : maximumLength).trim()}…`;
+}
+
+function getSummaryPreview(summary, fallback) {
+  const blocks = parseSummaryBlocks(summary);
+  const preferredParagraph = blocks.find((block) => (
+    block.type === "paragraph"
+    && block.text.length >= 60
+    && !/^(ast|alt|ggt|bilirubin|chỉ số)\b/i.test(block.text)
+  ));
+  const firstReadableBlock = blocks.find((block) => block.type === "paragraph")
+    ?? blocks.find((block) => block.type === "list" && block.items.length > 0);
+  const preview = preferredParagraph?.text
+    ?? firstReadableBlock?.text
+    ?? firstReadableBlock?.items?.[0]
+    ?? fallback;
+  return truncateSummary(preview);
+}
+
+function FormattedSummary({ value }) {
+  const blocks = parseSummaryBlocks(value);
+  if (blocks.length === 0) return null;
+
+  return (
+    <div className="lab-test-result__formatted-summary">
+      {blocks.map((block, index) => {
+        if (block.type === "heading") {
+          return <h4 key={`${block.type}-${index}`}>{block.text}</h4>;
+        }
+        if (block.type === "list") {
+          return (
+            <ul key={`${block.type}-${index}`}>
+              {block.items.map((item, itemIndex) => <li key={`${item}-${itemIndex}`}>{item}</li>)}
+            </ul>
+          );
+        }
+        return <p key={`${block.type}-${index}`}>{block.text}</p>;
+      })}
+    </div>
+  );
+}
+
 function OverviewActionGroup({ icon, title, items, tone = "default" }) {
   if (items.length === 0) return null;
 
@@ -392,6 +511,8 @@ function ResultOverview({
     unknownCount,
     totalCount,
   });
+  const summaryPreview = getSummaryPreview(summary, fallbackSummary);
+  const hasExtendedSummary = Boolean(summary) && stripSummaryFormatting(summary).length > summaryPreview.length + 80;
   const hasActions = actions.urgent.length + actions.followUp.length + actions.habits.length > 0;
 
   return (
@@ -406,8 +527,16 @@ function ResultOverview({
         </div>
       </header>
 
+      <div className="lab-test-result__overview-counts" aria-label={`Tổng cộng ${totalCount} chỉ số`}>
+        <div data-tone="danger"><strong>{criticalCount}</strong><span>Nguy cấp</span></div>
+        <div data-tone="warning"><strong>{attentionCount}</strong><span>Cần chú ý</span></div>
+        <div data-tone="success"><strong>{normalCount}</strong><span>Bình thường</span></div>
+        <div data-tone="neutral"><strong>{unknownCount}</strong><span>Chưa xác định</span></div>
+      </div>
+
       <div className="lab-test-result__overview-summary" data-tone={tone}>
-        <p>{summary || fallbackSummary}</p>
+        <span className="lab-test-result__overview-summary-label">Nhận định chung</span>
+        <p>{summaryPreview}</p>
         {summaryStatus === "loading" && (
           <span className="lab-test-result__summary-state">
             <LoaderCircle className="lab-test-result__spinner" size={15} aria-hidden="true" />
@@ -422,13 +551,6 @@ function ResultOverview({
             </button>
           </span>
         )}
-      </div>
-
-      <div className="lab-test-result__overview-counts" aria-label={`Tổng cộng ${totalCount} chỉ số`}>
-        <div data-tone="danger"><strong>{criticalCount}</strong><span>Nguy cấp</span></div>
-        <div data-tone="warning"><strong>{attentionCount}</strong><span>Cần chú ý</span></div>
-        <div data-tone="success"><strong>{normalCount}</strong><span>Bình thường</span></div>
-        <div data-tone="neutral"><strong>{unknownCount}</strong><span>Chưa xác định</span></div>
       </div>
 
       {priorityResults.length > 0 && (
@@ -489,6 +611,16 @@ function ResultOverview({
             />
           </div>
         </section>
+      )}
+
+      {hasExtendedSummary && (
+        <details className="lab-test-result__full-summary">
+          <summary>
+            <FileText size={17} aria-hidden="true" />
+            <span>Xem phân tích tổng quan đầy đủ</span>
+          </summary>
+          <FormattedSummary value={summary} />
+        </details>
       )}
 
       <p className="lab-test-result__overview-disclaimer">
@@ -710,6 +842,14 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const unknownCount = results.length - normalCount - warningCount;
   const summarySessionId = session?.sessionId ?? sessionId;
   const summaryText = firstMeaningfulText(session?.aiSummary);
+  const resultDate = formatDate(
+    session?.testDate
+      ?? session?.processedAt
+      ?? session?.uploadedAt
+      ?? session?.createdAt
+      ?? session?.createdAtUtc,
+    "",
+  );
   const summaryStatus = summaryText
     ? "ready"
     : summaryState.sessionId === summarySessionId
@@ -865,7 +1005,9 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
           <div className="lab-test-result__heading-group">
             <div>
               <p>KẾT QUẢ PHÂN TÍCH</p>
-              <h1 ref={pageHeadingRef} tabIndex="-1">Kết quả ngày {formatDate(session?.testDate)}</h1>
+              <h1 ref={pageHeadingRef} tabIndex="-1">
+                {resultDate ? `Kết quả ngày ${resultDate}` : "Kết quả xét nghiệm"}
+              </h1>
             </div>
             <div className="lab-test-result__session-badge">
               <CheckCircle2 size={17} aria-hidden="true" /> Đã hoàn tất

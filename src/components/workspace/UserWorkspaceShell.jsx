@@ -69,6 +69,7 @@ function getCurrentPath() {
 
 function isNavigationItemActive(item, path) {
   if (path === item.path) return true;
+  if (item.path === "/records" && path.startsWith("/records/")) return true;
   return item.path === "/symptom" && path.startsWith("/assessment/");
 }
 
@@ -170,7 +171,7 @@ export default function UserWorkspaceShell({ children }) {
   const accessToken = auth?.accessToken;
   const premiumAccess = hasPremiumAccess(auth);
   const path = getCurrentPath();
-  const activeItem = NAV_ITEMS.find((item) => path === item.path)
+  const activeItem = NAV_ITEMS.find((item) => isNavigationItemActive(item, path))
     ?? SECONDARY_ACTIVE_ITEMS[path]
     ?? (path.startsWith("/assessment/")
       ? { label: "Phân tích lâm sàng", icon: Activity }
