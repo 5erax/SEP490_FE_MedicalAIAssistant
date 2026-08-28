@@ -348,6 +348,7 @@ function SpecialtyQuotaBadge({ quota, status, error, onRetry }) {
 
   if (!quota) return null;
   const exhausted = quota.remainingToday <= 0;
+  const dailyBenefitLabel = quota.isFreeTier ? "lượt miễn phí hôm nay" : "lượt hôm nay";
   const planLabel = quota.isFreeTier
     ? "Gói miễn phí"
     : quota.hasServiceCredit ? "Có lượt dịch vụ" : "Tài khoản hiện tại";
@@ -355,12 +356,12 @@ function SpecialtyQuotaBadge({ quota, status, error, onRetry }) {
   return (
     <span
       className={`specialty-quota-badge ${exhausted ? "is-exhausted" : ""}`}
-      aria-label={`${quota.remainingToday} trên ${quota.limitPerDay} lượt tư vấn còn lại hôm nay. Đã dùng ${quota.usedToday} lượt. ${planLabel}.`}
-      title={`Đã dùng ${quota.usedToday} lượt · ${planLabel}`}
+      aria-label={`Còn ${quota.remainingToday} trên ${quota.limitPerDay} lượt gợi ý chuyên khoa ${quota.isFreeTier ? "miễn phí " : ""}hôm nay. Hạn mức được làm mới mỗi ngày. Đã dùng ${quota.usedToday} lượt. ${planLabel}.`}
+      title={`Làm mới mỗi ngày · Đã dùng ${quota.usedToday}/${quota.limitPerDay} lượt · ${planLabel}`}
     >
       <Gauge size={16} aria-hidden="true" />
-      <strong>{quota.remainingToday}/{quota.limitPerDay}</strong>
-      <span>lượt hôm nay</span>
+      <strong>Còn {quota.remainingToday}/{quota.limitPerDay}</strong>
+      <span>{dailyBenefitLabel}</span>
     </span>
   );
 }
