@@ -78,10 +78,10 @@ const BASE_ROUTES = [
   {
     id: "assistant.intake",
     path: "/symptom",
-    title: "Phân tích triệu chứng | MediMate AI",
+    title: "Chẩn đoán lâm sàng | MediMate AI",
     access: "auth",
     shell: "patient",
-    navigation: { shell: "patient", label: "Phân tích triệu chứng", hint: "Xem lượt và bắt đầu", icon: "symptom", order: 30 },
+    navigation: { shell: "patient", label: "Chẩn đoán lâm sàng", hint: "Làm rõ triệu chứng", icon: "symptom", order: 30 },
     aliases: ["/medical-assistant", "/medical-assistant/intake", "/symptom-chat"],
   },
   {
