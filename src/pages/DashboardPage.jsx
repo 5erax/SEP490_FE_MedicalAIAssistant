@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, CircleAlert, ClipboardPlus, History, LocateFixed, MapPinned, Send, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleAlert, ClipboardPlus, Gauge, History, LocateFixed, MapPinned, RefreshCw, Send, ShieldCheck, UserRound } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
@@ -8,7 +8,9 @@ import {
   getClinicalQuestionBooleanPrompts,
   getStoredAuth,
   isClinicalQuestionAnswered,
+  readSymptomAnalysisQuota,
   SYMPTOM_ANALYSIS_MESSAGES,
+  symptomAnalysisApi,
 } from "../services/api";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
@@ -321,6 +323,45 @@ function FacilityResultList({ facilities, recommendedDepartment, userLocation })
   );
 }
 
+function SpecialtyQuotaBar({ quota, status, error, onRetry }) {
+  if (status === "loading") {
+    return (
+      <section className="specialty-quota-bar is-loading" aria-live="polite" aria-busy="true">
+        <Gauge size={19} aria-hidden="true" />
+        <div><strong>Đang tải lượt tư vấn hôm nay…</strong><span>Hạn mức được cập nhật theo tài khoản đăng nhập.</span></div>
+      </section>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <section className="specialty-quota-bar is-error" role="status">
+        <Gauge size={19} aria-hidden="true" />
+        <div><strong>Chưa tải được hạn mức</strong><span>{error}</span></div>
+        <Button type="button" tone="secondary" size="sm" onClick={() => void onRetry()}>
+          <RefreshCw size={14} aria-hidden="true" /> Thử lại
+        </Button>
+      </section>
+    );
+  }
+
+  if (!quota) return null;
+  const exhausted = quota.remainingToday <= 0;
+  const planLabel = quota.isFreeTier
+    ? "Gói miễn phí"
+    : quota.hasServiceCredit ? "Có lượt dịch vụ" : "Tài khoản hiện tại";
+
+  return (
+    <section className={`specialty-quota-bar ${exhausted ? "is-exhausted" : ""}`} aria-label="Hạn mức tư vấn chuyên khoa hôm nay">
+      <Gauge size={19} aria-hidden="true" />
+      <div>
+        <strong>{quota.remainingToday}/{quota.limitPerDay} lượt tư vấn còn lại hôm nay</strong>
+        <span>Đã dùng {quota.usedToday} lượt · {planLabel}</span>
+      </div>
+    </section>
+  );
+}
+
 export default function DashboardPage() {
   const auth = getStoredAuth();
   const isAdminSession = hasAuthRole(auth, "admin");
@@ -355,6 +396,9 @@ export default function DashboardPage() {
   const [userLocation, setUserLocation] = useState(null);
   const [locationStatus, setLocationStatus] = useState("idle");
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const [symptomQuota, setSymptomQuota] = useState(null);
+  const [quotaStatus, setQuotaStatus] = useState("loading");
+  const [quotaError, setQuotaError] = useState("");
 
   const recommendedDepartment = getRecommendedDepartment(result);
   const sortedFacilities = sortRecommendedFacilities(result, userLocation);
@@ -381,6 +425,45 @@ export default function DashboardPage() {
     SYMPTOM_ANALYSIS_MESSAGES.inputRequired,
     SYMPTOM_ANALYSIS_MESSAGES.inputTooLong,
   ].includes(error) ? error : "";
+  const quotaExhausted = quotaStatus === "ready" && symptomQuota?.remainingToday <= 0;
+
+  async function refreshSymptomQuota() {
+    setQuotaStatus("loading");
+    setQuotaError("");
+    try {
+      const response = await symptomAnalysisApi.getQuota();
+      setSymptomQuota(readSymptomAnalysisQuota(response));
+      setQuotaStatus("ready");
+    } catch (requestError) {
+      setSymptomQuota(null);
+      setQuotaError(requestError?.message || "Chưa tải được hạn mức tư vấn chuyên khoa.");
+      setQuotaStatus("error");
+    }
+  }
+
+  async function startSpecialtyAnalysis() {
+    if (quotaExhausted) return;
+    await startDiagnosis();
+    void refreshSymptomQuota();
+  }
+
+  useEffect(() => {
+    let active = true;
+    symptomAnalysisApi.getQuota()
+      .then((response) => {
+        if (!active) return;
+        setSymptomQuota(readSymptomAnalysisQuota(response));
+        setQuotaStatus("ready");
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        setQuotaError(requestError?.message || "Chưa tải được hạn mức tư vấn chuyên khoa.");
+        setQuotaStatus("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (isAdminSession) {
@@ -529,9 +612,18 @@ export default function DashboardPage() {
         </ol>
 
         {showIntakeForm && (
+          <SpecialtyQuotaBar
+            quota={symptomQuota}
+            status={quotaStatus}
+            error={quotaError}
+            onRetry={refreshSymptomQuota}
+          />
+        )}
+
+        {showIntakeForm && (
           <form className="studio-chatbox" noValidate onSubmit={(event) => {
             event.preventDefault();
-            startDiagnosis();
+            void startSpecialtyAnalysis();
           }}>
             <div className="studio-form-heading">
               <div>
@@ -565,14 +657,16 @@ export default function DashboardPage() {
               <span className="studio-status" aria-live="polite">
                 {status === "loading-questions"
                   ? "AI đang chọn câu hỏi cần hỏi thêm..."
-                  : <><strong>Sẵn sàng.</strong> MediMate sẽ hỏi thêm một số câu ngắn.</>}
+                  : quotaExhausted
+                    ? <><strong>Đã hết lượt hôm nay.</strong> Bạn có thể quay lại vào ngày tiếp theo.</>
+                    : <><strong>Sẵn sàng.</strong> MediMate sẽ hỏi thêm một số câu ngắn.</>}
               </span>
               <Button
                 className="studio-submit-icon"
                 size="lg"
                 loading={loading}
                 loadingLabel="Đang tạo câu hỏi..."
-                disabled={loading}
+                disabled={loading || quotaExhausted}
                 type="submit"
                 aria-label="Gửi triệu chứng"
                 title="Gửi triệu chứng"
@@ -601,7 +695,7 @@ export default function DashboardPage() {
         {error && !symptomInputError && (
           <div className="studio-recovery-actions">
             <Button type="button" tone="secondary" onClick={() => resetDiagnosis()}>Quay lại biểu mẫu</Button>
-            <Button type="button" onClick={() => startDiagnosis()}>Thử lại</Button>
+            <Button type="button" onClick={() => void startSpecialtyAnalysis()}>Thử lại</Button>
           </div>
         )}
 
@@ -613,7 +707,7 @@ export default function DashboardPage() {
         {status === "no-questions" && (
           <div className="studio-recovery-actions">
             <Button type="button" tone="secondary" onClick={() => resetDiagnosis()}>Quay lại biểu mẫu</Button>
-            <Button type="button" onClick={() => startDiagnosis()}>Thử lại với mô tả hiện tại</Button>
+            <Button type="button" onClick={() => void startSpecialtyAnalysis()}>Thử lại với mô tả hiện tại</Button>
           </div>
         )}
 
