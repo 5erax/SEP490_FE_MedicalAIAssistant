@@ -212,42 +212,44 @@
   border-top: 4px solid var(--clinical-teal);
 }
 
-.specialty-clinical-page .specialty-quota-bar {
-  width: 100%;
+.specialty-clinical-page .studio-form-meta {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  justify-items: end;
+  gap: 8px;
+}
+
+.specialty-clinical-page .specialty-quota-badge {
+  min-height: 32px;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   border: 1px solid var(--clinical-line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.88);
-  padding: 13px 16px;
-  box-shadow: 0 10px 26px rgba(11, 45, 53, 0.05);
-}
-
-.specialty-clinical-page .specialty-quota-bar > svg {
+  border-radius: 999px;
+  background: var(--clinical-mint-soft);
   color: var(--clinical-teal-dark);
+  padding: 5px 10px;
+  font: inherit;
 }
 
-.specialty-clinical-page .specialty-quota-bar > div {
-  display: grid;
-  gap: 2px;
+.specialty-clinical-page button.specialty-quota-badge {
+  cursor: pointer;
 }
 
-.specialty-clinical-page .specialty-quota-bar strong {
+.specialty-clinical-page .specialty-quota-badge strong {
   color: var(--clinical-ink);
-  font-size: 14px;
+  font-size: 13px;
 }
 
-.specialty-clinical-page .specialty-quota-bar span {
-  color: var(--clinical-muted);
-  font-size: 12px;
+.specialty-clinical-page .specialty-quota-badge span {
+  font-size: 11px;
+  font-weight: 750;
 }
 
-.specialty-clinical-page .specialty-quota-bar.is-error,
-.specialty-clinical-page .specialty-quota-bar.is-exhausted {
+.specialty-clinical-page .specialty-quota-badge.is-error,
+.specialty-clinical-page .specialty-quota-badge.is-exhausted {
   border-color: rgba(169, 71, 36, 0.28);
   background: var(--clinical-warning-bg);
+  color: var(--clinical-warning);
 }
 
 .specialty-clinical-page .studio-form-heading {
@@ -606,18 +608,12 @@
     padding: 18px;
   }
 
-  .specialty-clinical-page .specialty-quota-bar {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .specialty-clinical-page .specialty-quota-bar .ui-button {
-    width: 100%;
-    grid-column: 1 / -1;
-  }
-
   .specialty-clinical-page .studio-form-heading {
     display: grid;
+  }
+
+  .specialty-clinical-page .studio-form-meta {
+    justify-items: start;
   }
 
   .specialty-clinical-page .clinical-strip {
@@ -718,7 +714,7 @@ html[data-theme="dark"] .specialty-clinical-page :is(
   .studio-flow,
   .studio-flow span,
   .studio-chatbox,
-  .specialty-quota-bar,
+  .specialty-quota-badge,
   .studio-diagnosis-panel.specialty-question-flow,
   .specialty-answer-row,
   .specialty-answer-grid button

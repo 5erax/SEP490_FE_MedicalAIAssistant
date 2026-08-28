@@ -323,25 +323,26 @@ function FacilityResultList({ facilities, recommendedDepartment, userLocation })
   );
 }
 
-function SpecialtyQuotaBar({ quota, status, error, onRetry }) {
+function SpecialtyQuotaBadge({ quota, status, error, onRetry }) {
   if (status === "loading") {
     return (
-      <section className="specialty-quota-bar is-loading" aria-live="polite" aria-busy="true">
-        <Gauge size={19} aria-hidden="true" />
-        <div><strong>Đang tải lượt tư vấn hôm nay…</strong><span>Hạn mức được cập nhật theo tài khoản đăng nhập.</span></div>
-      </section>
+      <span className="specialty-quota-badge is-loading" aria-live="polite" aria-busy="true">
+        <Gauge size={16} aria-hidden="true" /><strong>…</strong><span>lượt hôm nay</span>
+      </span>
     );
   }
 
   if (status === "error") {
     return (
-      <section className="specialty-quota-bar is-error" role="status">
-        <Gauge size={19} aria-hidden="true" />
-        <div><strong>Chưa tải được hạn mức</strong><span>{error}</span></div>
-        <Button type="button" tone="secondary" size="sm" onClick={() => void onRetry()}>
-          <RefreshCw size={14} aria-hidden="true" /> Thử lại
-        </Button>
-      </section>
+      <button
+        className="specialty-quota-badge is-error"
+        type="button"
+        title={error}
+        aria-label={`Tải lại hạn mức tư vấn. ${error}`}
+        onClick={() => void onRetry()}
+      >
+        <RefreshCw size={15} aria-hidden="true" /><span>Tải lại hạn mức</span>
+      </button>
     );
   }
 
@@ -352,13 +353,15 @@ function SpecialtyQuotaBar({ quota, status, error, onRetry }) {
     : quota.hasServiceCredit ? "Có lượt dịch vụ" : "Tài khoản hiện tại";
 
   return (
-    <section className={`specialty-quota-bar ${exhausted ? "is-exhausted" : ""}`} aria-label="Hạn mức tư vấn chuyên khoa hôm nay">
-      <Gauge size={19} aria-hidden="true" />
-      <div>
-        <strong>{quota.remainingToday}/{quota.limitPerDay} lượt tư vấn còn lại hôm nay</strong>
-        <span>Đã dùng {quota.usedToday} lượt · {planLabel}</span>
-      </div>
-    </section>
+    <span
+      className={`specialty-quota-badge ${exhausted ? "is-exhausted" : ""}`}
+      aria-label={`${quota.remainingToday} trên ${quota.limitPerDay} lượt tư vấn còn lại hôm nay. Đã dùng ${quota.usedToday} lượt. ${planLabel}.`}
+      title={`Đã dùng ${quota.usedToday} lượt · ${planLabel}`}
+    >
+      <Gauge size={16} aria-hidden="true" />
+      <strong>{quota.remainingToday}/{quota.limitPerDay}</strong>
+      <span>lượt hôm nay</span>
+    </span>
   );
 }
 
@@ -612,15 +615,6 @@ export default function DashboardPage() {
         </ol>
 
         {showIntakeForm && (
-          <SpecialtyQuotaBar
-            quota={symptomQuota}
-            status={quotaStatus}
-            error={quotaError}
-            onRetry={refreshSymptomQuota}
-          />
-        )}
-
-        {showIntakeForm && (
           <form className="studio-chatbox" noValidate onSubmit={(event) => {
             event.preventDefault();
             void startSpecialtyAnalysis();
@@ -630,9 +624,17 @@ export default function DashboardPage() {
                 <span>Bước 1</span>
                 <h3>Mô tả điều bạn đang cảm nhận</h3>
               </div>
-              <div className="clinical-strip" aria-label="Phạm vi tư vấn">
-                <span>Tiếp nhận ban đầu</span>
-                <span>Không thay thế chẩn đoán</span>
+              <div className="studio-form-meta">
+                <div className="clinical-strip" aria-label="Phạm vi tư vấn">
+                  <span>Tiếp nhận ban đầu</span>
+                  <span>Không thay thế chẩn đoán</span>
+                </div>
+                <SpecialtyQuotaBadge
+                  quota={symptomQuota}
+                  status={quotaStatus}
+                  error={quotaError}
+                  onRetry={refreshSymptomQuota}
+                />
               </div>
             </div>
 
