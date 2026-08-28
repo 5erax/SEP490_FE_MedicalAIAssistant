@@ -103,6 +103,7 @@ export const ENDPOINTS = {
     SUGGEST_CLINICAL_QUESTIONS: `${SYMPTOM_ANALYSIS_BASE}/suggest-clinical-questions`,
     SUBMIT_CLINICAL_QUESTION_ANSWERS: `${SYMPTOM_ANALYSIS_BASE}/submit-clinical-question-answers`,
     SUBMIT_DIAGNOSIS: `${SYMPTOM_ANALYSIS_BASE}/submit-diagnosis`,
+    QUOTA: `${SYMPTOM_ANALYSIS_BASE}/quota`,
     MY_SESSIONS: `${SYMPTOM_ANALYSIS_BASE}/my-sessions`,
     SESSIONS: `${SYMPTOM_ANALYSIS_BASE}/sessions`,
     BY_SESSION: (sessionId) => byId(SYMPTOM_ANALYSIS_BASE, sessionId),

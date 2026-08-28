@@ -469,6 +469,22 @@ export function unwrapApiData(response) {
   return response?.data?.data ?? response?.data ?? response;
 }
 
+export function readSymptomAnalysisQuota(response) {
+  const data = unwrapApiData(response) ?? {};
+  const limitPerDay = Math.max(0, Number(data.limitPerDay ?? data.LimitPerDay) || 0);
+  const usedToday = Math.max(0, Number(data.usedToday ?? data.UsedToday) || 0);
+  const remainingToday = Math.max(0, Number(data.remainingToday ?? data.RemainingToday) || 0);
+
+  return {
+    businessDate: data.businessDate ?? data.BusinessDate ?? "",
+    limitPerDay,
+    usedToday,
+    remainingToday,
+    isFreeTier: Boolean(data.isFreeTier ?? data.IsFreeTier),
+    hasServiceCredit: Boolean(data.hasServiceCredit ?? data.HasServiceCredit),
+  };
+}
+
 export function translateClinicalText(value) {
   const text = normalizeText(value);
 
@@ -694,6 +710,12 @@ export const symptomAnalysisApi = {
       body: {
         userInput: normalizeText(userInput),
       },
+      auth: true,
+    });
+  },
+
+  getQuota() {
+    return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.QUOTA, {
       auth: true,
     });
   },
