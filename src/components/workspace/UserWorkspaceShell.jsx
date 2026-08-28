@@ -44,7 +44,7 @@ const PATIENT_ICONS = {
 };
 
 const NAV_ITEMS = getNavigationModel("patient")
-  .filter((item) => !["patient.profile", "patient.medication", "patient.medications", "assistant.intake"].includes(item.id))
+  .filter((item) => !["patient.profile", "patient.medication", "patient.medications"].includes(item.id))
   .map((item) => ({
     ...item,
     icon: PATIENT_ICONS[item.icon],
@@ -174,7 +174,7 @@ export default function UserWorkspaceShell({ children }) {
   const activeItem = NAV_ITEMS.find((item) => isNavigationItemActive(item, path))
     ?? SECONDARY_ACTIVE_ITEMS[path]
     ?? (path.startsWith("/assessment/")
-      ? { label: "Phân tích lâm sàng", icon: Activity }
+      ? { label: "Phân tích triệu chứng", icon: Activity }
       : NAV_ITEMS[0]);
   const ActiveIcon = activeItem.icon;
   const accountUser = accountState.accessToken === accessToken ? accountState.user : null;
