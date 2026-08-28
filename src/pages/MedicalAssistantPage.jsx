@@ -3,10 +3,8 @@ import {
   ArrowLeft,
   CircleCheck,
   FileText,
-  Gauge,
   History,
   MapPin,
-  RefreshCw,
   Send,
   ShieldCheck,
   Stethoscope,
@@ -24,7 +22,6 @@ import {
   getSymptomInputError,
   isClinicalQuestionAnswered,
   readAnalysisPayload,
-  readSymptomAnalysisQuota,
   readSuggestClinicalQuestionsPayload,
   SYMPTOM_ANALYSIS_MESSAGES,
   symptomAnalysisApi,
@@ -324,58 +321,13 @@ function IntakePage() {
   const [userInput, setUserInput] = useState(() => loadDraft() || "");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
-  const [quota, setQuota] = useState(null);
-  const [quotaStatus, setQuotaStatus] = useState("loading");
-  const [quotaError, setQuotaError] = useState("");
 
   const trimmedInput = userInput.trim();
   const isSubmitting = status === "loading";
-  const quotaExhausted = quotaStatus === "ready" && quota?.remainingToday <= 0;
   const inputError = [
     SYMPTOM_ANALYSIS_MESSAGES.inputRequired,
     SYMPTOM_ANALYSIS_MESSAGES.inputTooLong,
   ].includes(error) ? error : "";
-
-  async function loadQuota() {
-    setQuotaStatus("loading");
-    setQuotaError("");
-
-    try {
-      const response = await symptomAnalysisApi.getQuota();
-      setQuota(readSymptomAnalysisQuota(response));
-      setQuotaStatus("ready");
-    } catch (requestError) {
-      setQuota(null);
-      setQuotaError(getSymptomAnalysisApiMessage(
-        requestError,
-        "Chưa tải được hạn mức phân tích triệu chứng.",
-      ));
-      setQuotaStatus("error");
-    }
-  }
-
-  useEffect(() => {
-    let active = true;
-
-    symptomAnalysisApi.getQuota()
-      .then((response) => {
-        if (!active) return;
-        setQuota(readSymptomAnalysisQuota(response));
-        setQuotaStatus("ready");
-      })
-      .catch((requestError) => {
-        if (!active) return;
-        setQuotaError(getSymptomAnalysisApiMessage(
-          requestError,
-          "Chưa tải được hạn mức phân tích triệu chứng.",
-        ));
-        setQuotaStatus("error");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   function updateUserInput(value) {
     setUserInput(value);
@@ -385,8 +337,6 @@ function IntakePage() {
 
   async function submit(event) {
     event.preventDefault();
-
-    if (quotaExhausted) return;
 
     const validationError = getSymptomInputError(userInput);
     if (validationError) {
@@ -431,13 +381,6 @@ function IntakePage() {
       description="Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi tổng hợp kết quả tham khảo."
       activeStep={0}
     >
-      <SymptomQuotaCard
-        quota={quota}
-        status={quotaStatus}
-        error={quotaError}
-        onRetry={loadQuota}
-      />
-
       <form className="clinical-card clinical-intake-card" onSubmit={submit} noValidate>
         <div className="clinical-card-head">
           <div>
@@ -472,18 +415,13 @@ function IntakePage() {
         {error && !inputError && <Alert tone="danger" live>{error}</Alert>}
 
         <div className="clinical-submit-row">
-          <span>
-            <strong>{quotaExhausted ? "Đã hết lượt hôm nay." : "Sẵn sàng."}</strong>{" "}
-            {quotaExhausted
-              ? "Bạn có thể quay lại vào ngày tiếp theo."
-              : "MediMate sẽ hỏi thêm một số câu ngắn ở bước tiếp theo."}
-          </span>
+          <span><strong>Sẵn sàng.</strong> MediMate sẽ hỏi thêm một số câu ngắn ở bước tiếp theo.</span>
           <Button
             type="submit"
             size="lg"
             loading={isSubmitting}
             loadingLabel="Đang tạo câu hỏi…"
-            disabled={isSubmitting || quotaExhausted}
+            disabled={isSubmitting}
             aria-label="Tiếp tục phân tích lâm sàng"
             title="Tiếp tục phân tích lâm sàng"
           >
@@ -492,60 +430,6 @@ function IntakePage() {
         </div>
       </form>
     </AssessmentShell>
-  );
-}
-
-function SymptomQuotaCard({ quota, status, error, onRetry }) {
-  if (status === "loading") {
-    return (
-      <section className="symptom-quota-card is-loading" aria-live="polite" aria-busy="true">
-        <span className="symptom-quota-icon" aria-hidden="true"><Gauge size={20} /></span>
-        <div><strong>Đang tải lượt phân tích hôm nay…</strong><span>Vui lòng chờ trong giây lát.</span></div>
-      </section>
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <section className="symptom-quota-card is-error" role="status">
-        <span className="symptom-quota-icon" aria-hidden="true"><Gauge size={20} /></span>
-        <div><strong>Chưa hiển thị được hạn mức</strong><span>{error}</span></div>
-        <Button tone="secondary" size="sm" onClick={() => void onRetry()}>
-          <RefreshCw size={15} aria-hidden="true" /> Thử lại
-        </Button>
-      </section>
-    );
-  }
-
-  if (!quota) return null;
-
-  const limit = quota.limitPerDay;
-  const remaining = Math.min(quota.remainingToday, limit || quota.remainingToday);
-  const usedPercent = limit > 0 ? Math.min(100, Math.round((quota.usedToday / limit) * 100)) : 0;
-  const formattedDate = quota.businessDate
-    ? new Intl.DateTimeFormat("vi-VN").format(new Date(`${quota.businessDate}T00:00:00`))
-    : "hôm nay";
-
-  return (
-    <section className={`symptom-quota-card ${remaining <= 0 ? "is-exhausted" : ""}`} aria-label="Hạn mức phân tích triệu chứng">
-      <span className="symptom-quota-icon" aria-hidden="true"><Gauge size={20} /></span>
-      <div className="symptom-quota-main">
-        <div className="symptom-quota-heading">
-          <div>
-            <span>Lượt phân tích ngày {formattedDate}</span>
-            <strong>{remaining}/{limit} lượt còn lại</strong>
-          </div>
-          <div className="symptom-quota-badges">
-            {quota.isFreeTier && <span>Gói miễn phí</span>}
-            {quota.hasServiceCredit && <span>Có lượt dịch vụ</span>}
-          </div>
-        </div>
-        <span className="symptom-quota-track" aria-label={`Đã dùng ${quota.usedToday} trên ${limit} lượt`}>
-          <i style={{ width: `${usedPercent}%` }} />
-        </span>
-        <small>Đã dùng {quota.usedToday} lượt · Còn {remaining} lượt trong ngày</small>
-      </div>
-    </section>
   );
 }
 
