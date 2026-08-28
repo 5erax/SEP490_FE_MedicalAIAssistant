@@ -46,6 +46,7 @@ export {
   getSymptomInputError,
   isClinicalQuestionAnswered,
   readAnalysisPayload,
+  readSymptomAnalysisQuota,
   SYMPTOM_ANALYSIS_MESSAGES,
   symptomAnalysisApi,
 } from "./symptomAnalysisService";
