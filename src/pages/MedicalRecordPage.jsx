@@ -104,6 +104,14 @@ function formatDateTime(value) {
     : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
 }
 
+function getLabSessionDate(session) {
+  return session?.testDate
+    ?? session?.createdAt
+    ?? session?.processedAt
+    ?? session?.uploadedAt
+    ?? session?.createdAtUtc;
+}
+
 function formatFileSize(bytes) {
   if (!Number.isFinite(bytes)) return "";
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -623,7 +631,7 @@ export default function MedicalRecordPage() {
                     onClick={(event) => openHistorySession(session.sessionId, event.currentTarget)}
                     aria-haspopup="dialog"
                   >
-                    <span><strong>{formatDate(session.testDate, "Ngày chưa xác định")}</strong><small>{session.facilityName || formatDateTime(session.processedAt || session.createdAt)}</small></span>
+                    <span><strong>{formatDate(getLabSessionDate(session), "Chưa có ngày")}</strong><small>{session.facilityName || formatDateTime(session.processedAt || session.createdAt)}</small></span>
                     <SessionStatus status={session.status} />
                   </button>
                 ))}

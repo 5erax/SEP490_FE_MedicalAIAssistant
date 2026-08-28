@@ -21,6 +21,12 @@ import {
 import { authApi, clearStoredAuth, setStoredAuth } from "../services/api";
 import { isGoogleOAuthEnabledForCurrentOrigin } from "../services/googleOAuthConfig";
 import { findPatientProfileByUserId } from "../services/patientProfileSetup";
+import {
+  getEarliestAllowedBirthDate,
+  getLatestAllowedBirthDate,
+  normalizeGender,
+  validateDateOfBirth,
+} from "../utils/profileValidation";
 import { getWorkspacePath, hasAuthRole } from "../utils/roles";
 import "../styles/auth-refresh.css";
 
@@ -426,116 +432,10 @@ function SelectField({
 const PASSWORD_HINT =
   "Tối thiểu 8 ký tự, nên có chữ hoa, chữ thường, số và ký tự đặc biệt.";
 
-const MIN_SIGNUP_AGE = 16;
-const MAX_REASONABLE_AGE = 120;
-
-function formatDateInputValue(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function getEarliestBirthDateValue(today = new Date()) {
-  const earliest = new Date(
-    today.getFullYear() - MAX_REASONABLE_AGE,
-    today.getMonth(),
-    today.getDate(),
-  );
-
-  return formatDateInputValue(earliest);
-}
-
-function getLatestBirthDateValue(today = new Date()) {
-  const latest = new Date(
-    today.getFullYear() - MIN_SIGNUP_AGE,
-    today.getMonth(),
-    today.getDate(),
-  );
-
-  return formatDateInputValue(latest);
-}
-
 function isValidGmailAddress(value) {
   return /^[^\s@]+@gmail\.com$/i.test(
     String(value ?? "").trim(),
   );
-}
-
-function parseDateInputValue(value) {
-  if (!value) return null;
-
-  const parts = value.split("-").map(Number);
-  if (parts.length !== 3) return null;
-
-  const [year, month, day] = parts;
-
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    !Number.isInteger(day)
-  ) {
-    return null;
-  }
-
-  const date = new Date(year, month - 1, day);
-
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-
-  return date;
-}
-
-function calculateAge(dateOfBirth, today = new Date()) {
-  let age =
-    today.getFullYear() - dateOfBirth.getFullYear();
-
-  const hasNotHadBirthday =
-    today.getMonth() < dateOfBirth.getMonth() ||
-    (
-      today.getMonth() === dateOfBirth.getMonth() &&
-      today.getDate() < dateOfBirth.getDate()
-    );
-
-  if (hasNotHadBirthday) {
-    age -= 1;
-  }
-
-  return age;
-}
-
-function validateDateOfBirth(value, today = new Date()) {
-  if (!value) {
-    return "Vui lòng nhập ngày sinh.";
-  }
-
-  const dateOfBirth = parseDateInputValue(value);
-
-  if (!dateOfBirth) {
-    return "Ngày sinh không hợp lệ. Vui lòng kiểm tra lại.";
-  }
-
-  if (dateOfBirth > today) {
-    return "Ngày sinh không thể nằm trong tương lai.";
-  }
-
-  const age = calculateAge(dateOfBirth, today);
-
-  if (age < MIN_SIGNUP_AGE) {
-    return `Bạn phải đủ ${MIN_SIGNUP_AGE} tuổi để đăng ký tài khoản.`;
-  }
-
-  if (age > MAX_REASONABLE_AGE) {
-    return "Ngày sinh không hợp lý. Vui lòng kiểm tra lại.";
-  }
-
-  return "";
 }
 
 function validateSignupForm(form, accepted) {
@@ -794,7 +694,7 @@ export function SignupPage() {
     confirmPassword: "",
     displayName: "",
     address: "",
-    gender: "1",
+    gender: "male",
     dateOfBirth: "",
     otp: "",
   });
@@ -806,10 +706,8 @@ export function SignupPage() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const signupFormRef = useRef(null);
   const today = new Date();
-  const earliestBirthDateValue =
-    getEarliestBirthDateValue(today);
-  const latestBirthDateValue =
-    getLatestBirthDateValue(today);
+  const earliestBirthDateValue = getEarliestAllowedBirthDate(today);
+  const latestBirthDateValue = getLatestAllowedBirthDate(today);
 
   function update(key, value) {
     const emailChangedAfterOtp = key === "email" && otpRequested;
@@ -933,7 +831,7 @@ export function SignupPage() {
       const response = await authApi.register({
         ...form,
         email: form.email.trim().toLowerCase(),
-        gender: Number(form.gender),
+        gender: normalizeGender(form.gender),
         dateOfBirth: form.dateOfBirth,
         otp: form.otp.trim(),
       });
@@ -1112,8 +1010,8 @@ export function SignupPage() {
                 update("gender", event.target.value)
               }
             >
-              <option value="1">Nam</option>
-              <option value="2">Nữ</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
             </SelectField>
 
             <Field

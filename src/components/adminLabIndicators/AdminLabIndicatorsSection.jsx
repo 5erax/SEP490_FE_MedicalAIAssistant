@@ -5,12 +5,12 @@ import {
   Eye,
   FlaskConical,
   Languages,
+  MessageSquareText,
   Pencil,
   Plus,
   RefreshCw,
   Ruler,
   Search,
-  Sparkles,
   Trash2,
 } from "lucide-react";
 import { useFeedback } from "../feedback/feedbackContext";
@@ -29,6 +29,7 @@ import {
   LoadingState,
 } from "../ui";
 import { LabIndicatorChildDialog, LabIndicatorFormDialog } from "./LabIndicatorDialogs";
+import LabIndicatorCatalogTransfer from "./LabIndicatorCatalogTransfer";
 import AdminPagination from "../admin/AdminPagination";
 import AdminSearchDatalist from "../admin/AdminSearchDatalist";
 import "../../styles/admin/lab-indicators.css";
@@ -496,6 +497,10 @@ function IndicatorListView() {
       </header>
 
       <ApiMessage message={message} />
+
+      <LabIndicatorCatalogTransfer
+        onApplied={() => loadIndicators(pageInfo.pageNumber, pageInfo.pageSize, appliedSearch)}
+      />
 
       <AdminFilterDisclosure
         className="lab-filter-card"
@@ -1244,7 +1249,7 @@ function IndicatorDetailView({ indicatorId }) {
         </article>
 
         <article>
-          <Sparkles size={18} aria-hidden="true" />
+          <MessageSquareText size={18} aria-hidden="true" />
           <span>
             <strong>{advice.length}</strong>
             <small>Lời khuyên</small>
@@ -1287,7 +1292,7 @@ function IndicatorDetailView({ indicatorId }) {
       />
 
       <DetailCollection
-        icon={<Sparkles size={18} />}
+        icon={<MessageSquareText size={18} />}
         title="Lời khuyên"
         description="Nội dung hướng dẫn theo trạng thái kết quả xét nghiệm."
         addLabel="Tạo lời khuyên"

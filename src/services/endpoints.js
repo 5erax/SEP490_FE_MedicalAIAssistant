@@ -53,6 +53,7 @@ export const ENDPOINTS = {
   USERS: {
     BASE: USERS_BASE,
     ME: `${USERS_BASE}/me`,
+    PHONE: `${USERS_BASE}/me/phone`,
     BY_ID: (userId) => byId(USERS_BASE, userId),
     RESTORE: (userId) => `${byId(USERS_BASE, userId)}/restore`,
   },
@@ -102,6 +103,7 @@ export const ENDPOINTS = {
     SUGGEST_CLINICAL_QUESTIONS: `${SYMPTOM_ANALYSIS_BASE}/suggest-clinical-questions`,
     SUBMIT_CLINICAL_QUESTION_ANSWERS: `${SYMPTOM_ANALYSIS_BASE}/submit-clinical-question-answers`,
     SUBMIT_DIAGNOSIS: `${SYMPTOM_ANALYSIS_BASE}/submit-diagnosis`,
+    QUOTA: `${SYMPTOM_ANALYSIS_BASE}/quota`,
     MY_SESSIONS: `${SYMPTOM_ANALYSIS_BASE}/my-sessions`,
     SESSIONS: `${SYMPTOM_ANALYSIS_BASE}/sessions`,
     BY_SESSION: (sessionId) => byId(SYMPTOM_ANALYSIS_BASE, sessionId),
@@ -191,6 +193,7 @@ export const ENDPOINTS = {
     MY_SESSIONS: `${LAB_TESTS_BASE}/my-sessions`,
     SESSIONS: `${LAB_TESTS_BASE}/sessions`,
     BY_SESSION: (sessionId) => encodedById(LAB_TESTS_BASE, sessionId),
+    SUMMARY: (sessionId) => `${encodedById(LAB_TESTS_BASE, sessionId)}/summary`,
     ANALYTICS_INDICATORS: `${LAB_TESTS_BASE}/analytics/indicators`,
     ANALYTICS_INDICATOR_TREND: (indicatorId) =>
       `${LAB_TESTS_BASE}/analytics/indicators/${encodeURIComponent(indicatorId)}/trend`,

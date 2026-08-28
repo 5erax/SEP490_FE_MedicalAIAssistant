@@ -11,6 +11,65 @@
   gap: 20px;
 }
 
+.admin-operator .lab-catalog-transfer {
+  display: grid;
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--admin-accent, #0d7773) 30%, var(--color-line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--admin-accent-soft, #e8f7f4) 55%, var(--color-surface));
+  padding: 16px;
+}
+
+.admin-operator .lab-catalog-transfer > div:first-child {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.admin-operator .lab-catalog-transfer__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--admin-accent, #0d7773);
+}
+
+.admin-operator .lab-catalog-transfer h3,
+.admin-operator .lab-catalog-transfer p {
+  margin: 0;
+}
+
+.admin-operator .lab-catalog-transfer h3 {
+  font-size: 15px;
+}
+
+.admin-operator .lab-catalog-transfer p {
+  margin-top: 3px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.admin-operator .lab-catalog-transfer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-operator .lab-catalog-transfer__status {
+  border-top: 1px solid var(--color-line);
+  padding-top: 10px;
+  color: var(--color-subtle);
+  font-weight: 700;
+}
+
+.admin-operator .lab-catalog-transfer__status.is-error {
+  color: var(--color-danger);
+}
+
 .admin-operator .lab-page-heading,
 .admin-operator .lab-detail-hero,
 .admin-operator .lab-detail-collection > header {

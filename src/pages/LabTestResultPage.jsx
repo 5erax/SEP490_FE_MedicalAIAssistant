@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   CircleAlert,
+  ClipboardCheck,
   FileText,
+  HeartPulse,
+  ListChecks,
   LoaderCircle,
   RefreshCw,
   ShieldCheck,
+  TriangleAlert,
 } from "lucide-react";
 import { Button, EmptyState, ErrorState } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -158,18 +163,19 @@ function getResultValue(result) {
   return `${formatNumber(value)}${unit ? ` ${unit}` : ""}`;
 }
 
-function formatReference(result) {
-  const explicitReference = firstMeaningfulText(
-    result?.referenceText,
-    result?.referenceRangeText,
-    result?.normalRange,
-    result?.normalRangeText,
-    typeof result?.referenceRange === "string" ? result.referenceRange : "",
-  );
-  if (explicitReference) return explicitReference;
+function getResultNumericValue(result) {
+  const value = result?.userValue
+    ?? result?.rawExtractedValue
+    ?? result?.value
+    ?? result?.resultValue
+    ?? result?.numericValue
+    ?? result?.measuredValue;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
 
+function getReferenceValues(result) {
   const range = result?.referenceRangeUsed ?? result?.referenceRange ?? {};
-  const comparisonType = result?.comparisonTypeUsed ?? range.comparisonType;
   const minimum = result?.referenceMinUsed
     ?? result?.referenceMin
     ?? result?.minReference
@@ -188,6 +194,28 @@ function formatReference(result) {
     ?? range.max
     ?? range.maximum
     ?? range.upperBound;
+
+  const normalizedMinimum = minimum === null || minimum === undefined || minimum === "" ? null : Number(minimum);
+  const normalizedMaximum = maximum === null || maximum === undefined || maximum === "" ? null : Number(maximum);
+
+  return {
+    comparisonType: result?.comparisonTypeUsed ?? range.comparisonType,
+    minimum: Number.isFinite(normalizedMinimum) ? normalizedMinimum : null,
+    maximum: Number.isFinite(normalizedMaximum) ? normalizedMaximum : null,
+  };
+}
+
+function formatReference(result) {
+  const explicitReference = firstMeaningfulText(
+    result?.referenceText,
+    result?.referenceRangeText,
+    result?.normalRange,
+    result?.normalRangeText,
+    typeof result?.referenceRange === "string" ? result.referenceRange : "",
+  );
+  if (explicitReference) return explicitReference;
+
+  const { comparisonType, minimum, maximum } = getReferenceValues(result);
   const unit = getResultUnit(result);
   let reference = "Chưa có khoảng tham chiếu";
 
@@ -204,6 +232,70 @@ function formatReference(result) {
   }
 
   return unit && reference !== "Chưa có khoảng tham chiếu" ? `${reference} ${unit}` : reference;
+}
+
+function getResultDeviation(result) {
+  const value = getResultNumericValue(result);
+  const status = normalizeResultStatus(result?.status);
+  const { minimum, maximum } = getReferenceValues(result);
+  const unit = getResultUnit(result);
+  const boundary = status === "low" || status === "criticalLow" ? minimum : maximum;
+  if (value === null || !Number.isFinite(boundary) || !ABNORMAL_RESULT_STATUSES.has(status)) return null;
+
+  const difference = Math.abs(value - boundary);
+  const percentage = boundary !== 0 ? (difference / Math.abs(boundary)) * 100 : null;
+  const direction = status === "low" || status === "criticalLow" ? "thấp hơn" : "cao hơn";
+  const boundaryLabel = status === "low" || status === "criticalLow" ? "giới hạn dưới" : "giới hạn trên";
+  const percentageText = Number.isFinite(percentage)
+    ? ` (${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(percentage)}%)`
+    : "";
+
+  return {
+    value: `${direction} ${formatNumber(difference)}${unit ? ` ${unit}` : ""}${percentageText}`,
+    note: `So với ${boundaryLabel} ${formatNumber(boundary)}${unit ? ` ${unit}` : ""}`,
+  };
+}
+
+function normalizeIndicatorKey(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
+
+const LIPID_RELATED_INDICATORS = [
+  { label: "LDL-C", keys: ["LDL", "LDLC", "CHOLESTEROLLDL"] },
+  { label: "HDL-C", keys: ["HDL", "HDLC", "CHOLESTEROLHDL"] },
+  { label: "Triglyceride", keys: ["TG", "TRIGLYCERIDE", "TRIGLYCERIDES"] },
+  { label: "Non-HDL", keys: ["NONHDL", "NONHDLCHOLESTEROL"] },
+];
+
+function getLipidContext(result, results) {
+  const currentKeys = [getResultSymbol(result), getResultName(result)].map(normalizeIndicatorKey);
+  const isTotalCholesterol = currentKeys.some((key) => (
+    key === "CHOL" || key.includes("CHOLESTEROLTOANPHAN") || key.includes("TOTALCHOLESTEROL")
+  ));
+  if (!isTotalCholesterol) return null;
+
+  const related = LIPID_RELATED_INDICATORS.map((definition) => {
+    const match = results.find((candidate) => {
+      if (candidate === result) return false;
+      const candidateKeys = [getResultSymbol(candidate), getResultName(candidate)].map(normalizeIndicatorKey);
+      return candidateKeys.some((key) => definition.keys.some((expected) => key === expected || key.includes(expected)));
+    });
+    return match ? {
+      label: definition.label,
+      value: getResultValue(match),
+      status: RESULT_STATUS_META[normalizeResultStatus(match?.status)]?.label ?? "Chưa xác định",
+      tone: RESULT_STATUS_META[normalizeResultStatus(match?.status)]?.tone ?? "neutral",
+    } : { label: definition.label, value: "Chưa nhận diện", status: "", tone: "neutral" };
+  });
+
+  return {
+    description: "Tổng cholesterol chưa đủ để tự kết luận nguy cơ tim mạch. Cần đọc cùng LDL-C, HDL-C, triglyceride, non-HDL và các yếu tố nguy cơ cá nhân.",
+    related,
+  };
 }
 
 function getResultKey(result, index) {
@@ -238,25 +330,397 @@ function toAdviceItems(value) {
     .filter(Boolean);
 }
 
-function AdviceBlock({ title, value, tone = "default" }) {
+function AdviceBlock({ title, value, tone = "default", collapsible = false }) {
   const items = toAdviceItems(value);
   if (items.length === 0) return null;
+
+  const renderItem = (item) => {
+    const parts = item.split(/(https?:\/\/[^\s]+)/g);
+    return parts.map((part, index) => (
+      /^https?:\/\//.test(part)
+        ? <a key={`${part}-${index}`} href={part.replace(/[.,;:]$/, "")} target="_blank" rel="noreferrer">Nguồn tham khảo</a>
+        : part
+    ));
+  };
+
+  const content = items.length === 1 ? (
+    <p>{renderItem(items[0])}</p>
+  ) : (
+    <ul>
+      {items.map((item, index) => <li key={`${title}-${index}`}>{renderItem(item)}</li>)}
+    </ul>
+  );
+
+  if (collapsible) {
+    return (
+      <details className="lab-test-result__advice-disclosure" data-tone={tone}>
+        <summary>{title}</summary>
+        {content}
+      </details>
+    );
+  }
 
   return (
     <section className="lab-test-result__advice-block" data-tone={tone}>
       <h3>{title}</h3>
-      {items.length === 1 ? (
-        <p>{items[0]}</p>
-      ) : (
-        <ul>
-          {items.map((item, index) => <li key={`${title}-${index}`}>{item}</li>)}
-        </ul>
-      )}
+      {content}
     </section>
   );
 }
 
-function ResultAdvice({ result }) {
+function getResultPriority(result) {
+  const status = normalizeResultStatus(result?.status);
+  if (status === "criticalHigh" || status === "criticalLow") return 0;
+  if (status === "high" || status === "low") return 1;
+  if (status === "unknown") return 2;
+  return 3;
+}
+
+function getDeviationMagnitude(result) {
+  const deviation = Number(result?.deviationPercent);
+  return Number.isFinite(deviation) ? Math.abs(deviation) : -1;
+}
+
+function getPriorityResults(results) {
+  return results
+    .filter((result) => ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status)))
+    .map((result, index) => ({ result, index }))
+    .sort((left, right) => (
+      getResultPriority(left.result) - getResultPriority(right.result)
+      || getDeviationMagnitude(right.result) - getDeviationMagnitude(left.result)
+      || left.index - right.index
+    ))
+    .slice(0, 3);
+}
+
+function uniqueAdviceItems(values, limit = 3) {
+  const seen = new Set();
+  const items = [];
+
+  for (const value of values) {
+    for (const item of toAdviceItems(value)) {
+      const key = item.normalize("NFKC").toLocaleLowerCase("vi-VN").replace(/\s+/g, " ").trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      items.push(item);
+      if (items.length >= limit) return items;
+    }
+  }
+
+  return items;
+}
+
+function getOverviewActions(results) {
+  const abnormalResults = results.filter((result) => (
+    ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
+  ));
+  const actionSources = abnormalResults.length > 0 ? abnormalResults : results;
+  const adviceItems = actionSources.map(getResultAdvice).filter(Boolean);
+
+  return {
+    urgent: uniqueAdviceItems(adviceItems.map((advice) => (
+      typeof advice === "object" ? advice.warningSigns : null
+    ))),
+    followUp: uniqueAdviceItems(adviceItems.flatMap((advice) => (
+      typeof advice === "object"
+        ? [advice.followUpSuggestion, advice.followUpAdvice, advice.monitoringAdvice]
+        : []
+    ))),
+    habits: uniqueAdviceItems(adviceItems.flatMap((advice) => (
+      typeof advice === "object"
+        ? [advice.lifestyleAdvice, advice.nutritionalAdvice]
+        : []
+    ))),
+  };
+}
+
+function getFallbackOverviewSummary({
+  criticalCount,
+  attentionCount,
+  normalCount,
+  unknownCount,
+  totalCount,
+  priorityNames = [],
+}) {
+  if (totalCount === 0) {
+    return "Phiên phân tích đã hoàn tất nhưng chưa có đủ chỉ số để tạo nhận định tổng quan.";
+  }
+  const normalRatio = normalCount > 0 ? `${normalCount}/${totalCount} chỉ số nằm trong khoảng tham chiếu. ` : "";
+  const focusText = priorityNames.length > 0 ? ` ${priorityNames.join(", ")} cần được xem trước.` : "";
+  if (criticalCount > 0) {
+    return `${normalRatio}Có ${criticalCount} chỉ số ở mức nguy cấp.${focusText} Hãy trao đổi với nhân viên y tế, đặc biệt khi bạn đang có triệu chứng bất thường.`;
+  }
+  if (attentionCount > 0) {
+    return `${normalRatio}Có ${attentionCount} chỉ số nằm ngoài khoảng tham chiếu.${focusText}`;
+  }
+  if (normalCount > 0 && unknownCount === 0) {
+    return "Các chỉ số đã nhận diện đều nằm trong khoảng tham chiếu. Bạn vẫn nên theo dõi sức khỏe và thực hiện theo hướng dẫn của bác sĩ nếu có.";
+  }
+  if (unknownCount > 0) {
+    return `Có ${unknownCount} chỉ số chưa đủ dữ liệu để đánh giá. Những chỉ số này không được xem là bình thường và có thể cần được đối chiếu thêm.`;
+  }
+  return "Kết quả đã được hệ thống tổng hợp. Hãy xem từng chỉ số để biết giá trị và khoảng tham chiếu tương ứng.";
+}
+
+function stripSummaryFormatting(value) {
+  return String(value ?? "")
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/\[([^\]]+)]\(([^)]+)\)/g, "$1 ($2)")
+    .replace(/[*_`~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseSummaryBlocks(value) {
+  const blocks = [];
+  let paragraphLines = [];
+  let listItems = [];
+
+  function flushParagraph() {
+    const text = stripSummaryFormatting(paragraphLines.join(" "));
+    if (text) blocks.push({ type: "paragraph", text });
+    paragraphLines = [];
+  }
+
+  function flushList() {
+    if (listItems.length > 0) blocks.push({ type: "list", items: listItems });
+    listItems = [];
+  }
+
+  for (const sourceLine of String(value ?? "").split(/\r?\n/)) {
+    const rawLine = sourceLine.trim();
+    if (!rawLine) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const isMarkdownHeading = /^#{1,6}\s+/.test(rawLine);
+    const isBullet = /^[-*•]\s+/.test(rawLine);
+    const content = stripSummaryFormatting(rawLine.replace(/^[-*•]\s+/, ""));
+    if (!content) continue;
+
+    if (/^chào\s+(bạn|anh|chị)\b/i.test(content) || /tôi là trợ lý y khoa/i.test(content)) {
+      continue;
+    }
+
+    const isNumberedHeading = /^\d+[.)]\s+/.test(content) && content.length <= 100;
+    const isSummaryTitle = /^(tóm tắt|bản tóm tắt)\s+kết quả xét nghiệm/i.test(content);
+
+    if (isMarkdownHeading || isNumberedHeading || isSummaryTitle) {
+      flushParagraph();
+      flushList();
+      if (!isSummaryTitle) {
+        blocks.push({ type: "heading", text: content.replace(/^\d+[.)]\s*/, "").replace(/:$/, "") });
+      }
+      continue;
+    }
+
+    if (isBullet) {
+      flushParagraph();
+      listItems.push(content);
+      continue;
+    }
+
+    flushList();
+    paragraphLines.push(content);
+  }
+
+  flushParagraph();
+  flushList();
+  return blocks;
+}
+
+function FormattedSummary({ value }) {
+  const blocks = parseSummaryBlocks(value);
+  if (blocks.length === 0) return null;
+
+  return (
+    <div className="lab-test-result__formatted-summary">
+      {blocks.map((block, index) => {
+        if (block.type === "heading") {
+          return <h4 key={`${block.type}-${index}`}>{block.text}</h4>;
+        }
+        if (block.type === "list") {
+          return (
+            <ul key={`${block.type}-${index}`}>
+              {block.items.map((item, itemIndex) => <li key={`${item}-${itemIndex}`}>{item}</li>)}
+            </ul>
+          );
+        }
+        return <p key={`${block.type}-${index}`}>{block.text}</p>;
+      })}
+    </div>
+  );
+}
+
+function OverviewActionGroup({ icon, title, items, tone = "default" }) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="lab-test-result__overview-action" data-tone={tone}>
+      <span aria-hidden="true">{icon}</span>
+      <div>
+        <h3>{title}</h3>
+        <ul>
+          {items.map((item) => <li key={`${title}-${item}`}>{item}</li>)}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function ResultOverview({
+  results,
+  summary,
+  summaryStatus,
+  summaryError,
+  normalCount,
+  attentionCount,
+  criticalCount,
+  unknownCount,
+  onRetrySummary,
+  onSelectResult,
+}) {
+  const totalCount = results.length;
+  const priorityResults = getPriorityResults(results);
+  const actions = getOverviewActions(results);
+  const headline = criticalCount > 0
+    ? `Có ${criticalCount} chỉ số ở mức nguy cấp`
+    : attentionCount > 0
+      ? `Có ${attentionCount} chỉ số cần chú ý`
+      : normalCount > 0 && unknownCount === 0
+        ? "Các chỉ số đã nhận diện đang ổn định"
+        : "Kết quả cần được đối chiếu thêm";
+  const tone = criticalCount > 0 ? "danger" : attentionCount > 0 ? "warning" : "success";
+  const fallbackSummary = getFallbackOverviewSummary({
+    criticalCount,
+    attentionCount,
+    normalCount,
+    unknownCount,
+    totalCount,
+    priorityNames: priorityResults.map(({ result }) => getResultSymbol(result)),
+  });
+  const summaryPreview = fallbackSummary;
+  const hasExtendedSummary = Boolean(summary) && stripSummaryFormatting(summary).length > summaryPreview.length + 80;
+  const hasActions = actions.urgent.length + actions.followUp.length + actions.habits.length > 0;
+
+  return (
+    <section className="lab-test-result__overview" aria-labelledby="lab-overview-title">
+      <header className="lab-test-result__overview-header">
+        <span className="lab-test-result__overview-icon" data-tone={tone} aria-hidden="true">
+          <ClipboardCheck size={22} />
+        </span>
+        <div>
+          <p>TỔNG QUAN KẾT QUẢ</p>
+          <h2 id="lab-overview-title">{headline}</h2>
+        </div>
+      </header>
+
+      <div className="lab-test-result__overview-counts" aria-label={`Tổng cộng ${totalCount} chỉ số`}>
+        <div data-tone="danger" data-active={criticalCount > 0}><strong>{criticalCount}</strong><span>Nguy cấp</span></div>
+        <div data-tone="warning" data-active={attentionCount > 0}><strong>{attentionCount}</strong><span>Cần chú ý</span></div>
+        <div data-tone="success" data-active={normalCount > 0}><strong>{normalCount}</strong><span>Bình thường</span></div>
+        <div data-tone="neutral" data-active={unknownCount > 0}><strong>{unknownCount}</strong><span>Chưa xác định</span></div>
+      </div>
+
+      <div className="lab-test-result__overview-summary" data-tone={tone}>
+        <span className="lab-test-result__overview-summary-label">Nhận định chung</span>
+        <p>{summaryPreview}</p>
+        {summaryStatus === "loading" && (
+          <span className="lab-test-result__summary-state">
+            <LoaderCircle className="lab-test-result__spinner" size={15} aria-hidden="true" />
+            Đang hoàn thiện phần tóm tắt…
+          </span>
+        )}
+        {summaryStatus === "error" && (
+          <span className="lab-test-result__summary-state is-error">
+            {summaryError || "Chưa thể tải tóm tắt tự động."}
+            <button type="button" onClick={onRetrySummary}>
+              <RefreshCw size={14} aria-hidden="true" /> Thử lại
+            </button>
+          </span>
+        )}
+      </div>
+
+      {priorityResults.length > 0 && (
+        <section className="lab-test-result__priority-section" aria-labelledby="lab-priority-title">
+          <div className="lab-test-result__section-title">
+            <TriangleAlert size={18} aria-hidden="true" />
+            <h3 id="lab-priority-title">Điểm cần chú ý trước</h3>
+          </div>
+          <div className="lab-test-result__priority-list">
+            {priorityResults.map(({ result, index }) => {
+              const key = getResultKey(result, index);
+              const meta = RESULT_STATUS_META[normalizeResultStatus(result?.status)];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="lab-test-result__priority-item"
+                  data-tone={meta.tone}
+                  onClick={() => onSelectResult(key, result)}
+                >
+                  <span>
+                    <strong>{getResultName(result)}</strong>
+                    <small>{getResultValue(result)} · {meta.label}</small>
+                  </span>
+                  <span className="lab-test-result__priority-link">
+                    Xem chi tiết <ArrowRight size={15} aria-hidden="true" />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {hasActions && (
+        <section className="lab-test-result__actions-section" aria-labelledby="lab-actions-title">
+          <div className="lab-test-result__section-title">
+            <ListChecks size={18} aria-hidden="true" />
+            <h3 id="lab-actions-title">Việc nên làm tiếp theo</h3>
+          </div>
+          <div className="lab-test-result__overview-actions">
+            <OverviewActionGroup
+              icon={<TriangleAlert size={18} />}
+              title="Dấu hiệu cần lưu ý"
+              items={actions.urgent}
+              tone="danger"
+            />
+            <OverviewActionGroup
+              icon={<HeartPulse size={18} />}
+              title="Nên theo dõi"
+              items={actions.followUp}
+            />
+            <OverviewActionGroup
+              icon={<CheckCircle2 size={18} />}
+              title="Sinh hoạt và dinh dưỡng"
+              items={actions.habits}
+              tone="success"
+            />
+          </div>
+        </section>
+      )}
+
+      {hasExtendedSummary && (
+        <details className="lab-test-result__full-summary">
+          <summary>
+            <FileText size={17} aria-hidden="true" />
+            <span>Xem phân tích tổng quan đầy đủ</span>
+          </summary>
+          <FormattedSummary value={summary} />
+        </details>
+      )}
+
+      <p className="lab-test-result__overview-disclaimer">
+        Tổng quan giúp bạn đọc kết quả dễ hơn, không thay thế chẩn đoán hoặc tư vấn trực tiếp từ bác sĩ.
+      </p>
+    </section>
+  );
+}
+
+function ResultAdvice({ result, results = [] }) {
   if (!result) {
     return (
       <EmptyState
@@ -269,6 +733,8 @@ function ResultAdvice({ result }) {
   const advice = getResultAdvice(result);
   const status = normalizeResultStatus(result?.status);
   const meta = RESULT_STATUS_META[status];
+  const deviation = getResultDeviation(result);
+  const lipidContext = getLipidContext(result, results);
 
   return (
     <div className="lab-test-result__advice-content">
@@ -286,7 +752,30 @@ function ResultAdvice({ result }) {
       <div className="lab-test-result__selected-summary" data-tone={meta.tone}>
         <div><span>Trạng thái</span><strong>{meta.label}</strong></div>
         <div><span>Khoảng tham chiếu</span><strong>{formatReference(result)}</strong></div>
+        {deviation && (
+          <div className="lab-test-result__deviation">
+            <span>Mức sai lệch</span>
+            <strong>{deviation.value}</strong>
+            <small>{deviation.note}</small>
+          </div>
+        )}
       </div>
+
+      {lipidContext && (
+        <section className="lab-test-result__related-context" aria-labelledby="lab-related-title">
+          <h3 id="lab-related-title">Cần đối chiếu cùng bộ mỡ máu</h3>
+          <p>{lipidContext.description}</p>
+          <div className="lab-test-result__related-list">
+            {lipidContext.related.map((item) => (
+              <div key={item.label} data-tone={item.tone}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                {item.status && <small>{item.status}</small>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {advice ? (
         <div className="lab-test-result__advice-sections">
@@ -296,12 +785,17 @@ function ResultAdvice({ result }) {
           />
           {typeof advice !== "string" && (
             <>
-              <AdviceBlock title="Nguyên nhân có thể liên quan" value={advice.possibleCauses} />
-              <AdviceBlock title="Sinh hoạt" value={advice.lifestyleAdvice} />
-              <AdviceBlock title="Dinh dưỡng" value={advice.nutritionalAdvice} />
-              <AdviceBlock title="Dấu hiệu cần lưu ý" value={advice.warningSigns} tone="danger" />
-              <AdviceBlock title="Theo dõi tiếp" value={advice.followUpSuggestion} />
-              <AdviceBlock title="Câu hỏi có thể trao đổi với bác sĩ" value={advice.doctorQuestions} />
+              <AdviceBlock title="Nguyên nhân có thể liên quan" value={advice.possibleCauses} collapsible />
+              <AdviceBlock title="Sinh hoạt" value={advice.lifestyleAdvice} collapsible />
+              <AdviceBlock title="Dinh dưỡng" value={advice.nutritionalAdvice} collapsible />
+              <AdviceBlock
+                title="Khi nào cần khám ngay"
+                value={advice.warningSigns}
+                tone="danger"
+                collapsible={advice.severityLevel !== "critical"}
+              />
+              <AdviceBlock title="Theo dõi tiếp" value={advice.followUpSuggestion} collapsible />
+              <AdviceBlock title="Câu hỏi có thể trao đổi với bác sĩ" value={advice.doctorQuestions} collapsible />
             </>
           )}
         </div>
@@ -328,32 +822,40 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const [loadStatus, setLoadStatus] = useState(initialSession ? "ready" : sessionId ? "loading" : "error");
   const [error, setError] = useState(initialSession || sessionId ? "" : "Không tìm thấy mã phiên phân tích xét nghiệm.");
   const [retryKey, setRetryKey] = useState(0);
+  const [summaryRetryKey, setSummaryRetryKey] = useState(0);
+  const [summaryState, setSummaryState] = useState({ sessionId: "", status: "idle", error: "" });
   const [selectedResultKey, setSelectedResultKey] = useState("");
+  const [resultFilter, setResultFilter] = useState("recommended");
+  const [visibleResultLimit, setVisibleResultLimit] = useState(9);
   const [announcement, setAnnouncement] = useState(
     sessionId ? "Đang tải kết quả xét nghiệm." : "Không tìm thấy mã phiên phân tích xét nghiệm.",
   );
   const pageHeadingRef = useRef(null);
   const responseNotifiedRef = useRef(false);
   const terminalBalanceRefreshRef = useRef("");
+  const summaryRequestedRef = useRef("");
 
   useEffect(() => {
     terminalBalanceRefreshRef.current = "";
-  }, [initialSession, retryKey, sessionId]);
+    summaryRequestedRef.current = "";
+  }, [initialSession?.sessionId, retryKey, sessionId]);
 
   useEffect(() => {
     if (initialSession) {
-      const nextStatus = normalizeAsyncSessionStatus(initialSession?.status);
-      const resultCount = getSessionResults(initialSession).length;
-      setSession(initialSession);
-      setLoadStatus("ready");
-      setError("");
-      setAnnouncement(
-        nextStatus === ASYNC_SESSION_STATUS.COMPLETED
-          ? `Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`
-          : "Đã tải kết quả xét nghiệm đính kèm.",
-      );
-      if (typeof onSessionUpdate === "function") onSessionUpdate(initialSession);
-      return undefined;
+      const initialSessionTimer = window.setTimeout(() => {
+        const nextStatus = normalizeAsyncSessionStatus(initialSession?.status);
+        const resultCount = getSessionResults(initialSession).length;
+        setSession(initialSession);
+        setLoadStatus("ready");
+        setError("");
+        setAnnouncement(
+          nextStatus === ASYNC_SESSION_STATUS.COMPLETED
+            ? `Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`
+            : "Đã tải kết quả xét nghiệm đính kèm.",
+        );
+        if (typeof onSessionUpdate === "function") onSessionUpdate(initialSession);
+      }, 0);
+      return () => window.clearTimeout(initialSessionTimer);
     }
 
     if (!sessionId) return undefined;
@@ -452,10 +954,112 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const sessionStatus = normalizeAsyncSessionStatus(session?.status);
   const isPending = !initialSession && loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);
   const normalCount = results.filter((result) => normalizeResultStatus(result?.status) === "normal").length;
-  const warningCount = results.filter((result) => (
-    ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
+  const criticalCount = results.filter((result) => (
+    ["criticalHigh", "criticalLow"].includes(normalizeResultStatus(result?.status))
   )).length;
+  const attentionCount = results.filter((result) => (
+    ["high", "low"].includes(normalizeResultStatus(result?.status))
+  )).length;
+  const warningCount = criticalCount + attentionCount;
   const unknownCount = results.length - normalCount - warningCount;
+  const requestedResultFilter = resultFilter === "recommended"
+    ? warningCount > 0 ? "attention" : "all"
+    : resultFilter;
+  const requestedFilterCount = {
+    attention: warningCount,
+    normal: normalCount,
+    unknown: unknownCount,
+    all: results.length,
+  }[requestedResultFilter] ?? results.length;
+  const effectiveResultFilter = requestedFilterCount > 0 ? requestedResultFilter : "all";
+  const orderedResultEntries = results
+    .map((result, index) => ({ result, index }))
+    .sort((left, right) => (
+      getResultPriority(left.result) - getResultPriority(right.result)
+      || left.index - right.index
+    ));
+  const filteredResultEntries = orderedResultEntries.filter(({ result }) => {
+    const status = normalizeResultStatus(result?.status);
+    if (effectiveResultFilter === "attention") return ABNORMAL_RESULT_STATUSES.has(status);
+    if (effectiveResultFilter === "normal") return status === "normal";
+    if (effectiveResultFilter === "unknown") return status === "unknown";
+    return true;
+  });
+  const visibleResultEntries = filteredResultEntries.slice(0, visibleResultLimit);
+  const summarySessionId = session?.sessionId ?? sessionId;
+  const summaryText = firstMeaningfulText(session?.aiSummary);
+  const resultDate = formatDate(
+    session?.testDate
+      ?? session?.processedAt
+      ?? session?.uploadedAt
+      ?? session?.createdAt
+      ?? session?.createdAtUtc,
+    "",
+  );
+  const summaryStatus = summaryText
+    ? "ready"
+    : summaryState.sessionId === summarySessionId
+      ? summaryState.status
+      : "idle";
+  const summaryError = summaryState.sessionId === summarySessionId ? summaryState.error : "";
+
+  useEffect(() => {
+    if (
+      sessionStatus !== ASYNC_SESSION_STATUS.COMPLETED
+      || !summarySessionId
+      || results.length === 0
+    ) return undefined;
+
+    if (summaryText) return undefined;
+
+    const requestKey = `${summarySessionId}:${summaryRetryKey}`;
+    if (summaryRequestedRef.current === requestKey) return undefined;
+    summaryRequestedRef.current = requestKey;
+
+    let active = true;
+
+    const loadSummary = async () => {
+      setSummaryState({ sessionId: summarySessionId, status: "loading", error: "" });
+      try {
+        const response = await labTestsApi.summarize(summarySessionId);
+        if (!active) return;
+
+        const generatedSummary = firstMeaningfulText(unwrapData(response));
+        if (!generatedSummary) {
+          throw new Error("API chưa trả về nội dung tóm tắt.");
+        }
+
+        const nextSession = { ...session, aiSummary: generatedSummary };
+        setSession(nextSession);
+        setSummaryState({ sessionId: summarySessionId, status: "ready", error: "" });
+        setAnnouncement("Đã hoàn thiện phần tổng quan kết quả xét nghiệm.");
+        if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
+      } catch (requestError) {
+        if (!active) return;
+        setSummaryState({
+          sessionId: summarySessionId,
+          status: "error",
+          error: getLabTestApiMessage(
+            requestError,
+            "Chưa thể tải tóm tắt tự động. Bạn vẫn có thể xem tổng quan theo trạng thái chỉ số.",
+          ),
+        });
+      }
+    };
+
+    void loadSummary();
+    return () => {
+      active = false;
+    };
+  }, [
+    onSessionUpdate,
+    results.length,
+    session,
+    sessionStatus,
+    summaryRetryKey,
+    summarySessionId,
+    summaryText,
+  ]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => pageHeadingRef.current?.focus());
@@ -472,6 +1076,34 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
     setError("");
     setAnnouncement("Đang tải lại kết quả xét nghiệm.");
     setRetryKey((current) => current + 1);
+  }
+
+  function retrySummary() {
+    summaryRequestedRef.current = "";
+    setSummaryRetryKey((current) => current + 1);
+  }
+
+  function selectOverviewResult(key, result) {
+    setResultFilter("attention");
+    setVisibleResultLimit(9);
+    selectResult(key, result);
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById("lab-result-advice");
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      target?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    });
+  }
+
+  function changeResultFilter(nextFilter) {
+    setResultFilter(nextFilter);
+    setVisibleResultLimit(9);
+    const labels = {
+      all: "tất cả chỉ số",
+      attention: "chỉ số cần chú ý",
+      normal: "chỉ số bình thường",
+      unknown: "chỉ số chưa xác định",
+    };
+    setAnnouncement(`Đang hiển thị ${labels[nextFilter]}.`);
   }
 
   let content;
@@ -533,7 +1165,9 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
           <div className="lab-test-result__heading-group">
             <div>
               <p>KẾT QUẢ PHÂN TÍCH</p>
-              <h1 ref={pageHeadingRef} tabIndex="-1">Kết quả ngày {formatDate(session?.testDate)}</h1>
+              <h1 ref={pageHeadingRef} tabIndex="-1">
+                {resultDate ? `Kết quả ngày ${resultDate}` : "Kết quả xét nghiệm"}
+              </h1>
             </div>
             <div className="lab-test-result__session-badge">
               <CheckCircle2 size={17} aria-hidden="true" /> Đã hoàn tất
@@ -546,6 +1180,19 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
           </div>
         </header>
 
+        <ResultOverview
+          results={results}
+          summary={summaryText}
+          summaryStatus={summaryStatus}
+          summaryError={summaryError}
+          normalCount={normalCount}
+          attentionCount={attentionCount}
+          criticalCount={criticalCount}
+          unknownCount={unknownCount}
+          onRetrySummary={retrySummary}
+          onSelectResult={selectOverviewResult}
+        />
+
         <div className="lab-test-result__content-grid">
           <section className="lab-test-result__results-panel" aria-labelledby="lab-results-title">
             <header className="lab-test-result__results-header">
@@ -553,12 +1200,50 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
                 <p>PHIẾU XÉT NGHIỆM</p>
                 <h2 id="lab-results-title">Các chỉ số được nhận diện</h2>
               </div>
-              <div className="lab-test-result__counts" aria-label="Tóm tắt trạng thái chỉ số">
-                {warningCount > 0 && <span data-tone="warning">{warningCount} cảnh báo</span>}
-                <span data-tone="success">{normalCount} bình thường</span>
-                {unknownCount > 0 && <span data-tone="neutral">{unknownCount} chưa xác định</span>}
-              </div>
             </header>
+
+            {results.length > 0 && (
+              <div className="lab-test-result__result-filters" role="group" aria-label="Lọc chỉ số xét nghiệm">
+                {warningCount > 0 && (
+                  <button
+                    type="button"
+                    data-active={effectiveResultFilter === "attention"}
+                    data-tone="warning"
+                    onClick={() => changeResultFilter("attention")}
+                  >
+                    Cần chú ý <span>{warningCount}</span>
+                  </button>
+                )}
+                {normalCount > 0 && (
+                  <button
+                    type="button"
+                    data-active={effectiveResultFilter === "normal"}
+                    data-tone="success"
+                    onClick={() => changeResultFilter("normal")}
+                  >
+                    Bình thường <span>{normalCount}</span>
+                  </button>
+                )}
+                {unknownCount > 0 && (
+                  <button
+                    type="button"
+                    data-active={effectiveResultFilter === "unknown"}
+                    data-tone="neutral"
+                    onClick={() => changeResultFilter("unknown")}
+                  >
+                    Chưa xác định <span>{unknownCount}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  data-active={effectiveResultFilter === "all"}
+                  data-tone="neutral"
+                  onClick={() => changeResultFilter("all")}
+                >
+                  Tất cả <span>{results.length}</span>
+                </button>
+              </div>
+            )}
 
             {results.length === 0 ? (
               <EmptyState
@@ -566,8 +1251,9 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
                 description="Phiên đã hoàn tất nhưng chưa có chỉ số xét nghiệm để hiển thị."
               />
             ) : (
-              <div className="lab-test-result__result-grid">
-                {results.map((result, index) => {
+              <>
+                <div className="lab-test-result__result-grid">
+                {visibleResultEntries.map(({ result, index }) => {
                   const key = getResultKey(result, index);
                   const status = normalizeResultStatus(result?.status);
                   const meta = RESULT_STATUS_META[status];
@@ -594,12 +1280,23 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
                     </button>
                   );
                 })}
-              </div>
+                </div>
+                {visibleResultEntries.length < filteredResultEntries.length && (
+                  <button
+                    type="button"
+                    className="lab-test-result__show-more"
+                    onClick={() => setVisibleResultLimit((current) => current + 12)}
+                  >
+                    Xem thêm {Math.min(12, filteredResultEntries.length - visibleResultEntries.length)} chỉ số
+                    <span>{visibleResultEntries.length}/{filteredResultEntries.length}</span>
+                  </button>
+                )}
+              </>
             )}
           </section>
 
           <aside id="lab-result-advice" className="lab-test-result__advice-panel" aria-label="Phân tích chi tiết chỉ số đã chọn">
-            <ResultAdvice result={selectedResult} />
+            <ResultAdvice result={selectedResult} results={results} />
           </aside>
         </div>
       </div>

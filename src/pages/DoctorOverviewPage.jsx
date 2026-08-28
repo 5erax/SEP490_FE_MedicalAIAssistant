@@ -7,7 +7,6 @@ import {
   HeartPulse,
   ListChecks,
   ShieldCheck,
-  Sparkles,
   Stethoscope,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -136,7 +135,7 @@ export default function DoctorOverviewPage() {
 
       <section className="doctor-overview-roadmap" aria-labelledby="doctor-roadmap-title">
         <div className="doctor-overview-roadmap-heading">
-          <span aria-hidden="true"><Sparkles size={20} /></span>
+          <span aria-hidden="true"><ListChecks size={20} /></span>
           <div>
             <h2 id="doctor-roadmap-title">Các bước tiếp theo trong quy trình lập kế hoạch hồi phục</h2>
           </div>

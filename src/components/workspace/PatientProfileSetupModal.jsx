@@ -1,8 +1,14 @@
 import { cloneElement, useEffect, useId, useMemo, useRef, useState } from "react";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
-import { authApi, setStoredAuth } from "../../services/api";
+import { authApi, mergeAuthWithCurrentUser, setStoredAuth } from "../../services/api";
 import { findPatientProfileByUserId, savePatientProfileSetup } from "../../services/patientProfileSetup";
-import { validateMedicalProfile, validatePersonalProfile } from "../../utils/profileValidation";
+import {
+  getEarliestAllowedBirthDate,
+  getLatestAllowedBirthDate,
+  normalizeGender,
+  validateMedicalProfile,
+  validatePersonalProfile,
+} from "../../utils/profileValidation";
 import { Dialog } from "../ui";
 
 const BLOOD_TYPES = ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -10,7 +16,7 @@ const BLOOD_TYPES = ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const INITIAL_FORM = {
   displayName: "",
   dateOfBirth: "",
-  gender: "1",
+  gender: "male",
   phoneNumber: "",
   address: "",
   bloodType: "",
@@ -112,13 +118,10 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
         const matchedProfile = await findPatientProfileByUserId(resolvedUserId);
         if (!active) return;
         if (matchedProfile) {
-          const nextAuth = {
-            ...auth,
-            firstLogin: false,
-            isFirstLogin: false,
+          const nextAuth = mergeAuthWithCurrentUser(auth, {
+            ...resolvedUser,
             isProfileCompleted: true,
-            patientOnboardingPending: auth?.patientOnboardingPending ?? true,
-          };
+          });
           setStoredAuth(nextAuth);
           onComplete?.(nextAuth);
           return;
@@ -134,7 +137,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
         ...current,
         displayName: resolvedUser?.displayName ?? resolvedUser?.name ?? auth?.displayName ?? auth?.name ?? "",
         dateOfBirth: toDateInput(resolvedUser?.dateOfBirth),
-        gender: String(resolvedUser?.gender ?? auth?.gender ?? "1"),
+        gender: normalizeGender(resolvedUser?.gender ?? auth?.gender) || "male",
         phoneNumber: resolvedUser?.phoneNumber ?? auth?.phoneNumber ?? "",
         address: resolvedUser?.address ?? auth?.address ?? "",
       }));
@@ -205,14 +208,8 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
     setSubmitting(true);
     setMessage(null);
     try {
-      await savePatientProfileSetup({ userId, form });
-      const nextAuth = {
-        ...auth,
-        firstLogin: false,
-        isFirstLogin: false,
-        isProfileCompleted: true,
-        patientOnboardingPending: true,
-      };
+      const { currentUser } = await savePatientProfileSetup({ userId, form });
+      const nextAuth = mergeAuthWithCurrentUser(auth, currentUser);
       setStoredAuth(nextAuth);
       onComplete?.(nextAuth);
     } catch (error) {
@@ -267,12 +264,12 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
               <input ref={firstFieldRef} name="displayName" autoComplete="name" value={form.displayName} onChange={(event) => updateField("displayName", event.target.value)} disabled={loading || submitting} />
             </SetupField>
             <SetupField label="Ngày sinh" error={errors.dateOfBirth}>
-              <input name="dateOfBirth" type="date" autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
+              <input name="dateOfBirth" type="date" min={getEarliestAllowedBirthDate()} max={getLatestAllowedBirthDate()} autoComplete="bday" value={form.dateOfBirth} onChange={(event) => updateField("dateOfBirth", event.target.value)} disabled={loading || submitting} />
             </SetupField>
             <SetupField label="Giới tính" error={errors.gender}>
               <select name="gender" autoComplete="sex" value={form.gender} onChange={(event) => updateField("gender", event.target.value)} disabled={loading || submitting}>
-                <option value="1">Nam</option>
-                <option value="2">Nữ</option>
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
               </select>
             </SetupField>
             <SetupField label="Số điện thoại" error={errors.phoneNumber}>

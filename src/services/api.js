@@ -16,7 +16,7 @@ export {
   withPagination,
 } from "./apiClient";
 export { authApi } from "./authService";
-export { usersApi } from "./userService";
+export { mergeAuthWithCurrentUser, usersApi } from "./userService";
 export {
   getMedicalDepartmentApiMessage,
   medicalDepartmentsApi,
