@@ -12,7 +12,6 @@ export default function SaleCampaignRedemptionsModal({ campaign, onClose }) {
   const [state, setState] = useState({ items: [], pageNumber: 1, totalPages: 1, loading: true, error: "" });
   useEffect(() => {
     let active = true;
-    setState((current) => ({ ...current, loading: true, error: "" }));
     saleCampaignsApi.redemptions(campaign.id, state.pageNumber, 10).then((response) => {
       if (!active) return; const page = response?.data || {};
       setState((current) => ({ ...current, items: page.items || [], totalPages: page.totalPages || 1, loading: false }));
@@ -27,6 +26,6 @@ export default function SaleCampaignRedemptionsModal({ campaign, onClose }) {
       {!state.loading && !state.items.length && <tr><td colSpan="6" className="sale-empty">Chưa có lượt sử dụng.</td></tr>}
     </tbody></table></div>
     {state.error && <p className="sale-form-error">{state.error}</p>}
-    <AdminPagination currentPage={state.pageNumber} totalPages={state.totalPages} loading={state.loading} onPageChange={(pageNumber) => setState((current) => ({ ...current, pageNumber }))} />
+    <AdminPagination currentPage={state.pageNumber} totalPages={state.totalPages} loading={state.loading} onPageChange={(pageNumber) => setState((current) => ({ ...current, pageNumber, loading: true, error: "" }))} />
   </Dialog>;
 }

@@ -35,7 +35,10 @@ export default function AdminSaleCampaignsSection() {
     } finally { setLoading(false); }
   }, [page.pageNumber, showToast]);
 
-  useEffect(() => { load(1); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const timer = window.setTimeout(() => load(1), 0);
+    return () => window.clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function save(payload) {
     setSaving(true);
@@ -60,8 +63,8 @@ export default function AdminSaleCampaignsSection() {
   }
 
   return <section className="admin-sale-campaigns admin-management-section">
-    <header className="admin-sale-hero"><div><span><Tags size={17} />Khuyến mãi bán hàng</span><h2>Chương trình ưu đãi</h2><p>Quản lý giá giảm, lượt thưởng, đối tượng và số suất. Backend tự chọn ưu đãi hợp lệ cho từng khách hàng.</p></div><div><button type="button" onClick={() => load()}><RefreshCw size={17} />Tải lại</button><button className="primary" type="button" onClick={() => { setEditing(null); setFormOpen(true); }}><Plus size={18} />Tạo khuyến mãi</button></div></header>
-    <div className="sale-campaign-summary"><strong>{page.totalCount} chương trình</strong><span>Trạng thái và số suất được lấy trực tiếp từ hệ thống.</span></div>
+    <header className="admin-sale-hero"><div><span><Tags size={17} />Ưu đãi dịch vụ chăm sóc</span><h2>Chương trình ưu đãi MediMate</h2><p>Thiết lập mức phí ưu đãi, lượt sử dụng tặng thêm, đối tượng áp dụng và số lượng người có thể nhận quyền lợi.</p></div><div><button type="button" onClick={() => load()}><RefreshCw size={17} />Tải lại</button><button className="primary" type="button" onClick={() => { setEditing(null); setFormOpen(true); }}><Plus size={18} />Thêm ưu đãi</button></div></header>
+    <div className="sale-campaign-summary"><strong>{page.totalCount} chương trình</strong><span>Trạng thái và số lượng quyền lợi còn lại được hệ thống cập nhật tự động.</span></div>
     <SaleCampaignTable campaigns={page.items} loading={loading} onEdit={(campaign) => { setEditing(campaign); setFormOpen(true); }} onRedemptions={setRedemptions} onRemove={remove} onToggle={toggle} />
     <AdminPagination currentPage={page.pageNumber} totalPages={page.totalPages} loading={loading} onPageChange={load} />
     {formOpen && <SaleCampaignFormModal campaign={editing} plans={plans} saving={saving} onClose={() => { setFormOpen(false); setEditing(null); }} onSave={save} />}

@@ -30,7 +30,7 @@ export default function SaleCampaignTable({ campaigns, loading, onEdit, onRedemp
               <tr key={campaign.id}>
                 <td><strong>{campaign.name}</strong><span>{campaign.badgeText || "Không có nhãn"}</span><small>Ưu tiên {campaign.priority}</small></td>
                 <td><span>{dateTime(campaign.startAt)} → {dateTime(campaign.endAt)}</span><small>{ELIGIBILITY_LABELS[campaign.eligibilityType] || campaign.eligibilityType}</small></td>
-                <td>{(campaign.plans || []).map((plan) => <span className="sale-plan-chip" key={plan.id || plan.planId}>{plan.planName}: {plan.salePrice != null ? money(plan.salePrice) : "Giữ giá"}{plan.bonusCredit ? ` +${plan.bonusCredit} lượt` : ""}</span>)}</td>
+                <td>{(campaign.plans || []).map((plan) => <span className="sale-plan-chip" key={plan.id || plan.planId}>{plan.planName}: {plan.salePrice != null ? money(plan.salePrice) : "Giữ nguyên mức phí"}{plan.bonusCredit ? ` · tặng ${plan.bonusCredit} lượt` : ""}</span>)}</td>
                 <td><strong>{campaign.occupiedRedemptions}/{campaign.maxRedemptions ?? "∞"}</strong><small>{campaign.remainingRedemptions == null ? "Không giới hạn" : `Còn ${campaign.remainingRedemptions} suất`}</small></td>
                 <td><span className={`sale-status sale-status-${status}`}>{STATUS_LABELS[status] || campaign.displayStatus}</span></td>
                 <td><div className="sale-row-actions">
