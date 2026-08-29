@@ -21,6 +21,10 @@ export const subscriptionPlansApi = {
     return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.ACTIVE);
   },
 
+  offers() {
+    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.OFFERS, { auth: true });
+  },
+
   get(id) {
     return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.BY_ID(id), { auth: true });
   },
@@ -85,10 +89,16 @@ export const adminSubscriptionPlanQuotasApi = {
 };
 
 export const userSubscriptionsApi = {
-  checkout(planId, autoRenew = false) {
+  checkout(planId, autoRenew = false, offer = null) {
+    const body = { planId, autoRenew };
+    if (offer?.offerId) {
+      body.expectedOfferId = offer.offerId;
+      body.expectedEffectivePrice = Number(offer.effectivePrice);
+      body.expectedGrantedCredit = Number(offer.grantedCredit);
+    }
     return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.CHECKOUT, {
       method: "POST",
-      body: { planId, autoRenew },
+      body,
       auth: true,
     });
   },

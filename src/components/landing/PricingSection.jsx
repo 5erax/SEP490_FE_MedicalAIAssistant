@@ -1,7 +1,6 @@
 import { ArrowRight, Check, CircleDollarSign, Info, LoaderCircle, MapPinned, ShieldCheck, Stethoscope } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { subscriptionPlansApi } from "../../services/api";
-import { findServiceCreditQuota } from "../../services/serviceCredit";
 import { getPlanBenefits, getPlanDisplayName, PUBLIC_ACCESS_BENEFITS } from "../../utils/subscriptionPlanPresentation";
 
 const FOOTER_COLUMNS = [
@@ -52,21 +51,21 @@ function formatPrice(value) {
 }
 
 export function PricingPreviewSection() {
-  const [plans, setPlans] = useState([]);
+  const [planOffers, setPlanOffers] = useState([]);
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
     let active = true;
 
-    subscriptionPlansApi.active()
+    subscriptionPlansApi.offers()
       .then((response) => {
         if (!active) return;
-        setPlans(getArrayData(response));
+        setPlanOffers(getArrayData(response));
         setStatus("ready");
       })
       .catch(() => {
         if (!active) return;
-        setPlans([]);
+        setPlanOffers([]);
         setStatus("error");
       });
 
@@ -75,10 +74,10 @@ export function PricingPreviewSection() {
     };
   }, []);
 
-  const previewPlans = useMemo(() => [...plans]
-    .filter((plan) => plan && Number(plan.price) > 0 && findServiceCreditQuota(plan))
-    .sort((left, right) => Number(left.price ?? Number.MAX_SAFE_INTEGER) - Number(right.price ?? Number.MAX_SAFE_INTEGER))
-    .slice(0, 2), [plans]);
+  const previewPlans = useMemo(() => [...planOffers]
+    .filter((item) => Number(item?.plan?.price) > 0 && Number(item?.baseCredit) > 0)
+    .sort((left, right) => Number(left.originalPrice) - Number(right.originalPrice))
+    .slice(0, 2), [planOffers]);
 
   return (
     <section id="pricing-preview" className="care-section care-pricing-section" aria-labelledby="pricing-preview-title">
@@ -154,10 +153,17 @@ export function PricingPreviewSection() {
 
           {previewPlans.length > 0 && (
             <>
-              {previewPlans.map((plan, index) => {
+              {previewPlans.map((item, index) => {
+                const plan = item.plan;
+                const offer = item.offer;
                 const benefits = getPlanBenefits(plan);
                 const planName = getPlanDisplayName(plan.planName);
-                const badgeText = index === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất";
+                const badgeText = offer?.badgeText || offer?.campaignName
+                  || (index === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất");
+                const originalPrice = Number(item.originalPrice) || 0;
+                const effectivePrice = Number(item.effectivePrice) || originalPrice;
+                const hasDiscount = Boolean(offer) && effectivePrice < originalPrice;
+                const bonusCredit = Number(item.bonusCredit) || 0;
 
                 return (
                   <article className="care-price-card care-price-card-paid" key={plan.id || plan.planName}>
@@ -168,8 +174,10 @@ export function PricingPreviewSection() {
                     <p className="care-price-kicker">Quyền lợi có hạn mức</p>
                     <h3>{planName}</h3>
                     <div className="care-price-line">
-                      <p className="care-price-value">{formatPrice(plan.price)}</p>
+                      {hasDiscount && <span className="pricing-original-price">{formatPrice(originalPrice)}</span>}
+                      <p className="care-price-value">{formatPrice(effectivePrice)}</p>
                     </div>
+                    {bonusCredit > 0 && <p className="care-price-sale-note">Tặng thêm {bonusCredit} lượt dùng</p>}
                     <p className="care-price-duration">
                       <ShieldCheck size={16} aria-hidden="true" />
                       Lượt dùng được cộng dồn và không hết hạn
@@ -190,7 +198,7 @@ export function PricingPreviewSection() {
                       )}
                     </div>
                     <a className="care-price-cta care-price-cta-primary" href="/pricing">
-                      Đăng ký {planName}
+                      {offer ? "Xem ưu đãi" : `Đăng ký ${planName}`}
                       <ArrowRight size={16} aria-hidden="true" />
                     </a>
                   </article>

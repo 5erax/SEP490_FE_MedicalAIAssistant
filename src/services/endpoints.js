@@ -17,6 +17,7 @@ const SYMPTOM_ANALYSIS_BASE = "/api/symptom-analysis";
 const SUBSCRIPTION_PLANS_BASE = "/api/subscription-plans";
 const ADMIN_QUOTAS_BASE = "/api/admin/quotas";
 const ADMIN_SUBSCRIPTION_PLANS_BASE = "/api/admin/subscription-plans";
+const ADMIN_SALE_CAMPAIGNS_BASE = "/api/admin/sale-campaigns";
 const USER_SUBSCRIPTIONS_BASE = "/api/user-subscriptions";
 const ADMIN_USER_SUBSCRIPTIONS_BASE = "/api/admin/user-subscriptions";
 const PAYMENTS_BASE = "/api/payments";
@@ -116,6 +117,7 @@ export const ENDPOINTS = {
   SUBSCRIPTION_PLANS: {
     BASE: SUBSCRIPTION_PLANS_BASE,
     ACTIVE: `${SUBSCRIPTION_PLANS_BASE}/active`,
+    OFFERS: `${SUBSCRIPTION_PLANS_BASE}/offers`,
     BY_ID: (id) => byId(SUBSCRIPTION_PLANS_BASE, id),
     STATUS: (id) => status(SUBSCRIPTION_PLANS_BASE, id),
   },
@@ -126,6 +128,12 @@ export const ENDPOINTS = {
     BY_PLAN: (planId) => `${encodedById(ADMIN_SUBSCRIPTION_PLANS_BASE, planId)}/quotas`,
     BY_PLAN_QUOTA: (planId, quotaId) =>
       `${encodedById(ADMIN_SUBSCRIPTION_PLANS_BASE, planId)}/quotas/${encodeURIComponent(quotaId)}`,
+  },
+  ADMIN_SALE_CAMPAIGNS: {
+    BASE: ADMIN_SALE_CAMPAIGNS_BASE,
+    BY_ID: (id) => encodedById(ADMIN_SALE_CAMPAIGNS_BASE, id),
+    STATUS: (id) => `${encodedById(ADMIN_SALE_CAMPAIGNS_BASE, id)}/status`,
+    REDEMPTIONS: (id) => `${encodedById(ADMIN_SALE_CAMPAIGNS_BASE, id)}/redemptions`,
   },
   USER_SUBSCRIPTIONS: {
     CHECKOUT: `${USER_SUBSCRIPTIONS_BASE}/checkout`,

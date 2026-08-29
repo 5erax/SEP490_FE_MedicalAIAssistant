@@ -57,6 +57,7 @@ export {
   subscriptionPlansApi,
   userSubscriptionsApi,
 } from "./subscriptionService";
+export { saleCampaignsApi } from "./saleCampaignService";
 export { recoveryPlanRequestsApi, recoveryPlansApi } from "./recoveryPlanService";
 export {
   doctorRecoveryPlanRequestsApi,

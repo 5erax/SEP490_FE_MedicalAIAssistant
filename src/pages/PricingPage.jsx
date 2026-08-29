@@ -22,14 +22,12 @@ import {
 } from "../services/api";
 import { clearCheckoutIntent, saveCheckoutIntent } from "../services/checkoutIntent";
 import {
-  findServiceCreditQuota,
   getServiceCreditErrorPresentation,
-  getServiceCreditLimit,
 } from "../services/serviceCredit";
 import { useServiceCredit } from "../state/useServiceCredit";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch, rememberReturnTo, withReturnTo } from "../router/returnIntent";
-import { getCheckoutErrorMessage } from "../services/apiError";
+import { getApiErrorCode, getCheckoutErrorMessage } from "../services/apiError";
 import { getPaymentStatusLabel } from "../services/paymentStatusLabels";
 import { trackUxEvent } from "../utils/analytics";
 import {
@@ -55,6 +53,22 @@ const FAQS = [
 
 function formatPrice(value) {
   return `${value.toLocaleString("vi-VN")} ₫`;
+}
+
+const SALE_ELIGIBILITY_LABELS = {
+  all: "Ưu đãi dành cho mọi khách hàng",
+  firstPurchase: "Ưu đãi cho lần mua đầu tiên",
+  returningCustomer: "Ưu đãi khách hàng quay lại",
+};
+
+function formatCountdown(endAt, now) {
+  const seconds = Math.floor((new Date(endAt).getTime() - now) / 1000);
+  if (!Number.isFinite(seconds) || seconds <= 0) return "";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  return `${days ? `${days} ngày ` : ""}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
 function getSubscriptionStatus(subscription) {
@@ -104,7 +118,7 @@ function PricingPage() {
   const { refresh: refreshServiceCredit } = useServiceCredit();
   const [auth] = useState(() => getStoredAuth());
   const [openFaq, setOpenFaq] = useState(null);
-  const [apiPlans, setApiPlans] = useState([]);
+  const [planOffers, setPlanOffers] = useState([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [plansError, setPlansError] = useState("");
   const [plansLoadAttempt, setPlansLoadAttempt] = useState(0);
@@ -115,13 +129,18 @@ function PricingPage() {
   const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState("");
   const pollingRef = useRef(null);
   const checkoutInFlightRef = useRef(false);
+  const expiredOfferRefreshRef = useRef("");
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const paidPlans = useMemo(
-    () => [...apiPlans]
-      .filter((plan) => Number(plan.price) > 0 && findServiceCreditQuota(plan))
-      .sort((left, right) => Number(left.price ?? Number.MAX_SAFE_INTEGER) - Number(right.price ?? Number.MAX_SAFE_INTEGER)),
-    [apiPlans],
+    () => [...planOffers]
+      .filter((item) => Number(item?.plan?.price) > 0 && Number(item?.baseCredit) > 0)
+      .sort((left, right) => Number(left.originalPrice) - Number(right.originalPrice)),
+    [planOffers],
   );
-  const freePlan = useMemo(() => apiPlans.find((plan) => Number(plan.price) === 0), [apiPlans]);
+  const freePlan = useMemo(
+    () => planOffers.find((item) => Number(item?.plan?.price) === 0)?.plan,
+    [planOffers],
+  );
   const visibleSubscriptions = useMemo(
     () => subscriptions.filter((subscription) => (
       isActiveSubscription(subscription) || isPendingSubscription(subscription)
@@ -169,14 +188,14 @@ function PricingPage() {
   useEffect(() => {
     let active = true;
 
-    subscriptionPlansApi.active()
+    subscriptionPlansApi.offers()
       .then((response) => {
         if (!active) return;
-        setApiPlans(Array.isArray(response.data) ? response.data : []);
+        setPlanOffers(Array.isArray(response.data) ? response.data : []);
       })
       .catch(() => {
         if (!active) return;
-        setApiPlans([]);
+        setPlanOffers([]);
         setPlansError("Không thể tải thông tin gói.");
       })
       .finally(() => {
@@ -187,6 +206,19 @@ function PricingPage() {
       active = false;
     };
   }, [plansLoadAttempt]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const expiredOffer = planOffers.find((item) => item?.offer?.endAt
+      && new Date(item.offer.endAt).getTime() <= clockNow);
+    if (!expiredOffer?.offer?.offerId || expiredOfferRefreshRef.current === expiredOffer.offer.offerId) return;
+    expiredOfferRefreshRef.current = expiredOffer.offer.offerId;
+    setPlansLoadAttempt((current) => current + 1);
+  }, [clockNow, planOffers]);
 
   useEffect(() => {
     if (!auth) return undefined;
@@ -282,6 +314,7 @@ function PricingPage() {
             loadSubscriptions(),
             refreshServiceCredit({ silent: true }),
           ]);
+          setPlansLoadAttempt((current) => current + 1);
           showToast({
             type: "success",
             title: "Thanh toán thành công",
@@ -336,7 +369,9 @@ function PricingPage() {
     }
   }
 
-  async function startPremiumUpgrade(paidPlan) {
+  async function startPremiumUpgrade(planOffer) {
+    const paidPlan = planOffer?.plan;
+    const offer = planOffer?.offer;
     if (checkoutInFlightRef.current || ["creating", "pending"].includes(checkoutState.status)) return;
 
     trackUxEvent("pricing_trial_clicked", {
@@ -362,7 +397,7 @@ function PricingPage() {
       return;
     }
 
-    const creditLimit = getServiceCreditLimit(paidPlan);
+    const creditLimit = Number(planOffer?.grantedCredit);
     if (!Number.isFinite(creditLimit) || creditLimit <= 0) {
       setCheckoutState({
         status: "error",
@@ -387,7 +422,7 @@ function PricingPage() {
     });
 
     try {
-      const response = await userSubscriptionsApi.checkout(paidPlan.id, false);
+      const response = await userSubscriptionsApi.checkout(paidPlan.id, false, offer);
       const checkout = response.data;
       if (!checkout?.paymentUrl || !checkout?.subscriptionId || !checkout?.paymentId || !checkout?.orderCode) {
         paymentWindow?.close();
@@ -415,6 +450,18 @@ function PricingPage() {
     } catch (error) {
       checkoutInFlightRef.current = false;
       paymentWindow?.close();
+      if (error?.status === 409 && getApiErrorCode(error) === "SALE_OFFER_UNAVAILABLE") {
+        setCheckoutState({
+          status: "error", paymentId: "", orderCode: "", planId: "",
+          message: "Ưu đãi vừa thay đổi hoặc đã hết. Bảng giá đã được cập nhật, vui lòng kiểm tra lại trước khi thanh toán.",
+        });
+        setPlansLoadAttempt((current) => current + 1);
+        showToast({
+          type: "warning", title: "Ưu đãi đã thay đổi",
+          message: "Vui lòng kiểm tra giá và số lượt mới trước khi tiếp tục.",
+        });
+        return;
+      }
       const creditError = getServiceCreditErrorPresentation(error);
       setCheckoutState({
         status: "error",
@@ -440,6 +487,7 @@ function PricingPage() {
     try {
       await userSubscriptionsApi.cancel(subscription.id);
       await loadSubscriptions();
+      setPlansLoadAttempt((current) => current + 1);
       showToast({
         type: "success",
         title: "Đã hủy giao dịch",
@@ -556,12 +604,22 @@ function PricingPage() {
             </article>
             )}
 
-            {paidPlans.map((paidPlan, paidPlanIndex) => {
+            {paidPlans.map((planOffer, paidPlanIndex) => {
+              const paidPlan = planOffer.plan;
+              const offer = planOffer.offer;
               const paidBenefits = getPlanBenefits(paidPlan);
-              const creditLimit = getServiceCreditLimit(paidPlan);
+              const baseCredit = Number(planOffer.baseCredit) || 0;
+              const bonusCredit = Number(planOffer.bonusCredit) || 0;
+              const creditLimit = Number(planOffer.grantedCredit) || baseCredit;
+              const originalPrice = Number(planOffer.originalPrice) || 0;
+              const effectivePrice = Number(planOffer.effectivePrice) || originalPrice;
+              const hasPriceDiscount = Boolean(offer) && effectivePrice < originalPrice;
+              const hasBonus = Boolean(offer) && bonusCredit > 0;
               const hasConfiguredCredits = Number.isFinite(creditLimit) && creditLimit > 0;
               const isCurrentCheckout = checkoutState.planId === paidPlan.id;
-              const badgeText = paidPlanIndex === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất";
+              const badgeText = offer?.badgeText || offer?.campaignName
+                || (paidPlanIndex === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất");
+              const countdown = offer?.endAt ? formatCountdown(offer.endAt, clockNow) : "";
 
               return (
                 <article className="pricing-plan-card pricing-plan-card-premium" key={paidPlan.id}>
@@ -570,12 +628,22 @@ function PricingPage() {
                     <span className="plan-badge">{badgeText}</span>
                   </div>
                   <p className="plan-kicker">
-                    {hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
+                    {hasBonus ? `${baseCredit} + ${bonusCredit} lượt thưởng` : hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
                   </p>
                   <h2>{getPlanDisplayName(paidPlan.planName)}</h2>
                   <div className="price-line">
-                    <strong>{formatPrice(Number(paidPlan.price) || 0)}</strong>
+                    {hasPriceDiscount && <span className="pricing-original-price">{formatPrice(originalPrice)}</span>}
+                    <strong>{formatPrice(effectivePrice)}</strong>
                   </div>
+                  {offer && (
+                    <div className="pricing-sale-details">
+                      <span>{SALE_ELIGIBILITY_LABELS[offer.eligibilityType] || "Ưu đãi dành cho bạn"}</span>
+                      {hasPriceDiscount && <strong>Tiết kiệm {formatPrice(Number(offer.discountAmount) || originalPrice - effectivePrice)}</strong>}
+                      {hasBonus && <strong>Tặng thêm {bonusCredit} lượt</strong>}
+                      {offer.remainingRedemptions != null && <span>Còn {offer.remainingRedemptions} suất ưu đãi</span>}
+                      {countdown && <span>Kết thúc sau {countdown}</span>}
+                    </div>
+                  )}
                   <p className="plan-summary">
                     Lượt dùng được cộng vào số dư hiện có và không hết hạn.
                   </p>
@@ -596,7 +664,7 @@ function PricingPage() {
                   <button
                     className="plan-action plan-action-primary"
                     type="button"
-                    onClick={() => startPremiumUpgrade(paidPlan)}
+                    onClick={() => startPremiumUpgrade(planOffer)}
                     disabled={!hasConfiguredCredits || ["creating", "pending"].includes(checkoutState.status)}
                   >
                     {isCurrentCheckout && checkoutState.status === "creating"

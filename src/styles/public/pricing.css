@@ -1041,6 +1041,25 @@ html[data-theme="dark"] .checkout-status.success {
   color: var(--color-success);
 }
 
+.pricing-original-price {
+  color: var(--pricing-subtle);
+  font-size: 1rem;
+  text-decoration: line-through;
+}
+
+.pricing-sale-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: -4px 0 14px;
+  color: var(--pricing-muted);
+  font-size: 0.82rem;
+}
+
+.pricing-sale-details strong {
+  color: var(--pricing-teal-dark);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pricing-page *,
   .pricing-page *::before,

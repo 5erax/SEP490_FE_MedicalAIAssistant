@@ -135,6 +135,7 @@ function PaymentDetailDialog({ paymentId, summary, onClose, restoreFocusRef }) {
 
   const visiblePayment = payment ?? summary;
   const title = visiblePayment?.planName || "Giao dịch MediMate+";
+  const hasSale = Boolean(visiblePayment?.saleCampaignId);
 
   return (
     <Dialog
@@ -212,6 +213,13 @@ function PaymentDetailDialog({ paymentId, summary, onClose, restoreFocusRef }) {
                 <dt>Gói dịch vụ</dt>
                 <dd>{payment.planName || "—"}</dd>
               </div>
+              {hasSale && <div><dt>Chương trình</dt><dd>{payment.saleCampaignName || payment.saleBadgeText || "Khuyến mãi"}</dd></div>}
+              {hasSale && Number(payment.discountAmount) > 0 && <div><dt>Giá gốc</dt><dd>{formatMoney(payment.originalAmount, payment.currency)}</dd></div>}
+              {hasSale && Number(payment.discountAmount) > 0 && <div><dt>Khuyến mãi</dt><dd>-{formatMoney(payment.discountAmount, payment.currency)}</dd></div>}
+              {hasSale && <div><dt>Đã thanh toán</dt><dd>{formatMoney(payment.amount, payment.currency)}</dd></div>}
+              {hasSale && <div><dt>Lượt cơ bản</dt><dd>{payment.baseCredit ?? 0}</dd></div>}
+              {hasSale && <div><dt>Lượt thưởng</dt><dd>+{payment.bonusCredit ?? 0}</dd></div>}
+              {hasSale && <div><dt>Tổng nhận</dt><dd>{payment.grantedCredit ?? 0} lượt</dd></div>}
               <div>
                 <dt>Cổng thanh toán</dt>
                 <dd>{payment.paymentProvider ?? payment.provider ?? "—"}</dd>
@@ -396,6 +404,7 @@ export default function PaymentHistoryPanel() {
               <tr key={itemKey}>
                 <th scope="row" data-label="Gói dịch vụ">
                     <strong>{payment.planName || "Giao dịch MediMate+"}</strong>
+                    {payment.saleCampaignId && <small className="payment-sale-badge">{payment.saleBadgeText || payment.saleCampaignName || "Khuyến mãi"}{Number(payment.bonusCredit) > 0 ? ` · +${payment.bonusCredit} lượt` : ""}</small>}
                 </th>
                 <td data-label="Trạng thái"><PaymentStatusBadge payment={payment} /></td>
                 <td data-label="Số tiền">{formatMoney(payment.amount, payment.currency)}</td>

@@ -37,6 +37,7 @@ const ADMIN_NAV_LAYOUT = [
     icon: "subscription",
     children: [
       { section: "subscriptions", label: "Gói dịch vụ" },
+      { section: "sale-campaigns", label: "Khuyến mãi" },
       { section: "payments", label: "Lịch sử thanh toán" },
     ],
   },
