@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Clock3, Pencil, Pill, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { userMedicationsApi } from "../services/api";
+import { getActiveMedicationReminderTimes, getMedicationReminderStatus } from "../utils/medicationReminderStatus";
 import {
   Alert,
   Badge,
@@ -402,7 +403,11 @@ export default function UserMedicationsPage() {
         />
       ) : (
         <div className="user-medications-list">
-          {medications.map((medication) => (
+          {medications.map((medication) => {
+            const reminderStatus = getMedicationReminderStatus(medication);
+            const reminderTimes = getActiveMedicationReminderTimes(medication);
+
+            return (
             <Card key={medication.id} className="user-medication-card">
               <div className="user-medication-card-head">
                 <span className="user-medication-card-icon" aria-hidden="true"><Pill size={18} /></span>
@@ -410,8 +415,8 @@ export default function UserMedicationsPage() {
                   <strong>{medication.medicineName}</strong>
                   <p>{formatDateRange(medication.startDate, medication.endDate)}</p>
                 </div>
-                <Badge tone={medication.isReminderEnabled ? "success" : "neutral"}>
-                  {medication.isReminderEnabled ? "Đang nhắc" : "Không nhắc"}
+                <Badge tone={reminderStatus.badgeTone}>
+                  {reminderStatus.label}
                 </Badge>
               </div>
 
@@ -420,15 +425,15 @@ export default function UserMedicationsPage() {
               )}
 
               <div className="user-medication-card-times">
-                {medication.isReminderEnabled && (medication.reminderTimes?.length ?? 0) > 0 ? (
-                  medication.reminderTimes.map((entry) => (
+                {reminderStatus.active && reminderTimes.length > 0 ? (
+                  reminderTimes.map((entry) => (
                     <span key={entry.id} className="user-medication-time-chip">
                       <Clock3 size={12} aria-hidden="true" />
                       {String(entry.timeOfDay).slice(0, 5)}
                     </span>
                   ))
                 ) : (
-                  <span className="user-medication-time-empty">Chưa có giờ nhắc</span>
+                  <span className="user-medication-time-empty">{reminderStatus.emptyText}</span>
                 )}
               </div>
 
@@ -441,7 +446,8 @@ export default function UserMedicationsPage() {
                 </Button>
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 

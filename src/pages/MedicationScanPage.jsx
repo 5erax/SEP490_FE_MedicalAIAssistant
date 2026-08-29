@@ -16,6 +16,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { Button, Dialog, EmptyState, ErrorState, LoadingState } from "../components/ui";
 import { getApiErrorCode } from "../services/apiError";
 import { userMedicationsApi } from "../services/api";
+import { getActiveMedicationReminderTimes, getMedicationReminderStatus } from "../utils/medicationReminderStatus";
 import "../styles/medication.css";
 
 const MAX_REMINDER_TIMES = 12;
@@ -434,8 +435,12 @@ export default function MedicationScanPage() {
     }
   }
 
+  const selectedReminderStatus = useMemo(
+    () => getMedicationReminderStatus(selectedMedication),
+    [selectedMedication],
+  );
   const activeReminderTimes = useMemo(
-    () => (selectedMedication?.reminderTimes ?? []).filter((item) => item?.isActive !== false),
+    () => getActiveMedicationReminderTimes(selectedMedication),
     [selectedMedication],
   );
 
@@ -492,6 +497,7 @@ export default function MedicationScanPage() {
             <ul className="medication-list">
               {medications.map((medication) => {
                 const selected = medication.id === selectedMedication?.id;
+                const reminderStatus = getMedicationReminderStatus(medication);
                 return (
                   <li key={medication.id}>
                     <button
@@ -503,9 +509,9 @@ export default function MedicationScanPage() {
                       <span className="medication-list-icon"><Pill size={19} aria-hidden="true" /></span>
                       <span>
                         <strong>{medication.medicineName || "Thuốc chưa đặt tên"}</strong>
-                        <small>{medication.isReminderEnabled ? "Đang bật lịch nhắc" : "Chưa bật lịch nhắc"}</small>
+                        <small>{reminderStatus.description}</small>
                       </span>
-                      {medication.isReminderEnabled ? <Bell size={17} aria-hidden="true" /> : <BellOff size={17} aria-hidden="true" />}
+                      {reminderStatus.active ? <Bell size={17} aria-hidden="true" /> : <BellOff size={17} aria-hidden="true" />}
                     </button>
                   </li>
                 );
@@ -522,9 +528,9 @@ export default function MedicationScanPage() {
                   <div>
                     <p className="medication-eyebrow">Chi tiết thuốc</p>
                     <h2 id="medication-detail-title">{selectedMedication.medicineName}</h2>
-                    <span className={`medication-status ${selectedMedication.isReminderEnabled ? "is-active" : ""}`}>
-                      {selectedMedication.isReminderEnabled ? <Bell size={15} aria-hidden="true" /> : <BellOff size={15} aria-hidden="true" />}
-                      {selectedMedication.isReminderEnabled ? "Đang nhắc" : "Chưa nhắc"}
+                    <span className={`medication-status ${selectedReminderStatus.active ? "is-active" : ""} ${selectedReminderStatus.key === "expired" ? "is-expired" : ""}`}>
+                      {selectedReminderStatus.active ? <Bell size={15} aria-hidden="true" /> : <BellOff size={15} aria-hidden="true" />}
+                      {selectedReminderStatus.label}
                     </span>
                   </div>
                   <div className="medication-detail-actions">
@@ -552,22 +558,34 @@ export default function MedicationScanPage() {
                   <div className="medication-reminder-card-heading">
                     <div>
                       <p className="medication-eyebrow"><Clock3 size={15} aria-hidden="true" /> Lịch nhắc</p>
-                      <h3 id="medication-reminder-title">{selectedMedication.isReminderEnabled ? "Các mốc giờ đang hoạt động" : "Lịch nhắc đang tắt"}</h3>
+                      <h3 id="medication-reminder-title">
+                        {selectedReminderStatus.active
+                          ? "Các mốc giờ đang hoạt động"
+                          : selectedReminderStatus.key === "expired"
+                            ? "Lịch nhắc đã hết hạn"
+                            : "Lịch nhắc đang tắt"}
+                      </h3>
                     </div>
-                    {selectedMedication.isReminderEnabled ? (
+                    {selectedReminderStatus.key === "expired" ? (
+                      <Button tone="secondary" size="sm" onClick={(event) => openForm(selectedMedication, event.currentTarget)}>Gia hạn lịch nhắc</Button>
+                    ) : selectedMedication.isReminderEnabled ? (
                       <Button tone="secondary" size="sm" onClick={disableReminder} disabled={actionBusy}>Tắt lịch nhắc</Button>
                     ) : (
                       <Button tone="secondary" size="sm" onClick={(event) => openForm(selectedMedication, event.currentTarget)}>Thiết lập lịch nhắc</Button>
                     )}
                   </div>
-                  {selectedMedication.isReminderEnabled && activeReminderTimes.length > 0 ? (
+                  {selectedReminderStatus.active && activeReminderTimes.length > 0 ? (
                     <div className="medication-time-chips">
                       {activeReminderTimes.map((item) => (
                         <time key={item.id || item.timeOfDay} dateTime={item.timeOfDay}>{toMinuteTime(item.timeOfDay)}</time>
                       ))}
                     </div>
                   ) : (
-                    <p>Bạn có thể bật lịch nhắc trong phần chỉnh sửa thuốc.</p>
+                    <p>
+                      {selectedReminderStatus.key === "expired"
+                        ? "Thuốc đã qua ngày kết thúc nên hệ thống không còn nhắc. Hãy gia hạn nếu bạn vẫn cần theo dõi."
+                        : "Bạn có thể bật lịch nhắc trong phần chỉnh sửa thuốc."}
+                    </p>
                   )}
                 </section>
               </>
