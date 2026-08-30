@@ -23,6 +23,8 @@ import {
 import { useFeedback } from "../components/feedback/feedbackContext";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
+import useNearbyFacilities from "../hooks/useNearbyFacilities";
+import { DEFAULT_NEARBY_RADIUS_KM, NEARBY_LIMIT } from "../utils/nearbyFacilities";
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
@@ -499,6 +501,12 @@ function NearbyClinicPage() {
   const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
   const [userLocation, setUserLocation] = useState(null);
+  const [nearbyEnabled, setNearbyEnabled] = useState(false);
+  const [radiusKm, setRadiusKm] = useState(DEFAULT_NEARBY_RADIUS_KM);
+  const [nearbyAttempt, setNearbyAttempt] = useState(0);
+  const [locating, setLocating] = useState(false);
+  const locatingRef = useRef(false);
+  const nearby = useNearbyFacilities(nearbyEnabled ? userLocation : null, radiusKm, selectedDepartmentId, nearbyAttempt);
   const [locationError, setLocationError] = useState("");
   const [mapStatus, setMapStatus] = useState("loading");
   const [mapRenderKey, setMapRenderKey] = useState(0);
@@ -899,13 +907,14 @@ function NearbyClinicPage() {
   // list hasn't caught (e.g. a stale fetch); keep them in the pool so
   // department-based filtering never silently drops a recommended facility.
   const clinicalFacilityPool = useMemo(() => {
+    if (nearbyEnabled) return nearby.items.map((item) => normalizeFacility(item));
     if (!isClinicalFlow) return facilities;
     const activeIds = new Set(facilities.map((facility) => String(facility.facilityId)));
     const extras = clinicalRecommendationFacilities.filter((facility) => (
       !activeIds.has(String(facility.facilityId))
     ));
     return extras.length ? [...facilities, ...extras] : facilities;
-  }, [clinicalRecommendationFacilities, facilities, isClinicalFlow]);
+  }, [clinicalRecommendationFacilities, facilities, isClinicalFlow, nearbyEnabled, nearby.items]);
   const effectiveDepartmentId = selectedDepartmentId;
   const selectedDepartment = selectedDepartmentId === "all"
     ? { id: "all", name: "Tất cả các khoa" }
@@ -930,7 +939,7 @@ function NearbyClinicPage() {
         ...facility.departments,
       ].map(normalizeSearchText);
       const matchSearch = !normalized || searchable.some((value) => value.includes(normalized));
-      const matchDepartment = !normalizedDepartmentId
+      const matchDepartment = nearbyEnabled || !normalizedDepartmentId
         || normalizedDepartmentId === "all"
         || facility.departmentIds?.some((departmentId) => String(departmentId) === normalizedDepartmentId)
         || facility.departments.map(normalizeSearchText).some((value) => value.includes(normalizedDepartmentSearch));
@@ -938,6 +947,7 @@ function NearbyClinicPage() {
     });
     // AI-recommended facilities (if any matched the department too) surface
     // first; every other facility offering the department follows them.
+    if (nearbyEnabled) return matches.sort((a, b) => a.distanceKm - b.distanceKm);
     return isClinicalFlow && recommendedFacilityOrder.size > 0
       ? matches.sort((left, right) => {
         const leftRank = recommendedFacilityOrder.get(String(left.facilityId));
@@ -956,6 +966,7 @@ function NearbyClinicPage() {
     isClinicalFlow,
     mapStatus,
     recommendedFacilityOrder,
+    nearbyEnabled,
   ]);
 
   // Undebounced (unlike filteredFacilities' pin filter above) since this is
@@ -979,13 +990,13 @@ function NearbyClinicPage() {
 
   const visibleFacilities = useMemo(
     () => typedFacilities.map((facility) => {
-      const distanceKm = getDistanceKm(userLocation, facility);
+      const distanceKm = nearbyEnabled && Number.isFinite(facility.distanceKm) ? facility.distanceKm : getDistanceKm(userLocation, facility);
       return {
         ...facility,
         distanceLabel: distanceKm === null ? "" : formatDistance(distanceKm),
       };
     }),
-    [typedFacilities, userLocation],
+    [typedFacilities, userLocation, nearbyEnabled],
   );
 
   const mappableFacilities = useMemo(
@@ -1334,23 +1345,39 @@ function NearbyClinicPage() {
   }, [detailFacility]);
 
   const handleLocateMe = () => {
+    if (locatingRef.current) return;
     setLocationError("");
     if (!navigator.geolocation) {
       setLocationError("Trình duyệt không hỗ trợ định vị.");
       return;
     }
 
+    locatingRef.current = true;
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        locatingRef.current = false;
+        setLocating(false);
         setUserLocation({ lat: latitude, lng: longitude });
+        setNearbyEnabled(true);
+        setSidebarUnlocked(true);
+        setSidebarView("hospital-list");
+        setSelectedFacility(null);
         mapRef.current?.flyTo?.({
           center: [longitude, latitude],
           zoom: 15,
           duration: prefersReducedMotion() ? 0 : 1500,
         });
       },
-      () => setLocationError("Không thể lấy vị trí của bạn.")
+      (error) => {
+        locatingRef.current = false;
+        setLocating(false);
+        setLocationError(error.code === 1
+          ? "Bạn chưa cho phép định vị. Hãy bật quyền vị trí để tìm cơ sở gần bạn."
+          : "Không thể lấy vị trí. Hãy kiểm tra GPS và thử lại.");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
   };
 
@@ -1643,7 +1670,7 @@ function NearbyClinicPage() {
         <FacilityList
           cardRefs={cardRefs}
           facilities={visibleFacilities}
-          loading={isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities}
+          loading={nearbyEnabled ? nearby.loading : isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
           onViewDetail={openFacilityDetail}
         />
@@ -1977,7 +2004,25 @@ function NearbyClinicPage() {
             )}
           </div>
         </div>
-        {apiNotice && <div className="map-top-notice" role="status">{apiNotice}</div>}
+        <div className="map-nearby-controls">
+          <button type="button" onClick={handleLocateMe} disabled={locating}>
+            <MapPin size={16} aria-hidden="true" /> {locating ? "Đang định vị…" : nearbyEnabled ? "Định vị lại" : "Tìm gần tôi"}
+          </button>
+          <label>Bán kính
+            <select value={radiusKm} onChange={(event) => { setRadiusKm(Number(event.target.value)); setSelectedFacility(null); }}>
+              {[1, 3, 5, 7, 10, 15, 20, 30, 50].map((radius) => <option key={radius} value={radius}>{radius} km</option>)}
+            </select>
+          </label>
+          {nearbyEnabled && <button type="button" onClick={() => { setNearbyEnabled(false); setSelectedFacility(null); }}>Bỏ giới hạn khoảng cách</button>}
+          <span role="status">
+            {nearbyEnabled ? nearby.loading ? "Đang tìm cơ sở gần bạn…" : nearby.error || (nearby.items.length
+              ? `${nearby.items.length} cơ sở trong ${radiusKm} km · Tối đa ${NEARBY_LIMIT} kết quả gần nhất`
+              : `Không có cơ sở phù hợp trong ${radiusKm} km. Hãy tăng bán kính hoặc đổi chuyên khoa.`)
+              : "Cho phép định vị để tìm quanh bạn; chọn chuyên khoa nếu cần."}
+          </span>
+          {nearbyEnabled && nearby.error && <button type="button" onClick={() => setNearbyAttempt((value) => value + 1)}>Thử lại</button>}
+        </div>
+        {apiNotice && !nearbyEnabled && <div className="map-top-notice" role="status">{apiNotice}</div>}
         </div>
         <FacilityMap
           chatContext={chatContext}
@@ -1990,7 +2035,7 @@ function NearbyClinicPage() {
           mapRef={mapRef}
           mapRenderKey={mapRenderKey}
           mapStatus={mapStatus}
-          selectedFacility={selectedFacility}
+          selectedFacility={nearbyEnabled && !mappableFacilities.some((facility) => facility.facilityId === selectedFacility?.facilityId) ? null : selectedFacility}
           recommendationContext={resolvedRecommendationContext}
           userLocation={userLocation}
           viewState={viewState}
@@ -2093,6 +2138,13 @@ function NearbyClinicPage() {
 }
 
 const styles = `
+.map-nearby-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; margin-top: 8px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: var(--ink); box-shadow: 0 4px 16px #123a3310; }
+.map-nearby-controls button, .map-nearby-controls select { min-height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-soft); color: var(--ink); padding: 8px 12px; font: inherit; }
+.map-nearby-controls button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+.map-nearby-controls button:disabled { opacity: .6; cursor: wait; }
+.map-nearby-controls label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.map-nearby-controls span[role="status"] { flex: 1 1 220px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.map-nearby-controls :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 .clinic-page { position: relative; height: 100svh; display: flex; background: var(--bg); color: var(--ink); overflow: hidden; }
 .map-skip-link { position: fixed; left: 340px; top: 12px; z-index: 20; border: 2px solid var(--ink); border-radius: 8px; background: var(--lime); padding: 10px 14px; color: var(--ink); font-weight: 900; transform: translateY(calc(-100% - 24px)); transition: transform 160ms ease; }
 .map-skip-link:focus { transform: translateY(0); }

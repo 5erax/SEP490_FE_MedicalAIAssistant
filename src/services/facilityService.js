@@ -1,7 +1,11 @@
 import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
+import { buildNearbyQuery } from "../utils/nearbyFacilities";
 
 export const medicalFacilitiesApi = {
+  nearby(filters, signal) {
+    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.NEARBY}?${buildNearbyQuery(filters)}`, { auth: true, signal, cache: "no-store" });
+  },
   list(pageNumber = 1, pageSize = 50, filters = {}) {
     const params = new URLSearchParams(withPagination(pageNumber, pageSize));
     if (filters.search?.trim()) params.set("search", filters.search.trim());
