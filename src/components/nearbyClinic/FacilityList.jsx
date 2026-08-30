@@ -1,3 +1,5 @@
+import { formatFacilityRating } from "../../utils/facilityRating";
+
 export default function FacilityList({
   cardRefs,
   facilities,
@@ -36,6 +38,7 @@ export default function FacilityList({
             <span className={`type-badge ${facility.facilityTypeKey}`}>{facility.facilityTypeLabel}</span>
           </div>
           <p className="facility-card-address">{facility.address}</p>
+          <p className="facility-card-rating">{formatFacilityRating(facility)}</p>
           <div className="facility-card-meta">
             {facility.distanceLabel && <span>{facility.distanceLabel}</span>}
             <span>{facility.openingHours}</span>

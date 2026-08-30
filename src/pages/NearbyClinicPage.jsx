@@ -24,6 +24,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import useNearbyFacilities from "../hooks/useNearbyFacilities";
+import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
 import { DEFAULT_NEARBY_RADIUS_KM, NEARBY_LIMIT } from "../utils/nearbyFacilities";
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
@@ -274,11 +275,6 @@ function getDistanceKm(fromLocation, facility) {
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function getAverageRating(reviews = []) {
-  const ratings = reviews.map((review) => Number(review.rating)).filter(Number.isFinite);
-  if (!ratings.length) return null;
-  return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
-}
 
 function getReviewAuthorName(review) {
   return review?.reviewerName
@@ -1400,6 +1396,23 @@ function NearbyClinicPage() {
     setMapRenderKey((current) => current + 1);
   };
 
+  const refreshFacilityRating = async (facilityId) => {
+    let summary;
+    try {
+      const response = await medicalFacilitiesApi.get(facilityId);
+      const data = getObjectData(response);
+      summary = { averageRating: data.averageRating, reviewCount: data.reviewCount };
+    } catch {
+      summary = { averageRating: null, reviewCount: null };
+      showToast({ type: "warning", title: "Chưa cập nhật được điểm đánh giá", message: "Đánh giá đã được lưu. Vui lòng mở lại thông tin cơ sở để tải điểm mới." });
+    }
+    const update = (item) => String(item?.facilityId) === String(facilityId) ? { ...item, ...summary } : item;
+    setDetailFacility(update);
+    setSelectedFacility(update);
+    setFacilities((current) => current.map(update));
+    setNearbyAttempt((current) => current + 1);
+  };
+
   const submitReview = async (event) => {
     event.preventDefault();
     if (!selectedFacility?.facilityId) return;
@@ -1457,6 +1470,7 @@ function NearbyClinicPage() {
         setReviews((current) => [savedReview, ...current.filter((review) => String(review.id) !== String(savedReview.id))]);
         setReviewsTotalCount((current) => Math.max(current, 1));
       }
+      await refreshFacilityRating(selectedFacility.facilityId);
     } catch (error) {
       const message = getFeedbackReviewApiMessage(
         error,
@@ -1525,6 +1539,7 @@ function NearbyClinicPage() {
       setReviewForm({ rating: "5", comment: "", imageUrls: [] });
       setReviewMessage(successMessage);
       showToast({ type: "success", title: "Đã xóa đánh giá" });
+      await refreshFacilityRating(selectedFacility.facilityId);
     } catch (error) {
       const message = getFeedbackReviewApiMessage(
         error,
@@ -1597,7 +1612,7 @@ function NearbyClinicPage() {
     }
   };
 
-  const detailAverageRating = getAverageRating(reviews);
+  const { average: detailAverageRating, count: detailReviewCount } = getFacilityRating(detailFacility);
   const currentUserReview = reviews.find((review) => isReviewByCurrentUser(review, auth)) || submittedReview;
   const selectedFacilityDistance = detailFacility ? getDistanceKm(userLocation, detailFacility) : null;
   const selectedFacilityDistanceLabel = selectedFacilityDistance === null ? "" : formatDistance(selectedFacilityDistance);
@@ -1718,7 +1733,7 @@ function NearbyClinicPage() {
                 <h2 id="facility-detail-title" ref={sidebarTitleRef} tabIndex="-1">{detailFacility.facilityName}</h2>
                 <p><MapPin size={16} /> {detailFacility.address}</p>
                 <p><Clock3 size={16} /> {detailFacility.openingHours || "Chưa có giờ hoạt động"}</p>
-                <p><Star size={16} fill={detailAverageRating ? "currentColor" : "none"} /> {detailAverageRating ? `${detailAverageRating.toFixed(1)} · ${reviewsTotalCount} đánh giá` : "Chưa có đánh giá"}</p>
+                <p><Star size={16} fill={detailAverageRating ? "currentColor" : "none"} /> {formatFacilityRating(detailFacility)}</p>
                 {selectedFacilityDistanceLabel && <p><Route size={16} /> Cách bạn khoảng {selectedFacilityDistanceLabel}</p>}
               </section>
 
@@ -1792,8 +1807,11 @@ function NearbyClinicPage() {
                 >
                   <section className="facility-info-group">
                     <h3>Đánh giá người dùng</h3>
-                    <div className="review-overview"><strong>{detailAverageRating ? detailAverageRating.toFixed(1) : "--"}</strong><div className="review-summary-stars" aria-label={detailAverageRating ? `${detailAverageRating.toFixed(1)} trên 5 sao` : "Chưa có điểm đánh giá"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={detailAverageRating >= rating - 0.25 ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{reviewsTotalCount} đánh giá</span></div>
-                    <div className="review-distribution" aria-label="Phân bố đánh giá">{reviewDistribution.map((row) => <div key={row.rating}><span>{row.rating} sao</span><i><b style={{ width: `${row.percent}%` }} /></i><em>{row.percent}%</em></div>)}</div>
+                    <div className="review-overview"><strong>{detailAverageRating ? detailAverageRating.toFixed(1) : "--"}</strong><div className="review-summary-stars" aria-label={detailAverageRating ? `${detailAverageRating.toFixed(1)} trên 5 sao` : "Chưa có điểm đánh giá"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={detailAverageRating >= rating - 0.25 ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{detailReviewCount == null ? "Chưa tải được tổng đánh giá" : `${detailReviewCount} đánh giá`}</span></div>
+                    <div className="review-distribution" aria-label="Phân bố đánh giá đã tải">
+                      {reviews.length < reviewsTotalCount && <small>Phân bố của {reviews.length} đánh giá đã tải, không phải toàn bộ đánh giá.</small>}
+                      {reviewDistribution.map((row) => <div key={row.rating}><span>{row.rating} sao</span><i><b style={{ width: `${row.percent}%` }} /></i><em>{row.percent}%</em></div>)}
+                    </div>
                   </section>
                   <section className="facility-info-group">
                     <h3>{editingReview ? "Chỉnh sửa đánh giá" : currentUserReview ? "Đánh giá của bạn" : "Gửi đánh giá"}</h3>
