@@ -1,7 +1,8 @@
 import { ArrowRight, Check, CircleDollarSign, Info, LoaderCircle, MapPinned, ShieldCheck, Stethoscope } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { subscriptionPlansApi } from "../../services/api";
-import { getPlanBenefits, getPlanDisplayName, PUBLIC_ACCESS_BENEFITS } from "../../utils/subscriptionPlanPresentation";
+import { getPlanDisplayName, PUBLIC_ACCESS_BENEFITS } from "../../utils/subscriptionPlanPresentation";
+import { getOfferBenefits } from "../../utils/planOfferPresentation";
 
 const FOOTER_COLUMNS = [
   {
@@ -156,7 +157,7 @@ export function PricingPreviewSection() {
               {previewPlans.map((item, index) => {
                 const plan = item.plan;
                 const offer = item.offer;
-                const benefits = getPlanBenefits(plan);
+                const benefits = getOfferBenefits(item);
                 const planName = getPlanDisplayName(plan.planName);
                 const badgeText = offer?.badgeText || offer?.campaignName
                   || (index === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất");

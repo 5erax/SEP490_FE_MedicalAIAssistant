@@ -1,5 +1,6 @@
 import { apiRequest } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
+import { buildCheckoutBody } from "./pricingSnapshot";
 
 function withQuery(path, params = {}) {
   const search = new URLSearchParams();
@@ -22,7 +23,7 @@ export const subscriptionPlansApi = {
   },
 
   offers() {
-    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.OFFERS, { auth: true });
+    return apiRequest(ENDPOINTS.SUBSCRIPTION_PLANS.OFFERS, { auth: true, cache: "no-store" });
   },
 
   get(id) {
@@ -89,13 +90,8 @@ export const adminSubscriptionPlanQuotasApi = {
 };
 
 export const userSubscriptionsApi = {
-  checkout(planId, autoRenew = false, offer = null) {
-    const body = { planId, autoRenew };
-    if (offer?.offerId) {
-      body.expectedOfferId = offer.offerId;
-      body.expectedEffectivePrice = Number(offer.effectivePrice);
-      body.expectedGrantedCredit = Number(offer.grantedCredit);
-    }
+  checkout(planId, autoRenew = false, planOffer = null) {
+    const body = buildCheckoutBody(planId, autoRenew, planOffer);
     return apiRequest(ENDPOINTS.USER_SUBSCRIPTIONS.CHECKOUT, {
       method: "POST",
       body,

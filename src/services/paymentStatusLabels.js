@@ -37,6 +37,10 @@ export function getPaymentStatusLabel(status, fallback = "") {
   return PAYMENT_STATUS_LABELS[String(status ?? "").toLowerCase()] ?? fallback;
 }
 
+export function getPaymentAmountLabel(status) {
+  return String(status ?? "").toLowerCase() === "paid" ? "Đã thanh toán" : "Số tiền giao dịch";
+}
+
 export function getSubscriptionStatusLabel(status, fallback = "") {
   return SUBSCRIPTION_STATUS_LABELS[String(status ?? "").toLowerCase()] ?? fallback;
 }

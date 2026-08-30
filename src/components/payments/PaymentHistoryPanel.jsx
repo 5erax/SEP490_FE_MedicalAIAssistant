@@ -4,7 +4,7 @@ import { Dialog } from "../ui";
 import { paymentsApi } from "../../services/api";
 import { getPaymentReconcileErrorMessage } from "../../services/apiError";
 import { translateApiMessage } from "../../services/apiMessageTranslator";
-import { getPaymentStatusLabel } from "../../services/paymentStatusLabels";
+import { getPaymentAmountLabel, getPaymentStatusLabel } from "../../services/paymentStatusLabels";
 import "../../styles/payment-history.css";
 
 const PAGE_SIZE = 10;
@@ -216,7 +216,7 @@ function PaymentDetailDialog({ paymentId, summary, onClose, restoreFocusRef }) {
               {hasSale && <div><dt>Chương trình</dt><dd>{payment.saleCampaignName || payment.saleBadgeText || "Khuyến mãi"}</dd></div>}
               {hasSale && Number(payment.discountAmount) > 0 && <div><dt>Giá gốc</dt><dd>{formatMoney(payment.originalAmount, payment.currency)}</dd></div>}
               {hasSale && Number(payment.discountAmount) > 0 && <div><dt>Khuyến mãi</dt><dd>-{formatMoney(payment.discountAmount, payment.currency)}</dd></div>}
-              {hasSale && <div><dt>Đã thanh toán</dt><dd>{formatMoney(payment.amount, payment.currency)}</dd></div>}
+              {hasSale && <div><dt>{getPaymentAmountLabel(payment.status)}</dt><dd>{formatMoney(payment.amount, payment.currency)}</dd></div>}
               {hasSale && <div><dt>Lượt cơ bản</dt><dd>{payment.baseCredit ?? 0}</dd></div>}
               {hasSale && <div><dt>Lượt thưởng</dt><dd>+{payment.bonusCredit ?? 0}</dd></div>}
               {hasSale && <div><dt>Tổng nhận</dt><dd>{payment.grantedCredit ?? 0} lượt</dd></div>}
