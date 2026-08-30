@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildNearbyQuery } from "../../src/utils/nearbyFacilities.js";
+import { buildNearbyQuery, getNextNearbyRadius } from "../../src/utils/nearbyFacilities.js";
+
+test("expanding the search preserves specialty and stops at the largest radius", () => {
+  assert.equal(getNextNearbyRadius(7), 10);
+  assert.equal(getNextNearbyRadius(50), null);
+  const query = new URLSearchParams(buildNearbyQuery({ latitude: 10, longitude: 106, radiusKm: getNextNearbyRadius(7), departmentId: "respiratory" }));
+  assert.equal(query.get("radiusKm"), "10");
+  assert.equal(query.get("departmentId"), "respiratory");
+});
 
 test("nearby uses provided geolocation and defaults to 7 km / 20 results", () => {
   const query = new URLSearchParams(buildNearbyQuery({ latitude: 10.8028, longitude: 106.6433 }));

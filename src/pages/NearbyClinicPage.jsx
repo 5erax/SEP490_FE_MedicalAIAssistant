@@ -25,7 +25,7 @@ import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import useNearbyFacilities from "../hooks/useNearbyFacilities";
 import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
-import { DEFAULT_NEARBY_RADIUS_KM, NEARBY_LIMIT } from "../utils/nearbyFacilities";
+import { DEFAULT_NEARBY_RADIUS_KM, NEARBY_LIMIT, NEARBY_RADII, getNextNearbyRadius } from "../utils/nearbyFacilities";
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
@@ -938,7 +938,7 @@ function NearbyClinicPage() {
     if (isClinicalFlow && clinicalStatus !== "ready") return [];
     // With no working map there is no pin to click either, so fall back to
     // showing every facility in the list regardless of department filter.
-    if (!isClinicalFlow && !effectiveDepartmentId && mapStatus !== "error") return [];
+    if (!nearbyEnabled && !isClinicalFlow && !effectiveDepartmentId && mapStatus !== "error") return [];
 
     const normalized = normalizeSearchText(debouncedSearch);
     const normalizedDepartmentId = String(effectiveDepartmentId).trim();
@@ -1370,17 +1370,18 @@ function NearbyClinicPage() {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
+        const { latitude, longitude, accuracy } = position.coords;
         locatingRef.current = false;
         setLocating(false);
-        setUserLocation({ lat: latitude, lng: longitude });
+        setUserLocation({ lat: latitude, lng: longitude, accuracy });
+        setNearbyAttempt((value) => value + 1);
         setNearbyEnabled(true);
         setSidebarUnlocked(true);
         setSidebarView("hospital-list");
         setSelectedFacility(null);
         mapRef.current?.flyTo?.({
           center: [longitude, latitude],
-          zoom: 15,
+          zoom: 12,
           duration: prefersReducedMotion() ? 0 : 1500,
         });
       },
@@ -1391,7 +1392,7 @@ function NearbyClinicPage() {
           ? "Bạn chưa cho phép định vị. Hãy bật quyền vị trí để tìm cơ sở gần bạn."
           : "Không thể lấy vị trí. Hãy kiểm tra GPS và thử lại.");
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -2046,16 +2047,22 @@ function NearbyClinicPage() {
           </button>
           <label>Bán kính
             <select value={radiusKm} onChange={(event) => { setRadiusKm(Number(event.target.value)); setSelectedFacility(null); }}>
-              {[1, 3, 5, 7, 10, 15, 20, 30, 50].map((radius) => <option key={radius} value={radius}>{radius} km</option>)}
+              {NEARBY_RADII.map((radius) => <option key={radius} value={radius}>{radius} km</option>)}
             </select>
           </label>
           {nearbyEnabled && <button type="button" onClick={() => { setNearbyEnabled(false); setSelectedFacility(null); }}>Bỏ giới hạn khoảng cách</button>}
           <span role="status">
             {nearbyEnabled ? nearby.loading ? "Đang tìm cơ sở gần bạn…" : nearby.error || (nearby.items.length
               ? `${nearby.items.length} cơ sở trong ${radiusKm} km · Tối đa ${NEARBY_LIMIT} kết quả gần nhất`
-              : `Không có cơ sở phù hợp trong ${radiusKm} km. Hãy tăng bán kính hoặc đổi chuyên khoa.`)
+              : `Chưa tìm thấy cơ sở${selectedDepartment?.name && selectedDepartmentId !== "all" ? ` có ${selectedDepartment.name}` : ""} trong ${radiusKm} km quanh vị trí của bạn. Điều này không có nghĩa là không có chuyên khoa này.`)
               : "Cho phép định vị để tìm quanh bạn; chọn chuyên khoa nếu cần."}
           </span>
+          {nearbyEnabled && !nearby.loading && !nearby.error && nearby.items.length === 0 && getNextNearbyRadius(radiusKm) && (
+            <button type="button" onClick={() => { setRadiusKm(getNextNearbyRadius(radiusKm)); setSelectedFacility(null); }}>
+              Tìm trong {getNextNearbyRadius(radiusKm)} km
+            </button>
+          )}
+          {nearbyEnabled && userLocation?.accuracy > 1000 && <small className="map-location-accuracy" role="status">Vị trí có sai số khoảng {(userLocation.accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</small>}
           {nearbyEnabled && nearby.error && <button type="button" onClick={() => setNearbyAttempt((value) => value + 1)}>Thử lại</button>}
         </div>
         {apiNotice && !nearbyEnabled && <div className="map-top-notice" role="status">{apiNotice}</div>}

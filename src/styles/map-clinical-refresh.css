@@ -1055,21 +1055,48 @@
   left: 18px;
   right: 70px;
   z-index: 6;
-  display: grid;
-  grid-template-columns: minmax(0, 320px) minmax(0, 680px);
-  align-items: start;
-  gap: 18px;
-  max-width: 1018px;
-  max-height: calc(100% - var(--map-controls-bottom, 180px) - 30px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  max-width: 420px;
+  background: var(--map-surface, #fff);
+  border: 1px solid var(--map-line);
+  box-shadow: 0 4px 16px #123a3310;
+  overflow: hidden;
   border-radius: 16px;
 }
 
+.map-clinical-refresh .map-clinical-panels > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--map-ink);
+}
+.map-clinical-refresh .map-clinical-panels > summary::-webkit-details-marker { display: none; }
+.map-clinical-refresh .map-clinical-panels > summary small,
+.map-clinical-refresh .map-clinical-panels > summary strong { display: block; }
+.map-clinical-refresh .map-clinical-panels > summary small { font-size: 11px; color: var(--map-muted); }
+.map-clinical-refresh .map-clinical-panels > summary strong { font-size: 15px; }
+.map-clinical-refresh .map-clinical-panels > summary:focus-visible { outline: 2px solid var(--map-teal); outline-offset: -3px; }
+.map-clinical-refresh .map-clinical-expand-label,
+.map-clinical-refresh .map-clinical-collapse-label { font-size: 12px; color: var(--map-teal); white-space: nowrap; }
+.map-clinical-refresh .map-clinical-collapse-label,
+.map-clinical-refresh .map-clinical-panels[open] .map-clinical-expand-label { display: none; }
+.map-clinical-refresh .map-clinical-panels[open] .map-clinical-collapse-label { display: inline; }
+.map-clinical-refresh .map-clinical-panel-content {
+  display: grid;
+  gap: 10px;
+  padding: 0 10px 10px;
+  max-height: min(38vh, 340px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
 /* The shared flow container handles positioning at every breakpoint. */
-.map-clinical-refresh .map-clinical-panels > .map-clinical-summary,
-.map-clinical-refresh .map-clinical-panels > .map-diagnosis-crossbar {
+.map-clinical-refresh .map-clinical-panel-content > .map-clinical-summary,
+.map-clinical-refresh .map-clinical-panel-content > .map-diagnosis-crossbar {
   position: static;
   width: auto;
   min-width: 0;
@@ -1081,9 +1108,7 @@
 
 @media (max-width: 1280px) {
   .map-clinical-refresh .map-clinical-panels {
-    grid-template-columns: minmax(0, 1fr);
-    max-width: 680px;
-    gap: 12px;
+    max-width: 420px;
   }
 }
 

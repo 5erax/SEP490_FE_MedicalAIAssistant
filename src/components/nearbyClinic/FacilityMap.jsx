@@ -668,7 +668,13 @@ export default function FacilityMap({
           <span>{chatContext.answer}</span>
         </aside>
       )}
-      {isClinicalFlow && <div className="map-clinical-panels" role="region" aria-label="Thông tin gợi ý chuyên khoa" tabIndex={0}>
+      {isClinicalFlow && <details className="map-clinical-panels">
+      <summary>
+        <span><small>Gợi ý chuyên khoa</small><strong>{recommendedDepartment?.departmentName || "Kết quả tư vấn"}</strong></span>
+        <span className="map-clinical-expand-label">Xem chi tiết</span>
+        <span className="map-clinical-collapse-label">Thu gọn</span>
+      </summary>
+      <div className="map-clinical-panel-content">
       {isClinicalFlow && (
         <aside
           className={`map-clinical-summary${hasTopNotice ? " has-top-notice" : ""}`}
@@ -709,7 +715,8 @@ export default function FacilityMap({
       {isClinicalFlow && clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
         <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} hasTopNotice={hasTopNotice} sessionId={recommendationContext.sessionId} />
       )}
-      </div>}
+      </div>
+      </details>}
 
       {mapStatus !== "error" && (
         <MapErrorBoundary key={mapRenderKey} onError={onError}>
