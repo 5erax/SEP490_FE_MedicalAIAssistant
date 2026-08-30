@@ -1,6 +1,25 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildNearbyQuery, getNextNearbyRadius } from "../../src/utils/nearbyFacilities.js";
+import { buildNearbyQuery, getNextNearbyRadius, rankNearestFacilities } from "../../src/utils/nearbyFacilities.js";
+
+test("nearest ranks the full catalog including facilities beyond 7 and 50 km", () => {
+  const items = [{ id: "far", latitude: 1, longitude: 0 }, { id: "near", latitude: 0.1, longitude: 0 }];
+  const result = rankNearestFacilities(items, 0, 0);
+  assert.deepEqual(result.map((item) => item.id), ["near", "far"]);
+  assert.ok(result[0].distanceKm > 7);
+  assert.ok(result[1].distanceKm > 50);
+  assert.equal(items[0].distanceKm, undefined);
+});
+test("nearest excludes missing or invalid coordinates and inactive facilities", () => {
+  const result = rankNearestFacilities([
+    { latitude: null, longitude: 0 }, { latitude: "", longitude: 0 },
+    { latitude: 91, longitude: 0 }, { latitude: 0, longitude: 0, isActive: false },
+    { latitude: "0", longitude: "0" },
+  ], 0, 0);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].distanceKm, 0);
+  assert.throws(() => rankNearestFacilities([], null, 0));
+});
 
 test("expanding the search preserves specialty and stops at the largest radius", () => {
   assert.equal(getNextNearbyRadius(7), 10);

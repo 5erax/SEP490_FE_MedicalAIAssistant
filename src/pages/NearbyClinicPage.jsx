@@ -25,7 +25,7 @@ import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import useNearbyFacilities from "../hooks/useNearbyFacilities";
 import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
-import { DEFAULT_NEARBY_RADIUS_KM, NEARBY_LIMIT, NEARBY_RADII, getNextNearbyRadius } from "../utils/nearbyFacilities";
+import { NEARBY_RADII, getNextNearbyRadius } from "../utils/nearbyFacilities";
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
@@ -498,7 +498,7 @@ function NearbyClinicPage() {
   const [shareMessage, setShareMessage] = useState("");
   const [userLocation, setUserLocation] = useState(null);
   const [nearbyEnabled, setNearbyEnabled] = useState(false);
-  const [radiusKm, setRadiusKm] = useState(DEFAULT_NEARBY_RADIUS_KM);
+  const [radiusKm, setRadiusKm] = useState("nearest");
   const [nearbyAttempt, setNearbyAttempt] = useState(0);
   const [locating, setLocating] = useState(false);
   const locatingRef = useRef(false);
@@ -2045,17 +2045,17 @@ function NearbyClinicPage() {
           <button type="button" onClick={handleLocateMe} disabled={locating}>
             <MapPin size={16} aria-hidden="true" /> {locating ? "Đang định vị…" : nearbyEnabled ? "Định vị lại" : "Tìm gần tôi"}
           </button>
-          <label>Bán kính
-            <select value={radiusKm} onChange={(event) => { setRadiusKm(Number(event.target.value)); setSelectedFacility(null); }}>
+          <label>Phạm vi
+            <select value={radiusKm} onChange={(event) => { setRadiusKm(event.target.value === "nearest" ? "nearest" : Number(event.target.value)); setSelectedFacility(null); }}>
+              <option value="nearest">Gần nhất · Không giới hạn</option>
               {NEARBY_RADII.map((radius) => <option key={radius} value={radius}>{radius} km</option>)}
             </select>
           </label>
-          {nearbyEnabled && <button type="button" onClick={() => { setNearbyEnabled(false); setSelectedFacility(null); }}>Bỏ giới hạn khoảng cách</button>}
           <span role="status">
             {nearbyEnabled ? nearby.loading ? "Đang tìm cơ sở gần bạn…" : nearby.error || (nearby.items.length
-              ? `${nearby.items.length} cơ sở trong ${radiusKm} km · Tối đa ${NEARBY_LIMIT} kết quả gần nhất`
-              : `Chưa tìm thấy cơ sở${selectedDepartment?.name && selectedDepartmentId !== "all" ? ` có ${selectedDepartment.name}` : ""} trong ${radiusKm} km quanh vị trí của bạn. Điều này không có nghĩa là không có chuyên khoa này.`)
-              : "Cho phép định vị để tìm quanh bạn; chọn chuyên khoa nếu cần."}
+              ? `${nearby.items.length} cơ sở · Gần → xa${radiusKm === "nearest" ? "" : ` · Trong ${radiusKm} km`} · Khoảng cách đường thẳng`
+              : `Chưa có cơ sở phù hợp có tọa độ${radiusKm === "nearest" ? " trong dữ liệu hiện tại" : ` trong ${radiusKm} km`}.`)
+              : "Bật vị trí để xếp cơ sở gần bạn nhất."}
           </span>
           {nearbyEnabled && !nearby.loading && !nearby.error && nearby.items.length === 0 && getNextNearbyRadius(radiusKm) && (
             <button type="button" onClick={() => { setRadiusKm(getNextNearbyRadius(radiusKm)); setSelectedFacility(null); }}>
@@ -2181,12 +2181,12 @@ function NearbyClinicPage() {
 }
 
 const styles = `
-.map-nearby-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; margin-top: 8px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: var(--ink); box-shadow: 0 4px 16px #123a3310; }
+.map-nearby-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; width: fit-content; max-width: 100%; box-sizing: border-box; padding: 8px 10px; margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); box-shadow: 0 4px 16px #123a3310; }
 .map-nearby-controls button, .map-nearby-controls select { min-height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-soft); color: var(--ink); padding: 8px 12px; font: inherit; }
 .map-nearby-controls button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
 .map-nearby-controls button:disabled { opacity: .6; cursor: wait; }
 .map-nearby-controls label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-.map-nearby-controls span[role="status"] { flex: 1 1 220px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.map-nearby-controls span[role="status"] { flex: 1 1 100%; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .map-nearby-controls :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 .clinic-page { position: relative; height: 100svh; display: flex; background: var(--bg); color: var(--ink); overflow: hidden; }
 .map-skip-link { position: fixed; left: 340px; top: 12px; z-index: 20; border: 2px solid var(--ink); border-radius: 8px; background: var(--lime); padding: 10px 14px; color: var(--ink); font-weight: 900; transform: translateY(calc(-100% - 24px)); transition: transform 160ms ease; }

@@ -699,14 +699,13 @@ export default function FacilityMap({
           )}
           {clinicalStatus === "ready" && (
             <>
-              <header>
-                <small>Chuyên khoa được gợi ý</small>
-                <strong>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</strong>
-              </header>
+              <details className="map-specialty-description">
+              <summary>Thông tin chuyên khoa</summary>
               <p className="map-clinical-description">
                 {recommendedDepartment?.description
                   || "Chưa có mô tả cho chuyên khoa được gợi ý."}
               </p>
+              </details>
             </>
           )}
         </aside>

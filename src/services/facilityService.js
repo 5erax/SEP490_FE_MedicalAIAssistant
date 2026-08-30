@@ -15,12 +15,12 @@ export const medicalFacilitiesApi = {
     return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.BASE}?${params.toString()}`);
   },
 
-  active(filters = {}) {
+  active(filters = {}, options = {}) {
     const params = new URLSearchParams();
     if (filters.departmentId) params.set("departmentId", filters.departmentId);
     if (filters.search) params.set("search", filters.search);
     const query = params.toString();
-    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.ACTIVE}${query ? `?${query}` : ""}`);
+    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.ACTIVE}${query ? `?${query}` : ""}`, options);
   },
 
   get(id) {

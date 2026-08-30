@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { medicalFacilitiesApi } from "../services/facilityService";
+import { rankNearestFacilities } from "../utils/nearbyFacilities";
 const EMPTY_ITEMS = [];
 
 export default function useNearbyFacilities(location, radiusKm, departmentId, attempt) {
@@ -11,10 +12,14 @@ export default function useNearbyFacilities(location, radiusKm, departmentId, at
     if (!key) return;
     let active = true;
     const controller = new AbortController();
-    medicalFacilitiesApi.nearby({ latitude, longitude, radiusKm, departmentId }, controller.signal)
+    const request = radiusKm === "nearest"
+      ? medicalFacilitiesApi.active({ departmentId: departmentId === "all" ? undefined : departmentId }, { signal: controller.signal, cache: "no-store" })
+      : medicalFacilitiesApi.nearby({ latitude, longitude, radiusKm, departmentId }, controller.signal);
+    request
       .then((response) => {
         if (!Array.isArray(response?.data)) throw new Error("Invalid nearby response");
-        if (active) setResult({ key, items: response.data, error: "" });
+        const items = radiusKm === "nearest" ? rankNearestFacilities(response.data, latitude, longitude) : response.data;
+        if (active) setResult({ key, items, error: "" });
       })
       .catch(() => {
         if (active) setResult({ key, items: [], error: "Không thể tải cơ sở gần bạn. Vui lòng thử lại." });
