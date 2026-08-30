@@ -1049,6 +1049,51 @@
   }
 }
 
+.map-clinical-refresh .map-clinical-panels {
+  position: absolute;
+  top: calc(var(--map-controls-bottom, 180px) + 12px);
+  left: 18px;
+  right: 70px;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 680px);
+  align-items: start;
+  gap: 18px;
+  max-width: 1018px;
+  max-height: calc(100% - var(--map-controls-bottom, 180px) - 30px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border-radius: 16px;
+}
+
+/* The shared flow container handles positioning at every breakpoint. */
+.map-clinical-refresh .map-clinical-panels > .map-clinical-summary,
+.map-clinical-refresh .map-clinical-panels > .map-diagnosis-crossbar {
+  position: static;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  transition: none;
+}
+
+@media (max-width: 1280px) {
+  .map-clinical-refresh .map-clinical-panels {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 680px;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .map-clinical-refresh .map-clinical-panels {
+    left: 12px;
+    right: 12px;
+  }
+}
+
 .map-clinical-refresh .map-clinical-summary {
   position: absolute;
   /* Sits below the floating search/department bar shared with the plain map. */

@@ -508,6 +508,8 @@ function NearbyClinicPage() {
   const [mapRenderKey, setMapRenderKey] = useState(0);
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
+  const mapStageRef = useRef(null);
+  const mapControlsRef = useRef(null);
   const cardRefs = useRef({});
   const departmentFilterRef = useRef(null);
   const searchBoxRef = useRef(null);
@@ -520,6 +522,22 @@ function NearbyClinicPage() {
   const lastFittedBoundsRef = useRef("");
   const clinicalRestoreRequestRef = useRef({ sessionId: "", promise: null });
   const clinicalDepartmentAutoSelectedRef = useRef(false);
+
+  useEffect(() => {
+    const stage = mapStageRef.current;
+    const controls = mapControlsRef.current;
+    if (!stage || !controls) return;
+    const measure = () => {
+      const bottom = controls.getBoundingClientRect().bottom - stage.getBoundingClientRect().top;
+      stage.style.setProperty("--map-controls-bottom", `${Math.ceil(bottom)}px`);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(controls);
+    observer.observe(stage);
+    window.addEventListener("resize", measure);
+    return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
+  }, []);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -1890,8 +1908,8 @@ function NearbyClinicPage() {
       </aside>
       )}
 
-      <section className="map-stage">
-        <div className="map-top-controls">
+      <section className="map-stage" ref={mapStageRef}>
+        <div className="map-top-controls" ref={mapControlsRef}>
         <div className="map-top-controls-row" ref={departmentFilterRef}>
           <button
             type="button"
