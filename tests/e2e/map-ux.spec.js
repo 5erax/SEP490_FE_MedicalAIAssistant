@@ -339,7 +339,7 @@ test("geolocation denial does not remove the rendered map", async ({ page, conte
   const locateButton = page.getByRole("button", { name: "Vị trí của tôi", exact: true });
   await locateButton.click();
 
-  await expect(page.locator(".explorer-location").getByRole("alert")).toHaveText("Bạn chưa cho phép định vị. Hãy bật quyền vị trí để tìm cơ sở gần bạn.");
+  await expect(page.locator(".explorer-location").getByRole("alert")).toHaveText("Chưa được phép dùng vị trí của bạn. Bạn có thể cho phép truy cập vị trí trong cài đặt trình duyệt rồi thử lại.");
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
 });
 
@@ -429,8 +429,9 @@ for (const screen of [
     expect((await nextStep.boundingBox()).height).toBeGreaterThanOrEqual(52);
     await expect(page.locator(".explorer-description")).not.toHaveAttribute("open");
     await page.screenshot({ path: testInfo.outputPath(`${screen.name}-results.png`) });
-    await page.getByText("Xem mô tả chuyên khoa", { exact: true }).click();
+    await page.getByText("Thông tin chuyên khoa và lý do gợi ý", { exact: true }).click();
     await expect(nextStep).toBeInViewport({ ratio: 1 });
+    await page.locator(".explorer-reference-results > summary").click();
     await page.locator(".explorer-diagnosis summary").last().click();
     await expect(nextStep).toBeInViewport({ ratio: 1 });
     await page.locator(".explorer-clinical-disclaimer").scrollIntoViewIfNeeded();
@@ -440,9 +441,9 @@ for (const screen of [
 
     const accessibility = await new AxeBuilder({ page }).include(".clinic-sidebar").withTags(["wcag2a", "wcag2aa"]).analyze();
     expect(accessibility.violations).toEqual([]);
-    await page.getByRole("button", { name: "Cơ sở y tế", exact: true }).click();
+    await page.getByRole("button", { name: "Xem cơ sở mà không dùng vị trí", exact: true }).click();
     await expect(nextStep).toHaveCount(0);
-    await page.getByRole("button", { name: "Kết quả tư vấn", exact: true }).click();
+    await page.getByRole("button", { name: "Kết quả gợi ý", exact: true }).click();
     await expect(nextStep).toBeInViewport({ ratio: 1 });
   });
 }
@@ -468,15 +469,15 @@ for (const width of [1440, 390]) {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: radius === 1 ? [] : [facility({ distanceKm: 2.4, isActive: true })] }) });
     });
     await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
-    const choice = page.getByRole("button", { name: "Xem cơ sở có chuyên khoa này gần tôi" });
+    const choice = page.getByRole("button", { name: "Tìm nơi khám gần tôi" });
     await expect(choice).toBeVisible();
     await expect(page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" })).toBeInViewport();
     await page.screenshot({ path: testInfo.outputPath(`nearby-choice-${width}.png`) });
     await choice.click();
-    await expect(page.locator(".explorer-nearby-summary")).toContainText("3 km");
+    await expect(page.locator(".result-summary")).toContainText("3 km");
     await expect(page.locator(".facility-result-card")).toHaveCount(1);
     expect(radii).toEqual([1, 3]);
-    await expect(page.getByRole("button", { name: "Kết quả tư vấn", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Kết quả gợi ý", exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(`nearby-results-${width}.png`) });
   });
 }
@@ -499,17 +500,17 @@ for (const scenario of ["empty", "error"]) {
       return route.fulfill({ status: scenario === "error" ? 503 : 200, contentType: "application/json", body: JSON.stringify({ success: scenario !== "error", data: [] }) });
     });
     await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
-    await page.getByRole("button", { name: "Xem cơ sở có chuyên khoa này gần tôi" }).click();
+    await page.getByRole("button", { name: "Tìm nơi khám gần tôi" }).click();
     if (scenario === "empty") {
-      await expect(page.locator(".explorer-nearby-summary")).toContainText("phạm vi 5 km");
+      await expect(page.locator(".result-summary")).toContainText("trong 5 km");
       expect(radii).toEqual([1, 3, 5]);
       await expect(page.locator(".clinic-marker")).toHaveCount(0);
-      await page.getByRole("button", { name: "Mở rộng lên 10 km" }).click();
+      await page.getByRole("button", { name: "Tìm xa hơn · trong 10 km" }).click();
       await expect.poll(() => radii).toEqual([1, 3, 5, 10]);
     } else {
-      await expect(page.locator(".explorer-controls [role=alert]")).toContainText("Không thể tải cơ sở gần bạn");
+      await expect(page.locator(".explorer-list [role=alert]")).toContainText("Không thể tải cơ sở gần bạn");
       expect(radii).toEqual([1]);
-      await expect(page.getByRole("button", { name: "Mở rộng lên 10 km" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Tìm xa hơn · trong 10 km" })).toHaveCount(0);
     }
   });
 }
@@ -545,7 +546,7 @@ test("changing specialty during a nearby search discards the previous response",
     })] }) });
   });
   await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
-  await page.getByRole("button", { name: "Xem cơ sở có chuyên khoa này gần tôi" }).click();
+  await page.getByRole("button", { name: "Tìm nơi khám gần tôi" }).click();
   await expect.poll(() => typeof releaseOld).toBe("function");
   await page.getByRole("button", { name: "Bộ lọc", exact: true }).click();
   await page.getByRole("combobox", { name: "Chuyên khoa", exact: true }).selectOption(SECOND_FACILITY_DEPARTMENT_ID);
@@ -562,17 +563,117 @@ test("specialty nearby permission denial stays on results with a recovery messag
   await page.addInitScript(({ accessToken, snapshot }) => {
     localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
     sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
-    navigator.geolocation.getCurrentPosition = (_success, failure) => failure({ code: 1 });
+    let calls = 0;
+    navigator.geolocation.getCurrentPosition = (success, failure) => {
+      if (calls++ === 0) failure({ code: 1 });
+      else success({ coords: { latitude: 10.8, longitude: 106.65, accuracy: 20 } });
+    };
   }, { accessToken: TOKEN, snapshot: clinicalAnalysis });
-  await mockMapApis(page, [facility()], { analysis: clinicalAnalysis });
+  await mockMapApis(page, [facility({ distanceKm: 0.8 })], { analysis: clinicalAnalysis });
   await mockSuccessfulMapStyle(page);
   const nearbyRequests = [];
   page.on("request", (request) => { if (request.url().includes("/medical-facilities/nearby")) nearbyRequests.push(request.url()); });
   await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
-  await page.getByRole("button", { name: "Xem cơ sở có chuyên khoa này gần tôi" }).click();
-  await expect(page.locator(".explorer-specialty-nearby [role=alert]")).toContainText("chưa cho phép định vị");
+  await page.getByRole("button", { name: "Tìm nơi khám gần tôi" }).click();
+  await expect(page.locator(".explorer-specialty-nearby [role=alert]")).toContainText("Chưa được phép dùng vị trí");
   await expect(page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" })).toBeVisible();
   expect(nearbyRequests).toEqual([]);
+  await expect(page.getByRole("alert")).toHaveCount(1);
+  await page.getByRole("button", { name: "Xem cơ sở mà không dùng vị trí" }).click();
+  await expect(page.getByRole("heading", { name: "Nơi khám có Khoa Hô hấp" })).toBeVisible();
+  await expect(page.locator(".facility-result-card")).toHaveCount(1);
+  await expect(page.locator(".explorer-location-compact")).toContainText("Chưa dùng vị trí");
+  await expect(page.locator(".facility-result-card .explorer-distance")).toHaveCount(0);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(nearbyRequests).toEqual([]);
+  await page.getByRole("button", { name: "Tìm nơi khám gần tôi", exact: true }).click();
+  await expect(page.locator(".result-summary")).toContainText("trong 1 km");
+  expect(nearbyRequests).toHaveLength(1);
+  expect(new URL(nearbyRequests[0]).searchParams.get("departmentId")).toBe(FACILITY_DEPARTMENT_ID);
+  expect(new URL(nearbyRequests[0]).searchParams.get("limit")).toBe("5");
+});
+
+for (const screen of [{ width: 390, height: 660 }, { width: 375, height: 600 }]) {
+  test(`nearby mobile prioritizes the first facility and keeps full information available: ${screen.width}`, async ({ page }, testInfo) => {
+    await preparePage(page);
+    await page.setViewportSize(screen);
+    await page.addInitScript(({ accessToken, snapshot }) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+      sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
+      navigator.geolocation.getCurrentPosition = (success) => success({ coords: { latitude: 10.8, longitude: 106.65, accuracy: 20 } });
+    }, { accessToken: TOKEN, snapshot: clinicalAnalysis });
+    await mockMapApis(page, [facility({ distanceKm: 0.8 })], { analysis: clinicalAnalysis });
+    await mockSuccessfulMapStyle(page);
+    const nearbyRequests = [];
+    page.on("request", (request) => { if (request.url().includes("/medical-facilities/nearby")) nearbyRequests.push(request.url()); });
+    await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
+    await expect(page.locator(".explorer-reference-results")).not.toHaveAttribute("open");
+    await expect(page.locator(".explorer-clinical-disclaimer")).toContainText("không phải chẩn đoán");
+    await page.getByRole("button", { name: "Tìm nơi khám gần tôi", exact: true }).click();
+    const card = page.locator(".facility-result-card").first();
+    await expect(card.locator("strong")).toBeInViewport({ ratio: 1 });
+    await expect(card.locator(".explorer-distance")).toBeInViewport({ ratio: 1 });
+    await expect(card.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử" })).toBeInViewport({ ratio: 1 });
+    expect(await page.locator(".explorer-scroll").evaluate((node) => node.scrollTop)).toBe(0);
+    await expect(page.locator(".explorer-location-compact")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cập nhật vị trí" })).toBeInViewport();
+    await expect(page.locator(".explorer-result-info")).not.toHaveAttribute("open");
+    await expect(page.getByLabel("Tìm tên bệnh viện, phòng khám")).toBeHidden();
+    await page.screenshot({ path: testInfo.outputPath(`nearby-simple-${screen.width}.png`) });
+
+    await page.locator(".explorer-result-info summary").click();
+    await expect(page.locator(".explorer-result-info")).toContainText("Khoảng cách là ước tính theo đường thẳng");
+    await expect(page.locator(".explorer-result-info")).toContainText("tối đa 5 cơ sở");
+    await page.screenshot({ path: testInfo.outputPath(`nearby-information-${screen.width}.png`) });
+    await page.locator(".explorer-result-info summary").click();
+    await page.getByRole("button", { name: "Tìm theo tên" }).click();
+    await page.getByLabel("Tìm tên bệnh viện, phòng khám").fill("không tồn tại");
+    await expect(page.locator(".facility-result-card")).toHaveCount(0);
+    await expect(page.locator(".explorer-list")).toContainText("trong các kết quả đã tìm");
+    await page.getByRole("button", { name: "Đóng tìm kiếm" }).click();
+    await expect(card).toBeVisible();
+
+    await page.getByRole("button", { name: "Bản đồ", exact: true }).click();
+    await expect(page.locator(".maplibregl-canvas")).toBeVisible();
+    await page.getByRole("button", { name: "Về vị trí của tôi", exact: true }).click();
+    await page.getByRole("button", { name: "Danh sách", exact: true }).click();
+    expect(nearbyRequests).toHaveLength(1);
+    await expect(page.locator(".result-summary")).toContainText("trong 1 km");
+    await page.getByRole("button", { name: "Kết quả gợi ý", exact: true }).click();
+    await page.getByRole("button", { name: "Trở lại các cơ sở đã tìm" }).click();
+    await expect(card).toBeVisible();
+    expect(nearbyRequests).toHaveLength(1);
+    await card.getByRole("button").click();
+    await expect(page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" })).toBeInViewport({ ratio: 1 });
+    await page.getByRole("button", { name: "Quay lại danh sách", exact: true }).click();
+    await expect(card.getByRole("button")).toBeFocused();
+    const accessibility = await new AxeBuilder({ page }).include(".clinic-sidebar").withTags(["wcag2a", "wcag2aa"]).analyze();
+    expect(accessibility.violations).toEqual([]);
+    expect(await page.locator(".explorer-scroll").evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(false);
+  });
+}
+
+test("failed location refresh keeps prior results with an explicit stale-location notice", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript(({ accessToken, snapshot }) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+    sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
+    let calls = 0;
+    navigator.geolocation.getCurrentPosition = (success, failure) => {
+      if (calls++ === 0) success({ coords: { latitude: 10.8, longitude: 106.65, accuracy: 20 } });
+      else failure({ code: 3 });
+    };
+  }, { accessToken: TOKEN, snapshot: clinicalAnalysis });
+  await mockMapApis(page, [facility({ distanceKm: 0.8 })], { analysis: clinicalAnalysis });
+  await mockSuccessfulMapStyle(page);
+  await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
+  await page.getByRole("button", { name: "Tìm nơi khám gần tôi", exact: true }).click();
+  await expect(page.locator(".facility-result-card")).toHaveCount(1);
+  await page.getByRole("button", { name: "Cập nhật vị trí", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveCount(1);
+  await expect(page.locator(".explorer-location-compact")).toContainText("Đang dùng vị trí trước đó");
+  await expect(page.getByRole("alert")).not.toContainText("GPS");
+  await expect(page.locator(".facility-result-card")).toHaveCount(1);
 });
 
 test("clinical next step is absent when results cannot be restored", async ({ page }) => {
@@ -583,9 +684,12 @@ test("clinical next step is absent when results cannot be restored", async ({ pa
   await mockMapApis(page, [facility()], { analysisError: true });
   await mockSuccessfulMapStyle(page);
   await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
-  await page.getByRole("button", { name: "Kết quả tư vấn", exact: true }).click();
+  await page.getByRole("button", { name: "Kết quả gợi ý", exact: true }).click();
   await expect(page.locator(".explorer-advice").getByRole("alert")).toBeVisible();
   await expect(page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Xem danh sách cơ sở", exact: true }).click();
+  await expect(page.locator(".facility-result-card")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Kết quả gợi ý", exact: true })).toBeVisible();
 });
 
 test("location controls share progress and mobile map shows permission errors", async ({ page }) => {
@@ -599,7 +703,7 @@ test("location controls share progress and mobile map shows permission errors", 
   await mockSuccessfulMapStyle(page);
   await page.goto("/map");
   await expect(page.locator(".locate-button")).toBeVisible();
-  await page.getByRole("button", { name: "Dùng vị trí của tôi", exact: true }).click();
+  await page.getByRole("button", { name: "Tìm nơi khám gần tôi", exact: true }).click();
   await expect(page.locator(".locate-button")).toBeDisabled();
   await expect(page.locator(".explorer-location-button")).toHaveAttribute("aria-busy", "true");
   await expect(page.locator(".explorer-location").getByRole("alert")).toBeVisible();

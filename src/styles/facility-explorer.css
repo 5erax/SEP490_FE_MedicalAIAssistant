@@ -57,7 +57,7 @@
 .facility-explorer .explorer-disclaimer { margin: 20px 0 0; color: var(--map-muted); font-size: .875rem; line-height: 1.6; }
 
 /* Search, filters and location each retain an identifiable purpose. */
-.facility-explorer .explorer-controls { display: grid; gap: 14px; }
+.facility-explorer .explorer-controls { display: grid; gap: 12px; }
 .facility-explorer .explorer-controls button, .facility-explorer .explorer-filters button, .facility-explorer .explorer-back, .facility-explorer .explorer-show-all {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; padding: 10px 14px; border: 1px solid var(--map-line-strong); border-radius: 10px;
@@ -83,6 +83,16 @@
 .facility-explorer .explorer-location h3 { margin: 0; font-size: 1rem; line-height: 1.5; color: var(--map-ink); }
 .facility-explorer .explorer-location-heading p { margin: 4px 0 0; font-size: .875rem; line-height: 1.55; color: var(--map-muted); }
 .facility-explorer .explorer-controls .explorer-location-button { width: 100%; min-height: 52px; font-size: 1rem; border-color: var(--map-teal); background: var(--map-teal); color: var(--map-on-accent); }
+.facility-explorer .explorer-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.facility-explorer .explorer-tools button { flex: 1 1 auto; padding: 10px; font-size: .875rem; }
+.facility-explorer .explorer-tools .explorer-mobile-map-toggle { display: none; }
+.facility-explorer .explorer-location.explorer-location-compact { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 0; margin: 0; background: transparent; border: 0; }
+.facility-explorer .explorer-location-compact .explorer-location-heading { flex: 1 1 190px; align-items: center; gap: 6px; }
+.facility-explorer .explorer-location-compact .explorer-location-icon { width: 24px; height: 24px; background: transparent; }
+.facility-explorer .explorer-location-compact .explorer-location-heading p { margin: 0; }
+.facility-explorer .explorer-location-compact .explorer-location-update { flex: 0 0 auto; min-height: 44px; padding: 8px 4px; border-color: transparent; background: transparent; color: var(--map-teal-strong); text-decoration: underline; text-underline-offset: 3px; font-size: .875rem; }
+.facility-explorer .explorer-location-compact .explorer-notice { flex: 1 1 100%; }
+.facility-explorer .explorer-advice-back { margin-bottom: 12px; padding-inline: 0; border-color: transparent; background: transparent; color: var(--map-teal-strong); }
 .facility-explorer .explorer-notice { padding: 12px 14px; margin: 0; font-size: .875rem; line-height: 1.6; color: var(--map-note-ink); background: var(--map-note-bg); border-radius: 10px; overflow-wrap: anywhere; }
 .facility-explorer .explorer-filters { display: grid; gap: 20px; padding: 20px; background: var(--map-surface); border: 1px solid var(--map-line); border-radius: 16px; }
 .facility-explorer .explorer-filters label { display: grid; gap: 8px; font-size: 1rem; font-weight: 600; color: var(--map-ink); }
@@ -101,6 +111,16 @@
 .facility-explorer.map-clinical-refresh .result-summary { margin-bottom: 16px; padding: 0; }
 .facility-explorer.map-clinical-refresh .result-summary h2 { font-size: 1.1875rem; }
 .facility-explorer.map-clinical-refresh .result-summary span { display: block; margin-top: 4px; color: var(--map-muted); font-size: .875rem; font-weight: 400; }
+.facility-explorer.map-clinical-refresh .result-summary { display: grid; gap: 0; margin-bottom: 10px; }
+.facility-explorer.map-clinical-refresh .result-summary [role="status"] { margin: 0; font-size: .9375rem; line-height: 1.5; color: var(--map-ink); font-weight: 600; }
+.facility-explorer .explorer-result-info summary { display: flex; align-items: center; gap: 6px; width: fit-content; min-height: 44px; list-style: none; cursor: pointer; color: var(--map-teal-strong); font-size: .875rem; text-decoration: underline; text-underline-offset: 3px; }
+.facility-explorer .explorer-result-info summary::-webkit-details-marker { display: none; }
+.facility-explorer .explorer-result-info[open] summary svg { transform: rotate(180deg); }
+.facility-explorer .explorer-result-info > div { margin-bottom: 12px; padding: 12px 14px; background: var(--map-surface); border: 1px solid var(--map-line); border-radius: 12px; }
+.facility-explorer .explorer-result-info p { margin: 0 0 8px; color: var(--map-body); font-size: .875rem; line-height: 1.6; }
+.facility-explorer .explorer-result-info p:last-child { margin-bottom: 0; }
+.facility-explorer .explorer-expand-search { width: 100%; min-height: 48px; padding: 10px 14px; border: 1px solid var(--map-line-strong); border-radius: 12px; color: var(--map-teal-strong); background: var(--map-surface); font-weight: 600; }
+.facility-explorer .facility-card-specialty { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--map-teal-strong); font-size: .875rem; line-height: 1.5; }
 .facility-explorer.map-clinical-refresh .facility-result-card { margin: 0 0 14px; padding: 18px; gap: 10px; border-radius: 14px; border: 1px solid var(--map-line); box-shadow: none; background: var(--map-surface); min-height: 0; }
 .facility-explorer.map-clinical-refresh .facility-result-card.selected { border-color: var(--map-teal); background: var(--map-teal-soft); }
 .facility-explorer.map-clinical-refresh .facility-top { align-items: flex-start; flex-wrap: wrap; gap: 8px 12px; }
@@ -135,6 +155,10 @@
 .facility-explorer .explorer-diagnosis-content { padding-bottom: 16px; }
 .facility-explorer .explorer-diagnosis-content p { margin: 0; }
 .facility-explorer .explorer-chat-context summary { padding: 0; }
+.facility-explorer .explorer-reference-results > summary { padding: 0; font-weight: 600; }
+.facility-explorer .explorer-description h4 { margin: 12px 0 8px; color: var(--map-ink); font-size: 1rem; }
+.facility-explorer .explorer-description .explorer-reason { margin-top: 8px; }
+.facility-explorer .explorer-text-action { min-height: 44px; padding: 8px 0; background: transparent; border: 0; color: var(--map-teal-strong); font-size: .9375rem; line-height: 1.5; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
 .facility-explorer .explorer-advice .explorer-clinical-disclaimer { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--map-note-bg); color: var(--map-note-ink); font-size: .875rem; }
 .facility-explorer .explorer-clinical-disclaimer svg { margin-top: 2px; }
 
@@ -184,12 +208,16 @@
 .facility-explorer .explorer-specialty-nearby .explorer-location-button:disabled { opacity: .7; cursor: wait; }
 .facility-explorer .explorer-specialty-nearby p, .facility-explorer .explorer-nearby-summary p { margin: 10px 0; color: var(--map-muted); font-size: .9375rem; line-height: 1.5; }
 @media (max-width: 900px) {
-  .clinic-page.facility-explorer { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .clinic-page.facility-explorer { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .clinic-page.facility-explorer[data-mobile-view="map"] { grid-template-rows: auto minmax(0, 1fr); }
   .facility-explorer .explorer-mobile-nav { display: flex; grid-row: 1; padding: 6px 12px; gap: 8px; background: var(--map-surface); border-bottom: 1px solid var(--map-line); }
-  .facility-explorer .explorer-mobile-nav button { flex: 1; min-width: 0; min-height: 44px; padding: 8px; background: var(--map-surface); border: 0; border-radius: 8px; color: var(--map-muted); font-size: .9375rem; }
+  .facility-explorer .explorer-mobile-nav button { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 8px; background: var(--map-surface); border: 0; border-radius: 8px; color: var(--map-teal-strong); font-size: .9375rem; }
+  .facility-explorer .explorer-mobile-nav span { align-self: center; margin-left: auto; color: var(--map-muted); font-size: .875rem; }
   .facility-explorer .explorer-mobile-nav [aria-pressed="true"] { background: var(--map-teal-soft); color: var(--map-teal-strong); font-weight: 700; }
   .facility-explorer.map-clinical-refresh .clinic-sidebar, .facility-explorer.map-clinical-refresh .map-stage { grid-row: 2; grid-column: 1; height: 100%; min-height: 0; width: 100%; max-height: none; box-sizing: border-box; }
   .facility-explorer.map-clinical-refresh .clinic-sidebar { border: 0; padding: 0; }
+  .facility-explorer[data-mobile-view="list"] .clinic-sidebar { grid-row: 1; }
+  .facility-explorer .explorer-tools .explorer-mobile-map-toggle { display: inline-flex; }
   .facility-explorer .explorer-scroll { padding: 16px; }
   .facility-explorer .explorer-next-step { padding: 14px 16px max(14px, env(safe-area-inset-bottom)); }
   .facility-explorer .explorer-card { padding: 16px; }

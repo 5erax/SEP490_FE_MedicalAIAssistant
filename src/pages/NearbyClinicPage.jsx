@@ -25,6 +25,7 @@ import FacilityExplorerControls from "../components/nearbyClinic/FacilityExplore
 import useNearbyFacilities from "../hooks/useNearbyFacilities";
 import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
 import { resolveExplorerSideMode } from "../utils/facilityExplorerState";
+import { getNextNearbyRadius, NEARBY_LIMIT } from "../utils/nearbyFacilities";
 
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
@@ -502,6 +503,7 @@ function NearbyClinicPage() {
   const [shareMessage, setShareMessage] = useState("");
   const [userLocation, setUserLocation] = useState(null);
   const [nearbyEnabled, setNearbyEnabled] = useState(false);
+  const [locationOptional, setLocationOptional] = useState(false);
   const [radiusKm, setRadiusKm] = useState("nearest");
   const [nearbyAttempt, setNearbyAttempt] = useState(0);
   const [locating, setLocating] = useState(false);
@@ -973,7 +975,7 @@ function NearbyClinicPage() {
     () => mappableFacilities.map((facility) => `${facility.facilityId}:${facility.longitude}:${facility.latitude}`).join("|"),
     [mappableFacilities],
   );
-  const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
+  const hasActiveFacilitiesWithoutMapData = visibleFacilities.length > 0 && !visibleFacilities.some((facility) => facility.hasValidCoordinates);
   const unavailableRecommendationCount = isClinicalFlow && recommendedFacilityOrder.size > 0
     ? (resolvedRecommendationContext?.recommendedFacilities ?? [])
       .filter((facility) => facility.isActive === false)
@@ -1294,7 +1296,7 @@ function NearbyClinicPage() {
     if (locatingRef.current) return;
     setLocationError("");
     if (!navigator.geolocation) {
-      setLocationError("Trình duyệt không hỗ trợ định vị.");
+      setLocationError("Chưa thể dùng vị trí trong trình duyệt này. Bạn vẫn có thể tìm cơ sở theo tên hoặc chuyên khoa.");
       return;
     }
 
@@ -1310,6 +1312,10 @@ function NearbyClinicPage() {
         setUserLocation({ lat: latitude, lng: longitude, accuracy });
         setNearbyAttempt((value) => value + 1);
         setNearbyEnabled(true);
+        setLocationOptional(false);
+        // Starting from the no-location specialty list still uses bounded search.
+        // Keep an explicitly chosen radius, as well as the user's other filters.
+        if (!nearbyEnabled && isClinicalFlow && selectedDepartmentId !== "all" && radiusKm === "nearest") setRadiusKm("auto");
         if (options.departmentId) {
           setSelectedDepartmentId(options.departmentId);
           setSelectedType("all");
@@ -1318,6 +1324,11 @@ function NearbyClinicPage() {
           setRadiusKm("auto");
           setSideMode("list");
           setMobileView("list");
+          savedListScrollRef.current = 0;
+          window.requestAnimationFrame(() => {
+            if (explorerScrollRef.current) explorerScrollRef.current.scrollTop = 0;
+            explorerScrollRef.current?.querySelector(".explorer-screen-title")?.focus({ preventScroll: true });
+          });
         }
         setSidebarView("hospital-list");
         setSelectedFacility(null);
@@ -1337,8 +1348,10 @@ function NearbyClinicPage() {
         locatingRef.current = false;
         setLocating(false);
         setLocationError(error.code === 1
-          ? "Bạn chưa cho phép định vị. Hãy bật quyền vị trí để tìm cơ sở gần bạn."
-          : "Không thể lấy vị trí. Hãy kiểm tra GPS và thử lại.");
+          ? "Chưa được phép dùng vị trí của bạn. Bạn có thể cho phép truy cập vị trí trong cài đặt trình duyệt rồi thử lại."
+          : error.code === 3
+            ? "Việc xác định vị trí mất nhiều thời gian. Bạn có thể thử lại hoặc xem cơ sở mà không dùng vị trí."
+            : "Chưa xác định được vị trí của bạn. Hãy kiểm tra cài đặt vị trí trên thiết bị rồi thử lại.");
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
@@ -1601,6 +1614,7 @@ function NearbyClinicPage() {
     setSideMode(mode);
     window.requestAnimationFrame(() => {
       if (explorerScrollRef.current) explorerScrollRef.current.scrollTop = mode === "list" ? savedListScrollRef.current : 0;
+      if (mode === "advice") explorerScrollRef.current?.querySelector(".explorer-advice h2")?.focus({ preventScroll: true });
     });
   };
 
@@ -1627,43 +1641,71 @@ function NearbyClinicPage() {
     lastFittedBoundsRef.current = "";
   };
 
+  const recommendedDepartment = resolvedRecommendationContext?.recommendedDepartment;
+  const departmentName = departments.find((department) => department.id === selectedDepartmentId)?.name
+    || (recommendedDepartment?.departmentId === selectedDepartmentId ? recommendedDepartment.departmentName : "");
+  const hasNearbyResults = nearbyEnabled && recommendedDepartment?.departmentId === selectedDepartmentId;
+  const browseSpecialtyFacilities = () => {
+    if (hasNearbyResults) {
+      changeSideMode("list");
+      return;
+    }
+    setSelectedDepartmentId(recommendedDepartment?.departmentId || "all");
+    setSelectedType("all");
+    setSearchText("");
+    setDebouncedSearch("");
+    setNearbyEnabled(false);
+    setUserLocation(null);
+    setLocationOptional(true);
+    setLocationError("");
+    setSelectedFacility(null);
+    setSideMode("list");
+    setMobileView("list");
+    savedListScrollRef.current = 0;
+    window.requestAnimationFrame(() => {
+      if (explorerScrollRef.current) explorerScrollRef.current.scrollTop = 0;
+      explorerScrollRef.current?.querySelector(".explorer-screen-title")?.focus({ preventScroll: true });
+    });
+  };
+  const handleMapLocate = () => {
+    if (!userLocation) return handleLocateMe();
+    // Re-centering the map must not reset filters, close details or fetch again.
+    mapInteractedRef.current = true;
+    mapRef.current?.stop?.();
+    mapRef.current?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 14, duration: prefersReducedMotion() ? 0 : 700 });
+  };
+  const resultError = nearbyEnabled ? nearby.error : facilities.length === 0 ? apiNotice : "";
+  const resultRadius = nearbyEnabled && !nearby.loading && !nearby.error && Number.isFinite(nearby.radiusKm) ? nearby.radiusKm : null;
+  const nextRadius = resultRadius ? radiusKm === "auto" && resultRadius === 5 ? 10 : getNextNearbyRadius(resultRadius) : null;
+  const resultSummary = `Đang hiển thị ${visibleFacilities.length} cơ sở${resultRadius ? ` trong ${resultRadius} km` : ""}${selectedType !== "all" ? ` · ${TYPE_LABELS[selectedType] || selectedType}` : ""}`;
+
   return (
-    <main className={`clinic-page map-clinical-refresh facility-explorer${isClinicalFlow ? " is-clinical-map-flow" : ""}`} data-mobile-view={mobileView} data-location-panel={sidebarView === "hospital-list" && sideMode === "list"}>
+    <main className={`clinic-page map-clinical-refresh facility-explorer${isClinicalFlow ? " is-clinical-map-flow" : ""}`} data-mobile-view={mobileView} data-location-panel={sidebarView === "hospital-list" && (sideMode === "list" || (sideMode === "advice" && clinicalStatus === "ready" && Boolean(recommendedDepartment?.departmentId)))}>
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list" onClick={showFacilityList}>Bỏ qua bản đồ, đến danh sách cơ sở</a>
-      <nav className="explorer-mobile-nav" aria-label="Chế độ xem">
-        <button type="button" aria-pressed={mobileView === "list"} onClick={() => setMobileView("list")}>Danh sách</button>
-        <button type="button" aria-pressed={mobileView === "map"} onClick={() => setMobileView("map")}>Bản đồ</button>
+      <nav className="explorer-mobile-nav" aria-label="Chế độ xem" hidden={mobileView !== "map"}>
+        <button type="button" onClick={() => setMobileView("list")}><ArrowLeft size={18} aria-hidden="true" /> {sidebarView !== "hospital-list" ? "Chi tiết cơ sở" : sideMode === "advice" ? "Kết quả gợi ý" : "Danh sách"}</button>
+        <span>Bản đồ cơ sở y tế</span>
       </nav>
       <aside className={`clinic-sidebar sidebar-view-${sidebarView}`}>
         <div className="explorer-scroll" ref={explorerScrollRef}>
         {sidebarView === "hospital-list" && <>
-          <a className="explorer-home" href="/dashboard"><House size={16} aria-hidden="true" /> Trang chủ</a>
+          {sideMode !== "filters" && (isClinicalFlow && sideMode === "list"
+            ? <button type="button" className="explorer-back explorer-advice-back" onClick={() => changeSideMode("advice")}><ArrowLeft size={18} aria-hidden="true" /> Kết quả gợi ý</button>
+            : <a className="explorer-home" href="/dashboard"><House size={16} aria-hidden="true" /> Trang chủ</a>)}
           {sideMode !== "advice" && <FacilityExplorerControls
             search={searchText} onSearch={handleSearchChange} suggestions={searchSuggestions} onSuggestion={openFacilityDetail}
             departments={departments} departmentsLoading={departmentsLoading} selectedDepartmentId={selectedDepartmentId}
             selectedType={selectedType} typeOptions={activeTypeOptions} radiusKm={radiusKm}
             filtersOpen={sideMode === "filters"} onOpenFilters={() => changeSideMode("filters")} onCloseFilters={() => changeSideMode("list")} onApplyFilters={applyExplorerFilters}
             hasLocation={nearbyEnabled && Boolean(userLocation)} locating={locating} onLocate={handleLocateMe}
-            locationError={locationError} accuracy={userLocation?.accuracy} nearbyError={nearbyEnabled ? nearby.error : ""}
-            onRetry={() => setNearbyAttempt((value) => value + 1)} loading={nearbyEnabled ? nearby.loading : loadingFacilities}
+            locationError={locationError} accuracy={userLocation?.accuracy}
+            loading={nearbyEnabled ? nearby.loading : loadingFacilities} departmentName={departmentName}
+            compactSearch={isClinicalFlow} locationOptional={locationOptional} onShowMap={() => setMobileView("map")}
           />}
-          {sideMode !== "filters" && isClinicalFlow && <nav className="explorer-tabs" aria-label="Nội dung cơ sở y tế">
-            <button type="button" aria-pressed={sideMode === "list"} onClick={() => changeSideMode("list")}>Cơ sở y tế</button>
-            <button type="button" aria-pressed={sideMode === "advice"} onClick={() => changeSideMode("advice")}>Kết quả tư vấn</button>
-          </nav>}
         </>}
         <div className="explorer-list" hidden={sidebarView !== "hospital-list" || sideMode !== "list"}>
-          {nearbyEnabled && !nearby.error && <p className="explorer-order" role="status">{radiusKm === "auto" && nearby.loading
-            ? "Đang tìm cơ sở có chuyên khoa phù hợp trong phạm vi 1 → 3 → 5 km…"
-            : `Gần → xa · Khoảng cách đường thẳng${nearby.radiusKm && nearby.radiusKm !== "nearest" ? ` · Trong ${nearby.radiusKm} km` : ""}`}</p>}
-          {nearbyEnabled && radiusKm === "auto" && !nearby.loading && !nearby.error && <div className="explorer-nearby-summary">
-            <p>{nearby.items.length
-              ? `Tối đa 5 cơ sở gần nhất có ${resolvedRecommendationContext?.recommendedDepartment?.departmentId === selectedDepartmentId ? resolvedRecommendationContext.recommendedDepartment.departmentName : "chuyên khoa bạn chọn"} trong phạm vi ${nearby.radiusKm} km.`
-              : "Chưa tìm thấy cơ sở có chuyên khoa này trong dữ liệu hệ thống ở phạm vi 5 km."}</p>
-            {!nearby.items.length && <button type="button" className="explorer-back" onClick={() => setRadiusKm(10)}>Mở rộng lên 10 km</button>}
-          </div>}
         {apiNotice && !nearbyEnabled && facilities.length > 0 && <div className="sidebar-note">{apiNotice}</div>}
         {isClinicalFlow && !loadingFacilities && unavailableRecommendationCount > 0 && (
           <div className="sidebar-note" role="status">
@@ -1672,7 +1714,7 @@ function NearbyClinicPage() {
         )}
         {hasActiveFacilitiesWithoutMapData && (
           <div className="sidebar-note">
-            Cơ sở y tế hiện chưa có tọa độ hợp lệ. Quản trị viên cần cập nhật vĩ độ và kinh độ để bản đồ hiển thị điểm khám.
+            Chưa có vị trí trên bản đồ cho các cơ sở này. Bạn vẫn có thể xem địa chỉ và thông tin liên hệ trong danh sách.
           </div>
         )}
 
@@ -1682,19 +1724,34 @@ function NearbyClinicPage() {
           loading={nearbyEnabled ? nearby.loading : loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
           onViewDetail={openFacilityDetail}
-          emptyMessage={nearbyEnabled && nearby.error ? nearby.error
-            : nearbyEnabled && radiusKm === "auto" && nearby.items.length > 0
-              ? "Chưa có cơ sở khớp bộ lọc trong tối đa 5 kết quả gần nhất đã tải. Hãy đổi bộ lọc hoặc chọn phạm vi khác."
-              : !nearbyEnabled && apiNotice ? apiNotice : undefined}
+          error={resultError}
+          summary={resultSummary}
+          specialtyId={selectedDepartmentId} specialtyName={departmentName}
+          resultDetails={<>
+            <p>{nearbyEnabled
+              ? "Các cơ sở được sắp xếp từ gần đến xa theo vị trí bạn đã cung cấp. Khoảng cách là ước tính theo đường thẳng; quãng đường đi thực tế có thể dài hơn."
+              : "Danh sách dựa trên chuyên khoa và bộ lọc bạn chọn. Chưa dùng vị trí của bạn để tìm cơ sở ở gần."}</p>
+            {nearbyEnabled && radiusKm === "auto" && <p>Tìm lần lượt trong 1, 3 rồi 5 km và dừng ở phạm vi đầu tiên có kết quả. Hiển thị tối đa 5 cơ sở; bạn có thể chọn Tìm xa hơn để xem thêm lựa chọn.</p>}
+            {nearbyEnabled && radiusKm !== "auto" && radiusKm !== "nearest" && <p>Hiển thị tối đa {NEARBY_LIMIT} cơ sở trong phạm vi đã chọn.</p>}
+            {!nearbyEnabled && radiusKm !== "nearest" && <p>Phạm vi bạn chọn chỉ áp dụng khi dùng vị trí.</p>}
+            {nearbyEnabled && (searchText.trim() || selectedType !== "all") && <p>Từ khóa và loại cơ sở đang được lọc trong các kết quả tìm được, không phải toàn bộ cơ sở trong khu vực.</p>}
+            <p>Dữ liệu hiện có có thể chưa bao gồm mọi cơ sở. Có chuyên khoa phù hợp không đảm bảo có lịch khám hoặc bác sĩ tiếp nhận ngay.</p>
+          </>}
+          emptyMessage={nearbyEnabled && nearby.items.length > 0
+            ? "Chưa có cơ sở khớp từ khóa hoặc loại cơ sở trong các kết quả đã tìm. Bạn có thể đổi bộ lọc, từ khóa hoặc tìm xa hơn."
+            : resultRadius ? `Chưa tìm thấy cơ sở phù hợp trong ${resultRadius} km từ dữ liệu hiện có. Bạn có thể tìm xa hơn hoặc đổi bộ lọc.` : undefined}
           onRetry={nearbyEnabled && nearby.error ? () => setNearbyAttempt((value) => value + 1) : !nearbyEnabled && apiNotice && facilities.length === 0 ? () => { setLoadingFacilities(true); setCatalogAttempt((value) => value + 1); } : undefined}
+          onChangeFilters={() => changeSideMode("filters")}
+          onExpand={nextRadius ? () => setRadiusKm(nextRadius) : undefined}
+          expandLabel={`Tìm xa hơn · trong ${nextRadius} km`}
         />
 
           <p className="explorer-disclaimer">Thông tin tham khảo. Vui lòng gọi cơ sở trước khi đến.</p>
         </div>
         {sidebarView === "hospital-list" && sideMode === "advice" && <>
-          <button type="button" className="explorer-back" onClick={() => changeSideMode("list")}><ArrowLeft size={16} /> Quay lại danh sách</button>
           <ClinicalRecommendationPanel context={resolvedRecommendationContext} status={clinicalStatus} notice={effectiveClinicalNotice} chatContext={chatContext}
             locating={locating} locationError={locationError}
+            onBrowseFacilities={browseSpecialtyFacilities} hasNearbyResults={hasNearbyResults}
             onFindNearby={() => handleLocateMe({ departmentId: resolvedRecommendationContext?.recommendedDepartment?.departmentId })} />
         </>}
 
@@ -1739,7 +1796,7 @@ function NearbyClinicPage() {
                 {detailFacility.website && <a href={detailFacility.website} target="_blank" rel="noreferrer"><Globe2 size={20} aria-hidden="true" /><span>Website</span></a>}
               </div>
               {!detailFacility.phone && <p className="facility-action-message">Cơ sở chưa có số điện thoại.</p>}
-              {!detailFacility.hasValidCoordinates && <p className="facility-action-message">Chưa có tọa độ để chỉ đường đến cơ sở này.</p>}
+              {!detailFacility.hasValidCoordinates && <p className="facility-action-message">Chưa có vị trí để chỉ đường đến cơ sở này.</p>}
               {shareMessage && <p className="facility-action-message" role="status">{shareMessage}</p>}
 
               <section className="explorer-card explorer-facility-facts" aria-labelledby="facility-facts-title">
@@ -1895,7 +1952,7 @@ function NearbyClinicPage() {
           </section>
         )}
         </div>
-        {sidebarView === "hospital-list" && sideMode === "advice" && clinicalStatus === "ready" && (
+        {isClinicalFlow && clinicalStatus === "ready" && ((sidebarView === "hospital-list" && sideMode === "advice") || sidebarView === "hospital-detail") && (
           <ClinicalRecommendationAction context={resolvedRecommendationContext} />
         )}
       </aside>
@@ -1912,7 +1969,7 @@ function NearbyClinicPage() {
           viewState={viewState}
           hidePopup={detailPanelOpen}
           onError={handleMapError}
-          onLocate={handleLocateMe}
+          onLocate={handleMapLocate}
           locating={locating}
           locationError={locationError}
           onMapLoad={() => setMapStatus("ready")}

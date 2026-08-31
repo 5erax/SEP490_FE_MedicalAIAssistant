@@ -574,7 +574,7 @@ export default function FacilityMap({
     <section className="map-panel" aria-labelledby="interactive-map-title" aria-describedby="interactive-map-description">
       <h2 className="sr-only" id="interactive-map-title">Bản đồ tương tác các cơ sở y tế</h2>
       <p className="sr-only" id="interactive-map-description">
-        Bản đồ hiển thị các cơ sở có tọa độ hợp lệ. Danh sách cơ sở bên cạnh cung cấp cùng thông tin ở dạng văn bản.
+        Bản đồ hiển thị các cơ sở đã có thông tin vị trí. Bạn cũng có thể xem địa chỉ và thông tin liên hệ trong danh sách cơ sở.
       </p>
       {mapStatus !== "error" && (
         <MapErrorBoundary key={mapRenderKey} onError={onError}>
@@ -662,11 +662,11 @@ export default function FacilityMap({
       )}
       {mapStatus === "ready" && (
         <div className="explorer-map-location">
-          {locationError && <p className="explorer-map-location-feedback explorer-notice" role="alert">{locationError}</p>}
-          {!locationError && userLocation?.accuracy > 1000 && <p className="explorer-map-location-feedback explorer-notice" role="status">Sai số vị trí khoảng {(userLocation.accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</p>}
+          {locationError && <p className="explorer-map-location-feedback explorer-notice" role="alert">{locationError}{userLocation && " Bản đồ vẫn đang dùng vị trí trước đó."}</p>}
+          {!locationError && userLocation?.accuracy > 1000 && <p className="explorer-map-location-feedback explorer-notice" role="status">Vị trí có thể chưa chính xác. Bạn có thể cập nhật vị trí trong danh sách cơ sở.</p>}
           <button className="locate-button" type="button" onClick={onLocate} disabled={locating} aria-busy={locating}>
             {locating ? <LoaderCircle className="explorer-spinner" size={24} aria-hidden="true" /> : <LocateFixed size={24} aria-hidden="true" />}
-            <span>{locating ? "Đang định vị…" : "Vị trí của tôi"}</span>
+            <span>{locating ? "Đang xác định vị trí…" : userLocation ? "Về vị trí của tôi" : "Vị trí của tôi"}</span>
           </button>
         </div>
       )}
