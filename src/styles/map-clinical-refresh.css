@@ -392,21 +392,62 @@
 }
 
 .map-clinical-refresh .user-marker {
-  border-color: #ffffff;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
   background: rgba(12, 124, 120, 0.28);
+  box-shadow: 0 10px 26px rgba(8, 75, 72, 0.24);
 }
 
 .map-clinical-refresh .user-marker span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
   background: var(--map-teal);
 }
 
-.map-clinical-refresh .locate-button {
-  width: 46px;
-  height: 46px;
-  border: 2px solid #ffffff;
-  background: var(--map-teal);
+.map-clinical-refresh .map-panel > .locate-button {
+  right: 18px;
+  bottom: 14px;
+  min-width: 148px;
+  height: 54px;
+  display: inline-flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #0b918c 0%, #087a76 100%);
   color: #ffffff;
-  box-shadow: 0 10px 26px rgba(8, 75, 72, 0.24);
+  padding: 0 20px 0 17px;
+  box-shadow:
+    0 14px 28px rgba(8, 75, 72, 0.28),
+    0 2px 7px rgba(8, 75, 72, 0.16);
+}
+
+.map-clinical-refresh .map-panel > .locate-button .locate-button-label {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.map-clinical-refresh .map-panel > .locate-button svg {
+  position: relative;
+  z-index: 1;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+}
+
+.map-clinical-refresh .maplibregl-ctrl-attrib {
+  display: none;
 }
 
 .map-clinical-refresh .map-top-controls {

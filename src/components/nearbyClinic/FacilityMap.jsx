@@ -800,6 +800,7 @@ export default function FacilityMap({
       )}
       {mapStatus === "ready" && (
         <button className="locate-button" type="button" onClick={onLocate} aria-label="Định vị tôi">
+          <span className="locate-button-label">Vị trí của tôi</span>
           <LocateFixed size={18} aria-hidden="true" />
         </button>
       )}
