@@ -1,5 +1,32 @@
 export const DEFAULT_NEARBY_RADIUS_KM = 7;
 export const NEARBY_LIMIT = 20;
+export const SPECIALTY_NEARBY_RADII = [1, 3, 5];
+
+// A bounded, read-only search. Errors must never be treated as an empty radius.
+export async function findNearbySpecialtyFacilities(fetchNearby, filters, signal) {
+  for (const radiusKm of SPECIALTY_NEARBY_RADII) {
+    signal?.throwIfAborted();
+    const response = await fetchNearby({ ...filters, radiusKm, limit: 5 }, signal);
+    signal?.throwIfAborted();
+    if (response?.success === false || !Array.isArray(response?.data)) {
+      throw new Error("Invalid nearby response");
+    }
+    const items = response.data;
+    if (items.some((item) => !item || !(item.id || item.facilityId) || item.isActive === false
+      || item.latitude == null || item.longitude == null
+      || String(item.latitude).trim() === "" || String(item.longitude).trim() === ""
+      || !Number.isFinite(Number(item.latitude)) || Math.abs(Number(item.latitude)) > 90
+      || !Number.isFinite(Number(item.longitude)) || Math.abs(Number(item.longitude)) > 180
+      || !Number.isFinite(item.distanceKm) || item.distanceKm < 0 || item.distanceKm > radiusKm
+      || (filters.departmentId && filters.departmentId !== "all"
+        && (!Array.isArray(item.departments) || !item.departments.some((department) => String(department?.departmentId).toLowerCase() === String(filters.departmentId).toLowerCase()))))) {
+      throw new Error("Invalid nearby facility");
+    }
+    if (items.length || radiusKm === SPECIALTY_NEARBY_RADII.at(-1)) {
+      return { items: [...items].sort((a, b) => a.distanceKm - b.distanceKm).slice(0, 5), radiusKm };
+    }
+  }
+}
 // The active endpoint returns the complete, unpaginated facility catalog.
 // Rank it without imposing a radius; omit facilities without usable coordinates.
 export function rankNearestFacilities(items, latitude, longitude) {

@@ -601,29 +601,6 @@
   }
 }
 
-html[data-theme="dark"] .admin-operator .clinical-catalog-panel {
-  --clinical-ink: #ecf7f4;
-  --clinical-muted: #a9bcba;
-  --clinical-line: rgba(211, 232, 225, 0.14);
-  background:
-    radial-gradient(circle at 100% 0, rgba(31, 105, 91, 0.2), transparent 30%),
-    #13211f;
-}
-
-html[data-theme="dark"] .admin-operator :is(
-  .clinical-catalog-filter-card,
-  .clinical-catalog-search-control,
-  .clinical-catalog-filter-card .custom-select-trigger,
-  .clinical-catalog-result-summary,
-  .clinical-question-card
-) {
-  background: #172825;
-}
-
-html[data-theme="dark"] .admin-operator .clinical-question-card-meta dd {
-  color: #c7dcd8;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .admin-operator .clinical-question-card,
   .admin-operator .clinical-catalog-search-control {

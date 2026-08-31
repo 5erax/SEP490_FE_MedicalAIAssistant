@@ -4,7 +4,6 @@
 @import "./public-surfaces.css";
 @import "./ux-foundation.css" layer(utilities);
 @import "./personalization.css" layer(overrides);
-@import "./dark-mode.css";
 @import "./loading-system.css";
 
 .ui-button.analysis-history-button {

@@ -114,16 +114,6 @@
 .clinical-result-list > li { min-width: 0; }
 .clinical-transcript { display: grid; gap: 12px; }
 .clinical-transcript .clinical-section-title { margin: 0 0 4px; font-size: 14px; color: var(--note-ink); }
-html[data-theme="dark"] :is(.clinical-note, .clinical-disclosure, .clinical-department, .clinical-results) {
-  --note-ink: #e1efed;
-  --note-muted: #b1c9c4;
-  --note-accent: #8cdbd4;
-  --note-line: #3b5b56;
-  --note-soft: #1a3532;
-  --note-warning-ink: #f4d49d;
-  --note-warning-line: #75613d;
-  --note-warning-soft: #332a1b;
-}
 @media (prefers-reduced-motion: reduce) {
   .clinical-disclosure .clinical-disclosure-chevron { transition: none; }
 }

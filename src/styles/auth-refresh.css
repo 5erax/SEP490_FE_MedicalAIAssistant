@@ -550,55 +550,6 @@
   outline-offset: 3px;
 }
 
-html[data-theme="dark"] .auth-mode-clinical {
-  --auth-navy: #e5f4f0;
-  --auth-navy-deep: #f3faf8;
-  --auth-teal: #79d5ca;
-  --auth-teal-dark: #a4e5dc;
-  --auth-mint: #142b2b;
-  --auth-canvas: #0e181b;
-  --auth-paper: #16272b;
-  --auth-text: #ecf6f3;
-  --auth-muted: #b9cbc7;
-  --auth-line: #3d5652;
-}
-
-html[data-theme="dark"] .auth-mode-clinical .nav-care {
-  background: rgba(14, 24, 27, 0.95);
-}
-
-html[data-theme="dark"] .auth-mode-clinical .auth-side-panel {
-  background:
-    radial-gradient(circle at 95% 5%, rgba(121, 213, 202, 0.07), transparent 34%),
-    #142b2b;
-}
-
-html[data-theme="dark"] .auth-mode-clinical .auth-side-panel p:not(.eyebrow, .auth-privacy-note),
-html[data-theme="dark"] .auth-mode-clinical .auth-side-panel p.auth-privacy-note {
-  color: var(--auth-muted);
-}
-
-html[data-theme="dark"] .auth-mode-clinical .auth-step-list,
-html[data-theme="dark"] .auth-mode-clinical .auth-step-list div + div {
-  border-color: var(--auth-line);
-}
-
-html[data-theme="dark"] .auth-mode-clinical .auth-step-list span,
-html[data-theme="dark"] .auth-mode-clinical .auth-brand .brand-mark {
-  background: #1c3738;
-}
-
-html[data-theme="dark"] .auth-mode-clinical .auth-card-clean,
-html[data-theme="dark"] .auth-mode-clinical .clean-field :is(input, select) {
-  background: var(--auth-paper);
-  color: var(--auth-text);
-}
-
-html[data-theme="dark"] .auth-mode-clinical .auth-provider-note {
-  background: #1a3033;
-  color: var(--auth-muted);
-}
-
 @media (max-width: 920px) {
   .auth-mode-clinical .auth-layout-clean {
     width: min(680px, calc(100% - 32px));
@@ -713,15 +664,6 @@ html[data-theme="dark"] .auth-mode-clinical .auth-provider-note {
 .auth-mode-reset .clean-field-error {
   color: #9c3f2b;
   font-weight: 800;
-}
-
-html[data-theme="dark"] .auth-mode-reset .auth-field-group {
-  border-color: var(--auth-line);
-  background: rgba(255, 255, 255, 0.015);
-}
-
-html[data-theme="dark"] .auth-mode-reset .clean-field-error {
-  color: #ffb9a4;
 }
 
 @media (max-width: 920px) {
@@ -1011,24 +953,6 @@ html[data-theme="dark"] .auth-mode-reset .clean-field-error {
   border: 1px solid #f3b7ae;
   background: var(--signup-danger-soft);
   color: #8f2319;
-}
-
-html[data-theme="dark"] .auth-mode-signup {
-  --signup-surface: #18292d;
-  --signup-surface-soft: #142428;
-  --signup-border: #31494a;
-  --signup-border-strong: #496361;
-  --signup-text: #e9f5f2;
-  --signup-muted: #afc1bd;
-}
-
-html[data-theme="dark"] .auth-mode-signup .auth-field-group,
-html[data-theme="dark"] .auth-mode-signup .auth-consent {
-  background: var(--signup-surface-soft);
-}
-
-html[data-theme="dark"] .auth-mode-signup .clean-field.has-error :is(input, select) {
-  background: #2b2020;
 }
 
 @media (max-width: 1100px) {

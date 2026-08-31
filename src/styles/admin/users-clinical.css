@@ -592,45 +592,6 @@
   }
 }
 
-html[data-theme="dark"] .admin-operator .admin-users-panel {
-  --users-ink: #edf8f6;
-  --users-muted: #b2c7c4;
-  --users-teal: #72d6cf;
-  --users-teal-dark: #93ded8;
-  --users-line: #36514e;
-  --users-soft: #1c302c;
-}
-
-html[data-theme="dark"] .admin-operator .admin-users-heading {
-  background:
-    linear-gradient(120deg, rgba(28, 66, 61, 0.9), rgba(23, 39, 36, 0.98) 64%),
-    #172724;
-}
-
-html[data-theme="dark"] .admin-operator :is(
-  .admin-users-filter-card,
-  .admin-users-search-control,
-  .admin-user-card,
-  .admin-users-reload
-) {
-  background: #172724;
-}
-
-html[data-theme="dark"] .admin-operator .admin-user-card:hover {
-  background: #203632;
-}
-
-html[data-theme="dark"] .admin-operator .admin-user-avatar,
-html[data-theme="dark"] .admin-operator .admin-users-filter-heading > span {
-  background: #24433e;
-}
-
-html[data-theme="dark"] .admin-operator .admin-user-card .admin-user-delete-btn {
-  border-color: #de7770;
-  background: #3c2422;
-  color: #ffc4bf;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .admin-operator .admin-user-card,
   .admin-operator .admin-user-delete-btn {

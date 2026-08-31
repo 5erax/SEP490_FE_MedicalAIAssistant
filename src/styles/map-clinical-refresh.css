@@ -963,38 +963,6 @@
   }
 }
 
-[data-theme="dark"] .map-clinical-refresh {
-  --map-ink: #e7f2ef;
-  --map-muted: #aec3bf;
-  --map-subtle: #8fa6a2;
-  --map-teal: #55c3b9;
-  --map-teal-strong: #8bd9d1;
-  --map-teal-soft: #153b39;
-  --map-jade: #214b46;
-  --map-surface: #102d2f;
-  --map-surface-soft: #143638;
-  --map-canvas: #0b2426;
-  --map-line: #355b56;
-  --map-line-strong: #52766f;
-  --map-focus: #f2ba62;
-  --map-danger: #ffaaa0;
-  --map-danger-line: #8b504c;
-  --map-danger-soft: #4a2525;
-  color-scheme: dark;
-}
-
-[data-theme="dark"] .map-clinical-refresh .clinic-sidebar,
-[data-theme="dark"] .map-clinical-refresh .facility-detail-topbar,
-[data-theme="dark"] .map-clinical-refresh .doctor-detail-topbar,
-[data-theme="dark"] .map-clinical-refresh .map-ai-header,
-[data-theme="dark"] .map-clinical-refresh .map-ai-composer {
-  background: rgba(16, 45, 47, 0.96);
-}
-
-[data-theme="dark"] .map-clinical-refresh .map-status-overlay {
-  background: rgba(11, 36, 38, 0.92);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .map-clinical-refresh *,
   .map-clinical-refresh *::before,

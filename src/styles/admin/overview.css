@@ -826,37 +826,6 @@
   }
 }
 
-html[data-theme="dark"] .admin-operator .admin-overview {
-  --overview-ink: #edf8f6;
-  --overview-muted: #b2c7c4;
-  --overview-teal: #72d6cf;
-  --overview-teal-dark: #93ded8;
-  --overview-line: #36514e;
-  --overview-surface: #172724;
-}
-
-html[data-theme="dark"] .admin-operator .admin-overview-heading {
-  background:
-    linear-gradient(120deg, rgba(28, 66, 61, 0.9), rgba(23, 39, 36, 0.98) 62%),
-    var(--overview-surface);
-}
-
-html[data-theme="dark"] .admin-operator .admin-overview-source-icon,
-html[data-theme="dark"] .admin-operator .admin-overview-card-icon,
-html[data-theme="dark"] .admin-operator .admin-overview-chart-icon,
-html[data-theme="dark"] .admin-operator .admin-overview-attention-icon {
-  background: #24433e;
-}
-
-html[data-theme="dark"] .admin-operator .admin-overview-card:hover {
-  background: #203632;
-}
-
-html[data-theme="dark"] .admin-operator .admin-overview-loading {
-  background: linear-gradient(90deg, #324b47, #46635e, #324b47);
-  background-size: 200% 100%;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .admin-operator .admin-overview-loading {
     animation: none;

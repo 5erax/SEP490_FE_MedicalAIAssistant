@@ -704,17 +704,3 @@
     flex-direction: column;
   }
 }
-
-html[data-theme="dark"] .admin-operator :is(
-  .subscription-plan-heading,
-  .consultation-catalog-header,
-  .lab-indicator-list .lab-page-heading,
-  .consultation-filter-card,
-  .lab-indicator-list .lab-filter-card,
-  .consultation-result-head,
-  .lab-indicator-list .lab-result-summary,
-  .admin-payment-panel
-) {
-  border-color: rgba(164, 207, 195, 0.2);
-  background: #172825;
-}

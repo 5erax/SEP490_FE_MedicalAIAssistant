@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { medicalFacilitiesApi } from "../services/facilityService";
-import { rankNearestFacilities } from "../utils/nearbyFacilities";
+import { findNearbySpecialtyFacilities, rankNearestFacilities } from "../utils/nearbyFacilities";
 const EMPTY_ITEMS = [];
 
 export default function useNearbyFacilities(location, radiusKm, departmentId, attempt) {
@@ -12,21 +12,29 @@ export default function useNearbyFacilities(location, radiusKm, departmentId, at
     if (!key) return;
     let active = true;
     const controller = new AbortController();
-    const request = radiusKm === "nearest"
+    const timeoutId = radiusKm === "auto" ? setTimeout(() => controller.abort(), 20_000) : null;
+    const request = radiusKm === "auto"
+      ? findNearbySpecialtyFacilities(medicalFacilitiesApi.nearby, { latitude, longitude, departmentId }, controller.signal)
+      : radiusKm === "nearest"
       ? medicalFacilitiesApi.active({ departmentId: departmentId === "all" ? undefined : departmentId }, { signal: controller.signal, cache: "no-store" })
       : medicalFacilitiesApi.nearby({ latitude, longitude, radiusKm, departmentId }, controller.signal);
     request
       .then((response) => {
-        if (!Array.isArray(response?.data)) throw new Error("Invalid nearby response");
+        if (radiusKm === "auto") {
+          if (active) setResult({ key, items: response.items, radiusKm: response.radiusKm, error: "" });
+          return;
+        }
+        if (response?.success === false || !Array.isArray(response?.data)) throw new Error("Invalid nearby response");
         const items = radiusKm === "nearest" ? rankNearestFacilities(response.data, latitude, longitude) : response.data;
-        if (active) setResult({ key, items, error: "" });
+        if (active) setResult({ key, items, radiusKm, error: "" });
       })
       .catch(() => {
         if (active) setResult({ key, items: [], error: "Không thể tải cơ sở gần bạn. Vui lòng thử lại." });
-      });
-    return () => { active = false; controller.abort(); };
+      })
+      .finally(() => clearTimeout(timeoutId));
+    return () => { active = false; clearTimeout(timeoutId); controller.abort(); };
   }, [key, latitude, longitude, radiusKm, departmentId]);
   // Never label results for an old radius/department as the current search.
   const current = Boolean(key) && result.key === key;
-  return { items: current ? result.items : EMPTY_ITEMS, error: current ? result.error : "", loading: Boolean(key) && !current };
+  return { items: current ? result.items : EMPTY_ITEMS, radiusKm: current ? result.radiusKm : null, error: current ? result.error : "", loading: Boolean(key) && !current };
 }

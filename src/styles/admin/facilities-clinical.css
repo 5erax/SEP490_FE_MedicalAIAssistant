@@ -464,32 +464,6 @@
   }
 }
 
-html[data-theme="dark"] .admin-operator .facility-clinical-panel {
-  --facility-ink: #ecf7f4;
-  --facility-muted: #a9bcba;
-  --facility-line: rgba(211, 232, 225, 0.14);
-  background:
-    radial-gradient(circle at 100% 0, rgba(31, 105, 91, 0.2), transparent 30%),
-    #13211f;
-}
-
-html[data-theme="dark"] .admin-operator :is(
-  .facility-filter-card,
-  .facility-search-control,
-  .facility-filter-card .custom-select-trigger,
-  .facility-result-summary,
-  .facility-catalog-button,
-  .facility-catalog-progress,
-  .facility-clinical-panel .facility-admin-card,
-  .facility-clinical-panel .facility-admin-actions
-) {
-  background: #172825;
-}
-
-html[data-theme="dark"] .admin-operator .facility-clinical-panel .facility-admin-meta {
-  background: #142320;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .admin-operator .facility-clinical-panel .facility-admin-card,
   .admin-operator .facility-search-control {

@@ -315,11 +315,6 @@
   color: var(--care-teal);
 }
 
-html[data-theme="dark"] .care-path-card:not(.care-path-card-primary),
-html[data-theme="dark"] .care-supporting-tools {
-  background: var(--care-paper);
-}
-
 /* Consistent landing section rhythm */
 .landing-page > .care-section {
   border-top: 1px solid var(--care-line);
@@ -388,12 +383,4 @@ html[data-theme="dark"] .care-supporting-tools {
 
 .care-emergency-banner {
   margin-top: 24px;
-}
-
-html[data-theme="dark"] .care-safety-principles {
-  background: var(--care-paper);
-}
-
-html[data-theme="dark"] .care-facility-section .care-section-summary > p {
-  color: #c2d3d0;
 }

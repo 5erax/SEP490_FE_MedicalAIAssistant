@@ -1,30 +1,33 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, LocateFixed, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Check, LoaderCircle, LocateFixed, Map, Search, SlidersHorizontal } from "lucide-react";
 import { NEARBY_RADII } from "../../utils/nearbyFacilities";
-import { Alert } from "../ui";
-import ClinicalNote from "../clinical/ClinicalNote";
 
 export default function FacilityExplorerControls({ search, onSearch, suggestions, onSuggestion,
   departments, departmentsLoading, selectedDepartmentId, selectedType, typeOptions, radiusKm,
   filtersOpen, onOpenFilters, onCloseFilters, onApplyFilters, hasLocation, locating, onLocate,
-  locationError, accuracy, nearbyError, onRetry, loading }) {
+  locationError, accuracy, loading, departmentName, compactSearch = false, locationOptional = false, onShowMap }) {
   const [focused, setFocused] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const filterHeadingRef = useRef(null);
   const searchRef = useRef(null);
+  const filterButtonRef = useRef(null);
   const wasOpenRef = useRef(false);
   useEffect(() => {
     if (filtersOpen) filterHeadingRef.current?.focus();
-    else if (wasOpenRef.current) searchRef.current?.focus({ preventScroll: true });
+    else if (wasOpenRef.current) filterButtonRef.current?.focus({ preventScroll: true });
     wasOpenRef.current = filtersOpen;
   }, [filtersOpen]);
   const showSuggestions = focused && search.trim() && suggestions.length > 0;
   const department = departments.find((item) => item.id === selectedDepartmentId);
+  const showSearch = !compactSearch || searchOpen || Boolean(search);
+  const compactLocation = hasLocation || locationOptional;
   const choose = (facility) => { setFocused(false); setActiveIndex(-1); onSuggestion(facility); };
   if (filtersOpen) return <form className="explorer-filters" onSubmit={(event) => {
     event.preventDefault();
     const values = new FormData(event.currentTarget);
-    onApplyFilters({ departmentId: values.get("department"), type: values.get("type"), radius: values.get("radius") === "nearest" ? "nearest" : Number(values.get("radius")) });
+    const radius = values.get("radius");
+    onApplyFilters({ departmentId: values.get("department"), type: values.get("type"), radius: radius === "nearest" || radius === "auto" ? radius : Number(radius) });
   }}>
     <button type="button" className="explorer-back" onClick={onCloseFilters}><ArrowLeft size={16} /> Quay lại</button>
     <h2 ref={filterHeadingRef} tabIndex={-1}>Bộ lọc cơ sở y tế</h2>
@@ -35,13 +38,38 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
     </select></label>
     {departmentsLoading && <p role="status">Đang tải chuyên khoa…</p>}
     <label>Loại cơ sở<select name="type" defaultValue={selectedType}>{typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-    <label>Phạm vi<select name="radius" defaultValue={radiusKm}><option value="nearest">Không giới hạn</option>{NEARBY_RADII.map((radius) => <option key={radius} value={radius}>Trong {radius} km</option>)}</select></label>
-    {!hasLocation && <ClinicalNote title="Cần vị trí để lọc theo phạm vi">Phạm vi sẽ được áp dụng sau khi bạn cho phép sử dụng vị trí.</ClinicalNote>}
+    <label>Phạm vi<select name="radius" defaultValue={radiusKm}>{radiusKm === "auto" && <option value="auto">Ưu tiên gần bạn (trong 5 km)</option>}<option value="nearest">Không giới hạn</option>{NEARBY_RADII.map((radius) => <option key={radius} value={radius}>Trong {radius} km</option>)}</select></label>
+    {radiusKm === "auto" && <p className="explorer-muted">Với lựa chọn “Ưu tiên gần bạn”, hệ thống tìm lần lượt trong 1, 3 rồi 5 km và dừng ở phạm vi đầu tiên có kết quả. Hiển thị tối đa 5 cơ sở để bạn dễ lựa chọn.</p>}
+    {!hasLocation && <p className="explorer-muted">Phạm vi sẽ được áp dụng sau khi bạn cho phép sử dụng vị trí.</p>}
     <div className="explorer-filter-actions"><button className="explorer-primary" type="submit" disabled={departmentsLoading}>Áp dụng</button><button type="button" onClick={() => onApplyFilters({ departmentId: "all", type: "all", radius: "nearest" })}>Đặt lại</button></div>
   </form>;
   return <header className="explorer-controls">
-    <h2>Tìm cơ sở y tế</h2>
-    <div className="explorer-search" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
+    <h2 tabIndex={-1} className="explorer-screen-title">{departmentName ? `Nơi khám có ${departmentName}` : selectedDepartmentId !== "all" ? "Nơi khám có chuyên khoa đã chọn" : "Tìm cơ sở y tế"}</h2>
+    <section className={`explorer-location${compactLocation ? " explorer-location-compact" : ""}`} aria-label="Vị trí tìm kiếm">
+      <div className="explorer-location-heading">
+        <span className="explorer-location-icon" aria-hidden="true">{hasLocation ? <Check size={20} /> : <LocateFixed size={20} />}</span>
+        <div>
+          {!compactLocation && <h3>Tìm nơi khám gần bạn</h3>}
+          <p id="explorer-location-status" role="status">{locating ? "Đang xác định vị trí…" : hasLocation ? locationError ? "Đang dùng vị trí trước đó" : "Đang dùng vị trí của bạn" : locationOptional ? "Chưa dùng vị trí của bạn" : "Cho phép dùng vị trí để tìm cơ sở phù hợp ở gần bạn."}</p>
+        </div>
+      </div>
+      <button className={compactLocation ? "explorer-location-update" : "explorer-location-button"} type="button" onClick={onLocate} disabled={locating} aria-busy={locating} aria-label={hasLocation ? "Cập nhật vị trí" : "Tìm nơi khám gần tôi"} aria-describedby="explorer-location-status">
+        {locating ? <LoaderCircle className="explorer-spinner" size={20} aria-hidden="true" /> : !compactLocation && <LocateFixed size={20} aria-hidden="true" />}
+        {locating ? "Đang tìm…" : hasLocation ? "Cập nhật" : compactLocation ? "Tìm gần tôi" : "Tìm nơi khám gần tôi"}
+      </button>
+      {locationError && <p className="explorer-notice" role="alert">{locationError}</p>}
+      {!locationError && hasLocation && accuracy > 1000 && <p className="explorer-notice" role="status">Vị trí hiện tại có thể lệch khoảng {(accuracy / 1000).toFixed(1)} km. Bạn có thể bật vị trí chính xác trên thiết bị rồi chọn Cập nhật.</p>}
+    </section>
+    <div className="explorer-tools" aria-label="Tìm kiếm và cách xem">
+      {compactSearch && <button type="button" aria-expanded={showSearch} aria-controls="explorer-search-area" onClick={() => {
+        setSearchOpen(!showSearch);
+        if (showSearch && search) onSearch({ target: { value: "" } });
+        if (!showSearch) window.requestAnimationFrame(() => searchRef.current?.focus());
+      }}><Search size={18} aria-hidden="true" />{showSearch ? "Đóng tìm kiếm" : "Tìm theo tên"}</button>}
+      <button ref={filterButtonRef} type="button" onClick={onOpenFilters}><SlidersHorizontal size={18} aria-hidden="true" /> Bộ lọc</button>
+      <button type="button" className="explorer-mobile-map-toggle" onClick={onShowMap}><Map size={18} aria-hidden="true" /> Bản đồ</button>
+    </div>
+    <div className="explorer-search" id="explorer-search-area" hidden={!showSearch} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
       <Search size={17} aria-hidden="true" />
       <label className="sr-only" htmlFor="explorer-search">Tìm tên bệnh viện, phòng khám</label>
       <input ref={searchRef} id="explorer-search" type="search" placeholder="Tên bệnh viện, phòng khám…" value={search}
@@ -66,12 +94,6 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
         </li>)}
       </ul>}
     </div>
-    <div className="explorer-filter-row"><button type="button" className="explorer-filter-chip" onClick={onOpenFilters}>{department?.name || (selectedDepartmentId !== "all" ? "Chuyên khoa được gợi ý" : "Tất cả chuyên khoa")}</button><button type="button" onClick={onOpenFilters}><SlidersHorizontal size={16} aria-hidden="true" /> Bộ lọc</button></div>
-    {(selectedType !== "all" || radiusKm !== "nearest") && <p className="explorer-active-filters">{selectedType !== "all" && <span>{typeOptions.find(([key]) => key === selectedType)?.[1]}</span>}{radiusKm !== "nearest" && <span>Trong {radiusKm} km{!hasLocation ? " · Chờ vị trí" : ""}</span>}</p>}
-    <div className="explorer-location"><span>{hasLocation ? "Đã dùng vị trí của bạn" : "Xếp theo khoảng cách khi bật vị trí"}</span><button type="button" onClick={onLocate} disabled={locating}><LocateFixed size={15} aria-hidden="true" />{locating ? "Đang định vị…" : hasLocation ? "Định vị lại" : "Dùng vị trí của tôi"}</button></div>
-    {locationError && <Alert tone="warning" title="Chưa lấy được vị trí" live>{locationError}</Alert>}
-    {hasLocation && accuracy > 1000 && <ClinicalNote tone="warning" title="Vị trí có thể chưa chính xác">Sai số vị trí khoảng {(accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</ClinicalNote>}
-    {nearbyError && <div className="explorer-request-error"><Alert tone="danger" title="Chưa cập nhật được danh sách">{nearbyError}</Alert><button type="button" onClick={onRetry}>Thử lại</button></div>}
     {loading && <span className="sr-only" role="status">Đang cập nhật danh sách</span>}
   </header>;
 }

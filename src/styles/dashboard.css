@@ -263,17 +263,6 @@
   width: min(680px, 100%);
 }
 
-html[data-theme="dark"] .specialty-page {
-  background:
-    radial-gradient(circle at 50% 12%, rgba(8, 127, 140, 0.14), transparent 32%),
-    linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%);
-}
-
-html[data-theme="dark"] .studio-heading .studio-eyebrow,
-html[data-theme="dark"] .studio-form-heading > div:first-child > span {
-  color: var(--color-info);
-}
-
 .studio-diagnosis-panel,
 .studio-result-panel {
   width: 100%;

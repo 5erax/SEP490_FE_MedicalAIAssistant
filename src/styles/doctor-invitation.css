@@ -244,41 +244,6 @@
   text-align: center;
 }
 
-html[data-theme="dark"] .auth-mode-doctor .doctor-form-group {
-  border-color: var(--auth-line);
-  background: rgba(255, 255, 255, 0.015);
-}
-
-html[data-theme="dark"] .auth-mode-doctor .doctor-profile-summary,
-html[data-theme="dark"] .auth-mode-doctor .doctor-expiry-notice {
-  border-color: var(--auth-line);
-  background: #1a3033;
-}
-
-html[data-theme="dark"] .auth-mode-doctor .doctor-api-errors,
-html[data-theme="dark"] .auth-mode-doctor .doctor-error-summary {
-  border-color: #a76c5a;
-  background: #3a2824;
-  color: #ffd0c1;
-}
-
-html[data-theme="dark"] .auth-mode-doctor .doctor-facility-warning,
-html[data-theme="dark"] .auth-mode-doctor .doctor-expiry-notice.is-urgent {
-  border-color: #96753c;
-  background: #342f22;
-  color: #f5d898;
-}
-
-html[data-theme="dark"] .auth-mode-doctor .doctor-expiry-notice.is-urgent strong {
-  color: #f5d898;
-}
-
-html[data-theme="dark"] .auth-mode-doctor .doctor-invitation-field input[readonly],
-html[data-theme="dark"] .auth-mode-doctor .doctor-invitation-field select:disabled {
-  background: #1a3033;
-  color: var(--auth-muted);
-}
-
 @keyframes doctorInvitationSpin {
   to {
     transform: rotate(360deg);

@@ -636,49 +636,6 @@
   to { transform: rotate(360deg); }
 }
 
-html[data-theme="dark"] .care-map-preview,
-html[data-theme="dark"] .care-price-card,
-html[data-theme="dark"] .care-pricing-state {
-  background: var(--care-paper);
-}
-
-html[data-theme="dark"] .care-price-card-paid {
-  background:
-    linear-gradient(145deg, rgba(20, 125, 120, 0.16), transparent 46%),
-    var(--care-paper);
-}
-
-html[data-theme="dark"] .care-map-preview-head > div > span,
-html[data-theme="dark"] .care-price-icon,
-html[data-theme="dark"] .care-map-facilities li > svg {
-  background: #203a3b;
-}
-
-html[data-theme="dark"] .care-map-library-loading,
-html[data-theme="dark"] .care-map-library-state,
-html[data-theme="dark"] .care-map-state,
-html[data-theme="dark"] .care-map-preview-foot {
-  background: rgba(22, 39, 43, 0.96);
-}
-
-html[data-theme="dark"] .care-map-count,
-html[data-theme="dark"] .care-pricing-state > a,
-html[data-theme="dark"] .care-price-card > .care-price-cta {
-  border-color: var(--care-line);
-  background: #193032;
-  color: var(--care-teal-dark);
-}
-
-html[data-theme="dark"] .care-price-card-paid > .care-price-cta-primary {
-  border-color: #79d5ca;
-  background: #79d5ca;
-  color: #0b2529;
-}
-
-html[data-theme="dark"] .care-pricing-section {
-  background: #101c1f;
-}
-
 html[data-contrast="more"] .care-map-preview,
 html[data-contrast="more"] .care-price-card,
 html[data-contrast="more"] .care-pricing-state {

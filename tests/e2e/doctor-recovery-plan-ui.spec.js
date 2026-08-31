@@ -277,7 +277,7 @@ test.describe("doctor recovery plan workflow", () => {
   });
 
   test("a doctor with an unresolved request is warned and blocked from accepting another", async ({ page }) => {
-    const calls = await prepareDoctorPage(page, {
+    await prepareDoctorPage(page, {
       openItems: [openRequest()],
       mineItems: [myRequest({ id: "33333333-3333-4333-8333-333333333333", status: "assigned" })],
     });

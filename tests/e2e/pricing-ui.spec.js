@@ -69,7 +69,7 @@ test("pricing remains usable at 320px and supports keyboard disclosure", async (
   )).toBeVisible();
 });
 
-test("pricing preserves clear credit-package controls in dark and forced-color modes", async ({ page }) => {
+test("pricing preserves clear credit-package controls with a dark system preference and forced colors", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/pricing", { waitUntil: "domcontentloaded" });
 

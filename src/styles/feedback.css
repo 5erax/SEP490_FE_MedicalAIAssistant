@@ -246,26 +246,3 @@
   .confirm-dialog { animation: none; }
   .confirm-actions button { transition: none; }
 }
-
-html[data-theme="dark"] .toast,
-html[data-theme="dark"] .confirm-dialog {
-  border-color: rgba(205, 233, 229, 0.16);
-  background: #132322;
-  color: #eef8f6;
-}
-
-html[data-theme="dark"] .confirm-dialog h2 {
-  color: #f5fbfa;
-}
-
-html[data-theme="dark"] .confirm-dialog p,
-html[data-theme="dark"] .toast p {
-  color: #adbfbc;
-}
-
-html[data-theme="dark"] .confirm-actions .confirm-cancel,
-html[data-theme="dark"] .toast button {
-  border-color: rgba(205, 233, 229, 0.18);
-  background: #1b302e;
-  color: #eef8f6;
-}

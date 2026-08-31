@@ -673,29 +673,6 @@
   }
 }
 
-html[data-theme="dark"] .admin-operator .department-clinical-panel {
-  --department-ink: #ecf7f4;
-  --department-muted: #a9bcba;
-  --department-line: rgba(211, 232, 225, 0.14);
-  background:
-    radial-gradient(circle at 100% 0, rgba(31, 105, 91, 0.2), transparent 30%),
-    #13211f;
-}
-
-html[data-theme="dark"] .admin-operator :is(
-  .department-filter-card,
-  .department-search-control,
-  .department-filter-card .custom-select-trigger,
-  .department-result-summary,
-  .department-card
-) {
-  background: #172825;
-}
-
-html[data-theme="dark"] .admin-operator .department-card-meta dd {
-  color: #c7dcd8;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .admin-operator .department-card,
   .admin-operator .department-search-control {
