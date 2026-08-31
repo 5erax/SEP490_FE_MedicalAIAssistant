@@ -410,27 +410,6 @@
   margin-top: 20px;
 }
 
-html[data-theme="dark"] .trust-page {
-  background:
-    radial-gradient(circle at 82% 7%, rgba(20, 125, 120, 0.2), transparent 30%),
-    linear-gradient(180deg, #122124 0, #101c1f 520px);
-}
-
-html[data-theme="dark"] .trust-fact-panel,
-html[data-theme="dark"] .trust-card,
-html[data-theme="dark"] .trust-services,
-html[data-theme="dark"] .trust-bullets li {
-  background: var(--care-paper);
-}
-
-html[data-theme="dark"] .trust-notice {
-  background: #173235;
-}
-
-html[data-theme="dark"] .trust-notice-warning {
-  background: #3a2b16;
-}
-
 html[data-contrast="more"] .trust-fact-panel,
 html[data-contrast="more"] .trust-card,
 html[data-contrast="more"] .trust-services,

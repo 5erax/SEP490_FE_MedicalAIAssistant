@@ -269,61 +269,6 @@
   outline-offset: 3px;
 }
 
-html[data-theme="dark"] .profile-setup-clinical {
-  --profile-navy: #e5f4f0;
-  --profile-navy-deep: #f3faf8;
-  --profile-teal: #79d5ca;
-  --profile-teal-dark: #a4e5dc;
-  --profile-mint: #142b2b;
-  --profile-canvas: #0e181b;
-  --profile-paper: #16272b;
-  --profile-text: #ecf6f3;
-  --profile-muted: #b9cbc7;
-  --profile-line: #3d5652;
-}
-
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-intro {
-  background:
-    radial-gradient(circle at 95% 5%, rgba(121, 213, 202, 0.07), transparent 34%),
-    #142b2b;
-}
-
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-intro .brand-mark,
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-privacy-note > svg,
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-progress {
-  border-color: var(--profile-line);
-  background: #1c3738;
-}
-
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-privacy-note {
-  border-color: var(--profile-line);
-}
-
-html[data-theme="dark"] .profile-setup-clinical .profile-progress-bar {
-  background: #284441;
-}
-
-html[data-theme="dark"] .profile-setup-clinical .profile-form-section,
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-disease-section,
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-disease-card,
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-field :is(input, select, textarea) {
-  border-color: var(--profile-line);
-  background: var(--profile-paper);
-  color: var(--profile-text);
-}
-
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-add-disease {
-  border-color: var(--profile-line);
-  background: #1a3033;
-  color: var(--profile-teal-dark);
-}
-
-html[data-theme="dark"] .profile-setup-clinical .profile-setup-actions .btn-primary {
-  border-color: #79d5ca;
-  background: #79d5ca;
-  color: #0e181b;
-}
-
 @media (max-width: 920px) {
   .profile-setup-clinical .profile-setup-shell {
     width: min(720px, calc(100% - 32px));

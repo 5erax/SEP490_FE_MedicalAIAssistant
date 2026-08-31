@@ -991,56 +991,6 @@
   }
 }
 
-html[data-theme="dark"] .pricing-page {
-  --pricing-ink: #e6f3f0;
-  --pricing-ink-deep: #f2faf8;
-  --pricing-muted: #afc4c0;
-  --pricing-subtle: #91aaa5;
-  --pricing-teal: #63c9bf;
-  --pricing-teal-dark: #8bdcd3;
-  --pricing-teal-soft: #143b39;
-  --pricing-teal-pale: #112f30;
-  --pricing-line: #365b56;
-  --pricing-line-strong: #4f7771;
-  --pricing-paper: #102c2d;
-  --pricing-canvas: #0b2224;
-  --pricing-danger: #ffb2bf;
-  --pricing-danger-bg: #441f29;
-  --pricing-on-primary: #09201e;
-  --pricing-badge-bg: #152f2d;
-  --pricing-interactive-hover: rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(circle at 8% 8%, rgba(99, 201, 191, 0.08), transparent 24rem),
-    var(--pricing-canvas);
-}
-
-html[data-theme="dark"] .pricing-back-link,
-html[data-theme="dark"] .billing-panel,
-html[data-theme="dark"] .pricing-api-message,
-html[data-theme="dark"] .current-subscription,
-html[data-theme="dark"] .faq-item {
-  background: rgba(16, 44, 45, 0.88);
-}
-
-html[data-theme="dark"] .pricing-plan-card-premium {
-  background: linear-gradient(150deg, rgba(20, 59, 57, 0.94), rgba(16, 44, 45, 0.98));
-}
-
-html[data-theme="dark"] .current-subscription-item {
-  background: rgba(10, 34, 35, 0.68);
-}
-
-html[data-theme="dark"] .auto-renew-option,
-html[data-theme="dark"] .plan-benefits .plan-benefit-unavailable {
-  background: rgba(10, 34, 35, 0.68);
-}
-
-html[data-theme="dark"] .checkout-status.success {
-  border-color: var(--color-success);
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
 .pricing-original-price {
   color: var(--pricing-subtle);
   font-size: 1rem;

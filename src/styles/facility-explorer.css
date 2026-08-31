@@ -178,16 +178,6 @@
 .facility-explorer .explorer-mobile-nav { display: none; }
 .facility-explorer .explorer-spinner { animation: explorer-spin 1s linear infinite; }
 @keyframes explorer-spin { to { transform: rotate(360deg); } }
-
-[data-theme="dark"] .clinic-page.facility-explorer {
-  --map-body: #dfebe9;
-  --map-muted: #b8cbc8;
-  --map-canvas: #142326;
-  --map-on-accent: #0b2426;
-  --map-note-bg: #3a3221;
-  --map-note-ink: #f5d18e;
-  --map-focus: #f2ba62;
-}
 @media (max-width: 900px) {
   .clinic-page.facility-explorer { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .facility-explorer .explorer-mobile-nav { display: flex; grid-row: 1; padding: 6px 12px; gap: 8px; background: var(--map-surface); border-bottom: 1px solid var(--map-line); }

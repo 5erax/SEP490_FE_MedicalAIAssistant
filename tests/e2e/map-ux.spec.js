@@ -343,7 +343,7 @@ test("geolocation denial does not remove the rendered map", async ({ page, conte
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
 });
 
-test("map refresh remains usable on mobile, dark mode and forced colors", async ({ page }) => {
+test("map stays light and usable on mobile with a dark system preference and forced colors", async ({ page }) => {
   await preparePage(page);
   await page.setViewportSize({ width: 320, height: 800 });
   await page.emulateMedia({ colorScheme: "dark" });
@@ -402,28 +402,28 @@ const clinicalAnalysis = {
 };
 
 for (const screen of [
-  { name: "desktop", width: 1440, height: 900, dark: false, scale: 100 },
-  { name: "mobile", width: 390, height: 844, dark: false, scale: 100 },
-  { name: "mobile-dark-large-text", width: 320, height: 740, dark: true, scale: 125 },
+  { name: "desktop", width: 1440, height: 900, systemDark: false, scale: 100 },
+  { name: "mobile", width: 390, height: 844, systemDark: false, scale: 100 },
+  { name: "mobile-large-text-system-dark", width: 320, height: 740, systemDark: true, scale: 125 },
 ]) {
   test(`clinical next step stays visible with long results: ${screen.name}`, async ({ page }, testInfo) => {
     await preparePage(page);
     await page.setViewportSize({ width: screen.width, height: screen.height });
-    await page.addInitScript(({ accessToken, snapshot, dark, scale }) => {
+    await page.emulateMedia({ colorScheme: screen.systemDark ? "dark" : "light" });
+    await page.addInitScript(({ accessToken, snapshot, scale }) => {
       localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
       sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
       document.addEventListener("DOMContentLoaded", () => {
-        document.documentElement.dataset.theme = dark ? "dark" : "light";
         document.documentElement.style.fontSize = `${scale}%`;
       }, { once: true });
-    }, { accessToken: TOKEN, snapshot: clinicalAnalysis, dark: screen.dark, scale: screen.scale });
+    }, { accessToken: TOKEN, snapshot: clinicalAnalysis, scale: screen.scale });
     await mockMapApis(page, [facility()], { analysis: clinicalAnalysis });
     await mockSuccessfulMapStyle(page);
     await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`, { waitUntil: "domcontentloaded" });
 
     const nextStep = page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" });
     await expect(nextStep).toBeInViewport({ ratio: 1 });
-    await expect(page.locator("html")).toHaveAttribute("data-theme", screen.dark ? "dark" : "light");
+    await expect(page.locator(".clinic-sidebar")).toHaveCSS("background-color", "rgb(241, 245, 247)");
     await expect(page.locator("html")).toHaveCSS("font-size", `${16 * screen.scale / 100}px`);
     await expect(nextStep).toHaveAttribute("href", `/pre-consultation?sessionId=${SESSION_ID}`);
     expect((await nextStep.boundingBox()).height).toBeGreaterThanOrEqual(52);
@@ -482,15 +482,11 @@ test("location controls share progress and mobile map shows permission errors", 
   expect((await page.locator(".locate-button").boundingBox()).height).toBeGreaterThanOrEqual(56);
 });
 
-for (const dark of [false, true]) {
-  test(`facility details keep actions readable and restore the list: ${dark ? "dark" : "light"}`, async ({ page }, testInfo) => {
+for (const systemTheme of ["light", "dark"]) {
+  test(`facility details stay light and restore the list with ${systemTheme} system preference`, async ({ page }, testInfo) => {
     await preparePage(page);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript((isDark) => {
-      document.addEventListener("DOMContentLoaded", () => {
-        document.documentElement.dataset.theme = isDark ? "dark" : "light";
-      }, { once: true });
-    }, dark);
+    await page.emulateMedia({ colorScheme: systemTheme });
     await mockMapApis(page, [facility({ website: "https://example.com" })]);
     await mockSuccessfulMapStyle(page);
     await page.goto("/map");
@@ -504,7 +500,8 @@ for (const dark of [false, true]) {
     }
     await expect(page.getByRole("link", { name: "Website", exact: true })).toHaveAttribute("href", "https://example.com");
     await expect(page.getByRole("region", { name: "Thông tin cần biết" })).toContainText("123 Nguyễn Trãi, TP.HCM");
-    await page.screenshot({ path: testInfo.outputPath(`facility-detail-${dark ? "dark" : "light"}.png`) });
+    await expect(page.locator(".clinic-sidebar")).toHaveCSS("background-color", "rgb(241, 245, 247)");
+    await page.screenshot({ path: testInfo.outputPath(`facility-detail-system-${systemTheme}.png`) });
     const accessibility = await new AxeBuilder({ page }).include(".clinic-sidebar").withTags(["wcag2a", "wcag2aa"]).analyze();
     expect(accessibility.violations).toEqual([]);
     expect(await page.locator(".explorer-scroll").evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(false);

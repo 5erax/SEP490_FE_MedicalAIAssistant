@@ -207,16 +207,6 @@
   .payment-result-reference, .payment-result-actions { grid-template-columns: 1fr; }
 }
 
-html[data-theme="dark"] .payment-result-cancelled {
-  --result-accent: #f1c27d;
-  --result-soft: #3b2c19;
-}
-
-html[data-theme="dark"] .payment-result-error {
-  --result-accent: #fda4af;
-  --result-soft: #3f2028;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .payment-result-icon.is-loading svg, .is-spinning { animation: none; }
 }
