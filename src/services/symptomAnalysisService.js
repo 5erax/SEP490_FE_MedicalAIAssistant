@@ -1,5 +1,6 @@
 import { apiRequest } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
+import { readRankingScore } from "../utils/clinicalExplanation";
 
 const FALLBACK_ANSWER_OPTIONS = [
   ["yes", "Có"],
@@ -136,6 +137,7 @@ function createDepartmentSnapshot(department) {
     ) === true,
     priorityRank: Number(department.priorityRank ?? department.PriorityRank ?? 0) || 0,
     reason: normalizeText(department.reason ?? department.Reason),
+    sourceDiagnosisId: department.sourceDiagnosisId ?? department.SourceDiagnosisId ?? null,
   };
 }
 
@@ -151,6 +153,8 @@ function createDiagnosisSnapshot(diagnosis, index = 0) {
   if (!diseaseName && !icd10Code) return null;
 
   return {
+    id: diagnosis.id ?? diagnosis.Id ?? diagnosis.diagnosisId ?? null,
+    confidenceScore: readRankingScore(diagnosis),
     clinicalReasoning: normalizeText(
       diagnosis.clinicalReasoning ?? diagnosis.ClinicalReasoning,
     ),

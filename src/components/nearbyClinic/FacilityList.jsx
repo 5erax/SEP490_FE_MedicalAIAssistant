@@ -11,6 +11,8 @@ export default function FacilityList({
   onRetry,
   error,
   summary,
+  pagination,
+  onPageChange,
   resultDetails,
   specialtyId,
   specialtyName,
@@ -22,7 +24,7 @@ export default function FacilityList({
     <section className="facility-list-panel" id="facility-list" tabIndex="-1" aria-labelledby="facility-list-title">
       <div className="result-summary">
         <div>
-          <h2 id="facility-list-title" className="sr-only">Danh sách cơ sở</h2>
+          <h2 id="facility-list-title" className="sr-only" tabIndex={-1}>Danh sách cơ sở</h2>
           <span role="status" aria-live="polite">
             {loading ? "Đang tìm cơ sở phù hợp…" : error ? "Chưa tải được danh sách cơ sở" : summary || `${facilities.length} cơ sở phù hợp`}
           </span>
@@ -32,6 +34,7 @@ export default function FacilityList({
           <div>{resultDetails}</div>
         </details>}
       </div>
+      {!loading && !error && pagination?.totalPages > 1 && <FacilityPager pagination={pagination} onPageChange={onPageChange} position="đầu danh sách" />}
       {loading && [0, 1, 2].map((item) => (
         <article className="facility-result-card facility-result-skeleton" key={item} aria-hidden="true">
           <span className="skeleton-line" />
@@ -45,7 +48,7 @@ export default function FacilityList({
       )}
       {!loading && !error && facilities.map((facility) => (
         <article
-          ref={(node) => { cardRefs.current[facility.facilityId] = node; }}
+          ref={(node) => { if (node) cardRefs.current[facility.facilityId] = node; else delete cardRefs.current[facility.facilityId]; }}
           className={`facility-result-card ${selectedFacilityId === facility.facilityId ? "selected" : ""}`}
           key={facility.facilityId}
         >
@@ -67,7 +70,18 @@ export default function FacilityList({
           </button>
         </article>
       ))}
+      {!loading && !error && pagination?.totalPages > 1 && <FacilityPager pagination={pagination} onPageChange={onPageChange} position="cuối danh sách" />}
       {!loading && !error && onExpand && <button className="explorer-expand-search" type="button" onClick={onExpand}>{expandLabel}</button>}
     </section>
   );
+}
+
+function FacilityPager({ pagination, onPageChange, position }) {
+  const { page, totalPages } = pagination;
+  return <nav className="explorer-pagination" aria-label={`Chuyển trang ${position}`}>
+    <button type="button" disabled={page === 1} onClick={() => onPageChange(page - 1)}>Trang trước</button>
+    <span>Trang {page}/{totalPages}</span>
+    <button type="button" disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>Trang sau</button>
+    {page > 1 && <button type="button" className="explorer-first-page" onClick={() => onPageChange(1)}>Về trang đầu</button>}
+  </nav>;
 }

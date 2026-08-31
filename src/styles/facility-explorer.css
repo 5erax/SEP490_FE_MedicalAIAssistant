@@ -38,6 +38,7 @@
   background: var(--map-canvas);
 }
 .facility-explorer .explorer-scroll {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -245,3 +246,31 @@
   .facility-explorer * { scroll-behavior: auto; }
   .facility-explorer .explorer-spinner { animation: none; }
 }
+
+/* Keep return navigation available without pinning the entire search/filter panel. */
+.facility-explorer .explorer-list-navigation { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; padding: 6px 12px; border-bottom: 1px solid var(--map-line); background: var(--map-surface); }
+.facility-explorer .explorer-list-navigation :is(button, a) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--map-teal-strong); font-size: .875rem; line-height: 1.4; text-decoration: none; }
+.facility-explorer .explorer-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 12px 0 20px; }
+.facility-explorer .explorer-pagination button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--map-line-strong); border-radius: 10px; background: var(--map-surface); color: var(--map-teal-strong); font-size: .875rem; }
+.facility-explorer .explorer-pagination span { font-size: .875rem; color: var(--map-body); }
+.facility-explorer .explorer-pagination .explorer-first-page { flex-basis: 100%; border: 0; background: transparent; text-decoration: underline; }
+.facility-explorer .explorer-advice .explorer-reason-summary { font-size: .9375rem; }
+.facility-explorer .explorer-score-explanation { padding: 14px; margin: 12px 0; border-radius: 12px; background: var(--map-surface-soft); border: 1px solid var(--map-line); color: var(--map-ink); }
+.facility-explorer .explorer-advice .explorer-score-explanation p { font-size: .875rem; }
+.facility-explorer .explorer-source-reason { border-left: 3px solid var(--map-teal); padding-left: 12px; }
+.facility-explorer .review-image-preview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.facility-explorer .review-image-preview { aspect-ratio: auto; overflow: hidden; contain: none; }
+.facility-explorer .review-image-preview .review-image { position: static; width: 100%; height: auto; aspect-ratio: 4 / 3; border: 0; border-radius: 0; }
+.facility-explorer .review-image-preview .review-remove-image { width: 44px; height: 44px; top: 0; right: 0; background: var(--map-surface); color: var(--map-ink); border: 1px solid var(--map-line-strong); }
+.facility-explorer .review-image-state { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; min-height: 32px; padding: 4px 8px; font-size: .8125rem; color: var(--map-body); background: var(--map-surface); }
+.facility-explorer .review-image-state button { position: static; width: auto; height: auto; min-height: 44px; padding: 4px 8px; border: 1px solid var(--map-line-strong); border-radius: 8px; color: var(--map-teal-strong); background: var(--map-surface); font-size: .875rem; }
+.facility-explorer .review-image-upload :is(small, p) { font-size: .875rem; overflow-wrap: anywhere; }
+.facility-explorer .review-upload-button.is-disabled { opacity: .65; cursor: not-allowed; }
+.facility-explorer .review-upload-status:empty { display: none; }
+.facility-explorer .review-upload-error { color: var(--map-note-ink); }
+.facility-explorer .review-editor-actions .review-form-actions button { min-height: 48px; padding: 10px 14px; border: 1px solid var(--map-teal); border-radius: 10px; background: var(--map-teal); color: var(--map-on-accent); font-size: 1rem; font-weight: 700; }
+.facility-explorer .review-editor-actions .review-form-actions .secondary { background: var(--map-surface); color: var(--map-teal-strong); }
+.facility-explorer .facility-review-form { scroll-margin-block: 12px; }
+.facility-explorer .facility-review-form textarea { font: inherit; font-size: 1rem; line-height: 1.6; font-weight: 400; }
+.facility-explorer .facility-review-form label > span, .facility-explorer .facility-review-form legend { font-size: .875rem; font-weight: 600; }
+.facility-explorer .facility-review-form small { font-size: .8125rem; font-weight: 400; }

@@ -429,7 +429,7 @@ for (const screen of [
     expect((await nextStep.boundingBox()).height).toBeGreaterThanOrEqual(52);
     await expect(page.locator(".explorer-description")).not.toHaveAttribute("open");
     await page.screenshot({ path: testInfo.outputPath(`${screen.name}-results.png`) });
-    await page.getByText("Thông tin chuyên khoa và lý do gợi ý", { exact: true }).click();
+    await page.getByText("Vì sao gợi ý chuyên khoa này?", { exact: true }).click();
     await expect(nextStep).toBeInViewport({ ratio: 1 });
     await page.locator(".explorer-reference-results > summary").click();
     await page.locator(".explorer-diagnosis summary").last().click();

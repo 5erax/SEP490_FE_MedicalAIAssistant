@@ -237,6 +237,13 @@ test("a patient can confirm and delete only their own facility review", async ({
     const url = new URL(route.request().url());
     const method = route.request().method();
 
+    if (url.pathname === `/api/medical-facilities/${FACILITY_ID}`) {
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: {
+        id: FACILITY_ID, facilityName: "Bệnh viện kiểm thử", reviewCount: reviewItems.length,
+        averageRating: reviewItems.length ? reviewItems.reduce((sum, review) => sum + review.rating, 0) / reviewItems.length : null,
+      } }) });
+    }
+
     if (url.pathname === "/api/medical-facilities/active") {
       return route.fulfill({
         contentType: "application/json",
@@ -315,7 +322,7 @@ test("a patient can confirm and delete only their own facility review", async ({
   await expect(page.getByText("2 đánh giá", { exact: true })).toBeVisible();
 
   await deleteButton.click();
-  const dialog = page.getByRole("dialog", { name: "Xóa đánh giá?" });
+  const dialog = page.getByRole("alertdialog", { name: "Xóa đánh giá?" });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Hủy", exact: true }).click();
   await expect(dialog).toBeHidden();
