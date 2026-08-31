@@ -15,6 +15,7 @@ import {
   userSubscriptionsApi,
 } from "../services/api";
 import { useServiceCredit } from "../state/useServiceCredit";
+import { isSameProfileAccount } from "../utils/patientProfileCompletion";
 import { getSubscriptionStatusLabel } from "../services/paymentStatusLabels";
 import {
   getEarliestAllowedBirthDate,
@@ -421,7 +422,10 @@ export default function UserProfilePage() {
           ? String(refreshedUser.dateOfBirth).slice(0, 10)
           : profileForm.dateOfBirth,
       };
-      setStoredAuth(mergeAuthWithCurrentUser(auth, refreshedUser));
+      const currentAuth = getStoredAuth();
+      if (isSameProfileAccount(auth, currentAuth)) {
+        setStoredAuth(mergeAuthWithCurrentUser(currentAuth, refreshedUser));
+      }
       setIsEditing(false);
       setProfileForm(nextProfile);
       setProfileSnapshot(nextProfile);

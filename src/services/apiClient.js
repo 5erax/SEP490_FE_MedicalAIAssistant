@@ -3,6 +3,7 @@ import {
   localizeApiPayload,
 } from "./apiMessageTranslator";
 import { ENDPOINTS } from "./endpoints";
+import { resolveProfileCompletion } from "../utils/patientProfileCompletion";
 
 // Ở môi trường production, frontend gọi API cùng origin thông qua
 // /api/proxy.js để tránh mixed-content và giảm vấn đề CORS.
@@ -680,9 +681,11 @@ function mergeRefreshedAuth(response) {
     });
   }
 
+  const currentAuth = getStoredSessionAuth();
   const refreshedAuth = {
-    ...(getStoredSessionAuth() ?? {}),
+    ...(currentAuth ?? {}),
     ...authData,
+    isProfileCompleted: resolveProfileCompletion(authData, currentAuth),
   };
 
   if (!("expiresAtUtc" in authData)) {

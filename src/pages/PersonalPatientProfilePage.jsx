@@ -5,8 +5,11 @@ import { Footer } from "../components/landing/PricingSection";
 import { useUnsavedChangesWarning } from "../hooks/useUnsavedChangesWarning";
 import { navigate } from "../router/navigation";
 import { getReturnToFromSearch } from "../router/returnIntent";
-import { authApi, getStoredAuth, mergeAuthWithCurrentUser, setStoredAuth } from "../services/api";
-import { findPatientProfileByUserId, savePatientProfileSetup } from "../services/patientProfileSetup";
+import { authApi, getStoredAuth } from "../services/api";
+import { findPatientProfileByUserId, rememberCompletedPatientProfile, savePatientProfileSetup } from "../services/patientProfileSetup";
+import { getProfileAccountKey, isSameProfileAccount, verifyPatientProfileSetup } from "../utils/patientProfileCompletion";
+import { useAuthSession } from "../state/useAuthSession";
+import { AppLoading } from "../components/ui";
 import {
   getEarliestAllowedBirthDate,
   getLatestAllowedBirthDate,
@@ -163,7 +166,15 @@ function EmptyAuth() {
 }
 
 export default function PersonalPatientProfilePage() {
-  const [auth, setAuth] = useState(() => getStoredAuth());
+  const { auth } = useAuthSession();
+  return auth ? <PatientProfileSetupPage key={getProfileAccountKey(auth)} initialAuth={auth} /> : <EmptyAuth />;
+}
+
+function PatientProfileSetupPage({ initialAuth: incomingAuth }) {
+  const [initialAuth] = useState(() => incomingAuth);
+  const [auth, setAuth] = useState(() => initialAuth);
+  const [verificationError, setVerificationError] = useState("");
+  const [verificationAttempt, setVerificationAttempt] = useState(0);
   const [user, setUser] = useState(null);
   const [form, setForm] = useState(createInitialForm);
   const [loading, setLoading] = useState(Boolean(auth));
@@ -188,54 +199,38 @@ export default function PersonalPatientProfilePage() {
   const progress = Math.round((completedFields / 7) * 100);
 
   useEffect(() => {
-    if (!auth) return;
     let active = true;
 
     async function loadProfileContext() {
       setLoading(true);
-      let resolvedUser = null;
-      let resolvedUserId = auth.userId ?? auth.identityId ?? "";
-
+      setVerificationError("");
       try {
-        const userResult = await authApi.me();
-        if (!active) return;
-
-        resolvedUser = userResult.data ?? {};
-        resolvedUserId = getUserId(resolvedUser, auth);
-        setUser(resolvedUser);
-      } catch (error) {
-        if (!active) return;
-        setMessage({ type: "warning", text: error.message });
-      }
-
-      try {
-        const matchedProfile = await findPatientProfileByUserId(resolvedUserId);
-        if (!active) return;
-
-        if (matchedProfile) {
-          const nextAuth = mergeAuthWithCurrentUser(auth, {
-            ...resolvedUser,
-            isProfileCompleted: true,
-          });
-          setStoredAuth(nextAuth);
-          setAuth(nextAuth);
-          navigate(getReturnToFromSearch() || getWorkspacePath(nextAuth));
+        const context = await verifyPatientProfileSetup({
+          auth: initialAuth,
+          loadUser: () => authApi.me(),
+          findProfile: findPatientProfileByUserId,
+        });
+        if (!active || !isSameProfileAccount(initialAuth, getStoredAuth())) return;
+        if (!context.required) {
+          const nextAuth = rememberCompletedPatientProfile(initialAuth, context.user);
+          if (nextAuth) navigate(getReturnToFromSearch() || getWorkspacePath(nextAuth));
           return;
         }
+        const resolvedUser = context.user;
+        setUser({ ...resolvedUser, userId: context.userId });
+        setForm((current) => ({
+          ...current,
+          displayName: resolvedUser.displayName ?? resolvedUser.name ?? "",
+          dateOfBirth: toDateInput(resolvedUser.dateOfBirth),
+          gender: normalizeGender(resolvedUser.gender) || "male",
+          phoneNumber: resolvedUser.phoneNumber ?? "",
+          address: resolvedUser.address ?? "",
+        }));
+        setLoading(false);
       } catch (error) {
         if (!active) return;
-        setMessage({ type: "warning", text: error.message });
+        setVerificationError(error.message || "Chưa thể kiểm tra hồ sơ của bạn.");
       }
-
-      setForm((current) => ({
-        ...current,
-        displayName: resolvedUser?.displayName ?? resolvedUser?.name ?? "",
-        dateOfBirth: toDateInput(resolvedUser?.dateOfBirth),
-        gender: normalizeGender(resolvedUser?.gender) || "male",
-        phoneNumber: resolvedUser?.phoneNumber ?? "",
-        address: resolvedUser?.address ?? "",
-      }));
-      setLoading(false);
     }
 
     loadProfileContext();
@@ -243,9 +238,7 @@ export default function PersonalPatientProfilePage() {
     return () => {
       active = false;
     };
-  }, [auth]);
-
-  if (!auth) return <EmptyAuth />;
+  }, [initialAuth, verificationAttempt]);
 
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -310,25 +303,36 @@ export default function PersonalPatientProfilePage() {
     setMessage(null);
 
     try {
+      if (!isSameProfileAccount(initialAuth, getStoredAuth())) return;
       const { currentUser } = await savePatientProfileSetup({
         userId: currentUserId,
         form,
       });
 
-      const nextAuth = mergeAuthWithCurrentUser(auth, currentUser);
-      setStoredAuth(nextAuth);
+      const nextAuth = rememberCompletedPatientProfile(initialAuth, currentUser);
+      if (!nextAuth) return;
       setAuth(nextAuth);
       setDirty(false);
       setMessage({ type: "success", text: "Đã hoàn thiện hồ sơ sức khỏe. MediMate đang mở không gian cá nhân của bạn..." });
 
       window.setTimeout(() => {
-        navigate(getReturnToFromSearch() || getWorkspacePath(nextAuth));
+        if (isSameProfileAccount(nextAuth, getStoredAuth())) navigate(getReturnToFromSearch() || getWorkspacePath(nextAuth));
       }, 900);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (loading) {
+    if (!verificationError) return <AppLoading label="Đang kiểm tra hồ sơ của bạn…" />;
+    return <main className="app-page"><div className="container app-empty" role="alert">
+      <h1>Chưa thể kiểm tra hồ sơ</h1>
+      <p>{verificationError}</p>
+      <button type="button" className="btn btn-primary" onClick={() => { setVerificationError(""); setVerificationAttempt((value) => value + 1); }}>Thử lại</button>
+      <a href={getWorkspacePath(auth)} className="btn btn-ghost">Về trang chính</a>
+    </div></main>;
   }
 
   return (

@@ -29,6 +29,8 @@ import { Dialog, useOverlayFocus } from "../ui";
 import PatientOnboardingAssistant from "./PatientOnboardingAssistant";
 import PatientProfileSetupModal from "./PatientProfileSetupModal";
 import { shouldSetupPatientProfile } from "../../utils/roles";
+import { getProfileAccountKey, resolveProfileCompletion } from "../../utils/patientProfileCompletion";
+import { useAuthSession } from "../../state/useAuthSession";
 import { ServiceCreditBadge } from "../subscriptions/ServiceCreditBadge";
 
 const PATIENT_ICONS = {
@@ -121,7 +123,7 @@ function rememberAccountUser(accessToken, user) {
 
   const auth = getStoredAuth();
   if (auth?.accessToken === accessToken) {
-    setStoredAuth({ ...auth, ...user });
+    setStoredAuth({ ...auth, ...user, isProfileCompleted: resolveProfileCompletion(user, auth) });
   }
 
   return setCachedAccountUser(accessToken, user);
@@ -167,7 +169,7 @@ export default function UserWorkspaceShell({ children }) {
   const noticeDeferButtonRef = useRef(null);
   const noticeTriggerRef = useRef(null);
   const drawerInertRefs = useMemo(() => [mainRef, mobileNavRef], []);
-  const auth = getStoredAuth();
+  const { auth } = useAuthSession();
   const accessToken = auth?.accessToken;
   const premiumAccess = hasPremiumAccess(auth);
   const path = getCurrentPath();
@@ -545,6 +547,13 @@ export default function UserWorkspaceShell({ children }) {
         </header>
 
         <section className="user-shell-content">
+          {shouldShowPatientSetup && (
+            <PatientProfileSetupModal
+              key={getProfileAccountKey(setupAuth)}
+              auth={setupAuth}
+              onComplete={handlePatientSetupComplete}
+            />
+          )}
           {children}
         </section>
       </main>
@@ -598,12 +607,6 @@ export default function UserWorkspaceShell({ children }) {
               <button type="button" onClick={openPricingFromNotice}>Xem bảng giá</button>
             </div>
         </Dialog>
-      )}
-      {shouldShowPatientSetup && (
-        <PatientProfileSetupModal
-          auth={setupAuth}
-          onComplete={handlePatientSetupComplete}
-        />
       )}
       <PatientOnboardingAssistant auth={auth} />
     </div>

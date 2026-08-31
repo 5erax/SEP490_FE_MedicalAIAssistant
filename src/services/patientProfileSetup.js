@@ -1,4 +1,5 @@
-import { authApi, patientProfilesApi, usersApi } from "./api";
+import { authApi, getStoredAuth, mergeAuthWithCurrentUser, patientProfilesApi, setStoredAuth, usersApi } from "./api";
+import { isSameProfileAccount } from "../utils/patientProfileCompletion";
 import {
   normalizeChronicDiseases,
   normalizePersonalProfile,
@@ -13,6 +14,15 @@ function numberOrNull(value) {
 
 export async function findPatientProfileByUserId(userId) {
   return patientProfilesApi.findByUserId(userId);
+}
+
+export function rememberCompletedPatientProfile(expectedAuth, user) {
+  const currentAuth = getStoredAuth();
+  if (!isSameProfileAccount(expectedAuth, currentAuth)) return null;
+  // Use the current token, not the snapshot captured before a slow request/refresh.
+  const nextAuth = mergeAuthWithCurrentUser(currentAuth, { ...user, isProfileCompleted: true });
+  setStoredAuth(nextAuth);
+  return nextAuth;
 }
 
 export async function savePatientProfileSetup({ userId, existingProfileId, form }) {

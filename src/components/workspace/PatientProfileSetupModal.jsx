@@ -1,7 +1,8 @@
 import { cloneElement, useEffect, useId, useMemo, useRef, useState } from "react";
 import { HeartPulse, Plus, Trash2 } from "lucide-react";
-import { authApi, mergeAuthWithCurrentUser, setStoredAuth } from "../../services/api";
-import { findPatientProfileByUserId, savePatientProfileSetup } from "../../services/patientProfileSetup";
+import { authApi, getStoredAuth } from "../../services/api";
+import { findPatientProfileByUserId, rememberCompletedPatientProfile, savePatientProfileSetup } from "../../services/patientProfileSetup";
+import { isSameProfileAccount, verifyPatientProfileSetup } from "../../utils/patientProfileCompletion";
 import {
   getEarliestAllowedBirthDate,
   getLatestAllowedBirthDate,
@@ -37,10 +38,6 @@ function createEmptyDisease() {
   };
 }
 
-function getUserId(user, auth) {
-  return user?.userId ?? user?.identityId ?? user?.id ?? auth?.userId ?? auth?.identityId ?? "";
-}
-
 function toDateInput(value) {
   if (!value) return "";
   return String(value).slice(0, 10);
@@ -72,8 +69,12 @@ function SetupField({ label, error, children }) {
 }
 
 export default function PatientProfileSetupModal({ auth, onComplete }) {
+  // The parent keys this component by account, not by its rotating access token.
+  const [initialAuth] = useState(() => auth);
   const [form, setForm] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(true);
+  const [verificationError, setVerificationError] = useState("");
+  const [verificationAttempt, setVerificationAttempt] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
   const [errors, setErrors] = useState({});
@@ -100,48 +101,34 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
 
     async function loadProfileContext() {
       setLoading(true);
-      setMessage(null);
-      let resolvedUser = null;
-      let resolvedUserId = auth?.userId ?? auth?.identityId ?? "";
-
+      setVerificationError("");
       try {
-        const userResult = await authApi.me();
-        if (!active) return;
-        resolvedUser = userResult.data ?? {};
-        resolvedUserId = getUserId(resolvedUser, auth);
-      } catch (error) {
-        if (!active) return;
-        setMessage({ type: "warning", text: error.message });
-      }
-
-      try {
-        const matchedProfile = await findPatientProfileByUserId(resolvedUserId);
-        if (!active) return;
-        if (matchedProfile) {
-          const nextAuth = mergeAuthWithCurrentUser(auth, {
-            ...resolvedUser,
-            isProfileCompleted: true,
-          });
-          setStoredAuth(nextAuth);
-          onComplete?.(nextAuth);
+        const context = await verifyPatientProfileSetup({
+          auth: initialAuth,
+          loadUser: () => authApi.me(),
+          findProfile: findPatientProfileByUserId,
+        });
+        if (!active || !isSameProfileAccount(initialAuth, getStoredAuth())) return;
+        if (!context.required) {
+          const nextAuth = rememberCompletedPatientProfile(initialAuth, context.user);
+          if (nextAuth) onComplete?.(nextAuth);
           return;
         }
+        const resolvedUser = context.user;
+        setResolvedUserId(context.userId);
+        setForm((current) => ({
+          ...current,
+          displayName: resolvedUser.displayName ?? resolvedUser.name ?? initialAuth?.displayName ?? initialAuth?.name ?? "",
+          dateOfBirth: toDateInput(resolvedUser.dateOfBirth),
+          gender: normalizeGender(resolvedUser.gender ?? initialAuth?.gender) || "male",
+          phoneNumber: resolvedUser.phoneNumber ?? initialAuth?.phoneNumber ?? "",
+          address: resolvedUser.address ?? initialAuth?.address ?? "",
+        }));
+        setLoading(false);
       } catch (error) {
         if (!active) return;
-        setMessage({ type: "warning", text: error.message });
+        setVerificationError(error.message || "Chưa thể kiểm tra hồ sơ của bạn.");
       }
-
-      if (!active) return;
-      setResolvedUserId(resolvedUserId);
-      setForm((current) => ({
-        ...current,
-        displayName: resolvedUser?.displayName ?? resolvedUser?.name ?? auth?.displayName ?? auth?.name ?? "",
-        dateOfBirth: toDateInput(resolvedUser?.dateOfBirth),
-        gender: normalizeGender(resolvedUser?.gender ?? auth?.gender) || "male",
-        phoneNumber: resolvedUser?.phoneNumber ?? auth?.phoneNumber ?? "",
-        address: resolvedUser?.address ?? auth?.address ?? "",
-      }));
-      setLoading(false);
     }
 
     loadProfileContext();
@@ -149,7 +136,7 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
     return () => {
       active = false;
     };
-  }, [auth, onComplete]);
+  }, [initialAuth, onComplete, verificationAttempt]);
 
   function updateField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -208,15 +195,25 @@ export default function PatientProfileSetupModal({ auth, onComplete }) {
     setSubmitting(true);
     setMessage(null);
     try {
+      if (!isSameProfileAccount(initialAuth, getStoredAuth())) return;
       const { currentUser } = await savePatientProfileSetup({ userId, form });
-      const nextAuth = mergeAuthWithCurrentUser(auth, currentUser);
-      setStoredAuth(nextAuth);
-      onComplete?.(nextAuth);
+      const nextAuth = rememberCompletedPatientProfile(initialAuth, currentUser);
+      if (nextAuth) onComplete?.(nextAuth);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Never mount a focus-trapping dialog while profile existence is still unknown.
+  if (loading) {
+    return verificationError ? (
+      <div className="api-message warning patient-setup-verification-error" role="status">
+        <span>Chưa thể xác minh hồ sơ. {verificationError}</span>
+        <button type="button" onClick={() => { setVerificationError(""); setVerificationAttempt((value) => value + 1); }}>Kiểm tra lại hồ sơ</button>
+      </div>
+    ) : null;
   }
 
   return (

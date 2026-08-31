@@ -5,11 +5,12 @@ import {
 } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 import { normalizeUserRecord } from "./userService";
+import { resolveProfileCompletion } from "../utils/patientProfileCompletion";
 
 function normalizeAuthResponse(response) {
   const authData = response?.data ?? response;
   if (authData?.accessToken) {
-    const isProfileCompleted = authData.isProfileCompleted === true;
+    const isProfileCompleted = resolveProfileCompletion(authData);
     const isFirstLogin = isProfileCompleted
       ? false
       : authData.firstLogin === true || authData.isFirstLogin === true;

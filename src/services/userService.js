@@ -1,5 +1,6 @@
 import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
+import { resolveProfileCompletion } from "../utils/patientProfileCompletion";
 
 export function normalizeUserRecord(user) {
   if (!user || typeof user !== "object") return user;
@@ -17,7 +18,7 @@ export function normalizeUserRecord(user) {
 export function mergeAuthWithCurrentUser(auth, user) {
   const normalizedUser = normalizeUserRecord(user) ?? {};
   const roles = normalizedUser.roles ?? normalizedUser.role ?? auth?.roles ?? auth?.role ?? [];
-  const isProfileCompleted = normalizedUser.isProfileCompleted === true;
+  const isProfileCompleted = resolveProfileCompletion(normalizedUser, auth);
 
   return {
     ...auth,
