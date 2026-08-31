@@ -107,35 +107,29 @@
   box-shadow: inset 0 0 0 1px rgba(8, 127, 140, 0.12);
 }
 
-.specialty-clinical-page .specialty-scope-note {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 11px;
-  border-left: 3px solid var(--clinical-teal);
-  background: rgba(232, 245, 241, 0.72);
-  color: var(--clinical-teal-dark);
-  padding: 13px 14px;
-}
-
-.specialty-clinical-page .specialty-scope-note svg {
-  margin-top: 2px;
-}
-
-.specialty-clinical-page .specialty-scope-note p {
-  display: grid;
-  gap: 3px;
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.specialty-clinical-page .specialty-scope-note strong {
-  color: var(--clinical-ink);
-  font-size: 12px;
-}
-
-.specialty-clinical-page .specialty-scope-note span {
+.specialty-clinical-page #specialty-symptoms-hint {
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.6;
+  font-weight: 400;
   color: var(--clinical-muted);
+}
+
+.specialty-clinical-page .clinical-character-limit {
+  margin: -8px 0 0;
+  text-align: right;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--clinical-muted);
+}
+
+.specialty-clinical-page .profile-nudge p,
+.specialty-clinical-page .studio-panel-head .clinical-guidance {
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.6;
 }
 
 .specialty-clinical-page .profile-nudge {

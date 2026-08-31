@@ -3,6 +3,7 @@ import { ArrowRight, Clock3, FileText, LoaderCircle, RefreshCw, X } from "lucide
 import { Button, useOverlayFocus } from "../ui";
 import { symptomAnalysisApi, unwrapApiData } from "../../services/symptomAnalysisService";
 import "../../styles/analysis-history-panel.css";
+import "../../styles/clinical-notes.css";
 
 export const ANALYSIS_HISTORY_PANEL_ID = "analysis-history-panel";
 const SESSION_TYPE_LABELS = {
@@ -278,7 +279,7 @@ export default function AnalysisHistoryPanel({
                 <div className="analysis-history-empty">
                   <FileText size={24} />
                   <strong>{copy.empty}</strong>
-                  <p>Bắt đầu phiên mới để MediMate lưu lại lịch sử tại đây.</p>
+                  <p className="clinical-guidance">Bắt đầu phiên mới để MediMate lưu lại lịch sử tại đây.</p>
                 </div>
               )}
 

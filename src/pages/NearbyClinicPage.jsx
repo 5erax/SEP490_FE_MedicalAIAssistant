@@ -22,6 +22,10 @@ import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
 import ClinicalRecommendationPanel from "../components/nearbyClinic/ClinicalRecommendationPanel";
 import FacilityExplorerControls from "../components/nearbyClinic/FacilityExplorerControls";
+import ClinicalNote from "../components/clinical/ClinicalNote";
+import ClinicalDisclosure from "../components/clinical/ClinicalDisclosure";
+import { Alert } from "../components/ui";
+import { CLINICAL_NOTES } from "../content/clinicalNotes";
 import useNearbyFacilities from "../hooks/useNearbyFacilities";
 import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
 import { resolveExplorerSideMode } from "../utils/facilityExplorerState";
@@ -80,7 +84,7 @@ function sanitizeDepartment(department) {
   if (!department || typeof department !== "object") return null;
   const emergencyValue = department.isEmergencySuggested ?? department.IsEmergencySuggested;
   return {
-    confidenceScore: Number(department.confidenceScore ?? department.ConfidenceScore ?? 0) || 0,
+    confidenceScore: department.confidenceScore ?? department.ConfidenceScore ?? null,
     departmentId: String(
       department.departmentId
       ?? department.DepartmentId
@@ -973,7 +977,7 @@ function NearbyClinicPage() {
     () => mappableFacilities.map((facility) => `${facility.facilityId}:${facility.longitude}:${facility.latitude}`).join("|"),
     [mappableFacilities],
   );
-  const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
+  const hasActiveFacilitiesWithoutMapData = visibleFacilities.some((facility) => !facility.hasValidCoordinates);
   const unavailableRecommendationCount = isClinicalFlow && recommendedFacilityOrder.size > 0
     ? (resolvedRecommendationContext?.recommendedFacilities ?? [])
       .filter((facility) => facility.isActive === false)
@@ -1636,7 +1640,7 @@ function NearbyClinicPage() {
             selectedType={selectedType} typeOptions={activeTypeOptions} radiusKm={radiusKm}
             filtersOpen={sideMode === "filters"} onOpenFilters={() => changeSideMode("filters")} onCloseFilters={() => changeSideMode("list")} onApplyFilters={applyExplorerFilters}
             hasLocation={nearbyEnabled && Boolean(userLocation)} locating={locating} onLocate={handleLocateMe}
-            locationError={locationError} accuracy={userLocation?.accuracy} nearbyError={nearbyEnabled ? nearby.error : ""}
+            locationError={locationError} accuracy={userLocation?.accuracy} nearbyError={nearbyEnabled && visibleFacilities.length > 0 ? nearby.error : ""}
             onRetry={() => setNearbyAttempt((value) => value + 1)} loading={nearbyEnabled ? nearby.loading : loadingFacilities}
           />}
           {sideMode !== "filters" && isClinicalFlow && <nav className="explorer-tabs" aria-label="Nội dung cơ sở y tế">
@@ -1645,17 +1649,18 @@ function NearbyClinicPage() {
           </nav>}
         </>}
         <div className="explorer-list" hidden={sidebarView !== "hospital-list" || sideMode !== "list"}>
-          {nearbyEnabled && !nearby.error && <p className="explorer-order">Gần → xa · Khoảng cách đường thẳng{radiusKm !== "nearest" ? ` · Trong ${radiusKm} km` : ""}</p>}
-        {apiNotice && !nearbyEnabled && facilities.length > 0 && <div className="sidebar-note">{apiNotice}</div>}
-        {isClinicalFlow && !loadingFacilities && unavailableRecommendationCount > 0 && (
-          <div className="sidebar-note" role="status">
-            Cơ sở được gợi ý hiện không còn trong danh sách cơ sở đang hoạt động.
-          </div>
+          {nearbyEnabled && !nearby.error && <>
+            <p className="explorer-order">Gần → xa · Khoảng cách đường thẳng{radiusKm !== "nearest" ? ` · Trong ${radiusKm} km` : ""}</p>
+            <ClinicalDisclosure className="explorer-distance-guide" title={CLINICAL_NOTES.distanceTitle}>
+              <p className="clinical-guidance">{CLINICAL_NOTES.distance}</p>
+            </ClinicalDisclosure>
+          </>}
+        {apiNotice && !nearbyEnabled && visibleFacilities.length > 0 && <Alert title="Thông tin danh sách" live>{apiNotice}</Alert>}
+        {isClinicalFlow && !loadingFacilities && visibleFacilities.length > 0 && unavailableRecommendationCount > 0 && (
+          <ClinicalNote tone="warning" title="Thay đổi trong danh sách">{CLINICAL_NOTES.unavailableFacilities}</ClinicalNote>
         )}
-        {hasActiveFacilitiesWithoutMapData && (
-          <div className="sidebar-note">
-            Cơ sở y tế hiện chưa có tọa độ hợp lệ. Quản trị viên cần cập nhật vĩ độ và kinh độ để bản đồ hiển thị điểm khám.
-          </div>
+        {!loadingFacilities && hasActiveFacilitiesWithoutMapData && (
+          <ClinicalNote title="Thông tin bản đồ">{CLINICAL_NOTES.noCoordinates}</ClinicalNote>
         )}
 
         <FacilityList
@@ -1668,12 +1673,12 @@ function NearbyClinicPage() {
           onRetry={nearbyEnabled && nearby.error ? () => setNearbyAttempt((value) => value + 1) : !nearbyEnabled && apiNotice && facilities.length === 0 ? () => { setLoadingFacilities(true); setCatalogAttempt((value) => value + 1); } : undefined}
         />
 
-          <p className="explorer-disclaimer">Thông tin tham khảo. Vui lòng gọi cơ sở trước khi đến.</p>
+          {visibleFacilities.length > 0 && <ClinicalNote title={CLINICAL_NOTES.contactTitle}>{CLINICAL_NOTES.contact}</ClinicalNote>}
         </div>
-        {sidebarView === "hospital-list" && sideMode === "advice" && <>
+        {isClinicalFlow && <div hidden={sidebarView !== "hospital-list" || sideMode !== "advice"}>
           <button type="button" className="explorer-back" onClick={() => changeSideMode("list")}><ArrowLeft size={16} /> Quay lại danh sách</button>
-          <ClinicalRecommendationPanel context={resolvedRecommendationContext} status={clinicalStatus} notice={effectiveClinicalNotice} chatContext={chatContext} />
-        </>}
+          <ClinicalRecommendationPanel key={mapQuery.sessionId || "current"} context={resolvedRecommendationContext} status={clinicalStatus} notice={effectiveClinicalNotice} chatContext={chatContext} />
+        </div>}
 
         {sidebarView === "hospital-detail" && detailFacility && (
           <section
@@ -1765,7 +1770,7 @@ function NearbyClinicPage() {
                   </section>
                   <section className="facility-info-group busy-hours-section">
                     <h3>Mức độ đông khách</h3>
-                    <p>Hệ thống chưa có dữ liệu lượng khách theo thời gian thực từ cơ sở này. Vui lòng liên hệ trực tiếp trước khi đến.</p>
+                    <p className="clinical-guidance">Hệ thống chưa có dữ liệu lượng khách theo thời gian thực từ cơ sở này. Vui lòng liên hệ trực tiếp trước khi đến.</p>
                   </section>
                   <section className="facility-info-group">
                     <h3>Tiện ích hiện có dữ liệu</h3>
@@ -1785,7 +1790,7 @@ function NearbyClinicPage() {
                     <h3>Đánh giá người dùng</h3>
                     <div className="review-overview"><strong>{detailAverageRating ? detailAverageRating.toFixed(1) : "--"}</strong><div className="review-summary-stars" aria-label={detailAverageRating ? `${detailAverageRating.toFixed(1)} trên 5 sao` : "Chưa có điểm đánh giá"}>{[1, 2, 3, 4, 5].map((rating) => <Star key={rating} size={18} fill={detailAverageRating >= rating - 0.25 ? "currentColor" : "none"} aria-hidden="true" />)}</div><span>{detailReviewCount == null ? "Chưa tải được tổng đánh giá" : `${detailReviewCount} đánh giá`}</span></div>
                     <div className="review-distribution" aria-label="Phân bố đánh giá đã tải">
-                      {reviews.length < reviewsTotalCount && <small>Phân bố của {reviews.length} đánh giá đã tải, không phải toàn bộ đánh giá.</small>}
+                      {reviews.length < reviewsTotalCount && <small className="clinical-guidance">Phân bố của {reviews.length} đánh giá đã tải, không phải toàn bộ đánh giá.</small>}
                       {reviewDistribution.map((row) => <div key={row.rating}><span>{row.rating} sao</span><i><b style={{ width: `${row.percent}%` }} /></i><em>{row.percent}%</em></div>)}
                     </div>
                   </section>
@@ -1809,7 +1814,7 @@ function NearbyClinicPage() {
                         <fieldset className="star-rating"><legend>Chọn số sao</legend><div onMouseLeave={() => setHoveredReviewRating(0)}>{[1, 2, 3, 4, 5].map((rating) => <label key={rating} title={`${rating} sao · ${RATING_LABELS[rating]}`} onMouseEnter={() => setHoveredReviewRating(rating)}><input type="radio" name="rating" value={rating} checked={reviewForm.rating === String(rating)} onChange={(event) => { setReviewForm((current) => ({ ...current, rating: event.target.value })); setHoveredReviewRating(0); }} /><Star size={32} fill={(hoveredReviewRating || Number(reviewForm.rating)) >= rating ? "currentColor" : "none"} aria-hidden="true" /><span className="sr-only">{rating} sao · {RATING_LABELS[rating]}</span></label>)}</div><p>{hoveredReviewRating || reviewForm.rating}/5 · {RATING_LABELS[hoveredReviewRating || Number(reviewForm.rating)]}</p></fieldset>
                         <label><span>Chia sẻ trải nghiệm</span><textarea rows={4} maxLength={1000} value={reviewForm.comment} onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))} placeholder="Điều gì khiến bạn hài lòng hoặc chưa hài lòng?" /><small>{reviewForm.comment.length}/1000 ký tự</small></label>
                         <div className="review-image-upload">
-                          <div><strong>Ảnh minh họa</strong><small>Tối đa 5 MB · JPG, PNG, WebP hoặc định dạng ảnh được hỗ trợ.</small></div>
+                          <div><strong>Ảnh minh họa</strong><small className="clinical-guidance">Tối đa 5 MB · JPG, PNG, WebP hoặc định dạng ảnh được hỗ trợ.</small></div>
                           {reviewForm.imageUrls.length > 0 && <div className="review-image-preview-grid">{reviewForm.imageUrls.map((imageUrl, index) => <div className="review-image-preview" key={imageUrl}><img className="review-image" src={imageUrl} alt={`Ảnh minh họa ${index + 1} sẽ đính kèm đánh giá`} width="240" height="180" decoding="async" /><button type="button" aria-label={`Xóa ảnh ${index + 1}`} onClick={() => setReviewForm((current) => ({ ...current, imageUrls: current.imageUrls.filter((url) => url !== imageUrl) }))}>×</button></div>)}</div>}
                           {reviewForm.imageUrls.length < 5 && <label className="review-upload-button"><ImagePlus size={17} aria-hidden="true" /><span>{uploadingReviewImage ? "Đang tải ảnh..." : `Thêm ảnh (${reviewForm.imageUrls.length}/5)`}</span><input type="file" accept="image/*" multiple onChange={uploadReviewImage} disabled={uploadingReviewImage || savingReview} /></label>}
                           <p>Không tải ảnh chứa hồ sơ bệnh án, giấy tờ tùy thân hoặc thông tin sức khỏe riêng tư.</p>

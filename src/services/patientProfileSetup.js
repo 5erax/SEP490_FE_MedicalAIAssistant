@@ -20,7 +20,7 @@ export function rememberCompletedPatientProfile(expectedAuth, user) {
   const currentAuth = getStoredAuth();
   if (!isSameProfileAccount(expectedAuth, currentAuth)) return null;
   // Use the current token, not the snapshot captured before a slow request/refresh.
-  const nextAuth = mergeAuthWithCurrentUser(currentAuth, { ...user, isProfileCompleted: true });
+  const nextAuth = mergeAuthWithCurrentUser(currentAuth, { ...(user ?? currentAuth), isProfileCompleted: true });
   setStoredAuth(nextAuth);
   return nextAuth;
 }

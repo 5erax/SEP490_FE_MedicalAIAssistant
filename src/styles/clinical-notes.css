@@ -1,0 +1,129 @@
+/* Only clinical guidance: do not restyle shared fields, alerts or admin UI. */
+:is(.clinical-note, .clinical-disclosure, .clinical-department, .clinical-results) {
+  --note-ink: #12383e;
+  --note-muted: #49676a;
+  --note-accent: #086c70;
+  --note-line: #c6deda;
+  --note-soft: #edf7f5;
+  --note-warning-ink: #774b13;
+  --note-warning-line: #e8cf9f;
+  --note-warning-soft: #fff8eb;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.clinical-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--note-line);
+  border-radius: 8px;
+  background: var(--note-soft);
+  color: var(--note-accent);
+  box-shadow: none;
+}
+.clinical-note.clinical-note-warning {
+  color: var(--note-warning-ink);
+  border-color: var(--note-warning-line);
+  background: var(--note-warning-soft);
+}
+.clinical-note .clinical-note-icon { flex: 0 0 18px; margin-top: 2px; }
+.clinical-note .clinical-note-body { flex: 1; min-width: 0; }
+.clinical-note .clinical-note-title {
+  display: block;
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.clinical-note .clinical-note-copy {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* Supporting guidance is quieter than the 14px clinical content. Keep warning
+   copy, result data, titles and interactive labels upright and readable. */
+.clinical-note-info .clinical-note-copy,
+:is(.clinical-results, .clinical-disclosure, .clinical-department) .clinical-helper,
+:is(.clinical-confidence-guide, .clinical-disclosure, .specialty-clinical-page, .facility-explorer, .analysis-history-panel) .clinical-guidance {
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.clinical-disclosure {
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--note-line);
+  background: transparent;
+  color: var(--note-ink);
+}
+.clinical-disclosure > .clinical-disclosure-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 12px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--note-accent);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.clinical-disclosure-summary::-webkit-details-marker { display: none; }
+.clinical-disclosure-summary::marker { content: ""; }
+.clinical-disclosure > .clinical-disclosure-summary:hover { background: var(--note-soft); }
+.clinical-disclosure > .clinical-disclosure-summary:focus-visible { outline: 2px solid var(--note-accent); outline-offset: 3px; }
+.clinical-disclosure .clinical-disclosure-label { min-width: 0; }
+.clinical-disclosure .clinical-disclosure-title { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.clinical-disclosure .clinical-disclosure-meta { display: block; font-size: 13px; font-weight: 400; color: var(--note-muted); margin-top: 3px; }
+.clinical-disclosure .clinical-disclosure-chevron { flex: 0 0 18px; transition: transform 120ms ease; }
+.clinical-disclosure[open] > summary .clinical-disclosure-chevron { transform: rotate(180deg); }
+.clinical-disclosure .clinical-disclosure-content { padding: 0 0 14px; min-width: 0; }
+.clinical-department, .clinical-results { display: grid; gap: 14px; }
+.clinical-department .clinical-department-header { display: grid; gap: 6px; }
+.clinical-department .clinical-eyebrow { font-size: 13px; font-weight: 600; color: var(--note-accent); letter-spacing: normal; }
+.clinical-department .clinical-department-name { margin: 0; font-size: 23px; font-weight: 700; line-height: 1.3; color: var(--note-ink); overflow-wrap: anywhere; }
+.clinical-department .clinical-confidence { color: var(--note-muted); font-size: 14px; line-height: 1.5; }
+.clinical-department .clinical-section-title, .clinical-results .clinical-section-title { margin: 0 0 6px; font-size: 15px; font-weight: 600; line-height: 1.5; color: var(--note-ink); }
+:is(.clinical-department, .clinical-disclosure) .clinical-body-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--note-ink);
+  font-weight: 400;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+:is(.clinical-results, .clinical-disclosure, .clinical-department) .clinical-helper { margin: 0; color: var(--note-muted); }
+.clinical-disclosure .clinical-guidance { margin: 0; color: var(--note-muted); }
+.clinical-disclosure .clinical-metadata { display: block; margin-top: 12px; color: var(--note-muted); font-size: 13px; overflow-wrap: anywhere; }
+.clinical-confidence-guide { display: grid; gap: 0; }
+.clinical-result-list { margin: 0; padding: 0; list-style: none; }
+.clinical-result-list > li { min-width: 0; }
+.clinical-transcript { display: grid; gap: 12px; }
+.clinical-transcript .clinical-section-title { margin: 0 0 4px; font-size: 14px; color: var(--note-ink); }
+html[data-theme="dark"] :is(.clinical-note, .clinical-disclosure, .clinical-department, .clinical-results) {
+  --note-ink: #e1efed;
+  --note-muted: #b1c9c4;
+  --note-accent: #8cdbd4;
+  --note-line: #3b5b56;
+  --note-soft: #1a3532;
+  --note-warning-ink: #f4d49d;
+  --note-warning-line: #75613d;
+  --note-warning-soft: #332a1b;
+}
+@media (prefers-reduced-motion: reduce) {
+  .clinical-disclosure .clinical-disclosure-chevron { transition: none; }
+}

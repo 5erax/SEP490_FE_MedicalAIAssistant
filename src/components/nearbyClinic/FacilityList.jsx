@@ -1,4 +1,5 @@
 import { formatFacilityRating } from "../../utils/facilityRating";
+import { EmptyState, ErrorState } from "../ui";
 
 export default function FacilityList({
   cardRefs,
@@ -27,7 +28,8 @@ export default function FacilityList({
         </article>
       ))}
       {!loading && facilities.length === 0 && (
-        <div className="sidebar-note" role="status">{emptyMessage || "Chưa tìm thấy cơ sở phù hợp. Hãy thử đổi chuyên khoa, phạm vi hoặc từ khóa."}{onRetry && <button type="button" className="facility-select-button" onClick={onRetry}>Thử tải lại</button>}</div>
+        onRetry ? <ErrorState title="Chưa tải được danh sách cơ sở" description={emptyMessage} action={<button type="button" className="facility-select-button" onClick={onRetry}>Thử tải lại</button>} />
+          : <EmptyState title="Chưa tìm thấy cơ sở phù hợp" description={emptyMessage || "Hãy thử đổi chuyên khoa, phạm vi hoặc từ khóa."} />
       )}
       {!loading && facilities.map((facility) => (
         <article

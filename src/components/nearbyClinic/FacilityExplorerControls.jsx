@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, LocateFixed, Search, SlidersHorizontal } from "lucide-react";
 import { NEARBY_RADII } from "../../utils/nearbyFacilities";
+import { Alert } from "../ui";
+import ClinicalNote from "../clinical/ClinicalNote";
 
 export default function FacilityExplorerControls({ search, onSearch, suggestions, onSuggestion,
   departments, departmentsLoading, selectedDepartmentId, selectedType, typeOptions, radiusKm,
@@ -34,7 +36,7 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
     {departmentsLoading && <p role="status">Đang tải chuyên khoa…</p>}
     <label>Loại cơ sở<select name="type" defaultValue={selectedType}>{typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
     <label>Phạm vi<select name="radius" defaultValue={radiusKm}><option value="nearest">Không giới hạn</option>{NEARBY_RADII.map((radius) => <option key={radius} value={radius}>Trong {radius} km</option>)}</select></label>
-    {!hasLocation && <p className="explorer-muted">Phạm vi sẽ được áp dụng sau khi bạn cho phép sử dụng vị trí.</p>}
+    {!hasLocation && <ClinicalNote title="Cần vị trí để lọc theo phạm vi">Phạm vi sẽ được áp dụng sau khi bạn cho phép sử dụng vị trí.</ClinicalNote>}
     <div className="explorer-filter-actions"><button className="explorer-primary" type="submit" disabled={departmentsLoading}>Áp dụng</button><button type="button" onClick={() => onApplyFilters({ departmentId: "all", type: "all", radius: "nearest" })}>Đặt lại</button></div>
   </form>;
   return <header className="explorer-controls">
@@ -67,9 +69,9 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
     <div className="explorer-filter-row"><button type="button" className="explorer-filter-chip" onClick={onOpenFilters}>{department?.name || (selectedDepartmentId !== "all" ? "Chuyên khoa được gợi ý" : "Tất cả chuyên khoa")}</button><button type="button" onClick={onOpenFilters}><SlidersHorizontal size={16} aria-hidden="true" /> Bộ lọc</button></div>
     {(selectedType !== "all" || radiusKm !== "nearest") && <p className="explorer-active-filters">{selectedType !== "all" && <span>{typeOptions.find(([key]) => key === selectedType)?.[1]}</span>}{radiusKm !== "nearest" && <span>Trong {radiusKm} km{!hasLocation ? " · Chờ vị trí" : ""}</span>}</p>}
     <div className="explorer-location"><span>{hasLocation ? "Đã dùng vị trí của bạn" : "Xếp theo khoảng cách khi bật vị trí"}</span><button type="button" onClick={onLocate} disabled={locating}><LocateFixed size={15} aria-hidden="true" />{locating ? "Đang định vị…" : hasLocation ? "Định vị lại" : "Dùng vị trí của tôi"}</button></div>
-    {locationError && <p className="explorer-notice" role="alert">{locationError}</p>}
-    {hasLocation && accuracy > 1000 && <p className="explorer-notice" role="status">Sai số vị trí khoảng {(accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</p>}
-    {nearbyError && <p className="explorer-notice" role="alert">{nearbyError} <button type="button" onClick={onRetry}>Thử lại</button></p>}
+    {locationError && <Alert tone="warning" title="Chưa lấy được vị trí" live>{locationError}</Alert>}
+    {hasLocation && accuracy > 1000 && <ClinicalNote tone="warning" title="Vị trí có thể chưa chính xác">Sai số vị trí khoảng {(accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</ClinicalNote>}
+    {nearbyError && <div className="explorer-request-error"><Alert tone="danger" title="Chưa cập nhật được danh sách">{nearbyError}</Alert><button type="button" onClick={onRetry}>Thử lại</button></div>}
     {loading && <span className="sr-only" role="status">Đang cập nhật danh sách</span>}
   </header>;
 }
