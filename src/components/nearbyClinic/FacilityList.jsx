@@ -1,3 +1,5 @@
+import { Star } from "lucide-react";
+
 export default function FacilityList({
   cardRefs,
   facilities,
@@ -37,6 +39,13 @@ export default function FacilityList({
           </div>
           <p className="facility-card-address">{facility.address}</p>
           <div className="facility-card-meta">
+            {Number.isFinite(facility.averageRating) && (
+              <span className="facility-rating-chip">
+                <Star size={13} fill="currentColor" aria-hidden="true" />
+                {facility.averageRating.toFixed(1)}
+                {facility.reviewCount ? ` · ${facility.reviewCount}` : ""}
+              </span>
+            )}
             {facility.distanceLabel && <span>{facility.distanceLabel}</span>}
             <span>{facility.openingHours}</span>
             <span>{facility.hasValidCoordinates ? "Có vị trí bản đồ" : "Thiếu tọa độ"}</span>

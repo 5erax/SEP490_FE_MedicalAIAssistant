@@ -65,6 +65,8 @@ export const ENDPOINTS = {
   MEDICAL_FACILITIES: {
     BASE: FACILITIES_BASE,
     ACTIVE: `${FACILITIES_BASE}/active`,
+    NEARBY: `${FACILITIES_BASE}/nearby`,
+    TOP_RATED: `${FACILITIES_BASE}/top-rated`,
     BY_ID: (id) => byId(FACILITIES_BASE, id),
     STATUS: (id) => status(FACILITIES_BASE, id),
   },
