@@ -1,9 +1,10 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Bot, ChevronDown, Clock3, ClipboardCheck, LocateFixed, Send, X } from "lucide-react";
+import { Bot, Clock3, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi, webChatbotApi } from "../../services/api";
 import { navigate } from "../../router/navigation";
+import { clusterFacilities } from "../../utils/facilityClusters";
 
 const FREE_MAP_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 const EMPTY_ASSISTANT_ITEMS = Object.freeze([]);
@@ -25,12 +26,6 @@ class MapErrorBoundary extends Component {
   render() {
     return this.state.failed ? null : this.props.children;
   }
-}
-
-function confidencePercent(value) {
-  const numeric = Number(value ?? 0);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
 }
 
 function unwrapData(response) {
@@ -103,8 +98,6 @@ function getQuestionText(question, index = 0) {
     ?? `Câu hỏi ${index + 1}`;
 }
 
-const MARKER_LABEL_MIN_ZOOM = 12;
-
 function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect, showLabel }) {
   return (
     <>
@@ -133,85 +126,6 @@ function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect, sho
         </Marker>
       )}
     </>
-  );
-}
-
-function diagnosisKey(diagnosis, index) {
-  return [diagnosis?.rank ?? index + 1, diagnosis?.icd10Code, diagnosis?.diseaseName]
-    .filter(Boolean)
-    .join("-");
-}
-
-function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false, sessionId = "" }) {
-  const [expandedKey, setExpandedKey] = useState("");
-  const expandedDiagnosis = diagnoses.find((diagnosis, index) => (
-    diagnosisKey(diagnosis, index) === expandedKey
-  ));
-  const preConsultationHref = sessionId
-    ? `/pre-consultation?sessionId=${encodeURIComponent(sessionId)}`
-    : "/pre-consultation";
-
-  return (
-    <section
-      className={`map-diagnosis-crossbar${hasTopNotice ? " has-top-notice" : ""}`}
-      aria-labelledby="map-diagnoses-title"
-    >
-      <header>
-        <div>
-          <small>Kết quả tham khảo</small>
-          <h3 id="map-diagnoses-title">Các chẩn đoán được cân nhắc</h3>
-        </div>
-        <span>Chọn từng bệnh để xem giải thích</span>
-      </header>
-      <ol className="map-diagnosis-list">
-        {diagnoses.map((diagnosis, index) => {
-          const key = diagnosisKey(diagnosis, index);
-          const expanded = key === expandedKey;
-          const reasoningId = `map-diagnosis-reasoning-${index}`;
-          const diseaseName = diagnosis.diseaseName || "Chưa xác định tên bệnh";
-          const metadata = [
-            diagnosis.icd10Code ? `ICD-10: ${diagnosis.icd10Code}` : "",
-            Number(diagnosis.confidenceScore) > 0
-              ? `Độ phù hợp: ${confidencePercent(diagnosis.confidenceScore)}%`
-              : "",
-          ].filter(Boolean).join(" · ");
-
-          return (
-            <li key={key}>
-              <button
-                type="button"
-                className={expanded ? "is-expanded" : ""}
-                aria-expanded={expanded}
-                aria-controls={expanded ? reasoningId : undefined}
-                onClick={() => setExpandedKey((current) => current === key ? "" : key)}
-              >
-                <span>
-                  <strong>{diseaseName}</strong>
-                  {metadata && <small>{metadata}</small>}
-                </span>
-                <ChevronDown size={16} aria-hidden="true" />
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-      {expandedDiagnosis && (
-        <div
-          className="map-diagnosis-reasoning"
-          id={`map-diagnosis-reasoning-${diagnoses.indexOf(expandedDiagnosis)}`}
-          role="region"
-          aria-live="polite"
-        >
-          <strong>Mô tả phân tích</strong>
-          <p>{expandedDiagnosis.clinicalReasoning || "Chưa có mô tả phân tích cho bệnh được gợi ý này."}</p>
-        </div>
-      )}
-      <a className="map-diagnosis-cta" href={preConsultationHref}>
-        <ClipboardCheck size={16} aria-hidden="true" />
-        <span>Bạn có muốn được tư vấn trước khi đến khám?</span>
-        <ArrowRight size={16} aria-hidden="true" />
-      </a>
-    </section>
   );
 }
 
@@ -612,17 +526,11 @@ function MapConsultationAssistant({
 export default function FacilityMap({
   assistantAccessLocked = false,
   assistantOpenRequestKey = 0,
-  chatContext,
-  clinicalNotice = "",
-  clinicalStatus = "idle",
   consultationFacility = null,
-  hasTopNotice = false,
-  isClinicalFlow = false,
   onAssistantLogin,
   showConsultationAssistant = false,
   facilities,
   hidePopup = false,
-  locationError,
   mapRef,
   mapRenderKey,
   mapStatus,
@@ -637,11 +545,16 @@ export default function FacilityMap({
   onSelect,
   onViewStateChange,
   onViewDetail,
+  onMarkerSelect,
+  onUserMove,
+  onShowAll,
+  onShowList,
 }) {
   const popupActionRef = useRef(null);
   const markerRefs = useRef(new globalThis.Map());
   const recommendedDepartment = recommendationContext?.recommendedDepartment;
-  const confidence = confidencePercent(recommendedDepartment?.confidenceScore);
+  const clusterZoom = Math.floor(viewState.zoom);
+  const clusters = useMemo(() => clusterFacilities(facilities, clusterZoom, selectedFacility?.facilityId), [facilities, clusterZoom, selectedFacility?.facilityId]);
 
   useEffect(() => {
     if (!selectedFacility?.hasValidCoordinates) return undefined;
@@ -661,62 +574,6 @@ export default function FacilityMap({
       <p className="sr-only" id="interactive-map-description">
         Bản đồ hiển thị các cơ sở có tọa độ hợp lệ. Danh sách cơ sở bên cạnh cung cấp cùng thông tin ở dạng văn bản.
       </p>
-      {chatContext && (
-        <aside className="map-chat-context" aria-label="Khung chat gợi ý chuyên khoa">
-          <strong>Gợi ý chuyên khoa qua triệu chứng</strong>
-          <p>{chatContext.symptom}</p>
-          <span>{chatContext.answer}</span>
-        </aside>
-      )}
-      {isClinicalFlow && <details className="map-clinical-panels">
-      <summary>
-        <span><small>Gợi ý chuyên khoa</small><strong>{recommendedDepartment?.departmentName || "Kết quả tư vấn"}</strong></span>
-        <span className="map-clinical-expand-label">Xem chi tiết</span>
-        <span className="map-clinical-collapse-label">Thu gọn</span>
-      </summary>
-      <div className="map-clinical-panel-content">
-      {isClinicalFlow && (
-        <aside
-          className={`map-clinical-summary${hasTopNotice ? " has-top-notice" : ""}`}
-          aria-label="Kết quả gợi ý chuyên khoa"
-          aria-live="polite"
-        >
-          {clinicalStatus === "loading" && (
-            <div className="map-clinical-summary-state" role="status">
-              <span className="map-loading-spinner" aria-hidden="true" />
-              <strong>Đang khôi phục gợi ý chuyên khoa…</strong>
-            </div>
-          )}
-          {clinicalStatus !== "loading" && clinicalStatus !== "ready" && clinicalNotice && (
-            <div className="map-clinical-summary-state" role={clinicalStatus === "error" ? "alert" : "status"}>
-              <strong>
-                {clinicalStatus === "empty"
-                  ? "Phiên chưa lưu kết quả gợi ý"
-                  : "Chưa thể hiển thị gợi ý chuyên khoa"}
-              </strong>
-              <p>{clinicalNotice}</p>
-            </div>
-          )}
-          {clinicalStatus === "ready" && (
-            <>
-              <details className="map-specialty-description">
-              <summary>Thông tin chuyên khoa</summary>
-              <p className="map-clinical-description">
-                {recommendedDepartment?.description
-                  || "Chưa có mô tả cho chuyên khoa được gợi ý."}
-              </p>
-              </details>
-            </>
-          )}
-        </aside>
-      )}
-
-      {isClinicalFlow && clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
-        <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} hasTopNotice={hasTopNotice} sessionId={recommendationContext.sessionId} />
-      )}
-      </div>
-      </details>}
-
       {mapStatus !== "error" && (
         <MapErrorBoundary key={mapRenderKey} onError={onError}>
           <Map
@@ -725,6 +582,7 @@ export default function FacilityMap({
             {...viewState}
             onLoad={onMapLoad}
             onError={onError}
+            onMoveStart={(event) => { if (event.originalEvent) onUserMove?.(); }}
             onMove={(event) => onViewStateChange(event.viewState)}
             style={{ width: "100%", height: "100%" }}
           >
@@ -734,19 +592,23 @@ export default function FacilityMap({
                 <div className="user-marker" role="img" aria-label="Vị trí hiện tại của bạn"><span /></div>
               </Marker>
             )}
-            {facilities.map((facility) => (
-              <AccessibleFacilityMarker
-                key={facility.facilityId}
-                buttonRef={(node) => {
-                  if (node) markerRefs.current.set(facility.facilityId, node);
-                  else markerRefs.current.delete(facility.facilityId);
-                }}
-                facility={facility}
-                selected={selectedFacility?.facilityId === facility.facilityId}
-                onSelect={onViewDetail}
-                showLabel={viewState.zoom >= MARKER_LABEL_MIN_ZOOM}
-              />
-            ))}
+            {clusters.map((cluster) => {
+              if (cluster.members.length > 1) return <Marker key={cluster.id} longitude={cluster.longitude} latitude={cluster.latitude}>
+                <button type="button" className="explorer-cluster" aria-label={`Phóng to nhóm ${cluster.members.length} cơ sở`} onClick={(event) => {
+                  event.stopPropagation();
+                  onUserMove?.();
+                  const lngs = cluster.members.map((item) => item.longitude);
+                  const lats = cluster.members.map((item) => item.latitude);
+                  mapRef.current?.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 70, maxZoom: 15, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500 });
+                }}>{cluster.members.length}</button>
+              </Marker>;
+              const facility = cluster.members[0];
+              return <AccessibleFacilityMarker key={facility.facilityId}
+                buttonRef={(node) => { if (node) markerRefs.current.set(facility.facilityId, node); else markerRefs.current.delete(facility.facilityId); }}
+                facility={facility} selected={selectedFacility?.facilityId === facility.facilityId}
+                onSelect={onMarkerSelect || onViewDetail}
+                showLabel={selectedFacility?.facilityId === facility.facilityId || viewState.zoom >= 15} />;
+            })}
             {selectedFacility?.hasValidCoordinates && !hidePopup && (
               <Popup
                 longitude={selectedFacility.longitude}
@@ -769,17 +631,7 @@ export default function FacilityMap({
                 >
                   <strong>{selectedFacility.facilityName}</strong>
                   <span>{selectedFacility.address}</span>
-                  {recommendationContext && (
-                    <div className="popup-ai-summary">
-                      <small>Chuyên khoa được gợi ý</small>
-                      {recommendedDepartment?.departmentName && (
-                        <b>{recommendedDepartment.departmentName}</b>
-                      )}
-                      {Number.isFinite(confidence) && confidence > 0 && <em>{confidence}% phù hợp</em>}
-                    </div>
-                  )}
-                  <span>{selectedFacility.phoneLabel}</span>
-                  {selectedFacility.website && <a href={selectedFacility.website} target="_blank" rel="noreferrer">Website cơ sở</a>}
+                  {selectedFacility.distanceLabel && <span>{selectedFacility.distanceLabel} · đường thẳng</span>}
                   <button ref={popupActionRef} type="button" onClick={() => onViewDetail(selectedFacility)}>Xem chi tiết</button>
                 </div>
               </Popup>
@@ -802,7 +654,7 @@ export default function FacilityMap({
           <p>Bạn vẫn có thể xem, tìm kiếm và chọn cơ sở trong danh sách.</p>
           <div className="map-fallback-actions">
             <button type="button" onClick={onRetry}>Thử tải lại bản đồ</button>
-            <a href="#facility-list">Đến danh sách cơ sở</a>
+            <a href="#facility-list" onClick={onShowList}>Đến danh sách cơ sở</a>
           </div>
         </div>
       )}
@@ -820,7 +672,7 @@ export default function FacilityMap({
           recommendedDepartment={recommendedDepartment}
         />
       )}
-      {locationError && <div className="location-error">{locationError}</div>}
+      {mapStatus === "ready" && facilities.length > 0 && <button className="explorer-show-all" type="button" onClick={onShowAll}>Xem tất cả kết quả</button>}
     </section>
   );
 }

@@ -2,17 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Building2,
-  ChevronDown,
   Clock3,
   Globe2,
   House,
   ImagePlus,
-  Info,
   MapPin,
   Pencil,
   Phone,
   Route,
-  Search,
   Share2,
   Star,
   Stethoscope,
@@ -23,9 +20,11 @@ import {
 import { useFeedback } from "../components/feedback/feedbackContext";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
+import ClinicalRecommendationPanel from "../components/nearbyClinic/ClinicalRecommendationPanel";
+import FacilityExplorerControls from "../components/nearbyClinic/FacilityExplorerControls";
 import useNearbyFacilities from "../hooks/useNearbyFacilities";
 import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
-import { NEARBY_RADII, getNextNearbyRadius } from "../utils/nearbyFacilities";
+
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
@@ -41,6 +40,7 @@ import {
   symptomAnalysisApi,
 } from "../services/api";
 import "../styles/map-clinical-refresh.css";
+import "../styles/facility-explorer.css";
 
 const TYPE_LABELS = {
   hospital: "Bệnh viện",
@@ -51,7 +51,6 @@ const TYPE_LABELS = {
 };
 
 const MAP_LOAD_TIMEOUT_MS = 12_000;
-const SIDEBAR_MAP_OFFSET = 190;
 const DETAIL_TABS = [
   ["overview", "Tổng quan"],
   ["reviews", "Đánh giá"],
@@ -122,6 +121,7 @@ function sanitizeDiagnosis(diagnosis, index = 0) {
     ).trim(),
     diseaseName,
     icd10Code,
+    confidenceScore: diagnosis.confidenceScore ?? diagnosis.ConfidenceScore ?? null,
     rank: Number(diagnosis.rank ?? diagnosis.Rank ?? index + 1) || index + 1,
   };
 }
@@ -462,20 +462,23 @@ function NearbyClinicPage() {
   });
   const [facilities, setFacilities] = useState([]);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
   const [apiNotice, setApiNotice] = useState("");
   const [searchText, setSearchText] = useState(
     () => mapQuery.search,
   );
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [selectedType, setSelectedType] = useState("all");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(requestedDepartmentId || "all");
   const [departments, setDepartments] = useState([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
-  const [departmentPickerOpen, setDepartmentPickerOpen] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [sidebarView, setSidebarView] = useState("hospital-list");
-  const [sidebarUnlocked, setSidebarUnlocked] = useState(false);
+  const [sideMode, setSideMode] = useState("list");
+  const [mobileView, setMobileView] = useState("list");
+  const explorerScrollRef = useRef(null);
+  const savedListScrollRef = useRef(0);
+  const mapInteractedRef = useRef(false);
   const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
@@ -509,10 +512,7 @@ function NearbyClinicPage() {
   const [viewState, setViewState] = useState({ longitude: 106.6297, latitude: 10.8231, zoom: 12 });
   const mapRef = useRef(null);
   const mapStageRef = useRef(null);
-  const mapControlsRef = useRef(null);
   const cardRefs = useRef({});
-  const departmentFilterRef = useRef(null);
-  const searchBoxRef = useRef(null);
   const sidebarTitleRef = useRef(null);
   const detailCloseButtonRef = sidebarTitleRef;
   const detailBodyRef = useRef(null);
@@ -525,18 +525,10 @@ function NearbyClinicPage() {
 
   useEffect(() => {
     const stage = mapStageRef.current;
-    const controls = mapControlsRef.current;
-    if (!stage || !controls) return;
-    const measure = () => {
-      const bottom = controls.getBoundingClientRect().bottom - stage.getBoundingClientRect().top;
-      stage.style.setProperty("--map-controls-bottom", `${Math.ceil(bottom)}px`);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(controls);
+    if (!stage) return;
+    const observer = new ResizeObserver(() => mapRef.current?.resize?.());
     observer.observe(stage);
-    window.addEventListener("resize", measure);
-    return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -567,46 +559,6 @@ function NearbyClinicPage() {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!departmentPickerOpen) return undefined;
-
-    function handlePointerDown(event) {
-      if (!departmentFilterRef.current?.contains(event.target)) {
-        setDepartmentPickerOpen(false);
-      }
-    }
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setDepartmentPickerOpen(false);
-    }
-
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [departmentPickerOpen]);
-
-  useEffect(() => {
-    if (!suggestionsOpen) return undefined;
-
-    function handlePointerDown(event) {
-      if (!searchBoxRef.current?.contains(event.target)) {
-        setSuggestionsOpen(false);
-      }
-    }
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setSuggestionsOpen(false);
-    }
-
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [suggestionsOpen]);
 
   useEffect(() => {
     if (!isClinicalFlow) return undefined;
@@ -799,7 +751,7 @@ function NearbyClinicPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [catalogAttempt]);
 
   useEffect(() => {
     if (!selectedFacility?.facilityId) return;
@@ -930,16 +882,8 @@ function NearbyClinicPage() {
     return extras.length ? [...facilities, ...extras] : facilities;
   }, [clinicalRecommendationFacilities, facilities, isClinicalFlow, nearbyEnabled, nearby.items]);
   const effectiveDepartmentId = selectedDepartmentId;
-  const selectedDepartment = selectedDepartmentId === "all"
-    ? { id: "all", name: "Tất cả các khoa" }
-    : departments.find((department) => department.id === selectedDepartmentId) || null;
 
   const filteredFacilities = useMemo(() => {
-    if (isClinicalFlow && clinicalStatus !== "ready") return [];
-    // With no working map there is no pin to click either, so fall back to
-    // showing every facility in the list regardless of department filter.
-    if (!nearbyEnabled && !isClinicalFlow && !effectiveDepartmentId && mapStatus !== "error") return [];
-
     const normalized = normalizeSearchText(debouncedSearch);
     const normalizedDepartmentId = String(effectiveDepartmentId).trim();
     const normalizedDepartmentSearch = normalizeSearchText(effectiveDepartmentId);
@@ -975,10 +919,8 @@ function NearbyClinicPage() {
   }, [
     debouncedSearch,
     clinicalFacilityPool,
-    clinicalStatus,
     effectiveDepartmentId,
     isClinicalFlow,
-    mapStatus,
     recommendedFacilityOrder,
     nearbyEnabled,
   ]);
@@ -990,12 +932,14 @@ function NearbyClinicPage() {
     const normalized = normalizeSearchText(searchText);
     if (!normalized) return [];
     return clinicalFacilityPool
+      .filter((facility) => (selectedType === "all" || facility.facilityTypeKey === selectedType)
+        && (nearbyEnabled || !selectedDepartmentId || selectedDepartmentId === "all" || facility.departmentIds?.includes(selectedDepartmentId)))
       .filter((facility) => (
         normalizeSearchText(facility.facilityName).includes(normalized)
         || normalizeSearchText(facility.address).includes(normalized)
       ))
       .slice(0, 6);
-  }, [searchText, clinicalFacilityPool]);
+  }, [searchText, clinicalFacilityPool, selectedType, selectedDepartmentId, nearbyEnabled]);
 
   const typedFacilities = useMemo(
     () => filteredFacilities.filter((facility) => selectedType === "all" || facility.facilityTypeKey === selectedType),
@@ -1040,7 +984,6 @@ function NearbyClinicPage() {
 
   const handleSearchChange = (event) => {
     setSearchText(event.target.value);
-    setSuggestionsOpen(Boolean(event.target.value.trim()));
     setSelectedFacility(null);
     setSidebarView("hospital-list");
     setDetailPanelOpen(false);
@@ -1087,14 +1030,10 @@ function NearbyClinicPage() {
       mapRef.current?.flyTo?.({
         center: [facility.longitude, facility.latitude],
         zoom: 16,
-        offset: window.innerWidth > 760 ? [SIDEBAR_MAP_OFFSET, 0] : [0, -120],
+        offset: [0, 0],
         duration: prefersReducedMotion() ? 0 : 900,
       });
     }
-    cardRefs.current[facility.facilityId]?.scrollIntoView?.({
-      block: "nearest",
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
-    });
   }, [
     mapStatus,
     prefersReducedMotion,
@@ -1106,47 +1045,32 @@ function NearbyClinicPage() {
     setSubmittedReview,
   ]);
 
-  useEffect(() => {
-    if (mapStatus !== "ready" || selectedFacility || mappableFacilities.length === 0) return;
-    if (lastFittedBoundsRef.current === mapBoundsKey) return;
-    lastFittedBoundsRef.current = mapBoundsKey;
-
-    const duration = prefersReducedMotion() ? 0 : 900;
-
-    // Keep markers from landing underneath the floating search/department bar,
-    // and under the recommended-department summary cards in the clinical flow.
-    const topClearance = isClinicalFlow ? 220 : 110;
-
-    if (mappableFacilities.length === 1) {
-      const [facility] = mappableFacilities;
-      mapRef.current?.flyTo?.({
-        center: [facility.longitude, facility.latitude],
-        zoom: 14,
-        duration,
-        offset: [0, topClearance / 2],
-      });
-      return;
-    }
-
-    const longitudes = mappableFacilities.map((facility) => facility.longitude);
-    const latitudes = mappableFacilities.map((facility) => facility.latitude);
-    mapRef.current?.fitBounds?.(
-      [
-        [Math.min(...longitudes), Math.min(...latitudes)],
-        [Math.max(...longitudes), Math.max(...latitudes)],
-      ],
-      {
-        duration,
-        padding: { top: topClearance, right: 72, bottom: 72, left: 72 },
-      },
+  const fitFacilities = useCallback((showAll = false) => {
+    if (mapStatus !== "ready" || mappableFacilities.length === 0) return;
+    const items = userLocation && !showAll ? mappableFacilities.slice(0, 5) : mappableFacilities;
+    const points = items.map((item) => [item.longitude, item.latitude]);
+    if (userLocation) points.push([userLocation.lng, userLocation.lat]);
+    mapRef.current?.fitBounds(
+      [[Math.min(...points.map((p) => p[0])), Math.min(...points.map((p) => p[1]))],
+       [Math.max(...points.map((p) => p[0])), Math.max(...points.map((p) => p[1]))]],
+      { padding: 64, maxZoom: 14, duration: prefersReducedMotion() ? 0 : 600 },
     );
-  }, [isClinicalFlow, mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
+  }, [mapStatus, mappableFacilities, userLocation, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (mapStatus !== "ready" || selectedFacility || mapInteractedRef.current || mappableFacilities.length === 0) return;
+    const key = `${mapBoundsKey}:${userLocation?.lat}:${userLocation?.lng}`;
+    if (lastFittedBoundsRef.current === key) return;
+    lastFittedBoundsRef.current = key;
+    fitFacilities();
+  }, [mapStatus, selectedFacility, mapBoundsKey, mappableFacilities.length, userLocation, fitFacilities]);
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
+    if (explorerScrollRef.current && explorerScrollRef.current.querySelector(".explorer-list:not([hidden])")) savedListScrollRef.current = explorerScrollRef.current.scrollTop;
+    setMobileView("list");
     handleCardClick(facility);
     setSidebarView("hospital-detail");
-    setSidebarUnlocked(true);
     setSelectedDoctor(null);
     setDetailPanelOpen(true);
     setDetailFacility(facility);
@@ -1283,7 +1207,6 @@ function NearbyClinicPage() {
   const closeFacilityDetail = () => {
     const facilityId = detailFacility?.facilityId;
     setSidebarView("hospital-list");
-    setSidebarUnlocked(false);
     setDetailPanelOpen(false);
     setDetailFacility(null);
     setDetailError("");
@@ -1296,7 +1219,8 @@ function NearbyClinicPage() {
       ? { facilityId: detailFacility.facilityId }
       : {});
     window.setTimeout(() => {
-      cardRefs.current[facilityId]?.querySelector?.(".facility-select-button")?.focus();
+      if (explorerScrollRef.current) explorerScrollRef.current.scrollTop = savedListScrollRef.current;
+      cardRefs.current[facilityId]?.querySelector?.(".facility-select-button")?.focus({ preventScroll: true });
     }, 0);
   };
 
@@ -1373,11 +1297,12 @@ function NearbyClinicPage() {
         const { latitude, longitude, accuracy } = position.coords;
         locatingRef.current = false;
         setLocating(false);
+        mapInteractedRef.current = false;
+        lastFittedBoundsRef.current = "";
         setUserLocation({ lat: latitude, lng: longitude, accuracy });
         setNearbyAttempt((value) => value + 1);
         setNearbyEnabled(true);
-        setSidebarUnlocked(true);
-        setSidebarView("hospital-list");
+            setSidebarView("hospital-list");
         setSelectedFacility(null);
         mapRef.current?.flyTo?.({
           center: [longitude, latitude],
@@ -1648,48 +1573,66 @@ function NearbyClinicPage() {
     };
   });
   const showLegacyMapDetail = Boolean(0);
-  const showSidebar =
-    // Once a pin has been opened at least once, keep the sidebar available so
-    // switching departments can return to its list instead of hiding it.
-    sidebarUnlocked
-    // If the map itself failed to load there is no pin left to click, so the
-    // list is the only way left to find and select a facility.
-    || mapStatus === "error";
+  const changeSideMode = (mode) => {
+    if (sideMode === "list") savedListScrollRef.current = explorerScrollRef.current?.scrollTop ?? 0;
+    setSideMode(mode);
+    window.requestAnimationFrame(() => {
+      if (explorerScrollRef.current) explorerScrollRef.current.scrollTop = mode === "list" ? savedListScrollRef.current : 0;
+    });
+  };
+
+  const showFacilityList = (event) => {
+    event?.preventDefault();
+    if (detailPanelOpen) closeFacilityDetail();
+    setMobileView("list");
+    changeSideMode("list");
+    window.setTimeout(() => {
+      explorerScrollRef.current?.querySelector("#facility-list")?.focus({ preventScroll: true });
+    }, 0);
+  };
+
+  const applyExplorerFilters = ({ departmentId, type, radius }) => {
+    setSelectedDepartmentId(departmentId || "all");
+    setSelectedType(type);
+    setRadiusKm(radius);
+    setSelectedFacility(null);
+    setSidebarView("hospital-list");
+    setSideMode("list");
+    savedListScrollRef.current = 0;
+    if (explorerScrollRef.current) explorerScrollRef.current.scrollTop = 0;
+    mapInteractedRef.current = false;
+    lastFittedBoundsRef.current = "";
+  };
 
   return (
-    <main className={`clinic-page map-clinical-refresh${isClinicalFlow ? " is-clinical-map-flow" : ""}`}>
+    <main className={`clinic-page map-clinical-refresh facility-explorer${isClinicalFlow ? " is-clinical-map-flow" : ""}`} data-mobile-view={mobileView}>
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
-      <a className="map-skip-link" href="#facility-list">Bỏ qua bản đồ, đến danh sách cơ sở</a>
-      {showSidebar && (
-      <aside className={`clinic-sidebar sidebar-view-${sidebarView}`}>
-        {sidebarView === "hospital-list" && (
-        <div className="map-sidebar-screen sidebar-screen-active">
-        <header className="map-sidebar-head">
-          <p>Cơ sở y tế</p>
-          <h2>Tìm nơi khám phù hợp</h2>
-          <span>
-            {selectedDepartment
-              ? `Đang lọc theo khoa: ${selectedDepartment.name}.`
-              : "Chọn một cơ sở để xem địa chỉ, chuyên khoa và đánh giá."}
-          </span>
-        </header>
-
-        <div className="facility-type-filter" role="group" aria-label="Lọc loại cơ sở y tế">
-          {activeTypeOptions.map(([type, label]) => (
-            <button
-              key={type}
-              type="button"
-              className={selectedType === type ? "active" : ""}
-              aria-pressed={selectedType === type}
-              onClick={() => setSelectedType(type)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {apiNotice && <div className="sidebar-note">{apiNotice}</div>}
+      <a className="map-skip-link" href="#facility-list" onClick={showFacilityList}>Bỏ qua bản đồ, đến danh sách cơ sở</a>
+      <nav className="explorer-mobile-nav" aria-label="Chế độ xem">
+        <button type="button" aria-pressed={mobileView === "list"} onClick={() => setMobileView("list")}>Danh sách</button>
+        <button type="button" aria-pressed={mobileView === "map"} onClick={() => setMobileView("map")}>Bản đồ</button>
+      </nav>
+      <aside className={`clinic-sidebar sidebar-view-${sidebarView}`} ref={explorerScrollRef}>
+        {sidebarView === "hospital-list" && <>
+          <a className="explorer-home" href="/dashboard"><House size={16} aria-hidden="true" /> Trang chủ</a>
+          {sideMode !== "advice" && <FacilityExplorerControls
+            search={searchText} onSearch={handleSearchChange} suggestions={searchSuggestions} onSuggestion={openFacilityDetail}
+            departments={departments} departmentsLoading={departmentsLoading} selectedDepartmentId={selectedDepartmentId}
+            selectedType={selectedType} typeOptions={activeTypeOptions} radiusKm={radiusKm}
+            filtersOpen={sideMode === "filters"} onOpenFilters={() => changeSideMode("filters")} onCloseFilters={() => changeSideMode("list")} onApplyFilters={applyExplorerFilters}
+            hasLocation={nearbyEnabled && Boolean(userLocation)} locating={locating} onLocate={handleLocateMe}
+            locationError={locationError} accuracy={userLocation?.accuracy} nearbyError={nearbyEnabled ? nearby.error : ""}
+            onRetry={() => setNearbyAttempt((value) => value + 1)} loading={nearbyEnabled ? nearby.loading : loadingFacilities}
+          />}
+          {sideMode !== "filters" && isClinicalFlow && <nav className="explorer-tabs" aria-label="Nội dung cơ sở y tế">
+            <button type="button" aria-pressed={sideMode === "list"} onClick={() => changeSideMode("list")}>Cơ sở y tế</button>
+            <button type="button" aria-pressed={sideMode === "advice"} onClick={() => changeSideMode("advice")}>Kết quả tư vấn</button>
+          </nav>}
+        </>}
+        <div className="explorer-list" hidden={sidebarView !== "hospital-list" || sideMode !== "list"}>
+          {nearbyEnabled && !nearby.error && <p className="explorer-order">Gần → xa · Khoảng cách đường thẳng{radiusKm !== "nearest" ? ` · Trong ${radiusKm} km` : ""}</p>}
+        {apiNotice && !nearbyEnabled && facilities.length > 0 && <div className="sidebar-note">{apiNotice}</div>}
         {isClinicalFlow && !loadingFacilities && unavailableRecommendationCount > 0 && (
           <div className="sidebar-note" role="status">
             Cơ sở được gợi ý hiện không còn trong danh sách cơ sở đang hoạt động.
@@ -1704,20 +1647,20 @@ function NearbyClinicPage() {
         <FacilityList
           cardRefs={cardRefs}
           facilities={visibleFacilities}
-          loading={nearbyEnabled ? nearby.loading : isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities}
+          loading={nearbyEnabled ? nearby.loading : loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
           onViewDetail={openFacilityDetail}
+          emptyMessage={nearbyEnabled && nearby.error ? nearby.error : !nearbyEnabled && apiNotice ? apiNotice : undefined}
+          onRetry={nearbyEnabled && nearby.error ? () => setNearbyAttempt((value) => value + 1) : !nearbyEnabled && apiNotice && facilities.length === 0 ? () => { setLoadingFacilities(true); setCatalogAttempt((value) => value + 1); } : undefined}
         />
 
+          <p className="explorer-disclaimer">Thông tin tham khảo. Vui lòng gọi cơ sở trước khi đến.</p>
         </div>
-        )}
+        {sidebarView === "hospital-list" && sideMode === "advice" && <>
+          <button type="button" className="explorer-back" onClick={() => changeSideMode("list")}><ArrowLeft size={16} /> Quay lại danh sách</button>
+          <ClinicalRecommendationPanel context={resolvedRecommendationContext} status={clinicalStatus} notice={effectiveClinicalNotice} chatContext={chatContext} />
+        </>}
 
-        {sidebarView === "hospital-list" && (
-          <div className="sidebar-note sidebar-disclaimer">
-            <Info size={16} aria-hidden="true" />
-            <span>Thông tin chỉ mang tính tham khảo. Vui lòng gọi trước khi đến.</span>
-          </div>
-        )}
         {sidebarView === "hospital-detail" && detailFacility && (
           <section
             className="map-sidebar-screen facility-detail-sidebar sidebar-screen-active"
@@ -1732,7 +1675,7 @@ function NearbyClinicPage() {
             </div>
 
             <div className="facility-detail-body" ref={detailBodyRef}>
-              <div className="facility-detail-media">
+              <div className={`facility-detail-media${detailFacility.imageUrl ? "" : " is-empty"}`}>
                 {detailFacility.imageUrl ? (
                   <img
                     src={detailFacility.imageUrl}
@@ -1907,174 +1850,10 @@ function NearbyClinicPage() {
           </section>
         )}
       </aside>
-      )}
 
       <section className="map-stage" ref={mapStageRef}>
-        <div className="map-top-controls" ref={mapControlsRef}>
-        <div className="map-top-controls-row" ref={departmentFilterRef}>
-          <button
-            type="button"
-            className="map-top-home-button"
-            aria-label="Về trang chủ"
-            onClick={() => navigate("/dashboard")}
-          >
-            <House size={18} aria-hidden="true" />
-          </button>
-          <div className="map-top-search" ref={searchBoxRef}>
-            <Search size={17} aria-hidden="true" />
-            <label className="sr-only" htmlFor="facility-search">Tìm tên bệnh viện, phòng khám</label>
-            <input
-              id="facility-search"
-              name="search"
-              type="search"
-              value={searchText}
-              onChange={handleSearchChange}
-              onFocus={() => { if (searchText.trim() && searchSuggestions.length > 0) setSuggestionsOpen(true); }}
-              placeholder="Tìm tên bệnh viện, phòng khám…"
-              autoComplete="off"
-              role="combobox"
-              aria-expanded={suggestionsOpen && searchSuggestions.length > 0}
-              aria-controls="facility-search-suggestions"
-              aria-autocomplete="list"
-            />
-            {searchText && (
-              <button type="button" aria-label="Xóa tìm kiếm" onClick={() => { setSearchText(""); setSelectedFacility(null); setSuggestionsOpen(false); }}>×</button>
-            )}
-            {suggestionsOpen && searchSuggestions.length > 0 && (
-              <div id="facility-search-suggestions" className="map-search-suggestions-panel" role="listbox" aria-label="Gợi ý cơ sở y tế">
-                <ul>
-                  {searchSuggestions.map((facility) => (
-                    <li key={facility.facilityId}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={selectedFacility?.facilityId === facility.facilityId}
-                        onClick={() => {
-                          setSuggestionsOpen(false);
-                          handleCardClick(facility);
-                        }}
-                      >
-                        <MapPin size={15} aria-hidden="true" />
-                        <span>
-                          <strong>{facility.facilityName}</strong>
-                          <small>{facility.address}</small>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-          <div className="map-department-filter">
-            <button
-              type="button"
-              className={`map-department-filter-trigger${selectedDepartment ? " has-selection" : ""}`}
-              aria-haspopup="listbox"
-              aria-expanded={departmentPickerOpen}
-              onClick={() => setDepartmentPickerOpen((open) => !open)}
-            >
-              <Stethoscope size={16} aria-hidden="true" />
-              <span>{selectedDepartment ? selectedDepartment.name : "Khoa khám"}</span>
-              <ChevronDown size={14} aria-hidden="true" />
-            </button>
-            {departmentPickerOpen && (
-              <div className="map-department-filter-panel" role="listbox" aria-label="Chọn khoa khám">
-                {departmentsLoading ? (
-                  <p className="map-department-filter-status">Đang tải danh sách khoa…</p>
-                ) : (
-                  <ul>
-                    <li>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={selectedDepartmentId === "all"}
-                        className={selectedDepartmentId === "all" ? "active" : ""}
-                        onClick={() => {
-                          setSelectedDepartmentId("all");
-                          setSidebarView("hospital-list");
-                          setDepartmentPickerOpen(false);
-                        }}
-                      >
-                        Tất cả các khoa
-                      </button>
-                    </li>
-                    {selectedDepartmentId && (
-                      <li>
-                        <button
-                          type="button"
-                          className="map-department-filter-clear"
-                          onClick={() => {
-                            setSelectedDepartmentId("");
-                            setSidebarView("hospital-list");
-                            setDepartmentPickerOpen(false);
-                          }}
-                        >
-                          Xóa lựa chọn
-                        </button>
-                      </li>
-                    )}
-                    {departments.length === 0 ? (
-                      <li><p className="map-department-filter-status">Chưa có khoa khám nào được cấu hình.</p></li>
-                    ) : (
-                      departments.map((department) => (
-                        <li key={department.id}>
-                          <button
-                            type="button"
-                            role="option"
-                            aria-selected={department.id === selectedDepartmentId}
-                            className={department.id === selectedDepartmentId ? "active" : ""}
-                            onClick={() => {
-                              setSelectedDepartmentId(department.id);
-                              setSidebarView("hospital-list");
-                              setDepartmentPickerOpen(false);
-                            }}
-                          >
-                            {department.name}
-                          </button>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="map-nearby-controls">
-          <button type="button" onClick={handleLocateMe} disabled={locating}>
-            <MapPin size={16} aria-hidden="true" /> {locating ? "Đang định vị…" : nearbyEnabled ? "Định vị lại" : "Tìm gần tôi"}
-          </button>
-          <label>Phạm vi
-            <select value={radiusKm} onChange={(event) => { setRadiusKm(event.target.value === "nearest" ? "nearest" : Number(event.target.value)); setSelectedFacility(null); }}>
-              <option value="nearest">Gần nhất · Không giới hạn</option>
-              {NEARBY_RADII.map((radius) => <option key={radius} value={radius}>{radius} km</option>)}
-            </select>
-          </label>
-          <span role="status">
-            {nearbyEnabled ? nearby.loading ? "Đang tìm cơ sở gần bạn…" : nearby.error || (nearby.items.length
-              ? `${nearby.items.length} cơ sở · Gần → xa${radiusKm === "nearest" ? "" : ` · Trong ${radiusKm} km`} · Khoảng cách đường thẳng`
-              : `Chưa có cơ sở phù hợp có tọa độ${radiusKm === "nearest" ? " trong dữ liệu hiện tại" : ` trong ${radiusKm} km`}.`)
-              : "Bật vị trí để xếp cơ sở gần bạn nhất."}
-          </span>
-          {nearbyEnabled && !nearby.loading && !nearby.error && nearby.items.length === 0 && getNextNearbyRadius(radiusKm) && (
-            <button type="button" onClick={() => { setRadiusKm(getNextNearbyRadius(radiusKm)); setSelectedFacility(null); }}>
-              Tìm trong {getNextNearbyRadius(radiusKm)} km
-            </button>
-          )}
-          {nearbyEnabled && userLocation?.accuracy > 1000 && <small className="map-location-accuracy" role="status">Vị trí có sai số khoảng {(userLocation.accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</small>}
-          {nearbyEnabled && nearby.error && <button type="button" onClick={() => setNearbyAttempt((value) => value + 1)}>Thử lại</button>}
-        </div>
-        {apiNotice && !nearbyEnabled && <div className="map-top-notice" role="status">{apiNotice}</div>}
-        </div>
         <FacilityMap
-          chatContext={chatContext}
-          clinicalNotice={effectiveClinicalNotice}
-          clinicalStatus={clinicalStatus}
-          hasTopNotice={Boolean(apiNotice)}
-          isClinicalFlow={isClinicalFlow}
           facilities={mappableFacilities}
-          locationError={locationError}
           mapRef={mapRef}
           mapRenderKey={mapRenderKey}
           mapStatus={mapStatus}
@@ -2082,7 +1861,7 @@ function NearbyClinicPage() {
           recommendationContext={resolvedRecommendationContext}
           userLocation={userLocation}
           viewState={viewState}
-          hidePopup={detailPanelOpen || isClinicalFlow}
+          hidePopup={detailPanelOpen}
           onError={handleMapError}
           onLocate={handleLocateMe}
           onMapLoad={() => setMapStatus("ready")}
@@ -2092,6 +1871,10 @@ function NearbyClinicPage() {
             : setSelectedFacility(null)}
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}
+          onMarkerSelect={(facility) => { if (window.matchMedia("(max-width: 900px)").matches) handleCardClick(facility); else openFacilityDetail(facility); }}
+          onUserMove={() => { mapInteractedRef.current = true; }}
+          onShowAll={() => { mapInteractedRef.current = true; fitFacilities(true); }}
+          onShowList={showFacilityList}
         />
         {showLegacyMapDetail && detailPanelOpen && detailFacility && (
           <section
