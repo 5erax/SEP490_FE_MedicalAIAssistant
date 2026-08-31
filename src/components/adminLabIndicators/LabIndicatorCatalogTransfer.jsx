@@ -34,7 +34,7 @@ function getAdviceId(advice) {
 async function listAllIndicators() {
   const allItems = [];
   let pageNumber = 1;
-  let totalPages = 1;
+  let totalPages;
 
   do {
     const response = await labIndicatorsApi.list(pageNumber, EXPORT_PAGE_SIZE, {});
