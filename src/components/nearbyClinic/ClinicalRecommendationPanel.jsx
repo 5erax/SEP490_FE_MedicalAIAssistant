@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronDown, Info, Stethoscope } from "lucide-react";
+import { ArrowRight, ChevronDown, Info, LocateFixed, Stethoscope } from "lucide-react";
 
 // Keep the next step outside the sidebar's scrolling results.
 export function ClinicalRecommendationAction({ context }) {
@@ -11,7 +11,7 @@ export function ClinicalRecommendationAction({ context }) {
   </footer>;
 }
 
-export default function ClinicalRecommendationPanel({ context, status, notice, chatContext }) {
+export default function ClinicalRecommendationPanel({ context, status, notice, chatContext, onFindNearby, locating, locationError }) {
   const department = context?.recommendedDepartment;
   const diagnoses = context?.diagnoses ?? [];
   return <section className="explorer-advice" aria-label="Kết quả tư vấn">
@@ -22,6 +22,14 @@ export default function ClinicalRecommendationPanel({ context, status, notice, c
       <section className="explorer-card explorer-specialty" aria-labelledby="explorer-specialty-title">
         <span className="explorer-eyebrow"><Stethoscope size={20} aria-hidden="true" /> Chuyên khoa được gợi ý</span>
         <h3 id="explorer-specialty-title">{department?.departmentName || "Chưa xác định chuyên khoa"}</h3>
+        {department?.departmentId && onFindNearby && <div className="explorer-specialty-nearby">
+          <button type="button" className="explorer-location-button" onClick={onFindNearby} disabled={locating} aria-busy={locating}>
+            <LocateFixed size={22} aria-hidden="true" />
+            <span>{locating ? "Đang xác định vị trí…" : "Xem cơ sở có chuyên khoa này gần tôi"}</span>
+          </button>
+          <p>Tìm tối đa 5 cơ sở có chuyên khoa được gợi ý, từ 1 đến 5 km quanh bạn.</p>
+          {locationError && <p role="alert">{locationError}</p>}
+        </div>}
         {department?.reason && <div className="explorer-reason"><span className="explorer-label">Lý do gợi ý</span><p>{department.reason}</p></div>}
         <details className="explorer-description">
           <summary>Xem mô tả chuyên khoa <ChevronDown size={20} aria-hidden="true" /></summary>

@@ -1,6 +1,62 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildNearbyQuery, getNextNearbyRadius, rankNearestFacilities } from "../../src/utils/nearbyFacilities.js";
+import { buildNearbyQuery, findNearbySpecialtyFacilities, getNextNearbyRadius, rankNearestFacilities } from "../../src/utils/nearbyFacilities.js";
+
+const specialtyFilters = { latitude: 10.8, longitude: 106.65, departmentId: "D1" };
+const nearbyItem = { id: "A", latitude: 10.803, longitude: 106.65, distanceKm: 0.35, departments: [{ departmentId: "D1" }] };
+
+test("specialty search expands only empty radii and preserves the specialty", async () => {
+  const calls = [];
+  const result = await findNearbySpecialtyFacilities(async (filters) => {
+    calls.push(filters);
+    return { success: true, data: filters.radiusKm === 1 ? [] : [{ ...nearbyItem, distanceKm: 2.4 }] };
+  }, specialtyFilters);
+  assert.deepEqual(calls.map((call) => call.radiusKm), [1, 3]);
+  assert.ok(calls.every((call) => call.departmentId === "D1" && call.limit === 5));
+  assert.equal(result.radiusKm, 3);
+  assert.equal(result.items.length, 1);
+});
+
+test("one matching facility stops the search immediately", async () => {
+  let calls = 0;
+  const result = await findNearbySpecialtyFacilities(async () => { calls++; return { data: [nearbyItem] }; }, specialtyFilters);
+  assert.equal(calls, 1);
+  assert.equal(result.radiusKm, 1);
+});
+
+test("empty specialty search stops at 5 km", async () => {
+  const calls = [];
+  const result = await findNearbySpecialtyFacilities(async ({ radiusKm }) => { calls.push(radiusKm); return { data: [] }; }, specialtyFilters);
+  assert.deepEqual(calls, [1, 3, 5]);
+  assert.deepEqual(result, { items: [], radiusKm: 5 });
+});
+
+test("API and malformed data errors never trigger radius expansion", async () => {
+  for (const payload of [{ success: false, data: [] }, { data: null }, { data: [{ ...nearbyItem, distanceKm: 35 }] }, { data: [{ ...nearbyItem, departments: [{ departmentId: "D2" }] }] }]) {
+    let calls = 0;
+    await assert.rejects(findNearbySpecialtyFacilities(async () => { calls++; return payload; }, specialtyFilters));
+    assert.equal(calls, 1);
+  }
+});
+
+test("aborted specialty searches cannot expand after a late response", async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  await assert.rejects(findNearbySpecialtyFacilities(async () => {
+    calls++;
+    controller.abort();
+    return { data: [] };
+  }, specialtyFilters, controller.signal), { name: "AbortError" });
+  assert.equal(calls, 1);
+});
+
+test("bad nearby records are not treated as an empty successful radius", async () => {
+  for (const item of [null, { ...nearbyItem, id: null }, { ...nearbyItem, latitude: " " }, { ...nearbyItem, departments: {} }]) {
+    let calls = 0;
+    await assert.rejects(findNearbySpecialtyFacilities(async () => { calls++; return { data: [item] }; }, specialtyFilters));
+    assert.equal(calls, 1);
+  }
+});
 
 test("nearest ranks the full catalog including facilities beyond 7 and 50 km", () => {
   const items = [{ id: "far", latitude: 1, longitude: 0 }, { id: "near", latitude: 0.1, longitude: 0 }];

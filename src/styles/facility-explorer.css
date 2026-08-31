@@ -178,6 +178,11 @@
 .facility-explorer .explorer-mobile-nav { display: none; }
 .facility-explorer .explorer-spinner { animation: explorer-spin 1s linear infinite; }
 @keyframes explorer-spin { to { transform: rotate(360deg); } }
+.facility-explorer .explorer-specialty-nearby { margin: 16px 0; }
+.facility-explorer .explorer-specialty-nearby .explorer-location-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 52px; padding: 12px 16px; border: 1px solid var(--map-teal-strong); border-radius: 12px; background: var(--map-surface); color: var(--map-teal-strong); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.facility-explorer .explorer-specialty-nearby .explorer-location-button svg { flex-shrink: 0; }
+.facility-explorer .explorer-specialty-nearby .explorer-location-button:disabled { opacity: .7; cursor: wait; }
+.facility-explorer .explorer-specialty-nearby p, .facility-explorer .explorer-nearby-summary p { margin: 10px 0; color: var(--map-muted); font-size: .9375rem; line-height: 1.5; }
 @media (max-width: 900px) {
   .clinic-page.facility-explorer { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .facility-explorer .explorer-mobile-nav { display: flex; grid-row: 1; padding: 6px 12px; gap: 8px; background: var(--map-surface); border-bottom: 1px solid var(--map-line); }

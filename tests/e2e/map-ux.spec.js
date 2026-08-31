@@ -46,7 +46,7 @@ async function mockMapApis(page, facilities, options = {}) {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          data: options.departments ?? [{ id: FACILITY_DEPARTMENT_ID, departmentName: "Tim mạch" }],
+          data: options.departments ?? [{ id: FACILITY_DEPARTMENT_ID, departmentName: options.analysis?.recommendedDepartment?.departmentName || "Tim mạch" }],
         }),
       });
     }
@@ -446,6 +446,134 @@ for (const screen of [
     await expect(nextStep).toBeInViewport({ ratio: 1 });
   });
 }
+
+for (const width of [1440, 390]) {
+  test(`clinical specialty nearby choice searches progressively: ${width}`, async ({ page }, testInfo) => {
+    await preparePage(page);
+    await page.setViewportSize({ width, height: 900 });
+    await page.addInitScript(({ accessToken, snapshot }) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+      sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
+      navigator.geolocation.getCurrentPosition = (success) => success({ coords: { latitude: 10.8, longitude: 106.65, accuracy: 20 } });
+    }, { accessToken: TOKEN, snapshot: clinicalAnalysis });
+    await mockMapApis(page, [facility()], { analysis: clinicalAnalysis });
+    await mockSuccessfulMapStyle(page);
+    const radii = [];
+    await page.route("**/api/medical-facilities/nearby?**", (route) => {
+      const query = new URL(route.request().url()).searchParams;
+      const radius = Number(query.get("radiusKm"));
+      radii.push(radius);
+      expect(query.get("departmentId")).toBe(FACILITY_DEPARTMENT_ID);
+      expect(query.get("limit")).toBe("5");
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: radius === 1 ? [] : [facility({ distanceKm: 2.4, isActive: true })] }) });
+    });
+    await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
+    const choice = page.getByRole("button", { name: "Xem cơ sở có chuyên khoa này gần tôi" });
+    await expect(choice).toBeVisible();
+    await expect(page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" })).toBeInViewport();
+    await page.screenshot({ path: testInfo.outputPath(`nearby-choice-${width}.png`) });
+    await choice.click();
+    await expect(page.locator(".explorer-nearby-summary")).toContainText("3 km");
+    await expect(page.locator(".facility-result-card")).toHaveCount(1);
+    expect(radii).toEqual([1, 3]);
+    await expect(page.getByRole("button", { name: "Kết quả tư vấn", exact: true })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(`nearby-results-${width}.png`) });
+  });
+}
+
+for (const scenario of ["empty", "error"]) {
+  test(`specialty nearby handles ${scenario} without silently expanding beyond scope`, async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript(({ accessToken, snapshot }) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+      sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
+      navigator.geolocation.getCurrentPosition = (success) => success({ coords: { latitude: 10.8, longitude: 106.65, accuracy: 20 } });
+    }, { accessToken: TOKEN, snapshot: clinicalAnalysis });
+    await mockMapApis(page, [facility()], { analysis: clinicalAnalysis });
+    await mockSuccessfulMapStyle(page);
+    const radii = [];
+    await page.route("**/api/medical-facilities/nearby?**", (route) => {
+      const query = new URL(route.request().url()).searchParams;
+      radii.push(Number(query.get("radiusKm")));
+      expect(query.get("departmentId")).toBe(FACILITY_DEPARTMENT_ID);
+      return route.fulfill({ status: scenario === "error" ? 503 : 200, contentType: "application/json", body: JSON.stringify({ success: scenario !== "error", data: [] }) });
+    });
+    await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
+    await page.getByRole("button", { name: "Xem cơ sở có chuyên khoa này gần tôi" }).click();
+    if (scenario === "empty") {
+      await expect(page.locator(".explorer-nearby-summary")).toContainText("phạm vi 5 km");
+      expect(radii).toEqual([1, 3, 5]);
+      await expect(page.locator(".clinic-marker")).toHaveCount(0);
+      await page.getByRole("button", { name: "Mở rộng lên 10 km" }).click();
+      await expect.poll(() => radii).toEqual([1, 3, 5, 10]);
+    } else {
+      await expect(page.locator(".explorer-controls [role=alert]")).toContainText("Không thể tải cơ sở gần bạn");
+      expect(radii).toEqual([1]);
+      await expect(page.getByRole("button", { name: "Mở rộng lên 10 km" })).toHaveCount(0);
+    }
+  });
+}
+
+test("changing specialty during a nearby search discards the previous response", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript(({ accessToken, snapshot }) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+    sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
+    navigator.geolocation.getCurrentPosition = (success) => success({ coords: { latitude: 10.8, longitude: 106.65, accuracy: 20 } });
+  }, { accessToken: TOKEN, snapshot: clinicalAnalysis });
+  await mockMapApis(page, [facility()], { analysis: clinicalAnalysis, departments: [
+    { id: FACILITY_DEPARTMENT_ID, departmentName: "Khoa Hô hấp" },
+    { id: SECOND_FACILITY_DEPARTMENT_ID, departmentName: "Khoa khác" },
+  ] });
+  await mockSuccessfulMapStyle(page);
+  let releaseOld;
+  let oldFinished = false;
+  const requests = [];
+  await page.route("**/api/medical-facilities/nearby?**", async (route) => {
+    const query = new URL(route.request().url()).searchParams;
+    const departmentId = query.get("departmentId");
+    requests.push([departmentId, Number(query.get("radiusKm"))]);
+    if (departmentId === FACILITY_DEPARTMENT_ID) {
+      await new Promise((resolve) => { releaseOld = resolve; });
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [] }) }).catch(() => {});
+      oldFinished = true;
+      return;
+    }
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [facility({
+      facilityName: "Cơ sở khoa mới", distanceKm: 0.4,
+      departments: [{ departmentId: SECOND_FACILITY_DEPARTMENT_ID, departmentName: "Khoa khác" }],
+    })] }) });
+  });
+  await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
+  await page.getByRole("button", { name: "Xem cơ sở có chuyên khoa này gần tôi" }).click();
+  await expect.poll(() => typeof releaseOld).toBe("function");
+  await page.getByRole("button", { name: "Bộ lọc", exact: true }).click();
+  await page.getByRole("combobox", { name: "Chuyên khoa", exact: true }).selectOption(SECOND_FACILITY_DEPARTMENT_ID);
+  await page.getByRole("button", { name: "Áp dụng", exact: true }).click();
+  await expect(page.locator(".facility-result-card")).toContainText("Cơ sở khoa mới");
+  releaseOld();
+  await expect.poll(() => oldFinished).toBe(true);
+  await expect(page.locator(".facility-result-card")).toContainText("Cơ sở khoa mới");
+  expect(requests).toEqual([[FACILITY_DEPARTMENT_ID, 1], [SECOND_FACILITY_DEPARTMENT_ID, 1]]);
+});
+
+test("specialty nearby permission denial stays on results with a recovery message", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript(({ accessToken, snapshot }) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+    sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
+    navigator.geolocation.getCurrentPosition = (_success, failure) => failure({ code: 1 });
+  }, { accessToken: TOKEN, snapshot: clinicalAnalysis });
+  await mockMapApis(page, [facility()], { analysis: clinicalAnalysis });
+  await mockSuccessfulMapStyle(page);
+  const nearbyRequests = [];
+  page.on("request", (request) => { if (request.url().includes("/medical-facilities/nearby")) nearbyRequests.push(request.url()); });
+  await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
+  await page.getByRole("button", { name: "Xem cơ sở có chuyên khoa này gần tôi" }).click();
+  await expect(page.locator(".explorer-specialty-nearby [role=alert]")).toContainText("chưa cho phép định vị");
+  await expect(page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" })).toBeVisible();
+  expect(nearbyRequests).toEqual([]);
+});
 
 test("clinical next step is absent when results cannot be restored", async ({ page }) => {
   await preparePage(page);

@@ -22,7 +22,8 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
   if (filtersOpen) return <form className="explorer-filters" onSubmit={(event) => {
     event.preventDefault();
     const values = new FormData(event.currentTarget);
-    onApplyFilters({ departmentId: values.get("department"), type: values.get("type"), radius: values.get("radius") === "nearest" ? "nearest" : Number(values.get("radius")) });
+    const radius = values.get("radius");
+    onApplyFilters({ departmentId: values.get("department"), type: values.get("type"), radius: radius === "nearest" || radius === "auto" ? radius : Number(radius) });
   }}>
     <button type="button" className="explorer-back" onClick={onCloseFilters}><ArrowLeft size={16} /> Quay lại</button>
     <h2 ref={filterHeadingRef} tabIndex={-1}>Bộ lọc cơ sở y tế</h2>
@@ -33,7 +34,7 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
     </select></label>
     {departmentsLoading && <p role="status">Đang tải chuyên khoa…</p>}
     <label>Loại cơ sở<select name="type" defaultValue={selectedType}>{typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-    <label>Phạm vi<select name="radius" defaultValue={radiusKm}><option value="nearest">Không giới hạn</option>{NEARBY_RADII.map((radius) => <option key={radius} value={radius}>Trong {radius} km</option>)}</select></label>
+    <label>Phạm vi<select name="radius" defaultValue={radiusKm}>{radiusKm === "auto" && <option value="auto">Tự tìm từ 1 đến 5 km</option>}<option value="nearest">Không giới hạn</option>{NEARBY_RADII.map((radius) => <option key={radius} value={radius}>Trong {radius} km</option>)}</select></label>
     {!hasLocation && <p className="explorer-muted">Phạm vi sẽ được áp dụng sau khi bạn cho phép sử dụng vị trí.</p>}
     <div className="explorer-filter-actions"><button className="explorer-primary" type="submit" disabled={departmentsLoading}>Áp dụng</button><button type="button" onClick={() => onApplyFilters({ departmentId: "all", type: "all", radius: "nearest" })}>Đặt lại</button></div>
   </form>;
@@ -65,7 +66,7 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
       </ul>}
     </div>
     <div className="explorer-filter-row"><button type="button" className="explorer-filter-chip" onClick={onOpenFilters}>{department?.name || (selectedDepartmentId !== "all" ? "Chuyên khoa được gợi ý" : "Tất cả chuyên khoa")}</button><button type="button" onClick={onOpenFilters}><SlidersHorizontal size={16} aria-hidden="true" /> Bộ lọc</button></div>
-    {(selectedType !== "all" || radiusKm !== "nearest") && <p className="explorer-active-filters">{selectedType !== "all" && <span>{typeOptions.find(([key]) => key === selectedType)?.[1]}</span>}{radiusKm !== "nearest" && <span>Trong {radiusKm} km{!hasLocation ? " · Chờ vị trí" : ""}</span>}</p>}
+    {(selectedType !== "all" || radiusKm !== "nearest") && <p className="explorer-active-filters">{selectedType !== "all" && <span>{typeOptions.find(([key]) => key === selectedType)?.[1]}</span>}{radiusKm !== "nearest" && <span>{radiusKm === "auto" ? "Tự tìm từ 1 đến 5 km" : `Trong ${radiusKm} km`}{!hasLocation ? " · Chờ vị trí" : ""}</span>}</p>}
     <section className="explorer-location" aria-labelledby="explorer-location-title">
       <div className="explorer-location-heading">
         <span className="explorer-location-icon" aria-hidden="true">{hasLocation ? <Check size={22} /> : <LocateFixed size={22} />}</span>

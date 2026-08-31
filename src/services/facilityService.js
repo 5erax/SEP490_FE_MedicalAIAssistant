@@ -4,7 +4,7 @@ import { buildNearbyQuery } from "../utils/nearbyFacilities";
 
 export const medicalFacilitiesApi = {
   nearby(filters, signal) {
-    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.NEARBY}?${buildNearbyQuery(filters)}`, { auth: true, signal, cache: "no-store" });
+    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.NEARBY}?${buildNearbyQuery(filters)}`, { signal, cache: "no-store" });
   },
   list(pageNumber = 1, pageSize = 50, filters = {}) {
     const params = new URLSearchParams(withPagination(pageNumber, pageSize));
