@@ -1305,18 +1305,24 @@ function NearbyClinicPage() {
         const { latitude, longitude, accuracy } = position.coords;
         locatingRef.current = false;
         setLocating(false);
-        mapInteractedRef.current = false;
-        lastFittedBoundsRef.current = "";
+        // Explicit geolocation owns the camera; nearby results must not interrupt it.
+        mapInteractedRef.current = true;
         setUserLocation({ lat: latitude, lng: longitude, accuracy });
         setNearbyAttempt((value) => value + 1);
         setNearbyEnabled(true);
-            setSidebarView("hospital-list");
+        setSidebarView("hospital-list");
         setSelectedFacility(null);
-        mapRef.current?.flyTo?.({
-          center: [longitude, latitude],
-          zoom: 12,
-          duration: prefersReducedMotion() ? 0 : 1500,
-        });
+        if (mapStatus === "ready" && mapRef.current) {
+          mapRef.current.stop?.();
+          mapRef.current.flyTo({
+            center: [longitude, latitude],
+            zoom: 12,
+            duration: prefersReducedMotion() ? 0 : 1500,
+          });
+        } else {
+          // Also honor location requests made before the map is ready or after an error.
+          setViewState((current) => ({ ...current, longitude, latitude, zoom: 12 }));
+        }
       },
       (error) => {
         locatingRef.current = false;
