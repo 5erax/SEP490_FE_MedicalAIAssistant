@@ -37,23 +37,26 @@ export default function ClinicalRecommendationPanel({ context, status, notice, c
         </div>}
         <details className="explorer-description">
           <summary>Vì sao gợi ý chuyên khoa này? <ChevronDown size={20} aria-hidden="true" /></summary>
-          {explanation.relatedResult && <div className="explorer-reason"><span className="explorer-label">Kết quả tham khảo liên quan</span><p>{explanation.relatedResult}</p></div>}
+          {explanation.relatedResult && <div className="explorer-reason"><span className="explorer-label">Bệnh tham khảo liên quan đến gợi ý</span><p>{explanation.relatedResult}</p></div>}
           {explanation.reasoning ? <div className="explorer-source-reason"><h4>Giải thích từ lần phân tích</h4><p>{explanation.reasoning}</p><p className="explorer-muted">Giải thích này do AI tạo từ thông tin của phiên tư vấn, chưa được bác sĩ xác nhận.</p></div>
-            : <p>Chưa có giải thích chi tiết cho gợi ý này. Bạn vẫn có thể xem thông tin chuyên khoa và các kết quả tham khảo bên dưới.</p>}
+            : <p>Chưa có giải thích chi tiết cho gợi ý này. Bạn vẫn có thể xem thông tin chuyên khoa và các bệnh được AI gợi ý để tham khảo bên dưới.</p>}
           <h4>Về chuyên khoa này</h4>
           <p>{department?.description || "Chưa có mô tả chuyên khoa."}</p>
         </details>
       </section>
       <p className="explorer-disclaimer explorer-clinical-disclaimer"><Info size={20} aria-hidden="true" /><span>Đây là gợi ý chuyên khoa để bạn tham khảo, không phải chẩn đoán bệnh và không thay thế việc khám với bác sĩ.</span></p>
       <details className="explorer-card explorer-reference-results">
-        <summary><span>Xem các kết quả tham khảo{diagnoses.length > 0 ? ` (${diagnoses.length})` : ""}</span><ChevronDown size={20} aria-hidden="true" /></summary>
-        <p className="explorer-muted">{diagnoses.length ? "Các kết quả được hệ thống sắp xếp để tham khảo từ thông tin bạn cung cấp. Đây không phải kết luận bạn mắc bệnh. Mở từng mục để xem giải thích." : "Chưa có kết quả tham khảo bổ sung cho lần tư vấn này."}</p>
-        {diagnoses.some((diagnosis) => readRankingScore(diagnosis) !== null) && <div className="explorer-score-explanation"><strong>Điểm xếp hạng có ý nghĩa gì?</strong><p>Điểm trong phần chi tiết chỉ dùng để so sánh các kết quả AI đưa ra trong lần phân tích này. Đây không phải tỷ lệ triệu chứng trùng khớp hay xác suất mắc bệnh. Điểm cao hơn không có nghĩa bệnh nặng hơn.</p></div>}
+        <summary><span>Các bệnh được AI gợi ý để tham khảo{diagnoses.length > 0 ? ` (${diagnoses.length})` : ""}</span><ChevronDown size={20} aria-hidden="true" /></summary>
+        <p className="explorer-muted">{diagnoses.length ? "AI gợi ý các bệnh dưới đây từ thông tin bạn đã cung cấp. Mở từng bệnh để xem lý do và tham khảo khi trao đổi với bác sĩ. Đây chưa phải chẩn đoán." : "Chưa có danh sách bệnh tham khảo cho lần tư vấn này."}</p>
+        {diagnoses.some((diagnosis) => readRankingScore(diagnosis) !== null) && <div className="explorer-score-explanation">
+          <p>Phần trăm dưới tên mỗi bệnh là <strong>điểm gợi ý của AI</strong>, không phải xác suất bạn mắc bệnh.</p>
+          <details><summary>Điểm gợi ý có nghĩa gì? <ChevronDown size={20} aria-hidden="true" /></summary><p>Điểm dùng để so sánh các bệnh AI đưa ra trong lần phân tích này. Điểm cao hơn nghĩa là hệ thống ưu tiên gợi ý bệnh đó hơn. Đây không phải tỷ lệ triệu chứng trùng khớp hay xác suất mắc bệnh. Điểm cao hơn không có nghĩa bệnh nặng hơn.</p></details>
+        </div>}
         {diagnoses.map((diagnosis, index) => {
           const score = readRankingScore(diagnosis);
           return <details className="explorer-diagnosis" key={`${diagnosis.icd10Code || diagnosis.diseaseName}-${index}`}>
-            <summary><span><strong>{diagnosis.diseaseName || "Kết quả tham khảo"}</strong><small>Xem giải thích</small></span><ChevronDown size={20} aria-hidden="true" /></summary>
-            <div className="explorer-diagnosis-content"><p>{diagnosis.clinicalReasoning || "Chưa có giải thích chi tiết."}</p>{score !== null && <p className="explorer-muted">Điểm xếp hạng tham khảo của AI: {Math.round(score * 100)}/100. Điểm này không cho biết khả năng bạn mắc bệnh.</p>}{diagnosis.icd10Code && <small>Mã tham khảo ICD-10: {diagnosis.icd10Code}</small>}</div>
+            <summary><span><strong>{diagnosis.diseaseName || "Bệnh tham khảo chưa có tên"}</strong>{score !== null ? <span className="explorer-diagnosis-score">Điểm gợi ý: <b>{Math.round(score * 100)}%</b></span> : <small>Chưa có điểm gợi ý</small>}<small>Xem lý do được gợi ý</small></span><ChevronDown size={20} aria-hidden="true" /></summary>
+            <div className="explorer-diagnosis-content"><h4>Vì sao AI gợi ý bệnh này?</h4><p>{diagnosis.clinicalReasoning || "Chưa có giải thích chi tiết cho bệnh này trong lần phân tích. Bạn có thể trao đổi thêm với bác sĩ."}</p>{diagnosis.icd10Code && <small>Mã tham khảo ICD-10: {diagnosis.icd10Code}</small>}</div>
           </details>;
         })}
       </details>

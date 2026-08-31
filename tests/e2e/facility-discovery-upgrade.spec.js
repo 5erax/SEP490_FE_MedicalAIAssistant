@@ -24,7 +24,7 @@ async function setup(page, options = {}) {
   const snapshot = {
     sessionId: SESSION_ID,
     recommendedDepartment: { departmentId: DEPARTMENT_ID, departmentName: "Khoa Hô hấp", reason: "cúm", description: "Thông tin chuyên khoa để tham khảo." },
-    diagnoses: [
+    diagnoses: options.diagnoses ?? [
       { diseaseName: "Kết quả A", pAGivenB: .6, rank: 1, clinicalReasoning: "Giải thích A không phải căn cứ chuyên khoa trong fixture." },
       { diseaseName: "cúm", pAGivenB: .35, rank: 2, clinicalReasoning: "Giải thích đúng nguồn B, dùng riêng để kiểm thử." },
     ],
@@ -147,19 +147,46 @@ test("23 results paginate completely and restore page, scroll and advice context
   await page.screenshot({ path: info.outputPath("paginated-list-mobile.png") });
 });
 
-test("reason comes from the related result and ranking is explained without disease probabilities", async ({ page }, info) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+for (const width of [320, 390, 1440]) {
+test(`reference diseases show percentage scores before opening each explanation at ${width}`, async ({ page }, info) => {
+  await page.setViewportSize({ width, height: 844 });
   await setup(page);
   await expect(page.locator(".explorer-reason-summary")).toContainText("cúm");
   await page.getByText("Vì sao gợi ý chuyên khoa này?", { exact: true }).click();
   await expect(page.locator(".explorer-source-reason")).toContainText("Giải thích đúng nguồn B");
   await expect(page.locator(".explorer-source-reason")).not.toContainText("Giải thích A");
   await page.locator(".explorer-reference-results > summary").click();
-  await expect(page.locator(".explorer-score-explanation")).toContainText("không phải tỷ lệ triệu chứng trùng khớp hay xác suất mắc bệnh");
-  await expect(page.locator(".explorer-diagnosis summary")).not.toContainText(["35%", "60%"]);
+  await expect(page.locator(".explorer-reference-results > summary")).toHaveText("Các bệnh được AI gợi ý để tham khảo (2)");
+  await expect(page.locator(".explorer-reference-results > p")).toContainText("tham khảo khi trao đổi với bác sĩ");
+  await expect(page.locator(".explorer-score-explanation > p")).toContainText("không phải xác suất bạn mắc bệnh");
+  await expect(page.locator(".explorer-diagnosis summary .explorer-diagnosis-score")).toHaveText(["Điểm gợi ý: 60%", "Điểm gợi ý: 35%"]);
+  const flu = page.locator(".explorer-diagnosis").filter({ hasText: "cúm" });
+  await expect(flu).not.toHaveAttribute("open");
+  await expect(flu.locator(".explorer-diagnosis-score")).toBeVisible();
+  await page.getByText("Điểm gợi ý có nghĩa gì?", { exact: true }).click();
+  await expect(page.locator(".explorer-score-explanation details > p")).toBeVisible();
+  await expect(page.locator(".explorer-score-explanation details > p")).toContainText("không phải tỷ lệ triệu chứng trùng khớp hay xác suất mắc bệnh");
+  await page.getByText("Điểm gợi ý có nghĩa gì?", { exact: true }).click();
   await page.locator(".explorer-diagnosis").filter({ hasText: "cúm" }).locator("summary").click();
-  await expect(page.getByText(/Điểm xếp hạng tham khảo của AI: 35\/100/)).toBeVisible();
-  await page.screenshot({ path: info.outputPath("clinical-explanation-mobile.png") });
+  await expect(flu.getByRole("heading", { name: "Vì sao AI gợi ý bệnh này?" })).toBeVisible();
+  await expect(flu.locator(".explorer-diagnosis-content")).toContainText("Giải thích đúng nguồn B");
+  expect(await page.locator(".explorer-scroll").evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(false);
+  const a11y = await new AxeBuilder({ page }).include(".clinic-sidebar").withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(a11y.violations).toEqual([]);
+  await page.locator(".explorer-reference-results").evaluate((node) => node.closest(".explorer-scroll").scrollTop = node.offsetTop);
+  await page.screenshot({ path: info.outputPath(`clinical-percentages-${width}.png`) });
+});
+}
+
+test("missing scores stay unknown instead of becoming zero and do not show an orphan score explanation", async ({ page }) => {
+  await setup(page, { diagnoses: [
+    { diseaseName: "Bệnh chưa có điểm", clinicalReasoning: "Giải thích có sẵn." },
+    { diseaseName: "Bệnh có điểm ngoài hợp đồng", pAGivenB: 35 },
+  ] });
+  await page.locator(".explorer-reference-results > summary").click();
+  await expect(page.locator(".explorer-diagnosis summary")).toContainText(["Chưa có điểm gợi ý", "Chưa có điểm gợi ý"]);
+  await expect(page.locator(".explorer-diagnosis-score")).toHaveCount(0);
+  await expect(page.locator(".explorer-score-explanation")).toHaveCount(0);
 });
 
 test("selecting a map marker on another page restores that facility's list page", async ({ page }) => {
