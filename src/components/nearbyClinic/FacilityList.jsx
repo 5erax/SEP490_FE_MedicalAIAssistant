@@ -1,13 +1,9 @@
-import { formatFacilityRating } from "../../utils/facilityRating";
-
 export default function FacilityList({
   cardRefs,
   facilities,
   loading,
   onViewDetail,
   selectedFacilityId,
-  emptyMessage,
-  onRetry,
 }) {
   return (
     <section className="facility-list-panel" id="facility-list" tabIndex="-1" aria-labelledby="facility-list-title">
@@ -27,7 +23,7 @@ export default function FacilityList({
         </article>
       ))}
       {!loading && facilities.length === 0 && (
-        <div className="sidebar-note" role="status">{emptyMessage || "Chưa tìm thấy cơ sở phù hợp. Hãy thử đổi chuyên khoa, phạm vi hoặc từ khóa."}{onRetry && <button type="button" className="facility-select-button" onClick={onRetry}>Thử tải lại</button>}</div>
+        <div className="sidebar-note">Chưa tìm thấy cơ sở y tế phù hợp với bộ lọc hoặc khu vực hiện tại. Vui lòng thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
       )}
       {!loading && facilities.map((facility) => (
         <article
@@ -37,10 +33,14 @@ export default function FacilityList({
         >
           <div className="facility-top">
             <strong>{facility.facilityName}</strong>
-            {facility.distanceLabel && <span className="explorer-distance">{facility.distanceLabel}</span>}
+            <span className={`type-badge ${facility.facilityTypeKey}`}>{facility.facilityTypeLabel}</span>
           </div>
           <p className="facility-card-address">{facility.address}</p>
-          <p className="facility-card-rating">{formatFacilityRating(facility)}</p>
+          <div className="facility-card-meta">
+            {facility.distanceLabel && <span>{facility.distanceLabel}</span>}
+            <span>{facility.openingHours}</span>
+            <span>{facility.hasValidCoordinates ? "Có vị trí bản đồ" : "Thiếu tọa độ"}</span>
+          </div>
           <button
             className="facility-select-button"
             type="button"
@@ -50,6 +50,15 @@ export default function FacilityList({
           >
             {selectedFacilityId === facility.facilityId ? "Đang xem chi tiết" : "Xem chi tiết"}
           </button>
+          {selectedFacilityId === facility.facilityId && <div className="facility-details">
+            <p>Địa chỉ: {facility.address}</p>
+            <p>Giờ mở cửa: {facility.openingHours}</p>
+            <p>Liên hệ: {facility.phoneLabel}</p>
+            {!facility.hasValidCoordinates && <p className="coordinate-notice">Chưa có vị trí chính xác trên bản đồ.</p>}
+            <div className="department-row">
+              {facility.departments.map((department) => <span key={department}>{department}</span>)}
+            </div>
+          </div>}
         </article>
       ))}
     </section>

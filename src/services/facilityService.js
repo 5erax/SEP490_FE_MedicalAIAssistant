@@ -1,11 +1,7 @@
 import { apiRequest, withPagination } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
-import { buildNearbyQuery } from "../utils/nearbyFacilities";
 
 export const medicalFacilitiesApi = {
-  nearby(filters, signal) {
-    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.NEARBY}?${buildNearbyQuery(filters)}`, { auth: true, signal, cache: "no-store" });
-  },
   list(pageNumber = 1, pageSize = 50, filters = {}) {
     const params = new URLSearchParams(withPagination(pageNumber, pageSize));
     if (filters.search?.trim()) params.set("search", filters.search.trim());
@@ -15,12 +11,12 @@ export const medicalFacilitiesApi = {
     return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.BASE}?${params.toString()}`);
   },
 
-  active(filters = {}, options = {}) {
+  active(filters = {}) {
     const params = new URLSearchParams();
     if (filters.departmentId) params.set("departmentId", filters.departmentId);
     if (filters.search) params.set("search", filters.search);
     const query = params.toString();
-    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.ACTIVE}${query ? `?${query}` : ""}`, options);
+    return apiRequest(`${ENDPOINTS.MEDICAL_FACILITIES.ACTIVE}${query ? `?${query}` : ""}`);
   },
 
   get(id) {
