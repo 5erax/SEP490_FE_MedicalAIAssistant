@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Clock3, LocateFixed, Send, X } from "lucide-react";
+import { Bot, Clock3, LoaderCircle, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi, webChatbotApi } from "../../services/api";
@@ -540,6 +540,8 @@ export default function FacilityMap({
   viewState,
   onError,
   onLocate,
+  locating = false,
+  locationError = "",
   onMapLoad,
   onRetry,
   onSelect,
@@ -659,9 +661,14 @@ export default function FacilityMap({
         </div>
       )}
       {mapStatus === "ready" && (
-        <button className="locate-button" type="button" onClick={onLocate} aria-label="Định vị tôi">
-          <LocateFixed size={18} aria-hidden="true" />
-        </button>
+        <div className="explorer-map-location">
+          {locationError && <p className="explorer-map-location-feedback explorer-notice" role="alert">{locationError}</p>}
+          {!locationError && userLocation?.accuracy > 1000 && <p className="explorer-map-location-feedback explorer-notice" role="status">Sai số vị trí khoảng {(userLocation.accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</p>}
+          <button className="locate-button" type="button" onClick={onLocate} disabled={locating} aria-busy={locating}>
+            {locating ? <LoaderCircle className="explorer-spinner" size={24} aria-hidden="true" /> : <LocateFixed size={24} aria-hidden="true" />}
+            <span>{locating ? "Đang định vị…" : "Vị trí của tôi"}</span>
+          </button>
+        </div>
       )}
       {showConsultationAssistant && (
         <MapConsultationAssistant

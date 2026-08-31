@@ -20,7 +20,7 @@ import {
 import { useFeedback } from "../components/feedback/feedbackContext";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
-import ClinicalRecommendationPanel from "../components/nearbyClinic/ClinicalRecommendationPanel";
+import ClinicalRecommendationPanel, { ClinicalRecommendationAction } from "../components/nearbyClinic/ClinicalRecommendationPanel";
 import FacilityExplorerControls from "../components/nearbyClinic/FacilityExplorerControls";
 import useNearbyFacilities from "../hooks/useNearbyFacilities";
 import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
@@ -1619,7 +1619,7 @@ function NearbyClinicPage() {
   };
 
   return (
-    <main className={`clinic-page map-clinical-refresh facility-explorer${isClinicalFlow ? " is-clinical-map-flow" : ""}`} data-mobile-view={mobileView}>
+    <main className={`clinic-page map-clinical-refresh facility-explorer${isClinicalFlow ? " is-clinical-map-flow" : ""}`} data-mobile-view={mobileView} data-location-panel={sidebarView === "hospital-list" && sideMode === "list"}>
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list" onClick={showFacilityList}>Bỏ qua bản đồ, đến danh sách cơ sở</a>
@@ -1627,7 +1627,8 @@ function NearbyClinicPage() {
         <button type="button" aria-pressed={mobileView === "list"} onClick={() => setMobileView("list")}>Danh sách</button>
         <button type="button" aria-pressed={mobileView === "map"} onClick={() => setMobileView("map")}>Bản đồ</button>
       </nav>
-      <aside className={`clinic-sidebar sidebar-view-${sidebarView}`} ref={explorerScrollRef}>
+      <aside className={`clinic-sidebar sidebar-view-${sidebarView}`}>
+        <div className="explorer-scroll" ref={explorerScrollRef}>
         {sidebarView === "hospital-list" && <>
           <a className="explorer-home" href="/dashboard"><House size={16} aria-hidden="true" /> Trang chủ</a>
           {sideMode !== "advice" && <FacilityExplorerControls
@@ -1707,19 +1708,27 @@ function NearbyClinicPage() {
               <section className="facility-detail-summary">
                 <span className={`type-badge ${detailFacility.facilityTypeKey}`}>{detailFacility.facilityTypeLabel}</span>
                 <h2 id="facility-detail-title" ref={sidebarTitleRef} tabIndex="-1">{detailFacility.facilityName}</h2>
-                <p><MapPin size={16} /> {detailFacility.address}</p>
-                <p><Clock3 size={16} /> {detailFacility.openingHours || "Chưa có giờ hoạt động"}</p>
-                <p><Star size={16} fill={detailAverageRating ? "currentColor" : "none"} /> {formatFacilityRating(detailFacility)}</p>
-                {selectedFacilityDistanceLabel && <p><Route size={16} /> Cách bạn khoảng {selectedFacilityDistanceLabel}</p>}
               </section>
 
               <div className="facility-quick-actions" aria-label={`Thao tác nhanh với ${detailFacility.facilityName}`}>
-                <button type="button" className="primary" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}><Route size={18} /><span>Chỉ đường</span></button>
-                <button type="button" disabled={!detailFacility.phone} title={detailFacility.phone ? undefined : "Cơ sở chưa có số điện thoại"} onClick={() => callFacility(detailFacility)}><Phone size={18} /><span>Gọi</span></button>
-                <button type="button" onClick={() => shareFacility(detailFacility)}><Share2 size={18} /><span>Chia sẻ</span></button>
-                {detailFacility.website && <a href={detailFacility.website} target="_blank" rel="noreferrer"><Globe2 size={18} /><span>Website</span></a>}
+                <button type="button" className="primary" disabled={!detailFacility.hasValidCoordinates} onClick={() => openDirections(detailFacility)}><Route size={22} aria-hidden="true" /><span>Chỉ đường</span></button>
+                <button type="button" disabled={!detailFacility.phone} title={detailFacility.phone ? undefined : "Cơ sở chưa có số điện thoại"} onClick={() => callFacility(detailFacility)}><Phone size={22} aria-hidden="true" /><span>Gọi</span></button>
+                <button type="button" onClick={() => shareFacility(detailFacility)}><Share2 size={20} aria-hidden="true" /><span>Chia sẻ</span></button>
+                {detailFacility.website && <a href={detailFacility.website} target="_blank" rel="noreferrer"><Globe2 size={20} aria-hidden="true" /><span>Website</span></a>}
               </div>
+              {!detailFacility.phone && <p className="facility-action-message">Cơ sở chưa có số điện thoại.</p>}
+              {!detailFacility.hasValidCoordinates && <p className="facility-action-message">Chưa có tọa độ để chỉ đường đến cơ sở này.</p>}
               {shareMessage && <p className="facility-action-message" role="status">{shareMessage}</p>}
+
+              <section className="explorer-card explorer-facility-facts" aria-labelledby="facility-facts-title">
+                <h3 id="facility-facts-title">Thông tin cần biết</h3>
+                <dl className="explorer-facts">
+                  <div><dt><MapPin size={20} aria-hidden="true" /> Địa chỉ</dt><dd>{detailFacility.address}</dd></div>
+                  <div><dt><Clock3 size={20} aria-hidden="true" /> Giờ hoạt động</dt><dd>{detailFacility.openingHours || "Chưa có giờ hoạt động"}</dd></div>
+                  <div><dt><Star size={20} aria-hidden="true" fill={detailAverageRating ? "currentColor" : "none"} /> Đánh giá</dt><dd>{formatFacilityRating(detailFacility)}</dd></div>
+                  {selectedFacilityDistanceLabel && <div><dt><Route size={20} aria-hidden="true" /> Khoảng cách đường thẳng</dt><dd className="explorer-distance">Khoảng {selectedFacilityDistanceLabel}</dd></div>}
+                </dl>
+              </section>
 
               <div className="facility-detail-tabs" role="tablist" aria-label="Thông tin cơ sở y tế">
                 {DETAIL_TABS.map(([tabId, label]) => (
@@ -1863,6 +1872,10 @@ function NearbyClinicPage() {
             </div>
           </section>
         )}
+        </div>
+        {sidebarView === "hospital-list" && sideMode === "advice" && clinicalStatus === "ready" && (
+          <ClinicalRecommendationAction context={resolvedRecommendationContext} />
+        )}
       </aside>
 
       <section className="map-stage" ref={mapStageRef}>
@@ -1878,6 +1891,8 @@ function NearbyClinicPage() {
           hidePopup={detailPanelOpen}
           onError={handleMapError}
           onLocate={handleLocateMe}
+          locating={locating}
+          locationError={locationError}
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}
           onSelect={(facility) => facility

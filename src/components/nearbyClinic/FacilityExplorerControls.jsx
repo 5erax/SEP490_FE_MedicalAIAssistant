@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, LocateFixed, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Check, LoaderCircle, LocateFixed, Search, SlidersHorizontal } from "lucide-react";
 import { NEARBY_RADII } from "../../utils/nearbyFacilities";
 
 export default function FacilityExplorerControls({ search, onSearch, suggestions, onSuggestion,
@@ -66,9 +66,18 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
     </div>
     <div className="explorer-filter-row"><button type="button" className="explorer-filter-chip" onClick={onOpenFilters}>{department?.name || (selectedDepartmentId !== "all" ? "Chuyên khoa được gợi ý" : "Tất cả chuyên khoa")}</button><button type="button" onClick={onOpenFilters}><SlidersHorizontal size={16} aria-hidden="true" /> Bộ lọc</button></div>
     {(selectedType !== "all" || radiusKm !== "nearest") && <p className="explorer-active-filters">{selectedType !== "all" && <span>{typeOptions.find(([key]) => key === selectedType)?.[1]}</span>}{radiusKm !== "nearest" && <span>Trong {radiusKm} km{!hasLocation ? " · Chờ vị trí" : ""}</span>}</p>}
-    <div className="explorer-location"><span>{hasLocation ? "Đã dùng vị trí của bạn" : "Xếp theo khoảng cách khi bật vị trí"}</span><button type="button" onClick={onLocate} disabled={locating}><LocateFixed size={15} aria-hidden="true" />{locating ? "Đang định vị…" : hasLocation ? "Định vị lại" : "Dùng vị trí của tôi"}</button></div>
-    {locationError && <p className="explorer-notice" role="alert">{locationError}</p>}
-    {hasLocation && accuracy > 1000 && <p className="explorer-notice" role="status">Sai số vị trí khoảng {(accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</p>}
+    <section className="explorer-location" aria-labelledby="explorer-location-title">
+      <div className="explorer-location-heading">
+        <span className="explorer-location-icon" aria-hidden="true">{hasLocation ? <Check size={22} /> : <LocateFixed size={22} />}</span>
+        <div><h3 id="explorer-location-title">Vị trí của bạn</h3><p id="explorer-location-status" role="status">{locating ? "Đang xác định vị trí của bạn…" : hasLocation ? "Đã xác định vị trí · Sắp xếp gần → xa" : "Dùng vị trí để tìm cơ sở gần bạn."}</p></div>
+      </div>
+      <button className="explorer-location-button" type="button" onClick={onLocate} disabled={locating} aria-busy={locating} aria-describedby="explorer-location-status">
+        {locating ? <LoaderCircle className="explorer-spinner" size={22} aria-hidden="true" /> : <LocateFixed size={22} aria-hidden="true" />}
+        {locating ? "Đang định vị…" : hasLocation ? "Cập nhật vị trí" : "Dùng vị trí của tôi"}
+      </button>
+      {locationError && <p className="explorer-notice" role="alert">{locationError}</p>}
+      {hasLocation && accuracy > 1000 && <p className="explorer-notice" role="status">Sai số vị trí khoảng {(accuracy / 1000).toFixed(1)} km. Hãy bật vị trí chính xác và định vị lại.</p>}
+    </section>
     {nearbyError && <p className="explorer-notice" role="alert">{nearbyError} <button type="button" onClick={onRetry}>Thử lại</button></p>}
     {loading && <span className="sr-only" role="status">Đang cập nhật danh sách</span>}
   </header>;

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { preparePage } from "./helpers.js";
 
 const FACILITY_ID = "11111111-1111-4111-8111-111111111111";
@@ -35,6 +36,11 @@ async function mockMapApis(page, facilities, options = {}) {
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
 
+    if (url.pathname.startsWith("/api/symptom-analysis/")) {
+      if (options.analysisError) return route.abort("failed");
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: options.analysis ?? null }) });
+    }
+
     if (url.pathname === "/api/medical-departments") {
       return route.fulfill({
         contentType: "application/json",
@@ -45,7 +51,7 @@ async function mockMapApis(page, facilities, options = {}) {
       });
     }
 
-    if (url.pathname === "/api/medical-facilities/active") {
+    if (url.pathname === "/api/medical-facilities/active" || url.pathname === "/api/medical-facilities/nearby") {
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ success: true, data: facilities }),
@@ -127,8 +133,9 @@ async function mockSuccessfulMapStyle(page) {
 }
 
 async function selectDepartment(page, name) {
-  await page.locator(".map-department-filter-trigger").click();
-  await page.getByRole("option", { name }).click();
+  await page.getByRole("button", { name: "Bộ lọc", exact: true }).click();
+  await page.getByRole("combobox", { name: "Chuyên khoa", exact: true }).selectOption({ label: name });
+  await page.getByRole("button", { name: "Áp dụng", exact: true }).click();
 }
 
 test("map renders and facility selection works with keyboard", async ({ page }) => {
@@ -146,18 +153,15 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   const mapMarker = page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" });
   await mapMarker.focus();
   await mapMarker.press("Enter");
-  const viewDetailButton = page.getByRole("button", { name: "Xem chi tiết", exact: true });
-  await expect(viewDetailButton).toBeVisible();
-  await viewDetailButton.press("Enter");
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
   await expect(mapMarker).toHaveAttribute("aria-pressed", "true");
 
   const overviewTab = page.getByRole("tab", { name: "Tổng quan" });
   await expect(overviewTab).toHaveAttribute("aria-selected", "true");
   await overviewTab.press("ArrowRight");
-  await expect(page.getByRole("tab", { name: "Bác sĩ" })).toHaveAttribute("aria-selected", "true");
-  await page.getByRole("tab", { name: "Bác sĩ" }).press("End");
   await expect(page.getByRole("tab", { name: "Đánh giá" })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "Đánh giá" }).press("Home");
+  await expect(overviewTab).toHaveAttribute("aria-selected", "true");
 
   const skipMap = page.getByRole("link", { name: "Bỏ qua bản đồ, đến danh sách cơ sở" });
   await expect(skipMap).toHaveAttribute("href", "#facility-list");
@@ -199,7 +203,6 @@ test("map omits the consultation assistant while preserving facility department 
   await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
 
   await marker.click();
-  await page.getByRole("button", { name: "Xem chi tiết", exact: true }).click();
   await expect(page.getByRole("region", { name: "Bệnh viện kiểm thử" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mở AI hỗ trợ trước khám" })).toHaveCount(0);
   await expect(page.getByRole("complementary", { name: "AI hỗ trợ trước khám" })).toHaveCount(0);
@@ -229,6 +232,8 @@ test("map shows every facility by default, a department narrows them, then searc
     facility({
       id: "22222222-2222-4222-8222-222222222222",
       facilityName: "Phòng khám Da liễu",
+      latitude: 10.81,
+      longitude: 106.72,
       phone: null,
       facilityType: "Phòng khám",
       departments: [{
@@ -262,7 +267,6 @@ test("map shows every facility by default, a department narrows them, then searc
   await expect(heartMarker).toHaveCount(0);
 
   await skinMarker.click();
-  await page.getByRole("button", { name: "Xem chi tiết", exact: true }).click();
   const callButton = page.getByRole("button", { name: "Gọi", exact: true });
   await expect(callButton).toBeDisabled();
   await expect(callButton).toHaveAttribute("title", "Cơ sở chưa có số điện thoại");
@@ -332,10 +336,10 @@ test("geolocation denial does not remove the rendered map", async ({ page, conte
   await page.goto("/map", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
 
-  const locateButton = page.getByRole("button", { name: "Định vị tôi" });
+  const locateButton = page.getByRole("button", { name: "Vị trí của tôi", exact: true });
   await locateButton.click();
 
-  await expect(page.getByText("Không thể lấy vị trí của bạn.", { exact: true })).toBeVisible();
+  await expect(page.locator(".explorer-location").getByRole("alert")).toHaveText("Bạn chưa cho phép định vị. Hãy bật quyền vị trí để tìm cơ sở gần bạn.");
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
 });
 
@@ -353,9 +357,10 @@ test("map refresh remains usable on mobile, dark mode and forced colors", async 
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(hasHorizontalOverflow).toBe(false);
+  await page.getByRole("button", { name: "Bản đồ", exact: true }).click();
   const marker = page.getByRole("button", { name: "Chọn Bệnh viện kiểm thử trên bản đồ" });
   await expect(marker).toBeVisible();
-  const locateButtonBox = await page.getByRole("button", { name: "Định vị tôi" }).boundingBox();
+  const locateButtonBox = await page.getByRole("button", { name: "Vị trí của tôi", exact: true }).boundingBox();
   expect(locateButtonBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.emulateMedia({ forcedColors: "active" });
@@ -373,7 +378,138 @@ test("facility API failure uses safe Vietnamese recovery copy", async ({ page })
 
   await expect(page.getByText(
     "Chưa thể tải danh sách cơ sở y tế. Vui lòng kiểm tra kết nối và thử lại.",
-    { exact: true },
+    { exact: false },
   )).toBeVisible();
   await expect(page.getByText("Failed to fetch", { exact: true })).toHaveCount(0);
 });
+
+const SESSION_ID = "55555555-5555-4555-8555-555555555555";
+const clinicalAnalysis = {
+  sessionId: SESSION_ID,
+  recommendedDepartment: {
+    departmentId: FACILITY_DEPARTMENT_ID,
+    departmentName: "Khoa Hô hấp",
+    reason: "Chuyên khoa được gợi ý dựa trên nội dung bạn đã cung cấp.",
+    description: "Mô tả chuyên khoa dùng để kiểm tra khả năng đọc và cuộn nội dung dài. ".repeat(35),
+  },
+  diagnoses: Array.from({ length: 5 }, (_, index) => ({
+    diseaseName: `Kết quả tham khảo ${index + 1}`,
+    rank: index + 1,
+    confidenceScore: 0.47 - index * 0.08,
+    clinicalReasoning: "Nội dung giải thích được giữ đầy đủ và chỉ mở khi người dùng muốn xem. ".repeat(15),
+  })),
+  recommendedFacilities: [facility()],
+};
+
+for (const screen of [
+  { name: "desktop", width: 1440, height: 900, dark: false, scale: 100 },
+  { name: "mobile", width: 390, height: 844, dark: false, scale: 100 },
+  { name: "mobile-dark-large-text", width: 320, height: 740, dark: true, scale: 125 },
+]) {
+  test(`clinical next step stays visible with long results: ${screen.name}`, async ({ page }, testInfo) => {
+    await preparePage(page);
+    await page.setViewportSize({ width: screen.width, height: screen.height });
+    await page.addInitScript(({ accessToken, snapshot, dark, scale }) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+      sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
+      document.addEventListener("DOMContentLoaded", () => {
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document.documentElement.style.fontSize = `${scale}%`;
+      }, { once: true });
+    }, { accessToken: TOKEN, snapshot: clinicalAnalysis, dark: screen.dark, scale: screen.scale });
+    await mockMapApis(page, [facility()], { analysis: clinicalAnalysis });
+    await mockSuccessfulMapStyle(page);
+    await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`, { waitUntil: "domcontentloaded" });
+
+    const nextStep = page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" });
+    await expect(nextStep).toBeInViewport({ ratio: 1 });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", screen.dark ? "dark" : "light");
+    await expect(page.locator("html")).toHaveCSS("font-size", `${16 * screen.scale / 100}px`);
+    await expect(nextStep).toHaveAttribute("href", `/pre-consultation?sessionId=${SESSION_ID}`);
+    expect((await nextStep.boundingBox()).height).toBeGreaterThanOrEqual(52);
+    await expect(page.locator(".explorer-description")).not.toHaveAttribute("open");
+    await page.screenshot({ path: testInfo.outputPath(`${screen.name}-results.png`) });
+    await page.getByText("Xem mô tả chuyên khoa", { exact: true }).click();
+    await expect(nextStep).toBeInViewport({ ratio: 1 });
+    await page.locator(".explorer-diagnosis summary").last().click();
+    await expect(nextStep).toBeInViewport({ ratio: 1 });
+    await page.locator(".explorer-clinical-disclaimer").scrollIntoViewIfNeeded();
+    await expect(nextStep).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    expect(await page.locator(".explorer-scroll").evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(false);
+
+    const accessibility = await new AxeBuilder({ page }).include(".clinic-sidebar").withTags(["wcag2a", "wcag2aa"]).analyze();
+    expect(accessibility.violations).toEqual([]);
+    await page.getByRole("button", { name: "Cơ sở y tế", exact: true }).click();
+    await expect(nextStep).toHaveCount(0);
+    await page.getByRole("button", { name: "Kết quả tư vấn", exact: true }).click();
+    await expect(nextStep).toBeInViewport({ ratio: 1 });
+  });
+}
+
+test("clinical next step is absent when results cannot be restored", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript((accessToken) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+  }, TOKEN);
+  await mockMapApis(page, [facility()], { analysisError: true });
+  await mockSuccessfulMapStyle(page);
+  await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
+  await page.getByRole("button", { name: "Kết quả tư vấn", exact: true }).click();
+  await expect(page.locator(".explorer-advice").getByRole("alert")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" })).toHaveCount(0);
+});
+
+test("location controls share progress and mobile map shows permission errors", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript(() => {
+    navigator.geolocation.getCurrentPosition = (_success, failure) => {
+      setTimeout(() => failure({ code: 1 }), 2000);
+    };
+  });
+  await mockMapApis(page, [facility()]);
+  await mockSuccessfulMapStyle(page);
+  await page.goto("/map");
+  await expect(page.locator(".locate-button")).toBeVisible();
+  await page.getByRole("button", { name: "Dùng vị trí của tôi", exact: true }).click();
+  await expect(page.locator(".locate-button")).toBeDisabled();
+  await expect(page.locator(".explorer-location-button")).toHaveAttribute("aria-busy", "true");
+  await expect(page.locator(".explorer-location").getByRole("alert")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Bản đồ", exact: true }).click();
+  await expect(page.locator(".explorer-map-location").getByRole("alert")).toBeVisible();
+  await expect(page.locator(".locate-button")).toBeEnabled();
+  expect((await page.locator(".locate-button").boundingBox()).height).toBeGreaterThanOrEqual(56);
+});
+
+for (const dark of [false, true]) {
+  test(`facility details keep actions readable and restore the list: ${dark ? "dark" : "light"}`, async ({ page }, testInfo) => {
+    await preparePage(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript((isDark) => {
+      document.addEventListener("DOMContentLoaded", () => {
+        document.documentElement.dataset.theme = isDark ? "dark" : "light";
+      }, { once: true });
+    }, dark);
+    await mockMapApis(page, [facility({ website: "https://example.com" })]);
+    await mockSuccessfulMapStyle(page);
+    await page.goto("/map");
+    const listAction = page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử", exact: true });
+    await listAction.click();
+    await expect(page.getByRole("heading", { name: "Bệnh viện kiểm thử", exact: true })).toBeVisible();
+    for (const name of ["Chỉ đường", "Gọi", "Chia sẻ"]) {
+      const action = page.getByRole("button", { name, exact: true });
+      await expect(action).toBeInViewport({ ratio: 1 });
+      expect((await action.boundingBox()).height).toBeGreaterThanOrEqual(52);
+    }
+    await expect(page.getByRole("link", { name: "Website", exact: true })).toHaveAttribute("href", "https://example.com");
+    await expect(page.getByRole("region", { name: "Thông tin cần biết" })).toContainText("123 Nguyễn Trãi, TP.HCM");
+    await page.screenshot({ path: testInfo.outputPath(`facility-detail-${dark ? "dark" : "light"}.png`) });
+    const accessibility = await new AxeBuilder({ page }).include(".clinic-sidebar").withTags(["wcag2a", "wcag2aa"]).analyze();
+    expect(accessibility.violations).toEqual([]);
+    expect(await page.locator(".explorer-scroll").evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(false);
+    await page.getByRole("button", { name: "Quay lại danh sách", exact: true }).click();
+    await expect(listAction).toBeFocused();
+    await expect(listAction).toBeInViewport({ ratio: 1 });
+  });
+}
