@@ -24,6 +24,7 @@ import ClinicalRecommendationPanel from "../components/nearbyClinic/ClinicalReco
 import FacilityExplorerControls from "../components/nearbyClinic/FacilityExplorerControls";
 import useNearbyFacilities from "../hooks/useNearbyFacilities";
 import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
+import { resolveExplorerSideMode } from "../utils/facilityExplorerState";
 
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
@@ -474,7 +475,7 @@ function NearbyClinicPage() {
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [sidebarView, setSidebarView] = useState("hospital-list");
-  const [sideMode, setSideMode] = useState("list");
+  const [selectedSideMode, setSideMode] = useState(null);
   const [mobileView, setMobileView] = useState("list");
   const explorerScrollRef = useRef(null);
   const savedListScrollRef = useRef(0);
@@ -810,6 +811,13 @@ function NearbyClinicPage() {
     requestedDepartmentId,
     requestedFacilityId,
   ]);
+
+  const sideMode = resolveExplorerSideMode({
+    selectedMode: selectedSideMode,
+    isClinicalFlow,
+    clinicalStatus,
+    recommendedDepartment: resolvedRecommendationContext?.recommendedDepartment,
+  });
 
   // Once the recommended department is known, filter pins by it like the
   // plain map's department picker - not just the AI's short facility list -
