@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, CircleAlert, ClipboardPlus, Gauge, History, LocateFixed, MapPinned, RefreshCw, Send, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardPlus, Gauge, History, LocateFixed, MapPinned, RefreshCw, Send } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import {
   getClinicalQuestionAnswerMode,
   getClinicalQuestionAnswerOptions,
   getClinicalQuestionBooleanPrompts,
-  getStoredAuth,
   isClinicalQuestionAnswered,
   readSymptomAnalysisQuota,
   SYMPTOM_ANALYSIS_MESSAGES,
@@ -14,17 +13,19 @@ import {
 } from "../services/api";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
 import { useSymptomIntake } from "../hooks/useSymptomIntake";
-import { hasAuthRole, shouldSetupPatientProfile } from "../utils/roles";
+import { hasAuthRole } from "../utils/roles";
+import { useAuthSession } from "../state/useAuthSession";
+import PatientProfileNudge from "../components/workspace/PatientProfileNudge";
+import ClinicalNote from "../components/clinical/ClinicalNote";
+import ClinicalDisclosure from "../components/clinical/ClinicalDisclosure";
+import DepartmentRecommendation from "../components/clinical/DepartmentRecommendation";
+import ClinicalConfidenceGuide from "../components/clinical/ClinicalConfidenceGuide";
+import { CLINICAL_NOTES } from "../content/clinicalNotes";
+import { clinicalConfidencePercent, hasClinicalPriority } from "../utils/clinicalPresentation";
 import "../styles/dashboard.css";
 import "../styles/dashboard-clinical.css";
 
 /* The service owns clinical question selection and specialty recommendation. */
-function confidencePercent(value) {
-  const numeric = Number(value ?? 0);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.max(0, Math.min(100, Math.round(numeric <= 1 ? numeric * 100 : numeric)));
-}
-
 function unwrapPayload(response) {
   return response?.data?.data ?? response?.data ?? response;
 }
@@ -131,17 +132,14 @@ function getRecommendedDepartment(result) {
 
     return {
       ...department,
-      confidenceScore: Number(
-        department.confidenceScore ?? department.ConfidenceScore ?? 0,
-      ) || 0,
+      confidenceScore: department.confidenceScore ?? department.ConfidenceScore ?? null,
       departmentId,
       departmentName,
       description: String(
         department.description ?? department.Description ?? "",
       ).trim(),
-      isEmergencySuggested: (
-        department.isEmergencySuggested ?? department.IsEmergencySuggested
-      ) === true,
+      reason: String(department.reason ?? department.Reason ?? "").trim(),
+      isEmergencySuggested: hasClinicalPriority(department),
       priorityRank: Number(
         department.priorityRank ?? department.PriorityRank ?? 0,
       ) || 0,
@@ -265,11 +263,6 @@ function sortRecommendedFacilities(result, userLocation) {
     ));
 }
 
-function readProfilePromptDismissed() {
-  if (typeof sessionStorage === "undefined") return false;
-  return sessionStorage.getItem("medimate.profile.prompt.dismissed") === "true";
-}
-
 function isPlainObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -367,7 +360,7 @@ function SpecialtyQuotaBadge({ quota, status, error, onRetry }) {
 }
 
 export default function DashboardPage() {
-  const auth = getStoredAuth();
+  const { auth } = useAuthSession();
   const isAdminSession = hasAuthRole(auth, "admin");
   const {
     answeredCount,
@@ -394,9 +387,6 @@ export default function DashboardPage() {
     readResultPayload,
   });
 
-  const [profilePromptVisible, setProfilePromptVisible] = useState(
-    shouldSetupPatientProfile(auth) && !readProfilePromptDismissed(),
-  );
   const [userLocation, setUserLocation] = useState(null);
   const [locationStatus, setLocationStatus] = useState("idle");
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
@@ -475,13 +465,6 @@ export default function DashboardPage() {
     }
   }, [isAdminSession]);
 
-  function dismissProfilePrompt() {
-    if (typeof sessionStorage !== "undefined") {
-      sessionStorage.setItem("medimate.profile.prompt.dismissed", "true");
-    }
-    setProfilePromptVisible(false);
-  }
-
   function requestUserLocation() {
     if (!navigator.geolocation) {
       setLocationStatus("unsupported");
@@ -558,19 +541,7 @@ export default function DashboardPage() {
   return (
     <section className="specialty-page specialty-clinical-page" aria-labelledby="specialty-intake-title">
       <section className="studio-center" aria-labelledby="specialty-intake-title">
-        {showIntakeForm && profilePromptVisible && (
-          <section className="profile-nudge" aria-labelledby="profile-nudge-title">
-            <span aria-hidden="true"><UserRound size={18} /></span>
-            <div>
-              <h2 id="profile-nudge-title">Hoàn thiện hồ sơ khi bạn sẵn sàng</h2>
-              <p>Hồ sơ giúp gợi ý theo bối cảnh sức khỏe tốt hơn, nhưng bạn vẫn có thể dùng tư vấn chuyên khoa ngay.</p>
-            </div>
-            <div className="profile-nudge-actions">
-              <Button type="button" tone="secondary" onClick={dismissProfilePrompt}>Để sau</Button>
-              <Button type="button" onClick={() => navigate("/profile")}>Cập nhật hồ sơ</Button>
-            </div>
-          </section>
-        )}
+        <PatientProfileNudge visible={showIntakeForm} />
 
         <header className="studio-heading specialty-clinical-heading">
           <div className="specialty-heading-main">
@@ -595,12 +566,10 @@ export default function DashboardPage() {
               <History size={16} />
               Lịch sử gợi ý chuyên khoa
             </Button>
-            <div className="specialty-scope-note">
-              <ShieldCheck size={19} aria-hidden="true" />
-              <p><strong>Phạm vi được nói rõ</strong><span>Kết quả không thay thế chẩn đoán hoặc điều trị của bác sĩ.</span></p>
-            </div>
           </div>
         </header>
+
+        <ClinicalNote title={CLINICAL_NOTES.scopeTitle}>{CLINICAL_NOTES.scope}</ClinicalNote>
 
         <ol className="studio-flow" aria-label="Tiến trình tư vấn">
           {["Mô tả", "Làm rõ", "Kết quả"].map((label, index) => (
@@ -626,10 +595,6 @@ export default function DashboardPage() {
                 <h3>Mô tả điều bạn đang cảm nhận</h3>
               </div>
               <div className="studio-form-meta">
-                <div className="clinical-strip" aria-label="Phạm vi tư vấn">
-                  <span>Tiếp nhận ban đầu</span>
-                  <span>Không thay thế chẩn đoán</span>
-                </div>
                 <SpecialtyQuotaBadge
                   quota={symptomQuota}
                   status={quotaStatus}
@@ -642,7 +607,7 @@ export default function DashboardPage() {
             <Field
               id="specialty-symptoms"
               label="Triệu chứng bạn đang gặp"
-              hint="Mô tả thời điểm bắt đầu, mức độ và dấu hiệu đi kèm. Tối đa 2000 ký tự."
+              hint={CLINICAL_NOTES.symptomHint}
               error={symptomInputError}
               required
             >
@@ -653,8 +618,11 @@ export default function DashboardPage() {
                 placeholder="Ví dụ: Tôi đau bụng âm ỉ sau bữa ăn, buồn nôn nhẹ..."
                 rows={4}
                 disabled={loading}
+                aria-describedby="specialty-symptoms-limit"
               />
             </Field>
+
+            <p id="specialty-symptoms-limit" className="clinical-character-limit">Tối đa 2.000 ký tự</p>
 
             <div className="studio-chat-actions">
               <span className="studio-status" aria-live="polite">
@@ -681,13 +649,7 @@ export default function DashboardPage() {
         )}
 
         {showIntakeForm && (
-          <section className="specialty-emergency-note" aria-labelledby="specialty-emergency-title">
-            <CircleAlert size={20} aria-hidden="true" />
-            <div>
-              <h3 id="specialty-emergency-title">Khi nào cần cấp cứu?</h3>
-              <p>Nếu có dấu hiệu nghiêm trọng hoặc tình trạng chuyển nặng nhanh, hãy liên hệ dịch vụ cấp cứu tại nơi bạn sống hoặc đến cơ sở y tế gần nhất.</p>
-            </div>
-          </section>
+          <ClinicalNote tone="warning" title={CLINICAL_NOTES.emergencyTitle}>{CLINICAL_NOTES.emergency}</ClinicalNote>
         )}
 
         {error && !symptomInputError && (
@@ -845,39 +807,13 @@ export default function DashboardPage() {
         {status === "result" && (
           <section className="studio-result-panel" aria-label="Kết quả gợi ý chuyên khoa và cơ sở y tế">
             <article className="studio-result-card specialty">
-              <div className="specialty-result-head">
-                <div>
-                  <span>Chuyên khoa được gợi ý</span>
-                  <h2>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</h2>
-                </div>
-                {confidencePercent(recommendedDepartment?.confidenceScore) > 0 && (
-                  <strong
-                    className="specialty-confidence-badge"
-                    aria-label={`Mức phù hợp tham khảo ${confidencePercent(recommendedDepartment?.confidenceScore)} phần trăm`}
-                  >
-                    {confidencePercent(recommendedDepartment?.confidenceScore)}% phù hợp
-                  </strong>
-                )}
-              </div>
-              <p>
-                {recommendedDepartment?.description
-                  || (recommendedDepartment?.departmentName
-                    ? "Đây là chuyên khoa được hệ thống đề xuất để bạn tham khảo khi chọn nơi thăm khám."
-                    : "Hệ thống chưa trả về chuyên khoa cụ thể. Bạn vẫn có thể xem các cơ sở y tế được gợi ý bên dưới.")}
-              </p>
+              <DepartmentRecommendation key={sessionId || "current"} department={recommendedDepartment} />
+              {clinicalConfidencePercent(recommendedDepartment?.confidenceScore) !== null && <ClinicalConfidenceGuide />}
               {Number(recommendedDepartment?.priorityRank) > 0 && (
                 <div className="studio-result-meta">
                   <small>Thứ tự ưu tiên: {recommendedDepartment.priorityRank}</small>
                 </div>
               )}
-              {recommendedDepartment?.isEmergencySuggested && (
-                <Alert tone="warning">
-                  Kết quả ghi nhận dấu hiệu cần được ưu tiên đánh giá tại cơ sở y tế.
-                </Alert>
-              )}
-              <small className="specialty-result-disclaimer">
-                Gợi ý này giúp định hướng nơi khám. Cơ sở y tế sẽ xác nhận chuyên khoa phù hợp sau khi đánh giá trực tiếp.
-              </small>
             </article>
 
             <article className="studio-result-card facilities">
@@ -885,7 +821,7 @@ export default function DashboardPage() {
                 <div>
                   <span>Cơ sở y tế được gợi ý</span>
                   <h2>Những nơi có chuyên khoa phù hợp</h2>
-                  <p>Danh sách chỉ gồm các cơ sở được trả về trong kết quả gợi ý. Khoảng cách được bổ sung khi bạn cho phép truy cập vị trí.</p>
+                  <p className="clinical-guidance">Danh sách cơ sở từ kết quả tư vấn của bạn.</p>
                 </div>
                 <div className="facility-panel-actions">
                   <Button
@@ -906,6 +842,10 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              <ClinicalDisclosure title={CLINICAL_NOTES.distanceTitle}>
+                <p className="clinical-guidance">{CLINICAL_NOTES.distance} Khoảng cách được hiển thị sau khi bạn cho phép sử dụng vị trí.</p>
+              </ClinicalDisclosure>
+
               {locationStatus === "denied" && (
                 <Alert tone="warning" live>
                   Trình duyệt chưa cấp quyền vị trí. Danh sách vẫn ưu tiên chuyên khoa, tọa độ hợp lệ và đánh giá thật khi có dữ liệu.
@@ -918,7 +858,7 @@ export default function DashboardPage() {
               )}
 
               {sortedFacilities.length === 0 ? (
-                <p>Hệ thống chưa trả về cơ sở y tế cụ thể. Hãy thử lại với mô tả triệu chứng rõ hơn.</p>
+                <p className="clinical-guidance">Hệ thống chưa trả về cơ sở y tế cụ thể. Hãy thử lại với mô tả triệu chứng rõ hơn.</p>
               ) : (
                 <FacilityResultList
                   key={sessionId}

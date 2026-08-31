@@ -16,6 +16,7 @@ import {
 } from "../services/api";
 import { useServiceCredit } from "../state/useServiceCredit";
 import { isSameProfileAccount } from "../utils/patientProfileCompletion";
+import { rememberCompletedPatientProfile } from "../services/patientProfileSetup";
 import { getSubscriptionStatusLabel } from "../services/paymentStatusLabels";
 import {
   getEarliestAllowedBirthDate,
@@ -167,6 +168,7 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     let active = true;
+    const requestAuth = getStoredAuth();
     const userRequest = authApi.me();
     const loadPatientProfile = (userResponse) => {
       const user = userResponse?.data ?? {};
@@ -221,6 +223,9 @@ export default function UserProfilePage() {
       }
 
       const patientProfile = profileResult.status === "fulfilled" ? profileResult.value : null;
+      if (patientProfile?.id || patientProfile?.patientProfileId || patientProfile?.profileId) {
+        rememberCompletedPatientProfile(requestAuth, userResult.status === "fulfilled" ? user : undefined);
+      }
       if (profileResult.status === "fulfilled") {
         setPatientProfileId(patientProfile?.id ?? "");
         const nextMedical = {
@@ -424,7 +429,8 @@ export default function UserProfilePage() {
       };
       const currentAuth = getStoredAuth();
       if (isSameProfileAccount(auth, currentAuth)) {
-        setStoredAuth(mergeAuthWithCurrentUser(currentAuth, refreshedUser));
+        if (patientProfileId) rememberCompletedPatientProfile(auth, refreshedUser);
+        else setStoredAuth(mergeAuthWithCurrentUser(currentAuth, refreshedUser));
       }
       setIsEditing(false);
       setProfileForm(nextProfile);
@@ -468,6 +474,7 @@ export default function UserProfilePage() {
         ? await patientProfilesApi.update(patientProfileId, payload)
         : await patientProfilesApi.create({ userId, ...payload });
       if (!patientProfileId) setPatientProfileId(response.data?.id ?? "");
+      rememberCompletedPatientProfile(auth);
       const savedMedicalForm = { ...medicalForm, chronicDiseases: keptDiseases };
       setMedicalForm(savedMedicalForm);
       setMedicalSnapshot(savedMedicalForm);
