@@ -12,7 +12,7 @@ test("specialty search expands only empty radii and preserves the specialty", as
     return { success: true, data: filters.radiusKm === 1 ? [] : [{ ...nearbyItem, distanceKm: 2.4 }] };
   }, specialtyFilters);
   assert.deepEqual(calls.map((call) => call.radiusKm), [1, 3]);
-  assert.ok(calls.every((call) => call.departmentId === "D1" && call.limit === 5));
+  assert.ok(calls.every((call) => call.departmentId === "D1" && call.limit === 20));
   assert.equal(result.radiusKm, 3);
   assert.equal(result.items.length, 1);
 });

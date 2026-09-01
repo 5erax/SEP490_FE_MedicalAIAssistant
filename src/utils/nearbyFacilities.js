@@ -6,7 +6,7 @@ export const SPECIALTY_NEARBY_RADII = [1, 3, 5, 7, 10, 15, 20, 30, 50];
 export async function findNearbySpecialtyFacilities(fetchNearby, filters, signal) {
   for (const radiusKm of SPECIALTY_NEARBY_RADII) {
     signal?.throwIfAborted();
-    const response = await fetchNearby({ ...filters, radiusKm, limit: 5 }, signal);
+    const response = await fetchNearby({ ...filters, radiusKm, limit: NEARBY_LIMIT }, signal);
     signal?.throwIfAborted();
     if (response?.success === false || !Array.isArray(response?.data)) {
       throw new Error("Invalid nearby response");
@@ -23,7 +23,7 @@ export async function findNearbySpecialtyFacilities(fetchNearby, filters, signal
       throw new Error("Invalid nearby facility");
     }
     if (items.length || radiusKm === SPECIALTY_NEARBY_RADII.at(-1)) {
-      return { items: [...items].sort((a, b) => a.distanceKm - b.distanceKm).slice(0, 5), radiusKm };
+      return { items: [...items].sort((a, b) => a.distanceKm - b.distanceKm), radiusKm };
     }
   }
 }

@@ -13,3 +13,18 @@ export function formatFacilityRating(facility) {
   if (average === null) return "Chưa có điểm đánh giá";
   return `${average.toFixed(1)}/5 · ${count} đánh giá`;
 }
+
+export function rankFacilitiesByReviewQuality(facilities) {
+  return [...facilities].sort((left, right) => {
+    const leftRating = getFacilityRating(left);
+    const rightRating = getFacilityRating(right);
+    const averageDifference = (rightRating.average ?? -1) - (leftRating.average ?? -1);
+    if (averageDifference) return averageDifference;
+    const countDifference = (rightRating.count ?? -1) - (leftRating.count ?? -1);
+    if (countDifference) return countDifference;
+    const distanceDifference = (Number.isFinite(left.distanceKm) ? left.distanceKm : Infinity)
+      - (Number.isFinite(right.distanceKm) ? right.distanceKm : Infinity);
+    if (distanceDifference) return distanceDifference;
+    return String(left.facilityName ?? "").localeCompare(String(right.facilityName ?? ""), "vi");
+  });
+}

@@ -31,7 +31,7 @@ import ReviewImageField from "../components/nearbyClinic/ReviewImageField";
 import { getReviewImages, reviewImageMap, reviewImagePatch } from "../utils/reviewImages";
 import { getFacilityPage, paginateFacilities } from "../utils/facilityPagination";
 import { readRankingScore } from "../utils/clinicalExplanation";
-import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
+import { getFacilityRating, formatFacilityRating, rankFacilitiesByReviewQuality } from "../utils/facilityRating";
 import { resolveExplorerSideMode } from "../utils/facilityExplorerState";
 import { getNearbyMapFocusPoints, getNextNearbyRadius, NEARBY_LIMIT } from "../utils/nearbyFacilities";
 
@@ -517,6 +517,7 @@ function NearbyClinicPage() {
   const [locationOptional, setLocationOptional] = useState(false);
   const [radiusKm, setRadiusKm] = useState("nearest");
   const [nearbyAttempt, setNearbyAttempt] = useState(0);
+  const [nearbyVisibility, setNearbyVisibility] = useState({ key: "", count: 5 });
   const [locating, setLocating] = useState(false);
   const locatingRef = useRef(false);
   const nearby = useNearbyFacilities(nearbyEnabled ? userLocation : null, radiusKm, selectedDepartmentId, nearbyAttempt);
@@ -1016,7 +1017,7 @@ function NearbyClinicPage() {
     });
     // AI-recommended facilities (if any matched the department too) surface
     // first; every other facility offering the department follows them.
-    if (nearbyEnabled) return matches.sort((a, b) => a.distanceKm - b.distanceKm);
+    if (nearbyEnabled) return rankFacilitiesByReviewQuality(matches);
     return isClinicalFlow && recommendedFacilityOrder.size > 0
       ? matches.sort((left, right) => {
         const leftRank = recommendedFacilityOrder.get(String(left.facilityId));
@@ -1070,6 +1071,22 @@ function NearbyClinicPage() {
 
   const listQueryKey = JSON.stringify([mapQuery.sessionId, debouncedSearch, selectedDepartmentId, selectedType, nearbyEnabled, radiusKm, userLocation?.lat, userLocation?.lng]);
   const pagination = paginateFacilities(visibleFacilities, listPosition.key === listQueryKey ? listPosition.page : 1);
+  const incrementalNearbyMode = nearbyEnabled;
+  const nearbyVisibleCount = nearbyVisibility.key === listQueryKey ? nearbyVisibility.count : 5;
+  const nearbyDisplayedCount = Math.min(nearbyVisibleCount, visibleFacilities.length);
+  const displayedFacilities = incrementalNearbyMode
+    ? visibleFacilities.slice(0, nearbyDisplayedCount)
+    : pagination.items;
+  const displayedPagination = incrementalNearbyMode
+    ? {
+      ...pagination,
+      page: 1,
+      totalPages: 1,
+      start: visibleFacilities.length > 0 ? 1 : 0,
+      end: nearbyDisplayedCount,
+      items: displayedFacilities,
+    }
+    : pagination;
   if (listPosition.key !== listQueryKey || listPosition.page !== pagination.page) {
     setListPosition({ key: listQueryKey, page: pagination.page });
   }
@@ -1088,15 +1105,16 @@ function NearbyClinicPage() {
     window.requestAnimationFrame(scrollToListStart);
   };
 
+  const mapFacilityCandidates = incrementalNearbyMode ? displayedFacilities : visibleFacilities;
   const mappableFacilities = useMemo(
-    () => visibleFacilities.filter((facility) => facility.hasValidCoordinates),
-    [visibleFacilities],
+    () => mapFacilityCandidates.filter((facility) => facility.hasValidCoordinates),
+    [mapFacilityCandidates],
   );
   const mapBoundsKey = useMemo(
     () => mappableFacilities.map((facility) => `${facility.facilityId}:${facility.longitude}:${facility.latitude}`).join("|"),
     [mappableFacilities],
   );
-  const hasActiveFacilitiesWithoutMapData = visibleFacilities.length > 0 && !visibleFacilities.some((facility) => facility.hasValidCoordinates);
+  const hasActiveFacilitiesWithoutMapData = mapFacilityCandidates.length > 0 && !mapFacilityCandidates.some((facility) => facility.hasValidCoordinates);
   const unavailableRecommendationCount = isClinicalFlow && recommendedFacilityOrder.size > 0
     ? (resolvedRecommendationContext?.recommendedFacilities ?? [])
       .filter((facility) => facility.isActive === false)
@@ -1842,7 +1860,12 @@ function NearbyClinicPage() {
   const resultError = nearbyEnabled ? nearby.error : facilities.length === 0 ? apiNotice : "";
   const resultRadius = nearbyEnabled && !nearby.loading && !nearby.error && Number.isFinite(nearby.radiusKm) ? nearby.radiusKm : null;
   const nextRadius = resultRadius ? getNextNearbyRadius(resultRadius) : null;
-  const resultSummary = `${pagination.total > 5 ? `${pagination.start}–${pagination.end} trong ${pagination.total}` : `Đang hiển thị ${pagination.total}`} cơ sở${resultRadius ? ` trong ${resultRadius} km` : ""}${selectedType !== "all" ? ` · ${TYPE_LABELS[selectedType] || selectedType}` : ""}`;
+  const canShowMoreWithinRadius = incrementalNearbyMode && nearbyDisplayedCount < visibleFacilities.length;
+  const resultSummary = `${incrementalNearbyMode && visibleFacilities.length > 5
+    ? `Đang hiển thị ${nearbyDisplayedCount} trong ${visibleFacilities.length}`
+    : pagination.total > 5
+      ? `${pagination.start}–${pagination.end} trong ${pagination.total}`
+      : `Đang hiển thị ${pagination.total}`} cơ sở${resultRadius ? ` trong ${resultRadius} km` : ""}${selectedType !== "all" ? ` · ${TYPE_LABELS[selectedType] || selectedType}` : ""}`;
   const selectMapFacility = async (facility) => {
     if (detailPanelOpen) { if (facility) await openFacilityDetail(facility); return; }
     if (!facility) { setSelectedFacility(null); return; }
@@ -1896,8 +1919,8 @@ function NearbyClinicPage() {
 
         <FacilityList
           cardRefs={cardRefs}
-          facilities={pagination.items}
-          pagination={pagination} onPageChange={changeListPage}
+          facilities={displayedFacilities}
+          pagination={displayedPagination} onPageChange={changeListPage}
           loading={nearbyEnabled ? nearby.loading : loadingFacilities}
           selectedFacilityId={selectedFacility?.facilityId}
           onViewDetail={openFacilityDetail}
@@ -1905,12 +1928,13 @@ function NearbyClinicPage() {
           summary={resultSummary}
           specialtyId={selectedDepartmentId} specialtyName={departmentName}
           resultDetails={<>
-            {mappableFacilities.length !== visibleFacilities.length && <p>Có {mappableFacilities.length} trong {visibleFacilities.length} cơ sở hiển thị được trên bản đồ. Các cơ sở còn lại vẫn có trong danh sách.</p>}
-            {pagination.totalPages > 1 && <p>Danh sách có 5 cơ sở mỗi trang. Bản đồ hiển thị các cơ sở có tọa độ trong toàn bộ kết quả đang lọc.</p>}
+            {mappableFacilities.length !== mapFacilityCandidates.length && <p>Có {mappableFacilities.length} trong {mapFacilityCandidates.length} cơ sở đang hiển thị có tọa độ trên bản đồ. Các cơ sở còn lại vẫn có trong danh sách.</p>}
+            {incrementalNearbyMode && visibleFacilities.length > displayedFacilities.length && <p>Bản đồ đang đồng bộ với {displayedFacilities.length} cơ sở trong danh sách. Chọn Xem thêm để hiển thị các cơ sở tiếp theo trong cùng phạm vi.</p>}
+            {!incrementalNearbyMode && pagination.totalPages > 1 && <p>Danh sách có 5 cơ sở mỗi trang. Bản đồ hiển thị các cơ sở có tọa độ trong toàn bộ kết quả đang lọc.</p>}
             <p>{nearbyEnabled
-              ? "Các cơ sở được sắp xếp từ gần đến xa theo vị trí bạn đã cung cấp. Khoảng cách là ước tính theo đường thẳng; quãng đường đi thực tế có thể dài hơn."
+              ? "Danh sách ưu tiên điểm đánh giá trung bình cao hơn, sau đó đến số lượt đánh giá và khoảng cách gần hơn. Khoảng cách là ước tính theo đường thẳng; quãng đường đi thực tế có thể dài hơn."
               : "Danh sách dựa trên chuyên khoa và bộ lọc bạn chọn. Chưa dùng vị trí của bạn để tìm cơ sở ở gần."}</p>
-            {nearbyEnabled && radiusKm === "auto" && <p>Hệ thống tự mở rộng phạm vi từ 1 đến tối đa 50 km và dừng ở phạm vi đầu tiên có kết quả. Hiển thị tối đa 5 cơ sở gần nhất; bạn có thể chọn Tìm xa hơn để xem thêm lựa chọn.</p>}
+            {nearbyEnabled && radiusKm === "auto" && <p>Hệ thống tự mở rộng phạm vi từ 1 đến tối đa 50 km và dừng ở phạm vi đầu tiên có kết quả. Ban đầu hiển thị 5 cơ sở được đánh giá nổi bật; bạn có thể xem thêm các cơ sở còn lại trong cùng phạm vi.</p>}
             {nearbyEnabled && radiusKm !== "auto" && radiusKm !== "nearest" && <p>Hiển thị tối đa {NEARBY_LIMIT} cơ sở trong phạm vi đã chọn.</p>}
             {!nearbyEnabled && radiusKm !== "nearest" && <p>Phạm vi bạn chọn chỉ áp dụng khi dùng vị trí.</p>}
             {nearbyEnabled && (searchText.trim() || selectedType !== "all") && <p>Từ khóa và loại cơ sở đang được lọc trong các kết quả tìm được, không phải toàn bộ cơ sở trong khu vực.</p>}
@@ -1921,8 +1945,12 @@ function NearbyClinicPage() {
             : resultRadius ? `Chưa tìm thấy cơ sở phù hợp trong ${resultRadius} km từ dữ liệu hiện có. Bạn có thể tìm xa hơn hoặc đổi bộ lọc.` : undefined}
           onRetry={nearbyEnabled && nearby.error ? () => setNearbyAttempt((value) => value + 1) : !nearbyEnabled && apiNotice && facilities.length === 0 ? () => { setLoadingFacilities(true); setCatalogAttempt((value) => value + 1); } : undefined}
           onChangeFilters={() => changeSideMode("filters")}
-          onExpand={nextRadius ? () => setRadiusKm(nextRadius) : undefined}
-          expandLabel={`Tìm xa hơn · trong ${nextRadius} km`}
+          onExpand={canShowMoreWithinRadius
+            ? () => setNearbyVisibility({ key: listQueryKey, count: Math.min(nearbyDisplayedCount + 5, visibleFacilities.length) })
+            : nextRadius ? () => setRadiusKm(nextRadius) : undefined}
+          expandLabel={canShowMoreWithinRadius
+            ? resultRadius ? `Xem thêm cơ sở trong ${resultRadius} km` : "Xem thêm cơ sở"
+            : `Tìm xa hơn · trong ${nextRadius} km`}
         />
 
           {visibleFacilities.length > 0 && <ClinicalNote title={CLINICAL_NOTES.contactTitle}>{CLINICAL_NOTES.contact}</ClinicalNote>}

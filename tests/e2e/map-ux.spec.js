@@ -469,7 +469,7 @@ for (const width of [1440, 390]) {
       const radius = Number(query.get("radiusKm"));
       radii.push(radius);
       expect(query.get("departmentId")).toBe(FACILITY_DEPARTMENT_ID);
-      expect(query.get("limit")).toBe("5");
+      expect(query.get("limit")).toBe("20");
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: radius === 1 ? [] : [facility({ distanceKm: 2.4, isActive: true })] }) });
     });
     await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
@@ -589,11 +589,11 @@ test("specialty nearby permission denial stays on results with a recovery messag
   await expect(page.locator(".facility-result-card .explorer-distance")).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
   expect(nearbyRequests).toEqual([]);
-  await page.getByRole("button", { name: "Tìm nơi khám gần tôi", exact: true }).click();
+  await page.getByRole("button", { name: "Tìm và xem nơi khám gần tôi", exact: true }).click();
   await expect(page.locator(".result-summary")).toContainText("trong 1 km");
   expect(nearbyRequests).toHaveLength(1);
   expect(new URL(nearbyRequests[0]).searchParams.get("departmentId")).toBe(FACILITY_DEPARTMENT_ID);
-  expect(new URL(nearbyRequests[0]).searchParams.get("limit")).toBe("5");
+  expect(new URL(nearbyRequests[0]).searchParams.get("limit")).toBe("20");
 });
 
 for (const screen of [{ width: 390, height: 660 }, { width: 375, height: 600 }]) {
@@ -626,7 +626,7 @@ for (const screen of [{ width: 390, height: 660 }, { width: 375, height: 600 }])
 
     await page.locator(".explorer-result-info summary").click();
     await expect(page.locator(".explorer-result-info")).toContainText("Khoảng cách là ước tính theo đường thẳng");
-    await expect(page.locator(".explorer-result-info")).toContainText("tối đa 5 cơ sở");
+    await expect(page.locator(".explorer-result-info")).toContainText("Ban đầu hiển thị 5 cơ sở");
     await page.screenshot({ path: testInfo.outputPath(`nearby-information-${screen.width}.png`) });
     await page.locator(".explorer-result-info summary").click();
     await page.getByRole("button", { name: "Tìm theo tên" }).click();
@@ -717,7 +717,7 @@ test("location controls share progress and mobile map shows permission errors", 
   expect((await page.locator(".locate-button").boundingBox()).height).toBeGreaterThanOrEqual(56);
 });
 
-test("the public near-me action automatically reaches the first populated radius without returning the full catalog", async ({ page }) => {
+test("the public near-me action prioritizes five highly rated facilities and reveals more in the same radius", async ({ page }) => {
   await preparePage(page);
   await page.addInitScript(() => {
     navigator.geolocation.getCurrentPosition = (success) => success({ coords: { latitude: 10.8, longitude: 106.65, accuracy: 20 } });
@@ -728,14 +728,22 @@ test("the public near-me action automatically reaches the first populated radius
     latitude: 10.8 + index / 1000,
     longitude: 106.65 + index / 1000,
   }));
+  const nearbyFacilities = [
+    { index: 0, averageRating: 4.1, reviewCount: 50, distanceKm: 12 },
+    { index: 1, averageRating: 4.8, reviewCount: 120, distanceKm: 18 },
+    { index: 2, averageRating: 5, reviewCount: 2, distanceKm: 19 },
+    { index: 3, averageRating: 4.8, reviewCount: 120, distanceKm: 13 },
+    { index: 4, averageRating: 4.6, reviewCount: 200, distanceKm: 14 },
+    { index: 5, averageRating: 4.8, reviewCount: 80, distanceKm: 15 },
+    { index: 6, averageRating: 3.9, reviewCount: 300, distanceKm: 16 },
+    { index: 7, averageRating: null, reviewCount: 0, distanceKm: 17 },
+  ].map(({ index, ...overrides }) => ({ ...facilities[index], ...overrides, isActive: true }));
   const requests = [];
   await mockMapApis(page, facilities, {
     nearby: (route, url) => {
       const radiusKm = Number(url.searchParams.get("radiusKm"));
       requests.push({ radiusKm, limit: Number(url.searchParams.get("limit")) });
-      const data = radiusKm === 20
-        ? facilities.slice(0, 4).map((item, index) => ({ ...item, distanceKm: 16 + index, isActive: true }))
-        : [];
+      const data = radiusKm === 20 ? nearbyFacilities : [];
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data }) });
     },
   });
@@ -743,9 +751,14 @@ test("the public near-me action automatically reaches the first populated radius
   await page.goto("/map");
   await expect(page.locator(".facility-result-card")).toHaveCount(5);
   await page.getByRole("button", { name: "Tìm và xem nơi khám gần tôi", exact: true }).click();
-  await expect(page.locator(".result-summary")).toContainText("trong 20 km");
-  await expect(page.locator(".facility-result-card")).toHaveCount(4);
-  expect(requests).toEqual([1, 3, 5, 7, 10, 15, 20].map((radiusKm) => ({ radiusKm, limit: 5 })));
+  await expect(page.locator(".result-summary")).toContainText("Đang hiển thị 5 trong 8 cơ sở trong 20 km");
+  await expect(page.locator(".facility-result-card")).toHaveCount(5);
+  await expect(page.locator(".facility-result-card").first()).toContainText("Cơ sở kiểm thử 3");
+  expect(requests).toEqual([1, 3, 5, 7, 10, 15, 20].map((radiusKm) => ({ radiusKm, limit: 20 })));
+  await page.getByRole("button", { name: "Xem thêm cơ sở trong 20 km", exact: true }).click();
+  await expect(page.locator(".facility-result-card")).toHaveCount(8);
+  await expect(page.locator(".result-summary")).toContainText("Đang hiển thị 8 trong 8 cơ sở trong 20 km");
+  await expect(page.getByRole("button", { name: "Tìm xa hơn · trong 30 km", exact: true })).toBeVisible();
 });
 
 for (const systemTheme of ["light", "dark"]) {
