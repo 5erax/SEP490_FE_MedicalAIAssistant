@@ -1486,9 +1486,9 @@ function NearbyClinicPage() {
           setNearbyAttempt((value) => value + 1);
           setNearbyEnabled(true);
           setLocationOptional(false);
-          // Starting from the no-location specialty list still uses bounded search.
-          // Keep an explicitly chosen radius, as well as the user's other filters.
-          if (!nearbyEnabled && isClinicalFlow && selectedDepartmentId !== "all" && radiusKm === "nearest") setRadiusKm("auto");
+          // The first "near me" action is intentionally bounded. Keep an explicit
+          // numeric radius; the unlimited catalog remains available afterwards.
+          if (!nearbyEnabled && radiusKm === "nearest") setRadiusKm("auto");
           if (options.departmentId) {
             setSelectedDepartmentId(options.departmentId);
             setSelectedType("all");

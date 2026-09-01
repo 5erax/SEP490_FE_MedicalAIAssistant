@@ -51,6 +51,10 @@ async function mockMapApis(page, facilities, options = {}) {
       });
     }
 
+    if (url.pathname === "/api/medical-facilities/nearby" && options.nearby) {
+      return options.nearby(route, url);
+    }
+
     if (url.pathname === "/api/medical-facilities/active" || url.pathname === "/api/medical-facilities/nearby") {
       return route.fulfill({
         contentType: "application/json",
@@ -703,7 +707,7 @@ test("location controls share progress and mobile map shows permission errors", 
   await mockSuccessfulMapStyle(page);
   await page.goto("/map");
   await expect(page.locator(".locate-button")).toBeVisible();
-  await page.getByRole("button", { name: "Tìm nơi khám gần tôi", exact: true }).click();
+  await page.getByRole("button", { name: "Tìm và xem nơi khám gần tôi", exact: true }).click();
   await expect(page.locator(".locate-button")).toBeDisabled();
   await expect(page.locator(".explorer-location-button")).toHaveAttribute("aria-busy", "true");
   await expect(page.locator(".explorer-location").getByRole("alert")).toBeVisible();
@@ -712,6 +716,34 @@ test("location controls share progress and mobile map shows permission errors", 
   await expect(page.locator(".explorer-map-location").getByRole("alert")).toBeVisible();
   await expect(page.locator(".locate-button")).toBeEnabled();
   expect((await page.locator(".locate-button").boundingBox()).height).toBeGreaterThanOrEqual(56);
+});
+
+test("the public near-me action returns a bounded nearby set instead of the full catalog", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript(() => {
+    navigator.geolocation.getCurrentPosition = (success) => success({ coords: { latitude: 10.8, longitude: 106.65, accuracy: 20 } });
+  });
+  const facilities = Array.from({ length: 25 }, (_, index) => facility({
+    id: `11111111-1111-4111-8111-${String(index).padStart(12, "0")}`,
+    facilityName: `Cơ sở kiểm thử ${index + 1}`,
+    latitude: 10.8 + index / 1000,
+    longitude: 106.65 + index / 1000,
+  }));
+  const requests = [];
+  await mockMapApis(page, facilities, {
+    nearby: (route, url) => {
+      requests.push({ radiusKm: Number(url.searchParams.get("radiusKm")), limit: Number(url.searchParams.get("limit")) });
+      const data = facilities.slice(0, 5).map((item, index) => ({ ...item, distanceKm: .1 + index / 10, isActive: true }));
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data }) });
+    },
+  });
+  await mockSuccessfulMapStyle(page);
+  await page.goto("/map");
+  await expect(page.locator(".facility-result-card")).toHaveCount(5);
+  await page.getByRole("button", { name: "Tìm và xem nơi khám gần tôi", exact: true }).click();
+  await expect(page.locator(".result-summary")).toContainText("trong 1 km");
+  await expect(page.locator(".facility-result-card")).toHaveCount(5);
+  expect(requests).toEqual([{ radiusKm: 1, limit: 5 }]);
 });
 
 for (const systemTheme of ["light", "dark"]) {
