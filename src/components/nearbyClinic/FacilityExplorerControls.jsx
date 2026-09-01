@@ -38,8 +38,8 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
     </select></label>
     {departmentsLoading && <p role="status">Đang tải chuyên khoa…</p>}
     <label>Loại cơ sở<select name="type" defaultValue={selectedType}>{typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-    <label>Phạm vi<select name="radius" defaultValue={radiusKm}>{radiusKm === "auto" && <option value="auto">Ưu tiên gần bạn (trong 5 km)</option>}<option value="nearest">Không giới hạn</option>{NEARBY_RADII.map((radius) => <option key={radius} value={radius}>Trong {radius} km</option>)}</select></label>
-    {radiusKm === "auto" && <p className="explorer-muted">Với lựa chọn “Ưu tiên gần bạn”, hệ thống tìm lần lượt trong 1, 3 rồi 5 km và dừng ở phạm vi đầu tiên có kết quả. Hiển thị tối đa 5 cơ sở để bạn dễ lựa chọn.</p>}
+    <label>Phạm vi<select name="radius" defaultValue={radiusKm}>{radiusKm === "auto" && <option value="auto">Tự tìm phạm vi gần nhất</option>}<option value="nearest">Không giới hạn</option>{NEARBY_RADII.map((radius) => <option key={radius} value={radius}>Trong {radius} km</option>)}</select></label>
+    {radiusKm === "auto" && <p className="explorer-muted">Hệ thống tự mở rộng phạm vi từ 1 đến tối đa 50 km và dừng ngay khi có kết quả. Hiển thị tối đa 5 cơ sở gần nhất để bạn dễ lựa chọn.</p>}
     {!hasLocation && <p className="explorer-muted">Phạm vi sẽ được áp dụng sau khi bạn cho phép sử dụng vị trí.</p>}
     <div className="explorer-filter-actions"><button className="explorer-primary" type="submit" disabled={departmentsLoading}>Áp dụng</button><button type="button" onClick={() => onApplyFilters({ departmentId: "all", type: "all", radius: "nearest" })}>Đặt lại</button></div>
   </form>;

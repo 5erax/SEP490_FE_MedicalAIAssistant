@@ -1,6 +1,6 @@
 export const DEFAULT_NEARBY_RADIUS_KM = 7;
 export const NEARBY_LIMIT = 20;
-export const SPECIALTY_NEARBY_RADII = [1, 3, 5];
+export const SPECIALTY_NEARBY_RADII = [1, 3, 5, 7, 10, 15, 20, 30, 50];
 
 // A bounded, read-only search. Errors must never be treated as an empty radius.
 export async function findNearbySpecialtyFacilities(fetchNearby, filters, signal) {

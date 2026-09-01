@@ -1841,7 +1841,7 @@ function NearbyClinicPage() {
   };
   const resultError = nearbyEnabled ? nearby.error : facilities.length === 0 ? apiNotice : "";
   const resultRadius = nearbyEnabled && !nearby.loading && !nearby.error && Number.isFinite(nearby.radiusKm) ? nearby.radiusKm : null;
-  const nextRadius = resultRadius ? radiusKm === "auto" && resultRadius === 5 ? 10 : getNextNearbyRadius(resultRadius) : null;
+  const nextRadius = resultRadius ? getNextNearbyRadius(resultRadius) : null;
   const resultSummary = `${pagination.total > 5 ? `${pagination.start}–${pagination.end} trong ${pagination.total}` : `Đang hiển thị ${pagination.total}`} cơ sở${resultRadius ? ` trong ${resultRadius} km` : ""}${selectedType !== "all" ? ` · ${TYPE_LABELS[selectedType] || selectedType}` : ""}`;
   const selectMapFacility = async (facility) => {
     if (detailPanelOpen) { if (facility) await openFacilityDetail(facility); return; }
@@ -1910,7 +1910,7 @@ function NearbyClinicPage() {
             <p>{nearbyEnabled
               ? "Các cơ sở được sắp xếp từ gần đến xa theo vị trí bạn đã cung cấp. Khoảng cách là ước tính theo đường thẳng; quãng đường đi thực tế có thể dài hơn."
               : "Danh sách dựa trên chuyên khoa và bộ lọc bạn chọn. Chưa dùng vị trí của bạn để tìm cơ sở ở gần."}</p>
-            {nearbyEnabled && radiusKm === "auto" && <p>Tìm lần lượt trong 1, 3 rồi 5 km và dừng ở phạm vi đầu tiên có kết quả. Hiển thị tối đa 5 cơ sở; bạn có thể chọn Tìm xa hơn để xem thêm lựa chọn.</p>}
+            {nearbyEnabled && radiusKm === "auto" && <p>Hệ thống tự mở rộng phạm vi từ 1 đến tối đa 50 km và dừng ở phạm vi đầu tiên có kết quả. Hiển thị tối đa 5 cơ sở gần nhất; bạn có thể chọn Tìm xa hơn để xem thêm lựa chọn.</p>}
             {nearbyEnabled && radiusKm !== "auto" && radiusKm !== "nearest" && <p>Hiển thị tối đa {NEARBY_LIMIT} cơ sở trong phạm vi đã chọn.</p>}
             {!nearbyEnabled && radiusKm !== "nearest" && <p>Phạm vi bạn chọn chỉ áp dụng khi dùng vị trí.</p>}
             {nearbyEnabled && (searchText.trim() || selectedType !== "all") && <p>Từ khóa và loại cơ sở đang được lọc trong các kết quả tìm được, không phải toàn bộ cơ sở trong khu vực.</p>}

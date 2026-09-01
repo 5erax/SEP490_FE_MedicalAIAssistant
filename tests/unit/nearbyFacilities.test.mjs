@@ -24,11 +24,22 @@ test("one matching facility stops the search immediately", async () => {
   assert.equal(result.radiusKm, 1);
 });
 
-test("empty specialty search stops at 5 km", async () => {
+test("empty automatic search stops at the 50 km safety limit", async () => {
   const calls = [];
   const result = await findNearbySpecialtyFacilities(async ({ radiusKm }) => { calls.push(radiusKm); return { data: [] }; }, specialtyFilters);
-  assert.deepEqual(calls, [1, 3, 5]);
-  assert.deepEqual(result, { items: [], radiusKm: 5 });
+  assert.deepEqual(calls, [1, 3, 5, 7, 10, 15, 20, 30, 50]);
+  assert.deepEqual(result, { items: [], radiusKm: 50 });
+});
+
+test("automatic search reaches the first populated radius without requiring user clicks", async () => {
+  const calls = [];
+  const result = await findNearbySpecialtyFacilities(async ({ radiusKm }) => {
+    calls.push(radiusKm);
+    return { data: radiusKm === 20 ? Array.from({ length: 4 }, (_, index) => ({ ...nearbyItem, id: `F${index}`, distanceKm: 16 + index })) : [] };
+  }, specialtyFilters);
+  assert.deepEqual(calls, [1, 3, 5, 7, 10, 15, 20]);
+  assert.equal(result.radiusKm, 20);
+  assert.equal(result.items.length, 4);
 });
 
 test("API and malformed data errors never trigger radius expansion", async () => {
