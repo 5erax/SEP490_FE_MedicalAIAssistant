@@ -149,11 +149,12 @@ function DiagnosisCrossbar({
   sessionId = "",
 }) {
   const [selectedKey, setSelectedKey] = useState(() => diagnosisKey(diagnoses[0], 0));
-  const selectedIndex = Math.max(0, diagnoses.findIndex((diagnosis, index) => (
+  const selectedIndex = diagnoses.findIndex((diagnosis, index) => (
     diagnosisKey(diagnosis, index) === selectedKey
-  )));
-  const selectedDiagnosis = diagnoses[selectedIndex] || diagnoses[0];
-  const diagnosisProgress = diagnoses.length <= 1 ? 100 : ((selectedIndex + 1) / diagnoses.length) * 100;
+  ));
+  const diagnosisProgress = diagnoses.length && selectedIndex >= 0
+    ? ((selectedIndex + 1) / diagnoses.length) * 100
+    : 0;
   const preConsultationHref = sessionId
     ? `/pre-consultation?sessionId=${encodeURIComponent(sessionId)}`
     : "/pre-consultation";
@@ -179,7 +180,7 @@ function DiagnosisCrossbar({
         <ol className="map-diagnosis-list">
           {diagnoses.map((diagnosis, index) => {
             const key = diagnosisKey(diagnosis, index);
-            const selected = key === diagnosisKey(selectedDiagnosis, selectedIndex);
+            const selected = key === selectedKey;
             const reasoningId = `map-diagnosis-reasoning-${index}`;
             const diseaseName = diagnosis.diseaseName || "Chưa xác định tên bệnh";
             const confidence = confidencePercent(diagnosis.confidenceScore);
@@ -191,7 +192,7 @@ function DiagnosisCrossbar({
                   className={selected ? "is-selected" : ""}
                   aria-expanded={selected}
                   aria-controls={selected ? reasoningId : undefined}
-                  onClick={() => setSelectedKey(key)}
+                  onClick={() => setSelectedKey((current) => current === key ? "" : key)}
                 >
                   <span>
                     <strong>{diseaseName}</strong>

@@ -56,6 +56,7 @@ const DEFAULT_NEARBY_RADIUS_KM = 5;
 const NEAREST_FACILITY_LIMIT = 1;
 const NEARBY_FACILITY_LIMIT = 20;
 const TOP_RATED_FACILITY_LIMIT = 5;
+const NEAREST_RADIUS_STEPS_KM = [5, 10, 15, 20, 25, 50, 100, 250, 500, 1000];
 const DETAIL_TABS = [
   ["overview", "Tổng quan"],
   ["reviews", "Đánh giá"],
@@ -806,20 +807,52 @@ function NearbyClinicPage() {
     setLoadingFacilities(true);
     setApiNotice("");
 
+    const requestNearestFacility = async () => {
+      let lastResponse = null;
+
+      for (const radiusKm of NEAREST_RADIUS_STEPS_KM) {
+        const response = await medicalFacilitiesApi.nearby({
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
+          radiusKm,
+          departmentId,
+          limit: NEAREST_FACILITY_LIMIT,
+        });
+        lastResponse = response;
+
+        if (getArrayData(response).length > 0) {
+          return {
+            response,
+            resolvedRadiusKm: radiusKm,
+          };
+        }
+      }
+
+      return {
+        response: lastResponse,
+        resolvedRadiusKm: NEAREST_RADIUS_STEPS_KM[NEAREST_RADIUS_STEPS_KM.length - 1],
+      };
+    };
+
     const facilityRequest = shouldLoadNearby
-      ? medicalFacilitiesApi.nearby({
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
-        radiusKm: nearbyRadiusKm,
-        departmentId,
-        limit: facilityDiscoveryMode === "nearest" ? NEAREST_FACILITY_LIMIT : NEARBY_FACILITY_LIMIT,
-      })
+      ? facilityDiscoveryMode === "nearest"
+        ? requestNearestFacility()
+        : medicalFacilitiesApi.nearby({
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
+          radiusKm: nearbyRadiusKm,
+          departmentId,
+          limit: NEARBY_FACILITY_LIMIT,
+        }).then((response) => ({
+          response,
+          resolvedRadiusKm: nearbyRadiusKm,
+        }))
       : shouldLoadTopRated
         ? medicalFacilitiesApi.topRated({
           departmentId,
           limit: TOP_RATED_FACILITY_LIMIT,
-        })
-        : medicalFacilitiesApi.active({ departmentId });
+        }).then((response) => ({ response }))
+        : medicalFacilitiesApi.active({ departmentId }).then((response) => ({ response }));
 
     Promise.allSettled([
       facilityRequest,
@@ -833,8 +866,9 @@ function NearbyClinicPage() {
         const relationsByFacility = relationResult.status === "fulfilled"
           ? buildRelationsByFacility(relationResult.value)
           : new globalThis.Map();
+        const facilityResponse = facilityResult.value?.response;
 
-        const data = getArrayData(facilityResult.value).map((facility) => {
+        const data = getArrayData(facilityResponse).map((facility) => {
           const facilityId = String(facility?.facilityId ?? facility?.id ?? "");
           const relations = relationsByFacility.get(facilityId) ?? [];
           return normalizeFacility(
@@ -857,7 +891,7 @@ function NearbyClinicPage() {
             : ""
           : shouldLoadNearby
             ? facilityDiscoveryMode === "nearest"
-              ? `Chưa tìm thấy cơ sở y tế gần nhất trong bán kính ${nearbyRadiusKm} km.`
+              ? "Chưa tìm thấy cơ sở y tế gần nhất từ vị trí của bạn."
               : `Chưa tìm thấy cơ sở y tế trong bán kính ${nearbyRadiusKm} km.`
             : shouldLoadTopRated
               ? "Chưa có cơ sở y tế được đánh giá phù hợp."
@@ -1034,6 +1068,9 @@ function NearbyClinicPage() {
         ? `${nearbyRadiusKm} km`
         : "Top 5"
     : "";
+  const hasClearableMapFilters = facilityDiscoveryMode !== "all"
+    || selectedDepartmentId !== "all"
+    || nearbyRadiusKm !== DEFAULT_NEARBY_RADIUS_KM;
 
   const filteredFacilities = useMemo(() => {
     if (isClinicalFlow && clinicalStatus !== "ready") return [];
@@ -1457,6 +1494,17 @@ function NearbyClinicPage() {
     setSelectedFacility(null);
     setSubmittedReview(null);
     setEditingReview(false);
+  };
+
+  const clearMapFilters = () => {
+    closeFacilitySidebarForFilter();
+    setSelectedDepartmentId("all");
+    setFacilityDiscoveryMode("all");
+    setNearbyRadiusKm(DEFAULT_NEARBY_RADIUS_KM);
+    setApiNotice("");
+    setFilterPanelOpen(false);
+    setDepartmentPickerOpen(false);
+    syncMapUrl({});
   };
 
   const backToHospitalList = () => closeFacilityDetail();
@@ -2287,8 +2335,8 @@ function NearbyClinicPage() {
                           <button
                             key={radius}
                             type="button"
-                            className={nearbyRadiusKm === radius ? "active" : ""}
-                            aria-pressed={nearbyRadiusKm === radius}
+                            className={facilityDiscoveryMode === "nearby" && nearbyRadiusKm === radius ? "active" : ""}
+                            aria-pressed={facilityDiscoveryMode === "nearby" && nearbyRadiusKm === radius}
                             onClick={() => {
                               closeFacilitySidebarForFilter();
                               setNearbyRadiusKm(radius);
@@ -2301,6 +2349,15 @@ function NearbyClinicPage() {
                         ))}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      className="map-filter-clear"
+                      disabled={!hasClearableMapFilters}
+                      onClick={clearMapFilters}
+                    >
+                      <X size={15} aria-hidden="true" />
+                      <span>Xóa lọc</span>
+                    </button>
                   </>
                 )}
               </div>
