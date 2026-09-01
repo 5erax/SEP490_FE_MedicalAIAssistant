@@ -187,16 +187,18 @@ test("map-selected facility is preselected but remains changeable", async ({ pag
     `/pre-consultation?sessionId=${SYMPTOM_SESSION_ID}&facilityId=${MAP_FACILITY_ID}&facilityName=${encodeURIComponent("Bệnh viện gần người dùng")}`,
   );
 
-  await expect(page.locator(".pre-consultation-selected-facility")).toContainText("Bệnh viện gần người dùng");
-  await expect(page.locator(".pre-consultation-autofill-note")).toContainText("Bản đồ");
-  const picker = page.getByRole("button", { name: /Chọn bệnh viện gợi ý \(2\)/ });
+  await expect(page.locator(".pre-consultation-facility-trigger")).toContainText("Bệnh viện gần người dùng");
+  await expect(page.getByText("Đã chọn theo cơ sở bạn vừa xem trên Bản đồ. Bạn vẫn có thể thay đổi.", { exact: true })).toBeVisible();
+  const picker = page.locator(".pre-consultation-facility-trigger");
   await expect(picker).toBeEnabled();
+  await expect(picker).toContainText("Thay đổi");
   await picker.click();
-  await expect(page.getByRole("button", { name: /Bệnh viện gần người dùng/ })).toBeVisible();
-  await page.getByRole("button", { name: /Bệnh viện Tim Tâm Đức/ }).click();
-  await expect(page.locator(".pre-consultation-selected-facility")).toContainText("Bệnh viện Tim Tâm Đức");
+  const facilityOptions = page.locator(".pre-consultation-suggestion-dropdown .pre-consultation-suggestion-row");
+  await expect(facilityOptions.filter({ hasText: "Bệnh viện gần người dùng" })).toBeVisible();
+  await facilityOptions.filter({ hasText: "Bệnh viện Tim Tâm Đức" }).click();
+  await expect(picker).toContainText("Bệnh viện Tim Tâm Đức");
   await picker.click();
-  await page.getByRole("button", { name: /Bệnh viện gần người dùng/ }).click();
+  await facilityOptions.filter({ hasText: "Bệnh viện gần người dùng" }).click();
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
   await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
   await expect(page.getByRole("heading", { name: "Danh sách chuẩn bị" })).toBeVisible();
@@ -206,7 +208,7 @@ test("map-selected facility is preselected but remains changeable", async ({ pag
 async function pickSuggestedSession(page) {
   await page.getByRole("button", { name: "Danh sách phiên gợi ý chuyên khoa" }).click();
   await page.getByRole("button", { name: /Đau ngực khi vận động/ }).click();
-  await page.getByRole("button", { name: /Chọn bệnh viện gợi ý/ }).click();
+  await page.getByRole("button", { name: /Chọn cơ sở y tế/ }).click();
   await page.getByRole("button", { name: /Bệnh viện Tim Tâm Đức/ }).click();
 }
 
