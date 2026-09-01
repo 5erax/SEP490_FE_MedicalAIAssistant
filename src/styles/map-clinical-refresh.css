@@ -465,6 +465,7 @@
   top: 28px;
   left: 28px;
   z-index: 20;
+  width: min(920px, calc(100% - 56px));
   display: grid;
   gap: 10px;
   max-width: calc(100% - 56px);
@@ -473,7 +474,7 @@
 .map-clinical-refresh .map-top-controls-row {
   display: flex;
   align-items: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 
@@ -916,7 +917,12 @@
   .map-clinical-refresh .map-top-controls {
     top: 18px;
     left: 18px;
+    width: calc(100% - 36px);
     max-width: calc(100% - 36px);
+  }
+
+  .map-clinical-refresh .map-top-controls-row {
+    flex-wrap: wrap;
   }
 
   .map-clinical-refresh .map-top-search {
