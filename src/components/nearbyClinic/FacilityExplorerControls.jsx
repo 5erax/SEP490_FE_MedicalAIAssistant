@@ -49,13 +49,13 @@ export default function FacilityExplorerControls({ search, onSearch, suggestions
       <div className="explorer-location-heading">
         <span className="explorer-location-icon" aria-hidden="true">{hasLocation ? <Check size={20} /> : <LocateFixed size={20} />}</span>
         <div>
-          {!compactLocation && <h3>Tìm nơi khám gần bạn</h3>}
-          <p id="explorer-location-status" role="status">{locating ? "Đang xác định vị trí…" : hasLocation ? locationError ? "Đang dùng vị trí trước đó" : "Đang dùng vị trí của bạn" : locationOptional ? "Chưa dùng vị trí của bạn" : "Cho phép dùng vị trí để tìm cơ sở phù hợp ở gần bạn."}</p>
+          {!compactLocation && <h3>Sắp xếp nơi khám gần bạn</h3>}
+          <p id="explorer-location-status" role="status">{locating ? "Đang xác định vị trí và tìm cơ sở…" : hasLocation ? locationError ? "Đang dùng vị trí trước đó" : "Đã sắp xếp cơ sở từ gần đến xa theo vị trí của bạn" : locationOptional ? "Chưa dùng vị trí của bạn" : "Dùng vị trí để sắp xếp cơ sở từ gần đến xa và hiển thị các lựa chọn gần nhất trên bản đồ."}</p>
         </div>
       </div>
-      <button className={compactLocation ? "explorer-location-update" : "explorer-location-button"} type="button" onClick={onLocate} disabled={locating} aria-busy={locating} aria-label={hasLocation ? "Cập nhật vị trí" : "Tìm nơi khám gần tôi"} aria-describedby="explorer-location-status">
+      <button className={compactLocation ? "explorer-location-update" : "explorer-location-button"} type="button" onClick={onLocate} disabled={locating} aria-busy={locating} aria-label={hasLocation ? "Cập nhật vị trí" : "Tìm và xem nơi khám gần tôi"} aria-describedby="explorer-location-status">
         {locating ? <LoaderCircle className="explorer-spinner" size={20} aria-hidden="true" /> : !compactLocation && <LocateFixed size={20} aria-hidden="true" />}
-        {locating ? "Đang tìm…" : hasLocation ? "Cập nhật" : compactLocation ? "Tìm gần tôi" : "Tìm nơi khám gần tôi"}
+        {locating ? "Đang tìm…" : hasLocation ? "Cập nhật" : compactLocation ? "Tìm gần tôi" : "Tìm và xem nơi khám gần tôi"}
       </button>
       {locationError && <p className="explorer-notice" role="alert">{locationError}</p>}
       {!locationError && hasLocation && accuracy > 1000 && <p className="explorer-notice" role="status">Vị trí hiện tại có thể lệch khoảng {(accuracy / 1000).toFixed(1)} km. Bạn có thể bật vị trí chính xác trên thiết bị rồi chọn Cập nhật.</p>}

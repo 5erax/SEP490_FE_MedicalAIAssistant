@@ -33,7 +33,7 @@ import { getFacilityPage, paginateFacilities } from "../utils/facilityPagination
 import { readRankingScore } from "../utils/clinicalExplanation";
 import { getFacilityRating, formatFacilityRating } from "../utils/facilityRating";
 import { resolveExplorerSideMode } from "../utils/facilityExplorerState";
-import { getNextNearbyRadius, NEARBY_LIMIT } from "../utils/nearbyFacilities";
+import { getNearbyMapFocusPoints, getNextNearbyRadius, NEARBY_LIMIT } from "../utils/nearbyFacilities";
 
 import { navigate } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
@@ -484,6 +484,7 @@ function NearbyClinicPage() {
   const listVisitedRef = useRef(false);
   const [listPosition, setListPosition] = useState({ key: "", page: 1 });
   const mapInteractedRef = useRef(false);
+  const nearbyFocusPendingRef = useRef(false);
   const [activeHospitalTab, setActiveHospitalTab] = useState(mapQuery.tab);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
@@ -1186,9 +1187,7 @@ function NearbyClinicPage() {
 
   const fitFacilities = useCallback((showAll = false) => {
     if (mapStatus !== "ready" || mappableFacilities.length === 0) return;
-    const items = userLocation && !showAll ? mappableFacilities.slice(0, 5) : mappableFacilities;
-    const points = items.map((item) => [item.longitude, item.latitude]);
-    if (userLocation) points.push([userLocation.lng, userLocation.lat]);
+    const points = getNearbyMapFocusPoints(mappableFacilities, userLocation, showAll);
     mapRef.current?.fitBounds(
       [[Math.min(...points.map((p) => p[0])), Math.min(...points.map((p) => p[1]))],
        [Math.max(...points.map((p) => p[0])), Math.max(...points.map((p) => p[1]))]],
@@ -1203,6 +1202,23 @@ function NearbyClinicPage() {
     lastFittedBoundsRef.current = key;
     fitFacilities();
   }, [mapStatus, selectedFacility, mapBoundsKey, mappableFacilities.length, userLocation, fitFacilities]);
+
+  useEffect(() => {
+    if (!nearbyFocusPendingRef.current || !nearbyEnabled || nearby.loading || mapStatus !== "ready") return;
+    nearbyFocusPendingRef.current = false;
+    if (mappableFacilities.length > 0) {
+      fitFacilities();
+      return;
+    }
+    if (userLocation) {
+      mapRef.current?.stop?.();
+      mapRef.current?.flyTo({
+        center: [userLocation.lng, userLocation.lat],
+        zoom: 14,
+        duration: prefersReducedMotion() ? 0 : 700,
+      });
+    }
+  }, [nearbyEnabled, nearby.loading, mapStatus, mappableFacilities.length, userLocation, fitFacilities, prefersReducedMotion]);
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
@@ -1454,15 +1470,19 @@ function NearbyClinicPage() {
     setLocating(true);
     const detailVersion = detailRequestRef.current;
     const preserveDetail = options.preserveDetail || detailPanelOpen;
+    const searchNearby = options.searchNearby !== false && !preserveDetail;
+    const focusNearbyResults = options.focusResults !== false && searchNearby;
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         locatingRef.current = false;
         setLocating(false);
-        // Explicit geolocation owns the camera; nearby results must not interrupt it.
+        // Sidebar searches frame the user together with nearby results. The map-only
+        // location control remains a separate action that focuses only the user.
         mapInteractedRef.current = true;
+        nearbyFocusPendingRef.current = focusNearbyResults;
         setUserLocation({ lat: latitude, lng: longitude, accuracy });
-        if (!preserveDetail && detailRequestRef.current === detailVersion) {
+        if (searchNearby && detailRequestRef.current === detailVersion) {
           setNearbyAttempt((value) => value + 1);
           setNearbyEnabled(true);
           setLocationOptional(false);
@@ -1487,14 +1507,14 @@ function NearbyClinicPage() {
           setSelectedFacility(null);
           setDetailPanelOpen(false);
         }
-        if (mapStatus === "ready" && mapRef.current) {
+        if (!focusNearbyResults && mapStatus === "ready" && mapRef.current) {
           mapRef.current.stop?.();
           mapRef.current.flyTo({
             center: [longitude, latitude],
             zoom: 12,
             duration: prefersReducedMotion() ? 0 : 1500,
           });
-        } else {
+        } else if (!focusNearbyResults) {
           // Also honor location requests made before the map is ready or after an error.
           setViewState((current) => ({ ...current, longitude, latitude, zoom: 12 }));
         }
@@ -1813,7 +1833,7 @@ function NearbyClinicPage() {
     });
   };
   const handleMapLocate = () => {
-    if (!userLocation) return handleLocateMe({ preserveDetail: detailPanelOpen });
+    if (!userLocation) return handleLocateMe({ preserveDetail: detailPanelOpen, searchNearby: false, focusResults: false });
     // Re-centering the map must not reset filters, close details or fetch again.
     mapInteractedRef.current = true;
     mapRef.current?.stop?.();
@@ -2138,7 +2158,7 @@ function NearbyClinicPage() {
           onViewStateChange={setViewState}
           onViewDetail={openFacilityDetail}
           onMarkerSelect={(facility) => { if (window.matchMedia("(max-width: 900px)").matches) void selectMapFacility(facility); else void openFacilityDetail(facility); }}
-          onUserMove={() => { mapInteractedRef.current = true; }}
+          onUserMove={() => { mapInteractedRef.current = true; nearbyFocusPendingRef.current = false; }}
           onShowAll={() => { mapInteractedRef.current = true; fitFacilities(true); }}
           onShowList={showFacilityList}
         />

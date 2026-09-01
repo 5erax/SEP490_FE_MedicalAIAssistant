@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildNearbyQuery, findNearbySpecialtyFacilities, getNextNearbyRadius, rankNearestFacilities } from "../../src/utils/nearbyFacilities.js";
+import { buildNearbyQuery, findNearbySpecialtyFacilities, getNearbyMapFocusPoints, getNextNearbyRadius, rankNearestFacilities } from "../../src/utils/nearbyFacilities.js";
 
 const specialtyFilters = { latitude: 10.8, longitude: 106.65, departmentId: "D1" };
 const nearbyItem = { id: "A", latitude: 10.803, longitude: 106.65, distanceKm: 0.35, departments: [{ departmentId: "D1" }] };
@@ -83,6 +83,17 @@ test("expanding the search preserves specialty and stops at the largest radius",
   const query = new URLSearchParams(buildNearbyQuery({ latitude: 10, longitude: 106, radiusKm: getNextNearbyRadius(7), departmentId: "respiratory" }));
   assert.equal(query.get("radiusKm"), "10");
   assert.equal(query.get("departmentId"), "respiratory");
+});
+
+test("nearby search frames the user with five nearest facilities while show-all includes every result", () => {
+  const facilities = Array.from({ length: 7 }, (_, index) => ({ longitude: 106 + index / 100, latitude: 10 + index / 100 }));
+  const location = { lng: 106.7, lat: 10.7 };
+  assert.deepEqual(getNearbyMapFocusPoints(facilities, location), [
+    ...facilities.slice(0, 5).map((item) => [item.longitude, item.latitude]),
+    [location.lng, location.lat],
+  ]);
+  assert.equal(getNearbyMapFocusPoints(facilities, location, true).length, 8);
+  assert.equal(getNearbyMapFocusPoints(facilities, null).length, 7);
 });
 
 test("nearby uses provided geolocation and defaults to 7 km / 20 results", () => {

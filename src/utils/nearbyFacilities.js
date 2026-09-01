@@ -43,6 +43,12 @@ export function rankNearestFacilities(items, latitude, longitude) {
     }).sort((a, b) => a.distanceKm - b.distanceKm);
 }
 export const NEARBY_RADII = [1, 3, 5, 7, 10, 15, 20, 30, 50];
+export function getNearbyMapFocusPoints(facilities, location, showAll = false) {
+  const items = location && !showAll ? facilities.slice(0, 5) : facilities;
+  const points = items.map((item) => [item.longitude, item.latitude]);
+  if (location) points.push([location.lng, location.lat]);
+  return points;
+}
 export function getNextNearbyRadius(radiusKm) {
   return NEARBY_RADII.find((radius) => radius > radiusKm) ?? null;
 }
