@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   Clock3,
   CreditCard,
+  Info,
   LoaderCircle,
   ShieldCheck,
   XCircle,
@@ -53,7 +54,7 @@ const FAQS = [
 ];
 
 function formatPrice(value) {
-  return `${value.toLocaleString("vi-VN")} ₫`;
+  return `${value.toLocaleString("vi-VN")}đ`;
 }
 
 const SALE_ELIGIBILITY_LABELS = {
@@ -149,6 +150,16 @@ function PricingPage() {
   const returnTo = getReturnToFromSearch();
   const pricingSearchParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const isFocusedUpgrade = pricingSearchParams.get("view") === "upgrade";
+  const displayPaidPlans = useMemo(() => (
+    isFocusedUpgrade
+      ? [...paidPlans]
+        .sort((left, right) => (
+          (Number(left?.grantedCredit ?? left?.baseCredit) || 0)
+          - (Number(right?.grantedCredit ?? right?.baseCredit) || 0)
+        ))
+        .slice(0, 2)
+      : paidPlans
+  ), [isFocusedUpgrade, paidPlans]);
   const backHref = returnTo || (auth ? "/dashboard" : "/");
   const backLabel = isFocusedUpgrade
     ? "Quay lại hồ sơ"
@@ -510,38 +521,37 @@ function PricingPage() {
       {!isFocusedUpgrade && <Navbar variant="landing" />}
       <main className={`pricing-page ${isFocusedUpgrade ? "pricing-page-focused" : ""}`}>
         <div className="pricing-shell">
-          <a className="pricing-back-link" href={backHref}>
-            <ArrowLeft size={17} aria-hidden="true" />
-            {backLabel}
-          </a>
+          {isFocusedUpgrade ? (
+            <a className="pricing-back-link pricing-back-link-focused" href={backHref}>
+              <ArrowLeft size={17} aria-hidden="true" />
+              {backLabel}
+            </a>
+          ) : (
+            <>
+              <a className="pricing-back-link" href={backHref}>
+                <ArrowLeft size={17} aria-hidden="true" />
+                {backLabel}
+              </a>
 
-          <header
-            className={`pricing-hero ${
-              isFocusedUpgrade || (!plansLoading && paidPlans.length === 0) ? "pricing-hero-single" : ""
-            }`}
-          >
-            <div className="pricing-hero-copy">
-              <p className="pricing-eyebrow">
-                {isFocusedUpgrade ? "Nâng cấp MediMate+" : "Bảng giá MediMate"}
-              </p>
-              <h1>
-                {isFocusedUpgrade
-                  ? "Mở khóa gói MediMate Plus"
-                  : "Chọn gói phù hợp với cách bạn sử dụng MediMate"}
-              </h1>
-              <p className="pricing-hero-description">
-                {isFocusedUpgrade
-                  ? "Chọn số lượt phù hợp để cộng vào số dư dùng chung của tài khoản. Bạn có thể mua thêm bất cứ lúc nào."
-                  : "Mỗi gói cấp lượt dùng chung cho kế hoạch phục hồi, tư vấn trước khám và phân tích xét nghiệm."}
-              </p>
-              {!isFocusedUpgrade && (
-                <ul className="pricing-trust-list" aria-label="Thông tin chính về gói">
-                  <li><ShieldCheck size={18} aria-hidden="true" />Không yêu cầu nhập thông tin thẻ tại MediMate</li>
-                  <li><Clock3 size={18} aria-hidden="true" />Lượt dùng được cộng dồn và không hết hạn</li>
-                </ul>
-              )}
-            </div>
-          </header>
+              <header
+                className={`pricing-hero ${
+                  !plansLoading && paidPlans.length === 0 ? "pricing-hero-single" : ""
+                }`}
+              >
+                <div className="pricing-hero-copy">
+                  <p className="pricing-eyebrow">Bảng giá MediMate</p>
+                  <h1>Chọn gói phù hợp với cách bạn sử dụng MediMate</h1>
+                  <p className="pricing-hero-description">
+                    Mỗi gói cấp lượt dùng chung cho kế hoạch phục hồi, tư vấn trước khám và phân tích xét nghiệm.
+                  </p>
+                  <ul className="pricing-trust-list" aria-label="Thông tin chính về gói">
+                    <li><ShieldCheck size={18} aria-hidden="true" />Không yêu cầu nhập thông tin thẻ tại MediMate</li>
+                    <li><Clock3 size={18} aria-hidden="true" />Lượt dùng được cộng dồn và không hết hạn</li>
+                  </ul>
+                </div>
+              </header>
+            </>
+          )}
 
           {!plansLoading && plansError ? (
             <section className="pricing-api-message error" role="alert">
@@ -556,7 +566,7 @@ function PricingPage() {
                 Thử tải lại
               </button>
             </section>
-          ) : !plansLoading && paidPlans.length === 0 ? (
+          ) : !plansLoading && displayPaidPlans.length === 0 ? (
             <section className="pricing-api-message neutral" role="status">
               <div>
                 <strong>Hiện chưa có gói trả phí khả dụng</strong>
@@ -570,15 +580,14 @@ function PricingPage() {
             aria-label={isFocusedUpgrade ? "Gói nâng cấp MediMate Plus" : "So sánh các gói MediMate"}
             aria-busy={plansLoading}
           >
-            {!isFocusedUpgrade && (
             <article className="pricing-plan-card pricing-plan-card-basic">
               <div className="pricing-plan-card-heading">
                 <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
               </div>
               <p className="plan-kicker">Truy cập công khai</p>
-              <h2>{freePlan?.planName || "Miễn phí"}</h2>
+              <h2>{isFocusedUpgrade ? "Miễn phí" : freePlan?.planName || "Miễn phí"}</h2>
               <div className="price-line">
-                <strong>0 ₫</strong>
+                <strong>0đ</strong>
               </div>
               <p className="plan-summary">
                 Phù hợp để tìm hiểu MediMate và chuẩn bị thông tin cơ bản trước khi đi khám.
@@ -595,12 +604,11 @@ function PricingPage() {
                 </ul>
               </div>
               <button className="plan-action plan-action-secondary" type="button" onClick={startFreePlan}>
-                Khám phá MediMate
+                {isFocusedUpgrade ? "Bắt đầu miễn phí" : "Khám phá MediMate"}
               </button>
             </article>
-            )}
 
-            {paidPlans.map((planOffer, paidPlanIndex) => {
+            {displayPaidPlans.map((planOffer, paidPlanIndex) => {
               const paidPlan = planOffer.plan;
               const offer = planOffer.offer;
               const paidBenefits = getOfferBenefits(planOffer);
@@ -613,6 +621,7 @@ function PricingPage() {
               const hasBonus = Boolean(offer) && bonusCredit > 0;
               const hasConfiguredCredits = Number.isFinite(creditLimit) && creditLimit > 0;
               const isCurrentCheckout = checkoutState.planId === paidPlan.id;
+              const planDisplayName = getPlanDisplayName(paidPlan.planName);
               const badgeText = offer?.badgeText || offer?.campaignName
                 || (paidPlanIndex === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất");
               const countdown = offer?.endAt ? formatCountdown(offer.endAt, clockNow) : "";
@@ -624,9 +633,11 @@ function PricingPage() {
                     <span className="plan-badge">{badgeText}</span>
                   </div>
                   <p className="plan-kicker">
-                    {hasBonus ? `${baseCredit} + ${bonusCredit} lượt thưởng` : hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
+                    {isFocusedUpgrade
+                      ? "Quyền lợi có hạn mức"
+                      : hasBonus ? `${baseCredit} + ${bonusCredit} lượt thưởng` : hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
                   </p>
-                  <h2>{getPlanDisplayName(paidPlan.planName)}</h2>
+                  <h2>{planDisplayName}</h2>
                   <div className="price-line">
                     {hasPriceDiscount && <span className="pricing-original-price">{formatPrice(originalPrice)}</span>}
                     <strong>{formatPrice(effectivePrice)}</strong>
@@ -641,7 +652,9 @@ function PricingPage() {
                     </div>
                   )}
                   <p className="plan-summary">
-                    Lượt dùng được cộng vào số dư hiện có và không hết hạn.
+                    {isFocusedUpgrade
+                      ? "Lượt dùng được cộng dồn và không hết hạn"
+                      : "Lượt dùng được cộng vào số dư hiện có và không hết hạn."}
                   </p>
                   <div className="plan-benefits">
                     <h3>Quyền lợi trong gói</h3>
@@ -670,8 +683,8 @@ function PricingPage() {
                         : auth
                           ? !hasConfiguredCredits
                             ? "Gói chưa sẵn sàng"
-                            : hasActivePackage ? `Mua thêm ${creditLimit} lượt` : `Mua ${creditLimit} lượt`
-                          : "Đăng ký để mua lượt"}
+                            : isFocusedUpgrade ? `Mua ${planDisplayName}` : hasActivePackage ? `Mua thêm ${creditLimit} lượt` : `Mua ${creditLimit} lượt`
+                          : isFocusedUpgrade ? `Mua ${planDisplayName}` : "Đăng ký để mua lượt"}
                   </button>
                 </article>
               );
@@ -691,6 +704,14 @@ function PricingPage() {
               </article>
             )}
           </section>
+
+          {isFocusedUpgrade && (
+            <p className="pricing-focused-note">
+              <Info size={16} aria-hidden="true" />
+              Các tính năng miễn phí vẫn có giới hạn và không thay thế chẩn đoán y khoa. Thanh toán chỉ bắt đầu trên
+              trang bảng giá sau khi bạn chọn gói và đăng nhập.
+            </p>
+          )}
 
           {!isFocusedUpgrade && (
             <section className="payment-methods" aria-label="Thông tin thanh toán">

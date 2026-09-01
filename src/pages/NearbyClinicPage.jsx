@@ -24,7 +24,7 @@ import {
 import { useFeedback } from "../components/feedback/feedbackContext";
 import FacilityList from "../components/nearbyClinic/FacilityList";
 import FacilityMap from "../components/nearbyClinic/FacilityMap";
-import { navigate } from "../router/navigation";
+import { navigate, subscribeToLocation } from "../router/navigation";
 import { doctorManagementApi } from "../services/doctors";
 import { uploadImageToCloudinary } from "../services/cloudinaryUploadService";
 import {
@@ -522,7 +522,7 @@ function NearbyClinicPage() {
   });
   const [facilities, setFacilities] = useState([]);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
-  const [facilityDiscoveryMode, setFacilityDiscoveryMode] = useState("top-rated");
+  const [facilityDiscoveryMode, setFacilityDiscoveryMode] = useState("all");
   const [nearbyRadiusKm, setNearbyRadiusKm] = useState(DEFAULT_NEARBY_RADIUS_KM);
   const [apiNotice, setApiNotice] = useState("");
   const [searchText, setSearchText] = useState(
@@ -577,7 +577,7 @@ function NearbyClinicPage() {
   const requestedDoctorOpenedRef = useRef(false);
   const lastFittedBoundsRef = useRef("");
   const clinicalRestoreRequestRef = useRef({ sessionId: "", promise: null });
-  const clinicalDepartmentAutoSelectedRef = useRef(false);
+  const clinicalDepartmentAutoSelectedRef = useRef("");
 
   useEffect(() => {
     const timerId = window.setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -793,10 +793,14 @@ function NearbyClinicPage() {
       ? selectedDepartmentId
       : "";
     const shouldLoadNearby = facilityDiscoveryMode === "nearby" && Boolean(userLocation);
-    const mode = shouldLoadNearby ? "nearby" : "top-rated";
+    const shouldLoadTopRated = facilityDiscoveryMode === "top-rated";
+
+    if (facilityDiscoveryMode === "nearby" && !userLocation) {
+      setFacilityDiscoveryMode("all");
+      return undefined;
+    }
 
     setLoadingFacilities(true);
-    setFacilityDiscoveryMode(mode);
     setApiNotice("");
 
     const facilityRequest = shouldLoadNearby
@@ -807,10 +811,12 @@ function NearbyClinicPage() {
         departmentId,
         limit: NEARBY_FACILITY_LIMIT,
       })
-      : medicalFacilitiesApi.topRated({
-        departmentId,
-        limit: TOP_RATED_FACILITY_LIMIT,
-      });
+      : shouldLoadTopRated
+        ? medicalFacilitiesApi.topRated({
+          departmentId,
+          limit: TOP_RATED_FACILITY_LIMIT,
+        })
+        : medicalFacilitiesApi.active({ departmentId });
 
     Promise.allSettled([
       facilityRequest,
@@ -846,7 +852,9 @@ function NearbyClinicPage() {
             : ""
           : shouldLoadNearby
             ? `Chưa tìm thấy cơ sở y tế trong bán kính ${nearbyRadiusKm} km.`
-            : "Chưa có cơ sở y tế được đánh giá phù hợp.");
+            : shouldLoadTopRated
+              ? "Chưa có cơ sở y tế được đánh giá phù hợp."
+              : "Chưa có cơ sở y tế phù hợp.");
       })
       .catch(() => {
         if (active) {
@@ -857,7 +865,9 @@ function NearbyClinicPage() {
           setSelectedDoctor(null);
           setApiNotice(shouldLoadNearby
             ? "Chưa thể tải bệnh viện gần vị trí của bạn. Vui lòng thử lại."
-            : "Chưa thể tải danh sách bệnh viện được đánh giá cao. Vui lòng thử lại.");
+            : shouldLoadTopRated
+              ? "Chưa thể tải danh sách bệnh viện được đánh giá cao. Vui lòng thử lại."
+              : "Chưa thể tải danh sách cơ sở y tế. Vui lòng thử lại.");
         }
       })
       .finally(() => {
@@ -932,10 +942,11 @@ function NearbyClinicPage() {
   // so every active facility offering that department shows up, not one.
   useEffect(() => {
     const departmentId = resolvedRecommendationContext?.recommendedDepartment?.departmentId;
-    if (!isClinicalFlow || !departmentId || clinicalDepartmentAutoSelectedRef.current) return;
-    clinicalDepartmentAutoSelectedRef.current = true;
+    const selectionKey = `${mapQuery.sessionId || "clinical"}:${departmentId}`;
+    if (!isClinicalFlow || !departmentId || clinicalDepartmentAutoSelectedRef.current === selectionKey) return;
+    clinicalDepartmentAutoSelectedRef.current = selectionKey;
     setSelectedDepartmentId(departmentId);
-  }, [isClinicalFlow, resolvedRecommendationContext?.recommendedDepartment?.departmentId]);
+  }, [isClinicalFlow, mapQuery.sessionId, resolvedRecommendationContext?.recommendedDepartment?.departmentId]);
 
   const recommendedFacilityOrder = useMemo(() => {
     const entries = resolvedRecommendationContext?.recommendedFacilities ?? [];
@@ -985,17 +996,20 @@ function NearbyClinicPage() {
     isClinicalFlow,
     resolvedRecommendationContext?.recommendedFacilities,
   ]);
+  const hasActiveMapFacilityFilter = facilityDiscoveryMode !== "all";
   // AI-recommended facilities can include ones the general active-facilities
   // list hasn't caught (e.g. a stale fetch); keep them in the pool so
   // department-based filtering never silently drops a recommended facility.
+  // Once the user applies Top 5 or a radius filter, the API response must be
+  // treated as authoritative so out-of-scope recommendations do not reappear.
   const clinicalFacilityPool = useMemo(() => {
-    if (!isClinicalFlow) return facilities;
+    if (!isClinicalFlow || hasActiveMapFacilityFilter) return facilities;
     const activeIds = new Set(facilities.map((facility) => String(facility.facilityId)));
     const extras = clinicalRecommendationFacilities.filter((facility) => (
       !activeIds.has(String(facility.facilityId))
     ));
     return extras.length ? [...facilities, ...extras] : facilities;
-  }, [clinicalRecommendationFacilities, facilities, isClinicalFlow]);
+  }, [clinicalRecommendationFacilities, facilities, hasActiveMapFacilityFilter, isClinicalFlow]);
   const effectiveDepartmentId = selectedDepartmentId;
   const selectedDepartment = selectedDepartmentId === "all"
     ? { id: "all", name: "Tất cả các khoa" }
@@ -1003,9 +1017,11 @@ function NearbyClinicPage() {
   const departmentFilterLabel = selectedDepartment?.name || "Tất cả các khoa";
   const canUseMapFilter = Boolean(userLocation);
   const mapFilterSummary = canUseMapFilter
-    ? facilityDiscoveryMode === "nearby"
-      ? `${nearbyRadiusKm} km`
-      : "Top 5"
+    ? facilityDiscoveryMode === "all"
+      ? ""
+      : facilityDiscoveryMode === "nearby"
+        ? `${nearbyRadiusKm} km`
+        : "Top 5"
     : "";
 
   const filteredFacilities = useMemo(() => {
@@ -1035,7 +1051,7 @@ function NearbyClinicPage() {
     });
     // AI-recommended facilities (if any matched the department too) surface
     // first; every other facility offering the department follows them.
-    return isClinicalFlow && recommendedFacilityOrder.size > 0
+    return isClinicalFlow && !hasActiveMapFacilityFilter && recommendedFacilityOrder.size > 0
       ? matches.sort((left, right) => {
         const leftRank = recommendedFacilityOrder.get(String(left.facilityId));
         const rightRank = recommendedFacilityOrder.get(String(right.facilityId));
@@ -1050,6 +1066,7 @@ function NearbyClinicPage() {
     clinicalFacilityPool,
     clinicalStatus,
     effectiveDepartmentId,
+    hasActiveMapFacilityFilter,
     isClinicalFlow,
     mapStatus,
     recommendedFacilityOrder,
@@ -1282,6 +1299,20 @@ function NearbyClinicPage() {
       setMapQuery(nextQuery);
       setSelectedDoctor(null);
 
+      if (nextQuery.source !== "clinical") {
+        clinicalDepartmentAutoSelectedRef.current = "";
+        setRecommendationContext(null);
+        setClinicalStatus("idle");
+        setClinicalNotice("");
+        setSelectedDepartmentId(nextQuery.departmentId || "all");
+        setFacilityDiscoveryMode("all");
+        setNearbyRadiusKm(DEFAULT_NEARBY_RADIUS_KM);
+        setFilterPanelOpen(false);
+        setDepartmentPickerOpen(false);
+        setSearchText(nextQuery.search);
+        setActiveHospitalTab(nextQuery.tab);
+      }
+
       if (!nextQuery.facilityId || (nextQuery.source === "clinical" && !shouldShowClinicalDetail)) {
         setSidebarView("hospital-list");
         setDetailPanelOpen(false);
@@ -1301,8 +1332,7 @@ function NearbyClinicPage() {
       }
     };
 
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    return subscribeToLocation(handlePopState);
   }, [clinicalRecommendationFacilities, facilities, handleCardClick, openFacilityDetail]);
 
   useEffect(() => {
@@ -2094,6 +2124,22 @@ function NearbyClinicPage() {
                   </div>
                 ) : (
                   <>
+                    <button
+                      type="button"
+                      className={`map-filter-option${facilityDiscoveryMode === "all" ? " active" : ""}`}
+                      aria-pressed={facilityDiscoveryMode === "all"}
+                      onClick={() => {
+                        setFacilityDiscoveryMode("all");
+                        setNearbyRadiusKm(DEFAULT_NEARBY_RADIUS_KM);
+                        setFilterPanelOpen(false);
+                      }}
+                    >
+                      <span aria-hidden="true"><Building2 size={17} /></span>
+                      <span>
+                        <strong>Tất cả cơ sở</strong>
+                        <small>Tắt bộ lọc Top 5 hoặc bán kính, hiển thị danh sách cơ sở đang hoạt động.</small>
+                      </span>
+                    </button>
                     <button
                       type="button"
                       className={`map-filter-option${facilityDiscoveryMode === "top-rated" ? " active" : ""}`}
