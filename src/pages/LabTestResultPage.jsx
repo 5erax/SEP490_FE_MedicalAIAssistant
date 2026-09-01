@@ -619,7 +619,9 @@ function ResultOverview({
 
       <div className="lab-test-result__overview-counts" aria-label={`Tổng cộng ${totalCount} chỉ số`}>
         <div data-tone="danger" data-active={criticalCount > 0}><strong>{criticalCount}</strong><span>Nguy cấp</span></div>
-        <div data-tone="warning" data-active={attentionCount > 0}><strong>{attentionCount}</strong><span>Cần chú ý</span></div>
+        <div className="lab-test-result__overview-attention" data-tone="warning" data-active={attentionCount > 0}>
+          <span>Cần chú ý</span><strong>{attentionCount}</strong>
+        </div>
         <div data-tone="success" data-active={normalCount > 0}><strong>{normalCount}</strong><span>Bình thường</span></div>
         <div data-tone="neutral" data-active={unknownCount > 0}><strong>{unknownCount}</strong><span>Chưa xác định</span></div>
       </div>
@@ -686,7 +688,7 @@ function ResultOverview({
               icon={<TriangleAlert size={18} />}
               title="Dấu hiệu cần lưu ý"
               items={actions.urgent}
-              tone="danger"
+              tone="warning"
             />
             <OverviewActionGroup
               icon={<HeartPulse size={18} />}
@@ -825,7 +827,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const [summaryRetryKey, setSummaryRetryKey] = useState(0);
   const [summaryState, setSummaryState] = useState({ sessionId: "", status: "idle", error: "" });
   const [selectedResultKey, setSelectedResultKey] = useState("");
-  const [resultFilter, setResultFilter] = useState("recommended");
+  const [resultFilter, setResultFilter] = useState("all");
   const [visibleResultLimit, setVisibleResultLimit] = useState(9);
   const [announcement, setAnnouncement] = useState(
     sessionId ? "Đang tải kết quả xét nghiệm." : "Không tìm thấy mã phiên phân tích xét nghiệm.",
@@ -962,9 +964,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   )).length;
   const warningCount = criticalCount + attentionCount;
   const unknownCount = results.length - normalCount - warningCount;
-  const requestedResultFilter = resultFilter === "recommended"
-    ? warningCount > 0 ? "attention" : "all"
-    : resultFilter;
+  const requestedResultFilter = resultFilter;
   const requestedFilterCount = {
     attention: warningCount,
     normal: normalCount,

@@ -326,6 +326,31 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
   color: var(--color-warning);
 }
 
+.lab-test-result__overview-counts > .lab-test-result__overview-attention[data-active="true"] {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-color: var(--color-warning);
+  border-radius: var(--radius-pill);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-warning) 10%, transparent);
+}
+
+.lab-test-result__overview-counts > .lab-test-result__overview-attention[data-active="true"] span {
+  color: currentColor;
+  font-weight: 800;
+}
+
+.lab-test-result__overview-counts > .lab-test-result__overview-attention[data-active="true"] strong {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-surface) 74%, transparent);
+  padding: 0 8px;
+  font-size: 15px;
+}
+
 .lab-test-result__overview-counts > div[data-tone="success"] strong {
   color: var(--color-success);
 }
@@ -462,6 +487,20 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
 .lab-test-result__overview-action[data-tone="danger"] > span {
   background: var(--color-danger-bg);
   color: var(--color-danger);
+}
+
+.lab-test-result__overview-action[data-tone="warning"] {
+  border-color: color-mix(in srgb, var(--color-warning) 38%, var(--color-line-strong));
+  background: color-mix(in srgb, var(--color-warning-bg) 52%, var(--color-surface));
+}
+
+.lab-test-result__overview-action[data-tone="warning"] > span {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.lab-test-result__overview-action[data-tone="warning"] li::marker {
+  color: var(--color-warning);
 }
 
 .lab-test-result__overview-action[data-tone="success"] > span {
