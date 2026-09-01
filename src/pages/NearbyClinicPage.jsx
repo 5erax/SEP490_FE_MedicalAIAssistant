@@ -50,7 +50,8 @@ const TYPE_LABELS = {
 
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 const SIDEBAR_MAP_OFFSET = 190;
-const DEFAULT_NEARBY_RADIUS_KM = 7;
+const DEFAULT_NEARBY_RADIUS_KM = 10;
+const NEAREST_FACILITY_LIMIT = 1;
 const NEARBY_FACILITY_LIMIT = 20;
 const TOP_RATED_FACILITY_LIMIT = 5;
 const DETAIL_TABS = [
@@ -792,10 +793,10 @@ function NearbyClinicPage() {
     const departmentId = selectedDepartmentId && selectedDepartmentId !== "all"
       ? selectedDepartmentId
       : "";
-    const shouldLoadNearby = facilityDiscoveryMode === "nearby" && Boolean(userLocation);
+    const shouldLoadNearby = ["nearby", "nearest"].includes(facilityDiscoveryMode) && Boolean(userLocation);
     const shouldLoadTopRated = facilityDiscoveryMode === "top-rated";
 
-    if (facilityDiscoveryMode === "nearby" && !userLocation) {
+    if (["nearby", "nearest"].includes(facilityDiscoveryMode) && !userLocation) {
       setFacilityDiscoveryMode("all");
       return undefined;
     }
@@ -809,7 +810,7 @@ function NearbyClinicPage() {
         longitude: userLocation.lng,
         radiusKm: nearbyRadiusKm,
         departmentId,
-        limit: NEARBY_FACILITY_LIMIT,
+        limit: facilityDiscoveryMode === "nearest" ? NEAREST_FACILITY_LIMIT : NEARBY_FACILITY_LIMIT,
       })
       : shouldLoadTopRated
         ? medicalFacilitiesApi.topRated({
@@ -843,6 +844,8 @@ function NearbyClinicPage() {
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
         setSelectedFacility(null);
+        setSidebarView("hospital-list");
+        setSidebarUnlocked(false);
         setDetailFacility(null);
         setDetailPanelOpen(false);
         setSelectedDoctor(null);
@@ -851,7 +854,9 @@ function NearbyClinicPage() {
             ? "Danh sách khoa liên kết đang tạm thời chưa đầy đủ."
             : ""
           : shouldLoadNearby
-            ? `Chưa tìm thấy cơ sở y tế trong bán kính ${nearbyRadiusKm} km.`
+            ? facilityDiscoveryMode === "nearest"
+              ? `Chưa tìm thấy cơ sở y tế gần nhất trong bán kính ${nearbyRadiusKm} km.`
+              : `Chưa tìm thấy cơ sở y tế trong bán kính ${nearbyRadiusKm} km.`
             : shouldLoadTopRated
               ? "Chưa có cơ sở y tế được đánh giá phù hợp."
               : "Chưa có cơ sở y tế phù hợp.");
@@ -860,6 +865,8 @@ function NearbyClinicPage() {
         if (active) {
           setFacilities([]);
           setSelectedFacility(null);
+          setSidebarView("hospital-list");
+          setSidebarUnlocked(false);
           setDetailFacility(null);
           setDetailPanelOpen(false);
           setSelectedDoctor(null);
@@ -1019,6 +1026,8 @@ function NearbyClinicPage() {
   const mapFilterSummary = canUseMapFilter
     ? facilityDiscoveryMode === "all"
       ? ""
+      : facilityDiscoveryMode === "nearest"
+        ? "Gần nhất"
       : facilityDiscoveryMode === "nearby"
         ? `${nearbyRadiusKm} km`
         : "Top 5"
@@ -1403,6 +1412,19 @@ function NearbyClinicPage() {
     }, 0);
   };
 
+  const closeFacilitySidebarForFilter = () => {
+    setSidebarView("hospital-list");
+    setSidebarUnlocked(false);
+    setDetailPanelOpen(false);
+    setDetailFacility(null);
+    setDetailError("");
+    setDetailDoctors([]);
+    setSelectedDoctor(null);
+    setSelectedFacility(null);
+    setSubmittedReview(null);
+    setEditingReview(false);
+  };
+
   const backToHospitalList = () => closeFacilityDetail();
 
   const changeHospitalTab = (tabId) => {
@@ -1472,6 +1494,7 @@ function NearbyClinicPage() {
       (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation({ lat: latitude, lng: longitude });
+        closeFacilitySidebarForFilter();
         setFacilityDiscoveryMode("nearby");
         setFilterPanelOpen(false);
         mapRef.current?.flyTo?.({
@@ -2126,25 +2149,10 @@ function NearbyClinicPage() {
                   <>
                     <button
                       type="button"
-                      className={`map-filter-option${facilityDiscoveryMode === "all" ? " active" : ""}`}
-                      aria-pressed={facilityDiscoveryMode === "all"}
-                      onClick={() => {
-                        setFacilityDiscoveryMode("all");
-                        setNearbyRadiusKm(DEFAULT_NEARBY_RADIUS_KM);
-                        setFilterPanelOpen(false);
-                      }}
-                    >
-                      <span aria-hidden="true"><Building2 size={17} /></span>
-                      <span>
-                        <strong>Tất cả cơ sở</strong>
-                        <small>Tắt bộ lọc Top 5 hoặc bán kính, hiển thị danh sách cơ sở đang hoạt động.</small>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
                       className={`map-filter-option${facilityDiscoveryMode === "top-rated" ? " active" : ""}`}
                       aria-pressed={facilityDiscoveryMode === "top-rated"}
                       onClick={() => {
+                        closeFacilitySidebarForFilter();
                         setFacilityDiscoveryMode("top-rated");
                         setFilterPanelOpen(false);
                       }}
@@ -2155,11 +2163,28 @@ function NearbyClinicPage() {
                         <small>Top 5 theo đánh giá{selectedDepartmentId !== "all" ? " trong khoa đã chọn" : " toàn hệ thống"}.</small>
                       </span>
                     </button>
+                    <button
+                      type="button"
+                      className={`map-filter-option${facilityDiscoveryMode === "nearest" ? " active" : ""}`}
+                      aria-pressed={facilityDiscoveryMode === "nearest"}
+                      onClick={() => {
+                        closeFacilitySidebarForFilter();
+                        setFacilityDiscoveryMode("nearest");
+                        setFilterPanelOpen(false);
+                      }}
+                    >
+                      <span aria-hidden="true"><MapPin size={17} /></span>
+                      <span>
+                        <strong>Bệnh viện gần tôi nhất</strong>
+                        <small>Hiển thị 1 bệnh viện gần vị trí hiện tại nhất trong bán kính đã chọn.</small>
+                      </span>
+                    </button>
                     <div className={`map-filter-option radius-option${facilityDiscoveryMode === "nearby" ? " active" : ""}`}>
                       <button
                         type="button"
                         aria-pressed={facilityDiscoveryMode === "nearby"}
                         onClick={() => {
+                          closeFacilitySidebarForFilter();
                           setFacilityDiscoveryMode("nearby");
                           setFilterPanelOpen(false);
                         }}
@@ -2171,13 +2196,14 @@ function NearbyClinicPage() {
                         </span>
                       </button>
                       <div className="map-radius-control" aria-label="Bán kính tìm bệnh viện gần bạn">
-                        {[5, 7, 10].map((radius) => (
+                        {[5, 10, 15, 20, 25].map((radius) => (
                           <button
                             key={radius}
                             type="button"
                             className={nearbyRadiusKm === radius ? "active" : ""}
                             aria-pressed={nearbyRadiusKm === radius}
                             onClick={() => {
+                              closeFacilitySidebarForFilter();
                               setNearbyRadiusKm(radius);
                               setFacilityDiscoveryMode("nearby");
                               setFilterPanelOpen(false);
