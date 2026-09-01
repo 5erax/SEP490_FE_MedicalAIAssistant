@@ -143,13 +143,19 @@ function diagnosisKey(diagnosis, index) {
 }
 
 function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false, sessionId = "" }) {
-  const [expandedKey, setExpandedKey] = useState("");
-  const expandedDiagnosis = diagnoses.find((diagnosis, index) => (
-    diagnosisKey(diagnosis, index) === expandedKey
-  ));
+  const [selectedKey, setSelectedKey] = useState(() => diagnosisKey(diagnoses[0], 0));
+  const selectedIndex = Math.max(0, diagnoses.findIndex((diagnosis, index) => (
+    diagnosisKey(diagnosis, index) === selectedKey
+  )));
+  const selectedDiagnosis = diagnoses[selectedIndex] || diagnoses[0];
+  const diagnosisProgress = diagnoses.length <= 1 ? 100 : ((selectedIndex + 1) / diagnoses.length) * 100;
   const preConsultationHref = sessionId
     ? `/pre-consultation?sessionId=${encodeURIComponent(sessionId)}`
     : "/pre-consultation";
+
+  useEffect(() => {
+    setSelectedKey(diagnosisKey(diagnoses[0], 0));
+  }, [diagnoses]);
 
   return (
     <section
@@ -160,56 +166,55 @@ function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false, sessionId = "
         <div>
           <small>Kết quả tham khảo</small>
           <h3 id="map-diagnoses-title">Các chẩn đoán được cân nhắc</h3>
+          <p>Dựa trên triệu chứng bạn cung cấp</p>
         </div>
-        <span>Chọn từng bệnh để xem giải thích</span>
       </header>
-      <ol className="map-diagnosis-list">
-        {diagnoses.map((diagnosis, index) => {
-          const key = diagnosisKey(diagnosis, index);
-          const expanded = key === expandedKey;
-          const reasoningId = `map-diagnosis-reasoning-${index}`;
-          const diseaseName = diagnosis.diseaseName || "Chưa xác định tên bệnh";
-          const metadata = [
-            diagnosis.icd10Code ? `ICD-10: ${diagnosis.icd10Code}` : "",
-            Number(diagnosis.confidenceScore) > 0
-              ? `Độ phù hợp: ${confidencePercent(diagnosis.confidenceScore)}%`
-              : "",
-          ].filter(Boolean).join(" · ");
 
-          return (
-            <li key={key}>
-              <button
-                type="button"
-                className={expanded ? "is-expanded" : ""}
-                aria-expanded={expanded}
-                aria-controls={expanded ? reasoningId : undefined}
-                onClick={() => setExpandedKey((current) => current === key ? "" : key)}
-              >
-                <span>
-                  <strong>{diseaseName}</strong>
-                  {metadata && <small>{metadata}</small>}
-                </span>
-                <ChevronDown size={16} aria-hidden="true" />
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-      {expandedDiagnosis && (
-        <div
-          className="map-diagnosis-reasoning"
-          id={`map-diagnosis-reasoning-${diagnoses.indexOf(expandedDiagnosis)}`}
-          role="region"
-          aria-live="polite"
-        >
-          <strong>Mô tả phân tích</strong>
-          <p>{expandedDiagnosis.clinicalReasoning || "Chưa có mô tả phân tích cho bệnh được gợi ý này."}</p>
-        </div>
-      )}
+      <div className="map-diagnosis-stack">
+        <ol className="map-diagnosis-list">
+          {diagnoses.map((diagnosis, index) => {
+            const key = diagnosisKey(diagnosis, index);
+            const selected = key === diagnosisKey(selectedDiagnosis, selectedIndex);
+            const reasoningId = `map-diagnosis-reasoning-${index}`;
+            const diseaseName = diagnosis.diseaseName || "Chưa xác định tên bệnh";
+            const confidence = confidencePercent(diagnosis.confidenceScore);
+
+            return (
+              <li key={key}>
+                <button
+                  type="button"
+                  className={selected ? "is-selected" : ""}
+                  aria-expanded={selected}
+                  aria-controls={selected ? reasoningId : undefined}
+                  onClick={() => setSelectedKey(key)}
+                >
+                  <span>
+                    <strong>{diseaseName}</strong>
+                    <small>{confidence ? `Độ phù hợp: ${confidence}%` : "Đang cân nhắc"}</small>
+                  </span>
+                  <ChevronDown size={17} aria-hidden="true" />
+                </button>
+                {selected && (
+                  <section className="map-diagnosis-inline-detail" id={reasoningId} aria-live="polite">
+                    <strong>Vì sao kết quả này được đề xuất?</strong>
+                    <p>{diagnosis.clinicalReasoning || "Chưa có mô tả phân tích cho bệnh được gợi ý này."}</p>
+                    {diagnosis.icd10Code && <span>ICD-10: {diagnosis.icd10Code}</span>}
+                  </section>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      <div className="map-diagnosis-progress" aria-hidden="true">
+        <span style={{ width: `${diagnosisProgress}%` }} />
+      </div>
+
       <a className="map-diagnosis-cta" href={preConsultationHref}>
-        <ClipboardCheck size={16} aria-hidden="true" />
-        <span>Bạn có muốn được tư vấn trước khi đến khám?</span>
-        <ArrowRight size={16} aria-hidden="true" />
+        <ClipboardCheck size={17} aria-hidden="true" />
+        <span>Tư vấn trước khám</span>
+        <ArrowRight size={17} aria-hidden="true" />
       </a>
     </section>
   );
@@ -640,8 +645,13 @@ export default function FacilityMap({
 }) {
   const popupActionRef = useRef(null);
   const markerRefs = useRef(new globalThis.Map());
+  const [departmentDescriptionOpen, setDepartmentDescriptionOpen] = useState(false);
   const recommendedDepartment = recommendationContext?.recommendedDepartment;
   const confidence = confidencePercent(recommendedDepartment?.confidenceScore);
+
+  useEffect(() => {
+    setDepartmentDescriptionOpen(false);
+  }, [recommendedDepartment?.departmentId]);
 
   useEffect(() => {
     if (!selectedFacility?.hasValidCoordinates) return undefined;
@@ -670,43 +680,60 @@ export default function FacilityMap({
       )}
       {isClinicalFlow && (
         <aside
-          className={`map-clinical-summary${hasTopNotice ? " has-top-notice" : ""}`}
+          className={`map-clinical-result-rail${hasTopNotice ? " has-top-notice" : ""}`}
           aria-label="Kết quả gợi ý chuyên khoa"
           aria-live="polite"
         >
-          {clinicalStatus === "loading" && (
-            <div className="map-clinical-summary-state" role="status">
-              <span className="map-loading-spinner" aria-hidden="true" />
-              <strong>Đang khôi phục gợi ý chuyên khoa…</strong>
-            </div>
-          )}
-          {clinicalStatus !== "loading" && clinicalStatus !== "ready" && clinicalNotice && (
-            <div className="map-clinical-summary-state" role={clinicalStatus === "error" ? "alert" : "status"}>
-              <strong>
-                {clinicalStatus === "empty"
-                  ? "Phiên chưa lưu kết quả gợi ý"
-                  : "Chưa thể hiển thị gợi ý chuyên khoa"}
-              </strong>
-              <p>{clinicalNotice}</p>
-            </div>
-          )}
-          {clinicalStatus === "ready" && (
-            <>
-              <header>
-                <small>Chuyên khoa được gợi ý</small>
-                <strong>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</strong>
-              </header>
-              <p className="map-clinical-description">
-                {recommendedDepartment?.description
-                  || "Chưa có mô tả cho chuyên khoa được gợi ý."}
-              </p>
-            </>
+          <section className="map-clinical-summary">
+            {clinicalStatus === "loading" && (
+              <div className="map-clinical-summary-state" role="status">
+                <span className="map-loading-spinner" aria-hidden="true" />
+                <strong>Đang khôi phục gợi ý chuyên khoa…</strong>
+              </div>
+            )}
+            {clinicalStatus !== "loading" && clinicalStatus !== "ready" && clinicalNotice && (
+              <div className="map-clinical-summary-state" role={clinicalStatus === "error" ? "alert" : "status"}>
+                <strong>
+                  {clinicalStatus === "empty"
+                    ? "Phiên chưa lưu kết quả gợi ý"
+                    : "Chưa thể hiển thị gợi ý chuyên khoa"}
+                </strong>
+                <p>{clinicalNotice}</p>
+              </div>
+            )}
+            {clinicalStatus === "ready" && (
+              <>
+                <header>
+                  <small>Định hướng chuyên khoa</small>
+                  <span>Từ các triệu chứng đã cung cấp, hệ thống ưu tiên định hướng bạn đến chuyên khoa phù hợp nhất:</span>
+                  <strong>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</strong>
+                </header>
+                <button
+                  type="button"
+                  className="map-clinical-description-toggle"
+                  aria-expanded={departmentDescriptionOpen}
+                  onClick={() => setDepartmentDescriptionOpen((open) => !open)}
+                >
+                  <span>
+                    <strong>{departmentDescriptionOpen ? "Ẩn thông tin chuyên khoa" : "Thông tin chuyên khoa"}</strong>
+                    <small>{departmentDescriptionOpen ? "Thu gọn phần mô tả" : "Xem vai trò và phạm vi thăm khám"}</small>
+                  </span>
+                  <ChevronDown size={18} aria-hidden="true" />
+                </button>
+                {departmentDescriptionOpen && (
+                  <p className="map-clinical-description">
+                    {recommendedDepartment?.description
+                      || "Chưa có mô tả cho chuyên khoa được gợi ý."}
+                  </p>
+                )}
+              </>
+            )}
+          </section>
+
+          {clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
+            <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} hasTopNotice={hasTopNotice} sessionId={recommendationContext.sessionId} />
           )}
         </aside>
-      )}
-
-      {isClinicalFlow && clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
-        <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} hasTopNotice={hasTopNotice} sessionId={recommendationContext.sessionId} />
       )}
 
       {mapStatus !== "error" && (

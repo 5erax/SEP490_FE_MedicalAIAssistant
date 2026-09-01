@@ -1187,7 +1187,8 @@ function NearbyClinicPage() {
 
     // Keep markers from landing underneath the floating search/department bar,
     // and under the recommended-department summary cards in the clinical flow.
-    const topClearance = isClinicalFlow ? 220 : 110;
+    const topClearance = isClinicalFlow ? 132 : 110;
+    const leftClearance = isClinicalFlow && window.innerWidth > 760 ? 508 : 72;
 
     if (mappableFacilities.length === 1) {
       const [facility] = mappableFacilities;
@@ -1195,7 +1196,7 @@ function NearbyClinicPage() {
         center: [facility.longitude, facility.latitude],
         zoom: 14,
         duration,
-        offset: [0, topClearance / 2],
+        offset: [isClinicalFlow && window.innerWidth > 760 ? 210 : 0, topClearance / 2],
       });
       return;
     }
@@ -1209,7 +1210,7 @@ function NearbyClinicPage() {
       ],
       {
         duration,
-        padding: { top: topClearance, right: 72, bottom: 72, left: 72 },
+        padding: { top: topClearance, right: 72, bottom: 72, left: leftClearance },
       },
     );
   }, [isClinicalFlow, mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
