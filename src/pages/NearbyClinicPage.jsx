@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   Building2,
   ChevronDown,
   Clock3,
+  ClipboardCheck,
   Globe2,
   House,
   ImagePlus,
@@ -50,7 +52,7 @@ const TYPE_LABELS = {
 
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 const SIDEBAR_MAP_OFFSET = 190;
-const DEFAULT_NEARBY_RADIUS_KM = 10;
+const DEFAULT_NEARBY_RADIUS_KM = 5;
 const NEAREST_FACILITY_LIMIT = 1;
 const NEARBY_FACILITY_LIMIT = 20;
 const TOP_RATED_FACILITY_LIMIT = 5;
@@ -1115,9 +1117,28 @@ function NearbyClinicPage() {
     () => visibleFacilities.filter((facility) => facility.hasValidCoordinates),
     [visibleFacilities],
   );
+  const mapBoundsPoints = useMemo(() => {
+    const points = mappableFacilities.map((facility) => ({
+      id: facility.facilityId,
+      longitude: facility.longitude,
+      latitude: facility.latitude,
+    }));
+
+    if (hasActiveMapFacilityFilter && userLocation) {
+      points.push({
+        id: "user-location",
+        longitude: userLocation.lng,
+        latitude: userLocation.lat,
+      });
+    }
+
+    return points.filter((point) => (
+      Number.isFinite(point.longitude) && Number.isFinite(point.latitude)
+    ));
+  }, [hasActiveMapFacilityFilter, mappableFacilities, userLocation]);
   const mapBoundsKey = useMemo(
-    () => mappableFacilities.map((facility) => `${facility.facilityId}:${facility.longitude}:${facility.latitude}`).join("|"),
-    [mappableFacilities],
+    () => mapBoundsPoints.map((point) => `${point.id}:${point.longitude}:${point.latitude}`).join("|"),
+    [mapBoundsPoints],
   );
   const hasActiveFacilitiesWithoutMapData = facilities.length > 0 && !facilities.some((facility) => facility.hasValidCoordinates);
   const unavailableRecommendationCount = isClinicalFlow && recommendedFacilityOrder.size > 0
@@ -1205,7 +1226,7 @@ function NearbyClinicPage() {
   ]);
 
   useEffect(() => {
-    if (mapStatus !== "ready" || selectedFacility || mappableFacilities.length === 0) return;
+    if (mapStatus !== "ready" || selectedFacility || mapBoundsPoints.length === 0) return;
     if (lastFittedBoundsRef.current === mapBoundsKey) return;
     lastFittedBoundsRef.current = mapBoundsKey;
 
@@ -1216,10 +1237,10 @@ function NearbyClinicPage() {
     const topClearance = isClinicalFlow ? 132 : 110;
     const leftClearance = isClinicalFlow && window.innerWidth > 760 ? 508 : 72;
 
-    if (mappableFacilities.length === 1) {
-      const [facility] = mappableFacilities;
+    if (mapBoundsPoints.length === 1) {
+      const [point] = mapBoundsPoints;
       mapRef.current?.flyTo?.({
-        center: [facility.longitude, facility.latitude],
+        center: [point.longitude, point.latitude],
         zoom: 14,
         duration,
         offset: [isClinicalFlow && window.innerWidth > 760 ? 210 : 0, topClearance / 2],
@@ -1227,19 +1248,34 @@ function NearbyClinicPage() {
       return;
     }
 
-    const longitudes = mappableFacilities.map((facility) => facility.longitude);
-    const latitudes = mappableFacilities.map((facility) => facility.latitude);
+    const longitudes = mapBoundsPoints.map((point) => point.longitude);
+    const latitudes = mapBoundsPoints.map((point) => point.latitude);
+    const minLongitude = Math.min(...longitudes);
+    const maxLongitude = Math.max(...longitudes);
+    const minLatitude = Math.min(...latitudes);
+    const maxLatitude = Math.max(...latitudes);
+
+    if (minLongitude === maxLongitude && minLatitude === maxLatitude) {
+      mapRef.current?.flyTo?.({
+        center: [minLongitude, minLatitude],
+        zoom: 14,
+        duration,
+        offset: [isClinicalFlow && window.innerWidth > 760 ? 210 : 0, topClearance / 2],
+      });
+      return;
+    }
+
     mapRef.current?.fitBounds?.(
       [
-        [Math.min(...longitudes), Math.min(...latitudes)],
-        [Math.max(...longitudes), Math.max(...latitudes)],
+        [minLongitude, minLatitude],
+        [maxLongitude, maxLatitude],
       ],
       {
         duration,
         padding: { top: topClearance, right: 72, bottom: 72, left: leftClearance },
       },
     );
-  }, [isClinicalFlow, mapBoundsKey, mapStatus, mappableFacilities, prefersReducedMotion, selectedFacility]);
+  }, [isClinicalFlow, mapBoundsKey, mapBoundsPoints, mapStatus, prefersReducedMotion, selectedFacility]);
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
@@ -1401,12 +1437,10 @@ function NearbyClinicPage() {
     setDetailError("");
     setDetailDoctors([]);
     setSelectedDoctor(null);
-    setSelectedFacility(isClinicalFlow ? detailFacility : null);
+    setSelectedFacility(null);
     setSubmittedReview(null);
     setEditingReview(false);
-    syncMapUrl(isClinicalFlow && detailFacility?.facilityId
-      ? { facilityId: detailFacility.facilityId }
-      : {});
+    syncMapUrl({});
     window.setTimeout(() => {
       cardRefs.current[facilityId]?.querySelector?.(".facility-select-button")?.focus();
     }, 0);
@@ -1750,6 +1784,21 @@ function NearbyClinicPage() {
     }
   };
 
+  const startPreConsultationFromDetail = (facility) => {
+    if (!facility?.facilityId || !isClinicalFlow || clinicalStatus !== "ready") return;
+
+    const search = new URLSearchParams();
+    const sessionId = resolvedRecommendationContext?.sessionId || mapQuery.sessionId;
+    const departmentId = resolvedRecommendationContext?.recommendedDepartment?.departmentId;
+
+    if (sessionId) search.set("sessionId", sessionId);
+    if (departmentId) search.set("departmentId", departmentId);
+    search.set("facilityId", facility.facilityId);
+    search.set("facilityName", facility.facilityName);
+
+    navigate(`/pre-consultation?${search.toString()}`);
+  };
+
   const detailAverageRating = getAverageRating(reviews);
   const currentUserReview = reviews.find((review) => isReviewByCurrentUser(review, auth)) || submittedReview;
   const selectedFacilityDistance = detailFacility ? detailFacility.distanceKm ?? getDistanceKm(userLocation, detailFacility) : null;
@@ -1881,6 +1930,17 @@ function NearbyClinicPage() {
                 <button type="button" onClick={() => shareFacility(detailFacility)}><Share2 size={18} /><span>Chia sẻ</span></button>
                 {detailFacility.website && <a href={detailFacility.website} target="_blank" rel="noreferrer"><Globe2 size={18} /><span>Website</span></a>}
               </div>
+              {isClinicalFlow && clinicalStatus === "ready" && resolvedRecommendationContext && (
+                <button
+                  type="button"
+                  className="map-diagnosis-cta facility-preconsultation-cta"
+                  onClick={() => startPreConsultationFromDetail(detailFacility)}
+                >
+                  <ClipboardCheck size={17} aria-hidden="true" />
+                  <span>Tư vấn trước khám</span>
+                  <ArrowRight size={17} aria-hidden="true" />
+                </button>
+              )}
               {shareMessage && <p className="facility-action-message" role="status">{shareMessage}</p>}
 
               <div className="facility-detail-tabs" role="tablist" aria-label="Thông tin cơ sở y tế">
@@ -2254,6 +2314,7 @@ function NearbyClinicPage() {
           clinicalNotice={effectiveClinicalNotice}
           clinicalStatus={clinicalStatus}
           hasTopNotice={Boolean(apiNotice)}
+          hideClinicalPreConsultationCta={detailPanelOpen}
           isClinicalFlow={isClinicalFlow}
           facilities={mappableFacilities}
           locationError={locationError}

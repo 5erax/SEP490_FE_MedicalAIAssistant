@@ -236,7 +236,18 @@ export default function PreConsultationPage() {
     const sessionId = search.get("sessionId");
     if (sessionId) {
       autoAppliedSessionRef.current = true;
-      applySuggestedSession({ sessionId }, { source: "map" });
+      applySuggestedSession(
+        { sessionId },
+        {
+          source: "map",
+          facilityOverride: search.get("facilityId")
+            ? {
+              facilityId: search.get("facilityId"),
+              facilityName: search.get("facilityName") || "",
+            }
+            : null,
+        },
+      );
       return;
     }
 
@@ -289,7 +300,7 @@ export default function PreConsultationPage() {
     }
   }
 
-  async function applySuggestedSession(sessionItem, { source = "list" } = {}) {
+  async function applySuggestedSession(sessionItem, { source = "list", facilityOverride = null } = {}) {
     const sessionId = sessionItem?.sessionId || sessionItem?.id;
     if (!sessionId) return;
 
@@ -302,15 +313,28 @@ export default function PreConsultationPage() {
       const matchedDepartmentId = departmentId && departments.some((item) => item.id === departmentId)
         ? departmentId
         : "";
+      const overriddenFacility = facilityOverride?.facilityId
+        ? {
+          facilityId: facilityOverride.facilityId,
+          facilityName: facilityOverride.facilityName
+            || facilities.find((facility) => String(facility.facilityId) === String(facilityOverride.facilityId))?.facilityName
+            || "",
+        }
+        : null;
 
       setForm((current) => ({
         ...current,
         departmentId: matchedDepartmentId || current.departmentId,
         symptoms: symptomText || current.symptoms,
-        facilityId: "",
-        facilityName: "",
+        facilityId: overriddenFacility?.facilityId || "",
+        facilityName: overriddenFacility?.facilityName || "",
       }));
-      setFormErrors((current) => ({ ...current, departmentId: "", symptoms: "" }));
+      setFormErrors((current) => ({
+        ...current,
+        departmentId: "",
+        symptoms: "",
+        facilityId: overriddenFacility ? "" : current.facilityId,
+      }));
       setSuggestedFacilities(facilities);
       setFacilityPickerOpen(false);
       setSuggestedSessionsOpen(false);

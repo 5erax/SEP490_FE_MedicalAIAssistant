@@ -142,7 +142,12 @@ function diagnosisKey(diagnosis, index) {
     .join("-");
 }
 
-function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false, sessionId = "" }) {
+function DiagnosisCrossbar({
+  diagnoses = [],
+  hasTopNotice = false,
+  hidePreConsultationCta = false,
+  sessionId = "",
+}) {
   const [selectedKey, setSelectedKey] = useState(() => diagnosisKey(diagnoses[0], 0));
   const selectedIndex = Math.max(0, diagnoses.findIndex((diagnosis, index) => (
     diagnosisKey(diagnosis, index) === selectedKey
@@ -211,11 +216,13 @@ function DiagnosisCrossbar({ diagnoses = [], hasTopNotice = false, sessionId = "
         <span style={{ width: `${diagnosisProgress}%` }} />
       </div>
 
-      <a className="map-diagnosis-cta" href={preConsultationHref}>
-        <ClipboardCheck size={17} aria-hidden="true" />
-        <span>Tư vấn trước khám</span>
-        <ArrowRight size={17} aria-hidden="true" />
-      </a>
+      {!hidePreConsultationCta && (
+        <a className="map-diagnosis-cta" href={preConsultationHref}>
+          <ClipboardCheck size={17} aria-hidden="true" />
+          <span>Tư vấn trước khám</span>
+          <ArrowRight size={17} aria-hidden="true" />
+        </a>
+      )}
     </section>
   );
 }
@@ -622,6 +629,7 @@ export default function FacilityMap({
   clinicalStatus = "idle",
   consultationFacility = null,
   hasTopNotice = false,
+  hideClinicalPreConsultationCta = false,
   isClinicalFlow = false,
   onAssistantLogin,
   showConsultationAssistant = false,
@@ -731,7 +739,12 @@ export default function FacilityMap({
           </section>
 
           {clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
-            <DiagnosisCrossbar diagnoses={recommendationContext.diagnoses} hasTopNotice={hasTopNotice} sessionId={recommendationContext.sessionId} />
+            <DiagnosisCrossbar
+              diagnoses={recommendationContext.diagnoses}
+              hasTopNotice={hasTopNotice}
+              hidePreConsultationCta={hideClinicalPreConsultationCta}
+              sessionId={recommendationContext.sessionId}
+            />
           )}
         </aside>
       )}

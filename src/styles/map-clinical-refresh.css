@@ -1032,6 +1032,19 @@
   color: #ffffff;
 }
 
+.map-clinical-refresh .map-diagnosis-cta.facility-preconsultation-cta {
+  box-sizing: border-box;
+  width: calc(100% - 36px);
+  min-height: 44px;
+  margin: 12px 18px 16px;
+  padding: 0 15px;
+  text-align: left;
+}
+
+.map-clinical-refresh .map-diagnosis-cta.facility-preconsultation-cta > span {
+  text-align: left;
+}
+
 .map-clinical-refresh .facility-detail-tabs {
   border-color: var(--map-line);
   background: var(--map-surface);
