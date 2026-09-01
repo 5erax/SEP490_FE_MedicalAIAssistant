@@ -631,54 +631,178 @@
   line-height: 1;
 }
 
-.map-clinical-refresh .map-department-filter {
+.map-clinical-refresh .map-department-filter,
+.map-clinical-refresh .map-filter-menu {
   position: relative;
   flex: 0 0 auto;
 }
 
-.map-clinical-refresh .map-discovery-filter {
-  position: relative;
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+.map-clinical-refresh .map-filter-trigger {
   height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--map-teal);
   border-radius: 23px;
-  background: rgba(230, 244, 238, 0.96);
+  background: var(--map-teal-soft);
   box-shadow: 0 10px 26px rgba(8, 75, 72, 0.14);
-  padding: 0 7px 0 14px;
+  padding: 0 10px 0 16px;
   color: var(--map-teal-strong);
-}
-
-.map-clinical-refresh .map-discovery-mode-button {
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  padding: 0 9px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 850;
   white-space: nowrap;
 }
 
-.map-clinical-refresh .map-discovery-mode-button:hover,
-.map-clinical-refresh .map-discovery-mode-button.active {
+.map-clinical-refresh .map-filter-trigger:hover,
+.map-clinical-refresh .map-filter-trigger.active {
   background: var(--map-teal);
   color: #ffffff;
+}
+
+.map-clinical-refresh .map-filter-trigger.locked {
+  border-color: rgba(12, 124, 120, 0.34);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--map-muted);
+}
+
+.map-clinical-refresh .map-filter-trigger small {
+  min-width: 58px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 4px 8px;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.map-clinical-refresh .map-filter-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 22;
+  width: min(340px, 86vw);
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--map-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 24px 56px rgba(8, 75, 72, 0.22);
+  padding: 9px;
+  color: var(--map-ink);
+  backdrop-filter: blur(14px);
+}
+
+.map-clinical-refresh .map-filter-locked-state {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 7px;
+}
+
+.map-clinical-refresh .map-filter-locked-state > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .map-filter-locked-state strong,
+.map-clinical-refresh .map-filter-option strong {
+  display: block;
+  color: var(--map-ink);
+  font-size: 13.5px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.map-clinical-refresh .map-filter-locked-state p,
+.map-clinical-refresh .map-filter-option small {
+  display: block;
+  margin: 3px 0 0;
+  color: var(--map-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.map-clinical-refresh .map-filter-locked-state > button {
+  grid-column: 1 / -1;
+  min-height: 40px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--map-teal);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.map-clinical-refresh .map-filter-option {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--map-line);
+  border-radius: 13px;
+  background: var(--map-surface);
+  padding: 11px;
+  color: var(--map-ink);
+  text-align: left;
+}
+
+.map-clinical-refresh .map-filter-option > span:first-child,
+.map-clinical-refresh .map-filter-option > button > span:first-child {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--map-teal-soft);
+  color: var(--map-teal-strong);
+}
+
+.map-clinical-refresh .map-filter-option:hover,
+.map-clinical-refresh .map-filter-option.active {
+  border-color: var(--map-teal);
+  background: var(--map-teal-soft);
+}
+
+.map-clinical-refresh .map-filter-option.active > span:first-child,
+.map-clinical-refresh .map-filter-option.active > button > span:first-child {
+  background: var(--map-teal);
+  color: #ffffff;
+}
+
+.map-clinical-refresh .map-filter-option.radius-option {
+  grid-template-columns: 1fr;
+}
+
+.map-clinical-refresh .map-filter-option.radius-option > button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  text-align: left;
 }
 
 .map-clinical-refresh .map-radius-control {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  width: fit-content;
+  margin-left: 44px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  padding: 3px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 4px;
 }
 
 .map-clinical-refresh .map-radius-control button {
@@ -788,11 +912,6 @@
   font-weight: 750;
 }
 
-.map-clinical-refresh .map-department-filter-panel li button.map-department-filter-clear {
-  color: var(--map-danger);
-  font-weight: 750;
-}
-
 @media (max-width: 640px) {
   .map-clinical-refresh .map-top-controls {
     top: 18px;
@@ -806,18 +925,15 @@
     max-width: none;
   }
 
-  .map-clinical-refresh .map-discovery-filter {
-    max-width: 100%;
-    padding-left: 12px;
+  .map-clinical-refresh .map-filter-trigger {
+    padding: 0 8px 0 12px;
   }
 
-  .map-clinical-refresh .map-discovery-mode-button {
-    padding: 0 7px;
-  }
-
-  .map-clinical-refresh .map-radius-control button {
-    min-width: 37px;
-    padding: 0 6px;
+  .map-clinical-refresh .map-filter-trigger small {
+    min-width: 0;
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .map-clinical-refresh .map-department-filter-trigger {
@@ -836,15 +952,10 @@
     min-width: 80px;
   }
 
-  .map-clinical-refresh .map-discovery-filter {
-    gap: 5px;
-    padding-right: 5px;
-  }
-
-  .map-clinical-refresh .map-discovery-mode-button span {
-    max-width: 48px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .map-clinical-refresh .map-filter-panel {
+    right: auto;
+    left: 0;
+    width: min(320px, calc(100vw - 36px));
   }
 
   .map-clinical-refresh .map-department-filter-trigger span {

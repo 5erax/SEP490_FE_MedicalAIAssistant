@@ -535,6 +535,7 @@ function NearbyClinicPage() {
   const [departments, setDepartments] = useState([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [departmentPickerOpen, setDepartmentPickerOpen] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [sidebarView, setSidebarView] = useState("hospital-list");
   const [sidebarUnlocked, setSidebarUnlocked] = useState(false);
@@ -566,6 +567,7 @@ function NearbyClinicPage() {
   const mapRef = useRef(null);
   const cardRefs = useRef({});
   const departmentFilterRef = useRef(null);
+  const mapFilterRef = useRef(null);
   const searchBoxRef = useRef(null);
   const sidebarTitleRef = useRef(null);
   const detailCloseButtonRef = sidebarTitleRef;
@@ -625,6 +627,26 @@ function NearbyClinicPage() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [departmentPickerOpen]);
+
+  useEffect(() => {
+    if (!filterPanelOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!mapFilterRef.current?.contains(event.target)) {
+        setFilterPanelOpen(false);
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setFilterPanelOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [filterPanelOpen]);
 
   useEffect(() => {
     if (!suggestionsOpen) return undefined;
@@ -770,7 +792,7 @@ function NearbyClinicPage() {
     const departmentId = selectedDepartmentId && selectedDepartmentId !== "all"
       ? selectedDepartmentId
       : "";
-    const shouldLoadNearby = Boolean(userLocation);
+    const shouldLoadNearby = facilityDiscoveryMode === "nearby" && Boolean(userLocation);
     const mode = shouldLoadNearby ? "nearby" : "top-rated";
 
     setLoadingFacilities(true);
@@ -845,7 +867,7 @@ function NearbyClinicPage() {
     return () => {
       active = false;
     };
-  }, [nearbyRadiusKm, selectedDepartmentId, userLocation]);
+  }, [facilityDiscoveryMode, nearbyRadiusKm, selectedDepartmentId, userLocation]);
 
   useEffect(() => {
     if (!selectedFacility?.facilityId) return;
@@ -979,6 +1001,12 @@ function NearbyClinicPage() {
     ? { id: "all", name: "Tất cả các khoa" }
     : departments.find((department) => department.id === selectedDepartmentId) || null;
   const departmentFilterLabel = selectedDepartment?.name || "Tất cả các khoa";
+  const canUseMapFilter = Boolean(userLocation);
+  const mapFilterSummary = canUseMapFilter
+    ? facilityDiscoveryMode === "nearby"
+      ? `${nearbyRadiusKm} km`
+      : "Top 5"
+    : "Cần định vị";
 
   const filteredFacilities = useMemo(() => {
     if (isClinicalFlow && clinicalStatus !== "ready") return [];
@@ -1413,6 +1441,8 @@ function NearbyClinicPage() {
       (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation({ lat: latitude, lng: longitude });
+        setFacilityDiscoveryMode("nearby");
+        setFilterPanelOpen(false);
         mapRef.current?.flyTo?.({
           center: [longitude, latitude],
           zoom: 15,
@@ -1916,7 +1946,7 @@ function NearbyClinicPage() {
 
       <section className="map-stage">
         <div className="map-top-controls">
-        <div className="map-top-controls-row" ref={departmentFilterRef}>
+        <div className="map-top-controls-row">
           <button
             type="button"
             className="map-top-home-button"
@@ -1971,51 +2001,16 @@ function NearbyClinicPage() {
               </div>
             )}
           </div>
-          <div className="map-discovery-filter">
-            <button
-              type="button"
-              className={`map-discovery-mode-button${facilityDiscoveryMode === "top-rated" ? " active" : ""}`}
-              aria-pressed={facilityDiscoveryMode === "top-rated"}
-              onClick={() => {
-                setUserLocation(null);
-                setFacilityDiscoveryMode("top-rated");
-                setLocationError("");
-              }}
-            >
-              <Star size={16} aria-hidden="true" />
-              <span>Top 5</span>
-            </button>
-            <button
-              type="button"
-              className={`map-discovery-mode-button${facilityDiscoveryMode === "nearby" ? " active" : ""}`}
-              aria-pressed={facilityDiscoveryMode === "nearby"}
-              onClick={handleLocateMe}
-            >
-              <Route size={16} aria-hidden="true" />
-              <span>Gần tôi</span>
-            </button>
-            <SlidersHorizontal size={14} aria-hidden="true" />
-            <div className="map-radius-control" aria-label="Bán kính tìm bệnh viện gần bạn">
-              {[5, 7, 10].map((radius) => (
-                <button
-                  key={radius}
-                  type="button"
-                  className={nearbyRadiusKm === radius ? "active" : ""}
-                  aria-pressed={nearbyRadiusKm === radius}
-                  onClick={() => setNearbyRadiusKm(radius)}
-                >
-                  {radius} km
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="map-department-filter">
+          <div className="map-department-filter" ref={departmentFilterRef}>
             <button
               type="button"
               className={`map-department-filter-trigger${selectedDepartment ? " has-selection" : ""}`}
               aria-haspopup="listbox"
               aria-expanded={departmentPickerOpen}
-              onClick={() => setDepartmentPickerOpen((open) => !open)}
+              onClick={() => {
+                setFilterPanelOpen(false);
+                setDepartmentPickerOpen((open) => !open);
+              }}
             >
               <Stethoscope size={16} aria-hidden="true" />
               <span>{departmentFilterLabel}</span>
@@ -2064,6 +2059,89 @@ function NearbyClinicPage() {
                       ))
                     )}
                   </ul>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="map-filter-menu" ref={mapFilterRef}>
+            <button
+              type="button"
+              className={`map-filter-trigger${filterPanelOpen ? " active" : ""}${canUseMapFilter ? "" : " locked"}`}
+              aria-haspopup="dialog"
+              aria-expanded={filterPanelOpen}
+              onClick={() => {
+                setDepartmentPickerOpen(false);
+                setFilterPanelOpen((open) => !open);
+              }}
+            >
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              <span>Bộ lọc</span>
+              <small>{mapFilterSummary}</small>
+            </button>
+            {filterPanelOpen && (
+              <div className="map-filter-panel" role="dialog" aria-label="Bộ lọc cơ sở y tế">
+                {!canUseMapFilter ? (
+                  <div className="map-filter-locked-state">
+                    <span aria-hidden="true"><MapPin size={18} /></span>
+                    <div>
+                      <strong>Bật vị trí để dùng bộ lọc</strong>
+                      <p>Bộ lọc cần vị trí hiện tại để so sánh bệnh viện tốt nhất và bán kính quanh bạn.</p>
+                    </div>
+                    <button type="button" onClick={handleLocateMe}>
+                      Dùng vị trí của tôi
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className={`map-filter-option${facilityDiscoveryMode === "top-rated" ? " active" : ""}`}
+                      aria-pressed={facilityDiscoveryMode === "top-rated"}
+                      onClick={() => {
+                        setFacilityDiscoveryMode("top-rated");
+                        setFilterPanelOpen(false);
+                      }}
+                    >
+                      <span aria-hidden="true"><Star size={17} /></span>
+                      <span>
+                        <strong>Top bệnh viện</strong>
+                        <small>Top 5 theo đánh giá{selectedDepartmentId !== "all" ? " trong khoa đã chọn" : " toàn hệ thống"}.</small>
+                      </span>
+                    </button>
+                    <div className={`map-filter-option radius-option${facilityDiscoveryMode === "nearby" ? " active" : ""}`}>
+                      <button
+                        type="button"
+                        aria-pressed={facilityDiscoveryMode === "nearby"}
+                        onClick={() => {
+                          setFacilityDiscoveryMode("nearby");
+                          setFilterPanelOpen(false);
+                        }}
+                      >
+                        <span aria-hidden="true"><Route size={17} /></span>
+                        <span>
+                          <strong>Theo bán kính</strong>
+                          <small>Tìm bệnh viện gần bạn trong bán kính đã chọn.</small>
+                        </span>
+                      </button>
+                      <div className="map-radius-control" aria-label="Bán kính tìm bệnh viện gần bạn">
+                        {[5, 7, 10].map((radius) => (
+                          <button
+                            key={radius}
+                            type="button"
+                            className={nearbyRadiusKm === radius ? "active" : ""}
+                            aria-pressed={nearbyRadiusKm === radius}
+                            onClick={() => {
+                              setNearbyRadiusKm(radius);
+                              setFacilityDiscoveryMode("nearby");
+                              setFilterPanelOpen(false);
+                            }}
+                          >
+                            {radius} km
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
