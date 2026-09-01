@@ -39,7 +39,7 @@ function RecommendationContent({ context, status, notice, chatContext, onFindNea
             <LocateFixed size={22} aria-hidden="true" />
             <span>{locating ? "Đang xác định vị trí…" : locationError ? "Thử lại vị trí" : "Tìm nơi khám gần tôi"}</span>
           </button>
-          <p className="clinical-guidance">Dùng vị trí của bạn để tìm cơ sở có chuyên khoa này ở gần bạn.</p>
+          <p className="clinical-guidance">Dùng vị trí để tìm cơ sở phù hợp gần bạn.</p>
           {locationError && <p className="explorer-notice" role="alert">{locationError}</p>}
           <button type="button" className="explorer-text-action" onClick={onBrowseFacilities} disabled={locating}>{hasNearbyResults ? "Trở lại các cơ sở đã tìm" : "Xem cơ sở mà không dùng vị trí"}</button>
         </div>}

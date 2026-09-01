@@ -35,6 +35,14 @@ test("specialty reasoning follows the unique source rather than the first ranked
   assert.equal(getSpecialtyExplanation({ reason: "khác" }, diagnoses).reasoning, "");
 });
 
+test("specialty summary explains the symptom relationship in plain language without presenting a diagnosis", () => {
+  const explanation = getSpecialtyExplanation({ departmentName: "Khoa Hô Hấp", reason: "cúm" }, []);
+  assert.match(explanation.summary, /triệu chứng bạn cung cấp có thể liên quan đến chuyên khoa Hô Hấp/);
+  assert.match(explanation.summary, /“cúm”/);
+  assert.match(explanation.summary, /không phải chẩn đoán/);
+  assert.doesNotMatch(explanation.summary, /Gợi ý chuyên khoa này có liên quan/);
+});
+
 function applyServerPatch(existing, patch) {
   const result = { ...existing };
   for (const [key, url] of Object.entries(patch)) { if (url === null) delete result[key]; else result[key] = url; }

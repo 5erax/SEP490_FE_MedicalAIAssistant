@@ -10,6 +10,8 @@ const normalizedName = (value) => String(value ?? "").trim().replace(/\s+/g, " "
 
 export function getSpecialtyExplanation(department, diagnoses = []) {
   const reason = String(department?.reason ?? "").trim();
+  const departmentName = String(department?.departmentName ?? "").trim();
+  const specialtyName = departmentName.replace(/^khoa\s+/i, "") || "phù hợp";
   const sourceId = department?.sourceDiagnosisId;
   // A specialty's source need not be the highest-ranked diagnosis. Never fall back to diagnoses[0].
   const matches = sourceId
@@ -20,7 +22,7 @@ export function getSpecialtyExplanation(department, diagnoses = []) {
     relatedResult: source?.diseaseName || reason,
     reasoning: source?.clinicalReasoning || "",
     summary: reason
-      ? `Gợi ý chuyên khoa này có liên quan đến kết quả tham khảo “${source?.diseaseName || reason}” trong lần phân tích của bạn. Đây chưa phải chẩn đoán.`
-      : "Đây là chuyên khoa được hệ thống gợi ý để bạn tham khảo khi chọn nơi khám. Chưa có căn cứ giải thích chi tiết cho gợi ý này.",
+      ? `Các triệu chứng bạn cung cấp có thể liên quan đến chuyên khoa ${specialtyName}. Kết quả tham khảo “${source?.diseaseName || reason}” là một căn cứ để hệ thống đưa ra gợi ý này. Đây không phải chẩn đoán.`
+      : `Các triệu chứng bạn cung cấp có thể liên quan đến chuyên khoa ${specialtyName}. Bạn có thể cân nhắc chuyên khoa này khi chọn nơi khám; đây không phải chẩn đoán.`,
   };
 }

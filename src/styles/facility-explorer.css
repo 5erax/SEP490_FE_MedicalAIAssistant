@@ -256,7 +256,7 @@
 .facility-explorer .explorer-pagination button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--map-line-strong); border-radius: 10px; background: var(--map-surface); color: var(--map-teal-strong); font-size: .875rem; }
 .facility-explorer .explorer-pagination span { font-size: .875rem; color: var(--map-body); }
 .facility-explorer .explorer-pagination .explorer-first-page { flex-basis: 100%; border: 0; background: transparent; text-decoration: underline; }
-.facility-explorer .explorer-advice .explorer-reason-summary { font-size: .9375rem; }
+.facility-explorer .explorer-advice .explorer-reason-summary { font-size: 1rem; font-style: normal; font-weight: 400; line-height: 1.6; color: var(--map-body); }
 .facility-explorer .explorer-score-explanation { padding: 14px; margin: 12px 0; border-radius: 12px; background: var(--map-surface-soft); border: 1px solid var(--map-line); color: var(--map-ink); }
 .facility-explorer .explorer-advice .explorer-score-explanation p { font-size: .875rem; }
 .facility-explorer .explorer-score-explanation > p { margin: 0; }
@@ -281,7 +281,7 @@
 
 /* All supporting guidance in the current explorer is a step below its 16px body
    text. Do not target result data, buttons, validation errors or live warnings. */
-.facility-explorer .explorer-advice :is(.explorer-muted, .explorer-reason-summary, .explorer-reason .explorer-label, .explorer-score-explanation p, .explorer-clinical-disclaimer),
+.facility-explorer .explorer-advice :is(.explorer-muted, .explorer-reason .explorer-label, .explorer-score-explanation p, .explorer-clinical-disclaimer),
 .facility-explorer .explorer-filters .explorer-muted,
 .facility-explorer .explorer-result-info p,
 .facility-explorer .explorer-next-step .clinical-guidance,
