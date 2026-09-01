@@ -190,6 +190,18 @@ test("result page polls every second, stops when completed, and displays advice"
   expect(accessibility.violations).toEqual([]);
 });
 
+test("result page shows all recognized indicators by default", async ({ page }) => {
+  await prepareResultPage(page, { completedOnCall: 1 });
+  await page.goto(`/records/${SESSION_ID}`, { waitUntil: "domcontentloaded" });
+
+  const astCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Chỉ số AST (GOT)" });
+  const glucoseCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Glucose huyết" });
+  await expect(page.getByRole("button", { name: "Tất cả 2" })).toHaveAttribute("data-active", "true");
+  await expect(astCard).toBeVisible();
+  await expect(glucoseCard).toBeVisible();
+  await expect(page.locator(".lab-test-result__overview-attention")).toHaveAttribute("data-active", "true");
+});
+
 test("result page remains responsive and keyboard usable at 320px", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
   await prepareResultPage(page, { completedOnCall: 1, forcedColors: "active" });
