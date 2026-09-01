@@ -680,7 +680,7 @@
 .map-clinical-refresh .map-filter-panel {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0;
   z-index: 22;
   width: min(340px, 86vw);
   display: grid;
@@ -959,8 +959,6 @@
   }
 
   .map-clinical-refresh .map-filter-panel {
-    right: auto;
-    left: 0;
     width: min(320px, calc(100vw - 36px));
   }
 

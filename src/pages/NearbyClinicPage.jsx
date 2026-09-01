@@ -1006,7 +1006,7 @@ function NearbyClinicPage() {
     ? facilityDiscoveryMode === "nearby"
       ? `${nearbyRadiusKm} km`
       : "Top 5"
-    : "Cần định vị";
+    : "";
 
   const filteredFacilities = useMemo(() => {
     if (isClinicalFlow && clinicalStatus !== "ready") return [];
@@ -2076,7 +2076,7 @@ function NearbyClinicPage() {
             >
               <SlidersHorizontal size={16} aria-hidden="true" />
               <span>Bộ lọc</span>
-              <small>{mapFilterSummary}</small>
+              {mapFilterSummary && <small>{mapFilterSummary}</small>}
             </button>
             {filterPanelOpen && (
               <div className="map-filter-panel" role="dialog" aria-label="Bộ lọc cơ sở y tế">
