@@ -1485,6 +1485,11 @@ function NearbyClinicPage() {
 
   const handleLocateMe = () => {
     setLocationError("");
+    if (!window.isSecureContext) {
+      setLocationError("Định vị chỉ hoạt động trên HTTPS hoặc localhost. Vui lòng mở link deploy bắt đầu bằng https://.");
+      return;
+    }
+
     if (!navigator.geolocation) {
       setLocationError("Trình duyệt không hỗ trợ định vị.");
       return;
@@ -1503,7 +1508,29 @@ function NearbyClinicPage() {
           duration: prefersReducedMotion() ? 0 : 1500,
         });
       },
-      () => setLocationError("Không thể lấy vị trí của bạn.")
+      (error) => {
+        if (error?.code === error.PERMISSION_DENIED) {
+          setLocationError("Bạn đang chặn quyền vị trí cho trang này. Hãy cho phép Location trong cài đặt trình duyệt rồi thử lại.");
+          return;
+        }
+
+        if (error?.code === error.POSITION_UNAVAILABLE) {
+          setLocationError("Thiết bị chưa cung cấp được vị trí hiện tại. Hãy bật dịch vụ định vị/GPS rồi thử lại.");
+          return;
+        }
+
+        if (error?.code === error.TIMEOUT) {
+          setLocationError("Lấy vị trí hơi lâu. Hãy kiểm tra GPS hoặc mạng rồi thử lại.");
+          return;
+        }
+
+        setLocationError("Không thể lấy vị trí của bạn. Vui lòng kiểm tra quyền vị trí của trình duyệt.");
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 60_000,
+        timeout: 15_000,
+      }
     );
   };
 
