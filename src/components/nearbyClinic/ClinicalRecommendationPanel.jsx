@@ -5,10 +5,13 @@ import { CLINICAL_NOTES } from "../../content/clinicalNotes";
 import { hasClinicalPriority } from "../../utils/clinicalPresentation";
 
 // Keep the next step outside the sidebar's scrolling results.
-export function ClinicalRecommendationAction({ context }) {
-  const href = context?.sessionId
-    ? `/pre-consultation?sessionId=${encodeURIComponent(context.sessionId)}`
-    : "/pre-consultation";
+export function ClinicalRecommendationAction({ context, facility = null }) {
+  const search = new URLSearchParams();
+  if (context?.sessionId) search.set("sessionId", context.sessionId);
+  if (facility?.facilityId) search.set("facilityId", facility.facilityId);
+  if (facility?.facilityName) search.set("facilityName", facility.facilityName);
+  const query = search.toString();
+  const href = `/pre-consultation${query ? `?${query}` : ""}`;
   return <footer className="explorer-next-step" aria-label="Bước tiếp theo">
     <p className="clinical-guidance">Chuẩn bị thông tin trước khi đi khám</p>
     <a className="explorer-primary" href={href}><span>Tiếp tục tư vấn trước khám</span><ArrowRight size={22} aria-hidden="true" /></a>

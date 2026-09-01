@@ -236,7 +236,13 @@ export default function PreConsultationPage() {
     const sessionId = search.get("sessionId");
     if (sessionId) {
       autoAppliedSessionRef.current = true;
-      applySuggestedSession({ sessionId }, { source: "map" });
+      const preferredFacilityId = String(search.get("facilityId") ?? "").trim();
+      const preferredFacility = preferredFacilityId ? {
+        facilityId: preferredFacilityId,
+        facilityName: String(search.get("facilityName") ?? "").trim() || "Cơ sở đã chọn từ bản đồ",
+        address: "",
+      } : null;
+      applySuggestedSession({ sessionId }, { source: "map", preferredFacility });
       return;
     }
 
@@ -289,7 +295,7 @@ export default function PreConsultationPage() {
     }
   }
 
-  async function applySuggestedSession(sessionItem, { source = "list" } = {}) {
+  async function applySuggestedSession(sessionItem, { source = "list", preferredFacility = null } = {}) {
     const sessionId = sessionItem?.sessionId || sessionItem?.id;
     if (!sessionId) return;
 
@@ -302,22 +308,37 @@ export default function PreConsultationPage() {
       const matchedDepartmentId = departmentId && departments.some((item) => item.id === departmentId)
         ? departmentId
         : "";
+      const preferredFacilityId = String(preferredFacility?.facilityId ?? "").trim();
+      const matchedPreferredFacility = preferredFacilityId
+        ? facilities.find((facility) => facility.facilityId === preferredFacilityId)
+        : null;
+      const selectedPreferredFacility = preferredFacilityId ? {
+        ...(matchedPreferredFacility ?? preferredFacility),
+        facilityId: preferredFacilityId,
+        facilityName: String(preferredFacility?.facilityName ?? matchedPreferredFacility?.facilityName ?? "").trim()
+          || "Cơ sở đã chọn từ bản đồ",
+      } : null;
+      const availableFacilities = selectedPreferredFacility
+        ? [selectedPreferredFacility, ...facilities.filter((facility) => facility.facilityId !== preferredFacilityId)]
+        : facilities;
 
       setForm((current) => ({
         ...current,
         departmentId: matchedDepartmentId || current.departmentId,
         symptoms: symptomText || current.symptoms,
-        facilityId: "",
-        facilityName: "",
+        facilityId: selectedPreferredFacility?.facilityId ?? "",
+        facilityName: selectedPreferredFacility?.facilityName ?? "",
       }));
-      setFormErrors((current) => ({ ...current, departmentId: "", symptoms: "" }));
-      setSuggestedFacilities(facilities);
+      setFormErrors((current) => ({ ...current, departmentId: "", symptoms: "", facilityId: "" }));
+      setSuggestedFacilities(availableFacilities);
       setFacilityPickerOpen(false);
       setSuggestedSessionsOpen(false);
       setAutoFilledFromMap(source === "map");
       setAnnouncement(
         departmentId && !matchedDepartmentId
           ? "Đã điền triệu chứng từ phiên đã chọn. Chuyên khoa được gợi ý hiện chưa hỗ trợ tư vấn trước khám."
+          : selectedPreferredFacility
+            ? `Đã điền thông tin và chọn cơ sở ${selectedPreferredFacility.facilityName} từ bản đồ.`
           : "Đã điền thông tin từ phiên gợi ý chuyên khoa đã chọn.",
       );
     } catch (loadError) {

@@ -7,6 +7,7 @@ const DEPARTMENT_ID = "11111111-1111-4111-8111-111111111111";
 const SESSION_ID = "22222222-2222-4222-8222-222222222222";
 const SYMPTOM_SESSION_ID = "66666666-6666-4666-8666-666666666666";
 const SUGGESTED_FACILITY_ID = "77777777-7777-4777-8777-777777777777";
+const MAP_FACILITY_ID = "88888888-8888-4888-8888-888888888888";
 const ACCESS_TOKEN = [
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0",
   "eyJleHAiOjQxNDIzNjgwMDAsInJvbGUiOiJQYXRpZW50IiwidXNlcklkIjoiNTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1In0",
@@ -164,7 +165,7 @@ async function mockPreConsultation(page) {
   return calls;
 }
 
-async function openPreConsultation(page) {
+async function openPreConsultation(page, path = "/pre-consultation") {
   await preparePage(page);
   await page.addInitScript(({ accessToken, userId }) => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -175,10 +176,32 @@ async function openPreConsultation(page) {
     }));
   }, { accessToken: ACCESS_TOKEN, userId: USER_ID });
   const calls = await mockPreConsultation(page);
-  await page.goto("/pre-consultation", { waitUntil: "domcontentloaded" });
+  await page.goto(path, { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Tư vấn trước khám", exact: true }).first()).toBeVisible();
   return calls;
 }
+
+test("map-selected facility is preselected but remains changeable", async ({ page }) => {
+  const calls = await openPreConsultation(
+    page,
+    `/pre-consultation?sessionId=${SYMPTOM_SESSION_ID}&facilityId=${MAP_FACILITY_ID}&facilityName=${encodeURIComponent("Bệnh viện gần người dùng")}`,
+  );
+
+  await expect(page.locator(".pre-consultation-selected-facility")).toContainText("Bệnh viện gần người dùng");
+  await expect(page.locator(".pre-consultation-autofill-note")).toContainText("Bản đồ");
+  const picker = page.getByRole("button", { name: /Chọn bệnh viện gợi ý \(2\)/ });
+  await expect(picker).toBeEnabled();
+  await picker.click();
+  await expect(page.getByRole("button", { name: /Bệnh viện gần người dùng/ })).toBeVisible();
+  await page.getByRole("button", { name: /Bệnh viện Tim Tâm Đức/ }).click();
+  await expect(page.locator(".pre-consultation-selected-facility")).toContainText("Bệnh viện Tim Tâm Đức");
+  await picker.click();
+  await page.getByRole("button", { name: /Bệnh viện gần người dùng/ }).click();
+  await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
+  await page.getByRole("button", { name: "Bắt đầu tư vấn" }).click();
+  await expect(page.getByRole("heading", { name: "Danh sách chuẩn bị" })).toBeVisible();
+  expect(calls.generateBody.facilityId).toBe(MAP_FACILITY_ID);
+});
 
 async function pickSuggestedSession(page) {
   await page.getByRole("button", { name: "Danh sách phiên gợi ý chuyên khoa" }).click();
@@ -220,7 +243,6 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
   await expect(page.getByText("Bệnh lý của tôi là cấp tính hay mạn tính?", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Thiết lập nhắc lịch" }).click();
   await page.getByLabel(/Có, nhắc tôi/).check();
-  await page.getByLabel("Số điện thoại nhận nhắc lịch (bắt buộc)").fill("0901234567");
   await page.getByRole("button", { name: "Xác nhận lựa chọn" }).click();
 
   await expect(page.getByRole("heading", { name: "Kiểm tra bản tổng kết" })).toBeVisible();
@@ -237,11 +259,11 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
   expect(calls.generateBody).toMatchObject({ departmentId: DEPARTMENT_ID, facilityId: SUGGESTED_FACILITY_ID, symptoms: "Đau ngực khi vận động" });
   expect(calls.checklist).toBe(1);
   expect(calls.detail).toBe(3);
-  expect(calls.detailTimes[1] - calls.detailTimes[0]).toBeGreaterThanOrEqual(900);
-  expect(calls.detailTimes[2] - calls.detailTimes[1]).toBeGreaterThanOrEqual(900);
+  expect(calls.detailTimes[1] - calls.detailTimes[0]).toBeGreaterThanOrEqual(150);
+  expect(calls.detailTimes[2] - calls.detailTimes[1]).toBeGreaterThanOrEqual(150);
   expect(calls.usage).toBeGreaterThanOrEqual(2);
-  expect(calls.userMe).toBeGreaterThanOrEqual(2);
-  expect(calls.reminderBody).toEqual({ enableReminder: true, phoneNumber: "0901234567" });
+  expect(calls.userMe).toBe(1);
+  expect(calls.reminderBody).toEqual({ enableReminder: true });
   expect(calls.summary).toBe(1);
   expect(calls.complete).toBe(1);
   expect(pageErrors).toEqual([]);

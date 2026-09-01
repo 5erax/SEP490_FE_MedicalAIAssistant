@@ -452,6 +452,28 @@ for (const screen of [
   });
 }
 
+test("clinical facility detail carries the selected facility into pre-consultation", async ({ page }) => {
+  await preparePage(page);
+  await page.addInitScript(({ accessToken, snapshot }) => {
+    localStorage.setItem("medimate.auth", JSON.stringify({ accessToken, roles: ["User"] }));
+    sessionStorage.setItem("medimate.clinical-map.recommendation", JSON.stringify(snapshot));
+  }, { accessToken: TOKEN, snapshot: clinicalAnalysis });
+  await mockMapApis(page, [facility()], { analysis: clinicalAnalysis });
+  await mockSuccessfulMapStyle(page);
+  await page.goto(`/map?source=clinical&sessionId=${SESSION_ID}`);
+
+  await page.getByRole("button", { name: "Xem cơ sở mà không dùng vị trí", exact: true }).click();
+  await page.getByRole("button", { name: "Xem chi tiết Bệnh viện kiểm thử", exact: true }).click();
+  const nextStep = page.getByRole("link", { name: "Tiếp tục tư vấn trước khám" });
+  await expect(nextStep).toBeVisible();
+  const href = await nextStep.getAttribute("href");
+  const target = new URL(href, "http://localhost");
+  expect(target.pathname).toBe("/pre-consultation");
+  expect(target.searchParams.get("sessionId")).toBe(SESSION_ID);
+  expect(target.searchParams.get("facilityId")).toBe(FACILITY_ID);
+  expect(target.searchParams.get("facilityName")).toBe("Bệnh viện kiểm thử");
+});
+
 for (const width of [1440, 390]) {
   test(`clinical specialty nearby choice searches progressively: ${width}`, async ({ page }, testInfo) => {
     await preparePage(page);

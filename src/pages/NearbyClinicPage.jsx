@@ -2161,7 +2161,10 @@ function NearbyClinicPage() {
           </div>
         </footer>}
         {!reviewFormOpen && isClinicalFlow && clinicalStatus === "ready" && ((sidebarView === "hospital-list" && sideMode === "advice") || sidebarView === "hospital-detail") && (
-          <ClinicalRecommendationAction context={resolvedRecommendationContext} />
+          <ClinicalRecommendationAction
+            context={resolvedRecommendationContext}
+            facility={sidebarView === "hospital-detail" ? detailFacility : null}
+          />
         )}
       </aside>
 
