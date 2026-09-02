@@ -74,7 +74,13 @@ export default function AdminSaleCampaignsSection() {
       }
       if (editing) await saleCampaignsApi.update(editing.id, payload); else await saleCampaignsApi.create(payload);
       setFormOpen(false); setEditing(null); await load(editing ? page.pageNumber : 1);
-      showToast({ type: "success", title: editing ? "Đã cập nhật khuyến mãi" : "Đã tạo khuyến mãi", message: "Dữ liệu ưu đãi đã được đồng bộ." });
+      showToast({
+        type: "success",
+        title: editing ? "Đã cập nhật khuyến mãi" : "Đã tạo khuyến mãi",
+        message: payload.announceToUsers
+          ? "Chương trình đã được lưu. Hệ thống sẽ tự động xét người dùng đủ điều kiện để gửi thông báo."
+          : "Dữ liệu ưu đãi đã được đồng bộ.",
+      });
     } catch (error) {
       setSaveError(error?.status === 409
         ? `Không thể lưu vì dữ liệu ưu đãi đã thay đổi hoặc giới hạn mới thấp hơn số suất đã sử dụng/giữ chỗ. ${apiMessage(error, "Vui lòng kiểm tra lại giới hạn.")}`

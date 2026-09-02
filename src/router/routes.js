@@ -157,6 +157,7 @@ const BASE_ROUTES = [
     navigation: { shell: "patient", label: "Thuốc & lịch nhắc", hint: "Quản lý thuốc đang dùng", icon: "medications", order: 75 },
   },
   { id: "public.pricing", path: "/pricing", title: "Bảng giá | MediMate AI", access: "public" },
+  { id: "public.subscription", path: "/subscription", title: "Bảng giá | MediMate AI", access: "public", returnable: false },
   { id: "public.support", path: "/support", title: "Hỗ trợ | MediMate AI", access: "public" },
   { id: "public.privacy", path: "/privacy", title: "Quyền riêng tư | MediMate AI", access: "public" },
   { id: "public.medical-disclaimer", path: "/medical-disclaimer", title: "Tuyên bố miễn trừ y tế | MediMate AI", access: "public" },
