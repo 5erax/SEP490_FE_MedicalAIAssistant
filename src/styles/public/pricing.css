@@ -58,11 +58,11 @@
 }
 
 .pricing-page-focused .pricing-hero-copy {
-  max-width: 700px;
+  max-width: 980px;
 }
 
 .pricing-page-focused .pricing-hero h1 {
-  max-width: 680px;
+  max-width: 980px;
   font-size: clamp(36px, 5vw, 54px);
 }
 
@@ -72,9 +72,9 @@
 }
 
 .pricing-page-focused .plans-grid {
-  grid-template-columns: minmax(0, 640px);
-  justify-content: center;
-  margin-top: 30px;
+  grid-template-columns: minmax(0, 900px);
+  justify-content: start;
+  margin-top: 26px;
 }
 
 .pricing-page-focused .pricing-plan-card-premium {
@@ -353,6 +353,10 @@
   box-shadow: 0 28px 70px rgba(20, 125, 120, 0.23);
 }
 
+.pricing-plan-card-sale .pricing-plan-card-heading {
+  margin-bottom: 20px;
+}
+
 .pricing-plan-card::before {
   position: absolute;
   inset: 0 0 auto;
@@ -425,6 +429,25 @@
 .pricing-plan-card-sale .plan-kicker {
   font-size: 15px;
   letter-spacing: 0.085em;
+}
+
+.pricing-plan-offer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.pricing-page-focused .pricing-plan-card-sale .pricing-plan-offer-layout {
+  grid-template-columns: minmax(0, 0.9fr) minmax(340px, 1.1fr);
+  align-items: stretch;
+  gap: 24px;
+}
+
+.pricing-plan-primary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .pricing-plan-card h2 {
@@ -929,6 +952,10 @@
     margin-top: 36px;
   }
 
+  .pricing-page-focused .pricing-plan-card-sale .pricing-plan-offer-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .plan-summary {
     min-height: 0;
   }
@@ -1024,7 +1051,8 @@
 .pricing-sale-details {
   display: grid;
   gap: 10px;
-  margin: 2px 0 22px;
+  align-content: center;
+  margin: 0;
   border: 1px solid color-mix(in srgb, var(--pricing-teal) 42%, var(--pricing-line));
   border-radius: 16px;
   background: color-mix(in srgb, var(--pricing-teal-pale) 82%, var(--pricing-paper));
@@ -1059,8 +1087,18 @@
 }
 
 .pricing-sale-availability span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pricing-paper) 70%, transparent);
   color: var(--pricing-ink);
+  padding: 5px 9px;
   font-weight: 750;
+}
+
+.pricing-sale-availability span:last-child {
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {

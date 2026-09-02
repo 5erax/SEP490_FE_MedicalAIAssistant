@@ -623,29 +623,33 @@ function PricingPage() {
                     <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
                     <span className={`plan-badge${offer ? " plan-badge-sale" : ""}`}>{badgeText}</span>
                   </div>
-                  <p className="plan-kicker">
-                    {hasBonus ? `${baseCredit} + ${bonusCredit} lượt thưởng` : hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
-                  </p>
-                  <h2>{getPlanDisplayName(paidPlan.planName)}</h2>
-                  <div className="price-line">
-                    {hasPriceDiscount && <span className="pricing-original-price">{formatPrice(originalPrice)}</span>}
-                    <strong>{formatPrice(effectivePrice)}</strong>
-                  </div>
-                  {offer && (
-                    <div className="pricing-sale-details" aria-label="Thông tin chương trình ưu đãi">
-                      <span className="pricing-sale-eligibility">{SALE_ELIGIBILITY_LABELS[offer.eligibilityType] || "Ưu đãi dành cho bạn"}</span>
-                      <div className="pricing-sale-rewards">
-                        {hasPriceDiscount && <strong>Tiết kiệm {formatPrice(Number(offer.discountAmount) || originalPrice - effectivePrice)}</strong>}
-                        {hasBonus && <strong>Tặng thêm {bonusCredit} lượt</strong>}
+                  <div className="pricing-plan-offer-layout">
+                    <div className="pricing-plan-primary">
+                      <p className="plan-kicker">
+                        {hasBonus ? `${baseCredit} + ${bonusCredit} lượt thưởng` : hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
+                      </p>
+                      <h2>{getPlanDisplayName(paidPlan.planName)}</h2>
+                      <div className="price-line">
+                        {hasPriceDiscount && <span className="pricing-original-price">{formatPrice(originalPrice)}</span>}
+                        <strong>{formatPrice(effectivePrice)}</strong>
                       </div>
-                      {(offer.remainingRedemptions != null || countdown) && (
-                        <div className="pricing-sale-availability">
-                          {offer.remainingRedemptions != null && <span>Còn {offer.remainingRedemptions} suất ưu đãi</span>}
-                          {countdown && <span>Kết thúc sau {countdown}</span>}
-                        </div>
-                      )}
                     </div>
-                  )}
+                    {offer && (
+                      <div className="pricing-sale-details" aria-label="Thông tin chương trình ưu đãi">
+                        <span className="pricing-sale-eligibility">{SALE_ELIGIBILITY_LABELS[offer.eligibilityType] || "Ưu đãi dành cho bạn"}</span>
+                        <div className="pricing-sale-rewards">
+                          {hasPriceDiscount && <strong>Tiết kiệm {formatPrice(Number(offer.discountAmount) || originalPrice - effectivePrice)}</strong>}
+                          {hasBonus && <strong>Tặng thêm {bonusCredit} lượt</strong>}
+                        </div>
+                        {(offer.remainingRedemptions != null || countdown) && (
+                          <div className="pricing-sale-availability">
+                            {offer.remainingRedemptions != null && <span>Còn {offer.remainingRedemptions} suất ưu đãi</span>}
+                            {countdown && <span>Kết thúc sau {countdown}</span>}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <div className="plan-benefits">
                     <h3>Quyền lợi trong gói</h3>
                     <ul>
