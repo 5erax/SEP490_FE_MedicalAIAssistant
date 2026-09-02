@@ -39,12 +39,20 @@ test("subscription email CTA alias renders the current pricing offers", async ({
         success: true,
         data: [{
           plan: ACTIVE_PLANS[0],
-          baseCredit: 10,
-          bonusCredit: 0,
-          totalCredit: 10,
-          originalPrice: 90000,
-          effectivePrice: 90000,
-          offer: null,
+          baseCredit: 2,
+          bonusCredit: 10,
+          totalCredit: 12,
+          grantedCredit: 12,
+          originalPrice: 20000,
+          effectivePrice: 12000,
+          offer: {
+            campaignName: "SALE TEST 20K",
+            badgeText: "TOTAL LIMIT",
+            eligibilityType: "all",
+            discountAmount: 8000,
+            remainingRedemptions: 7,
+            endAt: "2099-09-05T01:00:00Z",
+          },
         }],
       }),
     });
@@ -55,7 +63,15 @@ test("subscription email CTA alias renders the current pricing offers", async ({
   await expect(page).toHaveURL(/\/subscription$/);
   await expect(page.getByRole("heading", { name: "Chọn gói phù hợp với cách bạn sử dụng MediMate" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Gói 10 lượt", exact: true })).toBeVisible();
+  await expect(page.getByText("Tiết kiệm 8.000 ₫", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tặng thêm 10 lượt", { exact: true })).toBeVisible();
+  await expect(page.getByText("Còn 7 suất ưu đãi", { exact: true })).toBeVisible();
+  await expect(page.getByText("Lượt dùng được cộng vào số dư hiện có và không hết hạn.", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".plan-badge-sale")).toHaveCSS("font-size", "13px");
   await expect.poll(() => offersCalls).toBeGreaterThan(0);
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
 test("pricing compares public access with every active SERVICE_CREDIT package", async ({ page }) => {

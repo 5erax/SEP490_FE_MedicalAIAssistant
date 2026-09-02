@@ -136,7 +136,7 @@ test("pricing exposes every active SERVICE_CREDIT package as a one-time purchase
   await expect(page.getByText(
     "Lượt dùng được cộng vào số dư hiện có và không hết hạn.",
     { exact: true },
-  )).toHaveCount(plans.length);
+  )).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Mua thêm 10 lượt" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Mua thêm 25 lượt" })).toBeEnabled();
   await expect(page.getByText(/theo tháng|theo năm|tự động gia hạn|chu kỳ thanh toán/i)).toHaveCount(0);
