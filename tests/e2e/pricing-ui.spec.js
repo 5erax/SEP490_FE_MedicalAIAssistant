@@ -29,6 +29,35 @@ test.beforeEach(async ({ page }) => {
   await mockPlans(page);
 });
 
+test("subscription email CTA alias renders the current pricing offers", async ({ page }) => {
+  let offersCalls = 0;
+  await page.route("**/api/subscription-plans/offers", (route) => {
+    offersCalls += 1;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: [{
+          plan: ACTIVE_PLANS[0],
+          baseCredit: 10,
+          bonusCredit: 0,
+          totalCredit: 10,
+          originalPrice: 90000,
+          effectivePrice: 90000,
+          offer: null,
+        }],
+      }),
+    });
+  });
+
+  await page.goto("/subscription", { waitUntil: "domcontentloaded" });
+
+  await expect(page).toHaveURL(/\/subscription$/);
+  await expect(page.getByRole("heading", { name: "Chọn gói phù hợp với cách bạn sử dụng MediMate" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gói 10 lượt", exact: true })).toBeVisible();
+  await expect.poll(() => offersCalls).toBeGreaterThan(0);
+});
+
 test("pricing compares public access with every active SERVICE_CREDIT package", async ({ page }) => {
   await page.goto("/pricing", { waitUntil: "domcontentloaded" });
 

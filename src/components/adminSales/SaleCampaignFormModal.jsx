@@ -17,6 +17,7 @@ function initialForm(campaign) {
     eligibilityType: campaign?.eligibilityType || "all", maxRedemptions: campaign?.maxRedemptions ?? "",
     maxRedemptionsPerUser: campaign?.maxRedemptionsPerUser ?? "", priority: campaign?.priority ?? 0,
     isActive: campaign?.isActive ?? true,
+    announceToUsers: campaign?.announceToUsers ?? false,
   };
 }
 
@@ -83,6 +84,21 @@ export default function SaleCampaignFormModal({ campaign, plans, saving, capacit
         <label>Suất mỗi người<input type="number" min={Math.max(1, capacity?.maxOccupiedPerUser || 0)} step="1" value={form.maxRedemptionsPerUser} onChange={(e) => change("maxRedemptionsPerUser", e.target.value)} placeholder="Không giới hạn" aria-invalid={Boolean(capacityErrors.maxRedemptionsPerUser)} aria-describedby="sale-user-capacity" /><small id="sale-user-capacity" className={capacityErrors.maxRedemptionsPerUser ? "sale-form-error" : ""} aria-live="polite">{capacityErrors.maxRedemptionsPerUser || `Mức sử dụng cao nhất mỗi người: ${capacity?.maxOccupiedPerUser || 0} suất. Để trống nếu không giới hạn.`}</small></label>
       </div>
       <fieldset className="sale-plan-editor"><legend>Gói dịch vụ áp dụng</legend>{availablePlans.map((plan) => { const value = selectedPlans.get(plan.id); return <div className="sale-plan-editor-row" key={plan.id}><label className="sale-plan-check"><input type="checkbox" checked={Boolean(value)} onChange={() => togglePlan(plan)} /><span><strong>{plan.planName}</strong><small>Mức phí thông thường {Number(plan.price).toLocaleString("vi-VN")} ₫</small></span></label>{value && <><label>Mức phí ưu đãi<input type="number" min="1" value={value.salePrice} onChange={(e) => changePlan(plan.id, "salePrice", e.target.value)} /></label><label>Lượt tặng thêm<input type="number" min="0" value={value.bonusCredit} onChange={(e) => changePlan(plan.id, "bonusCredit", e.target.value)} /></label></>}</div>; })}</fieldset>
+      <fieldset className="sale-campaign-settings">
+        <legend>Trạng thái chương trình</legend>
+        <label className="sale-campaign-toggle">
+          <input type="checkbox" checked={Boolean(form.isActive)} onChange={(event) => change("isActive", event.target.checked)} />
+          <span className="sale-campaign-toggle-control" aria-hidden="true"><span /></span>
+          <span><strong>Kích hoạt chương trình</strong><small>Cho phép chương trình được áp dụng trên bảng giá và khi thanh toán trong thời gian hiệu lực.</small></span>
+        </label>
+        <label className="sale-campaign-toggle">
+          <input type="checkbox" checked={Boolean(form.announceToUsers)} onChange={(event) => change("announceToUsers", event.target.checked)} />
+          <span className="sale-campaign-toggle-control" aria-hidden="true"><span /></span>
+          <span><strong>Gửi thông báo ưu đãi</strong><small>Tự động gửi Email và Mobile Push cho người dùng đủ điều kiện khi chương trình thực sự khả dụng.</small></span>
+        </label>
+        {form.announceToUsers && !form.isActive && <p>Thông báo chỉ được gửi khi chương trình đang hoạt động. Hai lựa chọn này được lưu độc lập.</p>}
+        {form.announceToUsers && <p>Thông báo không được gửi ngay khi lưu. Hệ thống sẽ tự động xét điều kiện, mức ưu tiên và số suất còn lại.</p>}
+      </fieldset>
       {error && <p className="sale-form-error" role="alert">{error}</p>}
       {saveError && <p className="sale-form-error" role="alert">{saveError}</p>}
       <footer><button type="button" onClick={onClose} disabled={saving}>Hủy</button><button className="primary" type="submit" disabled={saving || hasCapacityErrors}>{saving ? "Đang kiểm tra và lưu…" : campaign ? "Lưu thay đổi" : "Tạo ưu đãi"}</button></footer>

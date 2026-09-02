@@ -1,4 +1,4 @@
-import { Eye, Pencil, Power, Trash2 } from "lucide-react";
+import { Bell, BellOff, Eye, Pencil, Power, Trash2 } from "lucide-react";
 
 const STATUS_LABELS = {
   active: "Đang diễn ra", scheduled: "Sắp diễn ra", soldout: "Đã hết suất",
@@ -32,7 +32,13 @@ export default function SaleCampaignTable({ campaigns, loading, onEdit, onRedemp
                 <td><span>{dateTime(campaign.startAt)} → {dateTime(campaign.endAt)}</span><small>{ELIGIBILITY_LABELS[campaign.eligibilityType] || campaign.eligibilityType}</small></td>
                 <td>{(campaign.plans || []).map((plan) => <span className="sale-plan-chip" key={plan.id || plan.planId}>{plan.planName}: {plan.salePrice != null ? money(plan.salePrice) : "Giữ nguyên mức phí"}{plan.bonusCredit ? ` · tặng ${plan.bonusCredit} lượt` : ""}</span>)}</td>
                 <td><strong>{campaign.occupiedRedemptions}/{campaign.maxRedemptions ?? "∞"}</strong><small>{campaign.remainingRedemptions == null ? "Không giới hạn" : `Còn ${campaign.remainingRedemptions} suất`}</small></td>
-                <td><span className={`sale-status sale-status-${status}`}>{STATUS_LABELS[status] || campaign.displayStatus}</span></td>
+                <td>
+                  <span className={`sale-status sale-status-${status}`}>{STATUS_LABELS[status] || campaign.displayStatus}</span>
+                  <span className="sale-announcement-status" data-active={campaign.announceToUsers === true}>
+                    {campaign.announceToUsers === true ? <Bell size={14} aria-hidden="true" /> : <BellOff size={14} aria-hidden="true" />}
+                    Thông báo: {campaign.announceToUsers === true ? "Đang bật" : "Đang tắt"}
+                  </span>
+                </td>
                 <td><div className="sale-row-actions">
                   <button type="button" onClick={() => onRedemptions(campaign)}><Eye size={16} />Lịch sử</button>
                   <button type="button" onClick={() => onEdit(campaign)}><Pencil size={16} />Sửa</button>

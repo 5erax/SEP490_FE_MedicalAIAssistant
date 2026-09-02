@@ -132,6 +132,7 @@ function App() {
     case "patient.medications":
       return userWorkspace(lazyPage(<UserMedicationsPage />));
     case "public.pricing":
+    case "public.subscription":
       return lazyPage(<PricingPage />);
     case "public.support":
       return lazyPage(<TrustInfoPage page="support" />);

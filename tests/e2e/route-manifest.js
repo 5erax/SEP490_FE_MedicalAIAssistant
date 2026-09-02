@@ -16,6 +16,7 @@ export const APP_ROUTES = [
   { path: "/recovery-plan", expectedPath: "/login", surface: "auth-gate" },
   { path: "/medication", expectedPath: "/login", surface: "auth-gate" },
   { path: "/pricing", expectedPath: "/pricing", surface: "public" },
+  { path: "/subscription", expectedPath: "/subscription", surface: "public" },
   { path: "/support", expectedPath: "/support", surface: "public-information" },
   { path: "/privacy", expectedPath: "/privacy", surface: "public-information" },
   { path: "/medical-disclaimer", expectedPath: "/medical-disclaimer", surface: "public-information" },
