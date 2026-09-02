@@ -9,7 +9,10 @@ export const doctorInvitationsApi = {
     }
 
     const params = new URLSearchParams({ token: normalizedToken });
-    return apiRequest(`${ENDPOINTS.DOCTOR_INVITATIONS.VALIDATE}?${params.toString()}`);
+    return apiRequest(`${ENDPOINTS.DOCTOR_INVITATIONS.VALIDATE}?${params.toString()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    });
   },
 
   register(payload) {

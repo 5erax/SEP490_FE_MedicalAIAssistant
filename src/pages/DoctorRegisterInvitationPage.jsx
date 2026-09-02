@@ -148,11 +148,24 @@ function presentInvitationError(message) {
   const normalized = text.toLowerCase();
 
   if (!text) return "Không thể hoàn tất đăng ký. Vui lòng thử lại.";
-  if (normalized.includes("invitation link has expired")) {
+  if (
+    normalized.includes("invitation link has expired")
+    || normalized.includes("liên kết đăng ký đã hết hạn")
+  ) {
     return "Liên kết đăng ký đã hết hạn. Vui lòng đề nghị quản trị viên gửi lời mời mới.";
   }
-  if (normalized.includes("invitation link has already been used")) {
+  if (
+    normalized.includes("invitation link has already been used")
+    || normalized.includes("liên kết đăng ký này đã được sử dụng")
+  ) {
     return "Liên kết đăng ký này đã được sử dụng. Hãy đăng nhập hoặc đề nghị quản trị viên kiểm tra lại.";
+  }
+  if (
+    normalized.includes("revoked")
+    || normalized.includes("revoke")
+    || normalized.includes("thu hồi")
+  ) {
+    return "Lời mời đăng ký này đã được quản trị viên thu hồi. Vui lòng đề nghị gửi lời mời mới.";
   }
   if (
     normalized.includes("invalid invitation")
@@ -205,8 +218,20 @@ function isInvitationFailure(messages) {
   return (
     text.includes("invitation link has expired") ||
     text.includes("invitation link has already been used") ||
+    text.includes("hết hạn") ||
+    text.includes("đã được sử dụng") ||
+    text.includes("revoked") ||
+    text.includes("revoke") ||
+    text.includes("thu hồi") ||
     text.includes("invalid invitation") ||
     text.includes("invitation link is invalid")
+  );
+}
+
+function getInvalidInvitationMessage(data) {
+  return presentInvitationError(
+    data?.message
+      || "Liên kết đăng ký đã hết hạn hoặc không hợp lệ. Vui lòng liên hệ quản trị viên để nhận lời mời mới.",
   );
 }
 
@@ -341,12 +366,8 @@ export default function DoctorRegisterInvitationPage() {
 
         if (!data?.isValid) {
           setStatus("invalid");
-          setApiErrors([
-            presentInvitationError(
-              data?.message
-                || "Liên kết đăng ký đã hết hạn hoặc không hợp lệ. Vui lòng liên hệ quản trị viên để nhận lời mời mới.",
-            ),
-          ]);
+          setInvitation(null);
+          setApiErrors([getInvalidInvitationMessage(data)]);
           return;
         }
 
@@ -392,10 +413,67 @@ export default function DoctorRegisterInvitationPage() {
     };
   }, [token]);
 
+  // A token can be revoked from the admin page while this form is already
+  // open. Revalidate on focus/visibility and at a short interval so the form
+  // stops immediately instead of continuing to count down and failing only
+  // after the doctor has filled every field.
+  useEffect(() => {
+    if (!["ready-new", "ready-linked"].includes(status) || !token) return undefined;
+
+    let active = true;
+    let checking = false;
+
+    async function revalidateInvitation() {
+      if (checking || !active) return;
+      checking = true;
+      try {
+        const response = await doctorInvitationsApi.validate(token);
+        if (!active) return;
+        if (!response?.data?.isValid) {
+          setInvitation(null);
+          setRemainingSeconds(null);
+          setApiErrors([getInvalidInvitationMessage(response?.data)]);
+          setStatus("invalid");
+        }
+      } catch (error) {
+        if (!active || error?.status === 0) return;
+        const messages = getApiErrors(error);
+        if (isInvitationFailure(getRawApiErrors(error))) {
+          setInvitation(null);
+          setRemainingSeconds(null);
+          setApiErrors(messages);
+          setStatus("invalid");
+        }
+      } finally {
+        checking = false;
+      }
+    }
+
+    const handleFocus = () => revalidateInvitation();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") revalidateInvitation();
+    };
+    const intervalId = window.setInterval(revalidateInvitation, 10_000);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [status, token]);
+
   // Invitation tokens are short-lived (BE hard-codes 2 minutes), so the form
   // counts down from expiresAt and moves to the "invalid" state on its own
   // instead of letting the doctor discover the token died at submit time.
   useEffect(() => {
+    if (!["ready-new", "ready-linked", "submitting"].includes(status)) {
+      queueMicrotask(() => setRemainingSeconds(null));
+      return undefined;
+    }
+
     const expiresAtMs = invitation?.expiresAt ? new Date(invitation.expiresAt).getTime() : NaN;
     if (Number.isNaN(expiresAtMs)) {
       queueMicrotask(() => setRemainingSeconds(null));
@@ -416,7 +494,7 @@ export default function DoctorRegisterInvitationPage() {
     tick();
     intervalId = window.setInterval(tick, 1000);
     return () => window.clearInterval(intervalId);
-  }, [invitation?.expiresAt]);
+  }, [invitation?.expiresAt, status]);
 
   useEffect(() => {
     if (status !== "success") return undefined;
@@ -452,6 +530,15 @@ export default function DoctorRegisterInvitationPage() {
 
     setStatus("submitting");
     try {
+      const validationResponse = await doctorInvitationsApi.validate(token);
+      if (!validationResponse?.data?.isValid) {
+        setInvitation(null);
+        setRemainingSeconds(null);
+        setApiErrors([getInvalidInvitationMessage(validationResponse?.data)]);
+        setStatus("invalid");
+        return;
+      }
+
       const response = await doctorInvitationsApi.register(buildPayload(token, form, isLinkedProfile));
       setRegisteredEmail(response?.data?.email || invitation?.email || "");
       setStatus("success");
@@ -492,9 +579,9 @@ export default function DoctorRegisterInvitationPage() {
             </a>
             <div>
               <p className="eyebrow">Dành cho bác sĩ được mời</p>
-              <h1>Hoàn tất tài khoản bác sĩ.</h1>
+              <h1 className="auth-side-title">Kích hoạt tài khoản bác sĩ</h1>
               <p>
-                Xác nhận lời mời và bổ sung thông tin cần thiết để truy cập không gian làm việc trên MediMate.
+                Xác nhận lời mời, hoàn thiện thông tin và bắt đầu sử dụng không gian chuyên môn trên MediMate.
               </p>
             </div>
             <div className="auth-step-list">
@@ -553,28 +640,30 @@ export default function DoctorRegisterInvitationPage() {
 
             {["ready-new", "ready-linked", "submitting"].includes(status) && (
               <>
-                <header className="auth-card-header auth-card-header-clean">
-                  <div>
-                    <p className="eyebrow">{isLinkedProfile ? "Liên kết hồ sơ bác sĩ" : "Tài khoản bác sĩ mới"}</p>
-                    <h2>{isLinkedProfile ? "Tạo tài khoản cho hồ sơ hiện có" : "Hoàn tất đăng ký tài khoản bác sĩ"}</h2>
-                    <p>
-                      {isLinkedProfile
-                        ? "Thông tin chuyên môn hiện có sẽ được giữ nguyên."
-                        : "Điền thông tin tài khoản và vị trí chuyên môn để hoàn tất đăng ký."}
-                    </p>
-                  </div>
-                </header>
+                <div className="doctor-registration-heading-row">
+                  <header className="auth-card-header auth-card-header-clean">
+                    <div>
+                      <p className="eyebrow">{isLinkedProfile ? "Liên kết hồ sơ bác sĩ" : "Tài khoản bác sĩ mới"}</p>
+                      <h2 className="auth-card-title">{isLinkedProfile ? "Tạo tài khoản cho hồ sơ hiện có" : "Hoàn tất đăng ký tài khoản bác sĩ"}</h2>
+                      <p>
+                        {isLinkedProfile
+                          ? "Xác nhận thông tin tài khoản; hồ sơ chuyên môn hiện có được giữ nguyên."
+                          : "Nhập thông tin tài khoản và vị trí chuyên môn theo lời mời."}
+                      </p>
+                    </div>
+                  </header>
 
-                {remainingSeconds != null && (
-                  <div
-                    className={`doctor-expiry-notice ${remainingSeconds <= 30 ? "is-urgent" : ""}`.trim()}
-                    role="status"
-                    aria-atomic="true"
-                  >
-                    <span>Lời mời còn hiệu lực</span>
-                    <strong>{formatCountdown(remainingSeconds)}</strong>
-                  </div>
-                )}
+                  {remainingSeconds != null && (
+                    <div
+                      className={`doctor-expiry-notice ${remainingSeconds <= 30 ? "is-urgent" : ""}`.trim()}
+                      role="status"
+                      aria-atomic="true"
+                    >
+                      <span>Thời gian còn lại</span>
+                      <strong>{formatCountdown(remainingSeconds)}</strong>
+                    </div>
+                  )}
+                </div>
 
                 {apiErrors.length > 0 && (
                   <div className="doctor-api-errors" role="alert">
@@ -598,7 +687,7 @@ export default function DoctorRegisterInvitationPage() {
                   <ErrorSummary errors={errors} summaryRef={errorSummaryRef} />
                   <fieldset className="doctor-form-group">
                     <legend>Thông tin tài khoản</legend>
-                    <p>Email được xác định từ lời mời. Bạn bổ sung tên hiển thị, mật khẩu và số điện thoại nếu cần.</p>
+                    <p>Email được lấy từ lời mời và không thể thay đổi tại bước này.</p>
                     <div className="form-two-cols">
                       <Field id="doctor-email" label="Email">
                         <input
@@ -654,7 +743,7 @@ export default function DoctorRegisterInvitationPage() {
                         id="doctor-phoneNumber"
                         label="Số điện thoại"
                         error={errors.phoneNumber}
-                        hint="Không bắt buộc."
+                        hint="Không bắt buộc · 9–15 chữ số."
                       >
                         <input
                           name="phoneNumber"
@@ -670,7 +759,7 @@ export default function DoctorRegisterInvitationPage() {
                   {!isLinkedProfile && (
                     <fieldset className="doctor-form-group doctor-professional-section">
                       <legend>Thông tin chuyên môn</legend>
-                      <p>Chọn đúng cơ sở, khoa và vai trò được ghi nhận trong lời mời của bạn.</p>
+                      <p>Chọn đúng nơi công tác, vai trò và kinh nghiệm chuyên môn của bạn.</p>
 
                       {facilityError && (
                         <div className="doctor-facility-warning" role="status" aria-atomic="true">
@@ -720,7 +809,7 @@ export default function DoctorRegisterInvitationPage() {
                             ))}
                           </select>
                         </Field>
-                        <Field id="doctor-qualification" label="Chuyên môn / bằng cấp">
+                        <Field id="doctor-qualification" label="Chuyên môn / bằng cấp" hint="Không bắt buộc.">
                           <input
                             name="qualification"
                             value={form.qualification}
@@ -732,6 +821,7 @@ export default function DoctorRegisterInvitationPage() {
                           id="doctor-yearsOfExperience"
                           label="Số năm kinh nghiệm"
                           error={errors.yearsOfExperience}
+                          hint="Nhập số năm tròn, ví dụ: 5."
                         >
                           <input
                             name="yearsOfExperience"

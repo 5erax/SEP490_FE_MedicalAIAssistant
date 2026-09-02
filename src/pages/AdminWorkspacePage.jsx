@@ -2498,7 +2498,12 @@ export default function AdminWorkspacePage({ initialSection = "overview", routeP
     setDoctorMessage(null);
     try {
       const response = await doctorInvitationsApi.revoke(lastInvitation.id);
-      setLastInvitation((current) => current ? { ...current, status: "Revoked" } : current);
+      setLastInvitation((current) => current ? {
+        ...current,
+        ...(response.data ?? {}),
+        status: "Revoked",
+        revokedAt: response.data?.revokedAt ?? new Date().toISOString(),
+      } : current);
       setDoctorMessage({
         type: "success",
         text: translateApiMessage(response.message, { fallback: "Đã thu hồi lời mời." }),

@@ -119,6 +119,18 @@ const EXACT_MESSAGES = Object.freeze({
     "Đăng ký tài khoản thành công.",
   "Doctor registration failed":
     "Đăng ký tài khoản bác sĩ thất bại.",
+  "Register doctor failed.":
+    "Chưa thể hoàn tất đăng ký bác sĩ. Vui lòng kiểm tra thông tin và thử lại.",
+  "Invitation link is invalid.":
+    "Liên kết đăng ký không hợp lệ.",
+  "Invitation link has expired.":
+    "Liên kết đăng ký đã hết hạn.",
+  "Invitation link has already been used.":
+    "Liên kết đăng ký này đã được sử dụng.",
+  "Invitation link has been revoked.":
+    "Lời mời đăng ký này đã được quản trị viên thu hồi.",
+  "Phone number is invalid.":
+    "Số điện thoại chưa đúng định dạng.",
   "Doctor account created. Status is pending until approved.":
     "Tài khoản bác sĩ đã được tạo và đang chờ quản trị viên phê duyệt.",
   "Invalid email or password.":
