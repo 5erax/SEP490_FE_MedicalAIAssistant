@@ -344,6 +344,15 @@
   box-shadow: 0 24px 56px rgba(20, 125, 120, 0.16);
 }
 
+.pricing-plan-card-sale {
+  border-width: 3px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(20, 125, 120, 0.15), transparent 34%),
+    linear-gradient(145deg, rgba(232, 245, 241, 0.96), transparent 54%),
+    var(--pricing-paper);
+  box-shadow: 0 28px 70px rgba(20, 125, 120, 0.23);
+}
+
 .pricing-plan-card::before {
   position: absolute;
   inset: 0 0 auto;
@@ -395,12 +404,27 @@
   text-align: center;
 }
 
+.plan-badge-sale {
+  border-width: 2px;
+  border-color: var(--pricing-teal);
+  background: var(--pricing-paper);
+  padding: 9px 14px;
+  font-size: 13px;
+  letter-spacing: 0.025em;
+  box-shadow: 0 8px 20px rgba(20, 125, 120, 0.14);
+}
+
 .plan-kicker {
   margin-bottom: 8px;
 }
 
 .pricing-plan-card-premium .plan-kicker {
   color: var(--pricing-teal-dark);
+}
+
+.pricing-plan-card-sale .plan-kicker {
+  font-size: 15px;
+  letter-spacing: 0.085em;
 }
 
 .pricing-plan-card h2 {
@@ -998,16 +1022,45 @@
 }
 
 .pricing-sale-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  margin: -4px 0 14px;
+  display: grid;
+  gap: 10px;
+  margin: 2px 0 22px;
+  border: 1px solid color-mix(in srgb, var(--pricing-teal) 42%, var(--pricing-line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--pricing-teal-pale) 82%, var(--pricing-paper));
+  padding: 15px 17px;
   color: var(--pricing-muted);
-  font-size: 0.82rem;
+  font-size: 0.94rem;
 }
 
-.pricing-sale-details strong {
+.pricing-sale-eligibility {
+  color: var(--pricing-ink-deep);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.pricing-sale-rewards,
+.pricing-sale-availability {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pricing-sale-rewards strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border-radius: 999px;
+  background: var(--pricing-paper);
   color: var(--pricing-teal-dark);
+  padding: 7px 11px;
+  font-size: 1rem;
+  box-shadow: 0 5px 15px rgba(20, 125, 120, 0.1);
+}
+
+.pricing-sale-availability span {
+  color: var(--pricing-ink);
+  font-weight: 750;
 }
 
 @media (prefers-reduced-motion: reduce) {

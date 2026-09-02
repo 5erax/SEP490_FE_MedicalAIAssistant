@@ -618,10 +618,10 @@ function PricingPage() {
               const countdown = offer?.endAt ? formatCountdown(offer.endAt, clockNow) : "";
 
               return (
-                <article className="pricing-plan-card pricing-plan-card-premium" key={paidPlan.id}>
+                <article className={`pricing-plan-card pricing-plan-card-premium${offer ? " pricing-plan-card-sale" : ""}`} key={paidPlan.id}>
                   <div className="pricing-plan-card-heading">
                     <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
-                    <span className="plan-badge">{badgeText}</span>
+                    <span className={`plan-badge${offer ? " plan-badge-sale" : ""}`}>{badgeText}</span>
                   </div>
                   <p className="plan-kicker">
                     {hasBonus ? `${baseCredit} + ${bonusCredit} lượt thưởng` : hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
@@ -632,17 +632,20 @@ function PricingPage() {
                     <strong>{formatPrice(effectivePrice)}</strong>
                   </div>
                   {offer && (
-                    <div className="pricing-sale-details">
-                      <span>{SALE_ELIGIBILITY_LABELS[offer.eligibilityType] || "Ưu đãi dành cho bạn"}</span>
-                      {hasPriceDiscount && <strong>Tiết kiệm {formatPrice(Number(offer.discountAmount) || originalPrice - effectivePrice)}</strong>}
-                      {hasBonus && <strong>Tặng thêm {bonusCredit} lượt</strong>}
-                      {offer.remainingRedemptions != null && <span>Còn {offer.remainingRedemptions} suất ưu đãi</span>}
-                      {countdown && <span>Kết thúc sau {countdown}</span>}
+                    <div className="pricing-sale-details" aria-label="Thông tin chương trình ưu đãi">
+                      <span className="pricing-sale-eligibility">{SALE_ELIGIBILITY_LABELS[offer.eligibilityType] || "Ưu đãi dành cho bạn"}</span>
+                      <div className="pricing-sale-rewards">
+                        {hasPriceDiscount && <strong>Tiết kiệm {formatPrice(Number(offer.discountAmount) || originalPrice - effectivePrice)}</strong>}
+                        {hasBonus && <strong>Tặng thêm {bonusCredit} lượt</strong>}
+                      </div>
+                      {(offer.remainingRedemptions != null || countdown) && (
+                        <div className="pricing-sale-availability">
+                          {offer.remainingRedemptions != null && <span>Còn {offer.remainingRedemptions} suất ưu đãi</span>}
+                          {countdown && <span>Kết thúc sau {countdown}</span>}
+                        </div>
+                      )}
                     </div>
                   )}
-                  <p className="plan-summary">
-                    Lượt dùng được cộng vào số dư hiện có và không hết hạn.
-                  </p>
                   <div className="plan-benefits">
                     <h3>Quyền lợi trong gói</h3>
                     <ul>
