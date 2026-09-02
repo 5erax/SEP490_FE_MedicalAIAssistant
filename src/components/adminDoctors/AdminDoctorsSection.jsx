@@ -152,10 +152,16 @@ export default function AdminDoctorsSection({
                 )}
               </span>
             </div>
-            {lastInvitation.expiresAt && (
+            {invitationStatus === "pending" && lastInvitation.expiresAt && (
               <span className="doctor-invitation-expiry">
                 <Clock3 size={15} aria-hidden="true" />
                 Hết hạn {new Date(lastInvitation.expiresAt).toLocaleString("vi-VN")}
+              </span>
+            )}
+            {invitationStatus === "revoked" && (
+              <span className="doctor-invitation-expiry is-revoked">
+                <ShieldCheck size={15} aria-hidden="true" />
+                Lời mời không còn hiệu lực
               </span>
             )}
             {invitationStatus !== "revoked" && (

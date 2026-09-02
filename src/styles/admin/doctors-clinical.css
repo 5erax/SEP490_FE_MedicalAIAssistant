@@ -233,6 +233,10 @@
   font-weight: 700;
 }
 
+.admin-operator .doctor-invitation-expiry.is-revoked {
+  color: var(--color-danger-strong, #8a3f2d);
+}
+
 .admin-operator .doctor-invitation-latest > .ui-button {
   margin-left: auto;
 }

@@ -1002,7 +1002,7 @@ test.describe("visual baseline", () => {
             )).toBeVisible();
           } else {
             await expect(page.getByText(
-              "3 đang hiển thị · 3 hồ sơ phù hợp",
+              "0 bộ lọc · 3 hồ sơ",
               { exact: true },
             )).toBeVisible();
           }

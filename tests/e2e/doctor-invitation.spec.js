@@ -349,6 +349,11 @@ for (const invitationCase of [
     message: "Invitation link has already been used.",
     expected: "Liên kết đăng ký này đã được sử dụng. Hãy đăng nhập hoặc đề nghị quản trị viên kiểm tra lại.",
   },
+  {
+    token: "revoked-token",
+    message: "Invitation link has been revoked.",
+    expected: "Lời mời đăng ký này đã được quản trị viên thu hồi. Vui lòng đề nghị gửi lời mời mới.",
+  },
 ]) {
   test(`${invitationCase.token} is rejected before rendering the form`, async ({ page }) => {
     await page.route(`**/api/doctor-invitations/validate?token=${invitationCase.token}`, (route) => route.fulfill({
@@ -369,6 +374,51 @@ for (const invitationCase of [
     await expect(page.getByRole("button", { name: "Hoàn tất đăng ký" })).toHaveCount(0);
   });
 }
+
+test("revoked invitation is rechecked before registration and stops the form", async ({ page }) => {
+  let validationCalls = 0;
+  let registerCalls = 0;
+  let revoked = false;
+
+  await page.route("**/api/doctor-invitations/validate?token=revoked-before-submit", (route) => {
+    validationCalls += 1;
+    const data = revoked
+      ? {
+          isValid: false,
+          message: "Invitation link has been revoked.",
+        }
+      : {
+          isValid: true,
+          email: "revoked.doctor@example.com",
+          doctorId: "11111111-1111-1111-1111-111111111111",
+          isLinkedToExistingDoctorProfile: true,
+          doctorName: "BS. Nguyễn Văn A",
+          suggestedFullName: "Nguyễn Văn A",
+        };
+
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ success: true, data }),
+    });
+  });
+  await page.route("**/api/doctor-invitations/register", (route) => {
+    registerCalls += 1;
+    return route.abort();
+  });
+
+  await page.goto("/register-doctor?token=revoked-before-submit", { waitUntil: "domcontentloaded" });
+  await page.getByLabel(/^Mật khẩu/).fill("Password123!");
+  await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
+  revoked = true;
+  await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
+
+  await expect(page.getByRole("heading", { name: "Không thể tiếp tục đăng ký." })).toBeFocused();
+  await expect(page.getByText(
+    "Lời mời đăng ký này đã được quản trị viên thu hồi. Vui lòng đề nghị gửi lời mời mới.",
+  )).toBeVisible();
+  expect(validationCalls).toBeGreaterThanOrEqual(2);
+  expect(registerCalls).toBe(0);
+});
 
 test("validation errors are associated with fields and move focus to the summary", async ({ page }) => {
   let registerCalls = 0;
@@ -455,9 +505,9 @@ test("backend validation errors are presented in plain Vietnamese", async ({ pag
   await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
   await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
 
-  await expect(page.getByText("Mật khẩu cần có ít nhất 8 ký tự.")).toBeVisible();
-  await expect(page.getByText("Mật khẩu cần có ít nhất một chữ số.")).toBeVisible();
-  await expect(page.getByText("Số điện thoại chưa đúng định dạng. Vui lòng kiểm tra lại.")).toBeVisible();
+  await expect(page.getByText("Mật khẩu phải có ít nhất 8 ký tự.")).toBeVisible();
+  await expect(page.getByText("Mật khẩu phải có ít nhất một chữ số.")).toBeVisible();
+  await expect(page.getByText("Số điện thoại chưa đúng định dạng.")).toBeVisible();
   await expect(page.getByText("Passwords must", { exact: false })).toHaveCount(0);
 });
 
@@ -490,7 +540,7 @@ test("invitation shows a countdown built from the validated expiresAt", async ({
   });
 
   await page.goto("/register-doctor?token=countdown-token", { waitUntil: "domcontentloaded" });
-  await expect(page.getByText("Lời mời còn hiệu lực", { exact: true })).toBeVisible();
+  await expect(page.getByText("Thời gian còn lại", { exact: true })).toBeVisible();
   const countdownText = await page.locator(".doctor-expiry-notice strong").innerText();
   expect(countdownText).toMatch(/^\d{2}:\d{2}$/);
 });

@@ -505,11 +505,11 @@
   }
 
   .admin-operator .doctor-invitation-card {
-    grid-template-columns: minmax(250px, 0.35fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 14px;
     border-radius: 16px;
-    padding: 14px 16px;
+    padding: 16px 18px;
   }
 
   .admin-operator .doctor-invitation-card-heading > div > p:last-child {
