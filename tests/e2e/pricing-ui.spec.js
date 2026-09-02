@@ -30,6 +30,15 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("subscription email CTA alias renders the current pricing offers", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.addInitScript(() => {
+    localStorage.setItem("medimate.auth", JSON.stringify({
+      accessToken: "test-patient-token",
+      email: "patient@example.com",
+      displayName: "Patient Test",
+      roles: ["Patient"],
+    }));
+  });
   let offersCalls = 0;
   await page.route("**/api/subscription-plans/offers", (route) => {
     offersCalls += 1;
@@ -51,27 +60,68 @@ test("subscription email CTA alias renders the current pricing offers", async ({
             eligibilityType: "all",
             discountAmount: 8000,
             remainingRedemptions: 7,
-            endAt: "2099-09-05T01:00:00Z",
+            endAt: new Date(Date.now() + (2 * 60 * 60 * 1000)).toISOString(),
           },
         }],
       }),
     });
   });
+  await page.route("**/api/user-subscriptions/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: [] }),
+  }));
+  await page.route("**/api/me/subscription-usage", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { quotaCode: "SERVICE_CREDIT", grantedCount: 0, usedCount: 0, reservedCount: 0, remainingCount: 0 } }),
+  }));
+  await page.route("**/api/users/me", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: { displayName: "Patient Test", roles: ["Patient"] } }),
+  }));
 
-  await page.goto("/subscription", { waitUntil: "domcontentloaded" });
+  await page.goto("/subscription?view=upgrade&returnTo=%2Fprofile", { waitUntil: "domcontentloaded" });
 
-  await expect(page).toHaveURL(/\/subscription$/);
-  await expect(page.getByRole("heading", { name: "Chọn gói phù hợp với cách bạn sử dụng MediMate" })).toBeVisible();
+  await expect(page).toHaveURL(/\/subscription\?view=upgrade/);
+  await expect(page.getByRole("region", { name: "Gói nâng cấp MediMate Plus" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Gói 10 lượt", exact: true })).toBeVisible();
-  await expect(page.getByText("Tiết kiệm 8.000 ₫", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tiết kiệm 8.000đ", { exact: true })).toBeVisible();
   await expect(page.getByText("Tặng thêm 10 lượt", { exact: true })).toBeVisible();
   await expect(page.getByText("Còn 7 suất ưu đãi", { exact: true })).toBeVisible();
   await expect(page.getByText("Lượt dùng được cộng vào số dư hiện có và không hết hạn.", { exact: true })).toHaveCount(0);
   await expect(page.locator(".plan-badge-sale")).toHaveCSS("font-size", "13px");
   await expect.poll(() => offersCalls).toBeGreaterThan(0);
 
+  const desktopLayout = await page.evaluate(() => {
+    const plans = document.querySelector(".plans-grid-focused")?.getBoundingClientRect();
+    const card = document.querySelector(".pricing-plan-card-sale")?.getBoundingClientRect();
+    const primary = document.querySelector(".pricing-plan-primary")?.getBoundingClientRect();
+    const sale = document.querySelector(".pricing-sale-details")?.getBoundingClientRect();
+    return {
+      cardBottom: card?.bottom ?? Infinity,
+      cardUsesWideLayout: Boolean(plans && card && card.width > plans.width / 2),
+      saleStartsAfterPrimary: Boolean(primary && sale && sale.left > primary.left),
+    };
+  });
+  expect(desktopLayout.cardBottom).toBeLessThanOrEqual(1080);
+  expect(desktopLayout.cardUsesWideLayout).toBe(true);
+  expect(desktopLayout.saleStartsAfterPrimary).toBe(true);
+
   await page.setViewportSize({ width: 320, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/subscription", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "Chọn gói phù hợp với cách bạn sử dụng MediMate" })).toBeVisible();
+  const publicCardLayout = await page.evaluate(() => {
+    const card = document.querySelector(".pricing-plan-card-sale");
+    const layout = card?.querySelector(".pricing-plan-offer-layout");
+    return {
+      columns: layout ? getComputedStyle(layout).gridTemplateColumns.split(" ").filter(Boolean).length : 0,
+      contentFits: Boolean(card && card.scrollWidth <= card.clientWidth),
+    };
+  });
+  expect(publicCardLayout.columns).toBe(1);
+  expect(publicCardLayout.contentFits).toBe(true);
 });
 
 test("pricing compares public access with every active SERVICE_CREDIT package", async ({ page }) => {
