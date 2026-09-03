@@ -56,6 +56,7 @@ const DEFAULT_NEARBY_RADIUS_KM = 5;
 const NEAREST_FACILITY_LIMIT = 1;
 const NEARBY_FACILITY_LIMIT = 20;
 const TOP_RATED_FACILITY_LIMIT = 5;
+const TOP_RATED_NEAREST_MODE = "top-rated-nearest";
 const NEAREST_RADIUS_STEPS_KM = [5, 10, 15, 20, 25, 50, 100, 250, 500, 1000];
 const DETAIL_TABS = [
   ["overview", "Tổng quan"],
@@ -278,6 +279,18 @@ function getDistanceKm(fromLocation, facility) {
   const a = Math.sin(dLat / 2) ** 2
     + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getNearestFacilityFromList(userLocation, facilities) {
+  if (!userLocation || !Array.isArray(facilities)) return null;
+
+  return facilities
+    .map((facility) => {
+      const distanceKm = facility.distanceKm ?? getDistanceKm(userLocation, facility);
+      return Number.isFinite(distanceKm) ? { facility, distanceKm } : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.distanceKm - right.distanceKm)[0]?.facility ?? null;
 }
 
 function getAverageRating(reviews = []) {
@@ -580,6 +593,7 @@ function NearbyClinicPage() {
   const requestedFacilityOpenedRef = useRef(false);
   const requestedDoctorOpenedRef = useRef(false);
   const lastFittedBoundsRef = useRef("");
+  const topRatedFacilitiesRef = useRef([]);
   const clinicalRestoreRequestRef = useRef({ sessionId: "", promise: null });
   const clinicalDepartmentAutoSelectedRef = useRef("");
 
@@ -799,6 +813,10 @@ function NearbyClinicPage() {
     const shouldLoadNearby = ["nearby", "nearest"].includes(facilityDiscoveryMode) && Boolean(userLocation);
     const shouldLoadTopRated = facilityDiscoveryMode === "top-rated";
 
+    if (facilityDiscoveryMode === TOP_RATED_NEAREST_MODE) {
+      return undefined;
+    }
+
     if (["nearby", "nearest"].includes(facilityDiscoveryMode) && !userLocation) {
       setFacilityDiscoveryMode("all");
       return undefined;
@@ -877,6 +895,9 @@ function NearbyClinicPage() {
             relations.map((relation) => relation.id),
           );
         });
+        if (shouldLoadTopRated) {
+          topRatedFacilitiesRef.current = data;
+        }
         setFacilities(data);
         setReviewsLoading(Boolean(data[0]));
         setSelectedFacility(null);
@@ -1062,6 +1083,8 @@ function NearbyClinicPage() {
   const mapFilterSummary = canUseMapFilter
     ? facilityDiscoveryMode === "all"
       ? ""
+      : facilityDiscoveryMode === TOP_RATED_NEAREST_MODE
+        ? "Gần nhất trong Top 5"
       : facilityDiscoveryMode === "nearest"
         ? "Gần nhất"
       : facilityDiscoveryMode === "nearby"
@@ -1500,11 +1523,34 @@ function NearbyClinicPage() {
     closeFacilitySidebarForFilter();
     setSelectedDepartmentId("all");
     setFacilityDiscoveryMode("all");
+    topRatedFacilitiesRef.current = [];
     setNearbyRadiusKm(DEFAULT_NEARBY_RADIUS_KM);
     setApiNotice("");
     setFilterPanelOpen(false);
     setDepartmentPickerOpen(false);
     syncMapUrl({});
+  };
+
+  const applyNearestFacilityFilter = () => {
+    closeFacilitySidebarForFilter();
+
+    if (facilityDiscoveryMode === "top-rated" || facilityDiscoveryMode === TOP_RATED_NEAREST_MODE) {
+      const topRatedFacilities = topRatedFacilitiesRef.current.length
+        ? topRatedFacilitiesRef.current
+        : facilities;
+      const nearestTopRatedFacility = getNearestFacilityFromList(userLocation, topRatedFacilities);
+      setFacilityDiscoveryMode(TOP_RATED_NEAREST_MODE);
+      setFacilities(nearestTopRatedFacility ? [nearestTopRatedFacility] : []);
+      setApiNotice(nearestTopRatedFacility
+        ? ""
+        : "Top 5 hiện chưa có bệnh viện nào có tọa độ hợp lệ để so sánh khoảng cách.");
+      setLoadingFacilities(false);
+      setFilterPanelOpen(false);
+      return;
+    }
+
+    setFacilityDiscoveryMode("nearest");
+    setFilterPanelOpen(false);
   };
 
   const backToHospitalList = () => closeFacilityDetail();
@@ -2300,13 +2346,9 @@ function NearbyClinicPage() {
                     </button>
                     <button
                       type="button"
-                      className={`map-filter-option${facilityDiscoveryMode === "nearest" ? " active" : ""}`}
-                      aria-pressed={facilityDiscoveryMode === "nearest"}
-                      onClick={() => {
-                        closeFacilitySidebarForFilter();
-                        setFacilityDiscoveryMode("nearest");
-                        setFilterPanelOpen(false);
-                      }}
+                      className={`map-filter-option${["nearest", TOP_RATED_NEAREST_MODE].includes(facilityDiscoveryMode) ? " active" : ""}`}
+                      aria-pressed={["nearest", TOP_RATED_NEAREST_MODE].includes(facilityDiscoveryMode)}
+                      onClick={applyNearestFacilityFilter}
                     >
                       <span aria-hidden="true"><MapPin size={17} /></span>
                       <span>
