@@ -216,6 +216,9 @@ test("result page shows all recognized indicators by default", async ({ page }) 
   await expect(astCard).toBeVisible();
   await expect(glucoseCard).toBeVisible();
   await expect(page.locator(".lab-test-result__overview-attention")).toHaveAttribute("data-active", "true");
+  await expect(page.locator(".lab-test-result__overview-counts > div")).toHaveCount(3);
+  await expect(page.getByText("Nguy cấp", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/cần được xem trước/i)).toHaveCount(0);
 });
 
 test("result page shows the complete overview directly without duplicated priority sections", async ({ page }) => {

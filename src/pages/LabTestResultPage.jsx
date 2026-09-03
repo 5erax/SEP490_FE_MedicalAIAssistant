@@ -28,8 +28,8 @@ const RESULT_STATUS_META = {
   normal: { label: "Bình thường", tone: "success" },
   high: { label: "Cao", tone: "warning" },
   low: { label: "Thấp", tone: "warning" },
-  criticalHigh: { label: "Cao nguy cấp", tone: "danger" },
-  criticalLow: { label: "Thấp nguy cấp", tone: "danger" },
+  criticalHigh: { label: "Cao", tone: "warning" },
+  criticalLow: { label: "Thấp", tone: "warning" },
 };
 
 function unwrapData(response) {
@@ -372,41 +372,18 @@ function getResultPriority(result) {
   return 3;
 }
 
-function getDeviationMagnitude(result) {
-  const deviation = Number(result?.deviationPercent);
-  return Number.isFinite(deviation) ? Math.abs(deviation) : -1;
-}
-
-function getPriorityResults(results) {
-  return results
-    .filter((result) => ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status)))
-    .map((result, index) => ({ result, index }))
-    .sort((left, right) => (
-      getResultPriority(left.result) - getResultPriority(right.result)
-      || getDeviationMagnitude(right.result) - getDeviationMagnitude(left.result)
-      || left.index - right.index
-    ))
-    .slice(0, 3);
-}
-
 function getFallbackOverviewSummary({
-  criticalCount,
   attentionCount,
   normalCount,
   unknownCount,
   totalCount,
-  priorityNames = [],
 }) {
   if (totalCount === 0) {
     return "Phiên phân tích đã hoàn tất nhưng chưa có đủ chỉ số để tạo nhận định tổng quan.";
   }
   const normalRatio = normalCount > 0 ? `${normalCount}/${totalCount} chỉ số nằm trong khoảng tham chiếu. ` : "";
-  const focusText = priorityNames.length > 0 ? ` ${priorityNames.join(", ")} cần được xem trước.` : "";
-  if (criticalCount > 0) {
-    return `${normalRatio}Có ${criticalCount} chỉ số ở mức nguy cấp.${focusText} Hãy trao đổi với nhân viên y tế, đặc biệt khi bạn đang có triệu chứng bất thường.`;
-  }
   if (attentionCount > 0) {
-    return `${normalRatio}Có ${attentionCount} chỉ số nằm ngoài khoảng tham chiếu.${focusText}`;
+    return `${normalRatio}Có ${attentionCount} chỉ số nằm ngoài khoảng tham chiếu.`;
   }
   if (normalCount > 0 && unknownCount === 0) {
     return "Các chỉ số đã nhận diện đều nằm trong khoảng tham chiếu. Bạn vẫn nên theo dõi sức khỏe và thực hiện theo hướng dẫn của bác sĩ nếu có.";
@@ -516,27 +493,21 @@ function ResultOverview({
   summaryError,
   normalCount,
   attentionCount,
-  criticalCount,
   unknownCount,
   onRetrySummary,
 }) {
   const totalCount = results.length;
-  const priorityResults = getPriorityResults(results);
-  const headline = criticalCount > 0
-    ? `Có ${criticalCount} chỉ số ở mức nguy cấp`
-    : attentionCount > 0
-      ? `Có ${attentionCount} chỉ số cần chú ý`
-      : normalCount > 0 && unknownCount === 0
-        ? "Các chỉ số đã nhận diện đang ổn định"
-        : "Kết quả cần được đối chiếu thêm";
-  const tone = criticalCount > 0 ? "danger" : attentionCount > 0 ? "warning" : "success";
+  const headline = attentionCount > 0
+    ? `Có ${attentionCount} chỉ số cần chú ý`
+    : normalCount > 0 && unknownCount === 0
+      ? "Các chỉ số đã nhận diện đang ổn định"
+      : "Kết quả cần được đối chiếu thêm";
+  const tone = attentionCount > 0 ? "warning" : "success";
   const fallbackSummary = getFallbackOverviewSummary({
-    criticalCount,
     attentionCount,
     normalCount,
     unknownCount,
     totalCount,
-    priorityNames: priorityResults.map(({ result }) => getResultSymbol(result)),
   });
 
   return (
@@ -552,7 +523,6 @@ function ResultOverview({
       </header>
 
       <div className="lab-test-result__overview-counts" aria-label={`Tổng cộng ${totalCount} chỉ số`}>
-        <div data-tone="danger" data-active={criticalCount > 0}><strong>{criticalCount}</strong><span>Nguy cấp</span></div>
         <div className="lab-test-result__overview-attention" data-tone="warning" data-active={attentionCount > 0}>
           <span>Cần chú ý</span><strong>{attentionCount}</strong>
         </div>
@@ -820,13 +790,10 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const sessionStatus = normalizeAsyncSessionStatus(session?.status);
   const isPending = !initialSession && loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);
   const normalCount = results.filter((result) => normalizeResultStatus(result?.status) === "normal").length;
-  const criticalCount = results.filter((result) => (
-    ["criticalHigh", "criticalLow"].includes(normalizeResultStatus(result?.status))
-  )).length;
   const attentionCount = results.filter((result) => (
-    ["high", "low"].includes(normalizeResultStatus(result?.status))
+    ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
   )).length;
-  const warningCount = criticalCount + attentionCount;
+  const warningCount = attentionCount;
   const unknownCount = results.length - normalCount - warningCount;
   const requestedResultFilter = resultFilter;
   const requestedFilterCount = {
@@ -1040,7 +1007,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
           summaryError={summaryError}
           normalCount={normalCount}
           attentionCount={attentionCount}
-          criticalCount={criticalCount}
           unknownCount={unknownCount}
           onRetrySummary={retrySummary}
         />

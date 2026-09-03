@@ -49,7 +49,7 @@ const CATEGORY_LABELS = {
   followUp: "Theo dõi",
 };
 
-const SESSION_POLL_INTERVAL_MS = 200;
+const SESSION_POLL_INTERVAL_MS = 1000;
 const SESSION_POLL_TIMEOUT_MS = 2 * 60 * 1000;
 
 function wait(milliseconds) {
@@ -313,14 +313,19 @@ export default function PreConsultationPage() {
       const matchedDepartmentId = departmentId && departments.some((item) => item.id === departmentId)
         ? departmentId
         : "";
-      const overriddenFacility = facilityOverride?.facilityId
-        ? {
-          facilityId: facilityOverride.facilityId,
-          facilityName: facilityOverride.facilityName
-            || facilities.find((facility) => String(facility.facilityId) === String(facilityOverride.facilityId))?.facilityName
-            || "",
-        }
+      const overriddenFacilityId = String(facilityOverride?.facilityId ?? "").trim();
+      const matchedOverriddenFacility = overriddenFacilityId
+        ? facilities.find((facility) => facility.facilityId === overriddenFacilityId)
         : null;
+      const overriddenFacility = overriddenFacilityId ? {
+        ...(matchedOverriddenFacility ?? facilityOverride),
+        facilityId: overriddenFacilityId,
+        facilityName: String(facilityOverride?.facilityName ?? matchedOverriddenFacility?.facilityName ?? "").trim()
+          || "Cơ sở đã chọn từ bản đồ",
+      } : null;
+      const availableFacilities = overriddenFacility
+        ? [overriddenFacility, ...facilities.filter((facility) => facility.facilityId !== overriddenFacilityId)]
+        : facilities;
 
       setForm((current) => ({
         ...current,
@@ -335,7 +340,7 @@ export default function PreConsultationPage() {
         symptoms: "",
         facilityId: overriddenFacility ? "" : current.facilityId,
       }));
-      setSuggestedFacilities(facilities);
+      setSuggestedFacilities(availableFacilities);
       setFacilityPickerOpen(false);
       setSuggestedSessionsOpen(false);
       setAutoFilledFromMap(source === "map");
@@ -361,10 +366,6 @@ export default function PreConsultationPage() {
     setFormErrors((current) => ({ ...current, facilityId: "" }));
     setFacilityPickerOpen(false);
     setAnnouncement(`Đã chọn cơ sở ${facility.facilityName}.`);
-  }
-
-  function clearSuggestedFacility() {
-    setForm((current) => ({ ...current, facilityId: "", facilityName: "" }));
   }
 
   function validateIntake() {
@@ -746,18 +747,29 @@ export default function PreConsultationPage() {
 
             <div className="pre-consultation-autofill-group">
               <div className={`pre-consultation-suggestion-field ${formErrors.facilityId ? "has-error" : ""}`}>
+                <span className="pre-consultation-field-label">Cơ sở khám dự kiến (bắt buộc)</span>
                 <button
                   type="button"
-                  className="ghost"
+                  className="ghost pre-consultation-facility-trigger"
                   onClick={toggleFacilityPicker}
                   aria-expanded={facilityPickerOpen}
                   disabled={suggestedFacilities.length === 0}
                   title={suggestedFacilities.length === 0 ? "Chọn một phiên gợi ý chuyên khoa trước để xem danh sách cơ sở" : undefined}
                 >
                   <Building2 size={16} aria-hidden="true" />
-                  Chọn bệnh viện gợi ý{suggestedFacilities.length > 0 ? ` (${suggestedFacilities.length})` : ""}
+                  <span className="pre-consultation-ghost-label">
+                    {form.facilityName || "Chọn cơ sở y tế"}
+                  </span>
+                  <span className="pre-consultation-facility-action">
+                    {form.facilityName ? "Thay đổi" : suggestedFacilities.length > 0 ? `${suggestedFacilities.length} lựa chọn` : "Chưa có lựa chọn"}
+                  </span>
                   <ChevronDown size={16} aria-hidden="true" className="pre-consultation-ghost-chevron" />
                 </button>
+                {autoFilledFromMap && form.facilityName && (
+                  <small className="pre-consultation-autofill-note">
+                    Đã chọn theo cơ sở bạn vừa xem trên Bản đồ. Bạn vẫn có thể thay đổi.
+                  </small>
+                )}
                 {facilityPickerOpen && suggestedFacilities.length > 0 && (
                   <div className="pre-consultation-suggestion-dropdown" role="listbox" aria-label="Danh sách cơ sở y tế được gợi ý trong phiên đã chọn">
                     <div className="pre-consultation-suggestion-list">
@@ -776,12 +788,6 @@ export default function PreConsultationPage() {
                       ))}
                     </div>
                   </div>
-                )}
-                {form.facilityName && (
-                  <span className="pre-consultation-selected-facility">
-                    Cơ sở dự kiến: <strong>{form.facilityName}</strong>
-                    <button type="button" onClick={clearSuggestedFacility} aria-label="Bỏ chọn cơ sở đã chọn">×</button>
-                  </span>
                 )}
                 {formErrors.facilityId && <small className="pre-consultation-field-error">{formErrors.facilityId}</small>}
               </div>

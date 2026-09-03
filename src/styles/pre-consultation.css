@@ -93,8 +93,9 @@
 .pre-consultation-suggestion-field.has-error .ghost { border-color: #c73931; }
 .pre-consultation-field-error { color: #a82d27; font-size: 12px; font-weight: 800; }
 .pre-consultation-ghost-chevron { margin-left: auto; color: var(--consult-muted) !important; }
-.pre-consultation-selected-facility { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; border-radius: 999px; padding: 8px 12px; color: var(--consult-teal-dark); background: #eaf7f4; font-size: 13px; font-weight: 750; }
-.pre-consultation-selected-facility button { display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: 50%; color: inherit; background: rgba(8, 127, 134, 0.14); font-size: 13px; line-height: 1; cursor: pointer; }
+.pre-consultation-facility-trigger .pre-consultation-ghost-label { color: var(--consult-ink); font-weight: 800; }
+.pre-consultation-facility-action { flex: 0 0 auto; margin-left: auto; color: var(--consult-teal-dark); font-size: 11px; font-weight: 800; }
+.pre-consultation-facility-trigger .pre-consultation-ghost-chevron { margin-left: 0; }
 
 .pre-consultation-autofill-group { display: grid; gap: 20px; border: 1px solid var(--consult-line); border-radius: 18px; padding: 20px; background: var(--paper, #fff); }
 

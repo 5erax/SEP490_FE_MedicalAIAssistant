@@ -298,7 +298,7 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
 
 .lab-test-result__overview-counts {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
@@ -324,10 +324,6 @@ html[data-theme="dark"] .lab-test-result__advice-header p {
   font-size: 11px;
   font-weight: 750;
   line-height: 1.35;
-}
-
-.lab-test-result__overview-counts > div[data-tone="danger"] strong {
-  color: var(--color-danger);
 }
 
 .lab-test-result__overview-counts > div[data-tone="warning"] strong {
