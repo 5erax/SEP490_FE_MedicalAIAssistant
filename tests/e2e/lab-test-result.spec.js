@@ -8,6 +8,14 @@ const ACCESS_TOKEN = [
   "",
 ].join(".");
 const SESSION_ID = "53a249cf-df0a-45a0-92e6-1efa3cb15d0b";
+const FULL_OVERVIEW_SUMMARY = [
+  "## Đánh giá tổng quan",
+  "Phần lớn chỉ số đang nằm trong khoảng tham chiếu, riêng AST cao hơn ngưỡng áp dụng.",
+  "",
+  "## Nội dung cần trao đổi với bác sĩ",
+  "- Đối chiếu AST với tiền sử sức khỏe và các thuốc đang sử dụng.",
+  "- Bác sĩ có thể cân nhắc thời điểm kiểm tra lại phù hợp.",
+].join("\n");
 
 function completedSession() {
   return {
@@ -113,6 +121,13 @@ async function prepareResultPage(page, {
       });
     }
 
+    if (pathname === `/api/lab-tests/${SESSION_ID}/summary`) {
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, data: FULL_OVERVIEW_SUMMARY }),
+      });
+    }
+
     if (pathname === "/api/users/me") {
       return route.fulfill({
         contentType: "application/json",
@@ -172,6 +187,7 @@ test("result page polls every second, stops when completed, and displays advice"
   const glucoseCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Glucose huyết" });
   await expect(astCard).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText("Men gan AST đang cao hơn khoảng tham chiếu và cần được theo dõi.", { exact: true })).toBeVisible();
+  await page.locator("#lab-result-advice").getByText("Sinh hoạt", { exact: true }).click();
   await expect(page.getByText("Hạn chế rượu bia và các chất kích thích.", { exact: true })).toBeVisible();
 
   await glucoseCard.click();
@@ -200,6 +216,20 @@ test("result page shows all recognized indicators by default", async ({ page }) 
   await expect(astCard).toBeVisible();
   await expect(glucoseCard).toBeVisible();
   await expect(page.locator(".lab-test-result__overview-attention")).toHaveAttribute("data-active", "true");
+});
+
+test("result page shows the complete overview directly without duplicated priority sections", async ({ page }) => {
+  await prepareResultPage(page, { completedOnCall: 1 });
+  await page.goto(`/records/${SESSION_ID}`, { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("heading", { name: "Đánh giá tổng quan" })).toBeVisible();
+  await expect(page.getByText("Phần lớn chỉ số đang nằm trong khoảng tham chiếu, riêng AST cao hơn ngưỡng áp dụng.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nội dung cần trao đổi với bác sĩ" })).toBeVisible();
+  await expect(page.getByText("Bác sĩ có thể cân nhắc thời điểm kiểm tra lại phù hợp.", { exact: true })).toBeVisible();
+
+  await expect(page.getByRole("heading", { name: "Điểm cần chú ý trước" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Việc nên làm tiếp theo" })).toHaveCount(0);
+  await expect(page.getByText("Xem phân tích tổng quan đầy đủ", { exact: true })).toHaveCount(0);
 });
 
 test("result page remains responsive and keyboard usable at 320px", async ({ page }) => {

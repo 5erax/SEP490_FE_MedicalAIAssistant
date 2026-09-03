@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
-  ArrowRight,
   CheckCircle2,
   CircleAlert,
   ClipboardCheck,
   FileText,
-  HeartPulse,
-  ListChecks,
   LoaderCircle,
   RefreshCw,
   ShieldCheck,
-  TriangleAlert,
 } from "lucide-react";
 import { Button, EmptyState, ErrorState } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -20,7 +16,7 @@ import { useServiceCredit } from "../state/useServiceCredit";
 import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
 import "../styles/user-workspace/lab-test-result.css";
 
-const POLL_INTERVAL_MS = 100;
+const POLL_INTERVAL_MS = 1000;
 const TERMINAL_SESSION_STATUSES = new Set([
   ASYNC_SESSION_STATUS.COMPLETED,
   ASYNC_SESSION_STATUS.FAILED,
@@ -393,47 +389,6 @@ function getPriorityResults(results) {
     .slice(0, 3);
 }
 
-function uniqueAdviceItems(values, limit = 3) {
-  const seen = new Set();
-  const items = [];
-
-  for (const value of values) {
-    for (const item of toAdviceItems(value)) {
-      const key = item.normalize("NFKC").toLocaleLowerCase("vi-VN").replace(/\s+/g, " ").trim();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      items.push(item);
-      if (items.length >= limit) return items;
-    }
-  }
-
-  return items;
-}
-
-function getOverviewActions(results) {
-  const abnormalResults = results.filter((result) => (
-    ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
-  ));
-  const actionSources = abnormalResults.length > 0 ? abnormalResults : results;
-  const adviceItems = actionSources.map(getResultAdvice).filter(Boolean);
-
-  return {
-    urgent: uniqueAdviceItems(adviceItems.map((advice) => (
-      typeof advice === "object" ? advice.warningSigns : null
-    ))),
-    followUp: uniqueAdviceItems(adviceItems.flatMap((advice) => (
-      typeof advice === "object"
-        ? [advice.followUpSuggestion, advice.followUpAdvice, advice.monitoringAdvice]
-        : []
-    ))),
-    habits: uniqueAdviceItems(adviceItems.flatMap((advice) => (
-      typeof advice === "object"
-        ? [advice.lifestyleAdvice, advice.nutritionalAdvice]
-        : []
-    ))),
-  };
-}
-
 function getFallbackOverviewSummary({
   criticalCount,
   attentionCount,
@@ -554,22 +509,6 @@ function FormattedSummary({ value }) {
   );
 }
 
-function OverviewActionGroup({ icon, title, items, tone = "default" }) {
-  if (items.length === 0) return null;
-
-  return (
-    <section className="lab-test-result__overview-action" data-tone={tone}>
-      <span aria-hidden="true">{icon}</span>
-      <div>
-        <h3>{title}</h3>
-        <ul>
-          {items.map((item) => <li key={`${title}-${item}`}>{item}</li>)}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
 function ResultOverview({
   results,
   summary,
@@ -580,11 +519,9 @@ function ResultOverview({
   criticalCount,
   unknownCount,
   onRetrySummary,
-  onSelectResult,
 }) {
   const totalCount = results.length;
   const priorityResults = getPriorityResults(results);
-  const actions = getOverviewActions(results);
   const headline = criticalCount > 0
     ? `Có ${criticalCount} chỉ số ở mức nguy cấp`
     : attentionCount > 0
@@ -601,9 +538,6 @@ function ResultOverview({
     totalCount,
     priorityNames: priorityResults.map(({ result }) => getResultSymbol(result)),
   });
-  const summaryPreview = fallbackSummary;
-  const hasExtendedSummary = Boolean(summary) && stripSummaryFormatting(summary).length > summaryPreview.length + 80;
-  const hasActions = actions.urgent.length + actions.followUp.length + actions.habits.length > 0;
 
   return (
     <section className="lab-test-result__overview" aria-labelledby="lab-overview-title">
@@ -628,7 +562,7 @@ function ResultOverview({
 
       <div className="lab-test-result__overview-summary" data-tone={tone}>
         <span className="lab-test-result__overview-summary-label">Nhận định chung</span>
-        <p>{summaryPreview}</p>
+        {summary ? <FormattedSummary value={summary} /> : <p>{fallbackSummary}</p>}
         {summaryStatus === "loading" && (
           <span className="lab-test-result__summary-state">
             <LoaderCircle className="lab-test-result__spinner" size={15} aria-hidden="true" />
@@ -644,76 +578,6 @@ function ResultOverview({
           </span>
         )}
       </div>
-
-      {priorityResults.length > 0 && (
-        <section className="lab-test-result__priority-section" aria-labelledby="lab-priority-title">
-          <div className="lab-test-result__section-title">
-            <TriangleAlert size={18} aria-hidden="true" />
-            <h3 id="lab-priority-title">Điểm cần chú ý trước</h3>
-          </div>
-          <div className="lab-test-result__priority-list">
-            {priorityResults.map(({ result, index }) => {
-              const key = getResultKey(result, index);
-              const meta = RESULT_STATUS_META[normalizeResultStatus(result?.status)];
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className="lab-test-result__priority-item"
-                  data-tone={meta.tone}
-                  onClick={() => onSelectResult(key, result)}
-                >
-                  <span>
-                    <strong>{getResultName(result)}</strong>
-                    <small>{getResultValue(result)} · {meta.label}</small>
-                  </span>
-                  <span className="lab-test-result__priority-link">
-                    Xem chi tiết <ArrowRight size={15} aria-hidden="true" />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {hasActions && (
-        <section className="lab-test-result__actions-section" aria-labelledby="lab-actions-title">
-          <div className="lab-test-result__section-title">
-            <ListChecks size={18} aria-hidden="true" />
-            <h3 id="lab-actions-title">Việc nên làm tiếp theo</h3>
-          </div>
-          <div className="lab-test-result__overview-actions">
-            <OverviewActionGroup
-              icon={<TriangleAlert size={18} />}
-              title="Dấu hiệu cần lưu ý"
-              items={actions.urgent}
-              tone="warning"
-            />
-            <OverviewActionGroup
-              icon={<HeartPulse size={18} />}
-              title="Nên theo dõi"
-              items={actions.followUp}
-            />
-            <OverviewActionGroup
-              icon={<CheckCircle2 size={18} />}
-              title="Sinh hoạt và dinh dưỡng"
-              items={actions.habits}
-              tone="success"
-            />
-          </div>
-        </section>
-      )}
-
-      {hasExtendedSummary && (
-        <details className="lab-test-result__full-summary">
-          <summary>
-            <FileText size={17} aria-hidden="true" />
-            <span>Xem phân tích tổng quan đầy đủ</span>
-          </summary>
-          <FormattedSummary value={summary} />
-        </details>
-      )}
 
       <p className="lab-test-result__overview-disclaimer">
         Tổng quan giúp bạn đọc kết quả dễ hơn, không thay thế chẩn đoán hoặc tư vấn trực tiếp từ bác sĩ.
@@ -1083,17 +947,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
     setSummaryRetryKey((current) => current + 1);
   }
 
-  function selectOverviewResult(key, result) {
-    setResultFilter("attention");
-    setVisibleResultLimit(9);
-    selectResult(key, result);
-    window.requestAnimationFrame(() => {
-      const target = document.getElementById("lab-result-advice");
-      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-      target?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-    });
-  }
-
   function changeResultFilter(nextFilter) {
     setResultFilter(nextFilter);
     setVisibleResultLimit(9);
@@ -1190,7 +1043,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
           criticalCount={criticalCount}
           unknownCount={unknownCount}
           onRetrySummary={retrySummary}
-          onSelectResult={selectOverviewResult}
         />
 
         <div className="lab-test-result__content-grid">
