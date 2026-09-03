@@ -82,7 +82,8 @@ test("subscription email CTA alias renders the current pricing offers", async ({
   await page.goto("/subscription?view=upgrade&returnTo=%2Fprofile", { waitUntil: "domcontentloaded" });
 
   await expect(page).toHaveURL(/\/subscription\?view=upgrade/);
-  await expect(page.getByRole("region", { name: "Gói nâng cấp MediMate Plus" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mở khóa gói MediMate Plus" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Miễn phí", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Gói 10 lượt", exact: true })).toBeVisible();
   await expect(page.getByText("Tiết kiệm 8.000đ", { exact: true })).toBeVisible();
   await expect(page.getByText("Tặng thêm 10 lượt", { exact: true })).toBeVisible();
@@ -92,18 +93,21 @@ test("subscription email CTA alias renders the current pricing offers", async ({
   await expect.poll(() => offersCalls).toBeGreaterThan(0);
 
   const desktopLayout = await page.evaluate(() => {
-    const plans = document.querySelector(".plans-grid-focused")?.getBoundingClientRect();
+    const title = document.querySelector(".pricing-hero h1")?.getBoundingClientRect();
+    const hero = document.querySelector(".pricing-hero-copy")?.getBoundingClientRect();
     const card = document.querySelector(".pricing-plan-card-sale")?.getBoundingClientRect();
     const primary = document.querySelector(".pricing-plan-primary")?.getBoundingClientRect();
     const sale = document.querySelector(".pricing-sale-details")?.getBoundingClientRect();
     return {
+      titleHeight: title?.height ?? Infinity,
       cardBottom: card?.bottom ?? Infinity,
-      cardUsesWideLayout: Boolean(plans && card && card.width > plans.width / 2),
+      leftAlignmentDelta: hero && card ? Math.abs(hero.left - card.left) : Infinity,
       saleStartsAfterPrimary: Boolean(primary && sale && sale.left > primary.left),
     };
   });
+  expect(desktopLayout.titleHeight).toBeLessThan(140);
   expect(desktopLayout.cardBottom).toBeLessThanOrEqual(1080);
-  expect(desktopLayout.cardUsesWideLayout).toBe(true);
+  expect(desktopLayout.leftAlignmentDelta).toBeLessThanOrEqual(2);
   expect(desktopLayout.saleStartsAfterPrimary).toBe(true);
 
   await page.setViewportSize({ width: 320, height: 800 });
