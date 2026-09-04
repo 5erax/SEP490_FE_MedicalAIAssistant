@@ -654,13 +654,9 @@ export default function FacilityMap({
 }) {
   const popupActionRef = useRef(null);
   const markerRefs = useRef(new globalThis.Map());
-  const [departmentDescriptionOpen, setDepartmentDescriptionOpen] = useState(false);
+  const [departmentDescriptionOpen, setDepartmentDescriptionOpen] = useState(true);
   const recommendedDepartment = recommendationContext?.recommendedDepartment;
   const confidence = confidencePercent(recommendedDepartment?.confidenceScore);
-
-  useEffect(() => {
-    setDepartmentDescriptionOpen(false);
-  }, [recommendedDepartment?.departmentId]);
 
   useEffect(() => {
     if (!selectedFacility?.hasValidCoordinates) return undefined;
