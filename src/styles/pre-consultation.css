@@ -23,7 +23,7 @@
   border-radius: 20px;
   padding: 32px 36px;
   color: #fff;
-  background: linear-gradient(120deg, var(--consult-teal-dark) 0%, var(--consult-teal-dark) 55%, var(--consult-teal) 100%);
+  background: linear-gradient(120deg, var(--color-info-strong) 0%, var(--color-info-strong) 55%, var(--color-info) 100%);
   box-shadow: 0 24px 50px rgba(5, 97, 106, 0.28);
 }
 
@@ -336,7 +336,7 @@
   .pre-consultation-hero { gap: 20px; border-radius: 20px; padding: 23px 20px; }
   .pre-consultation-hero-main { grid-template-columns: 1fr; }
   .pre-consultation-hero-icon { display: none; }
-  .pre-consultation-title { font-size: 34px; }
+  .pre-consultation-title { font-size: clamp(32px, 4vw, 48px); }
   .pre-consultation-stepper { border-radius: 16px; }
   .pre-consultation-stepper li { min-width: 62px; padding: 11px 7px; }
   .pre-consultation-stepper li > span { width: 31px; height: 31px; flex-basis: 31px; }
