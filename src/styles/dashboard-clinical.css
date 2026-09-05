@@ -10,9 +10,7 @@
   --clinical-warning-bg: #fff4ee;
   min-height: calc(100svh - 76px);
   overflow: visible;
-  background:
-    radial-gradient(circle at 84% 8%, rgba(155, 215, 195, 0.18), transparent 27%),
-    linear-gradient(180deg, #f7fbfa 0%, #eef7f4 100%);
+  background: transparent;
   color: var(--clinical-ink);
   padding: 12px 0 72px;
 }
