@@ -36,10 +36,6 @@
 .pre-consultation-hero-note strong { font-size: 14px; }
 .pre-consultation-hero-note small { color: #fff; line-height: 1.35; }
 
-.pre-consultation-view-tabs { display: inline-grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); margin-top: 20px; border: 1px solid var(--consult-line); border-radius: 13px; padding: 4px; background: #f4f8f7; }
-.pre-consultation-view-tabs button { min-height: 44px; border: 0; border-radius: 9px; padding: 0 18px; color: #49625f; background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
-.pre-consultation-view-tabs button[aria-selected="true"] { color: #fff; background: var(--consult-teal-dark); box-shadow: 0 5px 12px rgba(7, 95, 102, 0.16); }
-
 .pre-consultation-stepper {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -320,8 +316,6 @@
   .pre-consultation-page { width: calc(100% - 20px); padding: 12px 0 calc(var(--patient-safe-bottom, 82px) + 24px); }
   .pre-consultation-hero { gap: 20px; border-radius: 20px; padding: 23px 20px; }
   .pre-consultation-title { font-size: 34px; }
-  .pre-consultation-view-tabs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
-  .pre-consultation-view-tabs button { padding: 0 10px; }
   .pre-consultation-stepper { border-radius: 16px; }
   .pre-consultation-stepper li { min-width: 62px; padding: 11px 7px; }
   .pre-consultation-stepper li > span { width: 31px; height: 31px; flex-basis: 31px; }
@@ -358,5 +352,5 @@
 }
 
 @media (forced-colors: active) {
-  .pre-consultation-hero, .pre-consultation-actions .primary, .pre-consultation-section-head > span, .pre-consultation-view-tabs button[aria-selected="true"], .consultation-session-card[aria-pressed="true"] { border: 2px solid ButtonText; }
+  .pre-consultation-hero, .pre-consultation-actions .primary, .pre-consultation-section-head > span, .consultation-session-card[aria-pressed="true"] { border: 2px solid ButtonText; }
 }

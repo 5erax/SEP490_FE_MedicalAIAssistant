@@ -103,8 +103,8 @@ function getStatusMeta(status) {
   return STATUS_META[normalized] ?? { label: "Chưa xác định", tone: "unknown" };
 }
 
-export default function PreConsultationHistory({ onStartNew }) {
-  const [open, setOpen] = useState(true);
+export default function PreConsultationHistory({ onStartNew, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageData, setPageData] = useState({ items: [], totalPages: 1, totalCount: 0 });
   const [listStatus, setListStatus] = useState("loading");
@@ -225,6 +225,11 @@ export default function PreConsultationHistory({ onStartNew }) {
     setChecklistStatus("idle");
     setChecklistError("");
     setPageNumber(nextPage);
+  }
+
+  function startNewConsultation() {
+    setOpen(false);
+    onStartNew?.();
   }
 
   const groupedQuestions = useMemo(() => {
@@ -407,7 +412,7 @@ export default function PreConsultationHistory({ onStartNew }) {
             </div>
 
             <footer className="analysis-history-panel-footer">
-              <Button type="button" className="analysis-history-continue" onClick={onStartNew}>
+              <Button type="button" className="analysis-history-continue" onClick={startNewConsultation}>
                 Tiếp tục tư vấn
                 <ArrowRight size={16} aria-hidden="true" />
               </Button>

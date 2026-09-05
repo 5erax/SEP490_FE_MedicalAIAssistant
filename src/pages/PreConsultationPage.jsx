@@ -28,11 +28,6 @@ import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyn
 import PreConsultationHistory from "../components/preConsultation/PreConsultationHistory";
 import "../styles/pre-consultation.css";
 
-const VIEW_TABS = [
-  { id: "new", label: "Tư vấn mới" },
-  { id: "history", label: "Lịch sử tư vấn" },
-];
-
 const STEPS = [
   { label: "Thông tin", hint: "Buổi khám", icon: Stethoscope },
   { label: "Chuẩn bị", hint: "Checklist", icon: ClipboardCheck },
@@ -155,7 +150,6 @@ function normalizeQuestions(value) {
 
 export default function PreConsultationPage() {
   const { refresh: refreshServiceCredit } = useServiceCredit();
-  const [activeView, setActiveView] = useState("new");
   const [step, setStep] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [departmentsStatus, setDepartmentsStatus] = useState("loading");
@@ -186,7 +180,6 @@ export default function PreConsultationPage() {
   const createInFlightRef = useRef(false);
   const terminalBalanceRefreshRef = useRef("");
   const sessionPollRef = useRef({ sessionId: "", promise: null });
-  const viewTabRefs = useRef([]);
   const autoAppliedSessionRef = useRef(false);
 
   useEffect(() => {
@@ -563,30 +556,10 @@ export default function PreConsultationPage() {
     isReminderEnabled: reminderEnabled === true,
   };
 
-  function selectView(view, moveFocus = false) {
-    setActiveView(view);
-    setError("");
-    if (moveFocus) {
-      const index = VIEW_TABS.findIndex((tab) => tab.id === view);
-      window.requestAnimationFrame(() => viewTabRefs.current[index]?.focus());
-    }
-  }
-
-  function handleViewTabKeyDown(event, currentIndex) {
-    let nextIndex;
-    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % VIEW_TABS.length;
-    else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + VIEW_TABS.length) % VIEW_TABS.length;
-    else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = VIEW_TABS.length - 1;
-    else return;
-
-    event.preventDefault();
-    selectView(VIEW_TABS[nextIndex].id, true);
-  }
-
   function startNewFromHistory() {
     setStep(0);
-    selectView("new", true);
+    setError("");
+    window.requestAnimationFrame(() => headingRef.current?.focus());
   }
 
   return (
@@ -605,27 +578,7 @@ export default function PreConsultationPage() {
         </div>
       </header>
 
-      <div className="pre-consultation-view-tabs" role="tablist" aria-label="Chọn nội dung tư vấn trước khám">
-        {VIEW_TABS.map((tab, index) => (
-          <button
-            key={tab.id}
-            ref={(element) => { viewTabRefs.current[index] = element; }}
-            id={`pre-consultation-tab-${tab.id}`}
-            type="button"
-            role="tab"
-            aria-selected={activeView === tab.id}
-            aria-controls={`pre-consultation-panel-${tab.id}`}
-            tabIndex={activeView === tab.id ? 0 : -1}
-            onClick={() => selectView(tab.id)}
-            onKeyDown={(event) => handleViewTabKeyDown(event, index)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeView === "new" ? (
-        <div id="pre-consultation-panel-new" role="tabpanel" aria-labelledby="pre-consultation-tab-new">
+      <PreConsultationHistory onStartNew={startNewFromHistory} />
 
       <ol className="pre-consultation-stepper" aria-label="Tiến trình tư vấn trước khám">
         {STEPS.map((item, index) => {
@@ -939,12 +892,6 @@ export default function PreConsultationPage() {
           </section>
         )}
       </section>
-        </div>
-      ) : (
-        <div id="pre-consultation-panel-history" role="tabpanel" aria-labelledby="pre-consultation-tab-history">
-          <PreConsultationHistory onStartNew={startNewFromHistory} />
-        </div>
-      )}
     </div>
   );
 }
