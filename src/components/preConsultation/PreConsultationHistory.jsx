@@ -3,14 +3,18 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
-  ChevronRight,
+  Clock3,
   FileText,
+  History,
   LoaderCircle,
   RefreshCw,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, useOverlayFocus } from "../ui";
 import { checklistItemsApi, consultationSessionsApi } from "../../services/api";
 import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../../utils/asyncSessionStatus";
+import "../../styles/analysis-history-panel.css";
 
 const PAGE_SIZE = 6;
 const CATEGORY_LABELS = {
@@ -100,6 +104,7 @@ function getStatusMeta(status) {
 }
 
 export default function PreConsultationHistory({ onStartNew }) {
+  const [open, setOpen] = useState(true);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageData, setPageData] = useState({ items: [], totalPages: 1, totalCount: 0 });
   const [listStatus, setListStatus] = useState("loading");
@@ -112,8 +117,17 @@ export default function PreConsultationHistory({ onStartNew }) {
   const [checklistStatus, setChecklistStatus] = useState("idle");
   const [checklistError, setChecklistError] = useState("");
   const detailHeadingRef = useRef(null);
+  const panelRef = useRef(null);
+  const closeButtonRef = useRef(null);
   const detailRequestRef = useRef(0);
   const checklistRequestRef = useRef(0);
+
+  useOverlayFocus({
+    active: open,
+    containerRef: panelRef,
+    initialFocusRef: closeButtonRef,
+    onClose: () => setOpen(false),
+  });
 
   const loadSessions = useCallback(async () => {
     setListStatus("loading");
@@ -225,77 +239,106 @@ export default function PreConsultationHistory({ onStartNew }) {
 
   return (
     <section className="consultation-history" aria-labelledby="consultation-history-title">
-      <header className="consultation-history-header">
-        <div>
-          <span className="consultation-history-kicker">Hồ sơ đã lưu</span>
-          <h2 id="consultation-history-title">Lịch sử tư vấn trước khám</h2>
-          <p>Xem lại thông tin buổi khám và những câu hỏi đã chuẩn bị cho bác sĩ.</p>
-        </div>
-        <button type="button" className="consultation-history-refresh" onClick={loadSessions} disabled={listStatus === "loading"}>
-          <RefreshCw size={17} className={listStatus === "loading" ? "spin" : ""} aria-hidden="true" />
-          Tải lại
-        </button>
-      </header>
+      <Button
+        type="button"
+        tone="secondary"
+        size="sm"
+        className="analysis-history-button consultation-history-launch"
+        aria-haspopup="dialog"
+        aria-controls="pre-consultation-history-panel"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+      >
+        <History size={16} aria-hidden="true" />
+        Lịch sử tư vấn trước khám
+      </Button>
 
-      <div className="consultation-history-shell">
-        <section className="consultation-session-list" aria-label="Danh sách phiên tư vấn" aria-busy={listStatus === "loading"}>
-          <div className="consultation-session-list-head">
-            <div><strong>Các phiên gần đây</strong><small>{pageData.totalCount} phiên tư vấn</small></div>
-            <span>Trang {pageNumber}/{pageData.totalPages}</span>
-          </div>
+      {open && (
+        <div className="analysis-history-drawer consultation-history-drawer">
+          <div className="analysis-history-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />
+          <aside
+            className="analysis-history-panel consultation-history-drawer-panel"
+            id="pre-consultation-history-panel"
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="consultation-history-title"
+            aria-busy={listStatus === "loading" || detailStatus === "loading"}
+            tabIndex={-1}
+          >
+            <header className="analysis-history-panel-header">
+              <div>
+                <span><Clock3 size={15} aria-hidden="true" /> Lịch sử</span>
+                <h2 id="consultation-history-title">Lịch sử tư vấn trước khám</h2>
+              </div>
+              <button ref={closeButtonRef} type="button" className="analysis-history-close" onClick={() => setOpen(false)} aria-label="Đóng lịch sử tư vấn trước khám">
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
 
-          {listStatus === "loading" ? (
-            <div className="consultation-history-state" role="status"><LoaderCircle className="spin" aria-hidden="true" /><span>Đang tải lịch sử…</span></div>
-          ) : listStatus === "error" ? (
-            <div className="consultation-history-state error" role="alert"><strong>Chưa tải được lịch sử</strong><span>{listError}</span><button type="button" onClick={loadSessions}>Thử lại</button></div>
-          ) : pageData.items.length === 0 ? (
-            <div className="consultation-history-state empty"><FileText aria-hidden="true" /><strong>Chưa có phiên tư vấn</strong><span>Phiên đã tạo sẽ được lưu tại đây để bạn xem lại.</span><button type="button" onClick={onStartNew}>Tạo phiên đầu tiên</button></div>
-          ) : (
-            <div className="consultation-session-cards">
-              {pageData.items.map((item) => {
-                const statusMeta = getStatusMeta(item.status);
-                const sessionId = item.sessionId ?? item.id;
-                const selected = sessionId === selectedId;
-                return (
-                  <button
-                    key={sessionId}
-                    type="button"
-                    className={`consultation-session-card ${selected ? "selected" : ""}`}
-                    aria-pressed={selected}
-                    onClick={() => loadDetail(sessionId)}
-                  >
-                    <span className={`consultation-status ${statusMeta.tone}`}>{statusMeta.label}</span>
-                    <strong>{item.departmentName || "Chuyên khoa chưa cập nhật"}</strong>
-                    <span className="consultation-session-time"><CalendarDays size={15} aria-hidden="true" />{formatDateTime(item.appointmentTime, "Chưa có lịch hẹn")}</span>
-                    <span className="consultation-session-symptoms">{item.symptoms || "Chưa có nội dung cần tư vấn"}</span>
-                    <span className="consultation-session-open">Xem hồ sơ <ChevronRight size={16} aria-hidden="true" /></span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+            <div className="analysis-history-panel-body">
+              <div className="consultation-history-drawer-summary">
+                <strong>{pageData.totalCount} phiên tư vấn</strong>
+                <button type="button" className="consultation-history-refresh" onClick={loadSessions} disabled={listStatus === "loading"}>
+                  <RefreshCw size={17} className={listStatus === "loading" ? "spin" : ""} aria-hidden="true" />
+                  Tải lại
+                </button>
+              </div>
 
-          {pageData.totalPages > 1 && (
-            <nav className="consultation-history-pagination" aria-label="Phân trang lịch sử tư vấn">
-              <button type="button" disabled={pageNumber <= 1 || listStatus === "loading"} onClick={() => changePage(pageNumber - 1)}><ArrowLeft size={15} aria-hidden="true" /> Trang trước</button>
-              <button type="button" disabled={pageNumber >= pageData.totalPages || listStatus === "loading"} onClick={() => changePage(pageNumber + 1)}>Trang sau <ArrowRight size={15} aria-hidden="true" /></button>
-            </nav>
-          )}
-        </section>
+              {listStatus === "loading" ? (
+                <div className="analysis-history-state" role="status"><LoaderCircle className="analysis-history-spin" aria-hidden="true" /><p>Đang tải lịch sử...</p></div>
+              ) : listStatus === "error" ? (
+                <div className="analysis-history-state error" role="alert"><p>{listError}</p><Button type="button" tone="secondary" size="sm" onClick={loadSessions}>Thử lại</Button></div>
+              ) : pageData.items.length === 0 ? (
+                <div className="analysis-history-empty"><FileText aria-hidden="true" /><strong>Chưa có phiên tư vấn</strong><p>Phiên đã tạo sẽ được lưu tại đây để bạn xem lại.</p></div>
+              ) : (
+                <div className="analysis-history-list consultation-history-drawer-list">
+                  {pageData.items.map((item) => {
+                    const statusMeta = getStatusMeta(item.status);
+                    const sessionId = item.sessionId ?? item.id;
+                    const selected = sessionId === selectedId;
+                    return (
+                      <article className={selected ? "active" : ""} key={sessionId}>
+                        <div>
+                          <strong>{item.departmentName || "Chuyên khoa chưa cập nhật"}</strong>
+                          <span>{formatDateTime(item.appointmentTime, "Chưa có lịch hẹn")}</span>
+                          <small>Tư vấn trước khám · {statusMeta.label}</small>
+                        </div>
+                        <Button type="button" tone="secondary" size="sm" onClick={() => loadDetail(sessionId)}>
+                          Chi tiết
+                        </Button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
 
-        <article
-          className="consultation-session-detail"
-          aria-busy={detailStatus === "loading"}
-          aria-label="Chi tiết phiên tư vấn"
-          tabIndex="0"
-        >
-          {detailStatus === "idle" ? (
-            <div className="consultation-detail-placeholder"><FileText size={30} aria-hidden="true" /><strong>Chọn một phiên để xem hồ sơ</strong><p>Thông tin buổi khám và câu hỏi dành cho bác sĩ sẽ hiển thị tại đây.</p></div>
-          ) : detailStatus === "loading" ? (
-            <div className="consultation-history-state" role="status"><LoaderCircle className="spin" aria-hidden="true" /><span>Đang mở hồ sơ tư vấn…</span></div>
-          ) : detailStatus === "error" ? (
-            <div className="consultation-history-state error" role="alert"><strong>Chưa mở được hồ sơ</strong><span>{detailError}</span><button type="button" onClick={() => loadDetail(selectedId)}>Thử lại</button></div>
-          ) : (
+              {pageData.totalPages > 1 && (
+                <nav className="consultation-history-pagination" aria-label="Phân trang lịch sử tư vấn">
+                  <button type="button" disabled={pageNumber <= 1 || listStatus === "loading"} onClick={() => changePage(pageNumber - 1)}><ArrowLeft size={15} aria-hidden="true" /> Trang trước</button>
+                  <span>Trang {pageNumber}/{pageData.totalPages}</span>
+                  <button type="button" disabled={pageNumber >= pageData.totalPages || listStatus === "loading"} onClick={() => changePage(pageNumber + 1)}>Trang sau <ArrowRight size={15} aria-hidden="true" /></button>
+                </nav>
+              )}
+
+              {detailStatus === "idle" && (
+                <div className="analysis-history-empty consultation-detail-placeholder"><FileText size={30} aria-hidden="true" /><strong>Chọn một phiên để xem hồ sơ</strong><p>Thông tin buổi khám và câu hỏi dành cho bác sĩ sẽ hiển thị tại đây.</p></div>
+              )}
+
+              {detailStatus === "loading" && (
+                <div className="analysis-history-state" role="status"><LoaderCircle className="analysis-history-spin" aria-hidden="true" /><p>Đang mở hồ sơ tư vấn...</p></div>
+              )}
+
+              {detailStatus === "error" && (
+                <div className="analysis-history-state error" role="alert"><p>{detailError}</p><Button type="button" tone="secondary" size="sm" onClick={() => loadDetail(selectedId)}>Thử lại</Button></div>
+              )}
+
+              {detailStatus === "ready" && (
+                <article
+                  className="analysis-history-detail consultation-session-detail"
+                  aria-label="Chi tiết phiên tư vấn"
+                  tabIndex="0"
+                >
             <div className="consultation-detail-content">
               <header className="consultation-detail-header">
                 <div>
@@ -359,9 +402,19 @@ export default function PreConsultationHistory({ onStartNew }) {
                 )) : <p className="consultation-detail-empty-copy">Phiên này chưa có câu hỏi để hiển thị.</p>}
               </section>
             </div>
-          )}
-        </article>
-      </div>
+                </article>
+              )}
+            </div>
+
+            <footer className="analysis-history-panel-footer">
+              <Button type="button" className="analysis-history-continue" onClick={onStartNew}>
+                Tiếp tục tư vấn
+                <ArrowRight size={16} aria-hidden="true" />
+              </Button>
+            </footer>
+          </aside>
+        </div>
+      )}
     </section>
   );
 }
