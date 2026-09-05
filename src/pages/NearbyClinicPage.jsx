@@ -2267,9 +2267,6 @@ function NearbyClinicPage() {
               <div className="map-search-empty-panel" role="status" aria-live="polite">
                 <strong>Không tìm thấy cơ sở phù hợp</strong>
                 <span>Thử nhập tên bệnh viện, phòng khám hoặc địa chỉ khác.</span>
-                <button type="button" onClick={() => { setSearchText(""); setSelectedFacility(null); }}>
-                  Xóa tìm kiếm
-                </button>
               </div>
             )}
           </div>

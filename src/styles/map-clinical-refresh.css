@@ -623,19 +623,6 @@
   line-height: 1.45;
 }
 
-.map-clinical-refresh .map-search-empty-panel button {
-  width: fit-content;
-  height: 34px;
-  border: 1px solid var(--map-line);
-  border-radius: 10px;
-  background: var(--map-teal-soft);
-  color: var(--map-teal-strong);
-  padding: 0 11px;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
 .map-clinical-refresh .map-top-search input {
   flex: 1 1 auto;
   min-width: 0;
