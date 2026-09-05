@@ -554,6 +554,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="studio-heading-actions specialty-heading-aside">
+            <ClinicalNote className="specialty-hero-note" title={CLINICAL_NOTES.scopeTitle}>{CLINICAL_NOTES.scope}</ClinicalNote>
             <Button
               type="button"
               tone="secondary"
@@ -570,8 +571,6 @@ export default function DashboardPage() {
           </div>
         </header>
         </div>
-
-        <ClinicalNote title={CLINICAL_NOTES.scopeTitle}>{CLINICAL_NOTES.scope}</ClinicalNote>
 
         <ol className="studio-flow" aria-label="Tiến trình tư vấn">
           {["Mô tả", "Làm rõ", "Kết quả"].map((label, index) => (

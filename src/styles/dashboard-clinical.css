@@ -100,6 +100,34 @@
   margin: 0;
 }
 
+.specialty-clinical-page .specialty-hero-note {
+  width: 100%;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+  padding: 13px 15px;
+}
+
+.specialty-clinical-page .studio-heading .specialty-hero-note .clinical-note-title,
+.specialty-clinical-page .studio-heading .specialty-hero-note .clinical-note-copy {
+  max-width: none;
+  margin: 0;
+  color: #fff;
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.specialty-clinical-page .studio-heading .specialty-hero-note .clinical-note-title {
+  font-weight: 800;
+}
+
+.specialty-clinical-page .studio-heading .specialty-hero-note .clinical-note-copy {
+  margin-top: 3px;
+  font-weight: 500;
+}
+
 .specialty-clinical-page .analysis-history-button {
   width: 100%;
   min-height: 44px;
