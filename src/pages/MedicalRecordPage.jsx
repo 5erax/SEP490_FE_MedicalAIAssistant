@@ -491,9 +491,24 @@ export default function MedicalRecordPage() {
           <h1>Đọc phiếu xét nghiệm rõ ràng hơn</h1>
           <p>Tải ảnh hoặc PDF phiếu xét nghiệm. MediMate đối chiếu các chỉ số và cung cấp thông tin tham khảo.</p>
         </div>
-        <div className="records-hero-note">
-          <ShieldCheck size={21} aria-hidden="true" />
-          <div><strong>Dữ liệu sức khỏe nhạy cảm</strong><p>Chỉ tải tài liệu của bạn và kiểm tra kỹ trước khi gửi.</p></div>
+        <div className="records-hero-actions">
+          <Button
+            type="button"
+            tone="secondary"
+            size="sm"
+            className="analysis-history-button records-history-launch"
+            aria-haspopup="dialog"
+            aria-expanded={historyPanelOpen}
+            aria-controls="records-history-panel"
+            onClick={() => setHistoryPanelOpen(true)}
+          >
+            <History size={16} aria-hidden="true" />
+            Lịch sử xét nghiệm
+          </Button>
+          <div className="records-hero-note">
+            <ShieldCheck size={21} aria-hidden="true" />
+            <div><strong>Dữ liệu sức khỏe nhạy cảm</strong><p>Chỉ tải tài liệu của bạn và kiểm tra kỹ trước khi gửi.</p></div>
+          </div>
         </div>
       </header>
 
@@ -662,19 +677,6 @@ export default function MedicalRecordPage() {
           refreshKey={trendRefreshKey}
           onOpenSession={openHistorySession}
         />
-
-        <section className="records-library records-history-launch-section" aria-labelledby="records-history-title">
-          <Button
-            type="button"
-            className="analysis-history-button records-history-launch"
-            aria-expanded={historyPanelOpen}
-            aria-controls="records-history-panel"
-            onClick={() => setHistoryPanelOpen(true)}
-          >
-            <History size={20} aria-hidden="true" />
-            <span id="records-history-title">Lịch sử xét nghiệm</span>
-          </Button>
-        </section>
       </div>
 
       <LabTestHistoryPanel
