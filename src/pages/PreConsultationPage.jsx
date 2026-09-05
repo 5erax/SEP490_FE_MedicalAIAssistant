@@ -567,17 +567,22 @@ export default function PreConsultationPage() {
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
       <header className="pre-consultation-hero">
-        <div>
-          <span className="pre-consultation-eyebrow">Chuẩn bị trước buổi khám</span>
-          <p className="pre-consultation-title">Tư vấn trước khám</p>
-          <p className="pre-consultation-description">Ghi lại thông tin cần thiết, xem danh sách chuẩn bị và tổng hợp câu hỏi dành cho bác sĩ.</p>
+        <div className="pre-consultation-hero-main">
+          <span className="pre-consultation-hero-icon" aria-hidden="true">
+            <Stethoscope size={24} />
+          </span>
+          <div>
+            <span className="pre-consultation-eyebrow">Chuẩn bị trước buổi khám</span>
+            <p className="pre-consultation-title">Tư vấn trước khám</p>
+            <p className="pre-consultation-description">Ghi lại thông tin cần thiết, xem danh sách chuẩn bị và tổng hợp câu hỏi dành cho bác sĩ.</p>
+          </div>
         </div>
         <div className="pre-consultation-hero-actions">
-          <PreConsultationHistory onStartNew={startNewFromHistory} />
           <div className="pre-consultation-hero-note">
             <ShieldCheck size={24} aria-hidden="true" />
             <span><strong>5 bước ngắn gọn</strong><small>Bạn được kiểm tra lại thông tin trước khi hoàn thành.</small></span>
           </div>
+          <PreConsultationHistory onStartNew={startNewFromHistory} />
         </div>
       </header>
 
