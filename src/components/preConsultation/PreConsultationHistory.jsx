@@ -1,8 +1,7 @@
 import {
   ArrowLeft,
   ArrowRight,
-  CalendarDays,
-  CheckCircle2,
+  Check,
   Clock3,
   FileText,
   History,
@@ -18,14 +17,6 @@ import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../../utils/a
 import "../../styles/analysis-history-panel.css";
 
 const PAGE_SIZE = 6;
-const CATEGORY_LABELS = {
-  diagnosis: "Chẩn đoán",
-  tests: "Xét nghiệm",
-  treatment: "Điều trị",
-  lifestyle: "Sinh hoạt",
-  followUp: "Theo dõi",
-};
-
 const CATEGORY_ALIASES = {
   diagnosis: "diagnosis",
   tests: "tests",
@@ -246,16 +237,6 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
     onStartNew?.();
   }
 
-  const groupedQuestions = useMemo(() => {
-    const groups = new Map();
-    for (const question of normalizeQuestions(detail?.questions)) {
-      const key = question.category || "other";
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(question);
-    }
-    return Array.from(groups.entries());
-  }, [detail?.questions]);
-
   return (
     <section className="consultation-history" aria-labelledby="consultation-history-title">
       <Button
@@ -369,7 +350,7 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
               <div>
                 <span className="consultation-step-badge">5</span>
                 <div>
-                  <h2 id="consultation-detail-title">Chi tiết tư vấn trước khám</h2>
+                  <h2 id="consultation-detail-title" ref={detailHeadingRef} tabIndex="-1">Chi tiết tư vấn trước khám</h2>
                   <p>Xem lại nội dung đã chuẩn bị trước khi trao đổi với bác sĩ.</p>
                 </div>
               </div>
@@ -390,66 +371,42 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
               {detailStatus === "ready" && (
                 <article className="analysis-history-detail consultation-session-detail" aria-label="Chi tiết phiên tư vấn" tabIndex="0">
                   <div className="consultation-detail-content">
-                    <header className="consultation-detail-header">
-                      <div>
-                        <span className="consultation-history-kicker">Hồ sơ tư vấn</span>
-                        <h3 ref={detailHeadingRef} tabIndex="-1">{detail?.departmentName || "Tư vấn trước khám"}</h3>
-                        <p>Tạo lúc {formatDateTime(detail?.createdAt)}</p>
-                      </div>
-                      <span className={`consultation-status ${getStatusMeta(detail?.status).tone}`}>{getStatusMeta(detail?.status).label}</span>
-                    </header>
-
                     {normalizeAsyncSessionStatus(detail?.status, "") === ASYNC_SESSION_STATUS.PROCESSING && (
                       <div className="consultation-detail-processing" role="status"><LoaderCircle className="spin" size={18} aria-hidden="true" /><span>Đang hoàn thiện câu hỏi. Hồ sơ sẽ tự cập nhật.</span></div>
                     )}
 
-                    <div className="consultation-detail-appointment">
-                      <span className="consultation-detail-appointment-icon"><CalendarDays size={20} aria-hidden="true" /></span>
-                      <span><small>Lịch khám dự kiến</small><strong>{formatDateTime(detail?.appointmentTime, "Chưa có lịch hẹn")}</strong></span>
-                      <span className="consultation-detail-counts" aria-label="Tổng quan hồ sơ">
-                        <strong>{checklist.length}</strong> mục chuẩn bị
-                        <i aria-hidden="true" />
-                        <strong>{normalizeQuestions(detail?.questions).length}</strong> câu hỏi
-                      </span>
-                    </div>
+                    <dl className="pre-consultation-summary-grid consultation-detail-summary-grid">
+                      <div><dt>Chuyên khoa</dt><dd>{detail?.departmentName || "Chưa cập nhật"}</dd></div>
+                      <div><dt>Thời gian khám</dt><dd>{formatDateTime(detail?.appointmentTime, "Chưa có lịch hẹn")}</dd></div>
+                      <div><dt>Tạo lúc</dt><dd>{formatDateTime(detail?.createdAt)}</dd></div>
+                      <div><dt>Trạng thái</dt><dd>{getStatusMeta(detail?.status).label}</dd></div>
+                    </dl>
 
-                    <section className="consultation-detail-section">
-                      <h4>Điều cần tư vấn</h4>
+                    <section className="pre-consultation-summary-block consultation-detail-summary-block">
+                      <h3>Điều cần tư vấn</h3>
                       <p>{detail?.symptoms || "Chưa có nội dung cần tư vấn."}</p>
                     </section>
 
-                    <section className="consultation-detail-section checklist" aria-labelledby="consultation-detail-checklist-title">
-                      <div className="consultation-detail-section-title">
-                        <div><span className="consultation-section-index">01</span><h4 id="consultation-detail-checklist-title">Danh sách chuẩn bị</h4></div>
-                        {checklistStatus === "ready" && <span>{checklist.length} mục</span>}
-                      </div>
+                    <section className="pre-consultation-summary-block consultation-detail-summary-block" aria-labelledby="consultation-detail-checklist-title">
+                      <h3 id="consultation-detail-checklist-title">Danh sách chuẩn bị</h3>
                       {checklistStatus === "loading" ? (
                         <div className="consultation-inline-state" role="status"><LoaderCircle className="spin" size={18} aria-hidden="true" /> Đang tải danh sách chuẩn bị...</div>
                       ) : checklistStatus === "error" ? (
                         <div className="consultation-inline-state error" role="alert"><span>{checklistError}</span><button type="button" onClick={() => loadChecklist(detail?.departmentId)}>Thử lại</button></div>
                       ) : checklist.length > 0 ? (
-                        <ol className="consultation-detail-checklist">
-                          {checklist.map((item, index) => (
-                            <li key={item.id}>
-                              <span className="consultation-checklist-order">{String(index + 1).padStart(2, "0")}</span>
-                              <span>{item.content}</span>
-                              <small>{item.isMandatory ? "Cần chuẩn bị" : "Nên chuẩn bị"}</small>
-                            </li>
-                          ))}
-                        </ol>
+                        <ul>
+                          {checklist.map((item) => <li key={item.id}><Check size={15} aria-hidden="true" /> {item.content}</li>)}
+                        </ul>
                       ) : (
                         <p className="consultation-detail-empty-copy">Chuyên khoa này chưa có danh sách chuẩn bị.</p>
                       )}
                     </section>
 
-                    <section className="consultation-detail-section questions">
-                      <div className="consultation-detail-section-title"><div><span className="consultation-section-index">02</span><h4>Câu hỏi dành cho bác sĩ</h4></div><span>{normalizeQuestions(detail?.questions).length} câu hỏi</span></div>
-                      {groupedQuestions.length > 0 ? groupedQuestions.map(([category, questions]) => (
-                        <section className="consultation-question-group" key={category}>
-                          <h5><CheckCircle2 size={15} aria-hidden="true" />{CATEGORY_LABELS[category] || "Trao đổi thêm"}<span>{questions.length}</span></h5>
-                          <ol>{questions.map((question) => <li key={question.id}><span>{String(question.priority).padStart(2, "0")}</span><p>{question.text}</p></li>)}</ol>
-                        </section>
-                      )) : <p className="consultation-detail-empty-copy">Phiên này chưa có câu hỏi để hiển thị.</p>}
+                    <section className="pre-consultation-summary-block consultation-detail-summary-block">
+                      <h3>Câu hỏi dành cho bác sĩ</h3>
+                      {normalizeQuestions(detail?.questions).length > 0 ? (
+                        <ol>{normalizeQuestions(detail?.questions).map((question) => <li key={question.id}>{question.text}</li>)}</ol>
+                      ) : <p className="consultation-detail-empty-copy">Phiên này chưa có câu hỏi để hiển thị.</p>}
                     </section>
                   </div>
                 </article>
