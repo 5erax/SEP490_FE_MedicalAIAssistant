@@ -14,13 +14,23 @@
   padding: 32px 0 72px;
 }
 
-.records-page-hero,
+.records-page-hero-shell,
 .records-content {
   width: min(1160px, calc(100% - 48px));
   margin: 0 auto;
 }
 
+.records-page-hero-shell {
+  margin-bottom: 22px;
+  border: 1px solid rgba(192, 220, 214, 0.9);
+  border-radius: 28px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 22px 60px rgba(12, 45, 53, 0.08);
+}
+
 .records-page-hero {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1286,9 +1296,14 @@
     padding: 12px 0 calc(var(--patient-safe-bottom, 82px) + 24px);
   }
 
-  .records-page-hero,
+  .records-page-hero-shell,
   .records-content {
     width: calc(100% - 20px);
+  }
+
+  .records-page-hero-shell {
+    border-radius: 24px;
+    padding: 8px;
   }
 
   .records-page-hero {

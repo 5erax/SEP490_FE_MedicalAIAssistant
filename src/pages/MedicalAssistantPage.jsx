@@ -162,6 +162,7 @@ function AssessmentShell({
       aria-labelledby="assessment-title"
     >
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
+        <div className="assessment-hero-shell">
         <header className="assessment-header clinical-hero">
           <div className="assessment-heading-main">
             <span className="assessment-icon clinical-hero-icon" aria-hidden="true">
@@ -199,6 +200,7 @@ function AssessmentShell({
             </Button>
           </div>
         </header>
+        </div>
 
         {showStepper && <Stepper active={activeStep} />}
         {children}

@@ -237,6 +237,15 @@
   text-align: left;
 }
 
+.assessment-clinical-refresh .assessment-hero-shell {
+  width: 100%;
+  border: 1px solid rgba(192, 220, 214, 0.9);
+  border-radius: 28px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 22px 60px rgba(12, 45, 53, 0.08);
+}
+
 .assessment-clinical-refresh .assessment-heading-main {
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr);
@@ -665,6 +674,11 @@
     padding: 28px;
   }
 
+  .assessment-clinical-refresh .assessment-hero-shell {
+    border-radius: 24px;
+    padding: 10px;
+  }
+
   .assessment-clinical-refresh .assessment-heading-main {
     grid-template-columns: 46px minmax(0, 1fr);
     gap: 14px;
@@ -740,6 +754,10 @@
   .assessment-clinical-refresh .clinical-hero {
     border-radius: 20px;
     padding: 23px 20px;
+  }
+
+  .assessment-clinical-refresh .assessment-hero-shell {
+    padding: 8px;
   }
 
   .assessment-clinical-refresh .assessment-heading-main {

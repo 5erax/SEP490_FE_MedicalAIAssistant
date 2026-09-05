@@ -1774,6 +1774,7 @@ export default function RecoveryPlanPage() {
 
   return (
     <div className="recovery-page">
+      <div className="recovery-hero-shell">
       <header className="recovery-page-header">
         <HeartPulse className="recovery-hero-icon" size={160} strokeWidth={1.3} aria-hidden="true" />
         <div>
@@ -1787,6 +1788,7 @@ export default function RecoveryPlanPage() {
           </ol>
         </div>
       </header>
+      </div>
 
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
       <p className="sr-only" role="status" aria-atomic="true">{realtimeLabel}</p>

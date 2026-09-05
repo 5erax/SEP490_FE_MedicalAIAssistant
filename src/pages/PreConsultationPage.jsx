@@ -566,6 +566,7 @@ export default function PreConsultationPage() {
     <div className="pre-consultation-page">
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
+      <div className="pre-consultation-hero-shell">
       <header className="pre-consultation-hero">
         <div className="pre-consultation-hero-main">
           <span className="pre-consultation-hero-icon" aria-hidden="true">
@@ -585,6 +586,7 @@ export default function PreConsultationPage() {
           <PreConsultationHistory onStartNew={startNewFromHistory} />
         </div>
       </header>
+      </div>
 
       <ol className="pre-consultation-stepper" aria-label="Tiến trình tư vấn trước khám">
         {STEPS.map((item, index) => {

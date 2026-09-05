@@ -485,6 +485,7 @@ export default function MedicalRecordPage() {
 
   return (
     <div className="records-page lab-records-page">
+      <div className="records-page-hero-shell">
       <header className="records-page-hero">
         <div className="records-hero-main">
           <span className="records-hero-icon" aria-hidden="true">
@@ -516,6 +517,7 @@ export default function MedicalRecordPage() {
           </Button>
         </div>
       </header>
+      </div>
 
       <div className="records-content">
         <section className="records-upload-card" aria-labelledby="records-upload-title">

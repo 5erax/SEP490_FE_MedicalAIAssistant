@@ -543,6 +543,7 @@ export default function DashboardPage() {
       <section className="studio-center" aria-labelledby="specialty-intake-title">
         <PatientProfileNudge visible={showIntakeForm} />
 
+        <div className="specialty-clinical-hero-shell">
         <header className="studio-heading specialty-clinical-heading">
           <div className="specialty-heading-main">
             <span className="studio-mark" aria-hidden="true"><ClipboardPlus size={24} /></span>
@@ -568,6 +569,7 @@ export default function DashboardPage() {
             </Button>
           </div>
         </header>
+        </div>
 
         <ClinicalNote title={CLINICAL_NOTES.scopeTitle}>{CLINICAL_NOTES.scope}</ClinicalNote>
 
