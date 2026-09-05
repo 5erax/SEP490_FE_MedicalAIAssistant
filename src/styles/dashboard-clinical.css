@@ -95,6 +95,7 @@
 }
 
 .specialty-clinical-page .studio-heading-actions {
+  --specialty-heading-action-height: 76px;
   position: static;
   width: 100%;
   display: grid;
@@ -111,6 +112,7 @@
   background: rgba(255, 255, 255, 0.09);
   color: #fff;
   padding: 13px 15px;
+  min-height: var(--specialty-heading-action-height);
 }
 
 .specialty-clinical-page .studio-heading .specialty-hero-note .clinical-note-title,
@@ -134,7 +136,7 @@
 
 .specialty-clinical-page .analysis-history-button {
   width: 100%;
-  min-height: 44px;
+  min-height: var(--specialty-heading-action-height);
   justify-content: center;
   border-color: rgba(8, 127, 140, 0.22);
   background: linear-gradient(135deg, #ffffff, rgba(230, 244, 238, 0.86));

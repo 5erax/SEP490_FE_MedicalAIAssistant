@@ -47,6 +47,11 @@ const PATIENT_ICONS = {
 
 const NAV_ITEMS = getNavigationModel("patient")
   .filter((item) => !["patient.profile", "patient.medication", "patient.medications", "assistant.intake"].includes(item.id))
+  .sort((left, right) => {
+    if (left.id === "patient.map") return 1;
+    if (right.id === "patient.map") return -1;
+    return 0;
+  })
   .map((item) => ({
     ...item,
     icon: PATIENT_ICONS[item.icon],
