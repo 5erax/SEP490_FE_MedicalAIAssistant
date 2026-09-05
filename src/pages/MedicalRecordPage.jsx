@@ -486,12 +486,21 @@ export default function MedicalRecordPage() {
   return (
     <div className="records-page lab-records-page">
       <header className="records-page-hero">
-        <div>
-          <p className="records-eyebrow"><FlaskConical size={16} aria-hidden="true" /> PHÂN TÍCH XÉT NGHIỆM</p>
-          <h1>Đọc phiếu xét nghiệm<br />rõ ràng hơn</h1>
-          <p>Tải ảnh hoặc PDF phiếu xét nghiệm. MediMate đối chiếu các chỉ số và cung cấp thông tin tham khảo.</p>
+        <div className="records-hero-main">
+          <span className="records-hero-icon" aria-hidden="true">
+            <FlaskConical size={24} />
+          </span>
+          <div>
+            <p className="records-eyebrow">PHÂN TÍCH XÉT NGHIỆM</p>
+            <h1>Đọc phiếu xét nghiệm<br />rõ ràng hơn</h1>
+            <p>Tải ảnh hoặc PDF phiếu xét nghiệm. MediMate đối chiếu các chỉ số và cung cấp thông tin tham khảo.</p>
+          </div>
         </div>
         <div className="records-hero-actions">
+          <div className="records-hero-note">
+            <ShieldCheck size={21} aria-hidden="true" />
+            <div><strong>Dữ liệu sức khỏe nhạy cảm</strong><p>Chỉ tải tài liệu của bạn và kiểm tra kỹ trước khi gửi.</p></div>
+          </div>
           <Button
             type="button"
             tone="secondary"
@@ -505,10 +514,6 @@ export default function MedicalRecordPage() {
             <History size={16} aria-hidden="true" />
             Lịch sử xét nghiệm
           </Button>
-          <div className="records-hero-note">
-            <ShieldCheck size={21} aria-hidden="true" />
-            <div><strong>Dữ liệu sức khỏe nhạy cảm</strong><p>Chỉ tải tài liệu của bạn và kiểm tra kỹ trước khi gửi.</p></div>
-          </div>
         </div>
       </header>
 

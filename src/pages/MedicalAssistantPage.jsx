@@ -175,6 +175,10 @@ function AssessmentShell({
           </div>
 
           <div className="assessment-history-action assessment-heading-aside">
+            <div className="assessment-scope-note">
+              <ShieldCheck size={19} aria-hidden="true" />
+              <p><strong>Kết quả để tham khảo</strong><span>Không thay thế chẩn đoán, kê đơn hoặc điều trị của bác sĩ.</span></p>
+            </div>
             <Button
               tone="secondary"
               size="sm"
@@ -193,10 +197,6 @@ function AssessmentShell({
               <History size={16} />
               {historyAction.label}
             </Button>
-            <div className="assessment-scope-note">
-              <ShieldCheck size={19} aria-hidden="true" />
-              <p><strong>Kết quả để tham khảo</strong><span>Không thay thế chẩn đoán, kê đơn hoặc điều trị của bác sĩ.</span></p>
-            </div>
           </div>
         </header>
 

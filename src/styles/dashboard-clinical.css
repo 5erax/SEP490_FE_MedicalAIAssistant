@@ -14,23 +14,28 @@
     radial-gradient(circle at 84% 8%, rgba(155, 215, 195, 0.18), transparent 27%),
     linear-gradient(180deg, #f7fbfa 0%, #eef7f4 100%);
   color: var(--clinical-ink);
-  padding: clamp(28px, 4vw, 54px) clamp(20px, 4vw, 52px) clamp(48px, 6vw, 76px);
+  padding: 32px 0 72px;
 }
 
 .specialty-clinical-page .studio-center {
-  width: min(1120px, 100%);
+  width: min(1160px, calc(100% - 48px));
   justify-items: stretch;
   gap: 20px;
 }
 
 .specialty-clinical-page .specialty-clinical-heading {
   width: 100%;
-  grid-template-columns: minmax(0, 1fr) minmax(250px, 310px);
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 405px);
+  align-items: center;
   justify-items: stretch;
   gap: clamp(28px, 5vw, 72px);
-  border-bottom: 1px solid var(--clinical-line);
-  padding: 0 0 clamp(24px, 3.2vw, 36px);
+  overflow: hidden;
+  border: 1px solid #0c7379;
+  border-radius: 20px;
+  background: #0b747a;
+  color: #fff;
+  padding: 32px 36px;
+  box-shadow: 0 14px 32px rgba(7, 95, 102, 0.14);
   text-align: left;
 }
 
@@ -44,24 +49,24 @@
 .specialty-clinical-page .studio-mark {
   width: 52px;
   height: 52px;
-  border: 1px solid #a9d6cd;
+  border: 1px solid rgba(255, 255, 255, 0.36);
   border-radius: 14px;
-  background: var(--clinical-mint);
-  color: var(--clinical-teal-dark);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
   box-shadow: none;
 }
 
 .specialty-clinical-page .studio-heading .studio-eyebrow {
   margin: 1px 0 10px;
-  color: var(--clinical-teal-dark);
+  color: inherit;
   font-size: 11px;
   letter-spacing: 0.11em;
 }
 
 .specialty-clinical-page .studio-heading h2 {
   max-width: 720px;
-  color: var(--clinical-ink);
-  font-size: clamp(34px, 4.1vw, 52px);
+  color: inherit;
+  font-size: clamp(32px, 4vw, 48px);
   line-height: 1.02;
   letter-spacing: -0.045em;
 }
@@ -69,9 +74,10 @@
 .specialty-clinical-page .studio-heading p {
   max-width: 700px;
   margin: 15px 0 0;
-  color: var(--clinical-muted);
-  font-size: 15px;
-  line-height: 1.65;
+  color: #eef7f7;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .specialty-clinical-page .studio-heading-actions {
@@ -552,13 +558,18 @@
 @media (max-width: 820px) {
   .specialty-clinical-page {
     min-height: calc(100svh - 72px);
-    padding: 24px 16px 104px;
+    padding: 20px 0 104px;
+  }
+
+  .specialty-clinical-page .studio-center {
+    width: min(100% - 28px, 760px);
   }
 
   .specialty-clinical-page .specialty-clinical-heading {
     grid-template-columns: 1fr;
     align-items: start;
     gap: 22px;
+    padding: 28px;
   }
 
   .specialty-clinical-page .specialty-heading-main {
@@ -649,7 +660,16 @@
 
 @media (max-width: 480px) {
   .specialty-clinical-page {
-    padding-inline: 12px;
+    padding-top: 12px;
+  }
+
+  .specialty-clinical-page .studio-center {
+    width: calc(100% - 20px);
+  }
+
+  .specialty-clinical-page .specialty-clinical-heading {
+    border-radius: 20px;
+    padding: 23px 20px;
   }
 
   .specialty-clinical-page .specialty-heading-main {
