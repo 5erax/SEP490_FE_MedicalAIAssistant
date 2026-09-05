@@ -1690,6 +1690,20 @@ function NearbyClinicPage() {
     );
   };
 
+  const handleIdentifyFacility = () => {
+    setSidebarView("hospital-list");
+    setSelectedFacility(null);
+    setDetailPanelOpen(false);
+    setDetailFacility(null);
+    setSelectedDoctor(null);
+    setDepartmentPickerOpen(false);
+    setSuggestionsOpen(false);
+    setFilterPanelOpen(true);
+    window.requestAnimationFrame(() => {
+      mapFilterRef.current?.querySelector?.(".map-filter-trigger")?.focus();
+    });
+  };
+
   const openDirections = (facility) => {
     if (!facility.hasValidCoordinates) return;
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`, "_blank", "noopener,noreferrer");
@@ -2460,6 +2474,7 @@ function NearbyClinicPage() {
           viewState={viewState}
           hidePopup={detailPanelOpen || isClinicalFlow}
           onError={handleMapError}
+          onIdentifyFacility={handleIdentifyFacility}
           onLocate={handleLocateMe}
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}

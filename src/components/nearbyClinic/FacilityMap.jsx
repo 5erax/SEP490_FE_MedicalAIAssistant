@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Bot, ChevronDown, Clock3, ClipboardCheck, LocateFixed, Send, X } from "lucide-react";
+import { ArrowRight, Bot, ChevronDown, Clock3, LocateFixed, MapPin, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi, webChatbotApi } from "../../services/api";
@@ -146,7 +146,7 @@ function DiagnosisCrossbar({
   diagnoses = [],
   hasTopNotice = false,
   hidePreConsultationCta = false,
-  sessionId = "",
+  onIdentifyFacility,
 }) {
   const [selectedKey, setSelectedKey] = useState(() => diagnosisKey(diagnoses[0], 0));
   const selectedIndex = diagnoses.findIndex((diagnosis, index) => (
@@ -155,10 +155,6 @@ function DiagnosisCrossbar({
   const diagnosisProgress = diagnoses.length && selectedIndex >= 0
     ? ((selectedIndex + 1) / diagnoses.length) * 100
     : 0;
-  const preConsultationHref = sessionId
-    ? `/pre-consultation?sessionId=${encodeURIComponent(sessionId)}`
-    : "/pre-consultation";
-
   useEffect(() => {
     setSelectedKey(diagnosisKey(diagnoses[0], 0));
   }, [diagnoses]);
@@ -218,11 +214,16 @@ function DiagnosisCrossbar({
       </div>
 
       {!hidePreConsultationCta && (
-        <a className="map-diagnosis-cta" href={preConsultationHref}>
-          <ClipboardCheck size={17} aria-hidden="true" />
-          <span>Tư vấn trước khám</span>
-          <ArrowRight size={17} aria-hidden="true" />
-        </a>
+        <>
+          <p className="map-diagnosis-cta-note">
+            Nếu bạn muốn tư vấn trước khám, hãy chọn Xác định bệnh viện để lọc và chọn nơi khám phù hợp.
+          </p>
+          <button className="map-diagnosis-cta" type="button" onClick={onIdentifyFacility}>
+            <MapPin size={17} aria-hidden="true" />
+            <span>Xác định bệnh viện</span>
+            <ArrowRight size={17} aria-hidden="true" />
+          </button>
+        </>
       )}
     </section>
   );
@@ -645,6 +646,7 @@ export default function FacilityMap({
   userLocation,
   viewState,
   onError,
+  onIdentifyFacility,
   onLocate,
   onMapLoad,
   onRetry,
@@ -740,7 +742,7 @@ export default function FacilityMap({
               diagnoses={recommendationContext.diagnoses}
               hasTopNotice={hasTopNotice}
               hidePreConsultationCta={hideClinicalPreConsultationCta}
-              sessionId={recommendationContext.sessionId}
+              onIdentifyFacility={onIdentifyFacility}
             />
           )}
         </aside>
