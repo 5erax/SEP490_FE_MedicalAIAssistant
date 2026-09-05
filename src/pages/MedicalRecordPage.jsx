@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  ArrowRight,
   Bot,
   CalendarDays,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -24,9 +24,8 @@ import {
   X,
 } from "lucide-react";
 import LabTestTrendSection from "../components/lab-tests/LabTestTrendSection";
-import { Button, EmptyState, ErrorState, LoadingState } from "../components/ui";
+import { Button, ErrorState, LoadingState, useOverlayFocus } from "../components/ui";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import LabTestResultPage from "./LabTestResultPage";
 import { navigate } from "../router/navigation";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
 import { useServiceCredit } from "../state/useServiceCredit";
@@ -40,6 +39,7 @@ import {
   uploadMedicalDocumentToCloudinary,
   validateMedicalDocument,
 } from "../services/cloudinaryUploadService";
+import "../styles/analysis-history-panel.css";
 import "../styles/user-workspace/medical-records.css";
 
 const HISTORY_PAGE_SIZE = 8;
@@ -134,15 +134,135 @@ function profileProblem(profile, profileStatus) {
   return "";
 }
 
-function SessionStatus({ status }) {
-  const normalized = normalizeAsyncSessionStatus(status);
+function LabTestHistoryPanel({
+  open,
+  onClose,
+  sessions,
+  status,
+  error,
+  historyInfo,
+  historyPage,
+  historyFilter,
+  onFilterChange,
+  onReload,
+  onPageChange,
+  onViewSession,
+  onContinue,
+}) {
+  const panelRef = useRef(null);
+  const closeButtonRef = useRef(null);
+
+  useOverlayFocus({
+    active: open,
+    containerRef: panelRef,
+    initialFocusRef: closeButtonRef,
+    onClose,
+  });
+
+  if (!open) return null;
+
   return (
-    <span className={`records-status-pill is-${normalized}`}>
-      {normalized === "processing" && <Clock3 size={13} aria-hidden="true" />}
-      {normalized === "completed" && <CheckCircle2 size={13} aria-hidden="true" />}
-      {normalized === "failed" && <AlertTriangle size={13} aria-hidden="true" />}
-      {STATUS_LABELS[normalized] || normalized}
-    </span>
+    <div className="analysis-history-drawer records-history-drawer">
+      <div className="analysis-history-backdrop" onClick={onClose} aria-hidden="true" />
+      <aside
+        className="analysis-history-panel records-history-drawer-panel"
+        id="records-history-panel"
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="records-history-panel-title"
+        aria-busy={status === "loading"}
+        tabIndex={-1}
+      >
+        <header className="analysis-history-panel-header">
+          <div>
+            <span><Clock3 size={15} aria-hidden="true" /> Lịch sử</span>
+            <h2 id="records-history-panel-title">Lịch sử xét nghiệm</h2>
+          </div>
+          <button ref={closeButtonRef} type="button" className="analysis-history-close" onClick={onClose} aria-label="Đóng lịch sử xét nghiệm">
+            <X size={18} aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="analysis-history-panel-body">
+          <div className="records-history-drawer-tools">
+            <label className="records-history-filter" htmlFor="records-status-filter">
+              <span>Trạng thái</span>
+              <select id="records-status-filter" value={historyFilter} onChange={(event) => onFilterChange(event.target.value)}>
+                <option value="">Tất cả phiên</option>
+                <option value="processing">Đang phân tích</option>
+                <option value="completed">Đã hoàn tất</option>
+                <option value="failed">Không thành công</option>
+              </select>
+            </label>
+            <button type="button" className="records-history-refresh" onClick={onReload} aria-label="Tải lại lịch sử xét nghiệm">
+              <RefreshCw size={17} aria-hidden="true" />
+            </button>
+          </div>
+
+          <p className="records-history-count" role="status">{historyInfo.totalCount} phiên xét nghiệm</p>
+
+          {status === "loading" && (
+            <div className="analysis-history-state">
+              <RefreshCw className="analysis-history-spin" size={22} aria-hidden="true" />
+              <p>Đang tải lịch sử...</p>
+            </div>
+          )}
+
+          {status === "error" && (
+            <div className="analysis-history-state error">
+              <p>{error}</p>
+              <Button type="button" tone="secondary" size="sm" onClick={onReload}>
+                <RefreshCw size={16} aria-hidden="true" />
+                Thử lại
+              </Button>
+            </div>
+          )}
+
+          {status === "ready" && sessions.length === 0 && (
+            <div className="analysis-history-empty">
+              <FileCheck2 size={24} aria-hidden="true" />
+              <strong>Chưa có phiên xét nghiệm</strong>
+              <p>Phiên mới sẽ xuất hiện tại đây sau khi bạn gửi phiếu phân tích.</p>
+            </div>
+          )}
+
+          {status === "ready" && sessions.length > 0 && (
+            <div className="analysis-history-list records-history-drawer-list">
+              {sessions.map((session) => (
+                <article key={session.sessionId || `${getLabSessionDate(session)}-${session.status}`}>
+                  <div>
+                    <strong>{formatDate(getLabSessionDate(session), "Chưa có ngày")}</strong>
+                    <span>{session.facilityName || formatDateTime(session.processedAt || session.createdAt)}</span>
+                    <small>
+                      Phân tích xét nghiệm · {STATUS_LABELS[normalizeAsyncSessionStatus(session.status)] || "Đang cập nhật"}
+                    </small>
+                  </div>
+                  <Button type="button" tone="secondary" size="sm" onClick={() => onViewSession(session.sessionId)}>
+                    Chi tiết
+                  </Button>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {status === "ready" && historyInfo.totalPages > 1 && (
+            <nav className="records-pagination" aria-label="Phân trang lịch sử xét nghiệm">
+              <button type="button" disabled={historyPage <= 1} onClick={() => onPageChange(historyPage - 1)} aria-label="Trang lịch sử trước"><ChevronLeft size={17} /></button>
+              <span>Trang {historyPage} / {historyInfo.totalPages}</span>
+              <button type="button" disabled={historyPage >= historyInfo.totalPages} onClick={() => onPageChange(historyPage + 1)} aria-label="Trang lịch sử sau"><ChevronRight size={17} /></button>
+            </nav>
+          )}
+        </div>
+
+        <footer className="analysis-history-panel-footer">
+          <Button type="button" className="analysis-history-continue" onClick={onContinue}>
+            Phân tích xét nghiệm mới
+            <ArrowRight size={16} aria-hidden="true" />
+          </Button>
+        </footer>
+      </aside>
+    </div>
   );
 }
 
@@ -165,14 +285,12 @@ export default function MedicalRecordPage() {
   const [historyFilter, setHistoryFilter] = useState("");
   const [historyInfo, setHistoryInfo] = useState({ totalCount: 0, totalPages: 1 });
   const [historyReloadKey, setHistoryReloadKey] = useState(0);
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const [trendRefreshKey, setTrendRefreshKey] = useState(0);
-  const [activeHistorySessionId, setActiveHistorySessionId] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [filePreviewUrl, setFilePreviewUrl] = useState("");
   const errorSummaryRef = useRef(null);
   const analyzeInFlightRef = useRef(false);
-  const historyDialogRef = useRef(null);
-  const historyTriggerRef = useRef(null);
 
   const gender = normalizeGender(profile?.gender);
   const currentAge = useMemo(
@@ -246,53 +364,9 @@ export default function MedicalRecordPage() {
     return () => window.clearTimeout(timer);
   }, [historyReloadKey, loadHistory]);
 
-  useEffect(() => {
-    const dialog = historyDialogRef.current;
-    if (!dialog) return;
-
-    if (activeHistorySessionId && !dialog.open) {
-      dialog.showModal();
-    } else if (!activeHistorySessionId && dialog.open) {
-      dialog.close();
-    }
-  }, [activeHistorySessionId]);
-
-  const handleHistoryResponse = useCallback((response) => {
-    if (!response?.message || response.message === "OK") return;
-    showToast({
-      type: "info",
-      title: "Trạng thái phân tích xét nghiệm",
-      message: getLabTestApiMessage(response),
-    });
-  }, [showToast]);
-
-  const handleHistorySessionUpdate = useCallback((session) => {
-    if (!session?.sessionId) return;
-    setSessions((current) => current.map((item) => (
-      item.sessionId === session.sessionId
-        ? { ...item, ...session }
-        : item
-    )));
-    if (normalizeAsyncSessionStatus(session.status) === "completed") {
-      setTrendRefreshKey((current) => current + 1);
-    }
-  }, []);
-
-  function openHistorySession(sessionId, trigger) {
+  function openHistorySession(sessionId) {
     if (!sessionId) return;
-    historyTriggerRef.current = trigger;
-    setActiveHistorySessionId(sessionId);
-  }
-
-  function closeHistorySession() {
-    const dialog = historyDialogRef.current;
-    if (dialog?.open) dialog.close();
-    else setActiveHistorySessionId("");
-  }
-
-  function handleHistoryDialogClosed() {
-    setActiveHistorySessionId("");
-    window.requestAnimationFrame(() => historyTriggerRef.current?.focus());
+    navigate(`/records/${encodeURIComponent(sessionId)}`);
   }
 
   function selectFile(file) {
@@ -589,95 +663,46 @@ export default function MedicalRecordPage() {
           onOpenSession={openHistorySession}
         />
 
-        <section className="records-library" aria-labelledby="records-history-title">
-          <div className="records-history-panel">
-            <header>
-              <div><History size={19} aria-hidden="true" /><span><p>PHIÊN CỦA BẠN</p><h2 id="records-history-title">Lịch sử phân tích</h2></span></div>
-              <button
-                type="button"
-                onClick={() => {
-                  setHistoryReloadKey((current) => current + 1);
-                  setTrendRefreshKey((current) => current + 1);
-                }}
-                aria-label="Tải lại lịch sử và xu hướng xét nghiệm"
-              >
-                <RefreshCw size={17} aria-hidden="true" />
-              </button>
-            </header>
-
-            <label className="records-history-filter" htmlFor="records-status-filter">
-              <span>Trạng thái</span>
-              <select id="records-status-filter" value={historyFilter} onChange={(event) => { setHistoryFilter(event.target.value); setHistoryPage(1); }}>
-                <option value="">Tất cả phiên</option>
-                <option value="processing">Đang phân tích</option>
-                <option value="completed">Đã hoàn tất</option>
-                <option value="failed">Không thành công</option>
-              </select>
-            </label>
-
-            <p className="records-history-count" role="status">{historyInfo.totalCount} phiên xét nghiệm</p>
-            {historyStatus === "loading" && <LoadingState label="Đang tải lịch sử…" />}
-            {historyStatus === "error" && <ErrorState title="Không thể tải lịch sử" description={historyError} action={<Button onClick={() => loadHistory()}>Thử lại</Button>} />}
-            {historyStatus === "ready" && sessions.length === 0 && (
-              <EmptyState title="Chưa có phiên xét nghiệm" description="Phiên mới sẽ xuất hiện ở đây sau khi bạn gửi phiếu phân tích." />
-            )}
-            {historyStatus === "ready" && sessions.length > 0 && (
-              <div className="records-history-list">
-                {sessions.map((session) => (
-                  <button
-                    className={activeHistorySessionId === session.sessionId ? "is-selected" : ""}
-                    type="button"
-                    key={session.sessionId}
-                    onClick={(event) => openHistorySession(session.sessionId, event.currentTarget)}
-                    aria-haspopup="dialog"
-                  >
-                    <span><strong>{formatDate(getLabSessionDate(session), "Chưa có ngày")}</strong><small>{session.facilityName || formatDateTime(session.processedAt || session.createdAt)}</small></span>
-                    <SessionStatus status={session.status} />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {historyStatus === "ready" && historyInfo.totalPages > 1 && (
-              <nav className="records-pagination" aria-label="Phân trang lịch sử xét nghiệm">
-                <button type="button" disabled={historyPage <= 1} onClick={() => setHistoryPage((current) => current - 1)} aria-label="Trang lịch sử trước"><ChevronLeft size={17} /></button>
-                <span>Trang {historyPage} / {historyInfo.totalPages}</span>
-                <button type="button" disabled={historyPage >= historyInfo.totalPages} onClick={() => setHistoryPage((current) => current + 1)} aria-label="Trang lịch sử sau"><ChevronRight size={17} /></button>
-              </nav>
-            )}
-          </div>
+        <section className="records-library records-history-launch-section" aria-labelledby="records-history-title">
+          <Button
+            type="button"
+            className="analysis-history-button records-history-launch"
+            aria-expanded={historyPanelOpen}
+            aria-controls="records-history-panel"
+            onClick={() => setHistoryPanelOpen(true)}
+          >
+            <History size={20} aria-hidden="true" />
+            <span id="records-history-title">Lịch sử xét nghiệm</span>
+          </Button>
         </section>
       </div>
 
-      <dialog
-        ref={historyDialogRef}
-        className="records-history-dialog"
-        aria-label="Chi tiết kết quả xét nghiệm"
-        onClose={handleHistoryDialogClosed}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) closeHistorySession();
+      <LabTestHistoryPanel
+        open={historyPanelOpen}
+        onClose={() => setHistoryPanelOpen(false)}
+        sessions={sessions}
+        status={historyStatus}
+        error={historyError}
+        historyInfo={historyInfo}
+        historyPage={historyPage}
+        historyFilter={historyFilter}
+        onFilterChange={(value) => {
+          setHistoryFilter(value);
+          setHistoryPage(1);
         }}
-      >
-        <div className="records-history-dialog__surface">
-          <div className="records-history-dialog__toolbar">
-            <div>
-              <p>LỊCH SỬ PHÂN TÍCH</p>
-              <strong>Chi tiết kết quả xét nghiệm</strong>
-            </div>
-            <button type="button" onClick={closeHistorySession} aria-label="Đóng chi tiết kết quả xét nghiệm">
-              <X size={21} aria-hidden="true" />
-            </button>
-          </div>
-          {activeHistorySessionId && (
-            <LabTestResultPage
-              sessionId={activeHistorySessionId}
-              embedded
-              onResponse={handleHistoryResponse}
-              onSessionUpdate={handleHistorySessionUpdate}
-            />
-          )}
-        </div>
-      </dialog>
+        onReload={() => {
+          setHistoryReloadKey((current) => current + 1);
+          setTrendRefreshKey((current) => current + 1);
+        }}
+        onPageChange={setHistoryPage}
+        onViewSession={openHistorySession}
+        onContinue={() => {
+          setHistoryPanelOpen(false);
+          window.requestAnimationFrame(() => {
+            document.getElementById("records-upload-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }}
+      />
     </div>
   );
 }
