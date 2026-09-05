@@ -2358,7 +2358,7 @@ function NearbyClinicPage() {
               }}
             >
               <SlidersHorizontal size={16} aria-hidden="true" />
-              <span>Bộ lọc</span>
+              <span>Bộ lọc bệnh viện</span>
               {mapFilterSummary && <small>{mapFilterSummary}</small>}
             </button>
             {filterPanelOpen && (
