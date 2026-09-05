@@ -214,20 +214,21 @@
 .consultation-history-drawer-summary strong { color: var(--consult-ink); font-size: 13px; }
 .consultation-history-drawer-list article .ui-button { min-height: 42px; }
 .consultation-history-drawer-list article .ui-button > span { white-space: nowrap; }
+.consultation-history-drawer { z-index: 1700; }
 .consultation-history-drawer .consultation-history-pagination { margin-top: 0; padding-top: 0; }
-.consultation-history-drawer-panel { width: min(500px, calc(100vw - 36px)); }
-.consultation-history-drawer-panel .analysis-history-panel-header h2 { max-width: none; font-size: clamp(25px, 2vw, 30px); line-height: 1.08; }
+.consultation-history-drawer-panel { width: min(460px, calc(100vw - 36px)); }
+.consultation-history-drawer-panel .analysis-history-panel-header h2 { max-width: 360px; font-size: clamp(25px, 2vw, 30px); line-height: 1.08; }
 .consultation-history-drawer-panel .analysis-history-panel-body { display: grid; align-content: start; gap: 16px; }
 .consultation-detail-dialog { position: fixed; inset: 0; z-index: 2400; display: grid; place-items: center; padding: 24px; isolation: isolate; }
 .consultation-detail-dialog .analysis-history-backdrop { position: fixed; z-index: 0; background: rgba(9, 22, 20, 0.42); backdrop-filter: blur(10px); }
-.consultation-detail-panel { position: relative; inset: auto; z-index: 1; width: min(820px, calc(100vw - 32px)); max-height: min(880px, calc(100svh - 32px)); display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border: 1px solid rgba(122, 184, 176, 0.55); border-radius: 28px; background: #fff; box-shadow: 0 34px 90px rgba(8, 18, 17, 0.28); }
-.consultation-detail-panel .analysis-history-panel-header { align-items: center; border-bottom-color: rgba(122, 184, 176, 0.3); background: linear-gradient(135deg, #0a7076 0%, #0f8a8d 100%); color: #fff; }
-.consultation-detail-panel .analysis-history-panel-header span,
-.consultation-detail-panel .analysis-history-panel-header h2 { color: #fff; }
-.consultation-detail-panel .analysis-history-panel-header h2 { max-width: none; font-size: clamp(28px, 2.2vw, 34px); line-height: 1.08; }
-.consultation-detail-panel .analysis-history-close { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.96); color: #073c40; }
-.consultation-detail-panel-body { min-height: 0; overflow-y: auto; padding: clamp(18px, 2.6vw, 26px); background: linear-gradient(180deg, #f8fcfb 0%, #eef8f5 100%); scrollbar-color: #8ab8b2 #edf5f3; scrollbar-width: thin; }
-.consultation-detail-panel .consultation-session-detail { min-height: 0; border: 1px solid rgba(122, 184, 176, 0.28); padding: clamp(18px, 2.6vw, 26px); background: rgba(255, 255, 255, 0.98); box-shadow: 0 18px 50px rgba(8, 97, 106, 0.09); }
+.consultation-detail-panel { position: relative; inset: auto; z-index: 1; width: min(980px, calc(100vw - 32px)); max-height: min(880px, calc(100svh - 32px)); display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border: 1px solid rgba(122, 184, 176, 0.5); border-radius: 26px; background: #fff; box-shadow: 0 34px 90px rgba(8, 18, 17, 0.28); }
+.consultation-detail-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; border-bottom: 1px solid #cfe1dc; padding: clamp(22px, 3vw, 32px) clamp(22px, 4vw, 46px) 22px; background: #fff; color: var(--consult-ink); }
+.consultation-detail-modal-head > div { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: start; gap: 14px; }
+.consultation-detail-modal-head h2 { margin: 0; color: var(--consult-ink); font-size: clamp(28px, 3vw, 40px); line-height: 1.08; letter-spacing: 0; }
+.consultation-detail-modal-head p { margin: 6px 0 0; color: #557072; font-size: 14px; font-weight: 650; line-height: 1.5; }
+.consultation-detail-panel .analysis-history-close { border-color: #d5e3df; background: #fff; color: #073c40; }
+.consultation-detail-panel-body { min-height: 0; overflow-y: auto; padding: clamp(20px, 3vw, 36px) clamp(22px, 4vw, 46px); background: #fff; scrollbar-color: #8ab8b2 #edf5f3; scrollbar-width: thin; }
+.consultation-detail-panel .consultation-session-detail { min-height: 0; border: 0; padding: 0; background: #fff; box-shadow: none; }
 .consultation-history-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; border-bottom: 1px solid #e2ece9; padding-bottom: 20px; }
 .consultation-history-header h2 { margin: 5px 0 0; font-size: clamp(25px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.025em; }
 .consultation-history-kicker { color: var(--consult-teal-dark); font-size: 11px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }

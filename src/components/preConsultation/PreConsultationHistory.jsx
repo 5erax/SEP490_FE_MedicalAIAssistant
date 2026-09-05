@@ -272,7 +272,7 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
         Lịch sử tư vấn trước khám
       </Button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal((
         <div className="analysis-history-drawer consultation-history-drawer">
           <div className="analysis-history-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />
           <aside
@@ -351,7 +351,7 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
             </footer>
           </aside>
         </div>
-      )}
+      ), document.body)}
 
       {detailOpen && typeof document !== "undefined" && createPortal((
         <div className="consultation-detail-dialog">
@@ -365,10 +365,13 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
             aria-busy={detailStatus === "loading"}
             tabIndex={-1}
           >
-            <header className="analysis-history-panel-header">
+            <header className="consultation-detail-modal-head">
               <div>
-                <span><FileText size={15} aria-hidden="true" /> Chi tiết</span>
-                <h2 id="consultation-detail-title">Chi tiết tư vấn trước khám</h2>
+                <span className="consultation-step-badge">5</span>
+                <div>
+                  <h2 id="consultation-detail-title">Chi tiết tư vấn trước khám</h2>
+                  <p>Xem lại nội dung đã chuẩn bị trước khi trao đổi với bác sĩ.</p>
+                </div>
               </div>
               <button ref={detailCloseButtonRef} type="button" className="analysis-history-close" onClick={() => setDetailOpen(false)} aria-label="Đóng chi tiết tư vấn trước khám">
                 <X size={18} aria-hidden="true" />
