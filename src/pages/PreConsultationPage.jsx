@@ -671,7 +671,7 @@ export default function PreConsultationPage() {
 
             <div className="pre-consultation-schedule-row">
               <label className={formErrors.appointmentTime ? "has-error" : ""}>
-                <span>Thời gian dự kiến khám (bắt buộc)</span>
+                <span>Thời gian dự kiến khám <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                 <input
                   type="datetime-local"
                   value={form.appointmentTime}
@@ -747,7 +747,7 @@ export default function PreConsultationPage() {
 
             <div className="pre-consultation-autofill-group">
               <div className={`pre-consultation-suggestion-field ${formErrors.facilityId ? "has-error" : ""}`}>
-                <span className="pre-consultation-field-label">Cơ sở khám dự kiến (bắt buộc)</span>
+                <span className="pre-consultation-field-label">Cơ sở khám dự kiến <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                 <button
                   type="button"
                   className="ghost pre-consultation-facility-trigger"
@@ -794,7 +794,7 @@ export default function PreConsultationPage() {
 
               <div className="pre-consultation-form-grid">
                 <div className={`pre-consultation-readonly-field ${formErrors.departmentId ? "has-error" : ""}`}>
-                  <span>Chuyên khoa</span>
+                  <span>Chuyên khoa <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                   <div className="pre-consultation-readonly-box" aria-live="polite">
                     {selectedDepartment?.departmentName
                       || <em>Chọn danh sách phiên gợi ý chuyên khoa để hiển thị</em>}
@@ -803,7 +803,7 @@ export default function PreConsultationPage() {
                   {formErrors.departmentId && <small>{formErrors.departmentId}</small>}
                 </div>
                 <div className={`pre-consultation-readonly-field wide ${formErrors.symptoms ? "has-error" : ""}`}>
-                  <span>Triệu chứng hoặc điều cần tư vấn</span>
+                  <span>Triệu chứng hoặc điều cần tư vấn <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                   <div className="pre-consultation-readonly-box textarea-like" aria-live="polite">
                     {form.symptoms || <em>Chọn danh sách phiên gợi ý chuyên khoa để hiển thị</em>}
                   </div>
@@ -891,7 +891,7 @@ export default function PreConsultationPage() {
             </section>
             <div className="pre-consultation-appointment"><CalendarClock size={22} aria-hidden="true" /><span><small>Lịch khám dự kiến</small><strong>{formatDateTime(sessionDetail?.appointmentTime || session?.appointmentTime)}</strong></span></div>
             <fieldset className="pre-consultation-reminder-options">
-              <legend>Chọn một phương án (bắt buộc)</legend>
+              <legend>Chọn một phương án <span className="pre-consultation-required-mark" aria-hidden="true">*</span></legend>
               <label className={reminderEnabled === true ? "selected" : ""}>
                 <input type="radio" name="reminder" checked={reminderEnabled === true} onChange={() => chooseReminder(true)} />
                 <BellRing size={20} aria-hidden="true" /><span><strong>Có, nhắc tôi</strong><small>Đăng ký nhận thông báo cho lịch khám này.</small></span>
