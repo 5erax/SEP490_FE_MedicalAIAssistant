@@ -10,9 +10,13 @@
   --recovery-fs-body: 15px;
   --recovery-fs-sm: 13px;
   --recovery-fs-xs: 12px;
-  width: min(1160px, calc(100% - 48px));
+  width: min(1240px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 32px 0 72px;
+  border: 1px solid rgba(192, 220, 214, 0.9);
+  border-radius: 30px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 24px 70px rgba(12, 45, 53, 0.08);
   color: var(--color-ink);
 }
 
@@ -2033,7 +2037,8 @@
   .recovery-page {
     width: calc(100% - 24px);
     max-width: calc(100% - 24px);
-    padding: 20px 0 92px;
+    border-radius: 24px;
+    padding: 10px;
     overflow-x: clip;
   }
 

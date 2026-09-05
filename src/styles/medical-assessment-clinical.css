@@ -215,8 +215,13 @@
 }
 
 .assessment-clinical-refresh .assessment-shell {
-  width: min(1160px, calc(100% - 48px));
+  width: min(1240px, calc(100% - 48px));
   gap: 20px;
+  border: 1px solid rgba(192, 220, 214, 0.9);
+  border-radius: 30px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 24px 70px rgba(12, 45, 53, 0.08);
 }
 
 .assessment-clinical-refresh .clinical-hero {
@@ -666,6 +671,7 @@
 
   .assessment-clinical-refresh .assessment-shell {
     width: min(100% - 28px, 760px);
+    padding: 20px;
   }
 
   .assessment-clinical-refresh .clinical-hero {
@@ -750,6 +756,8 @@
 
   .assessment-clinical-refresh .assessment-shell {
     width: calc(100% - 20px);
+    border-radius: 24px;
+    padding: 10px;
   }
 
   .assessment-clinical-refresh .clinical-hero {

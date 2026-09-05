@@ -6,9 +6,13 @@
   --consult-ink: #102a2c;
   --consult-muted: #607477;
   --consult-line: #cbded9;
-  width: min(1160px, calc(100% - 48px));
+  width: min(1240px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 32px 0 72px;
+  border: 1px solid rgba(192, 220, 214, 0.9);
+  border-radius: 30px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 24px 70px rgba(12, 45, 53, 0.08);
   color: var(--consult-ink);
 }
 
@@ -310,7 +314,7 @@
 @keyframes consultation-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 900px) {
-  .pre-consultation-page { width: min(100% - 28px, 760px); padding-top: 20px; }
+  .pre-consultation-page { width: min(100% - 28px, 760px); padding: 20px; }
   .pre-consultation-hero { align-items: flex-start; flex-direction: column; padding: 28px; }
   .pre-consultation-hero-main { grid-template-columns: 46px minmax(0, 1fr); gap: 14px; }
   .pre-consultation-hero-icon { width: 44px; height: 44px; border-radius: 12px; }
@@ -327,7 +331,7 @@
 }
 
 @media (max-width: 640px) {
-  .pre-consultation-page { width: calc(100% - 20px); padding: 12px 0 calc(var(--patient-safe-bottom, 82px) + 24px); }
+  .pre-consultation-page { width: calc(100% - 20px); border-radius: 24px; padding: 10px; }
   .pre-consultation-hero-shell {
     border-radius: 24px;
     padding: 8px;

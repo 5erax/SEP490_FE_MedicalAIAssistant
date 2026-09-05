@@ -11,12 +11,18 @@
     radial-gradient(circle at 88% 4%, rgba(215, 237, 228, 0.72), transparent 24rem),
     #f6f9f7;
   color: var(--records-ink);
-  padding: 32px 0 72px;
+  width: min(1240px, calc(100% - 48px));
+  margin: 32px auto 72px;
+  border: 1px solid rgba(192, 220, 214, 0.9);
+  border-radius: 30px;
+  padding: 28px;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 24px 70px rgba(12, 45, 53, 0.08);
 }
 
 .records-page-hero-shell,
 .records-content {
-  width: min(1160px, calc(100% - 48px));
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -1294,12 +1300,15 @@
 @media (max-width: 760px) {
   .lab-records-page {
     min-height: 0;
-    padding: 12px 0 calc(var(--patient-safe-bottom, 82px) + 24px);
+    width: calc(100% - 20px);
+    margin: 12px auto calc(var(--patient-safe-bottom, 82px) + 24px);
+    border-radius: 24px;
+    padding: 10px;
   }
 
   .records-page-hero-shell,
   .records-content {
-    width: calc(100% - 20px);
+    width: 100%;
   }
 
   .records-page-hero-shell {
