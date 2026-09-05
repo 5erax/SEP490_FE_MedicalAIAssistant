@@ -488,7 +488,7 @@ export default function MedicalRecordPage() {
       <header className="records-page-hero">
         <div>
           <p className="records-eyebrow"><FlaskConical size={16} aria-hidden="true" /> PHÂN TÍCH XÉT NGHIỆM</p>
-          <h1>Đọc phiếu xét nghiệm rõ ràng hơn</h1>
+          <h1>Đọc phiếu xét nghiệm<br />rõ ràng hơn</h1>
           <p>Tải ảnh hoặc PDF phiếu xét nghiệm. MediMate đối chiếu các chỉ số và cung cấp thông tin tham khảo.</p>
         </div>
         <div className="records-hero-actions">
