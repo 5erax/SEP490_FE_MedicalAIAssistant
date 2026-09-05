@@ -686,7 +686,9 @@ export default function PreConsultationPage() {
               </label>
 
               <div className="pre-consultation-suggestion-field">
-                <span className="pre-consultation-field-label">Danh sách phiên gợi ý chuyên khoa</span>
+                <span className="pre-consultation-field-label">
+                  Danh sách phiên gợi ý chuyên khoa <span className="pre-consultation-required-mark" aria-hidden="true">*</span><span className="sr-only"> (bắt buộc)</span>
+                </span>
                 <button type="button" className="ghost" onClick={toggleSuggestedSessions} aria-expanded={suggestedSessionsOpen}>
                   <History size={16} aria-hidden="true" />
                   <span className="pre-consultation-ghost-label">{appliedSessionTitle || "Danh sách phiên gợi ý chuyên khoa"}</span>
