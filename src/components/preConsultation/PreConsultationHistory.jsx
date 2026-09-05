@@ -10,6 +10,7 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, useOverlayFocus } from "../ui";
 import { checklistItemsApi, consultationSessionsApi } from "../../services/api";
@@ -352,7 +353,7 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
         </div>
       )}
 
-      {detailOpen && (
+      {detailOpen && typeof document !== "undefined" && createPortal((
         <div className="consultation-detail-dialog">
           <div className="analysis-history-backdrop" onClick={() => setDetailOpen(false)} aria-hidden="true" />
           <aside
@@ -453,7 +454,7 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
             </div>
           </aside>
         </div>
-      )}
+      ), document.body)}
     </section>
   );
 }
