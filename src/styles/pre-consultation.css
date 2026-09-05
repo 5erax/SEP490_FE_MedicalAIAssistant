@@ -216,10 +216,15 @@
 .consultation-history-drawer-list article .ui-button > span { white-space: nowrap; }
 .consultation-history-drawer .consultation-history-pagination { margin-top: 0; padding-top: 0; }
 .consultation-history-drawer-panel .analysis-history-panel-body { display: grid; align-content: start; gap: 16px; }
-.consultation-detail-dialog { position: fixed; inset: 0; z-index: 130; display: grid; place-items: center; padding: 24px; }
-.consultation-detail-panel { position: relative; inset: auto; width: min(760px, calc(100vw - 32px)); max-height: min(860px, calc(100svh - 32px)); display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border-radius: 26px; }
-.consultation-detail-panel-body { min-height: 0; overflow-y: auto; scrollbar-color: #8ab8b2 #edf5f3; scrollbar-width: thin; }
-.consultation-detail-panel .consultation-session-detail { min-height: 0; border: 0; padding: 0; background: transparent; }
+.consultation-detail-dialog { position: fixed; inset: 0; z-index: 2400; display: grid; place-items: center; padding: 24px; isolation: isolate; }
+.consultation-detail-dialog .analysis-history-backdrop { position: fixed; z-index: 0; background: rgba(9, 22, 20, 0.42); backdrop-filter: blur(10px); }
+.consultation-detail-panel { position: relative; inset: auto; z-index: 1; width: min(820px, calc(100vw - 32px)); max-height: min(880px, calc(100svh - 32px)); display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; border: 1px solid rgba(122, 184, 176, 0.55); border-radius: 28px; background: #fff; box-shadow: 0 34px 90px rgba(8, 18, 17, 0.28); }
+.consultation-detail-panel .analysis-history-panel-header { align-items: center; border-bottom-color: rgba(122, 184, 176, 0.3); background: linear-gradient(135deg, #0a7076 0%, #0f8a8d 100%); color: #fff; }
+.consultation-detail-panel .analysis-history-panel-header span,
+.consultation-detail-panel .analysis-history-panel-header h2 { color: #fff; }
+.consultation-detail-panel .analysis-history-close { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.96); color: #073c40; }
+.consultation-detail-panel-body { min-height: 0; overflow-y: auto; padding: clamp(18px, 2.6vw, 26px); background: linear-gradient(180deg, #f8fcfb 0%, #eef8f5 100%); scrollbar-color: #8ab8b2 #edf5f3; scrollbar-width: thin; }
+.consultation-detail-panel .consultation-session-detail { min-height: 0; border: 1px solid rgba(122, 184, 176, 0.28); padding: clamp(18px, 2.6vw, 26px); background: rgba(255, 255, 255, 0.98); box-shadow: 0 18px 50px rgba(8, 97, 106, 0.09); }
 .consultation-history-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; border-bottom: 1px solid #e2ece9; padding-bottom: 20px; }
 .consultation-history-header h2 { margin: 5px 0 0; font-size: clamp(25px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.025em; }
 .consultation-history-kicker { color: var(--consult-teal-dark); font-size: 11px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -260,9 +265,10 @@
 .consultation-history-state.error { color: #74221d; }
 .consultation-history-state.error button { margin-top: 6px; color: #74221d; border-color: #e7aaa6; }
 .consultation-history-state.empty svg, .consultation-detail-placeholder svg { color: var(--consult-teal); }
-.consultation-detail-content { display: grid; gap: 22px; }
-.consultation-detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; border-bottom: 1px solid #e2ece9; padding-bottom: 18px; }
-.consultation-detail-header h3 { margin: 5px 0 0; font-size: clamp(21px, 2.5vw, 28px); line-height: 1.2; }
+.consultation-detail-content { display: grid; gap: 18px; color: var(--consult-ink); }
+.consultation-detail-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 18px; border-bottom: 1px solid #d9ebe6; padding-bottom: 18px; }
+.consultation-detail-header h3 { margin: 5px 0 0; color: var(--consult-ink); font-size: clamp(24px, 2.5vw, 32px); line-height: 1.12; }
+.consultation-detail-header p { margin: 8px 0 0; color: #557072; font-weight: 650; }
 .consultation-detail-header h3:focus { outline: none; }
 .consultation-detail-header h3:focus-visible { outline: 3px solid var(--consult-teal-dark); outline-offset: 4px; border-radius: 4px; }
 .consultation-detail-processing { display: flex; align-items: center; gap: 10px; border-left: 3px solid #c88a15; border-radius: 0 10px 10px 0; padding: 11px 13px; color: #65460d; background: #fff9e8; line-height: 1.45; }
@@ -274,28 +280,28 @@
 .consultation-detail-counts { display: flex !important; align-items: center; gap: 6px !important; margin-left: auto; color: #49625f; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .consultation-detail-counts strong { color: var(--consult-teal-dark); font-size: 16px; }
 .consultation-detail-counts i { width: 1px; height: 22px; margin: 0 5px; background: var(--consult-line); }
-.consultation-detail-section { display: grid; gap: 13px; }
-.consultation-detail-section h4 { margin: 0; font-size: 16px; }
+.consultation-detail-section { display: grid; gap: 13px; border: 1px solid rgba(122, 184, 176, 0.28); border-radius: 16px; background: #fff; padding: 16px; }
+.consultation-detail-section h4 { margin: 0; color: var(--consult-ink); font-size: 17px; line-height: 1.25; }
 .consultation-detail-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .consultation-detail-section-title > div { display: flex; align-items: center; gap: 9px; }
 .consultation-detail-section-title > span { color: var(--consult-muted); font-size: 12px; font-weight: 750; }
 .consultation-section-index { color: var(--consult-teal); font-size: 10px; font-weight: 950; letter-spacing: 0.08em; }
 .consultation-detail-empty-copy { border-left-color: #a9c8c1 !important; color: var(--consult-muted) !important; background: #f8fbfa !important; }
-.consultation-detail-section > p { margin: 0; border-left: 3px solid var(--consult-teal); padding: 10px 13px; color: #405b5c; background: #f2faf8; line-height: 1.6; white-space: pre-wrap; }
+.consultation-detail-section > p { margin: 0; border-left: 4px solid var(--consult-teal); border-radius: 0 12px 12px 0; padding: 12px 14px; color: #264548; background: #effaf7; font-weight: 650; line-height: 1.65; white-space: pre-wrap; }
 .consultation-inline-state { display: flex; align-items: center; gap: 9px; min-height: 54px; border: 1px dashed #a9c8c1; border-radius: 12px; padding: 12px 14px; color: var(--consult-muted); background: #fbfdfc; }
 .consultation-inline-state.error { align-items: flex-start; justify-content: space-between; border-color: #e7aaa6; color: #74221d; background: #fff7f6; }
 .consultation-inline-state button { flex: 0 0 auto; border: 1px solid #e7aaa6; border-radius: 9px; padding: 7px 10px; color: #74221d; background: #fff; font: inherit; font-weight: 850; cursor: pointer; }
-.consultation-detail-checklist { display: grid; gap: 0; margin: 0; padding: 0; border: 1px solid #d8e7e3; border-radius: 13px; background: #fff; list-style: none; }
-.consultation-detail-checklist li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 54px; padding: 11px 13px; }
+.consultation-detail-checklist { display: grid; gap: 0; margin: 0; padding: 0; overflow: hidden; border: 1px solid #d8e7e3; border-radius: 13px; background: #fff; list-style: none; }
+.consultation-detail-checklist li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 58px; padding: 13px 14px; color: #19383b; }
 .consultation-detail-checklist li + li { border-top: 1px solid #e5efec; }
 .consultation-checklist-order { color: var(--consult-teal); font-size: 11px; font-weight: 950; font-variant-numeric: tabular-nums; }
-.consultation-detail-checklist li > span:nth-child(2) { line-height: 1.45; }
+.consultation-detail-checklist li > span:nth-child(2) { color: #19383b; font-weight: 700; line-height: 1.5; }
 .consultation-detail-checklist small { border-radius: 999px; padding: 4px 8px; color: #35625b; background: #eaf4f1; font-size: 10px; font-weight: 850; white-space: nowrap; }
-.consultation-question-group { border-top: 1px solid #dce8e5; padding: 15px 2px 2px; }
+.consultation-question-group { border: 1px solid #dce8e5; border-radius: 14px; padding: 14px; background: #fbfefd; }
 .consultation-question-group h5 { display: flex; align-items: center; gap: 7px; margin: 0 0 11px; color: var(--consult-teal-dark); font-size: 11px; letter-spacing: 0.055em; text-transform: uppercase; }
 .consultation-question-group h5 span { margin-left: auto; border-radius: 999px; padding: 3px 7px; color: #49625f; background: #edf4f2; font-size: 10px; }
 .consultation-question-group ol { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
-.consultation-question-group li { display: grid; grid-template-columns: auto 1fr; gap: 10px; border-radius: 10px; padding: 9px 11px; background: #f8fbfa; line-height: 1.5; }
+.consultation-question-group li { display: grid; grid-template-columns: auto 1fr; gap: 10px; border-radius: 10px; padding: 10px 12px; color: #19383b; background: #f3faf8; line-height: 1.55; }
 .consultation-question-group li > span { color: var(--consult-teal); font-size: 11px; font-weight: 950; font-variant-numeric: tabular-nums; }
 .consultation-question-group li p { margin: 0; }
 
