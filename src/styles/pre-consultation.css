@@ -38,7 +38,7 @@
 .pre-consultation-hero > * { position: relative; z-index: 1; }
 .pre-consultation-hero-main { display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: start; gap: 18px; }
 .pre-consultation-hero-icon { display: grid; place-items: center; width: 52px; height: 52px; border: 1px solid rgba(255, 255, 255, 0.36); border-radius: 14px; background: rgba(255, 255, 255, 0.12); color: #fff; }
-.pre-consultation-title { margin: 7px 0 10px; color: inherit; font-size: clamp(32px, 4vw, 48px); font-weight: 800; line-height: 1.05; letter-spacing: -0.035em; }
+.pre-consultation-title { margin: 0 0 10px; color: inherit; font-size: clamp(32px, 4vw, 48px); font-weight: 800; line-height: 1.05; letter-spacing: -0.035em; }
 .pre-consultation-description { max-width: 650px; margin: 0; color: #eef7f7; font-size: 16px; font-weight: 650; line-height: 1.55; }
 .pre-consultation-eyebrow { display: inline-flex; align-items: center; font-size: 12px; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
 .pre-consultation-hero-actions { display: grid; gap: 12px; width: min(100%, 405px); }

@@ -1776,9 +1776,11 @@ export default function RecoveryPlanPage() {
     <div className="recovery-page">
       <div className="recovery-hero-shell">
       <header className="recovery-page-header">
-        <HeartPulse className="recovery-hero-icon" size={160} strokeWidth={1.3} aria-hidden="true" />
-        <div>
-          <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Theo dõi sau điều trị</p>
+        <div className="recovery-hero-main">
+          <span className="recovery-hero-icon" aria-hidden="true">
+            <HeartPulse size={24} />
+          </span>
+          <div>
           <h2>Kế hoạch phục hồi</h2>
           <p className="recovery-hero-copy">Theo dõi yêu cầu của bạn và xem kế hoạch sau khi bác sĩ hoàn tất.</p>
           <ol className="recovery-process" aria-label="Quy trình nhận kế hoạch phục hồi">
@@ -1786,6 +1788,7 @@ export default function RecoveryPlanPage() {
             <li><span>2</span><strong>Bác sĩ xem xét</strong></li>
             <li><span>3</span><strong>Nhận kế hoạch</strong></li>
           </ol>
+          </div>
         </div>
       </header>
       </div>

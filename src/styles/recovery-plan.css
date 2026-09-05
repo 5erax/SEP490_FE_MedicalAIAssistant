@@ -76,19 +76,26 @@
   z-index: 1;
 }
 
+.recovery-hero-main {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+}
+
 .recovery-hero-icon {
-  position: absolute;
-  top: 50%;
-  right: 22px;
-  z-index: 0;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
-  opacity: 0.14;
-  transform: translateY(-50%);
-  pointer-events: none;
 }
 
 .recovery-page-header h2 {
-  margin: 8px 0 8px;
+  margin: 0 0 10px;
   color: #fff;
   font-size: var(--recovery-fs-hero);
   font-weight: 800;
@@ -2004,9 +2011,15 @@
     grid-column: 1 / -1;
   }
 
+  .recovery-hero-main {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 14px;
+  }
+
   .recovery-hero-icon {
-    right: -40px;
-    opacity: 0.1;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
   }
 }
 
@@ -2037,6 +2050,10 @@
 
   .recovery-hero-icon {
     display: none;
+  }
+
+  .recovery-hero-main {
+    grid-template-columns: 1fr;
   }
 
   .recovery-workspace-tabs {

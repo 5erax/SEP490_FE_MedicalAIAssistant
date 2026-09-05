@@ -573,7 +573,6 @@ export default function PreConsultationPage() {
             <Stethoscope size={24} />
           </span>
           <div>
-            <span className="pre-consultation-eyebrow">Chuẩn bị trước buổi khám</span>
             <p className="pre-consultation-title">Tư vấn trước khám</p>
             <p className="pre-consultation-description">Ghi lại thông tin cần thiết, xem danh sách chuẩn bị và tổng hợp câu hỏi dành cho bác sĩ.</p>
           </div>

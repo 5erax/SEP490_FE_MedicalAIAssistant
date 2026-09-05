@@ -548,7 +548,6 @@ export default function DashboardPage() {
           <div className="specialty-heading-main">
             <span className="studio-mark" aria-hidden="true"><ClipboardPlus size={24} /></span>
             <div>
-              <p className="studio-eyebrow">Tư vấn chuyên khoa</p>
               <h2 id="specialty-intake-title">Gợi ý chuyên khoa qua triệu chứng</h2>
               <p>Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi gợi ý chuyên khoa và cơ sở y tế phù hợp.</p>
             </div>

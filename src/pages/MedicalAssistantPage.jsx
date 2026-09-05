@@ -169,7 +169,6 @@ function AssessmentShell({
               <Stethoscope size={25} />
             </span>
             <div>
-              <p className="eyebrow clinical-eyebrow">{eyebrow}</p>
               <h1 id="assessment-title">{title}</h1>
               {description && <p className="clinical-hero-description">{description}</p>}
             </div>
