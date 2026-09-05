@@ -1172,6 +1172,10 @@ function NearbyClinicPage() {
     }),
     [typedFacilities, userLocation],
   );
+  const mapFacilitiesLoading = isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities;
+  const showSearchEmptyState = Boolean(searchText.trim())
+    && !mapFacilitiesLoading
+    && visibleFacilities.length === 0;
 
   const mappableFacilities = useMemo(
     () => visibleFacilities.filter((facility) => facility.hasValidCoordinates),
@@ -2233,6 +2237,15 @@ function NearbyClinicPage() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+            {!suggestionsOpen && showSearchEmptyState && (
+              <div className="map-search-empty-panel" role="status" aria-live="polite">
+                <strong>Không tìm thấy cơ sở phù hợp</strong>
+                <span>Thử nhập tên bệnh viện, phòng khám hoặc địa chỉ khác.</span>
+                <button type="button" onClick={() => { setSearchText(""); setSelectedFacility(null); }}>
+                  Xóa tìm kiếm
+                </button>
               </div>
             )}
           </div>
