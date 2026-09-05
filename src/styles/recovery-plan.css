@@ -2,7 +2,7 @@
   --recovery-radius-lg: 24px;
   --recovery-radius-md: 18px;
   --recovery-radius-sm: 12px;
-  --recovery-fs-hero: clamp(30px, 3.6vw, 44px);
+  --recovery-fs-hero: clamp(32px, 4vw, 48px);
   --recovery-fs-h2: clamp(19px, 2.1vw, 24px);
   --recovery-fs-h3: 22px;
   --recovery-fs-h4: 18px;
@@ -10,9 +10,9 @@
   --recovery-fs-body: 15px;
   --recovery-fs-sm: 13px;
   --recovery-fs-xs: 12px;
-  width: min(1200px, 100%);
+  width: min(1160px, calc(100% - 48px));
   margin: 0 auto;
-  padding: clamp(24px, 4vw, 52px);
+  padding: 32px 0 72px;
   color: var(--color-ink);
 }
 
@@ -55,8 +55,9 @@
   position: relative;
   overflow: hidden;
   margin-bottom: 24px;
-  padding: clamp(24px, 3.4vw, 36px) clamp(24px, 4vw, 40px);
-  border-radius: var(--recovery-radius-lg);
+  padding: 32px 36px;
+  border: 1px solid #0c7379;
+  border-radius: 20px;
   background: linear-gradient(120deg, var(--color-info-strong) 0%, var(--color-info-strong) 55%, var(--color-info) 100%);
   box-shadow: 0 24px 50px rgba(5, 97, 106, 0.28);
 }
@@ -80,9 +81,9 @@
 .recovery-page-header h2 {
   margin: 8px 0 8px;
   color: #fff;
-  font-size: clamp(30px, 3.2vw, 42px);
-  line-height: 1.08;
-  letter-spacing: -0.04em;
+  font-size: var(--recovery-fs-hero);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
 }
 
 .recovery-page-header .recovery-eyebrow {
@@ -92,8 +93,9 @@
 .recovery-hero-copy {
   max-width: 62ch;
   color: rgba(255, 255, 255, 0.9);
-  font-size: var(--recovery-fs-body);
-  line-height: 1.65;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .recovery-section-heading > div > p:last-child,
