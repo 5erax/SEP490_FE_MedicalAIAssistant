@@ -1173,9 +1173,33 @@ function NearbyClinicPage() {
     [typedFacilities, userLocation],
   );
   const mapFacilitiesLoading = isClinicalFlow ? clinicalStatus === "loading" : loadingFacilities;
+  const hasImmediateSearchMatch = useMemo(() => {
+    const normalized = normalizeSearchText(searchText);
+    if (!normalized) return true;
+    const normalizedDepartmentId = String(effectiveDepartmentId).trim();
+    const normalizedDepartmentSearch = normalizeSearchText(effectiveDepartmentId);
+
+    return clinicalFacilityPool.some((facility) => {
+      const searchable = [
+        facility.facilityName,
+        facility.address,
+        facility.facilityType,
+        facility.facilityTypeLabel,
+        facility.openingHours,
+        ...facility.departments,
+      ].map(normalizeSearchText);
+      const matchSearch = searchable.some((value) => value.includes(normalized));
+      const matchDepartment = !normalizedDepartmentId
+        || normalizedDepartmentId === "all"
+        || facility.departmentIds?.some((departmentId) => String(departmentId) === normalizedDepartmentId)
+        || facility.departments.map(normalizeSearchText).some((value) => value.includes(normalizedDepartmentSearch));
+      const matchType = selectedType === "all" || facility.facilityTypeKey === selectedType;
+      return matchSearch && matchDepartment && matchType;
+    });
+  }, [clinicalFacilityPool, effectiveDepartmentId, searchText, selectedType]);
   const showSearchEmptyState = Boolean(searchText.trim())
     && !mapFacilitiesLoading
-    && visibleFacilities.length === 0;
+    && !hasImmediateSearchMatch;
 
   const mappableFacilities = useMemo(
     () => visibleFacilities.filter((facility) => facility.hasValidCoordinates),
@@ -2239,7 +2263,7 @@ function NearbyClinicPage() {
                 </ul>
               </div>
             )}
-            {!suggestionsOpen && showSearchEmptyState && (
+            {showSearchEmptyState && (
               <div className="map-search-empty-panel" role="status" aria-live="polite">
                 <strong>Không tìm thấy cơ sở phù hợp</strong>
                 <span>Thử nhập tên bệnh viện, phòng khám hoặc địa chỉ khác.</span>
