@@ -348,7 +348,6 @@ export default function PreConsultationHistory({ onStartNew, defaultOpen = false
           >
             <header className="consultation-detail-modal-head">
               <div>
-                <span className="consultation-step-badge">5</span>
                 <div>
                   <h2 id="consultation-detail-title" ref={detailHeadingRef} tabIndex="-1">Chi tiết tư vấn trước khám</h2>
                   <p>Xem lại nội dung đã chuẩn bị trước khi trao đổi với bác sĩ.</p>
