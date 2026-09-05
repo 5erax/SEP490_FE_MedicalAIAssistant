@@ -21,11 +21,11 @@
   width: min(1240px, calc(100% - 48px));
   justify-items: stretch;
   gap: 20px;
-  border: 1px solid rgba(192, 220, 214, 0.9);
-  border-radius: 30px;
-  padding: 28px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 24px 70px rgba(12, 45, 53, 0.08);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .specialty-clinical-page .specialty-clinical-heading {
@@ -607,7 +607,7 @@
 
   .specialty-clinical-page .studio-center {
     width: min(100% - 28px, 760px);
-    padding: 20px;
+    padding: 0;
   }
 
   .specialty-clinical-page .specialty-clinical-heading {
@@ -715,8 +715,8 @@
 
   .specialty-clinical-page .studio-center {
     width: calc(100% - 20px);
-    border-radius: 24px;
-    padding: 10px;
+    border-radius: 0;
+    padding: 0;
   }
 
   .specialty-clinical-page .specialty-clinical-heading {
