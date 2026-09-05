@@ -12,7 +12,7 @@
     #f6f9f7;
   color: var(--records-ink);
   width: min(1240px, calc(100% - 48px));
-  margin: 32px auto 72px;
+  margin: 12px auto 72px;
   border: 1px solid rgba(192, 220, 214, 0.9);
   border-radius: 30px;
   padding: 28px;
@@ -28,11 +28,11 @@
 
 .records-page-hero-shell {
   margin-bottom: 22px;
-  border: 1px solid rgba(192, 220, 214, 0.9);
-  border-radius: 28px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 22px 60px rgba(12, 45, 53, 0.08);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .records-page-hero {
@@ -1312,8 +1312,8 @@
   }
 
   .records-page-hero-shell {
-    border-radius: 24px;
-    padding: 8px;
+    border-radius: 0;
+    padding: 0;
   }
 
   .records-page-hero {

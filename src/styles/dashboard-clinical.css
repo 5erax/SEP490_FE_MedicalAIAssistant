@@ -14,7 +14,7 @@
     radial-gradient(circle at 84% 8%, rgba(155, 215, 195, 0.18), transparent 27%),
     linear-gradient(180deg, #f7fbfa 0%, #eef7f4 100%);
   color: var(--clinical-ink);
-  padding: 32px 0 72px;
+  padding: 12px 0 72px;
 }
 
 .specialty-clinical-page .studio-center {
@@ -46,11 +46,11 @@
 
 .specialty-clinical-page .specialty-clinical-hero-shell {
   width: 100%;
-  border: 1px solid rgba(192, 220, 214, 0.9);
-  border-radius: 28px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 22px 60px rgba(12, 45, 53, 0.08);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .specialty-clinical-page .specialty-heading-main {
@@ -618,8 +618,8 @@
   }
 
   .specialty-clinical-page .specialty-clinical-hero-shell {
-    border-radius: 24px;
-    padding: 10px;
+    border-radius: 0;
+    padding: 0;
   }
 
   .specialty-clinical-page .specialty-heading-main {
@@ -725,7 +725,7 @@
   }
 
   .specialty-clinical-page .specialty-clinical-hero-shell {
-    padding: 8px;
+    padding: 0;
   }
 
   .specialty-clinical-page .specialty-heading-main {
