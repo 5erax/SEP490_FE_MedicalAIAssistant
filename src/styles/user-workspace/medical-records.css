@@ -105,14 +105,17 @@
 }
 
 .records-hero-actions {
-  width: min(100%, 405px);
+  --records-heading-action-width: 405px;
+  --records-heading-note-height: 76px;
+  --records-heading-button-height: 54px;
+  width: min(100%, var(--records-heading-action-width));
   display: grid;
   gap: 12px;
 }
 
 .records-hero-actions .ui-button.analysis-history-button.records-history-launch {
   width: 100%;
-  min-height: 44px;
+  min-height: var(--records-heading-button-height);
   justify-content: center;
   border-color: rgba(8, 127, 140, 0.22);
   background: linear-gradient(135deg, #ffffff, rgba(230, 244, 238, 0.86));
@@ -136,12 +139,20 @@
 .records-hero-note {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: 11px;
+  width: 100%;
+  min-height: var(--records-heading-note-height);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.09);
   padding: 13px 15px;
   color: #fff;
+}
+
+.records-hero-note > svg {
+  width: 21px;
+  height: 21px;
 }
 
 .records-hero-note strong,
@@ -152,12 +163,15 @@
 
 .records-hero-note strong {
   font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
 }
 
 .records-hero-note p {
   margin-top: 3px;
   color: #fff;
   font-size: 11px;
+  font-weight: 500;
   line-height: 1.45;
 }
 

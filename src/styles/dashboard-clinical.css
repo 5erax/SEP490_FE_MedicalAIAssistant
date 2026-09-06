@@ -95,9 +95,11 @@
 }
 
 .specialty-clinical-page .studio-heading-actions {
-  --specialty-heading-action-height: 76px;
+  --specialty-heading-action-width: 405px;
+  --specialty-heading-note-height: 76px;
+  --specialty-heading-button-height: 54px;
   position: static;
-  width: 100%;
+  width: min(100%, var(--specialty-heading-action-width));
   display: grid;
   gap: 12px;
   align-content: end;
@@ -106,13 +108,24 @@
 }
 
 .specialty-clinical-page .specialty-hero-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
   width: 100%;
   border-color: rgba(255, 255, 255, 0.3);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.09);
   color: #fff;
   padding: 13px 15px;
-  min-height: var(--specialty-heading-action-height);
+  min-height: var(--specialty-heading-note-height);
+}
+
+.specialty-clinical-page .studio-heading .specialty-hero-note .clinical-note-icon {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  margin-top: 0;
 }
 
 .specialty-clinical-page .studio-heading .specialty-hero-note .clinical-note-title,
@@ -136,7 +149,7 @@
 
 .specialty-clinical-page .analysis-history-button {
   width: 100%;
-  min-height: var(--specialty-heading-action-height);
+  min-height: var(--specialty-heading-button-height);
   justify-content: center;
   border-color: rgba(8, 127, 140, 0.22);
   background: linear-gradient(135deg, #ffffff, rgba(230, 244, 238, 0.86));
