@@ -41,6 +41,7 @@ export function Navbar({ variant = "default" }) {
     typeof window === "undefined" ? "" : window.location.hash.slice(1)
   ));
   const [auth] = useState(() => getStoredAuth());
+  const isLoginPage = typeof window !== "undefined" && window.location.pathname === "/login";
   const headerRef = useRef(null);
   const menuButtonRef = useRef(null);
   const menuCloseButtonRef = useRef(null);
@@ -288,10 +289,12 @@ export function Navbar({ variant = "default" }) {
             <a href="/app" className="btn btn-dark">
               Vào ứng dụng
             </a>
-          ) : (
+          ) : !isLoginPage ? (
             <a href="/login" className="btn btn-dark">
               Đăng nhập
             </a>
+          ) : (
+            null
           )}
         </div>
 
@@ -361,7 +364,7 @@ export function Navbar({ variant = "default" }) {
                 </a>
               ))}
 
-              {!auth && (
+              {!auth && !isLoginPage && (
                 <a
                   className="btn care-nav-login"
                   href="/login"
