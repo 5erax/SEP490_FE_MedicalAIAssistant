@@ -1790,6 +1790,12 @@ export default function RecoveryPlanPage() {
           </ol>
           </div>
         </div>
+        <div className="recovery-hero-actions">
+          <section className="recovery-medical-note recovery-hero-note">
+            <ShieldCheck size={21} aria-hidden="true" />
+            <div><strong>Thông tin hỗ trợ, không thay thế chăm sóc y tế</strong><p>Nếu có dấu hiệu nghiêm trọng hoặc diễn biến bất thường, hãy liên hệ cơ sở y tế hoặc dịch vụ cấp cứu phù hợp.</p></div>
+          </section>
+        </div>
       </header>
       </div>
 
@@ -1964,11 +1970,6 @@ export default function RecoveryPlanPage() {
               <li><Activity size={19} aria-hidden="true" /><span><strong>Ghi nhận thay đổi đáng chú ý</strong><small>Thời điểm, mức độ và diễn biến gần đây.</small></span></li>
               <li><CalendarCheck size={19} aria-hidden="true" /><span><strong>Theo dõi mốc tái khám</strong><small>Chuẩn bị câu hỏi cho lần trao đổi tiếp theo.</small></span></li>
             </ul>
-          </section>
-
-          <section className="recovery-medical-note">
-            <ShieldCheck size={21} aria-hidden="true" />
-            <div><strong>Thông tin hỗ trợ, không thay thế chăm sóc y tế</strong><p>Nếu có dấu hiệu nghiêm trọng hoặc diễn biến bất thường, hãy liên hệ cơ sở y tế hoặc dịch vụ cấp cứu phù hợp.</p></div>
           </section>
         </div>
       </div>

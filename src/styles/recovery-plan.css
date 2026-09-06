@@ -66,6 +66,14 @@
   box-shadow: 0 24px 50px rgba(5, 97, 106, 0.28);
 }
 
+.recovery-page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 405px);
+  align-items: center;
+  justify-items: stretch;
+  gap: clamp(28px, 5vw, 72px);
+}
+
 .recovery-hero-shell {
   margin-bottom: 24px;
   border: 0;
@@ -85,6 +93,14 @@
   grid-template-columns: 54px minmax(0, 1fr);
   align-items: start;
   gap: 18px;
+}
+
+.recovery-hero-actions {
+  --recovery-heading-action-width: 405px;
+  --recovery-heading-note-height: 76px;
+  display: grid;
+  gap: 12px;
+  width: min(100%, var(--recovery-heading-action-width));
 }
 
 .recovery-hero-icon {
@@ -1698,6 +1714,42 @@
   color: var(--color-muted);
 }
 
+.recovery-hero-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: var(--recovery-heading-note-height, 76px);
+  border-color: rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+  padding: 13px 15px;
+}
+
+.recovery-hero-note svg {
+  width: 21px;
+  height: 21px;
+  color: #fff;
+}
+
+.recovery-hero-note strong {
+  display: block;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.recovery-hero-note p {
+  margin-top: 3px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .recovery-timeline {
   display: grid;
   gap: 20px;
@@ -2005,6 +2057,16 @@
   .recovery-support-sidebar,
   .recovery-split-view {
     grid-template-columns: 1fr;
+  }
+
+  .recovery-page-header {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+    gap: 22px;
+  }
+
+  .recovery-hero-actions {
+    width: 100%;
   }
 
   .recovery-item-list {
