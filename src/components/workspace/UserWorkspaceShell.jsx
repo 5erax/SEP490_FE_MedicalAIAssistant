@@ -45,11 +45,15 @@ const PATIENT_ICONS = {
   medications: Pill,
 };
 
+function isMapNavItem(item) {
+  return item.id === "public.map" || item.id === "patient.map" || item.path === "/map";
+}
+
 const NAV_ITEMS = getNavigationModel("patient")
   .filter((item) => !["patient.profile", "patient.medication", "patient.medications", "assistant.intake"].includes(item.id))
   .sort((left, right) => {
-    if (left.id === "patient.map") return 1;
-    if (right.id === "patient.map") return -1;
+    if (isMapNavItem(left)) return 1;
+    if (isMapNavItem(right)) return -1;
     return 0;
   })
   .map((item) => ({
