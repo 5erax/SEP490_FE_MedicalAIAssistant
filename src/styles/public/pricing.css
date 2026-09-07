@@ -1134,11 +1134,30 @@ html[data-theme="dark"] .checkout-status.success {
   font-weight: 800;
 }
 
-.pricing-sale-rewards,
-.pricing-sale-availability {
+.pricing-sale-rewards {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.pricing-sale-availability {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  justify-items: start;
+}
+
+.pricing-sale-countdown {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-sale-countdown strong {
+  min-height: 1.5em;
+  overflow-wrap: anywhere;
 }
 
 .pricing-sale-rewards strong {
@@ -1153,7 +1172,7 @@ html[data-theme="dark"] .checkout-status.success {
   box-shadow: 0 5px 15px rgba(20, 125, 120, 0.1);
 }
 
-.pricing-sale-availability span {
+.pricing-sale-availability > span {
   display: inline-flex;
   align-items: center;
   min-height: 30px;

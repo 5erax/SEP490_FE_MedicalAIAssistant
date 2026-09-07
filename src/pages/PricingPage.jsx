@@ -656,7 +656,7 @@ function PricingPage() {
                         {(offer.remainingRedemptions != null || countdown) && (
                           <div className="pricing-sale-availability">
                             {offer.remainingRedemptions != null && <span>Còn {offer.remainingRedemptions} suất ưu đãi</span>}
-                            {countdown && <span>Kết thúc sau {countdown}</span>}
+                            {countdown && <div className="pricing-sale-countdown"><span>Kết thúc sau</span><strong>{countdown}</strong></div>}
                           </div>
                         )}
                       </div>

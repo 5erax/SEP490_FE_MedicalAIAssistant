@@ -420,6 +420,46 @@ test("revoked invitation is rechecked before registration and stops the form", a
   expect(registerCalls).toBe(0);
 });
 
+test("revocation after preflight replaces a generic registration error", async ({ page }) => {
+  let revoked = false;
+  await page.route("**/api/doctor-invitations/validate?token=race-token", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ success: true, data: {
+      isValid: !revoked,
+      isRevoked: revoked,
+      email: "doctor@example.com",
+      doctorId: "11111111-1111-1111-1111-111111111111",
+      isLinkedToExistingDoctorProfile: true,
+      suggestedFullName: "Nguyễn Văn A",
+    } }),
+  }));
+  await page.route("**/api/doctor-invitations/register", (route) => {
+    revoked = true;
+    return route.fulfill({ status: 400, contentType: "application/json",
+      body: JSON.stringify({ success: false, message: "Invalid request data." }) });
+  });
+  await page.goto("/register-doctor?token=race-token");
+  await page.getByLabel(/^Mật khẩu/).fill("Password123!");
+  await page.getByLabel("Nhập lại mật khẩu").fill("Password123!");
+  await page.getByRole("button", { name: "Hoàn tất đăng ký" }).click();
+  await expect(page.getByText("Lời mời đăng ký này đã được quản trị viên thu hồi. Vui lòng đề nghị gửi lời mời mới.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Hoàn tất đăng ký" })).toHaveCount(0);
+  await expect(page.locator(".doctor-expiry-notice")).toHaveCount(0);
+});
+
+test("background validation stops countdown when an open invitation is revoked", async ({ page }) => {
+  await mockLinkedInvitation(page, "background-token", {
+    expiresAt: new Date(Date.now() + 600000).toISOString(),
+  });
+  await page.goto("/register-doctor?token=background-token");
+  await expect(page.getByRole("button", { name: "Hoàn tất đăng ký" })).toBeVisible();
+  await mockLinkedInvitation(page, "background-token", { isRevoked: true });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.getByText("Lời mời đăng ký này đã được quản trị viên thu hồi. Vui lòng đề nghị gửi lời mời mới.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Hoàn tất đăng ký" })).toHaveCount(0);
+  await expect(page.locator(".doctor-expiry-notice")).toHaveCount(0);
+});
+
 test("validation errors are associated with fields and move focus to the summary", async ({ page }) => {
   let registerCalls = 0;
   await mockLinkedInvitation(page, "validation-token", {

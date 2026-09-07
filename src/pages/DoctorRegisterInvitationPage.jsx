@@ -230,9 +230,16 @@ function isInvitationFailure(messages) {
 
 function getInvalidInvitationMessage(data) {
   return presentInvitationError(
-    data?.message
+    (data?.isRevoked === true || /revok/i.test(String(data?.status ?? data?.code ?? "")) ? "Invitation link has been revoked." : "")
+      || data?.message
       || "Liên kết đăng ký đã hết hạn hoặc không hợp lệ. Vui lòng liên hệ quản trị viên để nhận lời mời mới.",
   );
+}
+
+function isUsableInvitation(data) {
+  return data?.isValid === true
+    && data?.isRevoked !== true
+    && !/^(revoked|expired|used|consumed|invitation[_-](revoked|expired|used))$/i.test(String(data?.status ?? data?.code ?? "").trim());
 }
 
 function Field({ id, label, error, hint, required = false, children, className = "" }) {
@@ -364,7 +371,7 @@ export default function DoctorRegisterInvitationPage() {
         if (!active) return;
         const data = response?.data;
 
-        if (!data?.isValid) {
+        if (!isUsableInvitation(data)) {
           setStatus("invalid");
           setInvitation(null);
           setApiErrors([getInvalidInvitationMessage(data)]);
@@ -429,7 +436,7 @@ export default function DoctorRegisterInvitationPage() {
       try {
         const response = await doctorInvitationsApi.validate(token);
         if (!active) return;
-        if (!response?.data?.isValid) {
+        if (!isUsableInvitation(response?.data)) {
           setInvitation(null);
           setRemainingSeconds(null);
           setApiErrors([getInvalidInvitationMessage(response?.data)]);
@@ -531,7 +538,7 @@ export default function DoctorRegisterInvitationPage() {
     setStatus("submitting");
     try {
       const validationResponse = await doctorInvitationsApi.validate(token);
-      if (!validationResponse?.data?.isValid) {
+      if (!isUsableInvitation(validationResponse?.data)) {
         setInvitation(null);
         setRemainingSeconds(null);
         setApiErrors([getInvalidInvitationMessage(validationResponse?.data)]);
@@ -544,6 +551,29 @@ export default function DoctorRegisterInvitationPage() {
       setStatus("success");
     } catch (error) {
       const rawMessages = getRawApiErrors(error);
+      // The invitation can be revoked between validation and registration.
+      // A generic registration error must not restore a now-invalid form.
+      if (!isInvitationFailure(rawMessages)) {
+        try {
+          const latest = await doctorInvitationsApi.validate(token);
+          if (!isUsableInvitation(latest?.data)) {
+            setInvitation(null);
+            setRemainingSeconds(null);
+            setApiErrors([getInvalidInvitationMessage(latest?.data)]);
+            setStatus("invalid");
+            return;
+          }
+        } catch (validationError) {
+          const validationMessages = getRawApiErrors(validationError);
+          if (isInvitationFailure(validationMessages)) {
+            setInvitation(null);
+            setRemainingSeconds(null);
+            setApiErrors(validationMessages.map(presentInvitationError));
+            setStatus("invalid");
+            return;
+          }
+        }
+      }
       setApiErrors([...new Set(rawMessages.map(presentInvitationError))]);
       setStatus(isInvitationFailure(rawMessages) ? "invalid" : isLinkedProfile ? "ready-linked" : "ready-new");
     }
@@ -689,7 +719,7 @@ export default function DoctorRegisterInvitationPage() {
                     <legend>Thông tin tài khoản</legend>
                     <p>Email được lấy từ lời mời và không thể thay đổi tại bước này.</p>
                     <div className="form-two-cols">
-                      <Field id="doctor-email" label="Email">
+                      <Field id="doctor-email" label="Email" className="doctor-field-wide">
                         <input
                           name="email"
                           type="email"
@@ -699,7 +729,7 @@ export default function DoctorRegisterInvitationPage() {
                           aria-readonly="true"
                         />
                       </Field>
-                      <Field id="doctor-fullName" label="Họ và tên" error={errors.fullName} required>
+                      <Field id="doctor-fullName" label="Họ và tên" error={errors.fullName} className="doctor-field-wide" required>
                         <input
                           name="fullName"
                           value={form.fullName}

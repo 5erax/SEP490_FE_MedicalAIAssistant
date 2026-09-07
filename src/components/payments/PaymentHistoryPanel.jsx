@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ReceiptText, RefreshCw, X } from "lucide-react";
 import { Dialog } from "../ui";
 import { paymentsApi } from "../../services/api";
-import { getPaymentReconcileErrorMessage } from "../../services/apiError";
 import { translateApiMessage } from "../../services/apiMessageTranslator";
 import { getPaymentAmountLabel, getPaymentStatusLabel } from "../../services/paymentStatusLabels";
 import "../../styles/payment-history.css";
@@ -84,19 +83,6 @@ function getDetailErrorMessage(error) {
     status: error?.status,
     fallback: "Chưa thể tải chi tiết giao dịch. Vui lòng thử lại sau.",
   });
-}
-
-// Only Pending PayOS transactions can be reconciled - other providers or
-// already-terminal statuses have nothing for the reconcile endpoint to fix.
-function canReconcilePayment(payment) {
-  const status = String(payment?.status ?? "").toLowerCase();
-  const provider = String(payment?.paymentProvider ?? payment?.provider ?? "").toLowerCase();
-  const orderCode = String(payment?.transactionReference ?? "").trim();
-  return status === "pending" && provider === "payos" && Boolean(orderCode);
-}
-
-function getFriendlyReconcileMessage(error) {
-  return getPaymentReconcileErrorMessage(error, "Chưa thể kiểm tra giao dịch lúc này. Vui lòng thử lại sau.");
 }
 
 function PaymentStatusBadge({ payment }) {
@@ -256,25 +242,6 @@ export default function PaymentHistoryPanel() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState(null);
-  const [reconcilingOrderCode, setReconcilingOrderCode] = useState("");
-  const [reconcileMessage, setReconcileMessage] = useState("");
-
-  async function reconcileHistoryPayment(payment) {
-    const orderCode = String(payment?.transactionReference ?? "").trim();
-    if (!orderCode) return;
-
-    setReconcilingOrderCode(orderCode);
-    setReconcileMessage("Đang kiểm tra giao dịch với PayOS...");
-    try {
-      const response = await paymentsApi.reconcilePayOs(orderCode);
-      setReconcileMessage(response?.data?.message || response?.message || "Đã cập nhật giao dịch.");
-      setReloadKey((current) => current + 1);
-    } catch (requestError) {
-      setReconcileMessage(getFriendlyReconcileMessage(requestError));
-    } finally {
-      setReconcilingOrderCode("");
-    }
-  }
 
   useEffect(() => {
     let active = true;
@@ -343,9 +310,6 @@ export default function PaymentHistoryPanel() {
         <span>{paymentPage.totalCount} giao dịch</span>
       </div>
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
-      {reconcileMessage && (
-        <p className="payment-history-reconcile-status" role="status" aria-live="polite">{reconcileMessage}</p>
-      )}
 
       {loading && paymentPage.items.length === 0 ? (
         <div className="payment-history-state">
@@ -428,21 +392,6 @@ export default function PaymentHistoryPanel() {
                     >
                       Xem chi tiết
                     </button>
-                    {canReconcilePayment(payment) && (
-                      <button
-                        type="button"
-                        className="payment-history-reconcile-button"
-                        disabled={reconcilingOrderCode === payment.transactionReference}
-                        onClick={() => reconcileHistoryPayment(payment)}
-                      >
-                        <RefreshCw
-                          size={14}
-                          aria-hidden="true"
-                          className={reconcilingOrderCode === payment.transactionReference ? "payment-history-spinner" : ""}
-                        />
-                        {reconcilingOrderCode === payment.transactionReference ? "Đang kiểm tra..." : "Kiểm tra với PayOS"}
-                      </button>
-                    )}
                   </div>
                 </td>
               </tr>
