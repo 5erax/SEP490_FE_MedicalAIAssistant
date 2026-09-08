@@ -49,7 +49,7 @@ import {
 import "../styles/recovery-plan.css";
 import "../styles/formatted-recovery-note.css";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 const CANCELLABLE_REQUEST_STATUSES = new Set(["waitingForDoctor", "assigned", "inReview", "needMoreInformation"]);
 const DISEASE_GROUPS = [
   { value: "respiratory", label: "Hô hấp" },
