@@ -1470,9 +1470,21 @@
 }
 
 .recovery-detail-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: flex-start;
+  gap: 12px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--color-line);
+}
+
+.recovery-detail-header > div {
+  min-width: 0;
+}
+
+.recovery-detail-header .recovery-status-badge {
+  justify-self: end;
+  margin-top: 1px;
 }
 
 .recovery-detail-header h3 {
@@ -1928,6 +1940,7 @@
 .recovery-plan-collapse-toggle {
   display: grid;
   place-items: center;
+  justify-self: end;
   flex: 0 0 auto;
   width: 32px;
   height: 32px;
@@ -2143,10 +2156,18 @@
   .recovery-section-heading,
   .recovery-workspace-head,
   .recovery-submit-row,
-  .recovery-detail-header,
   .recovery-start-card {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .recovery-detail-header {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-detail-header .recovery-status-badge,
+  .recovery-plan-collapse-toggle {
+    justify-self: start;
   }
 
   .recovery-hero-icon {
