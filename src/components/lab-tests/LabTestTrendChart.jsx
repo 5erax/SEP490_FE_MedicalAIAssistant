@@ -1,5 +1,8 @@
-import { ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { Button } from "../ui";
+
+const TREND_POINTS_PER_PAGE = 8;
 
 const LAB_RESULT_STATUS_LABELS = {
   unknown: "Chưa xác định",
@@ -57,6 +60,24 @@ function pathFromSegment(segment) {
 
 export default function LabTestTrendChart({ trend, onOpenSession }) {
   const points = sortedPoints(trend?.points);
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(points.length / TREND_POINTS_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const visiblePoints = points.slice(
+    (currentPage - 1) * TREND_POINTS_PER_PAGE,
+    currentPage * TREND_POINTS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [trend?.name, trend?.symbol]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   if (points.length === 0) return null;
 
   const width = 820;
@@ -176,12 +197,13 @@ export default function LabTestTrendChart({ trend, onOpenSession }) {
       </div>
 
       <ol className="lab-trend-measurements" aria-label="Các lần đo trong biểu đồ">
-        {points.map((point, index) => {
+        {visiblePoints.map((point, index) => {
+          const pointIndex = (currentPage - 1) * TREND_POINTS_PER_PAGE + index;
           const statusKey = String(point?.status || "unknown").toLowerCase();
           const unit = point?.unit || trend?.unit || "";
           const hasReference = point?.referenceMin != null || point?.referenceMax != null;
           return (
-            <li key={`${point.sessionId || index}-${point.testDate || index}`}>
+            <li key={`${point.sessionId || pointIndex}-${point.testDate || pointIndex}`}>
               <div className="lab-trend-measurement__heading">
                 <div>
                   <strong>{formatDateOnly(point.testDate)}</strong>
@@ -217,6 +239,30 @@ export default function LabTestTrendChart({ trend, onOpenSession }) {
           );
         })}
       </ol>
+
+      {totalPages > 1 && (
+        <nav className="lab-trend-pagination" aria-label="Phân trang lịch sử xét nghiệm">
+          <Button
+            type="button"
+            tone="secondary"
+            size="sm"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            <ChevronLeft size={16} aria-hidden="true" /> Trang trước
+          </Button>
+          <span>Trang {currentPage}/{totalPages}</span>
+          <Button
+            type="button"
+            tone="secondary"
+            size="sm"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+          >
+            Trang sau <ChevronRight size={16} aria-hidden="true" />
+          </Button>
+        </nav>
+      )}
     </div>
   );
 }
