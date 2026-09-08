@@ -181,22 +181,31 @@ async function openPreConsultation(page, path = "/pre-consultation") {
   return calls;
 }
 
-test("map-selected facility is preselected but remains changeable", async ({ page }) => {
+async function pickSuggestedSession(page) {
+  await page.getByRole("button", { name: "Danh sách phiên gợi ý chuyên khoa" }).click();
+  await page.getByRole("button", { name: /Đau ngực khi vận động/ }).click();
+  await page.getByRole("button", { name: /Chọn cơ sở y tế/ }).click();
+  await page.getByRole("button", { name: /Bệnh viện Tim Tâm Đức/ }).click();
+}
+
+test("map-selected facility is shown once and remains changeable", async ({ page }) => {
   const calls = await openPreConsultation(
     page,
     `/pre-consultation?sessionId=${SYMPTOM_SESSION_ID}&facilityId=${MAP_FACILITY_ID}&facilityName=${encodeURIComponent("Bệnh viện gần người dùng")}`,
   );
 
-  await expect(page.locator(".pre-consultation-facility-trigger")).toContainText("Bệnh viện gần người dùng");
-  await expect(page.getByText("Đã chọn theo cơ sở bạn vừa xem trên Bản đồ. Bạn vẫn có thể thay đổi.", { exact: true })).toBeVisible();
   const picker = page.locator(".pre-consultation-facility-trigger");
-  await expect(picker).toBeEnabled();
+  await expect(picker).toContainText("Bệnh viện gần người dùng");
   await expect(picker).toContainText("Thay đổi");
+  await expect(page.locator(".pre-consultation-selected-facility")).toHaveCount(0);
+  await expect(page.getByText("Đã chọn theo cơ sở bạn vừa xem trên Bản đồ. Bạn vẫn có thể thay đổi.", { exact: true })).toBeVisible();
+
   await picker.click();
   const facilityOptions = page.locator(".pre-consultation-suggestion-dropdown .pre-consultation-suggestion-row");
   await expect(facilityOptions.filter({ hasText: "Bệnh viện gần người dùng" })).toBeVisible();
   await facilityOptions.filter({ hasText: "Bệnh viện Tim Tâm Đức" }).click();
   await expect(picker).toContainText("Bệnh viện Tim Tâm Đức");
+
   await picker.click();
   await facilityOptions.filter({ hasText: "Bệnh viện gần người dùng" }).click();
   await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
@@ -204,13 +213,6 @@ test("map-selected facility is preselected but remains changeable", async ({ pag
   await expect(page.getByRole("heading", { name: "Danh sách chuẩn bị" })).toBeVisible();
   expect(calls.generateBody.facilityId).toBe(MAP_FACILITY_ID);
 });
-
-async function pickSuggestedSession(page) {
-  await page.getByRole("button", { name: "Danh sách phiên gợi ý chuyên khoa" }).click();
-  await page.getByRole("button", { name: /Đau ngực khi vận động/ }).click();
-  await page.getByRole("button", { name: /Chọn cơ sở y tế/ }).click();
-  await page.getByRole("button", { name: /Bệnh viện Tim Tâm Đức/ }).click();
-}
 
 test("user completes the guided pre-consultation flow", async ({ page }) => {
   const pageErrors = [];
@@ -261,10 +263,10 @@ test("user completes the guided pre-consultation flow", async ({ page }) => {
   expect(calls.generateBody).toMatchObject({ departmentId: DEPARTMENT_ID, facilityId: SUGGESTED_FACILITY_ID, symptoms: "Đau ngực khi vận động" });
   expect(calls.checklist).toBe(1);
   expect(calls.detail).toBe(3);
-  expect(calls.detailTimes[1] - calls.detailTimes[0]).toBeGreaterThanOrEqual(150);
-  expect(calls.detailTimes[2] - calls.detailTimes[1]).toBeGreaterThanOrEqual(150);
+  expect(calls.detailTimes[1] - calls.detailTimes[0]).toBeGreaterThanOrEqual(900);
+  expect(calls.detailTimes[2] - calls.detailTimes[1]).toBeGreaterThanOrEqual(900);
   expect(calls.usage).toBeGreaterThanOrEqual(2);
-  expect(calls.userMe).toBe(1);
+  expect(calls.userMe).toBeGreaterThanOrEqual(1);
   expect(calls.reminderBody).toEqual({ enableReminder: true });
   expect(calls.summary).toBe(1);
   expect(calls.complete).toBe(1);

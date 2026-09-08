@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
-  ArrowRight,
   CheckCircle2,
   CircleAlert,
   ClipboardCheck,
   FileText,
-  HeartPulse,
-  ListChecks,
   LoaderCircle,
   RefreshCw,
   ShieldCheck,
-  TriangleAlert,
 } from "lucide-react";
 import { Button, EmptyState, ErrorState } from "../components/ui";
 import { navigate } from "../router/navigation";
@@ -20,7 +16,7 @@ import { useServiceCredit } from "../state/useServiceCredit";
 import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
 import "../styles/user-workspace/lab-test-result.css";
 
-const POLL_INTERVAL_MS = 100;
+const POLL_INTERVAL_MS = 1000;
 const TERMINAL_SESSION_STATUSES = new Set([
   ASYNC_SESSION_STATUS.COMPLETED,
   ASYNC_SESSION_STATUS.FAILED,
@@ -32,8 +28,8 @@ const RESULT_STATUS_META = {
   normal: { label: "Bình thường", tone: "success" },
   high: { label: "Cao", tone: "warning" },
   low: { label: "Thấp", tone: "warning" },
-  criticalHigh: { label: "Cao nguy cấp", tone: "danger" },
-  criticalLow: { label: "Thấp nguy cấp", tone: "danger" },
+  criticalHigh: { label: "Cao", tone: "warning" },
+  criticalLow: { label: "Thấp", tone: "warning" },
 };
 
 function unwrapData(response) {
@@ -376,82 +372,18 @@ function getResultPriority(result) {
   return 3;
 }
 
-function getDeviationMagnitude(result) {
-  const deviation = Number(result?.deviationPercent);
-  return Number.isFinite(deviation) ? Math.abs(deviation) : -1;
-}
-
-function getPriorityResults(results) {
-  return results
-    .filter((result) => ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status)))
-    .map((result, index) => ({ result, index }))
-    .sort((left, right) => (
-      getResultPriority(left.result) - getResultPriority(right.result)
-      || getDeviationMagnitude(right.result) - getDeviationMagnitude(left.result)
-      || left.index - right.index
-    ))
-    .slice(0, 3);
-}
-
-function uniqueAdviceItems(values, limit = 3) {
-  const seen = new Set();
-  const items = [];
-
-  for (const value of values) {
-    for (const item of toAdviceItems(value)) {
-      const key = item.normalize("NFKC").toLocaleLowerCase("vi-VN").replace(/\s+/g, " ").trim();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      items.push(item);
-      if (items.length >= limit) return items;
-    }
-  }
-
-  return items;
-}
-
-function getOverviewActions(results) {
-  const abnormalResults = results.filter((result) => (
-    ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
-  ));
-  const actionSources = abnormalResults.length > 0 ? abnormalResults : results;
-  const adviceItems = actionSources.map(getResultAdvice).filter(Boolean);
-
-  return {
-    urgent: uniqueAdviceItems(adviceItems.map((advice) => (
-      typeof advice === "object" ? advice.warningSigns : null
-    ))),
-    followUp: uniqueAdviceItems(adviceItems.flatMap((advice) => (
-      typeof advice === "object"
-        ? [advice.followUpSuggestion, advice.followUpAdvice, advice.monitoringAdvice]
-        : []
-    ))),
-    habits: uniqueAdviceItems(adviceItems.flatMap((advice) => (
-      typeof advice === "object"
-        ? [advice.lifestyleAdvice, advice.nutritionalAdvice]
-        : []
-    ))),
-  };
-}
-
 function getFallbackOverviewSummary({
-  criticalCount,
   attentionCount,
   normalCount,
   unknownCount,
   totalCount,
-  priorityNames = [],
 }) {
   if (totalCount === 0) {
     return "Phiên phân tích đã hoàn tất nhưng chưa có đủ chỉ số để tạo nhận định tổng quan.";
   }
   const normalRatio = normalCount > 0 ? `${normalCount}/${totalCount} chỉ số nằm trong khoảng tham chiếu. ` : "";
-  const focusText = priorityNames.length > 0 ? ` ${priorityNames.join(", ")} cần được xem trước.` : "";
-  if (criticalCount > 0) {
-    return `${normalRatio}Có ${criticalCount} chỉ số ở mức nguy cấp.${focusText} Hãy trao đổi với nhân viên y tế, đặc biệt khi bạn đang có triệu chứng bất thường.`;
-  }
   if (attentionCount > 0) {
-    return `${normalRatio}Có ${attentionCount} chỉ số nằm ngoài khoảng tham chiếu.${focusText}`;
+    return `${normalRatio}Có ${attentionCount} chỉ số nằm ngoài khoảng tham chiếu.`;
   }
   if (normalCount > 0 && unknownCount === 0) {
     return "Các chỉ số đã nhận diện đều nằm trong khoảng tham chiếu. Bạn vẫn nên theo dõi sức khỏe và thực hiện theo hướng dẫn của bác sĩ nếu có.";
@@ -554,22 +486,6 @@ function FormattedSummary({ value }) {
   );
 }
 
-function OverviewActionGroup({ icon, title, items, tone = "default" }) {
-  if (items.length === 0) return null;
-
-  return (
-    <section className="lab-test-result__overview-action" data-tone={tone}>
-      <span aria-hidden="true">{icon}</span>
-      <div>
-        <h3>{title}</h3>
-        <ul>
-          {items.map((item) => <li key={`${title}-${item}`}>{item}</li>)}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
 function ResultOverview({
   results,
   summary,
@@ -577,33 +493,22 @@ function ResultOverview({
   summaryError,
   normalCount,
   attentionCount,
-  criticalCount,
   unknownCount,
   onRetrySummary,
-  onSelectResult,
 }) {
   const totalCount = results.length;
-  const priorityResults = getPriorityResults(results);
-  const actions = getOverviewActions(results);
-  const headline = criticalCount > 0
-    ? `Có ${criticalCount} chỉ số ở mức nguy cấp`
-    : attentionCount > 0
-      ? `Có ${attentionCount} chỉ số cần chú ý`
-      : normalCount > 0 && unknownCount === 0
-        ? "Các chỉ số đã nhận diện đang ổn định"
-        : "Kết quả cần được đối chiếu thêm";
-  const tone = criticalCount > 0 ? "danger" : attentionCount > 0 ? "warning" : "success";
+  const headline = attentionCount > 0
+    ? `Có ${attentionCount} chỉ số cần chú ý`
+    : normalCount > 0 && unknownCount === 0
+      ? "Các chỉ số đã nhận diện đang ổn định"
+      : "Kết quả cần được đối chiếu thêm";
+  const tone = attentionCount > 0 ? "warning" : "success";
   const fallbackSummary = getFallbackOverviewSummary({
-    criticalCount,
     attentionCount,
     normalCount,
     unknownCount,
     totalCount,
-    priorityNames: priorityResults.map(({ result }) => getResultSymbol(result)),
   });
-  const summaryPreview = fallbackSummary;
-  const hasExtendedSummary = Boolean(summary) && stripSummaryFormatting(summary).length > summaryPreview.length + 80;
-  const hasActions = actions.urgent.length + actions.followUp.length + actions.habits.length > 0;
 
   return (
     <section className="lab-test-result__overview" aria-labelledby="lab-overview-title">
@@ -618,17 +523,16 @@ function ResultOverview({
       </header>
 
       <div className="lab-test-result__overview-counts" aria-label={`Tổng cộng ${totalCount} chỉ số`}>
-        <div data-tone="danger" data-active={criticalCount > 0}><strong>{criticalCount}</strong><span>Nguy cấp</span></div>
         <div className="lab-test-result__overview-attention" data-tone="warning" data-active={attentionCount > 0}>
-          <span>Cần chú ý</span><strong>{attentionCount}</strong>
+          <span>Chỉ số cần chú ý</span><strong>{attentionCount}</strong>
         </div>
-        <div data-tone="success" data-active={normalCount > 0}><strong>{normalCount}</strong><span>Bình thường</span></div>
-        <div data-tone="neutral" data-active={unknownCount > 0}><strong>{unknownCount}</strong><span>Chưa xác định</span></div>
+        <div data-tone="success" data-active={normalCount > 0}><span>Chỉ số bình thường</span><strong>{normalCount}</strong></div>
+        <div data-tone="neutral" data-active={unknownCount > 0}><span>Chỉ số chưa xác định</span><strong>{unknownCount}</strong></div>
       </div>
 
       <div className="lab-test-result__overview-summary" data-tone={tone}>
         <span className="lab-test-result__overview-summary-label">Nhận định chung</span>
-        <p>{summaryPreview}</p>
+        {summary ? <FormattedSummary value={summary} /> : <p>{fallbackSummary}</p>}
         {summaryStatus === "loading" && (
           <span className="lab-test-result__summary-state">
             <LoaderCircle className="lab-test-result__spinner" size={15} aria-hidden="true" />
@@ -644,76 +548,6 @@ function ResultOverview({
           </span>
         )}
       </div>
-
-      {priorityResults.length > 0 && (
-        <section className="lab-test-result__priority-section" aria-labelledby="lab-priority-title">
-          <div className="lab-test-result__section-title">
-            <TriangleAlert size={18} aria-hidden="true" />
-            <h3 id="lab-priority-title">Điểm cần chú ý trước</h3>
-          </div>
-          <div className="lab-test-result__priority-list">
-            {priorityResults.map(({ result, index }) => {
-              const key = getResultKey(result, index);
-              const meta = RESULT_STATUS_META[normalizeResultStatus(result?.status)];
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className="lab-test-result__priority-item"
-                  data-tone={meta.tone}
-                  onClick={() => onSelectResult(key, result)}
-                >
-                  <span>
-                    <strong>{getResultName(result)}</strong>
-                    <small>{getResultValue(result)} · {meta.label}</small>
-                  </span>
-                  <span className="lab-test-result__priority-link">
-                    Xem chi tiết <ArrowRight size={15} aria-hidden="true" />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {hasActions && (
-        <section className="lab-test-result__actions-section" aria-labelledby="lab-actions-title">
-          <div className="lab-test-result__section-title">
-            <ListChecks size={18} aria-hidden="true" />
-            <h3 id="lab-actions-title">Việc nên làm tiếp theo</h3>
-          </div>
-          <div className="lab-test-result__overview-actions">
-            <OverviewActionGroup
-              icon={<TriangleAlert size={18} />}
-              title="Dấu hiệu cần lưu ý"
-              items={actions.urgent}
-              tone="warning"
-            />
-            <OverviewActionGroup
-              icon={<HeartPulse size={18} />}
-              title="Nên theo dõi"
-              items={actions.followUp}
-            />
-            <OverviewActionGroup
-              icon={<CheckCircle2 size={18} />}
-              title="Sinh hoạt và dinh dưỡng"
-              items={actions.habits}
-              tone="success"
-            />
-          </div>
-        </section>
-      )}
-
-      {hasExtendedSummary && (
-        <details className="lab-test-result__full-summary">
-          <summary>
-            <FileText size={17} aria-hidden="true" />
-            <span>Xem phân tích tổng quan đầy đủ</span>
-          </summary>
-          <FormattedSummary value={summary} />
-        </details>
-      )}
 
       <p className="lab-test-result__overview-disclaimer">
         Tổng quan giúp bạn đọc kết quả dễ hơn, không thay thế chẩn đoán hoặc tư vấn trực tiếp từ bác sĩ.
@@ -956,13 +790,10 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const sessionStatus = normalizeAsyncSessionStatus(session?.status);
   const isPending = !initialSession && loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);
   const normalCount = results.filter((result) => normalizeResultStatus(result?.status) === "normal").length;
-  const criticalCount = results.filter((result) => (
-    ["criticalHigh", "criticalLow"].includes(normalizeResultStatus(result?.status))
-  )).length;
   const attentionCount = results.filter((result) => (
-    ["high", "low"].includes(normalizeResultStatus(result?.status))
+    ABNORMAL_RESULT_STATUSES.has(normalizeResultStatus(result?.status))
   )).length;
-  const warningCount = criticalCount + attentionCount;
+  const warningCount = attentionCount;
   const unknownCount = results.length - normalCount - warningCount;
   const requestedResultFilter = resultFilter;
   const requestedFilterCount = {
@@ -1083,17 +914,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
     setSummaryRetryKey((current) => current + 1);
   }
 
-  function selectOverviewResult(key, result) {
-    setResultFilter("attention");
-    setVisibleResultLimit(9);
-    selectResult(key, result);
-    window.requestAnimationFrame(() => {
-      const target = document.getElementById("lab-result-advice");
-      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-      target?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-    });
-  }
-
   function changeResultFilter(nextFilter) {
     setResultFilter(nextFilter);
     setVisibleResultLimit(9);
@@ -1187,10 +1007,8 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
           summaryError={summaryError}
           normalCount={normalCount}
           attentionCount={attentionCount}
-          criticalCount={criticalCount}
           unknownCount={unknownCount}
           onRetrySummary={retrySummary}
-          onSelectResult={selectOverviewResult}
         />
 
         <div className="lab-test-result__content-grid">

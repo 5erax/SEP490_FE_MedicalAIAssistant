@@ -28,11 +28,6 @@ import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyn
 import PreConsultationHistory from "../components/preConsultation/PreConsultationHistory";
 import "../styles/pre-consultation.css";
 
-const VIEW_TABS = [
-  { id: "new", label: "Tư vấn mới" },
-  { id: "history", label: "Lịch sử tư vấn" },
-];
-
 const STEPS = [
   { label: "Thông tin", hint: "Buổi khám", icon: Stethoscope },
   { label: "Chuẩn bị", hint: "Checklist", icon: ClipboardCheck },
@@ -49,7 +44,7 @@ const CATEGORY_LABELS = {
   followUp: "Theo dõi",
 };
 
-const SESSION_POLL_INTERVAL_MS = 200;
+const SESSION_POLL_INTERVAL_MS = 1000;
 const SESSION_POLL_TIMEOUT_MS = 2 * 60 * 1000;
 
 function wait(milliseconds) {
@@ -155,7 +150,6 @@ function normalizeQuestions(value) {
 
 export default function PreConsultationPage() {
   const { refresh: refreshServiceCredit } = useServiceCredit();
-  const [activeView, setActiveView] = useState("new");
   const [step, setStep] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [departmentsStatus, setDepartmentsStatus] = useState("loading");
@@ -186,7 +180,6 @@ export default function PreConsultationPage() {
   const createInFlightRef = useRef(false);
   const terminalBalanceRefreshRef = useRef("");
   const sessionPollRef = useRef({ sessionId: "", promise: null });
-  const viewTabRefs = useRef([]);
   const autoAppliedSessionRef = useRef(false);
 
   useEffect(() => {
@@ -236,13 +229,18 @@ export default function PreConsultationPage() {
     const sessionId = search.get("sessionId");
     if (sessionId) {
       autoAppliedSessionRef.current = true;
-      const preferredFacilityId = String(search.get("facilityId") ?? "").trim();
-      const preferredFacility = preferredFacilityId ? {
-        facilityId: preferredFacilityId,
-        facilityName: String(search.get("facilityName") ?? "").trim() || "Cơ sở đã chọn từ bản đồ",
-        address: "",
-      } : null;
-      applySuggestedSession({ sessionId }, { source: "map", preferredFacility });
+      applySuggestedSession(
+        { sessionId },
+        {
+          source: "map",
+          facilityOverride: search.get("facilityId")
+            ? {
+              facilityId: search.get("facilityId"),
+              facilityName: search.get("facilityName") || "",
+            }
+            : null,
+        },
+      );
       return;
     }
 
@@ -295,7 +293,7 @@ export default function PreConsultationPage() {
     }
   }
 
-  async function applySuggestedSession(sessionItem, { source = "list", preferredFacility = null } = {}) {
+  async function applySuggestedSession(sessionItem, { source = "list", facilityOverride = null } = {}) {
     const sessionId = sessionItem?.sessionId || sessionItem?.id;
     if (!sessionId) return;
 
@@ -308,28 +306,33 @@ export default function PreConsultationPage() {
       const matchedDepartmentId = departmentId && departments.some((item) => item.id === departmentId)
         ? departmentId
         : "";
-      const preferredFacilityId = String(preferredFacility?.facilityId ?? "").trim();
-      const matchedPreferredFacility = preferredFacilityId
-        ? facilities.find((facility) => facility.facilityId === preferredFacilityId)
+      const overriddenFacilityId = String(facilityOverride?.facilityId ?? "").trim();
+      const matchedOverriddenFacility = overriddenFacilityId
+        ? facilities.find((facility) => facility.facilityId === overriddenFacilityId)
         : null;
-      const selectedPreferredFacility = preferredFacilityId ? {
-        ...(matchedPreferredFacility ?? preferredFacility),
-        facilityId: preferredFacilityId,
-        facilityName: String(preferredFacility?.facilityName ?? matchedPreferredFacility?.facilityName ?? "").trim()
+      const overriddenFacility = overriddenFacilityId ? {
+        ...(matchedOverriddenFacility ?? facilityOverride),
+        facilityId: overriddenFacilityId,
+        facilityName: String(facilityOverride?.facilityName ?? matchedOverriddenFacility?.facilityName ?? "").trim()
           || "Cơ sở đã chọn từ bản đồ",
       } : null;
-      const availableFacilities = selectedPreferredFacility
-        ? [selectedPreferredFacility, ...facilities.filter((facility) => facility.facilityId !== preferredFacilityId)]
+      const availableFacilities = overriddenFacility
+        ? [overriddenFacility, ...facilities.filter((facility) => facility.facilityId !== overriddenFacilityId)]
         : facilities;
 
       setForm((current) => ({
         ...current,
         departmentId: matchedDepartmentId || current.departmentId,
         symptoms: symptomText || current.symptoms,
-        facilityId: selectedPreferredFacility?.facilityId ?? "",
-        facilityName: selectedPreferredFacility?.facilityName ?? "",
+        facilityId: overriddenFacility?.facilityId || "",
+        facilityName: overriddenFacility?.facilityName || "",
       }));
-      setFormErrors((current) => ({ ...current, departmentId: "", symptoms: "", facilityId: "" }));
+      setFormErrors((current) => ({
+        ...current,
+        departmentId: "",
+        symptoms: "",
+        facilityId: overriddenFacility ? "" : current.facilityId,
+      }));
       setSuggestedFacilities(availableFacilities);
       setFacilityPickerOpen(false);
       setSuggestedSessionsOpen(false);
@@ -337,8 +340,6 @@ export default function PreConsultationPage() {
       setAnnouncement(
         departmentId && !matchedDepartmentId
           ? "Đã điền triệu chứng từ phiên đã chọn. Chuyên khoa được gợi ý hiện chưa hỗ trợ tư vấn trước khám."
-          : selectedPreferredFacility
-            ? `Đã điền thông tin và chọn cơ sở ${selectedPreferredFacility.facilityName} từ bản đồ.`
           : "Đã điền thông tin từ phiên gợi ý chuyên khoa đã chọn.",
       );
     } catch (loadError) {
@@ -555,69 +556,36 @@ export default function PreConsultationPage() {
     isReminderEnabled: reminderEnabled === true,
   };
 
-  function selectView(view, moveFocus = false) {
-    setActiveView(view);
-    setError("");
-    if (moveFocus) {
-      const index = VIEW_TABS.findIndex((tab) => tab.id === view);
-      window.requestAnimationFrame(() => viewTabRefs.current[index]?.focus());
-    }
-  }
-
-  function handleViewTabKeyDown(event, currentIndex) {
-    let nextIndex;
-    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % VIEW_TABS.length;
-    else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + VIEW_TABS.length) % VIEW_TABS.length;
-    else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = VIEW_TABS.length - 1;
-    else return;
-
-    event.preventDefault();
-    selectView(VIEW_TABS[nextIndex].id, true);
-  }
-
   function startNewFromHistory() {
     setStep(0);
-    selectView("new", true);
+    setError("");
+    window.requestAnimationFrame(() => headingRef.current?.focus());
   }
 
   return (
     <div className="pre-consultation-page">
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
+      <div className="pre-consultation-hero-shell">
       <header className="pre-consultation-hero">
-        <div>
-          <span className="pre-consultation-eyebrow">Chuẩn bị trước buổi khám</span>
-          <p className="pre-consultation-title">Tư vấn trước khám</p>
-          <p className="pre-consultation-description">Ghi lại thông tin cần thiết, xem danh sách chuẩn bị và tổng hợp câu hỏi dành cho bác sĩ.</p>
+        <div className="pre-consultation-hero-main">
+          <span className="pre-consultation-hero-icon" aria-hidden="true">
+            <Stethoscope size={24} />
+          </span>
+          <div>
+            <p className="pre-consultation-title">Tư vấn trước khám</p>
+            <p className="pre-consultation-description">Ghi lại thông tin cần thiết, xem danh sách chuẩn bị và tổng hợp câu hỏi dành cho bác sĩ.</p>
+          </div>
         </div>
-        <div className="pre-consultation-hero-note">
-          <ShieldCheck size={24} aria-hidden="true" />
-          <span><strong>5 bước ngắn gọn</strong><small>Bạn được kiểm tra lại thông tin trước khi hoàn thành.</small></span>
+        <div className="pre-consultation-hero-actions">
+          <div className="pre-consultation-hero-note">
+            <ShieldCheck size={24} aria-hidden="true" />
+            <span><strong>5 bước ngắn gọn</strong><small>Bạn được kiểm tra lại thông tin trước khi hoàn thành.</small></span>
+          </div>
+          <PreConsultationHistory onStartNew={startNewFromHistory} />
         </div>
       </header>
-
-      <div className="pre-consultation-view-tabs" role="tablist" aria-label="Chọn nội dung tư vấn trước khám">
-        {VIEW_TABS.map((tab, index) => (
-          <button
-            key={tab.id}
-            ref={(element) => { viewTabRefs.current[index] = element; }}
-            id={`pre-consultation-tab-${tab.id}`}
-            type="button"
-            role="tab"
-            aria-selected={activeView === tab.id}
-            aria-controls={`pre-consultation-panel-${tab.id}`}
-            tabIndex={activeView === tab.id ? 0 : -1}
-            onClick={() => selectView(tab.id)}
-            onKeyDown={(event) => handleViewTabKeyDown(event, index)}
-          >
-            {tab.label}
-          </button>
-        ))}
       </div>
-
-      {activeView === "new" ? (
-        <div id="pre-consultation-panel-new" role="tabpanel" aria-labelledby="pre-consultation-tab-new">
 
       <ol className="pre-consultation-stepper" aria-label="Tiến trình tư vấn trước khám">
         {STEPS.map((item, index) => {
@@ -663,7 +631,7 @@ export default function PreConsultationPage() {
 
             <div className="pre-consultation-schedule-row">
               <label className={formErrors.appointmentTime ? "has-error" : ""}>
-                <span>Thời gian dự kiến khám (bắt buộc)</span>
+                <span>Thời gian dự kiến khám <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                 <input
                   type="datetime-local"
                   value={form.appointmentTime}
@@ -678,7 +646,9 @@ export default function PreConsultationPage() {
               </label>
 
               <div className="pre-consultation-suggestion-field">
-                <span className="pre-consultation-field-label">Danh sách phiên gợi ý chuyên khoa</span>
+                <span className="pre-consultation-field-label">
+                  Danh sách phiên gợi ý chuyên khoa <span className="pre-consultation-required-mark" aria-hidden="true">*</span><span className="sr-only"> (bắt buộc)</span>
+                </span>
                 <button type="button" className="ghost" onClick={toggleSuggestedSessions} aria-expanded={suggestedSessionsOpen}>
                   <History size={16} aria-hidden="true" />
                   <span className="pre-consultation-ghost-label">{appliedSessionTitle || "Danh sách phiên gợi ý chuyên khoa"}</span>
@@ -739,7 +709,7 @@ export default function PreConsultationPage() {
 
             <div className="pre-consultation-autofill-group">
               <div className={`pre-consultation-suggestion-field ${formErrors.facilityId ? "has-error" : ""}`}>
-                <span className="pre-consultation-field-label">Cơ sở khám dự kiến (bắt buộc)</span>
+                <span className="pre-consultation-field-label">Cơ sở khám dự kiến <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                 <button
                   type="button"
                   className="ghost pre-consultation-facility-trigger"
@@ -786,7 +756,7 @@ export default function PreConsultationPage() {
 
               <div className="pre-consultation-form-grid">
                 <div className={`pre-consultation-readonly-field ${formErrors.departmentId ? "has-error" : ""}`}>
-                  <span>Chuyên khoa</span>
+                  <span>Chuyên khoa <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                   <div className="pre-consultation-readonly-box" aria-live="polite">
                     {selectedDepartment?.departmentName
                       || <em>Chọn danh sách phiên gợi ý chuyên khoa để hiển thị</em>}
@@ -795,7 +765,7 @@ export default function PreConsultationPage() {
                   {formErrors.departmentId && <small>{formErrors.departmentId}</small>}
                 </div>
                 <div className={`pre-consultation-readonly-field wide ${formErrors.symptoms ? "has-error" : ""}`}>
-                  <span>Triệu chứng hoặc điều cần tư vấn</span>
+                  <span>Triệu chứng hoặc điều cần tư vấn <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                   <div className="pre-consultation-readonly-box textarea-like" aria-live="polite">
                     {form.symptoms || <em>Chọn danh sách phiên gợi ý chuyên khoa để hiển thị</em>}
                   </div>
@@ -883,7 +853,7 @@ export default function PreConsultationPage() {
             </section>
             <div className="pre-consultation-appointment"><CalendarClock size={22} aria-hidden="true" /><span><small>Lịch khám dự kiến</small><strong>{formatDateTime(sessionDetail?.appointmentTime || session?.appointmentTime)}</strong></span></div>
             <fieldset className="pre-consultation-reminder-options">
-              <legend>Chọn một phương án (bắt buộc)</legend>
+              <legend>Chọn một phương án <span className="pre-consultation-required-mark" aria-hidden="true">*</span></legend>
               <label className={reminderEnabled === true ? "selected" : ""}>
                 <input type="radio" name="reminder" checked={reminderEnabled === true} onChange={() => chooseReminder(true)} />
                 <BellRing size={20} aria-hidden="true" /><span><strong>Có, nhắc tôi</strong><small>Đăng ký nhận thông báo cho lịch khám này.</small></span>
@@ -929,12 +899,6 @@ export default function PreConsultationPage() {
           </section>
         )}
       </section>
-        </div>
-      ) : (
-        <div id="pre-consultation-panel-history" role="tabpanel" aria-labelledby="pre-consultation-tab-history">
-          <PreConsultationHistory onStartNew={startNewFromHistory} />
-        </div>
-      )}
     </div>
   );
 }

@@ -543,16 +543,17 @@ export default function DashboardPage() {
       <section className="studio-center" aria-labelledby="specialty-intake-title">
         <PatientProfileNudge visible={showIntakeForm} />
 
+        <div className="specialty-clinical-hero-shell">
         <header className="studio-heading specialty-clinical-heading">
           <div className="specialty-heading-main">
             <span className="studio-mark" aria-hidden="true"><ClipboardPlus size={24} /></span>
             <div>
-              <p className="studio-eyebrow">Tư vấn chuyên khoa</p>
               <h2 id="specialty-intake-title">Gợi ý chuyên khoa qua triệu chứng</h2>
               <p>Mô tả dấu hiệu bạn đang gặp. MediMate sẽ hỏi thêm một số câu ngắn trước khi gợi ý chuyên khoa và cơ sở y tế phù hợp.</p>
             </div>
           </div>
           <div className="studio-heading-actions specialty-heading-aside">
+            <ClinicalNote className="specialty-hero-note" title={CLINICAL_NOTES.scopeTitle}>{CLINICAL_NOTES.scope}</ClinicalNote>
             <Button
               type="button"
               tone="secondary"
@@ -568,8 +569,7 @@ export default function DashboardPage() {
             </Button>
           </div>
         </header>
-
-        <ClinicalNote title={CLINICAL_NOTES.scopeTitle}>{CLINICAL_NOTES.scope}</ClinicalNote>
+        </div>
 
         <ol className="studio-flow" aria-label="Tiến trình tư vấn">
           {["Mô tả", "Làm rõ", "Kết quả"].map((label, index) => (

@@ -613,13 +613,6 @@ export default function UserProfilePage() {
                     ? balance ? `${balance.remainingCount} lượt còn lại` : formatPlanName(primarySubscription?.planName)
                     : "Không khả dụng"}
               </strong>
-              <small>
-                {subscriptionReady
-                  ? activeSubscriptions.length > 1
-                    ? `${activeSubscriptions.length} gói đang hoạt động`
-                    : formatSubscriptionStatus(primarySubscription?.status ?? primarySubscription?.statusName)
-                  : "Chưa thể xác định gói hiện tại."}
-              </small>
             </article>
           </div>
         </section>

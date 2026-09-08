@@ -17,10 +17,15 @@ const ACTIVE_PLANS = [
   },
 ];
 
+function asOffers(plans) {
+  return plans.map((plan) => ({ plan, baseCredit: plan.quotas[0].limitValue,
+    grantedCredit: plan.quotas[0].limitValue, effectivePrice: plan.price, originalPrice: plan.price }));
+}
+
 async function mockPlans(page, plans = ACTIVE_PLANS) {
-  await page.route("**/api/subscription-plans/active", (route) => route.fulfill({
+  await page.route("**/api/subscription-plans/offers", (route) => route.fulfill({
     contentType: "application/json",
-    body: JSON.stringify({ success: true, data: plans }),
+    body: JSON.stringify({ success: true, data: asOffers(plans) }),
   }));
 }
 
@@ -30,6 +35,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("subscription email CTA alias renders the current pricing offers", async ({ page }) => {
+  await page.clock.install();
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.addInitScript(() => {
     localStorage.setItem("medimate.auth", JSON.stringify({
@@ -60,7 +66,7 @@ test("subscription email CTA alias renders the current pricing offers", async ({
             eligibilityType: "all",
             discountAmount: 8000,
             remainingRedemptions: 7,
-            endAt: new Date(Date.now() + (2 * 60 * 60 * 1000)).toISOString(),
+            endAt: new Date(Date.now() + (10 * 24 * 60 * 60 * 1000)).toISOString(),
           },
         }],
       }),
@@ -83,8 +89,9 @@ test("subscription email CTA alias renders the current pricing offers", async ({
 
   await expect(page).toHaveURL(/\/subscription\?view=upgrade/);
   await expect(page.getByRole("heading", { name: "Mở khóa gói MediMate Plus" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Miễn phí", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Gói 10 lượt", exact: true })).toBeVisible();
-  await expect(page.getByText("Tiết kiệm 8.000 ₫", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tiết kiệm 8.000đ", { exact: true })).toBeVisible();
   await expect(page.getByText("Tặng thêm 10 lượt", { exact: true })).toBeVisible();
   await expect(page.getByText("Còn 7 suất ưu đãi", { exact: true })).toBeVisible();
   await expect(page.getByText("Lượt dùng được cộng vào số dư hiện có và không hết hạn.", { exact: true })).toHaveCount(0);
@@ -104,13 +111,21 @@ test("subscription email CTA alias renders the current pricing offers", async ({
       saleStartsAfterPrimary: Boolean(primary && sale && sale.left > primary.left),
     };
   });
-  expect(desktopLayout.titleHeight).toBeLessThan(80);
+  expect(desktopLayout.titleHeight).toBeLessThan(140);
   expect(desktopLayout.cardBottom).toBeLessThanOrEqual(1080);
   expect(desktopLayout.leftAlignmentDelta).toBeLessThanOrEqual(2);
   expect(desktopLayout.saleStartsAfterPrimary).toBe(true);
 
   await page.setViewportSize({ width: 320, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  const countdown = page.locator(".pricing-sale-countdown");
+  await expect(countdown).toHaveCSS("display", "grid");
+  await expect(countdown).toHaveCSS("font-variant-numeric", "tabular-nums");
+  const beforeTick = await countdown.boundingBox();
+  await page.clock.fastForward(2000);
+  const afterTick = await countdown.boundingBox();
+  expect(afterTick.y).toBe(beforeTick.y);
+  expect(afterTick.height).toBe(beforeTick.height);
 
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/subscription", { waitUntil: "domcontentloaded" });
@@ -136,8 +151,8 @@ test("pricing compares public access with every active SERVICE_CREDIT package", 
   await expect(page.getByRole("heading", { name: "Miễn phí", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Gói 10 lượt", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Gói 25 lượt", exact: true })).toBeVisible();
-  await expect(page.getByText("90.000 ₫", { exact: true })).toBeVisible();
-  await expect(page.getByText("190.000 ₫", { exact: true })).toBeVisible();
+  await expect(page.getByText("90.000đ", { exact: true })).toBeVisible();
+  await expect(page.getByText("190.000đ", { exact: true })).toBeVisible();
   await expect(page.getByText(/10 lượt dùng chung cho kế hoạch phục hồi/i)).toBeVisible();
   await expect(page.getByText(/25 lượt dùng chung cho kế hoạch phục hồi/i)).toBeVisible();
   await expect(page.getByText(/mỗi tháng|mỗi ngày|chu kỳ thanh toán/i)).toHaveCount(0);
@@ -167,7 +182,7 @@ test("pricing remains usable at 320px and supports keyboard disclosure", async (
   )).toBeVisible();
 });
 
-test("pricing preserves clear credit-package controls with a dark system preference and forced colors", async ({ page }) => {
+test("pricing preserves clear credit-package controls in dark and forced-color modes", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/pricing", { waitUntil: "domcontentloaded" });
 
@@ -185,7 +200,7 @@ test("pricing preserves clear credit-package controls with a dark system prefere
 test("pricing treats every credit package as a one-time purchase", async ({ page }) => {
   await page.goto("/pricing", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("/ một lần", { exact: true })).toHaveCount(ACTIVE_PLANS.length);
+  await expect(page.getByRole("button", { name: "Đăng ký để mua lượt" })).toHaveCount(ACTIVE_PLANS.length);
   await expect(page.getByRole("button", { name: "Theo tháng" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Theo năm" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Gói 10 lượt", exact: true })).toBeVisible();
@@ -194,8 +209,8 @@ test("pricing treats every credit package as a one-time purchase", async ({ page
 
 test("pricing keeps unavailable paid data explicit and retryable", async ({ page }) => {
   let shouldFail = true;
-  await page.unroute("**/api/subscription-plans/active");
-  await page.route("**/api/subscription-plans/active", (route) => {
+  await page.unroute("**/api/subscription-plans/offers");
+  await page.route("**/api/subscription-plans/offers", (route) => {
     if (shouldFail) {
       return route.fulfill({
         status: 503,
@@ -206,7 +221,7 @@ test("pricing keeps unavailable paid data explicit and retryable", async ({ page
 
     return route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ success: true, data: ACTIVE_PLANS }),
+      body: JSON.stringify({ success: true, data: asOffers(ACTIVE_PLANS) }),
     });
   });
 

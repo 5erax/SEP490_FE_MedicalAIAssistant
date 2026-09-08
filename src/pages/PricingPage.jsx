@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   Clock3,
   CreditCard,
+  Info,
   LoaderCircle,
   ShieldCheck,
   XCircle,
@@ -53,7 +54,7 @@ const FAQS = [
 ];
 
 function formatPrice(value) {
-  return `${value.toLocaleString("vi-VN")} ₫`;
+  return `${value.toLocaleString("vi-VN")}đ`;
 }
 
 const SALE_ELIGIBILITY_LABELS = {
@@ -149,6 +150,16 @@ function PricingPage() {
   const returnTo = getReturnToFromSearch();
   const pricingSearchParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const isFocusedUpgrade = pricingSearchParams.get("view") === "upgrade";
+  const displayPaidPlans = useMemo(() => (
+    isFocusedUpgrade
+      ? [...paidPlans]
+        .sort((left, right) => (
+          (Number(left?.grantedCredit ?? left?.baseCredit) || 0)
+          - (Number(right?.grantedCredit ?? right?.baseCredit) || 0)
+        ))
+        .slice(0, 2)
+      : paidPlans
+  ), [isFocusedUpgrade, paidPlans]);
   const backHref = returnTo || (auth ? "/dashboard" : "/");
   const backLabel = isFocusedUpgrade
     ? "Quay lại hồ sơ"
@@ -556,7 +567,7 @@ function PricingPage() {
                 Thử tải lại
               </button>
             </section>
-          ) : !plansLoading && paidPlans.length === 0 ? (
+          ) : !plansLoading && displayPaidPlans.length === 0 ? (
             <section className="pricing-api-message neutral" role="status">
               <div>
                 <strong>Hiện chưa có gói trả phí khả dụng</strong>
@@ -571,36 +582,36 @@ function PricingPage() {
             aria-busy={plansLoading}
           >
             {!isFocusedUpgrade && (
-            <article className="pricing-plan-card pricing-plan-card-basic">
-              <div className="pricing-plan-card-heading">
-                <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
-              </div>
-              <p className="plan-kicker">Truy cập công khai</p>
-              <h2>{freePlan?.planName || "Miễn phí"}</h2>
-              <div className="price-line">
-                <strong>0 ₫</strong>
-              </div>
-              <p className="plan-summary">
-                Phù hợp để tìm hiểu MediMate và chuẩn bị thông tin cơ bản trước khi đi khám.
-              </p>
-              <div className="plan-benefits">
-                <h3>Bạn có thể sử dụng</h3>
-                <ul>
-                  {PUBLIC_ACCESS_BENEFITS.map((feature) => (
-                    <li key={feature}>
-                      <Check size={18} aria-hidden="true" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <button className="plan-action plan-action-secondary" type="button" onClick={startFreePlan}>
-                Khám phá MediMate
-              </button>
-            </article>
+              <article className="pricing-plan-card pricing-plan-card-basic">
+                <div className="pricing-plan-card-heading">
+                  <span className="plan-icon" aria-hidden="true"><CircleDollarSign size={22} /></span>
+                </div>
+                <p className="plan-kicker">Truy cập công khai</p>
+                <h2>{freePlan?.planName || "Miễn phí"}</h2>
+                <div className="price-line">
+                  <strong>0đ</strong>
+                </div>
+                <p className="plan-summary">
+                  Phù hợp để tìm hiểu MediMate và chuẩn bị thông tin cơ bản trước khi đi khám.
+                </p>
+                <div className="plan-benefits">
+                  <h3>Bạn có thể sử dụng</h3>
+                  <ul>
+                    {PUBLIC_ACCESS_BENEFITS.map((feature) => (
+                      <li key={feature}>
+                        <Check size={18} aria-hidden="true" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <button className="plan-action plan-action-secondary" type="button" onClick={startFreePlan}>
+                  Khám phá MediMate
+                </button>
+              </article>
             )}
 
-            {paidPlans.map((planOffer, paidPlanIndex) => {
+            {displayPaidPlans.map((planOffer, paidPlanIndex) => {
               const paidPlan = planOffer.plan;
               const offer = planOffer.offer;
               const paidBenefits = getOfferBenefits(planOffer);
@@ -613,6 +624,7 @@ function PricingPage() {
               const hasBonus = Boolean(offer) && bonusCredit > 0;
               const hasConfiguredCredits = Number.isFinite(creditLimit) && creditLimit > 0;
               const isCurrentCheckout = checkoutState.planId === paidPlan.id;
+              const planDisplayName = getPlanDisplayName(paidPlan.planName);
               const badgeText = offer?.badgeText || offer?.campaignName
                 || (paidPlanIndex === 0 ? "Phù hợp trải nghiệm" : "Giá trị tốt nhất");
               const countdown = offer?.endAt ? formatCountdown(offer.endAt, clockNow) : "";
@@ -628,7 +640,7 @@ function PricingPage() {
                       <p className="plan-kicker">
                         {hasBonus ? `${baseCredit} + ${bonusCredit} lượt thưởng` : hasConfiguredCredits ? `${creditLimit.toLocaleString("vi-VN")} lượt dùng chung` : "Chưa cấu hình lượt dùng"}
                       </p>
-                      <h2>{getPlanDisplayName(paidPlan.planName)}</h2>
+                      <h2>{planDisplayName}</h2>
                       <div className="price-line">
                         {hasPriceDiscount && <span className="pricing-original-price">{formatPrice(originalPrice)}</span>}
                         <strong>{formatPrice(effectivePrice)}</strong>
@@ -644,7 +656,7 @@ function PricingPage() {
                         {(offer.remainingRedemptions != null || countdown) && (
                           <div className="pricing-sale-availability">
                             {offer.remainingRedemptions != null && <span>Còn {offer.remainingRedemptions} suất ưu đãi</span>}
-                            {countdown && <span>Kết thúc sau {countdown}</span>}
+                            {countdown && <div className="pricing-sale-countdown"><span>Kết thúc sau</span><strong>{countdown}</strong></div>}
                           </div>
                         )}
                       </div>
@@ -677,8 +689,8 @@ function PricingPage() {
                         : auth
                           ? !hasConfiguredCredits
                             ? "Gói chưa sẵn sàng"
-                            : hasActivePackage ? `Mua thêm ${creditLimit} lượt` : `Mua ${creditLimit} lượt`
-                          : "Đăng ký để mua lượt"}
+                            : isFocusedUpgrade ? `Mua ${planDisplayName}` : hasActivePackage ? `Mua thêm ${creditLimit} lượt` : `Mua ${creditLimit} lượt`
+                          : isFocusedUpgrade ? `Mua ${planDisplayName}` : "Đăng ký để mua lượt"}
                   </button>
                 </article>
               );
@@ -698,6 +710,14 @@ function PricingPage() {
               </article>
             )}
           </section>
+
+          {isFocusedUpgrade && (
+            <p className="pricing-focused-note">
+              <Info size={16} aria-hidden="true" />
+              Các tính năng miễn phí vẫn có giới hạn và không thay thế chẩn đoán y khoa. Thanh toán chỉ bắt đầu trên
+              trang bảng giá sau khi bạn chọn gói và đăng nhập.
+            </p>
+          )}
 
           {!isFocusedUpgrade && (
             <section className="payment-methods" aria-label="Thông tin thanh toán">

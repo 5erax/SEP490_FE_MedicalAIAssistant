@@ -492,7 +492,7 @@ test.describe("patient specialty intake", () => {
     await expect(page).toHaveURL(/\/dashboard$/);
   });
 
-  test("shows a dismissible profile nudge without blocking diagnosis", async ({ page }) => {
+  test("shows the profile nudge only after a missing profile is confirmed", async ({ page }) => {
     await page.addInitScript((accessToken) => {
       localStorage.setItem("medimate.auth", JSON.stringify({
         accessToken,
@@ -500,14 +500,52 @@ test.describe("patient specialty intake", () => {
         isProfileCompleted: false,
       }));
     }, ACCESS_TOKEN);
+    await page.route("**/api/users/me", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: { id: "patient-without-profile", roles: ["Patient"], isProfileCompleted: false },
+      }),
+    }));
+    await page.route("**/api/patient-profiles/by-user/patient-without-profile", (route) => route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: JSON.stringify({ success: false, message: "Patient profile not found" }),
+    }));
 
     await openRoute(page, "/dashboard");
 
     await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ khi bạn sẵn sàng" })).toBeVisible();
     await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Hoàn thiện hồ sơ sức khỏe" })).toBeVisible();
+  });
 
-    await page.getByRole("button", { name: "Để sau" }).click();
-    await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ khi bạn sẵn sàng" })).toBeHidden();
+  test("does not show a stale profile nudge when the patient profile already exists", async ({ page }) => {
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        roles: ["Patient"],
+        isProfileCompleted: false,
+      }));
+    }, ACCESS_TOKEN);
+    await page.route("**/api/users/me", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: { id: "patient-with-profile", roles: ["Patient"], isProfileCompleted: false },
+      }),
+    }));
+    await page.route("**/api/patient-profiles/by-user/patient-with-profile", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: { id: "existing-profile", userId: "patient-with-profile" },
+      }),
+    }));
+
+    await openRoute(page, "/dashboard");
+
+    await expect(page.getByRole("heading", { name: "Hoàn thiện hồ sơ khi bạn sẵn sàng" })).toHaveCount(0);
     await expect(page.getByLabel("Triệu chứng bạn đang gặp")).toBeVisible();
   });
 

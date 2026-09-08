@@ -162,19 +162,23 @@ function AssessmentShell({
       aria-labelledby="assessment-title"
     >
       <section className="assessment-shell clinical-shell" aria-labelledby="assessment-title">
+        <div className="assessment-hero-shell">
         <header className="assessment-header clinical-hero">
           <div className="assessment-heading-main">
             <span className="assessment-icon clinical-hero-icon" aria-hidden="true">
               <Stethoscope size={25} />
             </span>
             <div>
-              <p className="eyebrow clinical-eyebrow">{eyebrow}</p>
               <h1 id="assessment-title">{title}</h1>
               {description && <p className="clinical-hero-description">{description}</p>}
             </div>
           </div>
 
           <div className="assessment-history-action assessment-heading-aside">
+            <div className="assessment-scope-note">
+              <ShieldCheck size={19} aria-hidden="true" />
+              <p><strong>Kết quả để tham khảo</strong><span>Không thay thế chẩn đoán, kê đơn hoặc điều trị của bác sĩ.</span></p>
+            </div>
             <Button
               tone="secondary"
               size="sm"
@@ -193,12 +197,9 @@ function AssessmentShell({
               <History size={16} />
               {historyAction.label}
             </Button>
-            <div className="assessment-scope-note">
-              <ShieldCheck size={19} aria-hidden="true" />
-              <p><strong>Kết quả để tham khảo</strong><span>Không thay thế chẩn đoán, kê đơn hoặc điều trị của bác sĩ.</span></p>
-            </div>
           </div>
         </header>
+        </div>
 
         {showStepper && <Stepper active={activeStep} />}
         {children}

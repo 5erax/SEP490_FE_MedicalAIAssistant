@@ -14,6 +14,7 @@ dist-ssr
 playwright-report
 test-results
 .vercel/
+.expo/
 
 # Editor directories and files
 .vscode/*

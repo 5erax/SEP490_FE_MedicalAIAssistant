@@ -49,7 +49,7 @@ import {
 import "../styles/recovery-plan.css";
 import "../styles/formatted-recovery-note.css";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 const CANCELLABLE_REQUEST_STATUSES = new Set(["waitingForDoctor", "assigned", "inReview", "needMoreInformation"]);
 const DISEASE_GROUPS = [
   { value: "respiratory", label: "Hô hấp" },
@@ -1774,10 +1774,13 @@ export default function RecoveryPlanPage() {
 
   return (
     <div className="recovery-page">
+      <div className="recovery-hero-shell">
       <header className="recovery-page-header">
-        <HeartPulse className="recovery-hero-icon" size={160} strokeWidth={1.3} aria-hidden="true" />
-        <div>
-          <p className="recovery-eyebrow"><HeartPulse size={16} aria-hidden="true" /> Theo dõi sau điều trị</p>
+        <div className="recovery-hero-main">
+          <span className="recovery-hero-icon" aria-hidden="true">
+            <HeartPulse size={24} />
+          </span>
+          <div>
           <h2>Kế hoạch phục hồi</h2>
           <p className="recovery-hero-copy">Theo dõi yêu cầu của bạn và xem kế hoạch sau khi bác sĩ hoàn tất.</p>
           <ol className="recovery-process" aria-label="Quy trình nhận kế hoạch phục hồi">
@@ -1785,8 +1788,16 @@ export default function RecoveryPlanPage() {
             <li><span>2</span><strong>Bác sĩ xem xét</strong></li>
             <li><span>3</span><strong>Nhận kế hoạch</strong></li>
           </ol>
+          </div>
+        </div>
+        <div className="recovery-hero-actions">
+          <section className="recovery-medical-note recovery-hero-note">
+            <ShieldCheck size={21} aria-hidden="true" />
+            <div><strong>Thông tin hỗ trợ, không thay thế chăm sóc y tế</strong><p>Nếu có dấu hiệu nghiêm trọng hoặc diễn biến bất thường, hãy liên hệ cơ sở y tế hoặc dịch vụ cấp cứu phù hợp.</p></div>
+          </section>
         </div>
       </header>
+      </div>
 
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
       <p className="sr-only" role="status" aria-atomic="true">{realtimeLabel}</p>
@@ -1959,11 +1970,6 @@ export default function RecoveryPlanPage() {
               <li><Activity size={19} aria-hidden="true" /><span><strong>Ghi nhận thay đổi đáng chú ý</strong><small>Thời điểm, mức độ và diễn biến gần đây.</small></span></li>
               <li><CalendarCheck size={19} aria-hidden="true" /><span><strong>Theo dõi mốc tái khám</strong><small>Chuẩn bị câu hỏi cho lần trao đổi tiếp theo.</small></span></li>
             </ul>
-          </section>
-
-          <section className="recovery-medical-note">
-            <ShieldCheck size={21} aria-hidden="true" />
-            <div><strong>Thông tin hỗ trợ, không thay thế chăm sóc y tế</strong><p>Nếu có dấu hiệu nghiêm trọng hoặc diễn biến bất thường, hãy liên hệ cơ sở y tế hoặc dịch vụ cấp cứu phù hợp.</p></div>
           </section>
         </div>
       </div>
