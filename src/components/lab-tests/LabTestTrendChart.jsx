@@ -161,7 +161,7 @@ export default function LabTestTrendChart({ trend, onOpenSession }) {
             if (value === null) return null;
             return (
               <circle
-                key={`${point.sessionId || index}-${point.testDate || index}`}
+                key={`${point.sessionId || "session"}-${point.testDate || "date"}-${index}`}
                 className={`lab-trend-chart__point is-${String(point.status || "unknown").toLowerCase()}`}
                 cx={xAt(index)}
                 cy={yAt(value)}
@@ -203,7 +203,7 @@ export default function LabTestTrendChart({ trend, onOpenSession }) {
           const unit = point?.unit || trend?.unit || "";
           const hasReference = point?.referenceMin != null || point?.referenceMax != null;
           return (
-            <li key={`${point.sessionId || pointIndex}-${point.testDate || pointIndex}`}>
+            <li key={`${point.sessionId || "session"}-${point.testDate || "date"}-${pointIndex}`}>
               <div className="lab-trend-measurement__heading">
                 <div>
                   <strong>{formatDateOnly(point.testDate)}</strong>
