@@ -524,10 +524,10 @@ function ResultOverview({
 
       <div className="lab-test-result__overview-counts" aria-label={`Tổng cộng ${totalCount} chỉ số`}>
         <div className="lab-test-result__overview-attention" data-tone="warning" data-active={attentionCount > 0}>
-          <span>Cần chú ý</span><strong>{attentionCount}</strong>
+          <span>Chỉ số cần chú ý</span><strong>{attentionCount}</strong>
         </div>
-        <div data-tone="success" data-active={normalCount > 0}><strong>{normalCount}</strong><span>Bình thường</span></div>
-        <div data-tone="neutral" data-active={unknownCount > 0}><strong>{unknownCount}</strong><span>Chưa xác định</span></div>
+        <div data-tone="success" data-active={normalCount > 0}><span>Chỉ số bình thường</span><strong>{normalCount}</strong></div>
+        <div data-tone="neutral" data-active={unknownCount > 0}><span>Chỉ số chưa xác định</span><strong>{unknownCount}</strong></div>
       </div>
 
       <div className="lab-test-result__overview-summary" data-tone={tone}>
