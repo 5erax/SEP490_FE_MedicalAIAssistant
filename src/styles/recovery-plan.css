@@ -415,7 +415,7 @@
 
 .recovery-support-sidebar {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   gap: 20px;
 }
