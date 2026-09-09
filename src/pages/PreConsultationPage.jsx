@@ -17,10 +17,14 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   checklistItemsApi,
+  getStoredAuth,
+  medicalFacilitiesApi,
+  facilityDepartmentsApi,
   consultationSessionsApi,
   medicalDepartmentsApi,
   symptomAnalysisApi,
 } from "../services/api";
+import { journeyOwner, readJourney, saveJourney } from "../state/careJourneyState";
 import { navigate } from "../router/navigation";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
 import { useServiceCredit } from "../state/useServiceCredit";
@@ -149,19 +153,26 @@ function normalizeQuestions(value) {
 }
 
 export default function PreConsultationPage() {
+  const owner = journeyOwner(getStoredAuth());
+  const [draftId] = useState(() => new URLSearchParams(window.location.search).get("draftId") || crypto.randomUUID());
+  const [restoredDraft] = useState(() => readJourney(owner, "draft:" + draftId));
+  const [draftExpired] = useState(() => Boolean(new URLSearchParams(window.location.search).get("draftId")
+    && !restoredDraft && performance.getEntriesByType("navigation")[0]?.type === "reload"));
+  const applyRequestRef = useRef(0);
+  const selectedSessionIdRef = useRef(restoredDraft?.sessionId || "");
   const { refresh: refreshServiceCredit } = useServiceCredit();
   const [step, setStep] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [departmentsStatus, setDepartmentsStatus] = useState("loading");
-  const [form, setForm] = useState({ departmentId: "", appointmentTime: "", symptoms: "", facilityId: "", facilityName: "" });
+  const [form, setForm] = useState(restoredDraft?.form || { departmentId: "", appointmentTime: "", symptoms: "", facilityId: "", facilityName: "" });
   const [formErrors, setFormErrors] = useState({});
   const [suggestedSessions, setSuggestedSessions] = useState([]);
   const [suggestedSessionsStatus, setSuggestedSessionsStatus] = useState("idle");
   const [suggestedSessionsError, setSuggestedSessionsError] = useState("");
   const [suggestedSessionsOpen, setSuggestedSessionsOpen] = useState(false);
   const [applyingSessionId, setApplyingSessionId] = useState("");
-  const [appliedSessionTitle, setAppliedSessionTitle] = useState("");
-  const [suggestedFacilities, setSuggestedFacilities] = useState([]);
+  const [appliedSessionTitle, setAppliedSessionTitle] = useState(restoredDraft?.title || "");
+  const [suggestedFacilities, setSuggestedFacilities] = useState(restoredDraft?.facilities || []);
   const [facilityPickerOpen, setFacilityPickerOpen] = useState(false);
   const [autoFilledFromMap, setAutoFilledFromMap] = useState(false);
   const [session, setSession] = useState(null);
@@ -181,6 +192,15 @@ export default function PreConsultationPage() {
   const terminalBalanceRefreshRef = useRef("");
   const sessionPollRef = useRef({ sessionId: "", promise: null });
   const autoAppliedSessionRef = useRef(false);
+  useEffect(() => {
+    if (!completed) saveJourney(owner, "draft:" + draftId, { form, title: appliedSessionTitle, facilities: suggestedFacilities, sessionId: selectedSessionIdRef.current });
+  }, [owner, draftId, form, appliedSessionTitle, suggestedFacilities, completed]);
+  function chooseOnMap() {
+    saveJourney(owner, "draft:" + draftId, { form, title: appliedSessionTitle, facilities: suggestedFacilities, sessionId: selectedSessionIdRef.current });
+    const params = new URLSearchParams({ draftId, panel:"list", departmentId:form.departmentId });
+    if (selectedSessionIdRef.current) { params.set("sessionId", selectedSessionIdRef.current); params.set("source", "clinical"); }
+    navigate("/map?" + params);
+  }
 
   useEffect(() => {
     pollingActiveRef.current = true;
@@ -233,6 +253,7 @@ export default function PreConsultationPage() {
         { sessionId },
         {
           source: "map",
+          departmentOverride: search.get("departmentId"),
           facilityOverride: search.get("facilityId")
             ? {
               facilityId: search.get("facilityId"),
@@ -293,27 +314,49 @@ export default function PreConsultationPage() {
     }
   }
 
-  async function applySuggestedSession(sessionItem, { source = "list", facilityOverride = null } = {}) {
+  async function applySuggestedSession(sessionItem, { source = "list", facilityOverride = null, departmentOverride = "" } = {}) {
     const sessionId = sessionItem?.sessionId || sessionItem?.id;
     if (!sessionId) return;
 
+    const requestId = ++applyRequestRef.current;
     setApplyingSessionId(sessionId);
     setError("");
     try {
       const response = await symptomAnalysisApi.get(sessionId);
       const { departmentId, symptomText, facilities } = extractSessionRecommendation(response);
+      let verifiedFacility = null;
+      let verifiedDepartment = "";
+      if (facilityOverride?.facilityId) {
+        const [facilityResponse, relationResponse] = await Promise.all([
+          medicalFacilitiesApi.get(facilityOverride.facilityId), facilityDepartmentsApi.active(),
+        ]);
+        const actual = unwrapData(facilityResponse);
+        const actualId = actual?.facilityId ?? actual?.id;
+        if (actualId && String(actualId) === String(facilityOverride.facilityId) && actual.isActive !== false) {
+          const relations = unwrapList(relationResponse).filter((r) => String(r.facilityId) === String(actualId));
+          const ids = [...(actual.departments ?? []).map((d) => String(d.departmentId ?? d.id)), ...relations.map((r) => String(r.departmentId))];
+          const candidate = departmentOverride || departmentId;
+          if (ids.includes(candidate)) {
+            verifiedDepartment = candidate;
+            verifiedFacility = { ...actual, facilityId:String(actualId), facilityName:actual.facilityName || actual.name };
+          }
+        }
+      }
+      if (requestId !== applyRequestRef.current) return;
+      selectedSessionIdRef.current = sessionId;
       setAppliedSessionTitle(getSuggestedSessionTitle(unwrapData(response), "Phiên gợi ý đã chọn"));
-      const matchedDepartmentId = departmentId && departments.some((item) => item.id === departmentId)
-        ? departmentId
+      const chosenDepartmentId = verifiedDepartment || departmentId;
+      const matchedDepartmentId = chosenDepartmentId && departments.some((item) => item.id === chosenDepartmentId)
+        ? chosenDepartmentId
         : "";
-      const overriddenFacilityId = String(facilityOverride?.facilityId ?? "").trim();
+      const overriddenFacilityId = String(verifiedFacility?.facilityId ?? "").trim();
       const matchedOverriddenFacility = overriddenFacilityId
         ? facilities.find((facility) => facility.facilityId === overriddenFacilityId)
         : null;
       const overriddenFacility = overriddenFacilityId ? {
-        ...(matchedOverriddenFacility ?? facilityOverride),
+        ...(matchedOverriddenFacility ?? verifiedFacility),
         facilityId: overriddenFacilityId,
-        facilityName: String(facilityOverride?.facilityName ?? matchedOverriddenFacility?.facilityName ?? "").trim()
+        facilityName: String(verifiedFacility?.facilityName ?? matchedOverriddenFacility?.facilityName ?? "").trim()
           || "Cơ sở đã chọn từ bản đồ",
       } : null;
       const availableFacilities = overriddenFacility
@@ -323,7 +366,7 @@ export default function PreConsultationPage() {
       setForm((current) => ({
         ...current,
         departmentId: matchedDepartmentId || current.departmentId,
-        symptoms: symptomText || current.symptoms,
+        symptoms: source === "map" && restoredDraft?.form ? current.symptoms : symptomText || current.symptoms,
         facilityId: overriddenFacility?.facilityId || "",
         facilityName: overriddenFacility?.facilityName || "",
       }));
@@ -338,14 +381,15 @@ export default function PreConsultationPage() {
       setSuggestedSessionsOpen(false);
       setAutoFilledFromMap(source === "map");
       setAnnouncement(
-        departmentId && !matchedDepartmentId
+        facilityOverride && !verifiedFacility ? "Cơ sở hoặc chuyên khoa vừa chọn hiện không còn phù hợp. Vui lòng chọn lại."
+        : departmentId && !matchedDepartmentId
           ? "Đã điền triệu chứng từ phiên đã chọn. Chuyên khoa được gợi ý hiện chưa hỗ trợ tư vấn trước khám."
           : "Đã điền thông tin từ phiên gợi ý chuyên khoa đã chọn.",
       );
     } catch (loadError) {
-      setError(getErrorMessage(loadError, "Chưa thể tải chi tiết phiên gợi ý. Vui lòng thử lại."));
+      if (requestId === applyRequestRef.current) setError(getErrorMessage(loadError, "Chưa thể tải chi tiết phiên gợi ý. Vui lòng thử lại."));
     } finally {
-      setApplyingSessionId("");
+      if (requestId === applyRequestRef.current) setApplyingSessionId("");
     }
   }
 
@@ -565,6 +609,7 @@ export default function PreConsultationPage() {
   return (
     <div className="pre-consultation-page">
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
+      {draftExpired && <p role="status" className="pre-consultation-inline-note">Bản nháp không được lưu sau khi tải lại trang. Vui lòng kiểm tra và điền lại thời gian khám, nội dung bạn đã nhập.</p>}
 
       <div className="pre-consultation-hero-shell">
       <header className="pre-consultation-hero">
@@ -634,6 +679,7 @@ export default function PreConsultationPage() {
                 <span>Thời gian dự kiến khám <span className="pre-consultation-required-mark" aria-hidden="true">*</span></span>
                 <input
                   type="datetime-local"
+                  aria-label="Thời gian dự kiến khám (bắt buộc)"
                   value={form.appointmentTime}
                   min={toLocalDateTimeMinimum()}
                   onChange={(event) => updateForm("appointmentTime", event.target.value)}
@@ -727,6 +773,7 @@ export default function PreConsultationPage() {
                   </span>
                   <ChevronDown size={16} aria-hidden="true" className="pre-consultation-ghost-chevron" />
                 </button>
+                <button type="button" className="ghost" onClick={chooseOnMap}>Chọn cơ sở trên bản đồ</button>
                 {autoFilledFromMap && form.facilityName && (
                   <small className="pre-consultation-autofill-note">
                     Đã chọn theo cơ sở bạn vừa xem trên Bản đồ. Bạn vẫn có thể thay đổi.

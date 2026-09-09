@@ -49,6 +49,15 @@ async function mockPreConsultation(page) {
     const path = url.pathname;
     const method = route.request().method();
 
+    // A handoff is revalidated against the public facility contract, not trusted URL text.
+    if (path === `/api/medical-facilities/${MAP_FACILITY_ID}`) {
+      return route.fulfill({json:{success:true,data:{id:MAP_FACILITY_ID,facilityName:"Bệnh viện gần người dùng",isActive:true,
+        departments:[{departmentId:DEPARTMENT_ID,departmentName:"Tim mạch"}]}}});
+    }
+    if (path === "/api/facility-departments/active") {
+      return route.fulfill({json:{success:true,data:[{facilityId:MAP_FACILITY_ID,departmentId:DEPARTMENT_ID,departmentName:"Tim mạch"}]}});
+    }
+
     if (path === "/api/users/me") {
       calls.userMe += 1;
       return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { id: USER_ID, displayName: "Nguyễn Minh", phoneNumber: null, roles: ["Patient"] } }) });
@@ -285,32 +294,33 @@ test("checklist is read-only and allows the user to continue", async ({ page }) 
 });
 
 test("user reviews a saved consultation in the medical record layout", async ({ page }) => {
+  await page.setViewportSize({width:1440, height:540});
   const calls = await openPreConsultation(page);
   const screenshotDirectory = globalThis.process?.env.PRE_CONSULT_SCREENSHOT_DIR;
-  const historyTab = page.getByRole("tab", { name: "Lịch sử tư vấn" });
+  const historyTab = page.getByRole("button", { name: "Lịch sử tư vấn trước khám", exact: true });
 
   await historyTab.click();
-  await expect(historyTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Lịch sử tư vấn trước khám" })).toBeVisible();
+  await expect(page.locator(".consultation-history-drawer-list")).toContainText("Tim mạch");
+  await page.getByRole("button", { name: "Chi tiết", exact:true }).click();
+  await expect(page.getByRole("heading", { name: "Chi tiết tư vấn trước khám" })).toBeVisible();
   await expect(page.getByText("Đau ngực khi vận động", { exact: true }).first()).toBeVisible();
-
-  await page.getByRole("button", { name: /Tim mạch.*Đau ngực khi vận động/ }).click();
-  await expect(page.getByRole("heading", { name: "Tim mạch", level: 3 })).toBeVisible();
   await expect(page.getByText("Bệnh lý của tôi là cấp tính hay mạn tính?", { exact: true })).toBeVisible();
   await expect(page.getByText("Mang theo kết quả xét nghiệm gần nhất", { exact: true })).toBeVisible();
-  await expect(page.getByText("6 câu hỏi", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Trao đổi thêm/, level: 5 })).toHaveCount(1);
+  await expect(page.locator(".consultation-detail-summary-block ol li")).toHaveCount(6);
+  await expect(page.getByText("Khi nào tôi cần tái khám?", { exact:true })).toBeVisible();
 
-  const desktopDetailMetrics = await page.locator(".consultation-session-detail").evaluate((element) => ({
+  const desktopDetailMetrics = await page.locator(".consultation-detail-panel-body").evaluate((element) => ({
     clientHeight: element.clientHeight,
     scrollHeight: element.scrollHeight,
     overflowY: getComputedStyle(element).overflowY,
   }));
-  expect(desktopDetailMetrics.clientHeight).toBeLessThanOrEqual(720);
+  expect(desktopDetailMetrics.clientHeight).toBeLessThan(page.viewportSize().height);
   expect(desktopDetailMetrics.scrollHeight).toBeGreaterThan(desktopDetailMetrics.clientHeight);
   expect(desktopDetailMetrics.overflowY).toBe("auto");
 
-  const detailPanel = page.locator(".consultation-session-detail");
+  const detailPanel = page.locator(".consultation-detail-panel-body");
   await detailPanel.evaluate((element) => { element.scrollTop = element.scrollHeight; });
   await expect(page.getByText("Dấu hiệu nào cần được khám sớm?", { exact: true })).toBeVisible();
   await detailPanel.evaluate((element) => { element.scrollTop = 0; });
@@ -328,7 +338,7 @@ test("user reviews a saved consultation in the medical record layout", async ({ 
   }
 
   const accessibility = await new AxeBuilder({ page })
-    .include(".consultation-history")
+    .include(".consultation-detail-panel")
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
   expect(accessibility.violations
@@ -380,4 +390,29 @@ test("shared credit exhaustion keeps the stable code and offers a purchase actio
   await expect(alert).toContainText("Mua thêm lượt để tiếp tục sử dụng");
   await page.getByRole("button", { name: "Mua thêm lượt" }).click();
   await expect(page).toHaveURL(/\/pricing\?view=upgrade&returnTo=%2Fpre-consultation$/);
+});
+test("changing facility on the map restores appointment and symptoms without creating a session",async({page})=>{
+ const calls=await openPreConsultation(page,"/pre-consultation?sessionId="+SYMPTOM_SESSION_ID);
+ await expect(page.locator(".textarea-like")).toContainText("Đau ngực khi vận động");
+ await page.getByLabel("Thời gian dự kiến khám (bắt buộc)").fill("2027-01-15T09:30");
+ await page.route("https://basemaps.cartocdn.com/**",r=>r.fulfill({json:{version:8,sources:{},layers:[]}}));
+ await page.route("**/api/medical-facilities/active",r=>r.fulfill({json:{success:true,data:[{
+   id:MAP_FACILITY_ID,facilityName:"Bệnh viện gần người dùng",isActive:true,latitude:10.7,longitude:106.7,
+   departments:[{departmentId:DEPARTMENT_ID,departmentName:"Tim mạch"}]
+ }]}}));
+ await page.getByRole("button",{name:"Chọn cơ sở trên bản đồ",exact:true}).click();
+ await expect(page).toHaveURL(/\/map\?/);
+ await page.getByRole("button",{name:"Xem thông tin Bệnh viện gần người dùng",exact:true}).click();
+ await page.getByRole("button",{name:"Tiếp tục tư vấn trước khám",exact:true}).click();
+ await expect(page.locator(".pre-consultation-facility-trigger")).toContainText("Bệnh viện gần người dùng");
+ await expect(page.getByLabel("Thời gian dự kiến khám (bắt buộc)")).toHaveValue("2027-01-15T09:30");
+ await expect(page.locator(".textarea-like")).toContainText("Đau ngực khi vận động");
+ expect(calls.generateBody).toBeNull();
+ expect(calls.complete).toBe(0);
+ const stored=await page.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}));
+ expect(stored).not.toContain("Đau ngực khi vận động");
+ expect(stored).not.toContain("2027-01-15T09:30");
+ await page.reload();
+ await expect(page.getByText("Bản nháp không được lưu sau khi tải lại trang.",{exact:false})).toBeVisible();
+ await expect(page.getByLabel("Thời gian dự kiến khám (bắt buộc)")).toHaveValue("");
 });

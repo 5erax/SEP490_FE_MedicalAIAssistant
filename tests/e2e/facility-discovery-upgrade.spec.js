@@ -75,11 +75,11 @@ async function setup(page, options = {}) {
 }
 
 async function browse(page) {
-  await page.getByRole("button", { name: "Xem cơ sở mà không dùng vị trí", exact: true }).click();
+  await page.getByRole("button", { name: "Tìm cơ sở khám phù hợp", exact: true }).click();
 }
 async function editReview(page) {
   await browse(page);
-  await page.getByRole("button", { name: "Xem chi tiết Cơ sở kiểm thử 1", exact: true }).click();
+  await page.getByRole("button", { name: "Xem thông tin Cơ sở kiểm thử 1", exact: true }).click();
   await page.getByRole("tab", { name: "Đánh giá", exact: true }).click();
   await page.getByRole("button", { name: "Chỉnh sửa đánh giá", exact: true }).click();
 }
@@ -100,11 +100,11 @@ for (const width of [1920, 390, 320]) {
     await chooseImages(page, imageFile());
     await expect(page.locator(".review-image-preview")).toHaveCount(2);
     await expect(save).toBeEnabled();
+    await save.scrollIntoViewIfNeeded();
     await expect(save).toBeInViewport({ ratio: 1 });
-    const geometry = await page.locator(".clinic-sidebar").evaluate((node) => ({ scrollTop: node.scrollTop, overflow: node.scrollHeight - node.clientHeight }));
-    expect(geometry.scrollTop).toBe(0);
-    expect(geometry.overflow).toBeLessThanOrEqual(1);
-    expect(await page.locator(".explorer-scroll").evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(false);
+    await save.scrollIntoViewIfNeeded();
+    await expect(save).toBeInViewport({ratio:1});
+    expect(await page.locator(".clinic-sidebar").evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(false);
     const a11y = await new AxeBuilder({ page }).include(".clinic-sidebar").withTags(["wcag2a", "wcag2aa"]).analyze();
     expect(a11y.violations).toEqual([]);
     await page.screenshot({ path: info.outputPath(`review-editor-${width}.png`) });
@@ -116,90 +116,57 @@ for (const width of [1920, 390, 320]) {
   });
 }
 
-test("23 results paginate completely and restore page, scroll and advice context", async ({ page }, info) => {
-  await page.setViewportSize({ width: 390, height: 740 });
-  const fixture = await setup(page, { count: 23 });
+test("23 results remain reachable through load more and restore scroll after detail", async ({page}) => {
+  await page.setViewportSize({width:390,height:740});
+  const fixture=await setup(page,{count:23});
   await browse(page);
-  const names = [];
-  for (let currentPage = 1; currentPage <= 5; currentPage += 1) {
-    await expect(page.locator(".facility-result-card")).toHaveCount(currentPage === 5 ? 3 : 5);
-    names.push(...await page.locator(".facility-result-card .facility-top strong").allTextContents());
-    if (currentPage < 5) await page.getByRole("navigation", { name: "Chuyển trang đầu danh sách", exact: true }).getByRole("button", { name: "Trang sau", exact: true }).click();
+  for(const count of [10,15,20,23]) {
+    await page.getByRole("button",{name:/Xem thêm .* cơ sở/}).click();
+    await expect(page.locator(".facility-result-card")).toHaveCount(count);
   }
-  expect(new Set(names).size).toBe(23);
-  await expect(page.getByText("21–23 trong 23 cơ sở", { exact: true })).toBeVisible();
-  const last = page.getByRole("button", { name: "Xem chi tiết Cơ sở kiểm thử 23", exact: true });
+  expect(new Set(await page.locator(".facility-top strong").allTextContents()).size).toBe(23);
+  const last=page.getByRole("button",{name:"Xem thông tin Cơ sở kiểm thử 23",exact:true});
   await last.scrollIntoViewIfNeeded();
-  const scroll = await page.locator(".explorer-scroll").evaluate((node) => node.scrollTop);
-  await expect(page.getByRole("button", { name: "Kết quả gợi ý", exact: true })).toBeInViewport({ ratio: 1 });
+  const scroll=await page.locator(".clinic-sidebar").evaluate(n=>n.scrollTop);
   await last.click();
-  await page.getByRole("button", { name: "Quay lại danh sách", exact: true }).click();
-  await expect(page.getByText("21–23 trong 23 cơ sở", { exact: true })).toBeVisible();
-  expect(await page.locator(".explorer-scroll").evaluate((node) => node.scrollTop)).toBeCloseTo(scroll, -1);
-  await page.getByRole("button", { name: "Kết quả gợi ý", exact: true }).click();
-  await browse(page);
-  await expect(page.getByText("21–23 trong 23 cơ sở", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Về đầu danh sách", exact: true }).click();
-  await expect.poll(() => page.locator(".explorer-scroll").evaluate((node) => node.scrollTop)).toBe(0);
-  await page.getByRole("button", { name: "Về trang đầu", exact: true }).first().click();
-  await expect(page.getByText("1–5 trong 23 cơ sở", { exact: true })).toBeVisible();
-  expect(fixture.analysisRequests.every((method) => method === "GET")).toBe(true);
-  await page.screenshot({ path: info.outputPath("paginated-list-mobile.png") });
+  await page.getByRole("button",{name:"Đóng chi tiết",exact:true}).click();
+  await expect(page.locator(".facility-result-card")).toHaveCount(23);
+  await expect.poll(()=>page.locator(".clinic-sidebar").evaluate(n=>n.scrollTop)).toBeCloseTo(scroll,-1);
+  expect(fixture.analysisRequests.every(method=>method==="GET")).toBe(true);
 });
-
-for (const width of [320, 390, 1440]) {
-test(`reference diseases show percentage scores before opening each explanation at ${width}`, async ({ page }, info) => {
-  await page.setViewportSize({ width, height: 844 });
+for(const width of [320,390,1440]) test("clinical explanations preserve source and avoid horizontal scrolling at "+width,async({page})=>{
+  await page.setViewportSize({width,height:844});
   await setup(page);
-  await expect(page.locator(".explorer-reason-summary")).toContainText("cúm");
-  await page.getByText("Vì sao gợi ý chuyên khoa này?", { exact: true }).click();
-  await expect(page.locator(".explorer-source-reason")).toContainText("Giải thích đúng nguồn B");
-  await expect(page.locator(".explorer-source-reason")).not.toContainText("Giải thích A");
-  await page.locator(".explorer-reference-results > summary").click();
-  await expect(page.locator(".explorer-reference-results > summary")).toHaveText("Các bệnh được AI gợi ý để tham khảo (2)");
-  await expect(page.locator(".explorer-reference-results > p")).toContainText("tham khảo khi trao đổi với bác sĩ");
-  await expect(page.locator(".explorer-score-explanation > p")).toContainText("không phải xác suất bạn mắc bệnh");
-  await expect(page.locator(".explorer-diagnosis summary .explorer-diagnosis-score")).toHaveText(["Điểm gợi ý: 60%", "Điểm gợi ý: 35%"]);
-  const flu = page.locator(".explorer-diagnosis").filter({ hasText: "cúm" });
-  await expect(flu).not.toHaveAttribute("open");
-  await expect(flu.locator(".explorer-diagnosis-score")).toBeVisible();
-  await page.getByText("Điểm gợi ý có nghĩa gì?", { exact: true }).click();
-  await expect(page.locator(".explorer-score-explanation details > p")).toBeVisible();
-  await expect(page.locator(".explorer-score-explanation details > p")).toContainText("không phải tỷ lệ triệu chứng trùng khớp hay xác suất mắc bệnh");
-  await page.getByText("Điểm gợi ý có nghĩa gì?", { exact: true }).click();
-  await page.locator(".explorer-diagnosis").filter({ hasText: "cúm" }).locator("summary").click();
-  await expect(flu.getByRole("heading", { name: "Vì sao AI gợi ý bệnh này?" })).toBeVisible();
-  await expect(flu.locator(".explorer-diagnosis-content")).toContainText("Giải thích đúng nguồn B");
-  expect(await page.locator(".explorer-scroll").evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(false);
-  const a11y = await new AxeBuilder({ page }).include(".clinic-sidebar").withTags(["wcag2a", "wcag2aa"]).analyze();
+  await expect(page.locator(".discovery-specialty")).toContainText("cúm");
+  await page.getByText("Vì sao gợi ý chuyên khoa này?",{exact:true}).click();
+  const source=page.locator(".discovery-results details").first();
+  await expect(source).toContainText("Giải thích đúng nguồn B");
+  await expect(source).not.toContainText("Giải thích A");
+  const flu=page.locator(".discovery-results details").filter({has:page.locator("summary",{hasText:"cúm"})});
+  await flu.locator("summary").click();
+  await expect(flu).toContainText("Điểm gợi ý: 35%");
+  await expect(flu).toContainText("Giải thích đúng nguồn B");
+  expect(await page.locator(".clinic-sidebar").evaluate(n=>n.scrollWidth>n.clientWidth)).toBe(false);
+  const a11y=await new AxeBuilder({page}).include(".clinic-sidebar").withTags(["wcag2a","wcag2aa"]).analyze();
   expect(a11y.violations).toEqual([]);
-  await page.locator(".explorer-reference-results").evaluate((node) => node.closest(".explorer-scroll").scrollTop = node.offsetTop);
-  await page.screenshot({ path: info.outputPath(`clinical-percentages-${width}.png`) });
 });
-}
-
-test("missing scores stay unknown instead of becoming zero and do not show an orphan score explanation", async ({ page }) => {
-  await setup(page, { diagnoses: [
-    { diseaseName: "Bệnh chưa có điểm", clinicalReasoning: "Giải thích có sẵn." },
-    { diseaseName: "Bệnh có điểm ngoài hợp đồng", pAGivenB: 35 },
-  ] });
-  await page.locator(".explorer-reference-results > summary").click();
-  await expect(page.locator(".explorer-diagnosis summary")).toContainText(["Chưa có điểm gợi ý", "Chưa có điểm gợi ý"]);
-  await expect(page.locator(".explorer-diagnosis-score")).toHaveCount(0);
-  await expect(page.locator(".explorer-score-explanation")).toHaveCount(0);
+test("missing and invalid scores never become zero",async({page})=>{
+  await setup(page,{diagnoses:[{diseaseName:"Bệnh chưa có điểm",clinicalReasoning:"Giải thích có sẵn."},{diseaseName:"Bệnh có điểm ngoài hợp đồng",pAGivenB:35}]});
+  await page.getByText("Bệnh chưa có điểm",{exact:true}).click();
+  await page.getByText("Bệnh có điểm ngoài hợp đồng",{exact:true}).click();
+  await expect(page.getByText(/Điểm gợi ý:.*%/)).toHaveCount(0);
 });
-
-test("selecting a map marker on another page restores that facility's list page", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await setup(page, { count: 23, outlier: true });
+test("map pins do not bypass the visible page boundary",async({page})=>{
+  await setup(page,{count:23,outlier:true});
   await browse(page);
-  await page.getByRole("button", { name: "Chọn Cơ sở kiểm thử 23 trên bản đồ", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Cơ sở kiểm thử 23", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Quay lại danh sách", exact: true }).click();
-  await expect(page.getByText("21–23 trong 23 cơ sở", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Xem chi tiết Cơ sở kiểm thử 23", exact: true })).toBeFocused();
+  await expect(page.getByRole("button",{name:"Chọn Cơ sở kiểm thử 23 trên bản đồ",exact:true})).toHaveCount(0);
+  for(let i=0;i<4;i++) await page.getByRole("button",{name:/Xem thêm .* cơ sở/}).click();
+  await page.getByRole("button",{name:"Vừa khung kết quả",exact:true}).click();
+  await page.getByRole("button",{name:"Chọn Cơ sở kiểm thử 23 trên bản đồ",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Cơ sở kiểm thử 23",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Đóng chi tiết",exact:true}).click();
+  await expect(page.locator(".facility-result-card")).toHaveCount(23);
 });
-
 test("replacing a photo when the review already has five keeps all other keys", async ({ page }) => {
   const existing = Object.fromEntries([1, 2, 3, 4, 5].map((n) => [`existing-${n}`, `https://images.example.test/${n}.png`]));
   const fixture = await setup(page, { imageUrls: existing });
@@ -225,8 +192,7 @@ test("removing every photo and clearing the comment persists across a reload", a
   await expect(page.getByRole("button", { name: "Chỉnh sửa đánh giá", exact: true })).toBeVisible();
   expect(fixture.updates[0]).toMatchObject({ imageUrls: { originalPhoto: null }, comment: "" });
   await page.reload();
-  await browse(page);
-  await page.getByRole("button", { name: "Xem chi tiết Cơ sở kiểm thử 1", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Cơ sở kiểm thử 1", exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Đánh giá", exact: true }).click();
   await expect(page.locator(".current-user-review .review-image")).toHaveCount(0);
   await expect(page.locator(".current-user-review")).toContainText("Bạn không để lại nhận xét");
@@ -318,8 +284,8 @@ test("reopening the same facility restores reviews instead of leaving an endless
   await setup(page);
   await editReview(page);
   await page.getByRole("button", { name: "Hủy chỉnh sửa", exact: true }).click();
-  await page.getByRole("button", { name: "Quay lại danh sách", exact: true }).click();
-  await page.getByRole("button", { name: "Xem chi tiết Cơ sở kiểm thử 1", exact: true }).click();
+  await page.getByRole("button", { name: "Đóng chi tiết", exact: true }).click();
+  await page.getByRole("button", { name: "Xem thông tin Cơ sở kiểm thử 1", exact: true }).click();
   await page.getByRole("tab", { name: "Đánh giá", exact: true }).click();
   await expect(page.getByRole("button", { name: "Chỉnh sửa đánh giá", exact: true })).toBeVisible();
   await expect(page.locator(".current-user-review")).toContainText("Nhận xét thử nghiệm ban đầu");

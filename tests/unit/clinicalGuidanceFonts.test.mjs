@@ -17,7 +17,7 @@ test('body font request includes real italic faces for guidance and its emphasis
 
 test('guidance permits synthetic slant when a font is unavailable without changing the global policy', () => {
   assert.match(style('base.css'), /font-synthesis:\s*none/);
-  for (const name of ['clinical-notes.css', 'dashboard-clinical.css', 'facility-explorer.css']) {
+  for (const name of ['clinical-notes.css', 'dashboard-clinical.css', 'facility-discovery-flow.css']) {
     const italicRules = style(name).match(/[^{}]+\{[^{}]*font-style:\s*italic\s*;[^{}]*\}/g) ?? [];
     assert.ok(italicRules.length > 0, `Expected guidance rules in ${name}`);
     for (const rule of italicRules) assert.match(rule, /font-synthesis:\s*style\s*;/, `Missing scoped italic fallback in ${name}`);
