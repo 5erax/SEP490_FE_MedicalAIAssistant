@@ -411,8 +411,10 @@ test.describe("doctor recovery plan workflow", () => {
     const resultDialog = page.getByRole("dialog", { name: "Kết quả xét nghiệm" });
     await expect(resultDialog).toBeVisible();
     await expect(resultDialog.getByRole("heading", { name: /Kết quả ngày 17\/0?8\/2026/ })).toBeVisible();
-    await expect(resultDialog.getByRole("heading", { name: "Chỉ số AST (GOT)" })).toBeVisible();
+    await resultDialog.getByRole("tab", { name: "Chỉ số xét nghiệm", exact: true }).click();
     await expect(resultDialog.getByText("Tham chiếu: 0 – 37 U/L")).toBeVisible();
+    await resultDialog.locator(".lab-test-result__result-card", { hasText: "Chỉ số AST (GOT)" }).click();
+    await expect(resultDialog.getByRole("heading", { name: "Chỉ số AST (GOT)" })).toBeVisible();
     await expect(resultDialog.getByText("Men gan AST đang cao hơn khoảng tham chiếu")).toBeVisible();
     await expect(resultDialog.getByText("Chỉ số chưa nhận diện")).toHaveCount(0);
     expect(calls.clinicalContextGets).toBeGreaterThanOrEqual(2);
