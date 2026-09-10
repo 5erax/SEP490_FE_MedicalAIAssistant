@@ -6,12 +6,27 @@ const FOCUSABLE_SELECTOR = [
   "input:not([disabled])",
   "select:not([disabled])",
   "textarea:not([disabled])",
+  "details > summary:first-of-type",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
 function getFocusableElements(container) {
   return Array.from(container?.querySelectorAll(FOCUSABLE_SELECTOR) ?? [])
-    .filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true");
+    .filter((element) => {
+      // Tab panels and compact detail screens keep controls mounted while hidden.
+      // Only rendered, keyboard-tabbable controls may define the overlay loop.
+      if (element.tabIndex < 0 || element.closest("[hidden], [inert], [aria-hidden='true']")) return false;
+      // Browsers can report layout boxes for descendants of closed details,
+      // although only that details element's first summary can receive focus.
+      for (let ancestor = element.parentElement; ancestor && ancestor !== container; ancestor = ancestor.parentElement) {
+        if (ancestor.tagName === "DETAILS" && !ancestor.open) {
+          const summary = ancestor.querySelector(":scope > summary");
+          if (!summary?.contains(element)) return false;
+        }
+      }
+      const visibility = window.getComputedStyle(element).visibility;
+      return element.getClientRects().length > 0 && visibility !== "hidden" && visibility !== "collapse";
+    });
 }
 
 export function useOverlayFocus({

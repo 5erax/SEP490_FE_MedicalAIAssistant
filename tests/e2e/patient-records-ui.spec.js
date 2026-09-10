@@ -51,6 +51,7 @@ function detailSession(overrides = {}) {
 }
 
 async function openPatientRecords(page, options = {}) {
+  await page.clock.setFixedTime(new Date("2026-08-03T09:00:00+07:00"));
   await page.emulateMedia({ forcedColors: options.forcedColors ?? "none" });
   await preparePage(page);
   await page.addInitScript(({ accessToken, isPremium }) => {
@@ -182,6 +183,19 @@ async function openPatientRecords(page, options = {}) {
   return state;
 }
 
+async function openHistory(page) {
+  await page.getByRole("button", { name: "Lịch sử xét nghiệm", exact: true }).click();
+  const drawer = page.getByRole("dialog", { name: "Lịch sử xét nghiệm", exact: true });
+  await expect(drawer).toBeVisible();
+  return drawer;
+}
+
+async function openHistoryResult(page) {
+  const drawer = await openHistory(page);
+  await drawer.locator("article").filter({ hasText: "1/8/2026" }).getByRole("button", { name: "Chi tiết", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp("/records/" + SESSION_ID + "$"));
+}
+
 test("patient submits the backend lab analysis payload from profile data", async ({ page }) => {
   const state = await openPatientRecords(page);
 
@@ -192,17 +206,17 @@ test("patient submits the backend lab analysis payload from profile data", async
     mimeType: "image/png",
     buffer: Buffer.from("mock-lab-report"),
   });
-  await page.getByLabel(/Ngày xét nghiệm/).fill("2026-08-01");
   await page.getByRole("button", { name: "Phân tích kết quả" }).click();
 
   await expect.poll(() => state.analyzePayload).toEqual({
     documentUrl: "https://res.cloudinary.com/demo/image/upload/lab-tests/report.png",
     patientGenderAtTest: "male",
     patientAgeAtTest: 35,
-    testDate: "2026-08-01",
   });
   await expect(page).toHaveURL(new RegExp(`/records/${SESSION_ID}$`));
   await expect(page.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Tổng quan", exact: true })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "Chỉ số xét nghiệm", exact: true }).click();
   const hemoglobinCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Hemoglobin" });
   await expect(hemoglobinCard).toBeVisible();
   await expect(hemoglobinCard).toContainText("13,8 g/dL");
@@ -230,7 +244,6 @@ test("patient sees the standardized analyze error message in a toast", async ({ 
     mimeType: "image/png",
     buffer: Buffer.from("mock-lab-report"),
   });
-  await page.getByLabel(/Ngày xét nghiệm/).fill("2026-08-01");
   await page.getByRole("button", { name: "Phân tích kết quả" }).click();
 
   const errorToast = page.locator(".toast-error");
@@ -256,7 +269,6 @@ test("lab analysis preserves shared credit errors and offers a purchase action",
     mimeType: "image/png",
     buffer: Buffer.from("mock-lab-report"),
   });
-  await page.getByLabel(/Ngày xét nghiệm/).fill("2026-08-01");
   await page.getByRole("button", { name: "Phân tích kết quả" }).click();
 
   const errorToast = page.locator(".toast-error");
@@ -266,8 +278,7 @@ test("lab analysis preserves shared credit errors and offers a purchase action",
   await expect(page).toHaveURL(/\/pricing\?view=upgrade&returnTo=%2Frecords$/);
 });
 
-test("patient age is derived from the profile birth date and selected test date", async ({ page }) => {
-  await page.clock.setFixedTime(new Date("2026-08-03T09:00:00+07:00"));
+test("patient age is derived from the profile birth date and current date, including birthday boundaries", async ({ page }) => {
   await openPatientRecords(page, {
     profileOverrides: { dateOfBirth: "2003-10-17" },
   });
@@ -275,12 +286,12 @@ test("patient age is derived from the profile birth date and selected test date"
   await expect(page.getByText("Tuổi hiện tại", { exact: true })).toBeVisible();
   await expect(page.getByText("22 tuổi", { exact: true })).toBeVisible();
 
-  const testDateInput = page.getByLabel(/Ngày xét nghiệm/);
-  await testDateInput.fill("2025-10-16");
-  await expect(page.getByText("Tuổi tại ngày xét nghiệm", { exact: true })).toBeVisible();
+  await page.clock.setFixedTime(new Date("2025-10-16T09:00:00+07:00"));
+  await page.reload();
   await expect(page.getByText("21 tuổi", { exact: true })).toBeVisible();
 
-  await testDateInput.fill("2025-10-17");
+  await page.clock.setFixedTime(new Date("2025-10-17T09:00:00+07:00"));
+  await page.reload();
   await expect(page.getByText("22 tuổi", { exact: true })).toBeVisible();
 });
 
@@ -305,13 +316,12 @@ test("patient-facing lab states avoid technical implementation terms", async ({ 
     detailOverrides: { status: "processing", results: [] },
   });
 
-  await expect(page.getByRole("button", { name: /1\/8\/2026/ })).toBeVisible();
+  const drawer = await openHistory(page);
+  await expect(drawer.locator("article").filter({ hasText: "1/8/2026" })).toBeVisible();
   await expect(page.getByText(/backend|schema|API trả về/i)).toHaveCount(0);
 
-  await page.getByRole("button", { name: /1\/8\/2026/ }).click();
-  const dialog = page.getByRole("dialog", { name: "Chi tiết kết quả xét nghiệm" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByText("Kết quả được kiểm tra tự động mỗi giây và sẽ xuất hiện ngay khi hoàn tất.")).toBeVisible();
+  await drawer.locator("article").filter({ hasText: "1/8/2026" }).getByRole("button", { name: "Chi tiết", exact: true }).click();
+  await expect(page.getByText("Kết quả được kiểm tra tự động mỗi giây và sẽ xuất hiện ngay khi hoàn tất.")).toBeVisible();
   await expect(page.getByText(/backend|schema|API trả về/i)).toHaveCount(0);
 });
 
@@ -329,26 +339,33 @@ test("patient opens a session detail through the account-owned history endpoint"
     }],
   });
 
-  const historyTrigger = page.getByRole("button", { name: /1\/8\/2026/ });
-  await historyTrigger.click();
-  const dialog = page.getByRole("dialog", { name: "Chi tiết kết quả xét nghiệm" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeFocused();
+  const historyTrigger = page.getByRole("button", { name: "Lịch sử xét nghiệm", exact: true });
+  const drawer = await openHistory(page);
+  await expect(drawer.getByRole("button", { name: "Đóng lịch sử xét nghiệm", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(drawer).not.toBeVisible();
+  await expect(historyTrigger).toBeFocused();
+  await openHistoryResult(page);
+  const dialog = page.locator(".lab-test-result-page");
+  await expect(dialog.getByRole("heading", { name: "Kết quả ngày 1/8/2026" })).toBeVisible();
+  await expect(dialog.getByRole("tab", { name: "Tổng quan", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.locator(".lab-test-result__overview-counts")).toBeVisible();
+  await dialog.getByRole("tab", { name: "Chỉ số xét nghiệm", exact: true }).click();
   await expect(dialog.locator(".lab-test-result__result-card").filter({ hasText: "Hemoglobin" })).toBeVisible();
+  await dialog.locator(".lab-test-result__result-card").filter({ hasText: "Hemoglobin" }).click();
   await expect(dialog.getByText("Chỉ số trong ngưỡng tham chiếu", { exact: true })).toBeVisible();
-  await expect(page.locator(".toast-info")).toContainText("OCR xét nghiệm hoàn tất");
   expect(state.requests.some((request) => (
     request.method === "GET" && request.pathname === `/api/lab-tests/${SESSION_ID}`
   ))).toBe(true);
 
   const accessibility = await new AxeBuilder({ page })
-    .include(".records-history-dialog")
+    .include(".lab-test-result-page")
     .analyze();
   expect(accessibility.violations).toEqual([]);
 
-  await page.keyboard.press("Escape");
-  await expect(dialog).not.toBeVisible();
-  await expect(historyTrigger).toBeFocused();
+  await page.getByRole("button", { name: "Phân tích xét nghiệm", exact: true }).click();
+  await expect(page).toHaveURL(/\/records$/);
+  await expect(historyTrigger).toBeVisible();
 });
 
 test("patient records stays responsive and reports accessible validation", async ({ page }) => {
@@ -359,7 +376,7 @@ test("patient records stays responsive and reports accessible validation", async
   const errorSummary = page.locator(".records-error-summary");
   await expect(errorSummary).toBeFocused();
   await expect(errorSummary).toContainText("Hãy chọn ảnh hoặc PDF phiếu xét nghiệm.");
-  await expect(errorSummary).toContainText("Hãy nhập ngày xét nghiệm.");
+  await expect(errorSummary.locator("li")).toHaveCount(1);
 
   const dimensions = await page.evaluate(() => ({
     documentWidth: document.documentElement.scrollWidth,
@@ -373,14 +390,52 @@ test("patient records stays responsive and reports accessible validation", async
   expect(results.violations).toEqual([]);
 });
 
+test("patient history keeps overview, list and detail readable on a small screen", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openPatientRecords(page, {
+    detailOverrides: {
+      aiSummary: "## Tổng hợp lần quét\nĐã đối chiếu hemoglobin với khoảng tham chiếu trên phiếu.\n\n## Trao đổi thêm\nMang phiếu gốc khi trao đổi với bác sĩ.",
+    },
+    summaries: [{
+      sessionId: SESSION_ID,
+      status: "completed",
+      testDate: "2026-08-01",
+      patientGenderAtTest: "male",
+      patientAgeAtTest: 35,
+      processedAt: "2026-08-01T08:30:00Z",
+      createdAt: "2026-08-01T08:00:00Z",
+    }],
+  });
+  await openHistoryResult(page);
+  const dialog = page.locator(".lab-test-result-page");
+  await expect(dialog.getByRole("tab", { name: "Tổng quan", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByText("Mang phiếu gốc khi trao đổi với bác sĩ.", { exact: true })).toBeVisible();
+  await dialog.getByRole("tab", { name: "Chỉ số xét nghiệm", exact: true }).click();
+  const row = dialog.locator(".lab-test-result__result-card").filter({ hasText: "Hemoglobin" });
+  await row.click();
+  await expect(dialog.locator("#lab-result-advice").getByRole("heading", { name: "Hemoglobin", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("searchbox", { name: "Tìm chỉ số xét nghiệm", exact: true })).not.toBeVisible();
+  await dialog.getByRole("button", { name: "Quay lại các chỉ số", exact: true }).click();
+  await expect(row).toHaveAttribute("aria-pressed", "true");
+  await expect(row).toBeInViewport();
+  const dimensions = await dialog.evaluate((element) => ({ width: element.scrollWidth, client: element.clientWidth }));
+  expect(dimensions.width).toBeLessThanOrEqual(dimensions.client);
+  const accessibility = await new AxeBuilder({ page }).include(".lab-test-result-page").analyze();
+  expect(accessibility.violations).toEqual([]);
+  await row.click();
+  await page.keyboard.press("Escape");
+  await expect(row).toBeFocused();
+  await expect(dialog.locator("#lab-result-advice")).not.toBeVisible();
+});
+
 test("patient records remains usable by keyboard in forced colors", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await openPatientRecords(page, { forcedColors: "active" });
 
-  const dateInput = page.getByLabel(/Ngày xét nghiệm/);
-  await dateInput.focus();
-  await expect(dateInput).toBeFocused();
-  await dateInput.fill("2026-08-01");
+  const fileInput = page.locator('input[type="file"]');
+  await fileInput.focus();
+  await expect(fileInput).toBeFocused();
+  await fileInput.setInputFiles({ name: "phieu.pdf", mimeType: "application/pdf", buffer: Buffer.from("mock-report") });
   await expect(page.getByRole("button", { name: "Phân tích kết quả" })).toBeVisible();
   await expect(page.locator(".records-upload-card")).toHaveCSS("border-top-style", "solid");
 });
