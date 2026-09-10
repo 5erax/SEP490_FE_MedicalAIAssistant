@@ -377,9 +377,12 @@ function getRawAnswerEntries(question) {
     .map(([key, label]) => {
       const answerKey = normalizeText(key);
       const answerValue = normalizeText(label || key);
-      const shouldDisplayKey = hasVietnameseText(answerKey) || answerKey.length > 20;
+      // Admin stores answers as { Vietnamese label: English label }. Vietnamese
+      // labels need not contain accents (e.g. "ho khan"); do not translate their
+      // English value instead. Keep legacy { code: Vietnamese label } responses.
+      const useLegacyValue = !hasVietnameseText(answerKey) && hasVietnameseText(answerValue);
 
-      return [answerKey, shouldDisplayKey ? answerKey : answerValue];
+      return [answerKey, useLegacyValue ? answerValue : answerKey];
     })
     .filter(([key]) => Boolean(key));
 }
