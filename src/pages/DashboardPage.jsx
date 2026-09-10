@@ -627,7 +627,7 @@ export default function DashboardPage() {
             <div className="studio-chat-actions">
               <span className="studio-status" aria-live="polite">
                 {status === "loading-questions"
-                  ? "AI đang chọn câu hỏi cần hỏi thêm..."
+                  ? "Đang tạo câu hỏi..."
                   : quotaExhausted
                     ? <><strong>Đã hết lượt hôm nay.</strong> Bạn có thể quay lại vào ngày tiếp theo.</>
                     : <><strong>Sẵn sàng.</strong> MediMate sẽ hỏi thêm một số câu ngắn.</>}
@@ -636,11 +636,11 @@ export default function DashboardPage() {
                 className="studio-submit-icon"
                 size="lg"
                 loading={loading}
-                loadingLabel="Đang tạo câu hỏi..."
+                loadingLabel=""
                 disabled={loading || quotaExhausted}
                 type="submit"
-                aria-label="Gửi triệu chứng"
-                title="Gửi triệu chứng"
+                aria-label={loading ? "Đang tạo câu hỏi..." : "Gửi triệu chứng"}
+                title={loading ? "Đang tạo câu hỏi..." : "Gửi triệu chứng"}
               >
                 <Send size={18} />
               </Button>

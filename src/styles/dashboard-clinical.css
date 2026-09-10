@@ -379,9 +379,11 @@
 .specialty-clinical-page .studio-chat-actions .studio-submit-icon {
   width: 52px;
   min-width: 52px;
-  height: 48px;
-  display: inline-grid;
-  place-items: center;
+  height: 52px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-color: rgba(8, 127, 140, 0.42);
   border-radius: 14px;
   background: linear-gradient(135deg, #087f8c, #0e8a83);
@@ -406,6 +408,19 @@
   background: #e6efec;
   color: #6f8380;
   box-shadow: none;
+}
+
+/* Progress is announced beside this icon-only button, not inside its fixed width. */
+.specialty-clinical-page .studio-chat-actions .studio-submit-icon[aria-busy="true"] > span:not(.ui-button-spinner) {
+  display: none;
+}
+
+.specialty-clinical-page .studio-chat-actions .studio-submit-icon[aria-busy="true"] {
+  border-color: #087f8c;
+  background: #087f8c;
+  color: #fff;
+  opacity: 1;
+  cursor: progress;
 }
 
 .specialty-clinical-page .specialty-emergency-note {
@@ -845,6 +860,7 @@ html[data-theme="dark"] .specialty-clinical-page .specialty-confidence-badge {
   }
 
   .specialty-clinical-page .studio-chat-actions .studio-submit-icon,
+  .specialty-clinical-page .studio-chat-actions .studio-submit-icon[aria-busy="true"],
   .specialty-clinical-page .specialty-answer-grid button.selected.yes,
   .specialty-clinical-page .specialty-answer-grid button.selected.no {
     forced-color-adjust: none;
