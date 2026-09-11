@@ -234,7 +234,17 @@ async function prepareRecoveryPage(page, options = {}) {
 
   await page.goto("/recovery-plan", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".recovery-page-header").getByRole("heading", { name: "Kế hoạch phục hồi", exact: true })).toBeVisible();
+  if (options.view === "request" || (options.view !== "tracking" && !(options.requests?.length || options.plans?.length))) {
+    await page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Gửi yêu cầu cho bác sĩ", exact: true })).toBeVisible();
+  }
   return calls;
+}
+
+async function attachLab(page) {
+  await page.getByRole("button", { name: "Chọn kết quả xét nghiệm", exact: true }).click();
+  await page.getByRole("radio").first().check();
+  await page.getByRole("button", { name: "Đính kèm kết quả", exact: true }).click();
 }
 
 test("user creates a recovery request with quota and an idempotency key", async ({ page }) => {
@@ -294,8 +304,7 @@ test("completed lab tests are listed but not attached by default", async ({ page
     ],
   });
 
-  const labSelect = page.getByLabel(/Xét nghiệm đính kèm/);
-  await expect(labSelect).toHaveValue("");
+  await expect(page.locator(".recovery-confirm-summary")).toContainText("0 đính kèm");
   expect(calls.labSessionsQuery).toMatchObject({ PageNumber: "1", PageSize: "20", status: "completed" });
 
   await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
@@ -318,8 +327,7 @@ test("user previews the selected lab test result before creating a recovery requ
     ],
   });
 
-  await page.locator(".recovery-attachments > summary").click();
-  await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
+  await attachLab(page);
   await expect(page.getByRole("button", { name: "Xem lại kết quả" })).toBeVisible();
   await page.getByRole("button", { name: "Xem lại kết quả" }).click();
 
@@ -344,9 +352,8 @@ test("lab test session id variants from the API are attachable", async ({ page }
     ],
   });
 
-  await page.locator(".recovery-attachments > summary").click();
-  await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
-  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toHaveValue(LAB_SESSION_ID);
+  await attachLab(page);
+  await expect(page.locator(".recovery-confirm-summary")).toContainText("1 đính kèm");
 
   await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
   await page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý").fill("Tôi cần bác sĩ xem xét kết quả xét nghiệm gần nhất.");
@@ -382,23 +389,15 @@ test("readiness issues block request creation and link to the medical profile", 
   expect(calls.createCalls).toBe(0);
 });
 
-test("recovery request form stays full-width above the workspace", async ({ page }) => {
+test("request is a separate screen with desktop confirmation beside the fields", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await prepareRecoveryPage(page);
-
-  const pageBox = await page.locator(".recovery-page").boundingBox();
-  const formBox = await page.locator(".recovery-create-card").boundingBox();
-  const mainBox = await page.locator(".recovery-workspace-main").boundingBox();
-  const diseaseBox = await page.locator(".recovery-disease-field").boundingBox();
-  const noteBox = await page.locator(".recovery-note-field").boundingBox();
-
-  expect(pageBox.width).toBeGreaterThan(1100);
-  expect(formBox.y).toBeLessThan(mainBox.y);
-  expect(formBox.x).toBeCloseTo(mainBox.x, 0);
-  expect(formBox.width).toBeCloseTo(mainBox.width, 0);
-  expect(diseaseBox.x).toBeCloseTo(noteBox.x, 0);
-  expect(diseaseBox.y).toBeLessThan(noteBox.y);
-  await expect(page.getByRole("list", { name: "Quy trình nhận kế hoạch phục hồi" })).toBeVisible();
+  await expect(page.locator(".recovery-tracking")).toHaveCount(0);
+  const fields = await page.locator(".recovery-compose-fields").boundingBox();
+  const confirmation = await page.locator(".recovery-confirmation").boundingBox();
+  expect(fields.width).toBeGreaterThan(confirmation.width);
+  expect(confirmation.x).toBeGreaterThan(fields.x + fields.width);
+  expect(Math.abs(fields.y - confirmation.y)).toBeLessThan(3);
 });
 
 test("legacy more-information requests render without the old patient submit form", async ({ page }) => {
@@ -411,22 +410,22 @@ test("legacy more-information requests render without the old patient submit for
 
 test("new-request form reappears immediately after cancelling an active request", async ({ page }) => {
   const calls = await prepareRecoveryPage(page, { requests: [request()] });
-  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Hủy yêu cầu" }).click();
   const dialog = page.getByRole("alertdialog", { name: "Hủy yêu cầu kế hoạch?" });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Hủy yêu cầu" }).click();
 
-  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeVisible();
   expect(calls.cancelled).toBe(true);
 });
 
 test("user reads and starts a published recovery plan", async ({ page }) => {
   const calls = await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan()] });
-  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("button", { name: "Hướng dẫn phục hồi", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toBeVisible();
-  await expect(page.getByText("Khởi động nhẹ", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Khởi động nhẹ", exact: true })).toBeVisible();
   await expect(page.getByText("Trứng", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Bắt đầu kế hoạch" }).click();
 
@@ -436,7 +435,7 @@ test("user reads and starts a published recovery plan", async ({ page }) => {
 
 test("user cancels a ready-to-start plan and sees the reason afterwards", async ({ page }) => {
   const calls = await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan()] });
-  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("button", { name: "Hướng dẫn phục hồi", exact: true }).click();
   await page.getByRole("button", { name: "Hủy kế hoạch" }).click();
 
   const dialog = page.getByRole("dialog");
@@ -450,12 +449,12 @@ test("user cancels a ready-to-start plan and sees the reason afterwards", async 
   await expect(page.getByText("Không thể tiếp tục thực hiện", { exact: true })).toBeVisible();
   expect(calls.cancelPlanBody).toEqual({ cancellationReasonCode: "UNABLE_TO_FOLLOW", cancellationReason: null });
 
-  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeVisible();
 });
 
 test("cancelling a plan with \"Lý do khác\" requires a note", async ({ page }) => {
   await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan({ status: "active" })] });
-  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("button", { name: "Hướng dẫn phục hồi", exact: true }).click();
   await page.getByRole("button", { name: "Hủy kế hoạch" }).click();
 
   const dialog = page.getByRole("dialog");
@@ -466,49 +465,25 @@ test("cancelling a plan with \"Lý do khác\" requires a note", async ({ page })
   await expect(dialog).toBeVisible();
 });
 
-test("a cancelled plan is collapsed by default and can be expanded", async ({ page }) => {
-  await prepareRecoveryPage(page, {
-    requests: [request({ status: "published" })],
-    plans: [plan({
-      status: "cancelled",
-      cancelledAt: "2026-08-01T10:00:00Z",
-      cancellationReasonCode: "NO_LONGER_NEEDED",
-      cancellationReason: null,
-    })],
-  });
-  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
-
-  await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toBeVisible();
-  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeHidden();
-  await expect(page.getByText("Khởi động nhẹ", { exact: true })).toBeHidden();
-
-  await page.getByRole("button", { name: "Mở rộng kế hoạch" }).click();
+test("cancelled plan keeps its outcome and full instructions available", async ({ page }) => {
+  await prepareRecoveryPage(page, { plans: [plan({ status: "cancelled", cancelledAt: "2026-08-01T10:00:00Z", cancellationReasonCode: "NO_LONGER_NEEDED" })] });
   await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeVisible();
-  await expect(page.getByText("Khởi động nhẹ", { exact: true })).toBeVisible();
-
-  await page.getByRole("button", { name: "Thu gọn kế hoạch" }).click();
-  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Khởi động nhẹ", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Bắt đầu kế hoạch" })).toHaveCount(0);
 });
 
-test("plans tab never repeats the plan name/status when there are multiple plans", async ({ page }) => {
-  await prepareRecoveryPage(page, {
-    requests: [request({ status: "published" })],
-    plans: [
-      plan(),
-      plan({ id: "33333333-3333-4333-8333-333333333333", planName: "Kế hoạch cũ", status: "cancelled", cancelledAt: "2026-07-01T10:00:00Z" }),
-    ],
-  });
-  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
-  await expect(page.getByRole("tab", { name: /Kế hoạch của bạn/ })).toContainText("2");
-  await expect(page.getByText("Phục hồi hô hấp 14 ngày", { exact: true })).toHaveCount(1);
-  await expect(page.locator(".recovery-plan-bar")).toHaveCount(0);
-
-  // The historical (cancelled) plan must still be reachable - just
-  // collapsed by default, not gone from the page entirely.
-  await expect(page.getByText("Kế hoạch cũ", { exact: true })).toBeVisible();
-  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeHidden();
-  await page.getByRole("button", { name: "Mở rộng kế hoạch" }).click();
-  await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeVisible();
+test("tracking shows only the current plan and older plans remain in history", async ({ page }) => {
+  await prepareRecoveryPage(page, { plans: [plan(), plan({ id: "33333333-3333-4333-8333-333333333333", planName: "Kế hoạch cũ", status: "cancelled" })] });
+  await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toBeVisible();
+  await expect(page.getByText("Kế hoạch cũ", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Lịch sử", exact: true }).click();
+  const history = page.getByRole("dialog", { name: "Lịch sử", exact: true });
+  await history.getByRole("button", { name: "Kế hoạch của bạn", exact: true }).click();
+  await history.getByRole("button", { name: /Kế hoạch cũ/ }).click();
+  await expect(history.getByText("Kế hoạch đã được hủy", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(history).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toBeVisible();
 });
 
 test("timeline tab paints each phase onto its real calendar dates", async ({ page }) => {
@@ -542,7 +517,7 @@ test("timeline tab paints each phase onto its real calendar dates", async ({ pag
     })],
   });
 
-  await page.getByRole("tab", { name: /Lộ trình của bạn/ }).click();
+  await page.getByRole("button", { name: "Lịch thực hiện", exact: true }).click();
   await expect(page.getByText("Tháng 8 - 2026", { exact: true })).toBeVisible();
   await expect(page.getByText("Giai đoạn 1: Khởi động nhẹ", { exact: true })).toBeVisible();
   await expect(page.getByText("5/8/2026 – 16/8/2026", { exact: true })).toBeVisible();
@@ -570,17 +545,17 @@ test("cancelling a plan immediately clears its colored roadmap, without a reload
     })],
   });
 
-  await page.getByRole("tab", { name: /Lộ trình của bạn/ }).click();
+  await page.getByRole("button", { name: "Lịch thực hiện", exact: true }).click();
   await expect(page.getByText("Giai đoạn 1: Khởi động nhẹ", { exact: true })).toBeVisible();
 
-  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("button", { name: "Hướng dẫn phục hồi", exact: true }).click();
   await page.getByRole("button", { name: "Hủy kế hoạch" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Lý do hủy").selectOption("UNABLE_TO_FOLLOW");
   await dialog.getByRole("button", { name: "Hủy kế hoạch" }).click();
   await expect(dialog).toBeHidden();
 
-  await page.getByRole("tab", { name: /Lộ trình của bạn/ }).click();
+  await page.getByRole("button", { name: "Lịch thực hiện", exact: true }).click();
   await expect(page.getByText("Lộ trình không còn hiệu lực", { exact: true })).toBeVisible();
   await expect(page.getByText("Giai đoạn 1: Khởi động nhẹ", { exact: true })).toHaveCount(0);
 });
@@ -590,87 +565,78 @@ test("new-request form is hidden while a plan is active", async ({ page }) => {
   // terminal, non-blocking request status) - the plan itself is what's
   // still blocking the workflow guard here.
   await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan({ status: "active" })] });
-  await page.getByRole("tab", { name: /Kế hoạch của bạn/ }).click();
+  await page.getByRole("button", { name: "Hướng dẫn phục hồi", exact: true }).click();
   await expect(page.getByText("Đang thực hiện", { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toHaveCount(0);
 });
 
 test("new-request form is visible again once the plan is no longer active", async ({ page }) => {
   await prepareRecoveryPage(page, { requests: [request({ status: "published" })], plans: [plan({ status: "completed" })] });
-  await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeVisible();
 });
 
-test("recovery plan page remains accessible on mobile", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await prepareRecoveryPage(page, { requests: [], plans: [plan({ status: "completed" })] });
-  const formBox = await page.locator(".recovery-create-card").boundingBox();
-  const tabsBox = await page.locator(".recovery-workspace-tabs").boundingBox();
-  expect(formBox).not.toBeNull();
-  expect(tabsBox).not.toBeNull();
-  expect(formBox.y).toBeLessThan(tabsBox.y);
-  const results = await new AxeBuilder({ page }).analyze();
-  expect(results.violations).toEqual([]);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-});
-
-for (const width of [1440, 768, 390, 320]) {
-  test(`compact recovery request keeps required fields and submit together at ${width}px`, async ({ page }, testInfo) => {
-    await page.setViewportSize({ width, height: 900 });
-    await prepareRecoveryPage(page);
-    await expect(page.getByLabel(/Nhóm bệnh/)).toBeEnabled();
-    const form = page.locator(".recovery-create-card");
-    const geometry = await page.evaluate(() => ({
-      formHeight: document.querySelector(".recovery-create-card").getBoundingClientRect().height,
-      pageHeight: document.querySelector(".recovery-page").getBoundingClientRect().height,
-    }));
-    await testInfo.attach("layout-metrics", { body: JSON.stringify(geometry), contentType: "application/json" });
-    console.info(`Recovery layout at ${width}px: ${JSON.stringify(geometry)}`);
-    await page.screenshot({ path: testInfo.outputPath("recovery-page.png"), fullPage: true });
-    expect(geometry.formHeight).toBeLessThan(width > 900 ? 650 : 820);
-    await expect(page.locator(".recovery-attachments")).not.toHaveAttribute("open", "");
-    await expect(page.getByLabel(/Xét nghiệm đính kèm/)).not.toBeVisible();
-    await expect(page.getByRole("button", { name: "Gửi yêu cầu", exact: true })).toBeVisible();
-    expect(await form.locator("textarea").evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(100);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  });
-}
 
 const ATTACHMENT_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==", "base64");
 const ATTACHABLE_LAB = { sessionId: LAB_SESSION_ID, status: "completed", testDate: "2026-08-13", facilityName: "MediLab", createdAt: "2026-08-13T04:59:00Z" };
 
-test("optional evidence can be opened by keyboard, preserved while closed, and removed", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 390, height: 900 });
+for (const width of [1440, 768, 390, 320]) {
+  test(`focused request has no overflow and correct confirmation layout at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await prepareRecoveryPage(page);
+    const fields = await page.locator(".recovery-compose-fields").boundingBox();
+    const summary = await page.locator(".recovery-confirmation").boundingBox();
+    if (width > 900) expect(summary.x).toBeGreaterThan(fields.x + fields.width);
+    else expect(summary.y).toBeGreaterThanOrEqual(fields.y + fields.height);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await expect(page.getByRole("button", { name: "Gửi yêu cầu", exact: true })).toBeVisible();
+    await expect(page.locator(".recovery-evidence-row")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Lịch sử", exact: true })).toHaveCount(0);
+    await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
+    await page.screenshot({ path: testInfo.outputPath("request.png"), fullPage: true });
+    const results = await new AxeBuilder({ page }).include(".recovery-page").analyze();
+    expect(results.violations).toEqual([]);
+  });
+}
+
+test("draft and attachments survive navigation between tracking and request, including browser back", async ({ page }) => {
   await prepareRecoveryPage(page, { labSessions: [ATTACHABLE_LAB] });
-  const summary = page.locator(".recovery-attachments > summary");
-  const note = page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý");
-  await note.fill("Ghi chú phải được giữ lại khi đóng mục đính kèm.");
-  await summary.focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toBeVisible();
-  await expect(page.locator(".recovery-lab-preview-card")).toHaveCount(0);
-  await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
+  await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
+  await page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý").fill("Nội dung bản nháp cần giữ lại.");
+  await attachLab(page);
   await page.locator("#recovery-prescriptionImage").setInputFiles({ name: "don-thuoc.png", mimeType: "image/png", buffer: ATTACHMENT_PNG });
+  await page.getByRole("button", { name: "Về theo dõi phục hồi" }).click();
+  await expect(page.locator(".recovery-create-card")).toBeHidden();
+  await expect(page.locator(".recovery-tracking")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý")).toHaveValue("Nội dung bản nháp cần giữ lại.");
+  await expect(page.locator(".recovery-confirm-summary")).toContainText("2 đính kèm");
+  await page.getByRole("button", { name: "Xem ảnh", exact: true }).click();
   await expect(page.getByAltText("Xem trước đơn thuốc")).toBeVisible();
-  await page.locator(".recovery-create-card").screenshot({ path: testInfo.outputPath("attachments-open.png") });
-  await summary.click();
-  await expect(summary).toContainText("Đã chọn 2 tài liệu");
-  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).not.toBeVisible();
-  await expect(note).toHaveValue("Ghi chú phải được giữ lại khi đóng mục đính kèm.");
-  await summary.focus();
-  await page.keyboard.press("Space");
-  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toHaveValue(LAB_SESSION_ID);
-  await expect(page.getByAltText("Xem trước đơn thuốc")).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Bỏ đính kèm", exact: true }).click();
   await page.getByRole("button", { name: "Xóa ảnh", exact: true }).click();
-  await expect(summary).toContainText("Thêm tài liệu");
-  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toHaveValue("");
-  await expect(page.getByAltText("Xem trước đơn thuốc")).toHaveCount(0);
-  await page.locator("#recovery-prescriptionImage").setInputFiles({ name: "not-an-image.pdf", mimeType: "application/pdf", buffer: Buffer.from("test") });
-  await expect(page.locator(".recovery-prescription-field [role=alert]")).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  await expect(page.locator(".recovery-confirm-summary")).toContainText("0 đính kèm");
+  await page.locator("#recovery-prescriptionImage").setInputFiles({ name: "wrong.pdf", mimeType: "application/pdf", buffer: Buffer.from("test") });
+  await expect(page.locator(".recovery-evidence [role=alert]")).toBeVisible();
 });
 
-test("upload failure reopens optional evidence and permits retry without losing the request", async ({ page }) => {
+test("lab picker needs confirmation, supports preview and keyboard dismissal", async ({ page }) => {
+  await prepareRecoveryPage(page, { labSessions: [ATTACHABLE_LAB] });
+  const button = page.getByRole("button", { name: "Chọn kết quả xét nghiệm", exact: true });
+  await button.focus();
+  await page.keyboard.press("Enter");
+  const picker = page.getByRole("dialog", { name: "Chọn kết quả xét nghiệm", exact: true });
+  await picker.getByRole("radio").check();
+  await picker.getByRole("button", { name: "Xem kết quả", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Kết quả xét nghiệm", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(picker).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(button).toBeFocused();
+  await expect(page.locator(".recovery-confirm-summary")).toContainText("0 đính kèm");
+});
+
+test("upload failure preserves the request and permits retry without duplicate creation", async ({ page }) => {
   await page.addInitScript(() => { window.__MEDIMATE_CLOUDINARY_CONFIG__ = { cloudName: "fixture", uploadPreset: "fixture" }; });
   let uploads = 0;
   await page.route("https://api.cloudinary.com/**", route => {
@@ -682,47 +648,66 @@ test("upload failure reopens optional evidence and permits retry without losing 
   await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
   const note = page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý");
   await note.fill("Tôi muốn bác sĩ tham khảo đơn thuốc đính kèm.");
-  const summary = page.locator(".recovery-attachments > summary");
-  await summary.click();
   await page.locator("#recovery-prescriptionImage").setInputFiles({ name: "don-thuoc.png", mimeType: "image/png", buffer: ATTACHMENT_PNG });
-  await summary.click();
   await page.getByRole("button", { name: "Gửi yêu cầu", exact: true }).click();
   await expect(page.getByText("Không thể tải ảnh kiểm thử.", { exact: true })).toBeVisible();
-  await expect(page.locator(".recovery-attachments")).toHaveAttribute("open", "");
   await expect(note).toHaveValue("Tôi muốn bác sĩ tham khảo đơn thuốc đính kèm.");
   expect(calls.createCalls).toBe(0);
   await page.getByRole("button", { name: "Gửi yêu cầu", exact: true }).click();
   await expect.poll(() => calls.createCalls).toBe(1);
   expect(calls.createBody.prescriptionImageUrl).toBe("https://example.invalid/prescription.png");
   expect(uploads).toBe(2);
+  await expect(page).toHaveURL(/\/recovery-plan$/);
 });
 
-test("compact recovery layout preserves quota blocking and the workspace shortcut", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 320, height: 900 });
-  const calls = await prepareRecoveryPage(page, { quota: { quotaCode: "SERVICE_CREDIT", grantedCount: 1, usedCount: 1, reservedCount: 0, remainingCount: 0 } });
-  await expect(page.getByRole("button", { name: "Gửi yêu cầu", exact: true })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Mua thêm lượt", exact: true })).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath("no-quota.png"), fullPage: true });
-  await page.getByRole("link", { name: "Xem yêu cầu và kế hoạch", exact: true }).click();
-  await expect(page.locator("#recovery-workspace")).toBeFocused();
-  await expect(page.getByRole("tablist", { name: "Khu vực làm việc" })).toBeInViewport();
-  await expect(page.getByRole("tab", { name: "Lộ trình của bạn", exact: true })).toBeInViewport();
-  expect(await page.locator(".recovery-workspace-tabs").evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
-  expect(calls.createCalls).toBe(0);
+test("no quota prevents new requests but not tracking or history", async ({ page }) => {
+  await prepareRecoveryPage(page, { view: "tracking", quota: { quotaCode: "SERVICE_CREDIT", grantedCount: 1, usedCount: 1, reservedCount: 0, remainingCount: 0 } });
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeDisabled();
+  await expect(page.getByText("Bạn vẫn có thể xem các yêu cầu và kế hoạch đã có.")).toBeVisible();
+  await page.getByRole("button", { name: "Lịch sử", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Lịch sử", exact: true })).toBeVisible();
 });
 
-test("expanded recovery attachments remain accessible in dark mode", async ({ page }, testInfo) => {
+for (const width of [1440, 390, 320]) {
+  test(`plan shows current scheduled phase and alternate calendar at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 8);
+    const dateKey = [start.getFullYear(), String(start.getMonth() + 1).padStart(2, "0"), String(start.getDate()).padStart(2, "0")].join("-");
+    await prepareRecoveryPage(page, { plans: [plan({ status: "active", startDate: dateKey, phases: [
+      ...plan().phases, { id: "phase-2", phaseName: "Tăng cường", startDay: 8, endDay: 14, instruction: "Hướng dẫn giai đoạn hai không được cắt bớt.", sortOrder: 2, nutrientTargets: [] },
+    ] })] });
+    await expect(page.getByText("Hướng dẫn giai đoạn hai không được cắt bớt.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Đi bộ nhẹ và theo dõi nhịp thở.", { exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Giai đoạn trước", exact: true }).click();
+    await expect(page.getByText("Đi bộ nhẹ và theo dõi nhịp thở.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Trứng", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Xem toàn bộ kế hoạch", exact: true }).click();
+    await expect(page.locator(".recovery-phase-card")).toHaveCount(2);
+    await page.getByRole("button", { name: "Xem từng giai đoạn", exact: true }).click();
+    await expect(page.locator(".recovery-phase-card")).toHaveCount(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
+    await page.screenshot({ path: testInfo.outputPath("tracking.png"), fullPage: true });
+    const result = await new AxeBuilder({ page }).include(".recovery-page").analyze();
+    expect(result.violations).toEqual([]);
+    await page.getByRole("button", { name: "Lịch thực hiện", exact: true }).click();
+    await expect(page.locator(".recovery-phase-workspace")).toHaveCount(0);
+    await expect(page.locator(".recovery-timeline-calendar")).toBeVisible();
+  });
+}
+
+test("focused request and history are accessible in dark mode", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await prepareRecoveryPage(page, { labSessions: [ATTACHABLE_LAB] });
   await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
-  await page.locator(".recovery-attachments > summary").click();
-  await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
-  // Audit each part in view; the shared account header is outside this redesign.
-  for (const selector of [".recovery-page-header", ".recovery-quota-card", ".recovery-create-card", ".recovery-workspace-main"]) {
-    await page.locator(selector).scrollIntoViewIfNeeded();
-    const results = await new AxeBuilder({ page }).include(selector).analyze();
-    expect(results.violations).toEqual([]);
-  }
+  await attachLab(page);
+  const results = await new AxeBuilder({ page }).include(".recovery-page").analyze();
+  expect(results.violations).toEqual([]);
   await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
-  await page.screenshot({ path: testInfo.outputPath("recovery-dark.png"), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("request-dark.png"), fullPage: true });
+  await page.getByRole("button", { name: "Về theo dõi phục hồi" }).click();
+  await page.getByRole("button", { name: "Lịch sử", exact: true }).click();
+  const historyResult = await new AxeBuilder({ page }).include(".recovery-history-panel").analyze();
+  expect(historyResult.violations).toEqual([]);
 });

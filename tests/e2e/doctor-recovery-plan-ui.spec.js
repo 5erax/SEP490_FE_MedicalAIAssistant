@@ -277,7 +277,7 @@ test.describe("doctor recovery plan workflow", () => {
   });
 
   test("a doctor with an unresolved request is warned and blocked from accepting another", async ({ page }) => {
-    const calls = await prepareDoctorPage(page, {
+    await prepareDoctorPage(page, {
       openItems: [openRequest()],
       mineItems: [myRequest({ id: "33333333-3333-4333-8333-333333333333", status: "assigned" })],
     });
@@ -458,6 +458,7 @@ test.describe("doctor recovery plan workflow", () => {
 
     await page.getByRole("button", { name: "Tạo kế hoạch", exact: true }).click();
     const planDialog = page.getByRole("dialog");
+    await planDialog.getByRole("button").filter({ hasText: "Tạo kế hoạch mới" }).click();
     await planDialog.getByLabel("Tên kế hoạch").fill("Phục hồi hô hấp 7 ngày");
     await planDialog.getByLabel("Tóm tắt").fill("Tăng dần vận động, theo dõi nhịp thở.");
     await planDialog.getByLabel("Số ngày thực hiện").fill("7");
@@ -470,7 +471,7 @@ test.describe("doctor recovery plan workflow", () => {
     await page.getByRole("button", { name: "Thêm giai đoạn" }).first().click();
     const phaseDialog = page.getByRole("dialog");
     await phaseDialog.getByLabel("Tên giai đoạn").fill("Giai đoạn 1");
-    await phaseDialog.getByLabel("Ngày bắt đầu").fill("1");
+    await expect(phaseDialog.getByLabel("Ngày bắt đầu")).toHaveValue("1");
     await phaseDialog.getByLabel("Ngày kết thúc").fill("7");
     await phaseDialog.getByLabel("Tổng giờ ngủ nghỉ / ngày").fill("10");
     await phaseDialog.getByRole("button", { name: "Thêm giai đoạn" }).click();

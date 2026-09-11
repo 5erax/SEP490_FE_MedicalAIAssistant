@@ -40,7 +40,7 @@ const PATIENT_SURFACES = [
     primaryAction: ".records-actions button",
   },
   {
-    path: "/recovery-plan",
+    path: "/recovery-plan?view=request",
     focusTarget: ".recovery-create-card select",
     primaryAction: ".recovery-create-card button[type=\"submit\"]",
   },
