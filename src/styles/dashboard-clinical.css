@@ -1079,6 +1079,24 @@
   line-height: 1.7;
 }
 
+.specialty-clinical-page .specialty-result-hero-action {
+  margin-top: 4px;
+}
+
+.specialty-clinical-page .specialty-result-hero-action .ui-button {
+  min-width: min(100%, 330px);
+  min-height: 58px;
+  justify-content: center;
+  border-radius: 16px;
+  font-size: 16px;
+}
+
+.specialty-clinical-page .specialty-result-hero-action .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .specialty-clinical-page .specialty-result-priority-note {
   max-width: 760px;
   margin: 2px 0 0;
@@ -1215,6 +1233,53 @@
   letter-spacing: 0;
 }
 
+.specialty-clinical-page .specialty-result-method {
+  display: grid;
+  gap: 10px;
+}
+
+.specialty-clinical-page .specialty-result-method p,
+.specialty-clinical-page .specialty-result-diagnosis-summary > p {
+  margin: 0;
+  color: var(--clinical-ink);
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.specialty-clinical-page .specialty-result-method ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialty-clinical-page .specialty-result-method li {
+  position: relative;
+  color: var(--clinical-muted);
+  padding-left: 20px;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.specialty-clinical-page .specialty-result-method li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.68em;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--clinical-teal);
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-summary {
+  display: grid;
+  gap: 10px;
+}
+
 .specialty-clinical-page .specialty-result-diagnosis-reason {
   padding-right: 72px;
 }
@@ -1222,6 +1287,33 @@
 .specialty-clinical-page .specialty-result-code {
   color: var(--clinical-teal-dark) !important;
   font-weight: 800 !important;
+}
+
+.specialty-clinical-page .specialty-result-reason-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialty-clinical-page .specialty-result-reason-list li {
+  display: grid;
+  gap: 4px;
+}
+
+.specialty-clinical-page .specialty-result-reason-list strong {
+  color: var(--clinical-ink);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.specialty-clinical-page .specialty-result-reason-list span,
+.specialty-clinical-page .specialty-result-reason-list em {
+  color: var(--clinical-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 .specialty-clinical-page .specialty-result-reasoning ul {

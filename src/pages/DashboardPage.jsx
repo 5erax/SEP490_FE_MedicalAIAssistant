@@ -437,10 +437,10 @@ function SpecialtyResultView({
   const percent = clinicalConfidencePercent(recommendedDepartment?.confidenceScore);
   const departmentName = recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa";
   const reason = recommendedDepartment?.reason || "";
-  const description = recommendedDepartment?.description || "";
   const displayedSymptom = getResultSymptomText(result, symptomText);
   const hasFacilities = facilities.length > 0;
   const hasPriority = hasClinicalPriority(recommendedDepartment);
+  const diagnosisReasonItems = diagnoses.filter((diagnosis) => diagnosis.clinicalReasoning);
 
   return (
     <section className="studio-result-panel specialty-result-page" aria-label="Kết quả định hướng chuyên khoa">
@@ -455,15 +455,15 @@ function SpecialtyResultView({
           <p className="specialty-result-hero-note">
             MediMate gợi ý nơi bắt đầu phù hợp nhất dựa trên triệu chứng và câu trả lời bạn đã cung cấp.
           </p>
-          {description && (
-            <details className="specialty-result-inline-help">
-              <summary>Xem mô tả chuyên khoa</summary>
-              <p>{description}</p>
-            </details>
-          )}
           {hasPriority && (
             <p className="specialty-result-priority-note">{CLINICAL_NOTES.priority}</p>
           )}
+          <div className="specialty-result-hero-action">
+            <Button type="button" onClick={() => onOpenFacilities?.(result, sessionId)}>
+              <MapPinned size={18} aria-hidden="true" />
+              Tìm cơ sở y tế
+            </Button>
+          </div>
         </div>
 
         <aside className="specialty-result-score" aria-label="Độ phù hợp">
@@ -483,85 +483,80 @@ function SpecialtyResultView({
         </aside>
       </section>
 
-      <section className="specialty-result-block specialty-result-diagnosis-panel" aria-labelledby="specialty-result-diagnosis-title">
+      <section className="specialty-result-block specialty-result-explanation" aria-labelledby="specialty-result-explanation-title">
         <header>
           <div>
-            <p className="specialty-result-kicker">Kết quả tham khảo</p>
-            <h3 id="specialty-result-diagnosis-title">Các chẩn đoán được cân nhắc</h3>
+            <p className="specialty-result-kicker">Giải thích</p>
+            <h3 id="specialty-result-explanation-title">Vì sao MediMate đưa ra kết quả này?</h3>
           </div>
-          <details className="specialty-result-inline-help">
-            <summary>Danh sách này có ý nghĩa gì?</summary>
-            <p>
-              Các chẩn đoán dưới đây là những khả năng được hệ thống cân nhắc dựa trên thông tin hiện có và không thay thế kết luận của bác sĩ.
-            </p>
-          </details>
         </header>
 
-        {diagnoses.length > 0 ? (
-          <ol className="specialty-result-diagnosis-list">
-            {diagnoses.map((diagnosis, index) => {
-              const key = getDiagnosisKey(diagnosis, index);
-              const confidence = clinicalConfidencePercent(diagnosis.confidenceScore);
-              const reasoningId = `specialty-result-diagnosis-reason-${index}`;
+        <div className="specialty-result-method">
+          <p>MediMate đã đối chiếu:</p>
+          <ul>
+            <li>Triệu chứng bạn mô tả</li>
+            <li>Các câu trả lời khảo sát</li>
+            <li>Phạm vi tiếp nhận của chuyên khoa</li>
+          </ul>
+        </div>
 
-              return (
-                <li key={key}>
-                  <div className="specialty-result-diagnosis-row">
-                    <span>{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}</span>
-                    <strong>{confidence ? `${confidence}%` : "Đang cân nhắc"}</strong>
-                  </div>
-                  <details className="specialty-result-inline-help specialty-result-diagnosis-reason" id={reasoningId}>
-                    <summary>Vì sao kết quả này được đề xuất?</summary>
-                    <p>{diagnosis.clinicalReasoning || "Chưa có mô tả phân tích cho bệnh được gợi ý này."}</p>
-                    {diagnosis.icd10Code && <p className="specialty-result-code">ICD-10: {diagnosis.icd10Code}</p>}
-                  </details>
-                </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <p className="specialty-result-empty">Phiên này chưa có danh sách chẩn đoán tham khảo từ hệ thống.</p>
-        )}
-      </section>
+        <div className="specialty-result-diagnosis-summary">
+          <p>Các chẩn đoán được cân nhắc</p>
+          {diagnoses.length > 0 ? (
+            <ol className="specialty-result-diagnosis-list">
+              {diagnoses.map((diagnosis, index) => {
+                const key = getDiagnosisKey(diagnosis, index);
+                const confidence = clinicalConfidencePercent(diagnosis.confidenceScore);
 
-      <section className="specialty-result-block specialty-result-reasoning" aria-labelledby="specialty-result-reason-title">
-        <p className="specialty-result-kicker">Phân tích</p>
-        <h3 id="specialty-result-reason-title">Vì sao hệ thống đề xuất chuyên khoa này?</h3>
-        <ul>
-          <li>Triệu chứng bạn mô tả</li>
-          <li>Các câu trả lời khảo sát</li>
-          <li>Phạm vi tiếp nhận của chuyên khoa</li>
-        </ul>
-        <details className="specialty-result-inline-help">
-          <summary>Vì sao tôi nhận được kết quả này?</summary>
+                return (
+                  <li key={key}>
+                    <div className="specialty-result-diagnosis-row">
+                      <span>{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}</span>
+                      <strong>{confidence ? `${confidence}%` : "Đang cân nhắc"}</strong>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="specialty-result-empty">Phiên này chưa có danh sách chẩn đoán tham khảo từ hệ thống.</p>
+          )}
+        </div>
+
+        <details className="specialty-result-inline-help specialty-result-explanation-detail">
+          <summary>Xem giải thích chi tiết</summary>
           <p>
             {reason || "MediMate đối chiếu mô tả triệu chứng và câu trả lời làm rõ với nhóm vấn đề thường được chuyên khoa này tiếp nhận."}
           </p>
-        </details>
-        <details className="specialty-result-inline-help">
-          <summary>Xem triệu chứng đã ghi nhận</summary>
+          <p>
+            Các chẩn đoán dưới đây chỉ là những khả năng được hệ thống cân nhắc dựa trên thông tin hiện có và không thay thế kết luận của bác sĩ.
+          </p>
+          {diagnosisReasonItems.length > 0 && (
+            <ul className="specialty-result-reason-list">
+              {diagnosisReasonItems.map((diagnosis, index) => (
+                <li key={getDiagnosisKey(diagnosis, index)}>
+                  <strong>{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}:</strong>
+                  <span>{diagnosis.clinicalReasoning}</span>
+                  {diagnosis.icd10Code && <em>ICD-10: {diagnosis.icd10Code}</em>}
+                </li>
+              ))}
+            </ul>
+          )}
           <p>{displayedSymptom || "Phiên này chưa lưu lại mô tả triệu chứng ban đầu."}</p>
         </details>
       </section>
 
       <section className="specialty-result-next-step" aria-labelledby="specialty-result-next-title">
         <p className="specialty-result-kicker">Bước tiếp theo</p>
-        <h3 id="specialty-result-next-title">Chọn cơ sở y tế để chuẩn bị trước khi đi khám</h3>
+        <h3 id="specialty-result-next-title">Chọn cơ sở y tế phù hợp để chuẩn bị trước khi đi khám</h3>
         <p>
-          Tìm cơ sở phù hợp để MediMate chuyển sang luồng tư vấn trước khám, giúp bạn chuẩn bị thông tin cần mang theo và câu hỏi nên trao đổi với bác sĩ.
+          Hãy dùng nút <strong>Tìm cơ sở y tế</strong> ở phần kết luận để mở bản đồ, chọn nơi khám phù hợp rồi tiếp tục sang tư vấn trước khám.
         </p>
         {!hasFacilities && (
           <small>Bạn vẫn có thể tìm theo chuyên khoa được đề xuất dù phiên này chưa có cơ sở gợi ý trực tiếp.</small>
         )}
-        <Button type="button" onClick={() => onOpenFacilities?.(result, sessionId)}>
-          <MapPinned size={18} aria-hidden="true" />
-          Tìm cơ sở y tế
-        </Button>
       </section>
 
-      <div className="studio-recovery-actions specialty-result-recovery-actions">
-        {onReset && <Button type="button" tone="secondary" onClick={onReset}>Nhập triệu chứng mới</Button>}
-      </div>
     </section>
   );
 }
