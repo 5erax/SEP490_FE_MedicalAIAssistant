@@ -527,7 +527,7 @@ function NearbyClinicPage() {
     if (!mapQuery.sessionId) return "error";
     return "loading";
   });
-  const [clinicalNotice, setClinicalNotice] = useState(() => {
+  const [, setClinicalNotice] = useState(() => {
     if (!isClinicalFlow) return "";
     if (!auth?.accessToken) {
       return "Đăng nhập để xem lại kết quả gợi ý chuyên khoa của bạn.";
@@ -818,12 +818,17 @@ function NearbyClinicPage() {
     }
 
     if (["nearby", "nearest"].includes(facilityDiscoveryMode) && !userLocation) {
-      setFacilityDiscoveryMode("all");
-      return undefined;
+      const fallbackDiscoveryModeId = window.setTimeout(() => {
+        setFacilityDiscoveryMode("all");
+      }, 0);
+      return () => window.clearTimeout(fallbackDiscoveryModeId);
     }
 
-    setLoadingFacilities(true);
-    setApiNotice("");
+    const loadingStateId = window.setTimeout(() => {
+      if (!active) return;
+      setLoadingFacilities(true);
+      setApiNotice("");
+    }, 0);
 
     const requestNearestFacility = async () => {
       let lastResponse = null;
@@ -940,6 +945,7 @@ function NearbyClinicPage() {
 
     return () => {
       active = false;
+      window.clearTimeout(loadingStateId);
     };
   }, [facilityDiscoveryMode, nearbyRadiusKm, selectedDepartmentId, userLocation]);
 
@@ -1234,12 +1240,6 @@ function NearbyClinicPage() {
       .filter((facility) => facility.isActive === false)
       .length
     : 0;
-  const effectiveClinicalNotice = clinicalNotice || (
-    isClinicalFlow && !loadingFacilities && unavailableRecommendationCount > 0
-      ? "Cơ sở được gợi ý hiện không còn khả dụng."
-      : ""
-  );
-
   const prefersReducedMotion = useCallback(() => (
     document.documentElement.dataset.motion === "reduce"
     || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
@@ -1320,10 +1320,9 @@ function NearbyClinicPage() {
 
     const duration = prefersReducedMotion() ? 0 : 900;
 
-    // Keep markers from landing underneath the floating search/department bar,
-    // and under the recommended-department summary cards in the clinical flow.
-    const topClearance = isClinicalFlow ? 132 : 110;
-    const leftClearance = isClinicalFlow && window.innerWidth > 760 ? 508 : 72;
+    // Keep markers from landing underneath the floating search/department bar.
+    const topClearance = 110;
+    const leftClearance = 72;
 
     if (mapBoundsPoints.length === 1) {
       const [point] = mapBoundsPoints;
@@ -1331,7 +1330,7 @@ function NearbyClinicPage() {
         center: [point.longitude, point.latitude],
         zoom: 14,
         duration,
-        offset: [isClinicalFlow && window.innerWidth > 760 ? 210 : 0, topClearance / 2],
+        offset: [0, topClearance / 2],
       });
       return;
     }
@@ -1348,7 +1347,7 @@ function NearbyClinicPage() {
         center: [minLongitude, minLatitude],
         zoom: 14,
         duration,
-        offset: [isClinicalFlow && window.innerWidth > 760 ? 210 : 0, topClearance / 2],
+        offset: [0, topClearance / 2],
       });
       return;
     }
@@ -1363,7 +1362,7 @@ function NearbyClinicPage() {
         padding: { top: topClearance, right: 72, bottom: 72, left: leftClearance },
       },
     );
-  }, [isClinicalFlow, mapBoundsKey, mapBoundsPoints, mapStatus, prefersReducedMotion, selectedFacility]);
+  }, [mapBoundsKey, mapBoundsPoints, mapStatus, prefersReducedMotion, selectedFacility]);
 
   const openFacilityDetail = useCallback(async (facility, options = {}) => {
     if (!facility?.facilityId) return;
@@ -1690,20 +1689,6 @@ function NearbyClinicPage() {
     );
   };
 
-  const handleIdentifyFacility = () => {
-    setSidebarView("hospital-list");
-    setSelectedFacility(null);
-    setDetailPanelOpen(false);
-    setDetailFacility(null);
-    setSelectedDoctor(null);
-    setDepartmentPickerOpen(false);
-    setSuggestionsOpen(false);
-    setFilterPanelOpen(true);
-    window.requestAnimationFrame(() => {
-      mapFilterRef.current?.querySelector?.(".map-filter-trigger")?.focus();
-    });
-  };
-
   const openDirections = (facility) => {
     if (!facility.hasValidCoordinates) return;
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`, "_blank", "noopener,noreferrer");
@@ -1961,7 +1946,7 @@ function NearbyClinicPage() {
     || mapStatus === "error";
 
   return (
-    <main className={`clinic-page map-clinical-refresh${isClinicalFlow ? " is-clinical-map-flow" : ""}`}>
+    <main className="clinic-page map-clinical-refresh">
       <style>{styles}</style>
       <h1 className="sr-only">Bản đồ cơ sở y tế</h1>
       <a className="map-skip-link" href="#facility-list">Bỏ qua bản đồ, đến danh sách cơ sở</a>
@@ -2458,11 +2443,6 @@ function NearbyClinicPage() {
         </div>
         <FacilityMap
           chatContext={chatContext}
-          clinicalNotice={effectiveClinicalNotice}
-          clinicalStatus={clinicalStatus}
-          hasTopNotice={Boolean(apiNotice)}
-          hideClinicalPreConsultationCta={detailPanelOpen}
-          isClinicalFlow={isClinicalFlow}
           facilities={mappableFacilities}
           locationError={locationError}
           mapRef={mapRef}
@@ -2474,7 +2454,6 @@ function NearbyClinicPage() {
           viewState={viewState}
           hidePopup={detailPanelOpen || isClinicalFlow}
           onError={handleMapError}
-          onIdentifyFacility={handleIdentifyFacility}
           onLocate={handleLocateMe}
           onMapLoad={() => setMapStatus("ready")}
           onRetry={retryMap}

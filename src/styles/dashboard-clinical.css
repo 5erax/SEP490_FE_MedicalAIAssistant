@@ -576,6 +576,726 @@
   width: 100%;
 }
 
+.specialty-clinical-page .specialty-result-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.specialty-clinical-page .specialty-result-overview,
+.specialty-clinical-page .specialty-result-diagnosis-panel,
+.specialty-clinical-page .specialty-result-primary,
+.specialty-clinical-page .specialty-result-next-panel,
+.specialty-clinical-page .specialty-result-state {
+  border: 1px solid var(--clinical-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 34px rgba(11, 45, 53, 0.06);
+}
+
+.specialty-clinical-page .specialty-result-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 210px);
+  align-items: center;
+  gap: 16px;
+  border-left: 4px solid var(--clinical-teal);
+  background: linear-gradient(135deg, #fff 0%, rgba(232, 247, 243, 0.72) 100%);
+  padding: 20px 22px;
+}
+
+.specialty-clinical-page .specialty-result-overview-main {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+.specialty-clinical-page .specialty-result-icon,
+.specialty-clinical-page .specialty-result-next-icon,
+.specialty-clinical-page .specialty-result-section-heading > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid rgba(8, 127, 140, 0.18);
+  background: var(--clinical-mint);
+  color: var(--clinical-teal-dark);
+}
+
+.specialty-clinical-page .specialty-result-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--clinical-teal-dark);
+  color: #fff;
+}
+
+.specialty-clinical-page .specialty-result-kicker,
+.specialty-clinical-page .specialty-result-section-heading p,
+.specialty-clinical-page .specialty-result-next-panel > p,
+.specialty-clinical-page .specialty-result-state span {
+  margin: 0;
+  color: var(--clinical-teal-dark);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.specialty-clinical-page .specialty-result-overview h2 {
+  margin: 5px 0 0;
+  color: var(--clinical-ink);
+  font-family: var(--font-display);
+  font-size: clamp(21px, 2.2vw, 28px);
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.specialty-clinical-page .specialty-result-overview-main strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--clinical-teal-dark);
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.8vw, 36px);
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.specialty-clinical-page .specialty-result-score-badge {
+  display: grid;
+  gap: 5px;
+  justify-items: start;
+  border: 1px solid rgba(8, 127, 140, 0.18);
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px 16px;
+}
+
+.specialty-clinical-page .specialty-result-score-badge span {
+  color: var(--clinical-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.specialty-clinical-page .specialty-result-score-badge strong {
+  color: var(--clinical-teal-dark);
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.5vw, 32px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.specialty-clinical-page .specialty-result-score-badge small {
+  color: var(--clinical-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.specialty-clinical-page .specialty-result-inline-help {
+  margin-top: 8px;
+}
+
+.specialty-clinical-page .specialty-result-inline-help summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--clinical-teal-dark);
+  cursor: pointer;
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1.35;
+  list-style: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.specialty-clinical-page .specialty-result-inline-help summary::-webkit-details-marker {
+  display: none;
+}
+
+.specialty-clinical-page .specialty-result-inline-help summary::after {
+  content: "›";
+  display: inline-block;
+  font-style: normal;
+  line-height: 1;
+  transform: translateY(-1px);
+  transition: transform 160ms ease;
+}
+
+.specialty-clinical-page .specialty-result-inline-help[open] summary::after {
+  transform: rotate(90deg) translateX(1px);
+}
+
+.specialty-clinical-page .specialty-result-inline-help p {
+  max-width: 760px;
+  margin: 7px 0 0;
+  color: var(--clinical-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.65;
+}
+
+.specialty-clinical-page .specialty-result-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  align-items: start;
+  gap: 16px;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-panel {
+  display: grid;
+  gap: 14px;
+  border-left: 4px solid var(--clinical-teal);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 252, 250, 0.96) 100%);
+  padding: 20px 22px 22px;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-panel > header div {
+  min-width: 0;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-panel > header p {
+  margin: 0;
+  color: var(--clinical-teal-dark);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-panel > header h3 {
+  margin: 5px 0 0;
+  color: var(--clinical-ink);
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-panel > header span {
+  display: block;
+  margin-top: 5px;
+  color: var(--clinical-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.specialty-clinical-page .specialty-result-primary {
+  overflow: hidden;
+}
+
+.specialty-clinical-page .specialty-result-section,
+.specialty-clinical-page .specialty-result-state {
+  display: grid;
+  gap: 12px;
+  padding: 20px 22px;
+}
+
+.specialty-clinical-page .specialty-result-section + .specialty-result-section {
+  border-top: 1px solid var(--clinical-line);
+}
+
+.specialty-clinical-page .specialty-result-section-heading,
+.specialty-clinical-page .specialty-result-state {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.specialty-clinical-page .specialty-result-section-heading > span,
+.specialty-clinical-page .specialty-result-next-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.specialty-clinical-page .specialty-result-section-heading h3,
+.specialty-clinical-page .specialty-result-next-panel h3,
+.specialty-clinical-page .specialty-result-state h2 {
+  margin: 4px 0 0;
+  color: var(--clinical-ink);
+  font-family: var(--font-display);
+  font-size: clamp(19px, 1.8vw, 24px);
+  font-weight: 850;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.specialty-clinical-page .specialty-result-section > p,
+.specialty-clinical-page .specialty-result-state p {
+  margin: 0;
+  color: var(--clinical-muted);
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.65;
+}
+
+.specialty-clinical-page .specialty-result-symptom-text {
+  border-left: 3px solid var(--clinical-teal);
+  border-radius: 0 12px 12px 0;
+  background: var(--clinical-mint-soft);
+  padding: 12px 14px;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list li {
+  overflow: hidden;
+  border: 1px solid var(--clinical-line);
+  border-radius: 14px;
+  background: #fff;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list li.is-selected {
+  border-color: var(--clinical-teal);
+  background: var(--clinical-mint);
+  box-shadow: 0 12px 26px rgba(8, 127, 140, 0.1);
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list button {
+  width: 100%;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--clinical-ink);
+  cursor: pointer;
+  font: inherit;
+  padding: 13px 16px;
+  text-align: left;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list button > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list button svg {
+  flex: 0 0 auto;
+  color: var(--clinical-teal-dark);
+  transition: transform 160ms ease;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list strong,
+.specialty-clinical-page .specialty-result-diagnosis-list small {
+  display: block;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list strong {
+  color: var(--clinical-ink);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list small {
+  width: fit-content;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--clinical-mint);
+  color: var(--clinical-teal-dark);
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-detail {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid rgba(8, 127, 140, 0.2);
+  background: rgba(255, 255, 255, 0.66);
+  padding: 14px 18px 16px;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-detail strong {
+  color: var(--clinical-teal-dark);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-detail p {
+  margin: 0;
+  color: var(--clinical-muted);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.65;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-detail span {
+  color: var(--clinical-teal-dark);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.specialty-clinical-page .specialty-result-empty {
+  color: var(--clinical-muted);
+}
+
+.specialty-clinical-page .specialty-result-next-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  border-left: 4px solid var(--clinical-teal);
+  background: linear-gradient(180deg, #fff 0%, rgba(232, 247, 243, 0.5) 100%);
+  padding: 20px 22px;
+}
+
+.specialty-clinical-page .specialty-result-next-panel small {
+  display: block;
+  margin-top: 2px;
+  color: var(--clinical-teal-dark);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.specialty-clinical-page .specialty-result-next-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.specialty-clinical-page .specialty-result-next-actions .ui-button {
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 13px;
+}
+
+.specialty-clinical-page .specialty-result-next-actions .ui-button > span,
+.specialty-clinical-page .specialty-result-recovery-actions .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.specialty-clinical-page .specialty-result-recovery-actions {
+  justify-content: flex-start;
+}
+
+.specialty-clinical-page .specialty-result-page {
+  gap: 0;
+  color: var(--clinical-ink);
+}
+
+.specialty-clinical-page .specialty-result-hero,
+.specialty-clinical-page .specialty-result-block,
+.specialty-clinical-page .specialty-result-next-step {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.specialty-clinical-page .specialty-result-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 240px);
+  gap: clamp(22px, 4vw, 46px);
+  align-items: end;
+  padding: clamp(26px, 5vw, 52px) clamp(22px, 5vw, 54px) clamp(24px, 4vw, 40px);
+}
+
+.specialty-clinical-page .specialty-result-hero-copy {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.specialty-clinical-page .specialty-result-hero h2,
+.specialty-clinical-page .specialty-result-block h3,
+.specialty-clinical-page .specialty-result-next-step h3 {
+  margin: 0;
+  color: var(--clinical-ink);
+  font-family: var(--font-display);
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.specialty-clinical-page .specialty-result-hero h2 {
+  max-width: 720px;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.02;
+}
+
+.specialty-clinical-page .specialty-result-label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--clinical-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.specialty-clinical-page .specialty-result-hero-copy strong {
+  display: block;
+  color: var(--clinical-teal-dark);
+  font-family: var(--font-display);
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 850;
+  line-height: 1.04;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.specialty-clinical-page .specialty-result-hero-note,
+.specialty-clinical-page .specialty-result-next-step > p {
+  max-width: 700px;
+  margin: 0;
+  color: var(--clinical-muted);
+  font-size: 15px;
+  font-weight: 550;
+  line-height: 1.7;
+}
+
+.specialty-clinical-page .specialty-result-priority-note {
+  max-width: 760px;
+  margin: 2px 0 0;
+  border-left: 3px solid var(--clinical-warning);
+  color: var(--clinical-ink);
+  padding-left: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.specialty-clinical-page .specialty-result-score {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  border-top: 1px solid var(--clinical-line);
+  padding-top: 18px;
+}
+
+.specialty-clinical-page .specialty-result-score > span {
+  color: var(--clinical-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.specialty-clinical-page .specialty-result-score > strong {
+  color: var(--clinical-teal-dark);
+  font-family: var(--font-display);
+  font-size: clamp(42px, 6vw, 64px);
+  font-weight: 850;
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.specialty-clinical-page .specialty-result-score > small,
+.specialty-clinical-page .specialty-result-next-step > small {
+  display: block;
+  max-width: 320px;
+  color: var(--clinical-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.specialty-clinical-page .specialty-result-block {
+  display: grid;
+  gap: 18px;
+  border-top: 1px solid var(--clinical-line);
+  padding: clamp(24px, 4vw, 40px) clamp(22px, 5vw, 54px);
+}
+
+.specialty-clinical-page .specialty-result-block > header {
+  display: grid;
+  gap: 8px;
+}
+
+.specialty-clinical-page .specialty-result-block h3,
+.specialty-clinical-page .specialty-result-next-step h3 {
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.12;
+}
+
+.specialty-clinical-page .specialty-result-inline-help {
+  margin-top: 0;
+}
+
+.specialty-clinical-page .specialty-result-inline-help summary {
+  color: var(--clinical-muted);
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 650;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.specialty-clinical-page .specialty-result-inline-help summary:hover,
+.specialty-clinical-page .specialty-result-inline-help summary:focus-visible {
+  color: var(--clinical-teal-dark);
+}
+
+.specialty-clinical-page .specialty-result-inline-help p {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: var(--clinical-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.7;
+  animation: specialty-result-detail-in 160ms ease both;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list {
+  display: grid;
+  gap: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list li {
+  display: grid;
+  gap: 6px;
+  border: 0;
+  border-top: 1px solid var(--clinical-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 15px 0 16px;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-list li:first-child {
+  border-top-color: rgba(8, 127, 140, 0.28);
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-row span {
+  color: var(--clinical-ink);
+  font-size: clamp(16px, 1.8vw, 20px);
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-row strong {
+  color: var(--clinical-teal-dark);
+  font-family: var(--font-display);
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.specialty-clinical-page .specialty-result-diagnosis-reason {
+  padding-right: 72px;
+}
+
+.specialty-clinical-page .specialty-result-code {
+  color: var(--clinical-teal-dark) !important;
+  font-weight: 800 !important;
+}
+
+.specialty-clinical-page .specialty-result-reasoning ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialty-clinical-page .specialty-result-reasoning li {
+  border: 1px solid rgba(8, 127, 140, 0.18);
+  border-radius: 999px;
+  background: var(--clinical-mint-soft);
+  color: var(--clinical-teal-dark);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.specialty-clinical-page .specialty-result-next-step {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid var(--clinical-line);
+  padding: clamp(28px, 5vw, 48px) clamp(22px, 5vw, 54px) clamp(34px, 5vw, 56px);
+}
+
+.specialty-clinical-page .specialty-result-next-step .ui-button {
+  width: min(360px, 100%);
+  min-height: 56px;
+  justify-content: center;
+  margin-top: 6px;
+  border-radius: 15px;
+  font-size: 16px;
+}
+
+.specialty-clinical-page .specialty-result-next-step .ui-button > span,
+.specialty-clinical-page .specialty-result-recovery-actions .ui-button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.specialty-clinical-page .specialty-result-empty {
+  margin: 0;
+  color: var(--clinical-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.specialty-clinical-page .specialty-result-spinner {
+  animation: specialty-result-spin 0.9s linear infinite;
+  color: var(--clinical-teal);
+}
+
+@keyframes specialty-result-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes specialty-result-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .specialty-clinical-page .studio-result-card {
   border-color: var(--clinical-line);
   border-radius: 16px;
@@ -734,6 +1454,29 @@
     grid-template-columns: 1fr;
     gap: 18px;
   }
+
+  .specialty-clinical-page .specialty-result-overview,
+  .specialty-clinical-page .specialty-result-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .specialty-clinical-page .specialty-result-hero {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .specialty-clinical-page .specialty-result-diagnosis-panel > header {
+    display: grid;
+  }
+
+  .specialty-clinical-page .specialty-result-score-badge {
+    justify-items: start;
+  }
+
+  .specialty-clinical-page .specialty-result-next-actions {
+    width: 100%;
+    justify-self: stretch;
+  }
 }
 
 @media (max-width: 480px) {
@@ -762,6 +1505,54 @@
 
   .specialty-clinical-page .studio-mark {
     display: none;
+  }
+
+  .specialty-clinical-page .specialty-result-overview {
+    padding: 22px;
+  }
+
+  .specialty-clinical-page .specialty-result-hero,
+  .specialty-clinical-page .specialty-result-block,
+  .specialty-clinical-page .specialty-result-next-step {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .specialty-clinical-page .specialty-result-hero h2 {
+    font-size: 34px;
+  }
+
+  .specialty-clinical-page .specialty-result-hero-copy strong {
+    font-size: 30px;
+  }
+
+  .specialty-clinical-page .specialty-result-overview-main,
+  .specialty-clinical-page .specialty-result-section-heading,
+  .specialty-clinical-page .specialty-result-state {
+    grid-template-columns: 1fr;
+  }
+
+  .specialty-clinical-page .specialty-result-icon {
+    display: none;
+  }
+
+  .specialty-clinical-page .specialty-result-next-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .specialty-clinical-page .specialty-result-diagnosis-panel,
+  .specialty-clinical-page .specialty-result-section,
+  .specialty-clinical-page .specialty-result-next-panel {
+    padding: 18px;
+  }
+
+  .specialty-clinical-page .specialty-result-diagnosis-reason {
+    padding-right: 0;
+  }
+
+  .specialty-clinical-page .specialty-result-diagnosis-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
   }
 
   .specialty-clinical-page .clinical-strip span {

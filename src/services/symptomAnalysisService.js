@@ -143,17 +143,51 @@ function createDiagnosisSnapshot(diagnosis, index = 0) {
   if (!isPlainObject(diagnosis)) return null;
 
   const diseaseName = normalizeText(
-    diagnosis.diseaseName ?? diagnosis.DiseaseName ?? diagnosis.name,
+    diagnosis.diseaseName
+    ?? diagnosis.DiseaseName
+    ?? diagnosis.diagnosisName
+    ?? diagnosis.DiagnosisName
+    ?? diagnosis.disease
+    ?? diagnosis.Disease
+    ?? diagnosis.title
+    ?? diagnosis.Title
+    ?? diagnosis.name,
   );
   const icd10Code = normalizeText(
-    diagnosis.icd10Code ?? diagnosis.Icd10Code ?? diagnosis.icdCode,
+    diagnosis.icd10Code
+    ?? diagnosis.Icd10Code
+    ?? diagnosis.ICD10Code
+    ?? diagnosis.icdCode
+    ?? diagnosis.IcdCode,
   );
   if (!diseaseName && !icd10Code) return null;
 
   return {
     clinicalReasoning: normalizeText(
-      diagnosis.clinicalReasoning ?? diagnosis.ClinicalReasoning,
+      diagnosis.clinicalReasoning
+      ?? diagnosis.ClinicalReasoning
+      ?? diagnosis.clinicalReason
+      ?? diagnosis.ClinicalReason
+      ?? diagnosis.reasoning
+      ?? diagnosis.Reasoning
+      ?? diagnosis.explanation
+      ?? diagnosis.Explanation
+      ?? diagnosis.reason
+      ?? diagnosis.Reason,
     ),
+    confidenceScore: Number(
+      diagnosis.confidenceScore
+      ?? diagnosis.ConfidenceScore
+      ?? diagnosis.matchScore
+      ?? diagnosis.MatchScore
+      ?? diagnosis.matchPercentage
+      ?? diagnosis.MatchPercentage
+      ?? diagnosis.confidence
+      ?? diagnosis.Confidence
+      ?? diagnosis.score
+      ?? diagnosis.Score
+      ?? 0,
+    ) || 0,
     diseaseName,
     icd10Code,
     rank: Number(diagnosis.rank ?? diagnosis.Rank ?? index + 1) || index + 1,
@@ -197,10 +231,26 @@ function createFacilitySnapshot(facility) {
 function createClinicalMapSnapshot(analysis, fallbackSessionId) {
   if (!isPlainObject(analysis)) return null;
 
-  const diagnosisItems = analysis.diagnoses ?? analysis.Diagnoses;
-  const primaryDiagnosis = analysis.primaryDiagnosis ?? analysis.PrimaryDiagnosis;
+  const diagnosisItems = [
+    analysis.diagnoses,
+    analysis.Diagnoses,
+    analysis.differentialDiagnoses,
+    analysis.DifferentialDiagnoses,
+    analysis.possibleDiagnoses,
+    analysis.PossibleDiagnoses,
+    analysis.suggestedDiagnoses,
+    analysis.SuggestedDiagnoses,
+    analysis.diagnosisSuggestions,
+    analysis.DiagnosisSuggestions,
+  ].find((items) => Array.isArray(items) && items.length > 0);
+  const primaryDiagnosis = [
+    analysis.primaryDiagnosis,
+    analysis.PrimaryDiagnosis,
+    analysis.diagnosis,
+    analysis.Diagnosis,
+  ].find((item) => item && typeof item === "object");
   const diagnoses = (
-    Array.isArray(diagnosisItems) && diagnosisItems.length > 0
+    diagnosisItems
       ? diagnosisItems
       : primaryDiagnosis ? [primaryDiagnosis] : []
   )
@@ -233,6 +283,13 @@ function createClinicalMapSnapshot(analysis, fallbackSessionId) {
 
 function createStoredClinicalMapSnapshot(snapshot) {
   return {
+    diagnoses: snapshot.diagnoses.map((diagnosis) => ({
+      clinicalReasoning: diagnosis.clinicalReasoning,
+      confidenceScore: diagnosis.confidenceScore,
+      diseaseName: diagnosis.diseaseName,
+      icd10Code: diagnosis.icd10Code,
+      rank: diagnosis.rank,
+    })),
     sessionId: snapshot.sessionId,
     recommendedDepartment: snapshot.recommendedDepartment,
     recommendedFacilities: snapshot.recommendedFacilities.map((facility) => ({

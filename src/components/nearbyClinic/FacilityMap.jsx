@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Bot, ChevronDown, Clock3, LocateFixed, MapPin, Send, X } from "lucide-react";
+import { Bot, Clock3, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi, webChatbotApi } from "../../services/api";
@@ -133,99 +133,6 @@ function AccessibleFacilityMarker({ buttonRef, facility, selected, onSelect, sho
         </Marker>
       )}
     </>
-  );
-}
-
-function diagnosisKey(diagnosis, index) {
-  return [diagnosis?.rank ?? index + 1, diagnosis?.icd10Code, diagnosis?.diseaseName]
-    .filter(Boolean)
-    .join("-");
-}
-
-function DiagnosisCrossbar({
-  diagnoses = [],
-  hasTopNotice = false,
-  hidePreConsultationCta = false,
-  onIdentifyFacility,
-}) {
-  const [selectedKey, setSelectedKey] = useState(() => diagnosisKey(diagnoses[0], 0));
-  const selectedIndex = diagnoses.findIndex((diagnosis, index) => (
-    diagnosisKey(diagnosis, index) === selectedKey
-  ));
-  const diagnosisProgress = diagnoses.length && selectedIndex >= 0
-    ? ((selectedIndex + 1) / diagnoses.length) * 100
-    : 0;
-  useEffect(() => {
-    setSelectedKey(diagnosisKey(diagnoses[0], 0));
-  }, [diagnoses]);
-
-  return (
-    <section
-      className={`map-diagnosis-crossbar${hasTopNotice ? " has-top-notice" : ""}`}
-      aria-labelledby="map-diagnoses-title"
-    >
-      <header>
-        <div>
-          <small>Kết quả tham khảo</small>
-          <h3 id="map-diagnoses-title">Các chẩn đoán được cân nhắc</h3>
-          <p>Dựa trên triệu chứng bạn cung cấp</p>
-        </div>
-      </header>
-
-      <div className="map-diagnosis-stack">
-        <ol className="map-diagnosis-list">
-          {diagnoses.map((diagnosis, index) => {
-            const key = diagnosisKey(diagnosis, index);
-            const selected = key === selectedKey;
-            const reasoningId = `map-diagnosis-reasoning-${index}`;
-            const diseaseName = diagnosis.diseaseName || "Chưa xác định tên bệnh";
-            const confidence = confidencePercent(diagnosis.confidenceScore);
-
-            return (
-              <li key={key}>
-                <button
-                  type="button"
-                  className={selected ? "is-selected" : ""}
-                  aria-expanded={selected}
-                  aria-controls={selected ? reasoningId : undefined}
-                  onClick={() => setSelectedKey((current) => current === key ? "" : key)}
-                >
-                  <span>
-                    <strong>{diseaseName}</strong>
-                    <small>{confidence ? `Độ phù hợp: ${confidence}%` : "Đang cân nhắc"}</small>
-                  </span>
-                  <ChevronDown size={17} aria-hidden="true" />
-                </button>
-                {selected && (
-                  <section className="map-diagnosis-inline-detail" id={reasoningId} aria-live="polite">
-                    <strong>Vì sao kết quả này được đề xuất?</strong>
-                    <p>{diagnosis.clinicalReasoning || "Chưa có mô tả phân tích cho bệnh được gợi ý này."}</p>
-                    {diagnosis.icd10Code && <span>ICD-10: {diagnosis.icd10Code}</span>}
-                  </section>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-      <div className="map-diagnosis-progress" aria-hidden="true">
-        <span style={{ width: `${diagnosisProgress}%` }} />
-      </div>
-
-      {!hidePreConsultationCta && (
-        <>
-          <p className="map-diagnosis-cta-note">
-            Nếu bạn muốn tư vấn trước khám, hãy chọn Xác định bệnh viện để lọc và chọn nơi khám phù hợp.
-          </p>
-          <button className="map-diagnosis-cta" type="button" onClick={onIdentifyFacility}>
-            <MapPin size={17} aria-hidden="true" />
-            <span>Xác định bệnh viện</span>
-            <ArrowRight size={17} aria-hidden="true" />
-          </button>
-        </>
-      )}
-    </section>
   );
 }
 
@@ -627,12 +534,7 @@ export default function FacilityMap({
   assistantAccessLocked = false,
   assistantOpenRequestKey = 0,
   chatContext,
-  clinicalNotice = "",
-  clinicalStatus = "idle",
   consultationFacility = null,
-  hasTopNotice = false,
-  hideClinicalPreConsultationCta = false,
-  isClinicalFlow = false,
   onAssistantLogin,
   showConsultationAssistant = false,
   facilities,
@@ -646,7 +548,6 @@ export default function FacilityMap({
   userLocation,
   viewState,
   onError,
-  onIdentifyFacility,
   onLocate,
   onMapLoad,
   onRetry,
@@ -656,7 +557,6 @@ export default function FacilityMap({
 }) {
   const popupActionRef = useRef(null);
   const markerRefs = useRef(new globalThis.Map());
-  const [departmentDescriptionOpen, setDepartmentDescriptionOpen] = useState(true);
   const recommendedDepartment = recommendationContext?.recommendedDepartment;
   const confidence = confidencePercent(recommendedDepartment?.confidenceScore);
 
@@ -685,69 +585,6 @@ export default function FacilityMap({
           <span>{chatContext.answer}</span>
         </aside>
       )}
-      {isClinicalFlow && (
-        <aside
-          className={`map-clinical-result-rail${hasTopNotice ? " has-top-notice" : ""}`}
-          aria-label="Kết quả gợi ý chuyên khoa"
-          aria-live="polite"
-        >
-          <section className="map-clinical-summary">
-            {clinicalStatus === "loading" && (
-              <div className="map-clinical-summary-state" role="status">
-                <span className="map-loading-spinner" aria-hidden="true" />
-                <strong>Đang khôi phục gợi ý chuyên khoa…</strong>
-              </div>
-            )}
-            {clinicalStatus !== "loading" && clinicalStatus !== "ready" && clinicalNotice && (
-              <div className="map-clinical-summary-state" role={clinicalStatus === "error" ? "alert" : "status"}>
-                <strong>
-                  {clinicalStatus === "empty"
-                    ? "Phiên chưa lưu kết quả gợi ý"
-                    : "Chưa thể hiển thị gợi ý chuyên khoa"}
-                </strong>
-                <p>{clinicalNotice}</p>
-              </div>
-            )}
-            {clinicalStatus === "ready" && (
-              <>
-                <header>
-                  <small>Định hướng chuyên khoa</small>
-                  <span>Từ các triệu chứng đã cung cấp, hệ thống ưu tiên định hướng bạn đến chuyên khoa phù hợp nhất:</span>
-                  <strong>{recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa"}</strong>
-                </header>
-                <button
-                  type="button"
-                  className="map-clinical-description-toggle"
-                  aria-expanded={departmentDescriptionOpen}
-                  onClick={() => setDepartmentDescriptionOpen((open) => !open)}
-                >
-                  <span>
-                    <strong>{departmentDescriptionOpen ? "Ẩn thông tin chuyên khoa" : "Thông tin chuyên khoa"}</strong>
-                    <small>{departmentDescriptionOpen ? "Thu gọn phần mô tả" : "Xem vai trò và phạm vi thăm khám"}</small>
-                  </span>
-                  <ChevronDown size={18} aria-hidden="true" />
-                </button>
-                {departmentDescriptionOpen && (
-                  <p className="map-clinical-description">
-                    {recommendedDepartment?.description
-                      || "Chưa có mô tả cho chuyên khoa được gợi ý."}
-                  </p>
-                )}
-              </>
-            )}
-          </section>
-
-          {clinicalStatus === "ready" && recommendationContext?.diagnoses?.length > 0 && (
-            <DiagnosisCrossbar
-              diagnoses={recommendationContext.diagnoses}
-              hasTopNotice={hasTopNotice}
-              hidePreConsultationCta={hideClinicalPreConsultationCta}
-              onIdentifyFacility={onIdentifyFacility}
-            />
-          )}
-        </aside>
-      )}
-
       {mapStatus !== "error" && (
         <MapErrorBoundary key={mapRenderKey} onError={onError}>
           <Map

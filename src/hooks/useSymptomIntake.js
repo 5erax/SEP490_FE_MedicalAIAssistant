@@ -170,7 +170,28 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
         payload,
       );
       const recommendation = readResultPayload(recommendationResponse) ?? {};
+      const diagnosisItems = [
+        recommendation.diagnoses,
+        recommendation.Diagnoses,
+        recommendation.differentialDiagnoses,
+        recommendation.DifferentialDiagnoses,
+        recommendation.possibleDiagnoses,
+        recommendation.PossibleDiagnoses,
+        recommendation.suggestedDiagnoses,
+        recommendation.SuggestedDiagnoses,
+        recommendation.diagnosisSuggestions,
+        recommendation.DiagnosisSuggestions,
+      ].find((items) => Array.isArray(items) && items.length > 0);
+      const primaryDiagnosis = [
+        recommendation.primaryDiagnosis,
+        recommendation.PrimaryDiagnosis,
+        recommendation.diagnosis,
+        recommendation.Diagnosis,
+      ].find((item) => item && typeof item === "object");
       const completedResult = {
+        inputText: input,
+        sessionId,
+        diagnoses: diagnosisItems ?? (primaryDiagnosis ? [primaryDiagnosis] : []),
         recommendedDepartment: recommendation.recommendedDepartment
           ?? recommendation.RecommendedDepartment
           ?? null,
