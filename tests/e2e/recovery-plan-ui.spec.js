@@ -662,8 +662,10 @@ test("upload failure preserves the request and permits retry without duplicate c
 
 test("no quota prevents new requests but not tracking or history", async ({ page }) => {
   await prepareRecoveryPage(page, { view: "tracking", quota: { quotaCode: "SERVICE_CREDIT", grantedCount: 1, usedCount: 1, reservedCount: 0, remainingCount: 0 } });
-  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeDisabled();
-  await expect(page.getByText("Bạn vẫn có thể xem các yêu cầu và kế hoạch đã có.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Bạn đã hết lượt sử dụng" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mua thêm lượt", exact: true })).toBeEnabled();
+  await expect(page.getByText("Bạn vẫn có thể xem kế hoạch và lịch sử đã có.")).toBeVisible();
   await page.getByRole("button", { name: "Lịch sử", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Lịch sử", exact: true })).toBeVisible();
 });
@@ -696,6 +698,39 @@ for (const width of [1440, 390, 320]) {
     await expect(page.locator(".recovery-timeline-calendar")).toBeVisible();
   });
 }
+
+for (const width of [1440, 390, 320]) {
+  test(`zero-credit state is clear above a compact previous request at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await prepareRecoveryPage(page, { view: "tracking", requests: [request({ status: "cancelled" })], quota: { remainingCount: 0 } });
+    const notice = page.getByRole("region", { name: "Lượt sử dụng đã hết" });
+    await expect(notice).toBeVisible();
+    await expect(notice.getByRole("button", { name: "Mua thêm lượt" })).toBeInViewport();
+    const noticeBox = await notice.boundingBox();
+    const previousBox = await page.locator(".recovery-recent-request").boundingBox();
+    expect(noticeBox.y + noticeBox.height).toBeLessThanOrEqual(previousBox.y);
+    await expect(page.locator(".recovery-tracking .recovery-request-detail")).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("no-credits.png"), fullPage: true });
+    const result = await new AxeBuilder({ page }).include(".recovery-page").analyze();
+    expect(result.violations).toEqual([]);
+    await page.getByRole("button", { name: "Xem chi tiết", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Lịch sử", exact: true })).toBeVisible();
+  });
+}
+
+test("direct request link with zero credits shows an actionable explanation, not a disabled form", async ({ page }) => {
+  const calls = await prepareRecoveryPage(page, { view: "tracking", quota: { remainingCount: 0 } });
+  await page.goto("/recovery-plan?view=request");
+  await expect(page.getByRole("heading", { name: "Bạn đã hết lượt sử dụng" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu", exact: true })).toHaveCount(0);
+  await expect(page.getByLabel(/Nhóm bệnh/)).toBeHidden();
+  await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+  expect((await new AxeBuilder({ page }).include(".recovery-page").analyze()).violations).toEqual([]);
+  await page.getByRole("button", { name: "Mua thêm lượt", exact: true }).click();
+  await expect(page).toHaveURL(/\/pricing\?view=upgrade&returnTo=%2Frecovery-plan%3Fview%3Drequest/);
+  expect(calls.createCalls).toBe(0);
+});
 
 test("focused request and history are accessible in dark mode", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });

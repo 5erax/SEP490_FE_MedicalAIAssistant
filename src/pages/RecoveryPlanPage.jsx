@@ -273,6 +273,18 @@ function Pagination({ label, page, onChange, loading }) {
   );
 }
 
+function RecoveryCreditNotice({ returnTo = "/recovery-plan" }) {
+  return <section className="recovery-credit-notice" aria-label="Lượt sử dụng đã hết">
+    <span className="recovery-credit-notice-icon" aria-hidden="true"><Info size={24} /></span>
+    <div>
+      <h3>Bạn đã hết lượt sử dụng</h3>
+      <p>Mua thêm lượt để gửi yêu cầu kế hoạch phục hồi cho bác sĩ.</p>
+      <small>Bạn vẫn có thể xem kế hoạch và lịch sử đã có.</small>
+    </div>
+    <Button onClick={() => navigate(`/pricing?view=upgrade&returnTo=${encodeURIComponent(returnTo)}`)}>Mua thêm lượt</Button>
+  </section>;
+}
+
 function QuotaCard({ quota, error, loading, onRetry }) {
   if (loading) {
     return <LoadingState label="Đang kiểm tra lượt dịch vụ…" />;
@@ -1731,6 +1743,10 @@ export default function RecoveryPlanPage() {
     }
   }
 
+  const noCredits = !quotaLoading && (
+    (!quotaError && quota && Number(quota.remainingCount) <= 0)
+    || quotaError?.action === "purchase"
+  );
   const requestCreationDisabled = workflowGuardError || workflowGuardLoading
     || workflowBlocked
     || quotaLoading
@@ -1797,19 +1813,25 @@ export default function RecoveryPlanPage() {
         {!creating && <div className="recovery-header-actions">
           <Button tone="secondary" onClick={() => setHistoryOpen(true)}>Lịch sử</Button>
           <Button tone="ghost" disabled={requestsLoading || plansLoading} onClick={refetchAll}><RefreshCw size={16} /> Tải lại</Button>
-          {!workflowBlocked && !initialLoading && <Button disabled={requestCreationDisabled} onClick={openRequest}>Gửi yêu cầu mới</Button>}
+          {!workflowBlocked && !initialLoading && !noCredits && (requestCreationDisabled
+            ? <Button tone="secondary" loading={quotaLoading} loadingLabel="Đang kiểm tra lượt…" onClick={refetchAll}>Kiểm tra lượt sử dụng</Button>
+            : <Button onClick={openRequest}>Gửi yêu cầu mới</Button>)}
         </div>}
       </header>
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
       <p className="sr-only" role="status" aria-atomic="true">{realtimeLabel}</p>
       {/* Keep this page's draft mounted across its views; never persist health data in storage. */}
       {(creating || composeVisited) && <div hidden={!creating} className="recovery-request-screen">
+        {noCredits && <RecoveryCreditNotice returnTo="/recovery-plan?view=request" />}
+        <div hidden={Boolean(noCredits)}>
         <CreateRequestForm disabled={requestCreationDisabled} disabledMessage={requestDisabledMessage}
           quotaContent={<QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />}
           onCreated={handleCreated} onWorkflowConflict={async () => { setWorkflowBlocked(true); await refetchAll(); }} />
         <p className="recovery-draft-note">Thông tin đang nhập được giữ khi chuyển giữa hai màn hình này, nhưng không được lưu khi tải lại hoặc rời trang.</p>
+        </div>
       </div>}
       {!creating && <section className="recovery-tracking" aria-label="Theo dõi phục hồi" id="recovery-workspace" tabIndex={-1}>
+        {!initialLoading && noCredits && <RecoveryCreditNotice />}
         {initialLoading ? <LoadingState label="Đang tải tình trạng phục hồi…" />
           : requestsError || plansError || workflowGuardError ? <ErrorState title="Chưa tải được tình trạng phục hồi"
             description={requestsError || plansError || requestDisabledMessage} action={<Button onClick={refetchAll}>Thử lại</Button>} />
@@ -1822,14 +1844,17 @@ export default function RecoveryPlanPage() {
             {planDetailError ? <ErrorState title="Không thể tải hướng dẫn" description={planDetailError} action={<Button onClick={() => loadPlanDetail(currentPlan.id, currentPlan)}>Thử lại</Button>} /> : planView === "instructions" ? <PlanDetail focused key={currentPlan.id} plan={currentPlan} loading={planDetailLoading}
               busy={actionBusy} onStart={handleStart} onCancel={setCancelPlan} onFeedback={openFeedbackDialog} />
               : <RecoveryTimelineCalendar plan={currentPlan} loading={planDetailLoading} />}
-          </> : currentRequest ? <RequestDetail request={currentRequest} loading={requestDetailLoading} busy={actionBusy} onCancel={handleCancel} />
+          </> : currentRequest ? <section className="recovery-recent-request" aria-label="Yêu cầu gần nhất">
+            <div><p className="recovery-eyebrow">Yêu cầu gần nhất</p><h3>{getDiseaseLabel(currentRequest.diseaseGroup)}</h3>
+              <p>{formatDate(currentRequest.requestedAt, true)}</p></div>
+            <StatusBadge map={REQUEST_STATUS} value={currentRequest.status} />
+            <Button tone="secondary" onClick={() => { setActiveTab("requests"); void loadRequestDetail(currentRequest.id, currentRequest); setHistoryOpen(true); }}>Xem chi tiết</Button>
+          </section>
           : <EmptyState icon={<FileText size={26} />} title="Bắt đầu kế hoạch phục hồi của bạn"
             description="Gửi thông tin sau khám để bác sĩ xem xét và chuẩn bị kế hoạch."
-            action={<Button disabled={requestCreationDisabled} onClick={openRequest}>Tạo yêu cầu phục hồi</Button>} />}
-        {!initialLoading && requestCreationDisabled && !workflowBlocked && <div className="recovery-access-note">
+            action={!requestCreationDisabled ? <Button onClick={openRequest}>Tạo yêu cầu phục hồi</Button> : undefined} />}
+        {!initialLoading && requestCreationDisabled && !workflowBlocked && !noCredits && <div className="recovery-access-note">
           <p>{requestDisabledMessage}</p>
-          {!quotaLoading && !quotaError && quota && Number(quota.remainingCount) <= 0 &&
-            <Button tone="secondary" onClick={() => navigate("/pricing?returnTo=%2Frecovery-plan")}>Xem gói dịch vụ</Button>}
           <p>Bạn vẫn có thể xem các yêu cầu và kế hoạch đã có.</p>
         </div>}
       </section>}

@@ -1,4 +1,16 @@
 /* Patient workspace: tracking and composing are separate, responsive surfaces. */
+.recovery-credit-notice { display: flex; align-items: center; gap: 18px; margin: 0 0 24px; padding: 22px; border: 1px solid var(--color-warning); border-left-width: 4px; border-radius: 14px; background: var(--color-warning-bg); color: var(--color-ink); }
+.recovery-credit-notice-icon { flex: 0 0 auto; color: var(--color-warning); }
+.recovery-credit-notice > div { flex: 1; min-width: 0; }
+.recovery-credit-notice h3 { margin: 0 0 8px; font-size: 1.25rem; line-height: 1.4; }
+.recovery-credit-notice p { margin: 0 0 6px; font-size: 1rem; line-height: 1.55; }
+.recovery-credit-notice small { font-size: .875rem; line-height: 1.5; }
+.recovery-credit-notice button { flex: 0 0 auto; }
+.recovery-recent-request { display: flex; align-items: center; gap: 20px; padding: 20px 0; border-top: 1px solid var(--color-line); }
+.recovery-recent-request > div { flex: 1; min-width: 0; }
+.recovery-recent-request h3 { margin: 6px 0; font-size: 1.125rem; }
+.recovery-recent-request p { margin: 0; font-size: .875rem; color: var(--color-muted); }
+.recovery-focused .recovery-credit-notice + .recovery-recent-request { border-top: 0; }
 .recovery-focused.recovery-page { max-width: 1240px; padding: 24px; margin-top: 16px; background: var(--color-surface, #fff); }
 .recovery-focused [hidden] { display: none !important; }
 .recovery-focused .recovery-focused-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 0 24px; border: 0; border-bottom: 1px solid var(--line, #ccdedc); border-radius: 0; background: none; box-shadow: none; }
@@ -81,6 +93,13 @@ html[data-theme="dark"] .recovery-focused .recovery-phase-nav button[aria-presse
   .recovery-confirmation { margin-top: 0; }
 }
 @media (max-width: 600px) {
+  .recovery-credit-notice { flex-wrap: wrap; align-items: flex-start; padding: 18px; gap: 12px; }
+  .recovery-credit-notice-icon { display: none; }
+  .recovery-credit-notice > div { flex-basis: 100%; }
+  .recovery-credit-notice button { width: 100%; }
+  .recovery-recent-request { gap: 12px; flex-wrap: wrap; }
+  .recovery-recent-request > div { flex-basis: 60%; }
+  .recovery-recent-request button { width: 100%; }
   .recovery-focused.recovery-page { width: calc(100% - 20px); padding: 16px; margin-top: 10px; }
   .recovery-phase-columns { grid-template-columns: 1fr; gap: 16px; }
   .recovery-phase-nav { display: none; }
