@@ -1023,8 +1023,8 @@
 .specialty-clinical-page .specialty-result-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(190px, 240px);
-  gap: clamp(22px, 4vw, 46px);
-  align-items: end;
+  gap: clamp(26px, 5vw, 58px);
+  align-items: center;
   padding: clamp(26px, 5vw, 52px) clamp(22px, 5vw, 54px) clamp(24px, 4vw, 40px);
 }
 
@@ -1045,9 +1045,25 @@
 }
 
 .specialty-clinical-page .specialty-result-hero h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   max-width: 720px;
-  font-size: clamp(34px, 5vw, 56px);
+  font-size: clamp(28px, 4vw, 44px);
   line-height: 1.02;
+}
+
+.specialty-clinical-page .specialty-result-complete-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--clinical-teal);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1;
 }
 
 .specialty-clinical-page .specialty-result-label {
@@ -1062,9 +1078,9 @@
   display: block;
   color: var(--clinical-teal-dark);
   font-family: var(--font-display);
-  font-size: clamp(30px, 4vw, 48px);
+  font-size: clamp(38px, 5.4vw, 70px);
   font-weight: 850;
-  line-height: 1.04;
+  line-height: 0.98;
   letter-spacing: 0;
   overflow-wrap: anywhere;
 }
@@ -1112,8 +1128,8 @@
   display: grid;
   gap: 8px;
   justify-items: start;
-  border-top: 1px solid var(--clinical-line);
-  padding-top: 18px;
+  border-left: 1px solid var(--clinical-line);
+  padding-left: clamp(18px, 3vw, 34px);
 }
 
 .specialty-clinical-page .specialty-result-score > span {
@@ -1125,7 +1141,7 @@
 .specialty-clinical-page .specialty-result-score > strong {
   color: var(--clinical-teal-dark);
   font-family: var(--font-display);
-  font-size: clamp(42px, 6vw, 64px);
+  font-size: clamp(48px, 7vw, 82px);
   font-weight: 850;
   line-height: 0.95;
   letter-spacing: 0;
@@ -1151,6 +1167,32 @@
 .specialty-clinical-page .specialty-result-block > header {
   display: grid;
   gap: 8px;
+}
+
+.specialty-clinical-page .specialty-result-check-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialty-clinical-page .specialty-result-check-list li {
+  position: relative;
+  color: var(--clinical-ink);
+  padding-left: 30px;
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.specialty-clinical-page .specialty-result-check-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0.05em;
+  color: var(--clinical-teal);
+  font-weight: 900;
 }
 
 .specialty-clinical-page .specialty-result-block h3,
@@ -1555,6 +1597,13 @@
   .specialty-clinical-page .specialty-result-hero {
     grid-template-columns: 1fr;
     align-items: start;
+  }
+
+  .specialty-clinical-page .specialty-result-score {
+    border-top: 1px solid var(--clinical-line);
+    border-left: 0;
+    padding-top: 18px;
+    padding-left: 0;
   }
 
   .specialty-clinical-page .specialty-result-diagnosis-panel > header {

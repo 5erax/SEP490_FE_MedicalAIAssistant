@@ -434,7 +434,12 @@ function SpecialtyResultView({
   const recommendedDepartment = getRecommendedDepartment(result);
   const diagnoses = getResultDiagnoses(result);
   const facilities = getRecommendedFacilities(result);
-  const percent = clinicalConfidencePercent(recommendedDepartment?.confidenceScore);
+  const fallbackConfidenceScore = diagnoses.find((diagnosis) => (
+    clinicalConfidencePercent(diagnosis.confidenceScore) !== null
+  ))?.confidenceScore;
+  const percent = clinicalConfidencePercent(
+    recommendedDepartment?.confidenceScore ?? fallbackConfidenceScore,
+  );
   const departmentName = recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa";
   const reason = recommendedDepartment?.reason || "";
   const displayedSymptom = getResultSymptomText(result, symptomText);
@@ -447,13 +452,15 @@ function SpecialtyResultView({
       <section className="specialty-result-hero" aria-labelledby="specialty-result-title">
         <div className="specialty-result-hero-copy">
           <p className="specialty-result-kicker">{sourceLabel}</p>
-          <h2 id="specialty-result-title">Kết quả tư vấn chuyên khoa</h2>
+          <h2 id="specialty-result-title">
+            <span className="specialty-result-complete-mark" aria-hidden="true">✓</span>
+            Phân tích hoàn tất
+          </h2>
           <div>
-            <span className="specialty-result-label">Chuyên khoa được đề xuất</span>
             <strong>{departmentName}</strong>
           </div>
           <p className="specialty-result-hero-note">
-            MediMate gợi ý nơi bắt đầu phù hợp nhất dựa trên triệu chứng và câu trả lời bạn đã cung cấp.
+            Đây là chuyên khoa phù hợp nhất dựa trên thông tin bạn đã cung cấp.
           </p>
           {hasPriority && (
             <p className="specialty-result-priority-note">{CLINICAL_NOTES.priority}</p>
@@ -467,7 +474,6 @@ function SpecialtyResultView({
         </div>
 
         <aside className="specialty-result-score" aria-label="Độ phù hợp">
-          <span>Độ phù hợp</span>
           <strong>{percent === null ? "Chưa có điểm" : `${percent}%`}</strong>
           <small>
             {percent === null
@@ -483,48 +489,22 @@ function SpecialtyResultView({
         </aside>
       </section>
 
-      <section className="specialty-result-block specialty-result-explanation" aria-labelledby="specialty-result-explanation-title">
+      <section className="specialty-result-block specialty-result-why" aria-labelledby="specialty-result-why-title">
         <header>
           <div>
             <p className="specialty-result-kicker">Giải thích</p>
-            <h3 id="specialty-result-explanation-title">Vì sao MediMate đưa ra kết quả này?</h3>
+            <h3 id="specialty-result-why-title">Tại sao lại có kết quả này?</h3>
           </div>
         </header>
 
-        <div className="specialty-result-method">
-          <p>MediMate đã đối chiếu:</p>
-          <ul>
-            <li>Triệu chứng bạn mô tả</li>
-            <li>Các câu trả lời khảo sát</li>
-            <li>Phạm vi tiếp nhận của chuyên khoa</li>
-          </ul>
-        </div>
-
-        <div className="specialty-result-diagnosis-summary">
-          <p>Các chẩn đoán được cân nhắc</p>
-          {diagnoses.length > 0 ? (
-            <ol className="specialty-result-diagnosis-list">
-              {diagnoses.map((diagnosis, index) => {
-                const key = getDiagnosisKey(diagnosis, index);
-                const confidence = clinicalConfidencePercent(diagnosis.confidenceScore);
-
-                return (
-                  <li key={key}>
-                    <div className="specialty-result-diagnosis-row">
-                      <span>{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}</span>
-                      <strong>{confidence ? `${confidence}%` : "Đang cân nhắc"}</strong>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          ) : (
-            <p className="specialty-result-empty">Phiên này chưa có danh sách chẩn đoán tham khảo từ hệ thống.</p>
-          )}
-        </div>
+        <ul className="specialty-result-check-list">
+          <li>Triệu chứng</li>
+          <li>Khảo sát</li>
+          <li>Kiến thức chuyên khoa</li>
+        </ul>
 
         <details className="specialty-result-inline-help specialty-result-explanation-detail">
-          <summary>Xem giải thích chi tiết</summary>
+          <summary>Vì sao?</summary>
           <p>
             {reason || "MediMate đối chiếu mô tả triệu chứng và câu trả lời làm rõ với nhóm vấn đề thường được chuyên khoa này tiếp nhận."}
           </p>
@@ -546,15 +526,48 @@ function SpecialtyResultView({
         </details>
       </section>
 
+      <section className="specialty-result-block specialty-result-possibilities" aria-labelledby="specialty-result-possibilities-title">
+        <header>
+          <div>
+            <p className="specialty-result-kicker">Kết quả tham khảo</p>
+            <h3 id="specialty-result-possibilities-title">Các khả năng được cân nhắc</h3>
+          </div>
+        </header>
+
+        {diagnoses.length > 0 ? (
+          <ol className="specialty-result-diagnosis-list">
+            {diagnoses.map((diagnosis, index) => {
+              const key = getDiagnosisKey(diagnosis, index);
+              const confidence = clinicalConfidencePercent(diagnosis.confidenceScore);
+
+              return (
+                <li key={key}>
+                  <div className="specialty-result-diagnosis-row">
+                    <span>{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}</span>
+                    <strong>{confidence !== null ? `${confidence}%` : "Đang cân nhắc"}</strong>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="specialty-result-empty">Phiên này chưa có danh sách chẩn đoán tham khảo từ hệ thống.</p>
+        )}
+      </section>
+
       <section className="specialty-result-next-step" aria-labelledby="specialty-result-next-title">
         <p className="specialty-result-kicker">Bước tiếp theo</p>
-        <h3 id="specialty-result-next-title">Chọn cơ sở y tế phù hợp để chuẩn bị trước khi đi khám</h3>
+        <h3 id="specialty-result-next-title">Bạn đã sẵn sàng đi khám?</h3>
         <p>
-          Hãy dùng nút <strong>Tìm cơ sở y tế</strong> ở phần kết luận để mở bản đồ, chọn nơi khám phù hợp rồi tiếp tục sang tư vấn trước khám.
+          Chọn cơ sở y tế phù hợp để tiếp tục tư vấn trước khám.
         </p>
         {!hasFacilities && (
           <small>Bạn vẫn có thể tìm theo chuyên khoa được đề xuất dù phiên này chưa có cơ sở gợi ý trực tiếp.</small>
         )}
+        <Button type="button" onClick={() => onOpenFacilities?.(result, sessionId)}>
+          <MapPinned size={18} aria-hidden="true" />
+          Tìm cơ sở y tế
+        </Button>
       </section>
 
     </section>
