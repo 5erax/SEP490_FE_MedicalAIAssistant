@@ -376,6 +376,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const errorSummaryRef = useRef(null);
   const noteRef = useRef(null);
   const labResultDialogRef = useRef(null);
+  const attachmentsRef = useRef(null);
   const prescriptionInputRef = useRef(null);
   const selectedLabSession = useMemo(
     () => labSessions.find((session) => getLabSessionId(session) === primaryLabTestSessionId) ?? null,
@@ -539,6 +540,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           if (!uploadedPrescriptionUrl) throw new Error("Không thể lấy URL ảnh đơn thuốc.");
           setPrescriptionImageUrl(uploadedPrescriptionUrl);
         } catch (uploadError) {
+          if (attachmentsRef.current) attachmentsRef.current.open = true;
           setPrescriptionUploadError(
             uploadError?.message
               || "Không thể tải ảnh đơn thuốc lên. Vui lòng thử lại hoặc xóa ảnh để tiếp tục mà không gửi đơn thuốc.",
@@ -644,121 +646,10 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           </select>
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
-        <div className="recovery-field recovery-lab-field">
-          <label htmlFor="recovery-primaryLabTestSessionId">
-            <span><b className="recovery-field-step" aria-hidden="true">2</b> Xét nghiệm đính kèm <small>(không bắt buộc)</small></span>
-          </label>
-          <div className="recovery-lab-picker" data-empty={selectedLabSession ? "false" : "true"}>
-            <div className="recovery-lab-choice-card">
-              <div className="recovery-lab-picker-head">
-                <div>
-                  <small>Phiếu xét nghiệm gần đây</small>
-                </div>
-                <span>{labSessions.length} kết quả</span>
-              </div>
-              <div className="recovery-lab-select-row">
-                <span className="recovery-lab-picker-icon" aria-hidden="true"><FlaskConical size={20} /></span>
-                <select
-                  id="recovery-primaryLabTestSessionId"
-                  className="recovery-lab-select"
-                  value={primaryLabTestSessionId}
-                  disabled={disabled || labSessionsLoading}
-                  onChange={(event) => setPrimaryLabTestSessionId(event.target.value)}
-                >
-                  <option value="">{labSessionsLoading ? "Đang tải xét nghiệm..." : "Không đính kèm xét nghiệm"}</option>
-                  {labSessions.map((session) => {
-                    const sessionId = getLabSessionId(session);
-                    return (
-                      <option key={sessionId} value={sessionId}>
-                        {getLabSessionLabel(session)}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            </div>
-            <div className="recovery-lab-preview-card">
-              <span className="recovery-lab-preview-mark" aria-hidden="true">
-                <CalendarCheck size={18} />
-              </span>
-              <div>
-                <small>{selectedLabSession ? "Đã chọn xét nghiệm" : "Chưa chọn xét nghiệm"}</small>
-                <strong>{selectedLabSession ? getLabSessionLabel(selectedLabSession) : "Không đính kèm xét nghiệm"}</strong>
-                {selectedLabSession ? <span>Bạn có thể xem lại kết quả trước khi gửi yêu cầu cho bác sĩ.</span> : null}
-              </div>
-              {selectedLabSession ? (
-                <Button
-                  type="button"
-                  tone="primary"
-                  size="sm"
-                  disabled={disabled}
-                  onClick={() => setActiveLabResultSessionId(primaryLabTestSessionId)}
-                >
-                  <Eye size={16} aria-hidden="true" /> Xem lại kết quả
-                </Button>
-              ) : null}
-            </div>
-          </div>
-          <small className="recovery-field-guidance">
-            {labSessionsError || (
-              labSessions.length > 0
-                ? "Mặc định không đính kèm xét nghiệm. Bạn có thể chọn một ngày nếu muốn gửi kèm kết quả."
-                : "Bạn chưa có kết quả xét nghiệm đã phân tích. Bạn vẫn có thể gửi yêu cầu mà không đính kèm xét nghiệm."
-            )}
-          </small>
-        </div>
-        <div className="recovery-field recovery-prescription-field">
-          <label htmlFor="recovery-prescriptionImage">
-            <span><b className="recovery-field-step" aria-hidden="true">3</b> Ảnh đơn thuốc sau khi khám <small>(không bắt buộc)</small></span>
-          </label>
-          <div className="recovery-prescription-upload">
-            <div className="recovery-prescription-upload-head">
-              <span className="recovery-lab-picker-icon" aria-hidden="true"><FileImage size={20} /></span>
-              <div>
-                <strong>{prescriptionFile ? prescriptionFile.name : "Chọn ảnh đơn thuốc"}</strong>
-                <small>Ảnh giúp bác sĩ tham khảo chẩn đoán và thuốc đã được kê.</small>
-              </div>
-            </div>
-            <input
-              ref={prescriptionInputRef}
-              id="recovery-prescriptionImage"
-              className="recovery-prescription-native-input"
-              type="file"
-              accept="image/*"
-              disabled={disabled || submitting || prescriptionUploading}
-              aria-invalid={Boolean(prescriptionUploadError) || undefined}
-              aria-describedby="recovery-prescriptionImage-guidance"
-              onChange={handlePrescriptionFileChange}
-            />
-            <div className="recovery-prescription-picker">
-              <button
-                type="button"
-                disabled={disabled || submitting || prescriptionUploading}
-                onClick={() => prescriptionInputRef.current?.click()}
-              >
-                <FileImage size={17} aria-hidden="true" /> {prescriptionFile ? "Đổi ảnh" : "Chọn ảnh"}
-              </button>
-              <span>{prescriptionFile ? prescriptionFile.name : "Chưa chọn ảnh"}</span>
-            </div>
-            {prescriptionPreviewUrl && (
-              <div className="recovery-prescription-preview">
-                <img src={prescriptionPreviewUrl} alt="Xem trước đơn thuốc" />
-                <Button type="button" tone="secondary" size="sm" disabled={disabled || prescriptionUploading} onClick={handleRemovePrescription}>
-                  <X size={15} aria-hidden="true" /> Xóa ảnh
-                </Button>
-              </div>
-            )}
-          </div>
-          <small id="recovery-prescriptionImage-guidance" className="recovery-field-guidance">
-            Bạn có thể gửi ảnh đơn thuốc hoặc giấy kê thuốc sau khi khám. File sẽ được tải lên Cloudinary khi bạn nhấn gửi yêu cầu.
-          </small>
-          {prescriptionUploading && <small className="recovery-field-guidance">Đang tải ảnh đơn thuốc...</small>}
-          {prescriptionUploadError && <small className="recovery-field-error">{prescriptionUploadError}</small>}
-        </div>
         <div className="recovery-field recovery-note-field">
           <label htmlFor="recovery-requestNote">
             <span>
-              <b className="recovery-field-step" aria-hidden="true">4</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
+              <b className="recovery-field-step" aria-hidden="true">2</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
               <span className="recovery-required-marker" aria-hidden="true">*</span>
               <span className="sr-only"> (bắt buộc)</span>
             </span>
@@ -774,7 +665,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             <textarea
               ref={noteRef}
               id="recovery-requestNote"
-              rows="5"
+              rows="4"
               maxLength="2000"
               required
               placeholder="Ví dụ: Tôi vẫn còn đau khi đi lại lâu và muốn biết những hoạt động nào nên hạn chế…"
@@ -792,11 +683,98 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
               }}
             />
           </div>
-          <small id="recovery-requestNote-guidance" className="recovery-field-guidance">Ghi lại những thay đổi, khó khăn hoặc vấn đề bạn muốn bác sĩ xem xét.</small>
-          <small id="recovery-requestNote-help" className={`recovery-character-count${errors.requestNote ? " recovery-field-error" : ""}`}>
-            {errors.requestNote || `${requestNote.length} / 2.000 ký tự`}
-          </small>
+          <div className="recovery-note-help">
+            <small id="recovery-requestNote-guidance" className="recovery-field-guidance">Ghi lại những thay đổi, khó khăn hoặc vấn đề bạn muốn bác sĩ xem xét.</small>
+            <small id="recovery-requestNote-help" className={`recovery-character-count${errors.requestNote ? " recovery-field-error" : ""}`}>
+              {errors.requestNote || `${requestNote.length} / 2.000 ký tự`}
+            </small>
+          </div>
         </div>
+        <details ref={attachmentsRef} className="recovery-attachments">
+          <summary>
+            <span><strong>Đính kèm xét nghiệm hoặc đơn thuốc</strong><small>Không bắt buộc</small></span>
+            <span className="recovery-attachment-status">
+              {primaryLabTestSessionId || prescriptionFile ? `Đã chọn ${Number(Boolean(primaryLabTestSessionId)) + Number(Boolean(prescriptionFile))} tài liệu` : "Thêm tài liệu"}
+            </span>
+            <ChevronDown size={18} aria-hidden="true" />
+          </summary>
+          <div className="recovery-attachments-grid">
+            <div className="recovery-field recovery-lab-field">
+              <label htmlFor="recovery-primaryLabTestSessionId">
+                <span><FlaskConical size={18} aria-hidden="true" /> Xét nghiệm đính kèm <small>(không bắt buộc)</small></span>
+              </label>
+              <select
+                id="recovery-primaryLabTestSessionId"
+                className="recovery-lab-select"
+                value={primaryLabTestSessionId}
+                disabled={disabled || labSessionsLoading}
+                aria-describedby="recovery-lab-guidance"
+                onChange={(event) => setPrimaryLabTestSessionId(event.target.value)}
+              >
+                <option value="">{labSessionsLoading ? "Đang tải xét nghiệm..." : "Không đính kèm xét nghiệm"}</option>
+                {labSessions.map((session) => (
+                  <option key={getLabSessionId(session)} value={getLabSessionId(session)}>{getLabSessionLabel(session)}</option>
+                ))}
+              </select>
+              {selectedLabSession && (
+                <div className="recovery-lab-selected">
+                  <Button type="button" tone="secondary" size="sm" disabled={disabled} onClick={() => setActiveLabResultSessionId(primaryLabTestSessionId)}>
+                    <Eye size={16} aria-hidden="true" /> Xem lại kết quả
+                  </Button>
+                  <Button type="button" tone="ghost" size="sm" disabled={disabled} onClick={() => setPrimaryLabTestSessionId("")}>
+                    <X size={15} aria-hidden="true" /> Bỏ đính kèm
+                  </Button>
+                </div>
+              )}
+              <small id="recovery-lab-guidance" className="recovery-field-guidance">
+                {labSessionsError || (labSessionsLoading ? "Đang tải danh sách xét nghiệm..." : labSessions.length
+                  ? `${labSessions.length} kết quả đã phân tích. Chọn phiếu bạn muốn gửi kèm.`
+                  : "Chưa có kết quả đã phân tích. Bạn vẫn có thể gửi yêu cầu.")}
+              </small>
+            </div>
+            <div className="recovery-field recovery-prescription-field">
+              <label htmlFor="recovery-prescriptionImage">
+                <span><FileImage size={18} aria-hidden="true" /> Ảnh đơn thuốc sau khi khám <small>(không bắt buộc)</small></span>
+              </label>
+              <div className="recovery-prescription-upload">
+                <input
+                  ref={prescriptionInputRef}
+                  id="recovery-prescriptionImage"
+                  className="recovery-prescription-native-input"
+                  type="file"
+                  accept="image/*"
+                  disabled={disabled || submitting || prescriptionUploading}
+                  aria-invalid={Boolean(prescriptionUploadError) || undefined}
+                  aria-describedby="recovery-prescriptionImage-guidance"
+                  onChange={handlePrescriptionFileChange}
+                />
+                <div className="recovery-prescription-picker">
+                  <button
+                    type="button"
+                    disabled={disabled || submitting || prescriptionUploading}
+                    onClick={() => prescriptionInputRef.current?.click()}
+                  >
+                    <FileImage size={17} aria-hidden="true" /> {prescriptionFile ? "Đổi ảnh" : "Chọn ảnh"}
+                  </button>
+                  <span>{prescriptionFile ? prescriptionFile.name : "Chưa chọn ảnh"}</span>
+                </div>
+                {prescriptionPreviewUrl && (
+                  <div className="recovery-prescription-preview">
+                    <img src={prescriptionPreviewUrl} alt="Xem trước đơn thuốc" />
+                    <Button type="button" tone="secondary" size="sm" disabled={disabled || prescriptionUploading} onClick={handleRemovePrescription}>
+                      <X size={15} aria-hidden="true" /> Xóa ảnh
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <small id="recovery-prescriptionImage-guidance" className="recovery-field-guidance">
+                Ảnh tối đa 5 MB, được tải lên khi bạn gửi yêu cầu.
+              </small>
+              {prescriptionUploading && <small className="recovery-field-guidance">Đang tải ảnh đơn thuốc...</small>}
+              {prescriptionUploadError && <small className="recovery-field-error" role="alert">{prescriptionUploadError}</small>}
+            </div>
+          </div>
+        </details>
         <div className="recovery-submit-row">
           <p role="status" aria-atomic="true">{submitError?.message ?? ""}</p>
           <Button
@@ -1783,6 +1761,7 @@ export default function RecoveryPlanPage() {
           <div>
           <h2>Kế hoạch phục hồi</h2>
           <p className="recovery-hero-copy">Theo dõi yêu cầu của bạn và xem kế hoạch sau khi bác sĩ hoàn tất.</p>
+          <a className="recovery-workspace-shortcut" href="#recovery-workspace">Xem yêu cầu và kế hoạch <ChevronRight size={16} aria-hidden="true" /></a>
           <ol className="recovery-process" aria-label="Quy trình nhận kế hoạch phục hồi">
             <li><span>1</span><strong>Gửi yêu cầu</strong></li>
             <li><span>2</span><strong>Bác sĩ xem xét</strong></li>
@@ -1825,7 +1804,7 @@ export default function RecoveryPlanPage() {
           </div>
         )}
 
-        <div className="recovery-workspace-main">
+        <div className="recovery-workspace-main" id="recovery-workspace" tabIndex="-1">
           <div className="recovery-workspace-head">
             <div className="recovery-workspace-tabs" role="tablist" aria-label="Khu vực làm việc">
               <button
@@ -1962,15 +1941,14 @@ export default function RecoveryPlanPage() {
         </div>
 
         <div className="recovery-support-sidebar">
-          <section className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
-            <p className="recovery-eyebrow">Trong thời gian chờ</p>
-            <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>
+          <details className="recovery-guidance-card">
+            <summary>Trong thời gian chờ, bạn cần chuẩn bị gì?<ChevronDown size={18} aria-hidden="true" /></summary>
             <ul>
               <li><ClipboardCheck size={19} aria-hidden="true" /><span><strong>Giữ lại hướng dẫn sau khám</strong><small>Đơn thuốc, lịch hẹn và các chỉ dẫn đã nhận.</small></span></li>
               <li><Activity size={19} aria-hidden="true" /><span><strong>Ghi nhận thay đổi đáng chú ý</strong><small>Thời điểm, mức độ và diễn biến gần đây.</small></span></li>
               <li><CalendarCheck size={19} aria-hidden="true" /><span><strong>Theo dõi mốc tái khám</strong><small>Chuẩn bị câu hỏi cho lần trao đổi tiếp theo.</small></span></li>
             </ul>
-          </section>
+          </details>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { Buffer } from "node:buffer";
 import { preparePage } from "./helpers.js";
 
 const USER_ID = "55555555-5555-4555-8555-555555555555";
@@ -255,6 +256,7 @@ test("user creates a recovery request with quota and an idempotency key", async 
     treatmentJourneyId: null,
     primaryLabTestSessionId: null,
     requestNote: "Tôi muốn kế hoạch phục hồi 14 ngày.",
+    prescriptionImageUrl: null,
   });
   expect(calls.idempotencyKey.length).toBeGreaterThan(0);
   expect(calls.idempotencyKey.length).toBeLessThanOrEqual(100);
@@ -316,6 +318,7 @@ test("user previews the selected lab test result before creating a recovery requ
     ],
   });
 
+  await page.locator(".recovery-attachments > summary").click();
   await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
   await expect(page.getByRole("button", { name: "Xem lại kết quả" })).toBeVisible();
   await page.getByRole("button", { name: "Xem lại kết quả" }).click();
@@ -323,6 +326,7 @@ test("user previews the selected lab test result before creating a recovery requ
   const dialog = page.getByRole("dialog", { name: "Kết quả xét nghiệm" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("heading", { name: /Kết quả ngày 13\/8\/2026/ })).toBeVisible();
+  await dialog.getByRole("tab", { name: "Chỉ số xét nghiệm", exact: true }).click();
   await expect(dialog.getByRole("heading", { name: "Cholesterol toàn phần", exact: true })).toBeVisible();
   expect(calls.labTestGets).toBeGreaterThanOrEqual(1);
 });
@@ -340,6 +344,7 @@ test("lab test session id variants from the API are attachable", async ({ page }
     ],
   });
 
+  await page.locator(".recovery-attachments > summary").click();
   await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
   await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toHaveValue(LAB_SESSION_ID);
 
@@ -409,7 +414,7 @@ test("new-request form reappears immediately after cancelling an active request"
   await expect(page.getByRole("heading", { name: "Gửi thông tin cho bác sĩ" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Hủy yêu cầu" }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("alertdialog", { name: "Hủy yêu cầu kế hoạch?" });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Hủy yêu cầu" }).click();
 
@@ -606,4 +611,114 @@ test("recovery plan page remains accessible on mobile", async ({ page }) => {
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
+for (const width of [1440, 768, 390, 320]) {
+  test(`compact recovery request keeps required fields and submit together at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await prepareRecoveryPage(page);
+    await expect(page.getByLabel(/Nhóm bệnh/)).toBeEnabled();
+    const form = page.locator(".recovery-create-card");
+    const geometry = await page.evaluate(() => ({
+      formHeight: document.querySelector(".recovery-create-card").getBoundingClientRect().height,
+      pageHeight: document.querySelector(".recovery-page").getBoundingClientRect().height,
+    }));
+    await testInfo.attach("layout-metrics", { body: JSON.stringify(geometry), contentType: "application/json" });
+    console.info(`Recovery layout at ${width}px: ${JSON.stringify(geometry)}`);
+    await page.screenshot({ path: testInfo.outputPath("recovery-page.png"), fullPage: true });
+    expect(geometry.formHeight).toBeLessThan(width > 900 ? 650 : 820);
+    await expect(page.locator(".recovery-attachments")).not.toHaveAttribute("open", "");
+    await expect(page.getByLabel(/Xét nghiệm đính kèm/)).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "Gửi yêu cầu", exact: true })).toBeVisible();
+    expect(await form.locator("textarea").evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(100);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+}
+
+const ATTACHMENT_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==", "base64");
+const ATTACHABLE_LAB = { sessionId: LAB_SESSION_ID, status: "completed", testDate: "2026-08-13", facilityName: "MediLab", createdAt: "2026-08-13T04:59:00Z" };
+
+test("optional evidence can be opened by keyboard, preserved while closed, and removed", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await prepareRecoveryPage(page, { labSessions: [ATTACHABLE_LAB] });
+  const summary = page.locator(".recovery-attachments > summary");
+  const note = page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý");
+  await note.fill("Ghi chú phải được giữ lại khi đóng mục đính kèm.");
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toBeVisible();
+  await expect(page.locator(".recovery-lab-preview-card")).toHaveCount(0);
+  await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
+  await page.locator("#recovery-prescriptionImage").setInputFiles({ name: "don-thuoc.png", mimeType: "image/png", buffer: ATTACHMENT_PNG });
+  await expect(page.getByAltText("Xem trước đơn thuốc")).toBeVisible();
+  await page.locator(".recovery-create-card").screenshot({ path: testInfo.outputPath("attachments-open.png") });
+  await summary.click();
+  await expect(summary).toContainText("Đã chọn 2 tài liệu");
+  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).not.toBeVisible();
+  await expect(note).toHaveValue("Ghi chú phải được giữ lại khi đóng mục đính kèm.");
+  await summary.focus();
+  await page.keyboard.press("Space");
+  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toHaveValue(LAB_SESSION_ID);
+  await expect(page.getByAltText("Xem trước đơn thuốc")).toBeVisible();
+  await page.getByRole("button", { name: "Bỏ đính kèm", exact: true }).click();
+  await page.getByRole("button", { name: "Xóa ảnh", exact: true }).click();
+  await expect(summary).toContainText("Thêm tài liệu");
+  await expect(page.getByLabel(/Xét nghiệm đính kèm/)).toHaveValue("");
+  await expect(page.getByAltText("Xem trước đơn thuốc")).toHaveCount(0);
+  await page.locator("#recovery-prescriptionImage").setInputFiles({ name: "not-an-image.pdf", mimeType: "application/pdf", buffer: Buffer.from("test") });
+  await expect(page.locator(".recovery-prescription-field [role=alert]")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
+test("upload failure reopens optional evidence and permits retry without losing the request", async ({ page }) => {
+  await page.addInitScript(() => { window.__MEDIMATE_CLOUDINARY_CONFIG__ = { cloudName: "fixture", uploadPreset: "fixture" }; });
+  let uploads = 0;
+  await page.route("https://api.cloudinary.com/**", route => {
+    uploads += 1;
+    return route.fulfill({ status: uploads === 1 ? 503 : 200, contentType: "application/json",
+      body: JSON.stringify(uploads === 1 ? { error: { message: "Không thể tải ảnh kiểm thử." } } : { secure_url: "https://example.invalid/prescription.png" }) });
+  });
+  const calls = await prepareRecoveryPage(page);
+  await page.getByLabel(/Nhóm bệnh/).selectOption("respiratory");
+  const note = page.getByLabel("Thông tin bạn muốn bác sĩ lưu ý");
+  await note.fill("Tôi muốn bác sĩ tham khảo đơn thuốc đính kèm.");
+  const summary = page.locator(".recovery-attachments > summary");
+  await summary.click();
+  await page.locator("#recovery-prescriptionImage").setInputFiles({ name: "don-thuoc.png", mimeType: "image/png", buffer: ATTACHMENT_PNG });
+  await summary.click();
+  await page.getByRole("button", { name: "Gửi yêu cầu", exact: true }).click();
+  await expect(page.getByText("Không thể tải ảnh kiểm thử.", { exact: true })).toBeVisible();
+  await expect(page.locator(".recovery-attachments")).toHaveAttribute("open", "");
+  await expect(note).toHaveValue("Tôi muốn bác sĩ tham khảo đơn thuốc đính kèm.");
+  expect(calls.createCalls).toBe(0);
+  await page.getByRole("button", { name: "Gửi yêu cầu", exact: true }).click();
+  await expect.poll(() => calls.createCalls).toBe(1);
+  expect(calls.createBody.prescriptionImageUrl).toBe("https://example.invalid/prescription.png");
+  expect(uploads).toBe(2);
+});
+
+test("compact recovery layout preserves quota blocking and the workspace shortcut", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  const calls = await prepareRecoveryPage(page, { quota: { quotaCode: "SERVICE_CREDIT", grantedCount: 1, usedCount: 1, reservedCount: 0, remainingCount: 0 } });
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Mua thêm lượt", exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("no-quota.png"), fullPage: true });
+  await page.getByRole("link", { name: "Xem yêu cầu và kế hoạch", exact: true }).click();
+  await expect(page.locator("#recovery-workspace")).toBeFocused();
+  await expect(page.getByRole("tablist", { name: "Khu vực làm việc" })).toBeInViewport();
+  await expect(page.getByRole("tab", { name: "Lộ trình của bạn", exact: true })).toBeInViewport();
+  expect(await page.locator(".recovery-workspace-tabs").evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  expect(calls.createCalls).toBe(0);
+});
+
+test("expanded recovery attachments remain accessible in dark mode", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await prepareRecoveryPage(page, { labSessions: [ATTACHABLE_LAB] });
+  await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+  await page.locator(".recovery-attachments > summary").click();
+  await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
+  // Audit the recovery screen; the shared account header is outside this redesign.
+  const results = await new AxeBuilder({ page }).include(".recovery-page").analyze();
+  expect(results.violations).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("recovery-dark.png"), fullPage: true });
 });

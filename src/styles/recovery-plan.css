@@ -2,7 +2,7 @@
   --recovery-radius-lg: 24px;
   --recovery-radius-md: 18px;
   --recovery-radius-sm: 12px;
-  --recovery-fs-hero: clamp(32px, 4vw, 48px);
+  --recovery-fs-hero: clamp(24px, 2.6vw, 32px);
   --recovery-fs-h2: clamp(19px, 2.1vw, 24px);
   --recovery-fs-h3: 22px;
   --recovery-fs-h4: 18px;
@@ -2344,4 +2344,131 @@
   .recovery-page * {
     scroll-behavior: auto;
   }
+}
+
+/* Compact patient workflow: required inputs first, optional evidence on demand. */
+.recovery-page .recovery-page-header {
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 0.55fr);
+  gap: 20px;
+  padding: 20px;
+  box-shadow: none;
+}
+.recovery-page .recovery-hero-shell { margin-bottom: 14px; }
+.recovery-page .recovery-page-header h2 { margin-bottom: 6px; line-height: 1.2; }
+.recovery-page .recovery-hero-main { grid-template-columns: 40px minmax(0, 1fr); gap: 12px; }
+.recovery-page .recovery-hero-icon { width: 40px; height: 40px; }
+.recovery-page .recovery-hero-copy { font-size: 14px; font-weight: 500; }
+.recovery-page .recovery-hero-note { padding: 12px; font-size: 12px; }
+.recovery-page .recovery-hero-note p { font-size: 12px; }
+.recovery-page .recovery-process { margin-top: 8px; gap: 12px; display: flex; flex-wrap: wrap; }
+.recovery-page .recovery-process li { font-size: 12px; gap: 6px; flex-direction: row; align-items: center; }
+.recovery-page .recovery-process li::after { display: none; }
+.recovery-page .recovery-process span { width: 22px; height: 22px; flex-basis: 22px; }
+.recovery-page .recovery-process strong { background: transparent; padding: 0; }
+.recovery-workspace-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 750;
+  text-underline-offset: 3px;
+}
+.recovery-workspace-shortcut:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.recovery-page .recovery-stats-row { grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr); gap: 12px; margin-bottom: 14px; }
+.recovery-page .recovery-quota-card { grid-template-columns: minmax(0, 1fr); min-height: 0; padding: 14px; gap: 10px; box-shadow: none; }
+.recovery-page .recovery-quota-card .recovery-card-icon { display: none; }
+.recovery-page .recovery-quota-content { grid-column: 1 / -1; }
+.recovery-page .recovery-quota-heading { flex-direction: row; align-items: center; }
+.recovery-page .recovery-quota-heading h2 { font-size: 17px; margin-top: 2px; }
+.recovery-page .recovery-quota-heading > strong { font-size: 18px; flex-shrink: 0; }
+.recovery-page .recovery-quota-track { height: 5px; margin: 10px 0; }
+.recovery-page .recovery-quota-stats { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.recovery-page .recovery-quota-stats div { display: flex; align-items: baseline; gap: 6px; padding: 0; border: 0; background: transparent; }
+.recovery-page .recovery-quota-stats dd { margin: 0; font-size: 13px; }
+.recovery-page .recovery-stat-tile { padding: 12px; gap: 8px; flex-direction: row; align-items: center; }
+.recovery-page .recovery-stat-tile strong { font-size: 22px; }
+.recovery-page .recovery-stat-icon { width: 30px; height: 30px; border-radius: 10px; }
+.recovery-page .recovery-create-card { padding: 20px; }
+.recovery-page .recovery-create-card > .recovery-section-heading { margin-bottom: 16px; }
+.recovery-page .recovery-create-card .recovery-card-icon { display: none; }
+.recovery-page .recovery-create-card h2 { font-size: 23px; margin: 3px 0 5px; }
+.recovery-page .recovery-create-card > form { gap: 14px; }
+.recovery-page .recovery-note-editor textarea { min-height: 110px; font-weight: 500; line-height: 1.5; }
+.recovery-page .recovery-note-toolbar { min-height: 44px; padding: 2px 6px; }
+.recovery-page .recovery-note-toolbar button { min-width: 40px; min-height: 40px; }
+.recovery-note-help { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+.recovery-note-help .recovery-character-count { margin-left: auto; }
+.recovery-attachments { min-width: 0; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface-soft); }
+.recovery-attachments > summary,
+.recovery-page .recovery-guidance-card > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+  font-weight: 750;
+  color: var(--color-ink);
+}
+.recovery-attachments > summary::-webkit-details-marker,
+.recovery-page .recovery-guidance-card > summary::-webkit-details-marker { display: none; }
+.recovery-attachments > summary > span:first-child { flex: 1; min-width: 0; }
+.recovery-attachments > summary small { display: block; margin-top: 3px; color: var(--color-muted); font-size: 12px; font-weight: 500; }
+.recovery-attachment-status { font-size: 12px; color: var(--color-ink); }
+.recovery-attachments > summary > svg,
+.recovery-page .recovery-guidance-card > summary > svg { flex-shrink: 0; margin-left: auto; }
+.recovery-attachments[open] > summary > svg,
+.recovery-page .recovery-guidance-card[open] > summary > svg { transform: rotate(180deg); }
+.recovery-attachments > summary:focus-visible,
+.recovery-page .recovery-guidance-card > summary:focus-visible { outline: 3px solid var(--color-info); outline-offset: 3px; border-radius: 10px; }
+.recovery-attachments-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 18px; padding: 4px 14px 16px; }
+.recovery-attachments-grid .recovery-field { min-width: 0; gap: 8px; }
+.recovery-attachments-grid label > span { flex-wrap: wrap; line-height: 1.5; }
+.recovery-attachments-grid label small { color: var(--color-muted); font-weight: 500; }
+.recovery-attachments-grid label svg { flex-shrink: 0; color: var(--color-info-strong); }
+.recovery-page .recovery-lab-select { width: 100%; font-size: 14px; font-weight: 600; }
+.recovery-lab-selected { display: flex; flex-wrap: wrap; gap: 8px; }
+.recovery-page .recovery-prescription-upload { padding: 0; border: 0; background: transparent; border-radius: 0; }
+.recovery-page .recovery-prescription-picker { grid-template-columns: auto minmax(0, 1fr); padding: 4px 8px; min-height: 48px; border-style: solid; }
+.recovery-page .recovery-prescription-picker button { min-height: 44px; padding-inline: 12px; box-shadow: none; }
+.recovery-page .recovery-prescription-picker span { white-space: normal; overflow-wrap: anywhere; }
+.recovery-page .recovery-submit-row { border-top: 1px solid var(--color-line); padding-top: 12px; margin: 0; gap: 8px; }
+.recovery-page .recovery-submit-row > p:empty { display: none; }
+.recovery-page .recovery-submit-row .ui-button { grid-column: -2 / -1; justify-self: end; min-height: 48px; }
+.recovery-page .recovery-workspace-main { scroll-margin-top: 110px; }
+.recovery-page .recovery-workspace-panel { padding: 18px; }
+.recovery-page .recovery-workspace-panel > .ui-empty { padding: 18px; }
+.recovery-page .recovery-guidance-card { padding: 0; box-shadow: none; background: var(--color-surface); }
+.recovery-page .recovery-guidance-card ul { margin: 0; padding: 0 14px 14px; gap: 12px; }
+.recovery-page .recovery-guidance-card li { min-height: 0; padding: 12px; background: var(--color-surface-soft); }
+@media (max-width: 900px) {
+  .recovery-page .recovery-page-header { grid-template-columns: 1fr; gap: 12px; }
+  .recovery-page .recovery-hero-actions { width: 100%; max-width: none; }
+  .recovery-page .recovery-stats-row { grid-template-columns: 1fr; }
+  .recovery-attachments-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .recovery-page { border: 0; border-radius: 0; width: 100%; max-width: 100%; padding: 12px; margin-top: 0; box-shadow: none; }
+  .recovery-page .recovery-page-header { padding: 16px; border-radius: 14px; }
+  .recovery-page .recovery-hero-main { grid-template-columns: 1fr; }
+  .recovery-page .recovery-page-header h2 { font-size: 26px; }
+  .recovery-page .recovery-hero-note { padding: 10px; }
+  .recovery-page .recovery-process { gap: 8px; }
+  .recovery-page .recovery-create-card { padding: 16px; border-radius: 14px; }
+  .recovery-page .recovery-create-card h2 { font-size: 21px; }
+  .recovery-page .recovery-field > label > span { flex-wrap: wrap; }
+  .recovery-page .recovery-note-field > label > span { display: block; line-height: 1.5; }
+  .recovery-page .recovery-note-field .recovery-field-step { margin-right: 6px; vertical-align: middle; }
+  .recovery-page .recovery-workspace-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 12px; overflow: visible; }
+  .recovery-page .recovery-workspace-tabs button { min-width: 0; min-height: 48px; white-space: normal; padding: 8px 6px; border-radius: 10px; font-size: 12px; line-height: 1.4; }
+  .recovery-attachments > summary { flex-wrap: wrap; gap: 6px; padding: 12px; }
+  .recovery-attachments > summary > span:first-child { flex-basis: calc(100% - 30px); }
+  .recovery-attachment-status { order: 2; flex-basis: 100%; }
+  .recovery-attachments-grid { padding: 2px 12px 14px; }
+  .recovery-page .recovery-submit-row { grid-template-columns: minmax(0, 1fr); }
+  .recovery-page .recovery-submit-row .ui-button { width: 100%; justify-self: stretch; white-space: normal; }
 }
