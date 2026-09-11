@@ -2472,3 +2472,26 @@
   .recovery-page .recovery-submit-row { grid-template-columns: minmax(0, 1fr); }
   .recovery-page .recovery-submit-row .ui-button { width: 100%; justify-self: stretch; white-space: normal; }
 }
+
+html[data-theme="dark"] .recovery-page {
+  background: var(--color-bg);
+  border-color: var(--color-line);
+}
+html[data-theme="dark"] .recovery-page .recovery-page-header {
+  background: linear-gradient(120deg, #074e54, #073a40);
+}
+html[data-theme="dark"] .recovery-page .recovery-quota-card {
+  background: var(--color-surface-soft);
+  border-color: var(--color-line);
+}
+html[data-theme="dark"] .recovery-page .recovery-eyebrow,
+html[data-theme="dark"] .recovery-page .recovery-field-step,
+html[data-theme="dark"] .recovery-page .recovery-attachments-grid label svg {
+  color: var(--color-ink);
+}
+html[data-theme="dark"] .recovery-page .ui-button[data-tone="primary"],
+html[data-theme="dark"] .recovery-page .recovery-prescription-picker button {
+  background: #087f8c;
+  border-color: #087f8c;
+  color: #fff;
+}

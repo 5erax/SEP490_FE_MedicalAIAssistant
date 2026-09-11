@@ -717,8 +717,12 @@ test("expanded recovery attachments remain accessible in dark mode", async ({ pa
   await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
   await page.locator(".recovery-attachments > summary").click();
   await page.getByLabel(/Xét nghiệm đính kèm/).selectOption(LAB_SESSION_ID);
-  // Audit the recovery screen; the shared account header is outside this redesign.
-  const results = await new AxeBuilder({ page }).include(".recovery-page").analyze();
-  expect(results.violations).toEqual([]);
+  // Audit each part in view; the shared account header is outside this redesign.
+  for (const selector of [".recovery-page-header", ".recovery-quota-card", ".recovery-create-card", ".recovery-workspace-main"]) {
+    await page.locator(selector).scrollIntoViewIfNeeded();
+    const results = await new AxeBuilder({ page }).include(selector).analyze();
+    expect(results.violations).toEqual([]);
+  }
+  await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
   await page.screenshot({ path: testInfo.outputPath("recovery-dark.png"), fullPage: true });
 });
