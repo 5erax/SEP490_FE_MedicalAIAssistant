@@ -1807,7 +1807,7 @@ export default function RecoveryPlanPage() {
     const diff = getTimeMs(a.publishedAt) - getTimeMs(b.publishedAt);
     return requestSortDirection === "asc" ? diff : -diff;
   });
-  const currentPlanItem = planItems[0] ?? null;
+  const currentPlanItem = planItems.find((item) => BLOCKING_PLAN_STATUSES.includes(item.status)) ?? null;
   const currentPlan = selectedPlan?.id === currentPlanItem?.id ? selectedPlan : currentPlanItem;
   const currentRequestItem = [...allRequests].sort((a, b) =>
     Number(BLOCKING_REQUEST_STATUSES.includes(b.status)) - Number(BLOCKING_REQUEST_STATUSES.includes(a.status))
@@ -1865,7 +1865,11 @@ export default function RecoveryPlanPage() {
             {planDetailError ? <ErrorState title="Không thể tải hướng dẫn" description={planDetailError} action={<Button onClick={() => loadPlanDetail(currentPlan.id, currentPlan)}>Thử lại</Button>} /> : planView === "instructions" ? <PlanDetail focused key={currentPlan.id} plan={currentPlan} loading={planDetailLoading}
               busy={actionBusy} onStart={handleStart} onCancel={setCancelPlan} onFeedback={openFeedbackDialog} />
               : <RecoveryTimelineCalendar plan={currentPlan} loading={planDetailLoading} />}
-          </> : currentRequest ? <section className="recovery-recent-request" aria-label="Yêu cầu gần nhất">
+          </> : planItems.length > 0 ? <EmptyState icon={<FileText size={26} />}
+            title="Bạn chưa có kế hoạch phục hồi đang thực hiện"
+            description="Các kế hoạch đã hủy, hoàn thành hoặc được thay thế vẫn được lưu trong lịch sử. Bạn có thể xem lại nội dung và gửi yêu cầu mới khi cần."
+            action={<Button tone="secondary" onClick={() => { setActiveTab("plans"); setHistorySearch(""); setHistoryDetail(null); setHistoryOpen(true); }}>Xem lịch sử kế hoạch</Button>} />
+          : currentRequest ? <section className="recovery-recent-request" aria-label="Yêu cầu gần nhất">
             <div><p className="recovery-eyebrow">Yêu cầu gần nhất</p><h3>{getDiseaseLabel(currentRequest.diseaseGroup)}</h3>
               <p>{formatDate(currentRequest.requestedAt, true)}</p></div>
             <StatusBadge map={REQUEST_STATUS} value={currentRequest.status} />

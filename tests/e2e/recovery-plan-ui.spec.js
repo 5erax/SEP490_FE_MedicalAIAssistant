@@ -445,10 +445,15 @@ test("user cancels a ready-to-start plan and sees the reason afterwards", async 
   await dialog.getByRole("button", { name: "Hủy kế hoạch" }).click();
 
   await expect(dialog).toBeHidden();
+  await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Hướng dẫn phục hồi", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Xem lịch sử kế hoạch", exact: true }).click();
+  await page.getByRole("dialog", { name: "Lịch sử", exact: true }).getByRole("button", { name: /Phục hồi hô hấp 14 ngày/ }).click();
   await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeVisible();
   await expect(page.getByText("Không thể tiếp tục thực hiện", { exact: true })).toBeVisible();
   expect(calls.cancelPlanBody).toEqual({ cancellationReasonCode: "UNABLE_TO_FOLLOW", cancellationReason: null });
 
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeVisible();
 });
 
@@ -467,6 +472,9 @@ test("cancelling a plan with \"Lý do khác\" requires a note", async ({ page })
 
 test("cancelled plan keeps its outcome and full instructions available", async ({ page }) => {
   await prepareRecoveryPage(page, { plans: [plan({ status: "cancelled", cancelledAt: "2026-08-01T10:00:00Z", cancellationReasonCode: "NO_LONGER_NEEDED" })] });
+  await expect(page.getByRole("heading", { name: "Khởi động nhẹ", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Xem lịch sử kế hoạch", exact: true }).click();
+  await page.getByRole("dialog", { name: "Lịch sử", exact: true }).getByRole("button", { name: /Phục hồi hô hấp 14 ngày/ }).click();
   await expect(page.getByText("Kế hoạch đã được hủy", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Khởi động nhẹ", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Bắt đầu kế hoạch" })).toHaveCount(0);
@@ -484,6 +492,32 @@ test("tracking shows only the current plan and older plans remain in history", a
   await page.keyboard.press("Escape");
   await expect(history).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toBeVisible();
+});
+
+for (const status of ["cancelled", "completed", "superseded"]) {
+  test(`historical ${status} plan stays in history after reload on mobile`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareRecoveryPage(page, { plans: [plan({ status })] });
+    await page.reload();
+    await expect(page.getByText("Bạn chưa có kế hoạch phục hồi đang thực hiện", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Xem lịch sử kế hoạch", exact: true }).click();
+    const history = page.getByRole("dialog", { name: "Lịch sử", exact: true });
+    await history.getByRole("button", { name: /Phục hồi hô hấp 14 ngày/ }).click();
+    await expect(history.getByRole("heading", { name: "Khởi động nhẹ", exact: true })).toBeVisible();
+    await expect(history.getByRole("button", { name: "Bắt đầu kế hoạch" })).toHaveCount(0);
+    await expect(history.getByRole("button", { name: "Hủy kế hoạch", exact: true })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(page.getByText("Bạn chưa có kế hoạch phục hồi đang thực hiện", { exact: true })).toBeVisible();
+  });
+}
+
+test("a waiting request takes priority over a cancelled plan", async ({ page }) => {
+  await prepareRecoveryPage(page, { requests: [request()], plans: [plan({ status: "cancelled" })] });
+  await expect(page.getByRole("button", { name: "Hủy yêu cầu", exact: true })).toBeVisible();
+  await expect(page.getByText("Bạn chưa có kế hoạch phục hồi đang thực hiện", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toHaveCount(0);
 });
 
 test("timeline tab paints each phase onto its real calendar dates", async ({ page }) => {
@@ -555,8 +589,8 @@ test("cancelling a plan immediately clears its colored roadmap, without a reload
   await dialog.getByRole("button", { name: "Hủy kế hoạch" }).click();
   await expect(dialog).toBeHidden();
 
-  await page.getByRole("button", { name: "Lịch thực hiện", exact: true }).click();
-  await expect(page.getByText("Lộ trình không còn hiệu lực", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Lịch thực hiện", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Bạn chưa có kế hoạch phục hồi đang thực hiện", { exact: true })).toBeVisible();
   await expect(page.getByText("Giai đoạn 1: Khởi động nhẹ", { exact: true })).toHaveCount(0);
 });
 
