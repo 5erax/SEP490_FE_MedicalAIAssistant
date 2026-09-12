@@ -2105,6 +2105,35 @@
   letter-spacing: 0.1em;
 }
 
+.specialty-clinical-page .specialty-result-back-button {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 22px;
+  border: 1px solid var(--clinical-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--clinical-muted);
+  padding: 9px 14px 9px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.specialty-clinical-page .specialty-result-back-button:hover {
+  border-color: rgba(8, 127, 140, 0.38);
+  background: var(--clinical-mint-soft);
+  color: var(--clinical-teal-dark);
+  transform: translateX(-2px);
+}
+
+.specialty-clinical-page .specialty-result-back-button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.2);
+  outline-offset: 2px;
+}
+
 .specialty-clinical-page .specialty-result-complete {
   display: inline-flex;
   align-items: center;
@@ -2195,9 +2224,15 @@
 
 .specialty-clinical-page .specialty-result-hero-note {
   max-width: 1080px;
-  margin-top: 12px;
+  margin-top: 20px;
+  color: var(--clinical-ink);
   font-size: 15px;
+  font-weight: 850;
   line-height: 1.6;
+}
+
+.specialty-clinical-page .specialty-result-hero .specialty-result-explanation-detail {
+  margin-top: 8px;
 }
 
 .specialty-clinical-page .specialty-result-block,
@@ -2343,10 +2378,10 @@
 .specialty-clinical-page .specialty-result-diagnosis-score {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 12px;
+  gap: 7px 12px;
   align-items: baseline;
   justify-content: space-between;
-  width: min(230px, 100%);
+  width: min(240px, 100%);
   margin: 0;
   text-align: right;
   white-space: nowrap;
@@ -2372,6 +2407,7 @@
   line-height: 1.1;
   transform: none;
   text-align: left;
+  white-space: nowrap;
 }
 
 .specialty-clinical-page .specialty-result-diagnosis-score strong {
@@ -2385,10 +2421,10 @@
 
 .specialty-clinical-page .specialty-result-diagnosis-list li.is-primary .specialty-result-diagnosis-score span {
   color: var(--clinical-teal-dark);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .specialty-clinical-page .specialty-result-diagnosis-list li.is-primary .specialty-result-diagnosis-score strong {
@@ -2396,7 +2432,7 @@
 }
 
 .specialty-clinical-page .specialty-result-diagnosis-list li.is-primary .specialty-result-diagnosis-score {
-  width: min(260px, 100%);
+  width: min(255px, 100%);
 }
 
 .specialty-clinical-page .specialty-result-diagnosis-list li.is-primary .specialty-result-diagnosis-score::after {
@@ -2410,18 +2446,36 @@
 }
 
 .specialty-clinical-page .specialty-result-confidence-help {
-  width: min(230px, 100%);
-  margin: 10px 0 0 auto;
+  width: min(255px, 100%);
+  margin: 18px 0 0;
+  margin-left: auto;
 }
 
 .specialty-clinical-page .specialty-result-confidence-help summary {
   text-align: left;
   line-height: 1.35;
+  white-space: nowrap;
 }
 
 .specialty-clinical-page .specialty-result-confidence-help p {
-  max-width: 230px;
-  text-align: left;
+  max-width: 255px;
+  text-align: justify;
+  text-align-last: left;
+}
+
+.specialty-clinical-page .specialty-result-confidence-help blockquote {
+  max-width: 255px;
+  margin: 10px 0 0;
+  border-left: 3px solid rgba(8, 127, 140, 0.34);
+  padding-left: 12px;
+  color: var(--clinical-muted);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 650;
+  line-height: 1.55;
+  text-align: justify;
+  text-align-last: left;
+  white-space: normal;
 }
 
 .specialty-clinical-page .specialty-result-next-step > p {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  ArrowLeft,
   ClipboardPlus,
   Gauge,
   History,
@@ -506,16 +507,25 @@ function SpecialtyResultView({
   result,
   sessionId,
   symptomText,
-  sourceLabel = "Kết quả hiện tại",
   loading = false,
   error = "",
   onOpenFacilities,
+  onBack,
+  backLabel = "Quay lại",
   onReset,
   onRetry,
 }) {
+  const backControl = onBack ? (
+    <button type="button" className="specialty-result-back-button" onClick={onBack}>
+      <ArrowLeft size={17} aria-hidden="true" />
+      <span>{backLabel}</span>
+    </button>
+  ) : null;
+
   if (loading) {
     return (
       <section className="studio-result-panel specialty-result-page" aria-label="Đang tải kết quả gợi ý chuyên khoa">
+        {backControl}
         <article className="specialty-result-state">
           <LoaderCircle className="specialty-result-spinner" size={30} aria-hidden="true" />
           <div>
@@ -531,6 +541,7 @@ function SpecialtyResultView({
   if (error) {
     return (
       <section className="studio-result-panel specialty-result-page" aria-label="Không thể tải kết quả gợi ý chuyên khoa">
+        {backControl}
         <Alert tone="danger" title="Không thể mở kết quả chuyên khoa" live>
           {error}
         </Alert>
@@ -561,13 +572,12 @@ function SpecialtyResultView({
 
   return (
     <section className="studio-result-panel specialty-result-page" aria-label="Kết quả định hướng chuyên khoa">
+      {backControl}
       <section className="specialty-result-hero" aria-labelledby="specialty-result-title">
-        <p className="specialty-result-kicker">{sourceLabel}</p>
         <p className="specialty-result-complete">
           <span className="specialty-result-complete-mark" aria-hidden="true">✓</span>
           Đã hoàn thành phân tích
         </p>
-        <p className="specialty-result-label">Khoa được đề xuất</p>
         <h2 id="specialty-result-title" className="specialty-result-department">{departmentName}</h2>
 
         {departmentDescription && (
@@ -580,20 +590,6 @@ function SpecialtyResultView({
         <p className="specialty-result-hero-note">
           MediMate nhận thấy chuyên khoa này phù hợp nhất với các thông tin bạn đã cung cấp.
         </p>
-        {hasPriority && (
-          <p className="specialty-result-priority-note">{CLINICAL_NOTES.priority}</p>
-        )}
-      </section>
-
-      <section className="specialty-result-block specialty-result-why" aria-labelledby="specialty-result-why-title">
-        <h3 id="specialty-result-why-title">MediMate đề xuất chuyên khoa này vì:</h3>
-
-        <ul className="specialty-result-check-list">
-          <li>Triệu chứng bạn mô tả</li>
-          <li>Các câu trả lời khảo sát</li>
-          <li>Phạm vi tiếp nhận của chuyên khoa</li>
-        </ul>
-
         <details className="specialty-result-inline-help specialty-result-explanation-detail">
           <summary>Vì sao lại có kết quả này?</summary>
           <p>
@@ -601,6 +597,9 @@ function SpecialtyResultView({
           </p>
           {displayedSymptom && <p>Triệu chứng đã ghi nhận: {displayedSymptom}</p>}
         </details>
+        {hasPriority && (
+          <p className="specialty-result-priority-note">{CLINICAL_NOTES.priority}</p>
+        )}
       </section>
 
       <section className="specialty-result-block specialty-result-possibilities" aria-labelledby="specialty-result-possibilities-title">
@@ -608,7 +607,6 @@ function SpecialtyResultView({
 
         {diagnoses.length > 0 ? (
           <>
-            <p className="specialty-result-best-label">Phù hợp nhất</p>
             <ol className="specialty-result-diagnosis-list">
               {diagnoses.map((diagnosis, index) => {
                 const key = getDiagnosisKey(diagnosis, index);
@@ -635,7 +633,7 @@ function SpecialtyResultView({
                           className="specialty-result-diagnosis-score"
                           style={{ "--match-score": `${confidence}%` }}
                         >
-                          <span>Độ phù hợp</span>
+                          <span>Khả năng mắc</span>
                           <strong>{confidence}%</strong>
                         </p>
                       )}
@@ -646,10 +644,13 @@ function SpecialtyResultView({
             </ol>
             {percent !== null && (
               <details className="specialty-result-inline-help specialty-result-confidence-help">
-                <summary>Độ phù hợp được tính như thế nào?</summary>
+                <summary>Khả năng mắc được tính như thế nào?</summary>
                 <p>
-                  Độ phù hợp phản ánh mức độ trùng khớp giữa triệu chứng bạn mô tả, câu trả lời khảo sát và phạm vi tiếp nhận của từng chuyên khoa. Đây chỉ là giá trị tham khảo, không phải kết luận bệnh.
+                  <strong>Khả năng mắc bệnh</strong> được ước tính dựa trên mức độ phổ biến của bệnh trong cộng đồng và mức độ phù hợp giữa các triệu chứng bạn cung cấp với đặc điểm của bệnh.
                 </p>
+                <blockquote>
+                  <strong>Lưu ý:</strong> Kết quả trên chỉ mang tính chất <strong>tham khảo</strong>, được tạo ra dựa trên thông tin và triệu chứng bạn cung cấp. Đây <strong>không phải là kết luận chẩn đoán bệnh</strong> và không thay thế cho việc thăm khám, xét nghiệm hoặc tư vấn từ bác sĩ.
+                </blockquote>
               </details>
             )}
           </>
@@ -991,6 +992,20 @@ export default function DashboardPage() {
     resetDiagnosis(options);
   }
 
+  function returnToHistoryFromResult() {
+    if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(DASHBOARD_RETURN_RESULT_KEY);
+    setHistoricalResult(EMPTY_HISTORICAL_RESULT);
+    if (resultSessionIdFromUrl) replaceRoute("/dashboard");
+    setHistoryPanelOpen(true);
+  }
+
+  function returnToIntakeFromResult() {
+    if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(DASHBOARD_RETURN_RESULT_KEY);
+    setHistoricalResult(EMPTY_HISTORICAL_RESULT);
+    if (resultSessionIdFromUrl) replaceRoute("/dashboard");
+    resetDiagnosis({ clearInput: false });
+  }
+
   function goToPreviousQuestion() {
     setCurrentQuestionIndex((index) => Math.max(0, index - 1));
   }
@@ -1277,10 +1292,11 @@ export default function DashboardPage() {
             result={displayedResult}
             sessionId={displayedSessionId}
             symptomText={displayedSymptomText}
-            sourceLabel={historicalResult.result ? "Kết quả đã lưu" : "Kết quả hiện tại"}
             loading={historicalResult.status === "loading"}
             error={historicalResult.status === "error" ? historicalResult.error : ""}
             onOpenFacilities={openFacilities}
+            onBack={historicalResult.session ? returnToHistoryFromResult : returnToIntakeFromResult}
+            backLabel={historicalResult.session ? "Quay lại lịch sử" : "Quay lại mô tả"}
             onRetry={historicalResult.sessionId ? () => openHistoricalSuggestion({
               sessionId: historicalResult.sessionId,
               session: historicalResult.session,
