@@ -348,7 +348,7 @@
 
 .recovery-workspace-head-controls {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
 }
 
@@ -356,7 +356,7 @@
   min-width: 168px;
 }
 
-.recovery-workspace-head-controls .custom-select-label {
+.recovery-workspace-head-controls .custom-select-field.is-label-hidden > span {
   position: absolute;
   width: 1px;
   height: 1px;
