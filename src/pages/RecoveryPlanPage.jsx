@@ -277,84 +277,6 @@ function Pagination({ label, page, onChange, loading }) {
   );
 }
 
-function QuotaCard({ quota, error, loading, onRetry }) {
-  if (loading) {
-    return <LoadingState label="Đang kiểm tra lượt dịch vụ…" />;
-  }
-
-  if (error) {
-    const needsPlan = error.action === "purchase"
-      || error.code === "NO_ACTIVE_SUBSCRIPTION"
-      || error.code === "RECOVERY_PLAN_QUOTA_EXHAUSTED";
-    return (
-      <section className="recovery-quota-card is-error" aria-labelledby="recovery-quota-title">
-        <div className="recovery-card-icon"><ShieldCheck size={22} aria-hidden="true" /></div>
-        <div>
-          <p className="recovery-eyebrow">Lượt kế hoạch</p>
-          <h2 id="recovery-quota-title">{needsPlan ? "Chưa thể tạo yêu cầu mới" : "Chưa tải được hạn mức"}</h2>
-          <p>{error.message}</p>
-          <div className="recovery-inline-actions">
-            {needsPlan && <Button onClick={() => navigate("/pricing?returnTo=%2Frecovery-plan")}>Xem gói dịch vụ</Button>}
-            <Button tone="secondary" onClick={onRetry}><RefreshCw size={16} aria-hidden="true" /> Thử lại</Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (!quota) return null;
-  const limit = Math.max(0, Number(quota.grantedCount) || 0);
-  const remaining = Math.max(0, Number(quota.remainingCount) || 0);
-  const used = Math.max(0, Number(quota.usedCount) || 0);
-  const reserved = Math.max(0, Number(quota.reservedCount) || 0);
-  const percentage = limit ? Math.min(100, ((used + reserved) / limit) * 100) : 100;
-
-  return (
-    <section className="recovery-quota-card" aria-labelledby="recovery-quota-title">
-      <div className="recovery-card-icon"><CalendarCheck size={22} aria-hidden="true" /></div>
-      <div className="recovery-quota-content">
-        <div className="recovery-quota-heading">
-          <div>
-            <p className="recovery-eyebrow">Lượt dịch vụ dùng chung</p>
-            <h2 id="recovery-quota-title">Còn {remaining} lượt có thể yêu cầu</h2>
-            {remaining === 0 && (
-              <Button size="sm" onClick={() => navigate("/pricing?view=upgrade&returnTo=%2Frecovery-plan")}>Mua thêm lượt</Button>
-            )}
-          </div>
-          <strong>{remaining}/{limit}</strong>
-        </div>
-        <div
-          className="recovery-quota-track"
-          role="progressbar"
-          aria-label="Lượt kế hoạch đã dùng hoặc đang chờ xử lý"
-          aria-valuemin="0"
-          aria-valuemax={limit}
-          aria-valuenow={used + reserved}
-        >
-          <span style={{ width: `${percentage}%` }} />
-        </div>
-        <dl className="recovery-quota-stats">
-          <div><dt>Đã dùng</dt><dd>{used}</dd></div>
-          <div><dt>Đang chờ xử lý</dt><dd>{reserved}</dd></div>
-          <div><dt>Đã cấp</dt><dd>{limit}</dd></div>
-        </dl>
-      </div>
-    </section>
-  );
-}
-
-function StatTile({ icon: Icon, label, value, tone = "info" }) {
-  return (
-    <div className={`recovery-stat-tile is-${tone}`}>
-      <span className="recovery-stat-icon" aria-hidden="true"><Icon size={20} /></span>
-      <div>
-        <p>{label}</p>
-        <strong>{value}</strong>
-      </div>
-    </div>
-  );
-}
-
 function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowConflict }) {
   const [diseaseGroup, setDiseaseGroup] = useState("");
   const [requestNote, setRequestNote] = useState("");
@@ -1383,6 +1305,7 @@ export default function RecoveryPlanPage() {
   const [actionBusy, setActionBusy] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [statusMessage, setStatusMessage] = useState("");
+  const [activePageTab, setActivePageTab] = useState("new");
   const [activeTab, setActiveTab] = useState("requests");
   const [workflowBlocked, setWorkflowBlocked] = useState(false);
   const [workflowGuardLoading, setWorkflowGuardLoading] = useState(true);
@@ -1652,6 +1575,8 @@ export default function RecoveryPlanPage() {
 
   async function handleCreated(createdRequest) {
     showToast({ type: "success", title: "Đã gửi yêu cầu", message: "Bạn có thể theo dõi trạng thái ngay trên trang này." });
+    setActivePageTab("requests");
+    setActiveTab("requests");
     void loadQuota();
     await Promise.allSettled([
       loadRequests(1, createdRequest?.id),
@@ -1773,7 +1698,7 @@ export default function RecoveryPlanPage() {
   const planItems = useMemo(() => planPage.items, [planPage.items]);
 
   return (
-    <div className="recovery-page">
+    <div className="recovery-page" data-active-page-tab={activePageTab}>
       <div className="recovery-hero-shell">
       <header className="recovery-page-header">
         <div className="recovery-hero-main">
@@ -1802,28 +1727,41 @@ export default function RecoveryPlanPage() {
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
       <p className="sr-only" role="status" aria-atomic="true">{realtimeLabel}</p>
 
-      <div className="recovery-stats-row">
-        <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
-        <div className="recovery-overview-metrics" aria-label="Tổng quan kế hoạch phục hồi">
-          <StatTile icon={ListChecks} label="Yêu cầu đã gửi" value={requestPage.totalCount} tone="warning" />
-          <StatTile icon={FileText} label="Kế hoạch đã nhận" value={planPage.totalCount} tone="success" />
+      <div className="recovery-page-tab-shell">
+        <div className="recovery-workspace-tabs recovery-page-tabs" role="tablist" aria-label="Khu vực kế hoạch phục hồi">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activePageTab === "new"}
+            className={activePageTab === "new" ? "is-active" : ""}
+            onClick={() => setActivePageTab("new")}
+          >
+            Tạo yêu cầu mới
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activePageTab === "requests"}
+            className={activePageTab === "requests" ? "is-active" : ""}
+            onClick={() => setActivePageTab("requests")}
+          >
+            Yêu cầu của bạn
+          </button>
         </div>
       </div>
 
       <div className="recovery-workspace-layout">
-        {!workflowBlocked && (
-          <div className="recovery-request-sidebar">
-            <CreateRequestForm
-              disabled={requestCreationDisabled}
-              disabledMessage={requestDisabledMessage}
-              onCreated={handleCreated}
-              onWorkflowConflict={async () => {
-                setWorkflowBlocked(true);
-                await Promise.allSettled([loadRequests(1), loadPlans(1), loadWorkflowGuard()]);
-              }}
-            />
-          </div>
-        )}
+        <div className="recovery-request-sidebar">
+          <CreateRequestForm
+            disabled={requestCreationDisabled}
+            disabledMessage={requestDisabledMessage}
+            onCreated={handleCreated}
+            onWorkflowConflict={async () => {
+              setWorkflowBlocked(true);
+              await Promise.allSettled([loadRequests(1), loadPlans(1), loadWorkflowGuard()]);
+            }}
+          />
+        </div>
 
         <div className="recovery-workspace-main">
           <div className="recovery-workspace-head">
