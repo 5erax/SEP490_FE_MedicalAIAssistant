@@ -2207,6 +2207,8 @@
   font-size: 14px;
   font-weight: 550;
   line-height: 1.6;
+  text-align: justify;
+  text-align-last: left;
 }
 
 .specialty-clinical-page .specialty-result-meta {
