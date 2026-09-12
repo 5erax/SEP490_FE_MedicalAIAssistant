@@ -732,6 +732,41 @@ test("direct request link with zero credits shows an actionable explanation, not
   expect(calls.createCalls).toBe(0);
 });
 
+for (const width of [1440, 390, 320]) {
+  test(`history has one sort control and separate readable list/detail at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await prepareRecoveryPage(page, { requests: [request({ status: "cancelled" }), request({ id: "older-request", diseaseGroup: "musculoskeletal", status: "cancelled", requestedAt: "2026-07-01T08:00:00Z" })] });
+    await page.getByRole("button", { name: "Lịch sử", exact: true }).click();
+    const history = page.getByRole("dialog", { name: "Lịch sử", exact: true });
+    await expect(history.getByRole("combobox", { name: "Sắp xếp", exact: true })).toHaveCount(1);
+    await expect(history.locator(".custom-select-trigger")).toHaveCount(0);
+    await expect(history.locator(".recovery-detail-card")).toHaveCount(0);
+    await expect(history.locator(".recovery-history-row")).toHaveCount(2);
+    await history.getByLabel("Sắp xếp", { exact: true }).selectOption("asc");
+    await expect(history.locator(".recovery-history-row").first()).toContainText("Cơ xương khớp");
+    await page.screenshot({ path: testInfo.outputPath("history-list.png"), fullPage: true });
+    expect((await new AxeBuilder({ page }).include(".recovery-history-panel").analyze()).violations).toEqual([]);
+    await history.getByLabel("Tìm trong lịch sử").fill("ho hap");
+    await expect(history.locator(".recovery-history-row")).toHaveCount(1);
+    await history.locator(".recovery-history-row").click();
+    await expect(history.locator(".recovery-detail-card")).toBeVisible();
+    await expect(history.locator(".recovery-history-row")).toHaveCount(0);
+    await expect(history.getByText("Tôi muốn kế hoạch phục hồi 14 ngày.", { exact: true })).toBeVisible();
+    expect(await history.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("history-detail.png"), fullPage: true });
+    expect((await new AxeBuilder({ page }).include(".recovery-history-panel").analyze()).violations).toEqual([]);
+    await history.getByRole("button", { name: "Về danh sách yêu cầu" }).click();
+    await expect(history.getByLabel("Tìm trong lịch sử")).toHaveValue("ho hap");
+    await expect(history.getByLabel("Sắp xếp", { exact: true })).toHaveValue("asc");
+    await history.getByLabel("Tìm trong lịch sử").fill("khongtimthay");
+    await expect(history.getByText("Không tìm thấy yêu cầu phù hợp", { exact: true })).toBeVisible();
+    await history.getByRole("button", { name: "Xóa tìm kiếm", exact: true }).click();
+    await expect(history.locator(".recovery-history-row")).toHaveCount(2);
+    await page.keyboard.press("Escape");
+    await expect(history).toHaveCount(0);
+  });
+}
+
 test("focused request and history are accessible in dark mode", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await prepareRecoveryPage(page, { labSessions: [ATTACHABLE_LAB] });

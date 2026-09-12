@@ -1,4 +1,30 @@
 /* Patient workspace: tracking and composing are separate, responsive surfaces. */
+.recovery-history-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px; background: var(--color-surface-soft); border-radius: 14px; margin-bottom: 24px; }
+.recovery-history-tabs .ui-button { box-shadow: none; }
+.recovery-history-controls { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 16px; align-items: end; }
+.recovery-history-controls input, .recovery-history-controls select { width: 100%; min-width: 0; height: 46px; font: inherit; color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-control-border); border-radius: 10px; padding: 10px 12px; }
+.recovery-history-count { margin: 20px 0 10px; color: var(--color-muted); font-size: .875rem; }
+.recovery-history-rows { display: grid; gap: 10px; }
+.recovery-history-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 18px; text-align: left; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); color: var(--color-ink); cursor: pointer; }
+.recovery-history-row:hover { border-color: var(--color-info); background: var(--color-surface-soft); }
+.recovery-history-row-main { flex: 1; min-width: 0; display: grid; gap: 8px; overflow-wrap: anywhere; }
+.recovery-history-row-main strong { font-size: 1rem; line-height: 1.5; }
+.recovery-history-row-main small { color: var(--color-muted); font-size: .875rem; }
+.recovery-history-row > svg { flex: 0 0 auto; color: var(--color-info); }
+.recovery-history-detail-view, .recovery-history-list-view { outline: none; }
+.recovery-history-back { margin-bottom: 24px; }
+.recovery-history-detail-view .recovery-detail-card { border: 0; padding: 0; box-shadow: none; background: none; }
+.recovery-history-detail-view .recovery-detail-header { margin-bottom: 16px; }
+.recovery-history-detail-view .recovery-detail-grid { gap: 20px; margin: 0; }
+.recovery-history-detail-view .recovery-detail-header h3 { margin: 6px 0; }
+@media (max-width: 600px) {
+  .recovery-history-controls { grid-template-columns: 1fr; gap: 12px; }
+  .recovery-history-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding: 16px; gap: 10px; }
+  .recovery-history-row-main { grid-column: 1; }
+  .recovery-history-row .recovery-status-badge { grid-column: 1; justify-self: start; }
+  .recovery-history-row > svg { grid-column: 2; grid-row: 1 / span 2; }
+  .recovery-history-tabs button { font-size: .875rem; padding-inline: 10px; }
+}
 .recovery-credit-notice { display: flex; align-items: center; gap: 18px; margin: 0 0 24px; padding: 22px; border: 1px solid var(--color-warning); border-left-width: 4px; border-radius: 14px; background: var(--color-warning-bg); color: var(--color-ink); }
 .recovery-credit-notice-icon { flex: 0 0 auto; color: var(--color-warning); }
 .recovery-credit-notice > div { flex: 1; min-width: 0; }

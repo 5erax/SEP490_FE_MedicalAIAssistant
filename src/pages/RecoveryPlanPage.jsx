@@ -22,7 +22,7 @@ import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote"
 import RecoveryPlanFeedbackDialog from "../components/recovery/RecoveryPlanFeedbackDialog";
 import LabTestResultPage from "./LabTestResultPage";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Button, CustomSelect, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
+import { Button, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
 import { navigate, getLocationSnapshot, subscribeToLocation } from "../router/navigation";
 import { getApiErrorCode } from "../services/apiError";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
@@ -271,6 +271,10 @@ function Pagination({ label, page, onChange, loading }) {
       </Button>
     </nav>
   );
+}
+
+function normalizeHistorySearch(value) {
+  return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLowerCase().trim();
 }
 
 function RecoveryCreditNotice({ returnTo = "/recovery-plan" }) {
@@ -1371,6 +1375,13 @@ export default function RecoveryPlanPage() {
   const creating = new URLSearchParams(location.split("?")[1] || "").get("view") === "request";
   const [composeVisited, setComposeVisited] = useState(creating);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyDetail, setHistoryDetail] = useState(null);
+  const [historySearch, setHistorySearch] = useState("");
+  const historyContentRef = useRef(null);
+  useEffect(() => {
+    if (historyOpen) historyContentRef.current?.focus();
+  }, [historyDetail]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [planView, setPlanView] = useState("instructions");
   const headingRef = useRef(null);
   useEffect(() => {
@@ -1769,7 +1780,10 @@ export default function RecoveryPlanPage() {
       : "Bạn có thể dùng nút tải lại để xem thay đổi mới";
 
   const requestPage = useMemo(() => {
-    const sorted = [...allRequests].sort((a, b) => {
+    const term = normalizeHistorySearch(historySearch);
+    const sorted = allRequests.filter((item) => normalizeHistorySearch(
+      `${getDiseaseLabel(item.diseaseGroup)} ${REQUEST_STATUS[item.status]?.label || ""}`
+    ).includes(term)).sort((a, b) => {
       const diff = getTimeMs(a.requestedAt) - getTimeMs(b.requestedAt);
       return requestSortDirection === "asc" ? diff : -diff;
     });
@@ -1783,10 +1797,16 @@ export default function RecoveryPlanPage() {
       totalCount,
       totalPages,
     };
-  }, [allRequests, requestSortDirection, requestPageNumber]);
+  }, [allRequests, requestSortDirection, requestPageNumber, historySearch]);
   const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
   const planItems = useMemo(() => planPage.items, [planPage.items]);
 
+  const historyPlans = [...planItems].filter((item) => normalizeHistorySearch(
+    `${item.planName || "Kế hoạch phục hồi"} ${PLAN_STATUS[item.status]?.label || ""}`
+  ).includes(normalizeHistorySearch(historySearch))).sort((a, b) => {
+    const diff = getTimeMs(a.publishedAt) - getTimeMs(b.publishedAt);
+    return requestSortDirection === "asc" ? diff : -diff;
+  });
   const currentPlanItem = planItems[0] ?? null;
   const currentPlan = selectedPlan?.id === currentPlanItem?.id ? selectedPlan : currentPlanItem;
   const currentRequestItem = [...allRequests].sort((a, b) =>
@@ -1798,6 +1818,7 @@ export default function RecoveryPlanPage() {
   const openRequest = () => navigate("/recovery-plan?view=request");
   function closeHistory() {
     setHistoryOpen(false);
+    setHistoryDetail(null);
     if (currentPlanItem && selectedPlan?.id !== currentPlanItem.id) void loadPlanDetail(currentPlanItem.id, currentPlanItem);
   }
 
@@ -1848,7 +1869,7 @@ export default function RecoveryPlanPage() {
             <div><p className="recovery-eyebrow">Yêu cầu gần nhất</p><h3>{getDiseaseLabel(currentRequest.diseaseGroup)}</h3>
               <p>{formatDate(currentRequest.requestedAt, true)}</p></div>
             <StatusBadge map={REQUEST_STATUS} value={currentRequest.status} />
-            <Button tone="secondary" onClick={() => { setActiveTab("requests"); void loadRequestDetail(currentRequest.id, currentRequest); setHistoryOpen(true); }}>Xem chi tiết</Button>
+            <Button tone="secondary" onClick={() => { setActiveTab("requests"); setHistoryDetail("requests"); void loadRequestDetail(currentRequest.id, currentRequest); setHistoryOpen(true); }}>Xem chi tiết</Button>
           </section>
           : <EmptyState icon={<FileText size={26} />} title="Bắt đầu kế hoạch phục hồi của bạn"
             description="Gửi thông tin sau khám để bác sĩ xem xét và chuẩn bị kế hoạch."
@@ -1860,38 +1881,65 @@ export default function RecoveryPlanPage() {
       </section>}
       {historyOpen && <Dialog className="recovery-history-panel recovery-focused" backdropClassName="recovery-drawer-backdrop"
         labelledBy="recovery-history-title" onClose={closeHistory}>
-        <header className="recovery-history-header"><div><p className="recovery-eyebrow">Hồ sơ phục hồi</p><h2 id="recovery-history-title">Lịch sử</h2></div>
-          <Button tone="secondary" onClick={closeHistory}><X size={18} /> Đóng lịch sử</Button></header>
-        <div className="recovery-view-switch" role="group" aria-label="Loại lịch sử">
-          <Button tone={activeTab === "requests" ? "primary" : "secondary"} aria-pressed={activeTab === "requests"} onClick={() => setActiveTab("requests")}>Yêu cầu của bạn</Button>
-          <Button tone={activeTab === "plans" ? "primary" : "secondary"} aria-pressed={activeTab === "plans"} onClick={() => setActiveTab("plans")}>Kế hoạch của bạn</Button>
-        </div>
-        {activeTab === "requests" ? <section aria-label="Lịch sử yêu cầu">
-          <CustomSelect label="Sắp xếp" value={requestSortDirection} options={REQUEST_SORT_OPTIONS}
-            onChange={(value) => { setRequestSortDirection(value); setRequestPageNumber(1); }} />
-          {requestsError ? <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(1)}>Thử lại</Button>} />
-            : !requestItems.length ? <EmptyState title="Chưa có yêu cầu phục hồi" /> : <>
-            <div className="recovery-item-list">
-              {requestItems.map((item) => <button type="button" key={item.id} className="recovery-item-button" aria-pressed={selectedRequest?.id === item.id}
-                onClick={() => loadRequestDetail(item.id, item)}>
-                <span><strong>{getDiseaseLabel(item.diseaseGroup)}</strong><small>{formatDate(item.requestedAt, true)}</small></span>
-                <StatusBadge map={REQUEST_STATUS} value={item.status} />
-              </button>)}
-            </div>
-            <Pagination label="Phân trang yêu cầu phục hồi" page={requestPage} loading={requestsLoading} onChange={setRequestPageNumber} />
-            <RequestDetail request={selectedRequest} loading={requestDetailLoading} busy={actionBusy} onCancel={handleCancel} />
-          </>}
-        </section> : <section aria-label="Lịch sử kế hoạch">
-          {plansError ? <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(1)}>Thử lại</Button>} />
-            : !planItems.length ? <EmptyState title="Chưa có kế hoạch được xuất bản" /> : <>
-            <div className="recovery-item-list">{planItems.map((item) => <button type="button" key={item.id} className="recovery-item-button"
-              aria-pressed={selectedPlan?.id === item.id} onClick={() => loadPlanDetail(item.id, item)}>
-              <span><strong>{item.planName || "Kế hoạch phục hồi"}</strong><small>{formatDate(item.publishedAt)}</small></span><StatusBadge map={PLAN_STATUS} value={item.status} />
-            </button>)}</div>
-            {planDetailError ? <ErrorState title="Không thể tải hướng dẫn" description={planDetailError} action={<Button onClick={() => loadPlans(1)}>Thử lại</Button>} /> : <PlanDetail focused key={selectedPlan?.id} plan={selectedPlan} loading={planDetailLoading} busy={actionBusy}
-              onStart={handleStart} onCancel={setCancelPlan} onFeedback={openFeedbackDialog} />}
-          </>}
-        </section>}
+        <header className="recovery-history-header">
+          <div><p className="recovery-eyebrow">Hồ sơ phục hồi</p><h2 id="recovery-history-title">Lịch sử</h2></div>
+          <Button tone="secondary" onClick={closeHistory}><X size={18} aria-hidden="true" /> Đóng lịch sử</Button>
+        </header>
+        {historyDetail ? <div className="recovery-history-detail-view" ref={historyContentRef} tabIndex={-1}>
+          <Button className="recovery-history-back" tone="secondary" onClick={() => setHistoryDetail(null)}>
+            <ChevronLeft size={18} aria-hidden="true" /> Về danh sách {historyDetail === "requests" ? "yêu cầu" : "kế hoạch"}
+          </Button>
+          {historyDetail === "requests" ? <RequestDetail request={selectedRequest} loading={requestDetailLoading}
+            busy={actionBusy} onCancel={(request) => { closeHistory(); void handleCancel(request); }} />
+            : planDetailError ? <ErrorState title="Không thể tải hướng dẫn" description={planDetailError}
+              action={<Button onClick={() => loadPlans(1)}>Thử lại</Button>} />
+            : <PlanDetail focused key={selectedPlan?.id} plan={selectedPlan} loading={planDetailLoading} busy={actionBusy}
+              onStart={handleStart} onCancel={(plan) => { closeHistory(); setCancelPlan(plan); }}
+              onFeedback={(plan) => { closeHistory(); openFeedbackDialog(plan); }} />}
+        </div> : <div className="recovery-history-list-view" ref={historyContentRef} tabIndex={-1}>
+          <div className="recovery-history-tabs" role="group" aria-label="Loại lịch sử">
+            <Button tone={activeTab === "requests" ? "primary" : "secondary"} aria-pressed={activeTab === "requests"}
+              onClick={() => { setActiveTab("requests"); setHistorySearch(""); setRequestPageNumber(1); }}>Yêu cầu của bạn</Button>
+            <Button tone={activeTab === "plans" ? "primary" : "secondary"} aria-pressed={activeTab === "plans"}
+              onClick={() => { setActiveTab("plans"); setHistorySearch(""); setRequestPageNumber(1); }}>Kế hoạch của bạn</Button>
+          </div>
+          <div className="recovery-history-controls">
+            <Field label="Tìm trong lịch sử">
+              <input type="search" value={historySearch} placeholder={activeTab === "requests" ? "Nhóm bệnh hoặc trạng thái" : "Tên kế hoạch hoặc trạng thái"}
+                onChange={(event) => { setHistorySearch(event.target.value); setRequestPageNumber(1); }} />
+            </Field>
+            <Field label="Sắp xếp">
+              <Select value={requestSortDirection} onChange={(event) => { setRequestSortDirection(event.target.value); setRequestPageNumber(1); }}>
+                {REQUEST_SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </Select>
+            </Field>
+          </div>
+          <p className="recovery-history-count" role="status">{activeTab === "requests" ? requestPage.totalCount : historyPlans.length} {activeTab === "requests" ? "yêu cầu" : "kế hoạch"}{historySearch ? " phù hợp" : ""}</p>
+          {activeTab === "requests" ? <section aria-label="Lịch sử yêu cầu">
+            {requestsLoading ? <LoadingState label="Đang tải yêu cầu…" /> : requestsError ? <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(1)}>Thử lại</Button>} />
+              : !requestItems.length ? <EmptyState title={historySearch ? "Không tìm thấy yêu cầu phù hợp" : "Chưa có yêu cầu phục hồi"}
+                action={historySearch ? <Button tone="secondary" onClick={() => setHistorySearch("")}>Xóa tìm kiếm</Button> : undefined} /> : <>
+              <div className="recovery-history-rows">
+                {requestItems.map((item) => <button type="button" key={item.id} className="recovery-history-row"
+                  onClick={() => { setHistoryDetail("requests"); void loadRequestDetail(item.id, item); }}>
+                  <span className="recovery-history-row-main"><strong>{getDiseaseLabel(item.diseaseGroup)}</strong><small>{formatDate(item.requestedAt, true)}</small></span>
+                  <StatusBadge map={REQUEST_STATUS} value={item.status} />
+                  <ChevronRight size={20} aria-hidden="true" />
+                </button>)}
+              </div>
+              <Pagination label="Phân trang yêu cầu phục hồi" page={requestPage} loading={requestsLoading} onChange={setRequestPageNumber} />
+            </>}
+          </section> : <section aria-label="Lịch sử kế hoạch">
+            {plansLoading ? <LoadingState label="Đang tải kế hoạch…" /> : plansError ? <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(1)}>Thử lại</Button>} />
+              : !historyPlans.length ? <EmptyState title={historySearch ? "Không tìm thấy kế hoạch phù hợp" : "Chưa có kế hoạch được xuất bản"}
+                action={historySearch ? <Button tone="secondary" onClick={() => setHistorySearch("")}>Xóa tìm kiếm</Button> : undefined} />
+              : <div className="recovery-history-rows">{historyPlans.map((item) => <button type="button" key={item.id} className="recovery-history-row"
+                onClick={() => { setHistoryDetail("plans"); void loadPlanDetail(item.id, item); }}>
+                <span className="recovery-history-row-main"><strong>{item.planName || "Kế hoạch phục hồi"}</strong><small>{formatDate(item.publishedAt)}</small></span>
+                <StatusBadge map={PLAN_STATUS} value={item.status} /><ChevronRight size={20} aria-hidden="true" />
+              </button>)}</div>}
+          </section>}
+        </div>}
       </Dialog>}
 
       {cancelPlan && (
