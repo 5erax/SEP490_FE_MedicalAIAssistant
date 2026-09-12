@@ -499,6 +499,9 @@ for (const status of ["cancelled", "completed", "superseded"]) {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareRecoveryPage(page, { plans: [plan({ status })] });
     await page.reload();
+    if (status === "completed") {
+      await page.getByRole("dialog", { name: "Đánh giá kế hoạch phục hồi" }).getByRole("button", { name: "Để sau", exact: true }).click();
+    }
     await expect(page.getByText("Bạn chưa có kế hoạch phục hồi đang thực hiện", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Gửi yêu cầu mới", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Phục hồi hô hấp 14 ngày" })).toHaveCount(0);
