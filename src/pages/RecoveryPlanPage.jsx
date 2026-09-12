@@ -1156,14 +1156,14 @@ function getPhaseColor(index) {
 function RecoveryTimelineCalendar({ plan, loading }) {
   const timeline = useMemo(() => getPhaseTimeline(plan), [plan]);
   const [monthCursor, setMonthCursor] = useState(() => {
-    const anchor = timeline[0]?.from ?? new Date();
-    return new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
   });
 
   useEffect(() => {
-    const anchor = getPhaseTimeline(plan)[0]?.from ?? new Date();
-    queueMicrotask(() => setMonthCursor(new Date(anchor.getFullYear(), anchor.getMonth(), 1)));
-  }, [plan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const today = new Date();
+    queueMicrotask(() => setMonthCursor(new Date(today.getFullYear(), today.getMonth(), 1)));
+  }, [plan?.id, plan?.status]);
 
   const weeks = useMemo(() => {
     const year = monthCursor.getFullYear();
@@ -1178,29 +1178,13 @@ function RecoveryTimelineCalendar({ plan, loading }) {
   }, [monthCursor]);
 
   if (loading) return <LoadingState label="Đang tải lộ trình…" />;
-  if (!plan) return null;
-
-  if (plan.status === "cancelled") {
-    return (
-      <div className="recovery-timeline">
-        <div className="recovery-timeline-intro">
-          <p className="recovery-eyebrow">Lộ trình</p>
-          <h4>{plan.planName || "Kế hoạch phục hồi"}</h4>
-        </div>
-        <EmptyState
-          className="recovery-timeline-empty"
-          icon={<CalendarCheck size={26} aria-hidden="true" />}
-          title="Lộ trình không còn hiệu lực"
-          description="Kế hoạch này đã bị hủy nên các mốc thời gian không còn được áp dụng."
-        />
-      </div>
-    );
-  }
 
   const today = new Date();
   const monthLabel = `Tháng ${monthCursor.getMonth() + 1} - ${monthCursor.getFullYear()}`;
+  const hasActivePlan = plan?.status === "active";
 
   function findPhase(date) {
+    if (!hasActivePlan) return null;
     const key = toDateKey(date);
     return timeline.find((entry) => key >= toDateKey(entry.from) && key <= toDateKey(entry.to)) ?? null;
   }
@@ -1209,8 +1193,8 @@ function RecoveryTimelineCalendar({ plan, loading }) {
     <div className="recovery-timeline">
       <div className="recovery-timeline-intro">
         <p className="recovery-eyebrow">Lộ trình</p>
-        <h4>{plan.planName || "Kế hoạch phục hồi"}</h4>
-        <p>Mỗi màu tương ứng với một giai đoạn trong kế hoạch của bạn.</p>
+        <h4>{hasActivePlan ? plan.planName || "Kế hoạch phục hồi" : "Chưa có lộ trình nào hiện tại"}</h4>
+        {hasActivePlan && <p>Mỗi màu tương ứng với một giai đoạn trong kế hoạch của bạn.</p>}
       </div>
 
       <div className="recovery-timeline-calendar">
@@ -1260,7 +1244,7 @@ function RecoveryTimelineCalendar({ plan, loading }) {
         </div>
       </div>
 
-      {timeline.length > 0 && (
+      {hasActivePlan && timeline.length > 0 ? (
         <div className="recovery-timeline-legend">
           {timeline.map((entry) => (
             <div className="recovery-timeline-legend-item" key={entry.phase.id}>
@@ -1271,6 +1255,11 @@ function RecoveryTimelineCalendar({ plan, loading }) {
               </div>
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="recovery-timeline-current-empty">
+          <CalendarCheck size={18} aria-hidden="true" />
+          <span>Chưa có kế hoạch nào đang được thực hiện</span>
         </div>
       )}
     </div>
@@ -1890,11 +1879,7 @@ export default function RecoveryPlanPage() {
             </section>
           ) : (
             <section className="recovery-workspace-panel" role="tabpanel" aria-label="Lộ trình của bạn">
-              {planItems.length === 0 ? (
-                <EmptyState icon={<CalendarCheck size={26} aria-hidden="true" />} title="Chưa có lộ trình để hiển thị" description="Lộ trình sẽ hiện ra dưới dạng lịch khi bạn có kế hoạch phục hồi." />
-              ) : (
-                <RecoveryTimelineCalendar plan={selectedPlan} loading={planDetailLoading} />
-              )}
+              <RecoveryTimelineCalendar plan={selectedPlan} loading={planDetailLoading} />
             </section>
           )}
         </div>
