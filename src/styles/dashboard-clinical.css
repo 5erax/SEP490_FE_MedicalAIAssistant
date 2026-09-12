@@ -2260,6 +2260,10 @@
   font-weight: 750;
 }
 
+.specialty-clinical-page .specialty-result-possibilities {
+  --specialty-result-score-column: 285px;
+}
+
 .specialty-clinical-page .specialty-result-inline-help summary {
   gap: 0;
   opacity: 0.72;
@@ -2331,7 +2335,7 @@
 
 .specialty-clinical-page .specialty-result-diagnosis-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(230px, max-content);
+  grid-template-columns: minmax(0, 1fr) minmax(var(--specialty-result-score-column), max-content);
   gap: clamp(28px, 5.5vw, 84px);
   align-items: start;
 }
@@ -2383,7 +2387,9 @@
   gap: 7px 12px;
   align-items: baseline;
   justify-content: space-between;
-  width: min(240px, 100%);
+  width: var(--specialty-result-score-column);
+  max-width: 100%;
+  min-width: min(var(--specialty-result-score-column), 100%);
   margin: 0;
   text-align: right;
   white-space: nowrap;
@@ -2404,8 +2410,8 @@
 
 .specialty-clinical-page .specialty-result-diagnosis-score span {
   color: var(--clinical-muted);
-  font-size: 13px;
-  font-weight: 750;
+  font-size: 15px;
+  font-weight: 800;
   line-height: 1.1;
   transform: none;
   text-align: left;
@@ -2423,7 +2429,7 @@
 
 .specialty-clinical-page .specialty-result-diagnosis-list li.is-primary .specialty-result-diagnosis-score span {
   color: var(--clinical-teal-dark);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 850;
   text-transform: none;
   letter-spacing: 0;
@@ -2434,7 +2440,7 @@
 }
 
 .specialty-clinical-page .specialty-result-diagnosis-list li.is-primary .specialty-result-diagnosis-score {
-  width: min(255px, 100%);
+  width: min(var(--specialty-result-score-column), 100%);
 }
 
 .specialty-clinical-page .specialty-result-diagnosis-list li.is-primary .specialty-result-diagnosis-score::after {
@@ -2448,7 +2454,7 @@
 }
 
 .specialty-clinical-page .specialty-result-confidence-help {
-  width: min(255px, 100%);
+  width: min(var(--specialty-result-score-column), 100%);
   margin: 18px 0 0;
   margin-left: auto;
 }
@@ -2460,13 +2466,13 @@
 }
 
 .specialty-clinical-page .specialty-result-confidence-help p {
-  max-width: 255px;
+  max-width: var(--specialty-result-score-column);
   text-align: justify;
   text-align-last: left;
 }
 
 .specialty-clinical-page .specialty-result-confidence-help blockquote {
-  max-width: 255px;
+  max-width: var(--specialty-result-score-column);
   margin: 10px 0 0;
   border-left: 3px solid rgba(8, 127, 140, 0.34);
   padding-left: 12px;
