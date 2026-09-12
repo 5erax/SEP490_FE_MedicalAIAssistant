@@ -1,16 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Activity,
   Bold,
   CalendarCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
+  Eye,
   FileImage,
   FileText,
   FlaskConical,
+  HeartPulse,
   Info,
   Italic,
   List,
+  ListChecks,
   RefreshCw,
   Send,
   ShieldCheck,
@@ -22,8 +27,8 @@ import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote"
 import RecoveryPlanFeedbackDialog from "../components/recovery/RecoveryPlanFeedbackDialog";
 import LabTestResultPage from "./LabTestResultPage";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Button, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
-import { navigate, getLocationSnapshot, subscribeToLocation } from "../router/navigation";
+import { Button, CustomSelect, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
+import { navigate } from "../router/navigation";
 import { getApiErrorCode } from "../services/apiError";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
 import { useServiceCredit } from "../state/useServiceCredit";
@@ -43,7 +48,6 @@ import {
 } from "../utils/recoveryPlanFeedback";
 import "../styles/recovery-plan.css";
 import "../styles/formatted-recovery-note.css";
-import "../styles/recovery-workspace.css";
 
 const PAGE_SIZE = 5;
 const CANCELLABLE_REQUEST_STATUSES = new Set(["waitingForDoctor", "assigned", "inReview", "needMoreInformation"]);
@@ -273,22 +277,6 @@ function Pagination({ label, page, onChange, loading }) {
   );
 }
 
-function normalizeHistorySearch(value) {
-  return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLowerCase().trim();
-}
-
-function RecoveryCreditNotice({ returnTo = "/recovery-plan" }) {
-  return <section className="recovery-credit-notice" aria-label="Lượt sử dụng đã hết">
-    <span className="recovery-credit-notice-icon" aria-hidden="true"><Info size={24} /></span>
-    <div>
-      <h3>Bạn đã hết lượt sử dụng</h3>
-      <p>Mua thêm lượt để gửi yêu cầu kế hoạch phục hồi cho bác sĩ.</p>
-      <small>Bạn vẫn có thể xem kế hoạch và lịch sử đã có.</small>
-    </div>
-    <Button onClick={() => navigate(`/pricing?view=upgrade&returnTo=${encodeURIComponent(returnTo)}`)}>Mua thêm lượt</Button>
-  </section>;
-}
-
 function QuotaCard({ quota, error, loading, onRetry }) {
   if (loading) {
     return <LoadingState label="Đang kiểm tra lượt dịch vụ…" />;
@@ -315,14 +303,59 @@ function QuotaCard({ quota, error, loading, onRetry }) {
   }
 
   if (!quota) return null;
+  const limit = Math.max(0, Number(quota.grantedCount) || 0);
   const remaining = Math.max(0, Number(quota.remainingCount) || 0);
-  return <section className="recovery-quota-card recovery-quota-inline" aria-labelledby="recovery-quota-title">
-    <h2 id="recovery-quota-title">Còn {remaining} lượt có thể yêu cầu</h2>
-    {remaining === 0 && <Button size="sm" onClick={() => navigate("/pricing?view=upgrade&returnTo=%2Frecovery-plan")}>Mua thêm lượt</Button>}
-  </section>;
+  const used = Math.max(0, Number(quota.usedCount) || 0);
+  const reserved = Math.max(0, Number(quota.reservedCount) || 0);
+  const percentage = limit ? Math.min(100, ((used + reserved) / limit) * 100) : 100;
+
+  return (
+    <section className="recovery-quota-card" aria-labelledby="recovery-quota-title">
+      <div className="recovery-card-icon"><CalendarCheck size={22} aria-hidden="true" /></div>
+      <div className="recovery-quota-content">
+        <div className="recovery-quota-heading">
+          <div>
+            <p className="recovery-eyebrow">Lượt dịch vụ dùng chung</p>
+            <h2 id="recovery-quota-title">Còn {remaining} lượt có thể yêu cầu</h2>
+            {remaining === 0 && (
+              <Button size="sm" onClick={() => navigate("/pricing?view=upgrade&returnTo=%2Frecovery-plan")}>Mua thêm lượt</Button>
+            )}
+          </div>
+          <strong>{remaining}/{limit}</strong>
+        </div>
+        <div
+          className="recovery-quota-track"
+          role="progressbar"
+          aria-label="Lượt kế hoạch đã dùng hoặc đang chờ xử lý"
+          aria-valuemin="0"
+          aria-valuemax={limit}
+          aria-valuenow={used + reserved}
+        >
+          <span style={{ width: `${percentage}%` }} />
+        </div>
+        <dl className="recovery-quota-stats">
+          <div><dt>Đã dùng</dt><dd>{used}</dd></div>
+          <div><dt>Đang chờ xử lý</dt><dd>{reserved}</dd></div>
+          <div><dt>Đã cấp</dt><dd>{limit}</dd></div>
+        </dl>
+      </div>
+    </section>
+  );
 }
 
-function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowConflict, quotaContent }) {
+function StatTile({ icon: Icon, label, value, tone = "info" }) {
+  return (
+    <div className={`recovery-stat-tile is-${tone}`}>
+      <span className="recovery-stat-icon" aria-hidden="true"><Icon size={20} /></span>
+      <div>
+        <p>{label}</p>
+        <strong>{value}</strong>
+      </div>
+    </div>
+  );
+}
+
+function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowConflict }) {
   const [diseaseGroup, setDiseaseGroup] = useState("");
   const [requestNote, setRequestNote] = useState("");
   const [prescriptionFile, setPrescriptionFile] = useState(null);
@@ -340,15 +373,9 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const [submitError, setSubmitError] = useState(null);
   const [profileReadinessIssues, setProfileReadinessIssues] = useState([]);
   const submissionRef = useRef(null);
-  const submittingRef = useRef(false);
   const errorSummaryRef = useRef(null);
   const noteRef = useRef(null);
   const labResultDialogRef = useRef(null);
-  const labPickerTriggerRef = useRef(null);
-  const returnToLabPickerRef = useRef(false);
-  const [labPickerOpen, setLabPickerOpen] = useState(false);
-  const [pendingLabId, setPendingLabId] = useState("");
-  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const prescriptionInputRef = useRef(null);
   const selectedLabSession = useMemo(
     () => labSessions.find((session) => getLabSessionId(session) === primaryLabTestSessionId) ?? null,
@@ -472,7 +499,6 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (submittingRef.current || disabled) return;
     const nextErrors = {};
     const trimmedNote = requestNote.trim();
     if (!diseaseGroup) nextErrors.diseaseGroup = "Chọn nhóm bệnh cần hỗ trợ.";
@@ -486,7 +512,6 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       return;
     }
 
-    submittingRef.current = true;
     setSubmitting(true);
     setPrescriptionUploadError("");
     try {
@@ -514,7 +539,6 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           if (!uploadedPrescriptionUrl) throw new Error("Không thể lấy URL ảnh đơn thuốc.");
           setPrescriptionImageUrl(uploadedPrescriptionUrl);
         } catch (uploadError) {
-          prescriptionInputRef.current?.scrollIntoView({ block: "center" });
           setPrescriptionUploadError(
             uploadError?.message
               || "Không thể tải ảnh đơn thuốc lên. Vui lòng thử lại hoặc xóa ảnh để tiếp tục mà không gửi đơn thuốc.",
@@ -557,18 +581,24 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       }
     } finally {
       setPrescriptionUploading(false);
-      submittingRef.current = false;
       setSubmitting(false);
     }
   }
 
   return (
     <section className="recovery-create-card" aria-labelledby="recovery-create-title">
+      <div className="recovery-section-heading">
+        <div>
+          <p className="recovery-eyebrow">Yêu cầu mới</p>
+          <h2 id="recovery-create-title">Gửi thông tin cho bác sĩ</h2>
+          <p>Chọn nhóm bệnh và ghi lại những điều bạn muốn bác sĩ lưu ý khi chuẩn bị kế hoạch.</p>
+        </div>
+        <div className="recovery-card-icon"><FileText size={22} aria-hidden="true" /></div>
+      </div>
+
       {disabled && disabledMessage && <div className="recovery-form-blocked"><Info size={18} aria-hidden="true" /><span>{disabledMessage}</span></div>}
 
-      <form onSubmit={handleSubmit} noValidate className="recovery-compose-grid">
-        <fieldset className="recovery-compose-fields" disabled={disabled || submitting || prescriptionUploading}>
-        <legend className="sr-only" id="recovery-create-title">Thông tin gửi bác sĩ</legend>
+      <form onSubmit={handleSubmit} noValidate>
         {Object.entries(errors).filter(([, message]) => message).length > 0 && (
           <div ref={errorSummaryRef} className="recovery-error-summary" role="alert" tabIndex="-1">
             <strong>Kiểm tra lại thông tin yêu cầu:</strong>
@@ -614,10 +644,121 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
           </select>
           {errors.diseaseGroup && <small id="recovery-diseaseGroup-error" className="recovery-field-error">{errors.diseaseGroup}</small>}
         </label>
+        <div className="recovery-field recovery-lab-field">
+          <label htmlFor="recovery-primaryLabTestSessionId">
+            <span><b className="recovery-field-step" aria-hidden="true">2</b> Xét nghiệm đính kèm <small>(không bắt buộc)</small></span>
+          </label>
+          <div className="recovery-lab-picker" data-empty={selectedLabSession ? "false" : "true"}>
+            <div className="recovery-lab-choice-card">
+              <div className="recovery-lab-picker-head">
+                <div>
+                  <small>Phiếu xét nghiệm gần đây</small>
+                </div>
+                <span>{labSessions.length} kết quả</span>
+              </div>
+              <div className="recovery-lab-select-row">
+                <span className="recovery-lab-picker-icon" aria-hidden="true"><FlaskConical size={20} /></span>
+                <select
+                  id="recovery-primaryLabTestSessionId"
+                  className="recovery-lab-select"
+                  value={primaryLabTestSessionId}
+                  disabled={disabled || labSessionsLoading}
+                  onChange={(event) => setPrimaryLabTestSessionId(event.target.value)}
+                >
+                  <option value="">{labSessionsLoading ? "Đang tải xét nghiệm..." : "Không đính kèm xét nghiệm"}</option>
+                  {labSessions.map((session) => {
+                    const sessionId = getLabSessionId(session);
+                    return (
+                      <option key={sessionId} value={sessionId}>
+                        {getLabSessionLabel(session)}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+            <div className="recovery-lab-preview-card">
+              <span className="recovery-lab-preview-mark" aria-hidden="true">
+                <CalendarCheck size={18} />
+              </span>
+              <div>
+                <small>{selectedLabSession ? "Đã chọn xét nghiệm" : "Chưa chọn xét nghiệm"}</small>
+                <strong>{selectedLabSession ? getLabSessionLabel(selectedLabSession) : "Không đính kèm xét nghiệm"}</strong>
+                {selectedLabSession ? <span>Bạn có thể xem lại kết quả trước khi gửi yêu cầu cho bác sĩ.</span> : null}
+              </div>
+              {selectedLabSession ? (
+                <Button
+                  type="button"
+                  tone="primary"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => setActiveLabResultSessionId(primaryLabTestSessionId)}
+                >
+                  <Eye size={16} aria-hidden="true" /> Xem lại kết quả
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          <small className="recovery-field-guidance">
+            {labSessionsError || (
+              labSessions.length > 0
+                ? "Mặc định không đính kèm xét nghiệm. Bạn có thể chọn một ngày nếu muốn gửi kèm kết quả."
+                : "Bạn chưa có kết quả xét nghiệm đã phân tích. Bạn vẫn có thể gửi yêu cầu mà không đính kèm xét nghiệm."
+            )}
+          </small>
+        </div>
+        <div className="recovery-field recovery-prescription-field">
+          <label htmlFor="recovery-prescriptionImage">
+            <span><b className="recovery-field-step" aria-hidden="true">3</b> Ảnh đơn thuốc sau khi khám <small>(không bắt buộc)</small></span>
+          </label>
+          <div className="recovery-prescription-upload">
+            <div className="recovery-prescription-upload-head">
+              <span className="recovery-lab-picker-icon" aria-hidden="true"><FileImage size={20} /></span>
+              <div>
+                <strong>{prescriptionFile ? prescriptionFile.name : "Chọn ảnh đơn thuốc"}</strong>
+                <small>Ảnh giúp bác sĩ tham khảo chẩn đoán và thuốc đã được kê.</small>
+              </div>
+            </div>
+            <input
+              ref={prescriptionInputRef}
+              id="recovery-prescriptionImage"
+              className="recovery-prescription-native-input"
+              type="file"
+              accept="image/*"
+              disabled={disabled || submitting || prescriptionUploading}
+              aria-invalid={Boolean(prescriptionUploadError) || undefined}
+              aria-describedby="recovery-prescriptionImage-guidance"
+              onChange={handlePrescriptionFileChange}
+            />
+            <div className="recovery-prescription-picker">
+              <button
+                type="button"
+                disabled={disabled || submitting || prescriptionUploading}
+                onClick={() => prescriptionInputRef.current?.click()}
+              >
+                <FileImage size={17} aria-hidden="true" /> {prescriptionFile ? "Đổi ảnh" : "Chọn ảnh"}
+              </button>
+              <span>{prescriptionFile ? prescriptionFile.name : "Chưa chọn ảnh"}</span>
+            </div>
+            {prescriptionPreviewUrl && (
+              <div className="recovery-prescription-preview">
+                <img src={prescriptionPreviewUrl} alt="Xem trước đơn thuốc" />
+                <Button type="button" tone="secondary" size="sm" disabled={disabled || prescriptionUploading} onClick={handleRemovePrescription}>
+                  <X size={15} aria-hidden="true" /> Xóa ảnh
+                </Button>
+              </div>
+            )}
+          </div>
+          <small id="recovery-prescriptionImage-guidance" className="recovery-field-guidance">
+            Bạn có thể gửi ảnh đơn thuốc hoặc giấy kê thuốc sau khi khám. File sẽ được tải lên Cloudinary khi bạn nhấn gửi yêu cầu.
+          </small>
+          {prescriptionUploading && <small className="recovery-field-guidance">Đang tải ảnh đơn thuốc...</small>}
+          {prescriptionUploadError && <small className="recovery-field-error">{prescriptionUploadError}</small>}
+        </div>
         <div className="recovery-field recovery-note-field">
           <label htmlFor="recovery-requestNote">
             <span>
-              <b className="recovery-field-step" aria-hidden="true">2</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
+              <b className="recovery-field-step" aria-hidden="true">4</b> Thông tin bạn muốn bác sĩ lưu ý{" "}
               <span className="recovery-required-marker" aria-hidden="true">*</span>
               <span className="sr-only"> (bắt buộc)</span>
             </span>
@@ -633,7 +774,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
             <textarea
               ref={noteRef}
               id="recovery-requestNote"
-              rows="4"
+              rows="5"
               maxLength="2000"
               required
               placeholder="Ví dụ: Tôi vẫn còn đau khi đi lại lâu và muốn biết những hoạt động nào nên hạn chế…"
@@ -651,47 +792,11 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
               }}
             />
           </div>
-          <div className="recovery-note-help">
-            <small id="recovery-requestNote-guidance" className="recovery-field-guidance">Ghi lại những thay đổi, khó khăn hoặc vấn đề bạn muốn bác sĩ xem xét.</small>
-            <small id="recovery-requestNote-help" className={`recovery-character-count${errors.requestNote ? " recovery-field-error" : ""}`}>
-              {errors.requestNote || `${requestNote.length} / 2.000 ký tự`}
-            </small>
-          </div>
+          <small id="recovery-requestNote-guidance" className="recovery-field-guidance">Ghi lại những thay đổi, khó khăn hoặc vấn đề bạn muốn bác sĩ xem xét.</small>
+          <small id="recovery-requestNote-help" className={`recovery-character-count${errors.requestNote ? " recovery-field-error" : ""}`}>
+            {errors.requestNote || `${requestNote.length} / 2.000 ký tự`}
+          </small>
         </div>
-        <section className="recovery-evidence" aria-labelledby="recovery-evidence-title">
-          <h3 id="recovery-evidence-title">Tài liệu đính kèm <small>Không bắt buộc</small></h3>
-          <div className="recovery-evidence-actions">
-            <Button ref={labPickerTriggerRef} type="button" tone="secondary" onClick={() => { setPendingLabId(primaryLabTestSessionId); setLabPickerOpen(true); }}>
-              <FlaskConical size={18} /> {selectedLabSession ? "Đổi kết quả xét nghiệm" : "Chọn kết quả xét nghiệm"}
-            </Button>
-            <Button type="button" tone="secondary" onClick={() => prescriptionInputRef.current?.click()}>
-              <FileImage size={18} /> {prescriptionFile ? "Đổi ảnh đơn thuốc" : "Thêm ảnh đơn thuốc"}
-            </Button>
-          </div>
-          <input ref={prescriptionInputRef} id="recovery-prescriptionImage" className="recovery-prescription-native-input" type="file" accept="image/*"
-            aria-label="Ảnh đơn thuốc" onChange={handlePrescriptionFileChange} />
-          {selectedLabSession && <div className="recovery-evidence-row">
-            <FlaskConical size={20} /><strong>{getLabSessionLabel(selectedLabSession)}</strong>
-            <Button type="button" tone="ghost" onClick={() => setActiveLabResultSessionId(primaryLabTestSessionId)}>Xem lại kết quả</Button>
-            <Button type="button" tone="ghost" onClick={() => setPrimaryLabTestSessionId("")}>Bỏ đính kèm</Button>
-          </div>}
-          {prescriptionFile && <div className="recovery-evidence-row">
-            <FileImage size={20} /><strong>{prescriptionFile.name}</strong>
-            <Button type="button" tone="ghost" onClick={() => setImagePreviewOpen(true)}>Xem ảnh</Button>
-            <Button type="button" tone="ghost" onClick={handleRemovePrescription}>Xóa ảnh</Button>
-          </div>}
-          <small>Ảnh tối đa 5 MB. Tài liệu chỉ được gửi khi bạn xác nhận yêu cầu.</small>
-          {prescriptionUploadError && <p className="recovery-field-error" role="alert">{prescriptionUploadError}</p>}
-        </section>
-        </fieldset>
-        <aside className="recovery-confirmation" aria-labelledby="recovery-confirm-title">
-          <h3 id="recovery-confirm-title">Kiểm tra trước khi gửi</h3>
-          {quotaContent}
-          <dl className="recovery-confirm-summary">
-            <div><dt>Nhóm bệnh</dt><dd>{diseaseGroup ? getDiseaseLabel(diseaseGroup) : "Chưa chọn"}</dd></div>
-            <div><dt>Tài liệu</dt><dd>{Number(Boolean(primaryLabTestSessionId)) + Number(Boolean(prescriptionFile))} đính kèm</dd></div>
-          </dl>
-          <p>Bác sĩ sẽ xem thông tin bạn cung cấp để chuẩn bị kế hoạch phục hồi.</p>
         <div className="recovery-submit-row">
           <p role="status" aria-atomic="true">{submitError?.message ?? ""}</p>
           <Button
@@ -709,51 +814,12 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
         {submitError?.action === "profile" && profileReadinessIssues.length === 0 && (
           <Button type="button" tone="secondary" onClick={() => navigate("/profile")}>Cập nhật hồ sơ y tế</Button>
         )}
-        </aside>
       </form>
-      {labPickerOpen && <Dialog className="recovery-picker-panel recovery-focused" backdropClassName="recovery-drawer-backdrop"
-        labelledBy="recovery-lab-picker-title" restoreFocusRef={labPickerTriggerRef} onClose={() => setLabPickerOpen(false)}>
-        <header className="recovery-history-header"><h2 id="recovery-lab-picker-title">Chọn kết quả xét nghiệm</h2>
-          <Button tone="secondary" onClick={() => setLabPickerOpen(false)}>Đóng</Button></header>
-        <p>Chọn một phiếu đã phân tích để gửi cho bác sĩ.</p>
-        {labSessionsLoading ? <LoadingState label="Đang tải xét nghiệm…" /> : labSessionsError ? <p role="alert">{labSessionsError}</p>
-          : !labSessions.length ? <EmptyState title="Chưa có kết quả đã phân tích" description="Bạn vẫn có thể gửi yêu cầu mà không đính kèm." />
-          : <div className="recovery-lab-options">
-            {labSessions.map((session) => {
-              const id = getLabSessionId(session);
-              return <div className="recovery-lab-option" key={id}>
-                <label><input type="radio" name="recovery-lab-selection" value={id} checked={pendingLabId === id} onChange={() => setPendingLabId(id)} />
-                  <span>{getLabSessionLabel(session)}</span></label>
-                <Button tone="ghost" onClick={() => {
-                  returnToLabPickerRef.current = true;
-                  setLabPickerOpen(false);
-                  setActiveLabResultSessionId(id);
-                }}>Xem kết quả</Button>
-              </div>;
-            })}
-          </div>}
-        <footer className="recovery-picker-footer">
-          <Button tone="secondary" onClick={() => setLabPickerOpen(false)}>Hủy chọn</Button>
-          <Button disabled={!pendingLabId || disabled || submitting} onClick={() => { setPrimaryLabTestSessionId(pendingLabId); setLabPickerOpen(false); }}>Đính kèm kết quả</Button>
-        </footer>
-      </Dialog>}
-      {imagePreviewOpen && prescriptionPreviewUrl && <Dialog className="recovery-picker-panel recovery-focused" backdropClassName="recovery-drawer-backdrop"
-        labelledBy="recovery-image-title" onClose={() => setImagePreviewOpen(false)}>
-        <header className="recovery-history-header"><h2 id="recovery-image-title">Ảnh đơn thuốc</h2>
-          <Button tone="secondary" onClick={() => setImagePreviewOpen(false)}>Đóng ảnh</Button></header>
-        <img className="recovery-image-full" src={prescriptionPreviewUrl} alt="Xem trước đơn thuốc" />
-      </Dialog>}
       <dialog
         ref={labResultDialogRef}
         className="recovery-lab-result-dialog"
         aria-label="Kết quả xét nghiệm"
-        onClose={() => {
-          setActiveLabResultSessionId("");
-          if (returnToLabPickerRef.current) {
-            returnToLabPickerRef.current = false;
-            setLabPickerOpen(true);
-          }
-        }}
+        onClose={() => setActiveLabResultSessionId("")}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeLabResultPreview();
         }}
@@ -886,107 +952,14 @@ function RecoveryPlanFeedbackSummary({ plan, onFeedback }) {
   );
 }
 
-function RecoveryPhaseContent({ phase, index }) {
-  return (
-                  <article className="recovery-phase-card" >
-                    <header>
-                      <span className="recovery-phase-step" aria-hidden="true">{index + 1}</span>
-                      <div className="recovery-phase-heading">
-                        <span>Ngày {phase.startDay}–{phase.endDay}</span>
-                        <h5>{phase.phaseName}</h5>
-                      </div>
-                    </header>
-                    {phase.instruction && <p>{phase.instruction}</p>}
-                    <dl className="recovery-phase-rest">
-                      {phase.sleepAndRestHoursPerDay != null && (
-                        <div><dt>Ngủ nghỉ</dt><dd>{phase.sleepAndRestHoursPerDay} giờ/ngày</dd></div>
-                      )}
-                    </dl>
-                    {(phase.nutrientTargets ?? []).length > 0 && (
-                      <div className="recovery-nutrients">
-                        <p className="recovery-subsection-label">Dinh dưỡng gợi ý</p>
-                        <div className="recovery-nutrient-list">
-                          {[...(phase.nutrientTargets ?? [])].sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((nutrient) => (
-                            <div className="recovery-nutrient" key={nutrient.id}>
-                              <div><span>{nutrient.nutrientName}</span><b>{nutrient.amountPerDay} {nutrient.unit}/ngày</b></div>
-                              {nutrient.instruction && <p>{nutrient.instruction}</p>}
-                              {(nutrient.foodSources ?? []).length > 0 && (
-                                <>
-                                  <p className="recovery-food-list-label">Bạn có thể lựa chọn một trong các thực phẩm sau:</p>
-                                  <ul className="recovery-food-list">
-                                    {[...(nutrient.foodSources ?? [])].sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
-                                      <li className="recovery-food-item" key={food.id}>
-                                        <strong>{food.foodName}</strong>
-                                        {(food.suggestedServing || food.note) && (
-                                          <span>{[food.suggestedServing, food.note].filter(Boolean).join(" — ")}</span>
-                                        )}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </article>
-  );
-}
-
-function RecoveryPhaseWorkspace({ plan, phases }) {
-  const [today, setToday] = useState(() => toDateKey(new Date()));
-  useEffect(() => {
-    const timer = window.setInterval(() => setToday(toDateKey(new Date())), 60000);
-    return () => window.clearInterval(timer);
-  }, []);
-  const currentIndex = plan.status === "active"
-    ? getPhaseTimeline(plan).findIndex((entry) => today >= toDateKey(entry.from) && today <= toDateKey(entry.to)) : -1;
-  const [chosen, setChosen] = useState(null);
-  const [showAll, setShowAll] = useState(false);
-  const selectedIndex = Math.min(chosen ?? Math.max(0, currentIndex), phases.length - 1);
-  return <section className="recovery-phase-workspace" aria-label="Hướng dẫn theo giai đoạn">
-    <div className="recovery-phase-toolbar">
-      <div><h4>Các giai đoạn thực hiện</h4><p>{currentIndex >= 0
-        ? `Giai đoạn ${currentIndex + 1} theo lịch hiện tại · Không phản ánh mức độ hoàn thành.`
-        : "Chọn giai đoạn để xem hướng dẫn của bác sĩ."}</p></div>
-      <Button tone="secondary" aria-pressed={showAll} onClick={() => setShowAll(!showAll)}>{showAll ? "Xem từng giai đoạn" : "Xem toàn bộ kế hoạch"}</Button>
-    </div>
-    <div className={showAll ? "recovery-all-phases" : "recovery-phase-columns"}>
-      {!showAll && <>
-        <nav className="recovery-phase-nav" aria-label="Giai đoạn phục hồi">
-          {phases.map((phase, index) => <button type="button" key={phase.id ?? index}
-            aria-pressed={index === selectedIndex} onClick={() => setChosen(index)}>
-            <small>Giai đoạn {index + 1} · Ngày {phase.startDay}–{phase.endDay}</small>
-            <strong>{phase.phaseName}</strong>{currentIndex === index && <span>Theo lịch hiện tại</span>}
-          </button>)}
-        </nav>
-        <label className="recovery-phase-mobile">Giai đoạn
-          <select value={selectedIndex} onChange={(event) => setChosen(Number(event.target.value))}>
-            {phases.map((phase, index) => <option key={phase.id ?? index} value={index}>{index + 1}. {phase.phaseName} · Ngày {phase.startDay}–{phase.endDay}</option>)}
-          </select>
-        </label>
-      </>}
-      <div className="recovery-selected-phase">
-        {phases.map((phase, index) => (showAll || index === selectedIndex) && <RecoveryPhaseContent key={phase.id ?? index} phase={phase} index={index} />)}
-        {!showAll && <div className="recovery-phase-pagination">
-          <Button tone="secondary" disabled={selectedIndex === 0} onClick={() => setChosen(selectedIndex - 1)}>Giai đoạn trước</Button>
-          <span>{selectedIndex + 1}/{phases.length}</span>
-          <Button tone="secondary" disabled={selectedIndex === phases.length - 1} onClick={() => setChosen(selectedIndex + 1)}>Giai đoạn tiếp</Button>
-        </div>}
-      </div>
-    </div>
-  </section>;
-}
-
-export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedback, busy, focused = false }) {
+export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedback, busy }) {
   const isHistorical = plan ? HISTORICAL_PLAN_STATUSES.has(plan.status) : false;
-  const shouldCollapseInitially = !focused && isHistorical && !recoveryPlanNeedsFeedback(plan);
+  const shouldCollapseInitially = isHistorical && !recoveryPlanNeedsFeedback(plan);
   const [collapsed, setCollapsed] = useState(shouldCollapseInitially);
 
   useEffect(() => {
     queueMicrotask(() => setCollapsed(
-      plan ? !focused && HISTORICAL_PLAN_STATUSES.has(plan.status) && !recoveryPlanNeedsFeedback(plan) : false,
+      plan ? HISTORICAL_PLAN_STATUSES.has(plan.status) && !recoveryPlanNeedsFeedback(plan) : false,
     ));
   }, [plan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1009,7 +982,7 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedb
           <h3>{plan.planName || "Kế hoạch phục hồi"}</h3>
         </div>
         <StatusBadge map={PLAN_STATUS} value={plan.status} />
-        {isHistorical && !focused && (
+        {isHistorical && (
           <button
             type="button"
             className="recovery-plan-collapse-toggle"
@@ -1022,7 +995,7 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedb
         )}
       </header>
 
-      {(focused || !isHistorical || !collapsed) && (
+      {(!isHistorical || !collapsed) && (
         <>
           <p className="recovery-plan-summary">{plan.summary || "Nội dung tổng quan sẽ được cập nhật trong kế hoạch."}</p>
           <dl className="recovery-detail-grid">
@@ -1063,7 +1036,7 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedb
             </div>
           )}
 
-          {phases.length > 0 && (focused ? <RecoveryPhaseWorkspace key={`${plan.id}-${plan.startDate || "not-started"}`} plan={plan} phases={phases} /> : (
+          {phases.length > 0 && (
             <section className="recovery-phases" aria-labelledby={`recovery-phases-title-${plan.id}`}>
               <div className="recovery-section-heading">
                 <div><p className="recovery-eyebrow">Lộ trình</p><h4 id={`recovery-phases-title-${plan.id}`}>Các giai đoạn thực hiện</h4></div>
@@ -1071,11 +1044,53 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedb
               </div>
               <div className="recovery-phase-list">
                 {phases.map((phase, index) => (
-                  <RecoveryPhaseContent key={phase.id ?? index} phase={phase} index={index} />
+                  <article className="recovery-phase-card" key={phase.id}>
+                    <header>
+                      <span className="recovery-phase-step" aria-hidden="true">{index + 1}</span>
+                      <div className="recovery-phase-heading">
+                        <span>Ngày {phase.startDay}–{phase.endDay}</span>
+                        <h5>{phase.phaseName}</h5>
+                      </div>
+                    </header>
+                    {phase.instruction && <p>{phase.instruction}</p>}
+                    <dl className="recovery-phase-rest">
+                      {phase.sleepAndRestHoursPerDay != null && (
+                        <div><dt>Ngủ nghỉ</dt><dd>{phase.sleepAndRestHoursPerDay} giờ/ngày</dd></div>
+                      )}
+                    </dl>
+                    {(phase.nutrientTargets ?? []).length > 0 && (
+                      <div className="recovery-nutrients">
+                        <p className="recovery-subsection-label">Dinh dưỡng gợi ý</p>
+                        <div className="recovery-nutrient-list">
+                          {(phase.nutrientTargets ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((nutrient) => (
+                            <div className="recovery-nutrient" key={nutrient.id}>
+                              <div><span>{nutrient.nutrientName}</span><b>{nutrient.amountPerDay} {nutrient.unit}/ngày</b></div>
+                              {nutrient.instruction && <p>{nutrient.instruction}</p>}
+                              {(nutrient.foodSources ?? []).length > 0 && (
+                                <>
+                                  <p className="recovery-food-list-label">Bạn có thể lựa chọn một trong các thực phẩm sau:</p>
+                                  <ul className="recovery-food-list">
+                                    {(nutrient.foodSources ?? []).sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder)).map((food) => (
+                                      <li className="recovery-food-item" key={food.id}>
+                                        <strong>{food.foodName}</strong>
+                                        {(food.suggestedServing || food.note) && (
+                                          <span>{[food.suggestedServing, food.note].filter(Boolean).join(" — ")}</span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </article>
                 ))}
               </div>
             </section>
-          ))}
+          )}
 
           {canCancel && (
             <footer className="recovery-detail-actions">
@@ -1365,32 +1380,12 @@ export default function RecoveryPlanPage() {
   const [plansError, setPlansError] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [planDetailLoading, setPlanDetailLoading] = useState(false);
-  const [planDetailError, setPlanDetailError] = useState("");
-  const planDetailSequenceRef = useRef(0);
   const [actionBusy, setActionBusy] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [statusMessage, setStatusMessage] = useState("");
   const [activeTab, setActiveTab] = useState("requests");
-  const location = useSyncExternalStore(subscribeToLocation, getLocationSnapshot);
-  const creating = new URLSearchParams(location.split("?")[1] || "").get("view") === "request";
-  const [composeVisited, setComposeVisited] = useState(creating);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyDetail, setHistoryDetail] = useState(null);
-  const [historySearch, setHistorySearch] = useState("");
-  const historyContentRef = useRef(null);
-  useEffect(() => {
-    if (historyOpen) historyContentRef.current?.focus();
-  }, [historyDetail]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const [planView, setPlanView] = useState("instructions");
-  const headingRef = useRef(null);
-  useEffect(() => {
-    headingRef.current?.focus();
-    if (creating) queueMicrotask(() => setComposeVisited(true));
-  }, [creating]);
   const [workflowBlocked, setWorkflowBlocked] = useState(false);
   const [workflowGuardLoading, setWorkflowGuardLoading] = useState(true);
-  const [workflowGuardError, setWorkflowGuardError] = useState(false);
   const [cancelPlan, setCancelPlan] = useState(null);
   const [feedbackPlan, setFeedbackPlan] = useState(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
@@ -1443,24 +1438,19 @@ export default function RecoveryPlanPage() {
   }, [requestPageNumber, requestSortDirection, selectedRequest?.id]);
 
   async function loadPlanDetail(planId, fallback) {
-    const sequence = ++planDetailSequenceRef.current;
     setSelectedPlan(fallback ?? selectedPlan);
     setPlanDetailLoading(true);
-    setPlanDetailError("");
     try {
       const response = await recoveryPlansApi.get(planId);
-      if (sequence !== planDetailSequenceRef.current) return;
       setSelectedPlan(response?.data ?? fallback);
     } catch (error) {
-      if (sequence !== planDetailSequenceRef.current) return;
-      setPlanDetailError("Chưa tải được đầy đủ hướng dẫn của bác sĩ. Vui lòng thử lại.");
       if (error?.status === 404 || getApiErrorCode(error) === "NOT_FOUND") {
         setSelectedPlan(null);
       } else {
         showToast({ type: "error", title: "Không tải được kế hoạch", message: "Vui lòng thử lại sau." });
       }
     } finally {
-      if (sequence === planDetailSequenceRef.current) setPlanDetailLoading(false);
+      setPlanDetailLoading(false);
     }
   }
 
@@ -1470,12 +1460,6 @@ export default function RecoveryPlanPage() {
     try {
       const response = await recoveryPlansApi.listMine({ pageNumber, pageSize: PAGE_SIZE });
       const nextPage = normalizePaged(response, pageNumber);
-      for (let page = 2; page <= nextPage.totalPages; page += 1) {
-        const extra = await recoveryPlansApi.listMine({ pageNumber: page, pageSize: PAGE_SIZE });
-        nextPage.items.push(...normalizePaged(extra, page).items);
-      }
-      nextPage.items.sort((a, b) => Number(BLOCKING_PLAN_STATUSES.includes(b.status)) - Number(BLOCKING_PLAN_STATUSES.includes(a.status))
-        || getTimeMs(b.publishedAt) - getTimeMs(a.publishedAt));
       setPlanPage(nextPage);
       const nextSelected = nextPage.items.find((item) => item.id === preferredId)
         ?? nextPage.items.find((item) => item.id === selectedPlan?.id)
@@ -1497,7 +1481,6 @@ export default function RecoveryPlanPage() {
 
   async function loadWorkflowGuard() {
     setWorkflowGuardLoading(true);
-    setWorkflowGuardError(false);
     try {
       const responses = await Promise.all([
         ...BLOCKING_REQUEST_STATUSES.map((status) => recoveryPlanRequestsApi.listMine({ pageNumber: 1, pageSize: 1, status })),
@@ -1509,9 +1492,6 @@ export default function RecoveryPlanPage() {
       });
       setWorkflowBlocked(blocked);
       return blocked;
-    } catch {
-      setWorkflowGuardError(true);
-      return true;
     } finally {
       setWorkflowGuardLoading(false);
     }
@@ -1678,7 +1658,6 @@ export default function RecoveryPlanPage() {
       loadWorkflowGuard(),
     ]);
     setRequestPageNumber(1);
-    navigate("/recovery-plan");
   }
 
   async function handleCancel(request) {
@@ -1754,18 +1733,13 @@ export default function RecoveryPlanPage() {
     }
   }
 
-  const noCredits = !quotaLoading && (
-    (!quotaError && quota && Number(quota.remainingCount) <= 0)
-    || quotaError?.action === "purchase"
-  );
-  const requestCreationDisabled = workflowGuardError || workflowGuardLoading
+  const requestCreationDisabled = workflowGuardLoading
     || workflowBlocked
     || quotaLoading
     || Boolean(quotaError)
     || !quota
     || Number(quota.remainingCount) <= 0;
-  const requestDisabledMessage = workflowGuardError
-    ? "Chưa thể kiểm tra trạng thái yêu cầu. Hãy tải lại trước khi gửi." : workflowBlocked
+  const requestDisabledMessage = workflowBlocked
     ? "Bạn đang có một yêu cầu hoặc kế hoạch phục hồi chưa kết thúc."
     : workflowGuardLoading
       ? "Đang kiểm tra trạng thái kế hoạch của bạn."
@@ -1780,10 +1754,7 @@ export default function RecoveryPlanPage() {
       : "Bạn có thể dùng nút tải lại để xem thay đổi mới";
 
   const requestPage = useMemo(() => {
-    const term = normalizeHistorySearch(historySearch);
-    const sorted = allRequests.filter((item) => normalizeHistorySearch(
-      `${getDiseaseLabel(item.diseaseGroup)} ${REQUEST_STATUS[item.status]?.label || ""}`
-    ).includes(term)).sort((a, b) => {
+    const sorted = [...allRequests].sort((a, b) => {
       const diff = getTimeMs(a.requestedAt) - getTimeMs(b.requestedAt);
       return requestSortDirection === "asc" ? diff : -diff;
     });
@@ -1797,154 +1768,211 @@ export default function RecoveryPlanPage() {
       totalCount,
       totalPages,
     };
-  }, [allRequests, requestSortDirection, requestPageNumber, historySearch]);
+  }, [allRequests, requestSortDirection, requestPageNumber]);
   const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
   const planItems = useMemo(() => planPage.items, [planPage.items]);
 
-  const historyPlans = [...planItems].filter((item) => normalizeHistorySearch(
-    `${item.planName || "Kế hoạch phục hồi"} ${PLAN_STATUS[item.status]?.label || ""}`
-  ).includes(normalizeHistorySearch(historySearch))).sort((a, b) => {
-    const diff = getTimeMs(a.publishedAt) - getTimeMs(b.publishedAt);
-    return requestSortDirection === "asc" ? diff : -diff;
-  });
-  const currentPlanItem = planItems.find((item) => BLOCKING_PLAN_STATUSES.includes(item.status)) ?? null;
-  const currentPlan = selectedPlan?.id === currentPlanItem?.id ? selectedPlan : currentPlanItem;
-  const currentRequestItem = [...allRequests].sort((a, b) =>
-    Number(BLOCKING_REQUEST_STATUSES.includes(b.status)) - Number(BLOCKING_REQUEST_STATUSES.includes(a.status))
-    || getTimeMs(b.requestedAt) - getTimeMs(a.requestedAt))[0] ?? null;
-  const currentRequest = selectedRequest?.id === currentRequestItem?.id ? selectedRequest : currentRequestItem;
-  const showCurrentRequest = currentRequest && BLOCKING_REQUEST_STATUSES.includes(currentRequest.status);
-  const initialLoading = (requestsLoading && !allRequests.length) || (plansLoading && !planItems.length) || workflowGuardLoading;
-  const openRequest = () => navigate("/recovery-plan?view=request");
-  function closeHistory() {
-    setHistoryOpen(false);
-    setHistoryDetail(null);
-    if (currentPlanItem && selectedPlan?.id !== currentPlanItem.id) void loadPlanDetail(currentPlanItem.id, currentPlanItem);
-  }
-
   return (
-    <div className="recovery-page recovery-focused">
-      <header className="recovery-page-header recovery-focused-header">
-        <div>
-          {creating && <Button tone="ghost" onClick={() => navigate("/recovery-plan")}><ChevronLeft size={18} /> Về theo dõi phục hồi</Button>}
-          <p className="recovery-eyebrow">{creating ? "Yêu cầu mới" : "Chăm sóc sau khám"}</p>
-          <h2 ref={headingRef} tabIndex={-1}>{creating ? "Gửi yêu cầu cho bác sĩ" : "Kế hoạch phục hồi"}</h2>
-          <p>{creating ? "Chia sẻ thông tin để bác sĩ chuẩn bị kế hoạch phù hợp." : "Theo dõi yêu cầu và hướng dẫn phục hồi của bạn."}</p>
+    <div className="recovery-page">
+      <div className="recovery-hero-shell">
+      <header className="recovery-page-header">
+        <div className="recovery-hero-main">
+          <span className="recovery-hero-icon" aria-hidden="true">
+            <HeartPulse size={24} />
+          </span>
+          <div>
+          <h2>Kế hoạch phục hồi</h2>
+          <p className="recovery-hero-copy">Theo dõi yêu cầu của bạn và xem kế hoạch sau khi bác sĩ hoàn tất.</p>
+          <ol className="recovery-process" aria-label="Quy trình nhận kế hoạch phục hồi">
+            <li><span>1</span><strong>Gửi yêu cầu</strong></li>
+            <li><span>2</span><strong>Bác sĩ xem xét</strong></li>
+            <li><span>3</span><strong>Nhận kế hoạch</strong></li>
+          </ol>
+          </div>
         </div>
-        {!creating && <div className="recovery-header-actions">
-          <Button tone="secondary" onClick={() => setHistoryOpen(true)}>Lịch sử</Button>
-          <Button tone="ghost" disabled={requestsLoading || plansLoading} onClick={refetchAll}><RefreshCw size={16} /> Tải lại</Button>
-          {!workflowBlocked && !initialLoading && !noCredits && (requestCreationDisabled
-            ? <Button tone="secondary" loading={quotaLoading} loadingLabel="Đang kiểm tra lượt…" onClick={refetchAll}>Kiểm tra lượt sử dụng</Button>
-            : <Button onClick={openRequest}>Gửi yêu cầu mới</Button>)}
-        </div>}
+        <div className="recovery-hero-actions">
+          <section className="recovery-medical-note recovery-hero-note">
+            <ShieldCheck size={21} aria-hidden="true" />
+            <div><strong>Thông tin hỗ trợ, không thay thế chăm sóc y tế</strong><p>Nếu có dấu hiệu nghiêm trọng hoặc diễn biến bất thường, hãy liên hệ cơ sở y tế hoặc dịch vụ cấp cứu phù hợp.</p></div>
+          </section>
+        </div>
       </header>
+      </div>
+
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
       <p className="sr-only" role="status" aria-atomic="true">{realtimeLabel}</p>
-      {/* Keep this page's draft mounted across its views; never persist health data in storage. */}
-      {(creating || composeVisited) && <div hidden={!creating} className="recovery-request-screen">
-        {noCredits && <RecoveryCreditNotice returnTo="/recovery-plan?view=request" />}
-        <div hidden={Boolean(noCredits)}>
-        <CreateRequestForm disabled={requestCreationDisabled} disabledMessage={requestDisabledMessage}
-          quotaContent={<QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />}
-          onCreated={handleCreated} onWorkflowConflict={async () => { setWorkflowBlocked(true); await refetchAll(); }} />
-        <p className="recovery-draft-note">Thông tin đang nhập được giữ khi chuyển giữa hai màn hình này, nhưng không được lưu khi tải lại hoặc rời trang.</p>
+
+      <div className="recovery-stats-row">
+        <QuotaCard quota={quota} error={quotaError} loading={quotaLoading} onRetry={loadQuota} />
+        <div className="recovery-overview-metrics" aria-label="Tổng quan kế hoạch phục hồi">
+          <StatTile icon={ListChecks} label="Yêu cầu đã gửi" value={requestPage.totalCount} tone="warning" />
+          <StatTile icon={FileText} label="Kế hoạch đã nhận" value={planPage.totalCount} tone="success" />
         </div>
-      </div>}
-      {!creating && <section className="recovery-tracking" aria-label="Theo dõi phục hồi" id="recovery-workspace" tabIndex={-1}>
-        {!initialLoading && noCredits && <RecoveryCreditNotice />}
-        {initialLoading ? <LoadingState label="Đang tải tình trạng phục hồi…" />
-          : requestsError || plansError || workflowGuardError ? <ErrorState title="Chưa tải được tình trạng phục hồi"
-            description={requestsError || plansError || requestDisabledMessage} action={<Button onClick={refetchAll}>Thử lại</Button>} />
-          : showCurrentRequest ? <RequestDetail request={currentRequest} loading={requestDetailLoading} busy={actionBusy} onCancel={handleCancel} />
-          : currentPlan ? <>
-            <div className="recovery-view-switch" role="group" aria-label="Cách xem kế hoạch">
-              <Button tone={planView === "instructions" ? "primary" : "secondary"} aria-pressed={planView === "instructions"} onClick={() => setPlanView("instructions")}>Hướng dẫn phục hồi</Button>
-              <Button tone={planView === "calendar" ? "primary" : "secondary"} aria-pressed={planView === "calendar"} onClick={() => setPlanView("calendar")}>Lịch thực hiện</Button>
+      </div>
+
+      <div className="recovery-workspace-layout">
+        {!workflowBlocked && (
+          <div className="recovery-request-sidebar">
+            <CreateRequestForm
+              disabled={requestCreationDisabled}
+              disabledMessage={requestDisabledMessage}
+              onCreated={handleCreated}
+              onWorkflowConflict={async () => {
+                setWorkflowBlocked(true);
+                await Promise.allSettled([loadRequests(1), loadPlans(1), loadWorkflowGuard()]);
+              }}
+            />
+          </div>
+        )}
+
+        <div className="recovery-workspace-main">
+          <div className="recovery-workspace-head">
+            <div className="recovery-workspace-tabs" role="tablist" aria-label="Khu vực làm việc">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "requests"}
+                className={activeTab === "requests" ? "is-active" : ""}
+                onClick={() => setActiveTab("requests")}
+              >
+                Yêu cầu của bạn
+                {requestPage.totalCount > 0 && <span className="recovery-tab-count">{requestPage.totalCount}</span>}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "plans"}
+                className={activeTab === "plans" ? "is-active" : ""}
+                onClick={() => setActiveTab("plans")}
+              >
+                Kế hoạch của bạn
+                {planPage.totalCount > 0 && <span className="recovery-tab-count">{planPage.totalCount}</span>}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "timeline"}
+                className={activeTab === "timeline" ? "is-active" : ""}
+                onClick={() => setActiveTab("timeline")}
+              >
+                Lộ trình của bạn
+              </button>
             </div>
-            {planDetailError ? <ErrorState title="Không thể tải hướng dẫn" description={planDetailError} action={<Button onClick={() => loadPlanDetail(currentPlan.id, currentPlan)}>Thử lại</Button>} /> : planView === "instructions" ? <PlanDetail focused key={currentPlan.id} plan={currentPlan} loading={planDetailLoading}
-              busy={actionBusy} onStart={handleStart} onCancel={setCancelPlan} onFeedback={openFeedbackDialog} />
-              : <RecoveryTimelineCalendar plan={currentPlan} loading={planDetailLoading} />}
-          </> : planItems.length > 0 ? <EmptyState icon={<FileText size={26} />}
-            title="Bạn chưa có kế hoạch phục hồi đang thực hiện"
-            description="Các kế hoạch đã hủy, hoàn thành hoặc được thay thế vẫn được lưu trong lịch sử. Bạn có thể xem lại nội dung và gửi yêu cầu mới khi cần."
-            action={<Button tone="secondary" onClick={() => { setActiveTab("plans"); setHistorySearch(""); setHistoryDetail(null); setHistoryOpen(true); }}>Xem lịch sử kế hoạch</Button>} />
-          : currentRequest ? <section className="recovery-recent-request" aria-label="Yêu cầu gần nhất">
-            <div><p className="recovery-eyebrow">Yêu cầu gần nhất</p><h3>{getDiseaseLabel(currentRequest.diseaseGroup)}</h3>
-              <p>{formatDate(currentRequest.requestedAt, true)}</p></div>
-            <StatusBadge map={REQUEST_STATUS} value={currentRequest.status} />
-            <Button tone="secondary" onClick={() => { setActiveTab("requests"); setHistoryDetail("requests"); void loadRequestDetail(currentRequest.id, currentRequest); setHistoryOpen(true); }}>Xem chi tiết</Button>
-          </section>
-          : <EmptyState icon={<FileText size={26} />} title="Bắt đầu kế hoạch phục hồi của bạn"
-            description="Gửi thông tin sau khám để bác sĩ xem xét và chuẩn bị kế hoạch."
-            action={!requestCreationDisabled ? <Button onClick={openRequest}>Tạo yêu cầu phục hồi</Button> : undefined} />}
-        {!initialLoading && requestCreationDisabled && !workflowBlocked && !noCredits && <div className="recovery-access-note">
-          <p>{requestDisabledMessage}</p>
-          <p>Bạn vẫn có thể xem các yêu cầu và kế hoạch đã có.</p>
-        </div>}
-      </section>}
-      {historyOpen && <Dialog className="recovery-history-panel recovery-focused" backdropClassName="recovery-drawer-backdrop"
-        labelledBy="recovery-history-title" onClose={closeHistory}>
-        <header className="recovery-history-header">
-          <div><p className="recovery-eyebrow">Hồ sơ phục hồi</p><h2 id="recovery-history-title">Lịch sử</h2></div>
-          <Button tone="secondary" onClick={closeHistory}><X size={18} aria-hidden="true" /> Đóng lịch sử</Button>
-        </header>
-        {historyDetail ? <div className="recovery-history-detail-view" ref={historyContentRef} tabIndex={-1}>
-          <Button className="recovery-history-back" tone="secondary" onClick={() => setHistoryDetail(null)}>
-            <ChevronLeft size={18} aria-hidden="true" /> Về danh sách {historyDetail === "requests" ? "yêu cầu" : "kế hoạch"}
-          </Button>
-          {historyDetail === "requests" ? <RequestDetail request={selectedRequest} loading={requestDetailLoading}
-            busy={actionBusy} onCancel={(request) => { closeHistory(); void handleCancel(request); }} />
-            : planDetailError ? <ErrorState title="Không thể tải hướng dẫn" description={planDetailError}
-              action={<Button onClick={() => loadPlans(1)}>Thử lại</Button>} />
-            : <PlanDetail focused key={selectedPlan?.id} plan={selectedPlan} loading={planDetailLoading} busy={actionBusy}
-              onStart={handleStart} onCancel={(plan) => { closeHistory(); setCancelPlan(plan); }}
-              onFeedback={(plan) => { closeHistory(); openFeedbackDialog(plan); }} />}
-        </div> : <div className="recovery-history-list-view" ref={historyContentRef} tabIndex={-1}>
-          <div className="recovery-history-tabs" role="group" aria-label="Loại lịch sử">
-            <Button tone={activeTab === "requests" ? "primary" : "secondary"} aria-pressed={activeTab === "requests"}
-              onClick={() => { setActiveTab("requests"); setHistorySearch(""); setRequestPageNumber(1); }}>Yêu cầu của bạn</Button>
-            <Button tone={activeTab === "plans" ? "primary" : "secondary"} aria-pressed={activeTab === "plans"}
-              onClick={() => { setActiveTab("plans"); setHistorySearch(""); setRequestPageNumber(1); }}>Kế hoạch của bạn</Button>
-          </div>
-          <div className="recovery-history-controls">
-            <Field label="Tìm trong lịch sử">
-              <input type="search" value={historySearch} placeholder={activeTab === "requests" ? "Nhóm bệnh hoặc trạng thái" : "Tên kế hoạch hoặc trạng thái"}
-                onChange={(event) => { setHistorySearch(event.target.value); setRequestPageNumber(1); }} />
-            </Field>
-            <Field label="Sắp xếp">
-              <Select value={requestSortDirection} onChange={(event) => { setRequestSortDirection(event.target.value); setRequestPageNumber(1); }}>
-                {REQUEST_SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </Select>
-            </Field>
-          </div>
-          <p className="recovery-history-count" role="status">{activeTab === "requests" ? requestPage.totalCount : historyPlans.length} {activeTab === "requests" ? "yêu cầu" : "kế hoạch"}{historySearch ? " phù hợp" : ""}</p>
-          {activeTab === "requests" ? <section aria-label="Lịch sử yêu cầu">
-            {requestsLoading ? <LoadingState label="Đang tải yêu cầu…" /> : requestsError ? <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(1)}>Thử lại</Button>} />
-              : !requestItems.length ? <EmptyState title={historySearch ? "Không tìm thấy yêu cầu phù hợp" : "Chưa có yêu cầu phục hồi"}
-                action={historySearch ? <Button tone="secondary" onClick={() => setHistorySearch("")}>Xóa tìm kiếm</Button> : undefined} /> : <>
-              <div className="recovery-history-rows">
-                {requestItems.map((item) => <button type="button" key={item.id} className="recovery-history-row"
-                  onClick={() => { setHistoryDetail("requests"); void loadRequestDetail(item.id, item); }}>
-                  <span className="recovery-history-row-main"><strong>{getDiseaseLabel(item.diseaseGroup)}</strong><small>{formatDate(item.requestedAt, true)}</small></span>
-                  <StatusBadge map={REQUEST_STATUS} value={item.status} />
-                  <ChevronRight size={20} aria-hidden="true" />
-                </button>)}
+            {activeTab === "requests" ? (
+              <div className="recovery-workspace-head-controls">
+                <CustomSelect
+                  label="Sắp xếp"
+                  hideLabel
+                  value={requestSortDirection}
+                  options={REQUEST_SORT_OPTIONS}
+                  onChange={(value) => { setRequestSortDirection(value); setRequestPageNumber(1); }}
+                  className="recovery-request-sort-select"
+                />
+                <Button tone="secondary" size="sm" onClick={() => loadRequests(requestPageNumber, selectedRequest?.id)} disabled={requestsLoading}>
+                  <RefreshCw size={16} aria-hidden="true" /> Tải lại
+                </Button>
               </div>
-              <Pagination label="Phân trang yêu cầu phục hồi" page={requestPage} loading={requestsLoading} onChange={setRequestPageNumber} />
-            </>}
-          </section> : <section aria-label="Lịch sử kế hoạch">
-            {plansLoading ? <LoadingState label="Đang tải kế hoạch…" /> : plansError ? <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(1)}>Thử lại</Button>} />
-              : !historyPlans.length ? <EmptyState title={historySearch ? "Không tìm thấy kế hoạch phù hợp" : "Chưa có kế hoạch được xuất bản"}
-                action={historySearch ? <Button tone="secondary" onClick={() => setHistorySearch("")}>Xóa tìm kiếm</Button> : undefined} />
-              : <div className="recovery-history-rows">{historyPlans.map((item) => <button type="button" key={item.id} className="recovery-history-row"
-                onClick={() => { setHistoryDetail("plans"); void loadPlanDetail(item.id, item); }}>
-                <span className="recovery-history-row-main"><strong>{item.planName || "Kế hoạch phục hồi"}</strong><small>{formatDate(item.publishedAt)}</small></span>
-                <StatusBadge map={PLAN_STATUS} value={item.status} /><ChevronRight size={20} aria-hidden="true" />
-              </button>)}</div>}
-          </section>}
-        </div>}
-      </Dialog>}
+            ) : activeTab === "plans" ? (
+              <Button tone="secondary" size="sm" onClick={() => loadPlans(planPageNumber, selectedPlan?.id)} disabled={plansLoading}>
+                <RefreshCw size={16} aria-hidden="true" /> Tải lại
+              </Button>
+            ) : null}
+          </div>
+
+          {activeTab === "requests" ? (
+            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Yêu cầu của bạn">
+              {requestsLoading && requestItems.length === 0 ? (
+                <LoadingState label="Đang tải yêu cầu…" />
+              ) : requestsError ? (
+                <ErrorState title="Không thể tải yêu cầu" description={requestsError} action={<Button onClick={() => loadRequests(requestPageNumber)}>Thử lại</Button>} />
+              ) : requestItems.length === 0 ? (
+                <EmptyState icon={<ListChecks size={26} aria-hidden="true" />} title="Chưa có yêu cầu phục hồi" description="Yêu cầu mới của bạn sẽ xuất hiện tại đây." />
+              ) : (
+                <div className="recovery-split-view">
+                  <div className="recovery-item-list" role="group" aria-label="Danh sách yêu cầu phục hồi">
+                    {requestItems.map((request) => (
+                      <button
+                        type="button"
+                        key={request.id}
+                        className={`recovery-item-button ${selectedRequest?.id === request.id ? "is-selected" : ""}`}
+                        aria-pressed={selectedRequest?.id === request.id}
+                        onClick={() => loadRequestDetail(request.id, request)}
+                      >
+                        <span><strong>{getDiseaseLabel(request.diseaseGroup)}</strong><small>{formatDate(request.requestedAt, true)}</small></span>
+                        <StatusBadge map={REQUEST_STATUS} value={request.status} />
+                      </button>
+                    ))}
+                    <Pagination
+                      label="Phân trang yêu cầu phục hồi"
+                      page={requestPage}
+                      loading={requestsLoading}
+                      onChange={(nextPage) => {
+                        setRequestPageNumber(nextPage);
+                        void loadRequests(nextPage);
+                      }}
+                    />
+                  </div>
+                  <RequestDetail
+                    key={selectedRequest?.id || "empty-request"}
+                    request={selectedRequest}
+                    loading={requestDetailLoading}
+                    busy={actionBusy}
+                    onCancel={handleCancel}
+                  />
+                </div>
+              )}
+            </section>
+          ) : activeTab === "plans" ? (
+            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Kế hoạch của bạn">
+              {plansLoading && planItems.length === 0 ? (
+                <LoadingState label="Đang tải kế hoạch…" />
+              ) : plansError ? (
+                <ErrorState title="Không thể tải kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
+              ) : planItems.length === 0 ? (
+                <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
+              ) : (
+                <div className="recovery-plan-list">
+                  {planItems.map((item) => {
+                    const isSelected = item.id === selectedPlan?.id;
+                    return (
+                      <PlanDetail
+                        key={item.id}
+                        plan={isSelected ? selectedPlan : item}
+                        loading={isSelected && planDetailLoading}
+                        busy={actionBusy}
+                        onStart={handleStart}
+                        onCancel={setCancelPlan}
+                        onFeedback={openFeedbackDialog}
+                        onExpand={isSelected ? undefined : () => loadPlanDetail(item.id, item)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ) : (
+            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Lộ trình của bạn">
+              {planItems.length === 0 ? (
+                <EmptyState icon={<CalendarCheck size={26} aria-hidden="true" />} title="Chưa có lộ trình để hiển thị" description="Lộ trình sẽ hiện ra dưới dạng lịch khi bạn có kế hoạch phục hồi." />
+              ) : (
+                <RecoveryTimelineCalendar plan={selectedPlan} loading={planDetailLoading} />
+              )}
+            </section>
+          )}
+        </div>
+
+        <div className="recovery-support-sidebar">
+          <section className="recovery-guidance-card" aria-labelledby="recovery-guidance-title">
+            <p className="recovery-eyebrow">Trong thời gian chờ</p>
+            <h2 id="recovery-guidance-title">Chuẩn bị thông tin để kế hoạch sát với bạn hơn</h2>
+            <ul>
+              <li><ClipboardCheck size={19} aria-hidden="true" /><span><strong>Giữ lại hướng dẫn sau khám</strong><small>Đơn thuốc, lịch hẹn và các chỉ dẫn đã nhận.</small></span></li>
+              <li><Activity size={19} aria-hidden="true" /><span><strong>Ghi nhận thay đổi đáng chú ý</strong><small>Thời điểm, mức độ và diễn biến gần đây.</small></span></li>
+              <li><CalendarCheck size={19} aria-hidden="true" /><span><strong>Theo dõi mốc tái khám</strong><small>Chuẩn bị câu hỏi cho lần trao đổi tiếp theo.</small></span></li>
+            </ul>
+          </section>
+        </div>
+      </div>
 
       {cancelPlan && (
         <CancelPlanDialog
