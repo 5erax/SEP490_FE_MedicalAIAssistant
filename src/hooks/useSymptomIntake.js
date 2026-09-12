@@ -188,10 +188,17 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
         recommendation.diagnosis,
         recommendation.Diagnosis,
       ].find((item) => item && typeof item === "object");
+      const symptomItems = [
+        recommendation.symptoms,
+        recommendation.Symptoms,
+        recommendation.extractedSymptoms,
+        recommendation.ExtractedSymptoms,
+      ].find((items) => Array.isArray(items) && items.length > 0);
       const completedResult = {
         inputText: input,
         sessionId,
         diagnoses: diagnosisItems ?? (primaryDiagnosis ? [primaryDiagnosis] : []),
+        symptoms: symptomItems ?? [],
         recommendedDepartment: recommendation.recommendedDepartment
           ?? recommendation.RecommendedDepartment
           ?? null,

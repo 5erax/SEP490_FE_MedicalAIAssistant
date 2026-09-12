@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ClipboardPlus,
   Gauge,
   History,
   LoaderCircle,
-  MapPinned,
+  LocateFixed,
   RefreshCw,
   Send,
 } from "lucide-react";
 import { Alert, Button, Field, Textarea } from "../components/ui";
-import { navigate } from "../router/navigation";
+import { navigate, replaceRoute } from "../router/navigation";
 import {
   getClinicalQuestionAnswerMode,
   getClinicalQuestionAnswerOptions,
@@ -167,7 +167,9 @@ function normalizeDiagnosis(diagnosis, index) {
   if (!diseaseName && !icd10Code && !clinicalReasoning) return null;
 
   return {
-    confidenceScore: diagnosis.confidenceScore
+    confidenceScore: diagnosis.paGivenB
+      ?? diagnosis.PAGivenB
+      ?? diagnosis.confidenceScore
       ?? diagnosis.ConfidenceScore
       ?? diagnosis.matchScore
       ?? diagnosis.MatchScore
@@ -185,6 +187,27 @@ function normalizeDiagnosis(diagnosis, index) {
   };
 }
 
+function normalizeSymptomAsDiagnosis(symptom, index) {
+  if (!symptom || typeof symptom !== "object") return null;
+  return normalizeDiagnosis({
+    clinicalReasoning: symptom.extractedText
+      ?? symptom.ExtractedText
+      ?? symptom.clinicalReasoning
+      ?? symptom.ClinicalReasoning,
+    confidenceScore: symptom.paGivenB
+      ?? symptom.PAGivenB
+      ?? symptom.confidenceScore
+      ?? symptom.ConfidenceScore,
+    diseaseName: symptom.symptomName
+      ?? symptom.SymptomName
+      ?? symptom.diseaseName
+      ?? symptom.DiseaseName
+      ?? symptom.name,
+    icd10Code: symptom.icd10Code ?? symptom.Icd10Code ?? symptom.ICD10Code,
+    rank: index + 1,
+  }, index);
+}
+
 function getDiagnosisKey(diagnosis, index) {
   return [
     diagnosis?.rank ?? index + 1,
@@ -194,8 +217,19 @@ function getDiagnosisKey(diagnosis, index) {
 }
 
 function getResultDiagnoses(result) {
+  const root = result && typeof result === "object" ? result : {};
   const analysis = readAnalysisSource(result);
   const diagnosisItems = [
+    root.diagnoses,
+    root.Diagnoses,
+    root.differentialDiagnoses,
+    root.DifferentialDiagnoses,
+    root.possibleDiagnoses,
+    root.PossibleDiagnoses,
+    root.suggestedDiagnoses,
+    root.SuggestedDiagnoses,
+    root.diagnosisSuggestions,
+    root.DiagnosisSuggestions,
     analysis.diagnoses,
     analysis.Diagnoses,
     analysis.differentialDiagnoses,
@@ -208,17 +242,42 @@ function getResultDiagnoses(result) {
     analysis.DiagnosisSuggestions,
   ].find((items) => Array.isArray(items) && items.length > 0);
   const primaryDiagnosis = [
+    root.primaryDiagnosis,
+    root.PrimaryDiagnosis,
+    root.diagnosis,
+    root.Diagnosis,
     analysis.primaryDiagnosis,
     analysis.PrimaryDiagnosis,
     analysis.diagnosis,
     analysis.Diagnosis,
   ].find((item) => item && typeof item === "object");
   const source = diagnosisItems ?? (primaryDiagnosis ? [primaryDiagnosis] : []);
-
-  return source
+  const diagnoses = source
     .map(normalizeDiagnosis)
     .filter(Boolean)
     .sort((left, right) => left.rank - right.rank);
+  if (diagnoses.length > 0) return diagnoses;
+
+  const symptomItems = [
+    root.symptoms,
+    root.Symptoms,
+    root.extractedSymptoms,
+    root.ExtractedSymptoms,
+    analysis.symptoms,
+    analysis.Symptoms,
+    analysis.extractedSymptoms,
+    analysis.ExtractedSymptoms,
+  ].find((items) => Array.isArray(items) && items.length > 0);
+
+  return (symptomItems ?? [])
+    .map(normalizeSymptomAsDiagnosis)
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftConfidence = clinicalConfidencePercent(left.confidenceScore) ?? 0;
+      const rightConfidence = clinicalConfidencePercent(right.confidenceScore) ?? 0;
+      return rightConfidence - leftConfidence;
+    })
+    .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
 }
 
 function firstNonEmptyText(...values) {
@@ -268,7 +327,7 @@ function normalizeSpecialtyResult(result, fallbackSessionId = "", fallbackSessio
     ...analysis,
     recommendedDepartment: analysis.recommendedDepartment ?? analysis.RecommendedDepartment ?? null,
     recommendedFacilities: getRecommendedFacilities(analysis),
-    diagnoses: getResultDiagnoses(analysis),
+    diagnoses: getResultDiagnoses(result),
     inputText: getResultSymptomText(result, getHistoricalSessionTitle(fallbackSession, "")),
     sessionId: String(
       analysis.sessionId
@@ -347,6 +406,58 @@ const EMPTY_HISTORICAL_RESULT = {
   sessionId: "",
   status: "idle",
 };
+
+const DASHBOARD_RETURN_RESULT_KEY = "medimate.dashboard.returnResult";
+
+function consumeDashboardReturnResult() {
+  if (typeof sessionStorage === "undefined") return EMPTY_HISTORICAL_RESULT;
+
+  try {
+    const rawSnapshot = sessionStorage.getItem(DASHBOARD_RETURN_RESULT_KEY);
+    if (!rawSnapshot) return EMPTY_HISTORICAL_RESULT;
+    sessionStorage.removeItem(DASHBOARD_RETURN_RESULT_KEY);
+    const snapshot = JSON.parse(rawSnapshot);
+    const nextResult = normalizeSpecialtyResult(snapshot?.result, snapshot?.sessionId, snapshot?.session);
+    if (!nextResult) return EMPTY_HISTORICAL_RESULT;
+
+    return {
+      error: "",
+      result: nextResult,
+      session: snapshot?.session ?? null,
+      sessionId: snapshot?.sessionId || nextResult.sessionId || "",
+      status: "ready",
+    };
+  } catch {
+    sessionStorage.removeItem(DASHBOARD_RETURN_RESULT_KEY);
+    return EMPTY_HISTORICAL_RESULT;
+  }
+}
+
+function rememberDashboardReturnResult({ result, session = null, sessionId = "" }) {
+  if (typeof sessionStorage === "undefined" || !result) return;
+
+  try {
+    sessionStorage.setItem(DASHBOARD_RETURN_RESULT_KEY, JSON.stringify({
+      result,
+      session,
+      sessionId,
+    }));
+  } catch {
+    // Ignore storage failures; browser history fallback still applies.
+  }
+}
+
+function rememberResultHistoryEntry(sessionId) {
+  if (!sessionId) return;
+  const params = new URLSearchParams(window.location.search);
+  params.set("resultSessionId", sessionId);
+  const search = params.toString();
+  const nextLocation = `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`;
+  const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (nextLocation !== currentLocation) {
+    window.history.pushState(null, "", nextLocation);
+  }
+}
 
 function SpecialtyQuotaBadge({ quota, status, error, onRetry }) {
   if (status === "loading") {
@@ -434,140 +545,150 @@ function SpecialtyResultView({
   const recommendedDepartment = getRecommendedDepartment(result);
   const diagnoses = getResultDiagnoses(result);
   const facilities = getRecommendedFacilities(result);
-  const fallbackConfidenceScore = diagnoses.find((diagnosis) => (
-    clinicalConfidencePercent(diagnosis.confidenceScore) !== null
-  ))?.confidenceScore;
-  const percent = clinicalConfidencePercent(
-    recommendedDepartment?.confidenceScore ?? fallbackConfidenceScore,
-  );
+  const departmentPercent = clinicalConfidencePercent(recommendedDepartment?.confidenceScore);
+  const fallbackPercent = diagnoses
+    .map((diagnosis) => clinicalConfidencePercent(diagnosis.confidenceScore))
+    .find((confidence) => confidence !== null && confidence > 0);
+  const percent = departmentPercent !== null && departmentPercent > 0
+    ? departmentPercent
+    : fallbackPercent ?? departmentPercent;
   const departmentName = recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa";
   const reason = recommendedDepartment?.reason || "";
+  const departmentDescription = recommendedDepartment?.description || reason;
   const displayedSymptom = getResultSymptomText(result, symptomText);
   const hasFacilities = facilities.length > 0;
   const hasPriority = hasClinicalPriority(recommendedDepartment);
-  const diagnosisReasonItems = diagnoses.filter((diagnosis) => diagnosis.clinicalReasoning);
 
   return (
     <section className="studio-result-panel specialty-result-page" aria-label="Kết quả định hướng chuyên khoa">
       <section className="specialty-result-hero" aria-labelledby="specialty-result-title">
-        <div className="specialty-result-hero-copy">
-          <p className="specialty-result-kicker">{sourceLabel}</p>
-          <h2 id="specialty-result-title">
-            <span className="specialty-result-complete-mark" aria-hidden="true">✓</span>
-            Phân tích hoàn tất
-          </h2>
-          <div>
-            <strong>{departmentName}</strong>
-          </div>
-          <p className="specialty-result-hero-note">
-            Đây là chuyên khoa phù hợp nhất dựa trên thông tin bạn đã cung cấp.
-          </p>
-          {hasPriority && (
-            <p className="specialty-result-priority-note">{CLINICAL_NOTES.priority}</p>
-          )}
-          <div className="specialty-result-hero-action">
-            <Button type="button" onClick={() => onOpenFacilities?.(result, sessionId)}>
-              <MapPinned size={18} aria-hidden="true" />
-              Tìm cơ sở y tế
-            </Button>
-          </div>
-        </div>
+        <p className="specialty-result-kicker">{sourceLabel}</p>
+        <p className="specialty-result-complete">
+          <span className="specialty-result-complete-mark" aria-hidden="true">✓</span>
+          Đã hoàn thành phân tích
+        </p>
+        <p className="specialty-result-label">Khoa được đề xuất</p>
+        <h2 id="specialty-result-title" className="specialty-result-department">{departmentName}</h2>
 
-        <aside className="specialty-result-score" aria-label="Độ phù hợp">
-          <strong>{percent === null ? "Chưa có điểm" : `${percent}%`}</strong>
-          <small>
-            {percent === null
-              ? "Phiên này chưa có điểm phù hợp từ hệ thống."
-              : "Mức phù hợp cao nhất trong các chuyên khoa được hệ thống cân nhắc."}
-          </small>
-          <details className="specialty-result-inline-help">
-            <summary>Độ phù hợp là gì?</summary>
-            <p>
-              Độ phù hợp phản ánh mức độ trùng khớp giữa triệu chứng bạn mô tả, các câu trả lời khảo sát và phạm vi tiếp nhận của từng chuyên khoa. Đây là kết quả tham khảo nhằm hỗ trợ định hướng trước khi đến cơ sở y tế.
-            </p>
-          </details>
-        </aside>
+        {departmentDescription && (
+          <div className="specialty-result-department-info">
+            <h3>Chuyên khoa này điều trị những gì?</h3>
+            <p>{departmentDescription}</p>
+          </div>
+        )}
+
+        <p className="specialty-result-hero-note">
+          MediMate nhận thấy chuyên khoa này phù hợp nhất với các thông tin bạn đã cung cấp.
+        </p>
+        {hasPriority && (
+          <p className="specialty-result-priority-note">{CLINICAL_NOTES.priority}</p>
+        )}
       </section>
 
       <section className="specialty-result-block specialty-result-why" aria-labelledby="specialty-result-why-title">
-        <header>
-          <div>
-            <p className="specialty-result-kicker">Giải thích</p>
-            <h3 id="specialty-result-why-title">Tại sao lại có kết quả này?</h3>
-          </div>
-        </header>
+        <h3 id="specialty-result-why-title">MediMate đề xuất chuyên khoa này vì:</h3>
 
         <ul className="specialty-result-check-list">
-          <li>Triệu chứng</li>
-          <li>Khảo sát</li>
-          <li>Kiến thức chuyên khoa</li>
+          <li>Triệu chứng bạn mô tả</li>
+          <li>Các câu trả lời khảo sát</li>
+          <li>Phạm vi tiếp nhận của chuyên khoa</li>
         </ul>
 
         <details className="specialty-result-inline-help specialty-result-explanation-detail">
-          <summary>Vì sao?</summary>
+          <summary>Vì sao lại có kết quả này?</summary>
           <p>
             {reason || "MediMate đối chiếu mô tả triệu chứng và câu trả lời làm rõ với nhóm vấn đề thường được chuyên khoa này tiếp nhận."}
           </p>
-          <p>
-            Các chẩn đoán dưới đây chỉ là những khả năng được hệ thống cân nhắc dựa trên thông tin hiện có và không thay thế kết luận của bác sĩ.
-          </p>
-          {diagnosisReasonItems.length > 0 && (
-            <ul className="specialty-result-reason-list">
-              {diagnosisReasonItems.map((diagnosis, index) => (
-                <li key={getDiagnosisKey(diagnosis, index)}>
-                  <strong>{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}:</strong>
-                  <span>{diagnosis.clinicalReasoning}</span>
-                  {diagnosis.icd10Code && <em>ICD-10: {diagnosis.icd10Code}</em>}
-                </li>
-              ))}
-            </ul>
-          )}
-          <p>{displayedSymptom || "Phiên này chưa lưu lại mô tả triệu chứng ban đầu."}</p>
+          {displayedSymptom && <p>Triệu chứng đã ghi nhận: {displayedSymptom}</p>}
         </details>
       </section>
 
       <section className="specialty-result-block specialty-result-possibilities" aria-labelledby="specialty-result-possibilities-title">
-        <header>
-          <div>
-            <p className="specialty-result-kicker">Kết quả tham khảo</p>
-            <h3 id="specialty-result-possibilities-title">Các khả năng được cân nhắc</h3>
-          </div>
-        </header>
+        <h3 id="specialty-result-possibilities-title">Các khả năng được cân nhắc</h3>
 
         {diagnoses.length > 0 ? (
-          <ol className="specialty-result-diagnosis-list">
-            {diagnoses.map((diagnosis, index) => {
-              const key = getDiagnosisKey(diagnosis, index);
-              const confidence = clinicalConfidencePercent(diagnosis.confidenceScore);
+          <>
+            <p className="specialty-result-best-label">Phù hợp nhất</p>
+            <ol className="specialty-result-diagnosis-list">
+              {diagnoses.map((diagnosis, index) => {
+                const key = getDiagnosisKey(diagnosis, index);
+                const confidence = clinicalConfidencePercent(diagnosis.confidenceScore);
 
-              return (
-                <li key={key}>
-                  <div className="specialty-result-diagnosis-row">
-                    <span>{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}</span>
-                    <strong>{confidence !== null ? `${confidence}%` : "Đang cân nhắc"}</strong>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+                return (
+                  <li className={index === 0 ? "is-primary" : undefined} key={key}>
+                    <div className="specialty-result-diagnosis-row">
+                      <div className="specialty-result-diagnosis-main">
+                        <div className="specialty-result-diagnosis-title">
+                          <span className="specialty-result-diagnosis-rank">{String(index + 1).padStart(2, "0")}</span>
+                          <span className="specialty-result-diagnosis-name">{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}</span>
+                        </div>
+                        <details className="specialty-result-inline-help specialty-result-diagnosis-detail" open={index === 0}>
+                          <summary>Vì sao AI đề xuất kết quả này?</summary>
+                          <p>
+                            {diagnosis.clinicalReasoning || "Kết quả này được cân nhắc vì có điểm trùng khớp với triệu chứng đã mô tả, câu trả lời khảo sát và phạm vi thường được chuyên khoa tiếp nhận."}
+                          </p>
+                          {diagnosis.icd10Code && <p>ICD-10 tham khảo: {diagnosis.icd10Code}</p>}
+                        </details>
+                      </div>
+                      {confidence !== null && (
+                        <p
+                          className="specialty-result-diagnosis-score"
+                          style={{ "--match-score": `${confidence}%` }}
+                        >
+                          <span>Độ phù hợp</span>
+                          <strong>{confidence}%</strong>
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+            {percent !== null && (
+              <details className="specialty-result-inline-help specialty-result-confidence-help">
+                <summary>Độ phù hợp được tính như thế nào?</summary>
+                <p>
+                  Độ phù hợp phản ánh mức độ trùng khớp giữa triệu chứng bạn mô tả, câu trả lời khảo sát và phạm vi tiếp nhận của từng chuyên khoa. Đây chỉ là giá trị tham khảo, không phải kết luận bệnh.
+                </p>
+              </details>
+            )}
+          </>
         ) : (
           <p className="specialty-result-empty">Phiên này chưa có danh sách chẩn đoán tham khảo từ hệ thống.</p>
         )}
       </section>
 
       <section className="specialty-result-next-step" aria-labelledby="specialty-result-next-title">
-        <p className="specialty-result-kicker">Bước tiếp theo</p>
-        <h3 id="specialty-result-next-title">Bạn đã sẵn sàng đi khám?</h3>
+        <h3 id="specialty-result-next-title">Tiếp theo bạn nên làm gì?</h3>
         <p>
-          Chọn cơ sở y tế phù hợp để tiếp tục tư vấn trước khám.
+          Bạn đã có định hướng chuyên khoa. Bước tiếp theo không phải là đặt lịch ngay, mà là chọn một cơ sở y tế phù hợp để MediMate chuyển bạn sang luồng tư vấn trước khám.
         </p>
+        <ol className="specialty-result-next-flow" aria-label="Quy trình tiếp theo">
+          <li>
+            <strong>Chọn cơ sở y tế</strong>
+            <span>Tìm bệnh viện hoặc phòng khám có tiếp nhận chuyên khoa được đề xuất.</span>
+          </li>
+          <li>
+            <strong>Mở tư vấn trước khám</strong>
+            <span>Sau khi chọn cơ sở, MediMate sẽ tạo phiên chuẩn bị riêng cho buổi khám đó.</span>
+          </li>
+          <li>
+            <strong>Chuẩn bị trước khi đi khám</strong>
+            <span>Bạn sẽ nhận danh sách cần mang theo, lưu ý trước khám và câu hỏi nên trao đổi với bác sĩ.</span>
+          </li>
+        </ol>
         {!hasFacilities && (
           <small>Bạn vẫn có thể tìm theo chuyên khoa được đề xuất dù phiên này chưa có cơ sở gợi ý trực tiếp.</small>
         )}
-        <Button type="button" onClick={() => onOpenFacilities?.(result, sessionId)}>
-          <MapPinned size={18} aria-hidden="true" />
-          Tìm cơ sở y tế
-        </Button>
+        <div className="specialty-result-primary-action">
+          <Button
+            type="button"
+            onClick={() => onOpenFacilities?.(result, sessionId, { useCurrentLocation: true })}
+          >
+            <LocateFixed size={18} aria-hidden="true" />
+            Tìm bệnh viện gần bạn
+          </Button>
+        </div>
       </section>
 
     </section>
@@ -577,6 +698,7 @@ function SpecialtyResultView({
 export default function DashboardPage() {
   const { auth } = useAuthSession();
   const isAdminSession = hasAuthRole(auth, "admin");
+  const resultSessionIdFromUrl = new URLSearchParams(window.location.search).get("resultSessionId") || "";
   const {
     answeredCount,
     answers,
@@ -603,10 +725,11 @@ export default function DashboardPage() {
   });
 
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
-  const [historicalResult, setHistoricalResult] = useState(EMPTY_HISTORICAL_RESULT);
+  const [historicalResult, setHistoricalResult] = useState(consumeDashboardReturnResult);
   const [symptomQuota, setSymptomQuota] = useState(null);
   const [quotaStatus, setQuotaStatus] = useState("loading");
   const [quotaError, setQuotaError] = useState("");
+  const restoringResultSessionRef = useRef("");
 
   const hasHistoricalResultView = historicalResult.status === "loading"
     || historicalResult.status === "error"
@@ -642,6 +765,21 @@ export default function DashboardPage() {
   ].includes(error) ? error : "";
   const quotaExhausted = quotaStatus === "ready" && symptomQuota?.remainingToday <= 0;
 
+  useEffect(() => {
+    if (showResultView || resultSessionIdFromUrl) return undefined;
+
+    let active = true;
+    Promise.resolve().then(() => {
+      if (!active) return;
+      const restoredResult = consumeDashboardReturnResult();
+      if (restoredResult.result) setHistoricalResult(restoredResult);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [resultSessionIdFromUrl, showResultView]);
+
   async function refreshSymptomQuota() {
     setQuotaStatus("loading");
     setQuotaError("");
@@ -658,6 +796,7 @@ export default function DashboardPage() {
 
   async function startSpecialtyAnalysis() {
     if (quotaExhausted) return;
+    if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(DASHBOARD_RETURN_RESULT_KEY);
     setHistoricalResult(EMPTY_HISTORICAL_RESULT);
     await startDiagnosis();
     void refreshSymptomQuota();
@@ -687,21 +826,106 @@ export default function DashboardPage() {
     }
   }, [isAdminSession]);
 
+  useEffect(() => {
+    if (!resultSessionIdFromUrl) {
+      restoringResultSessionRef.current = "";
+      return undefined;
+    }
+    if (status === "result" && sessionId === resultSessionIdFromUrl && result) return undefined;
+    if (restoringResultSessionRef.current === resultSessionIdFromUrl) return undefined;
+
+    let active = true;
+    restoringResultSessionRef.current = resultSessionIdFromUrl;
+
+    Promise.resolve()
+      .then(() => {
+        if (!active) return null;
+        setHistoricalResult({
+          error: "",
+          result: null,
+          session: null,
+          sessionId: resultSessionIdFromUrl,
+          status: "loading",
+        });
+
+        const cachedResult = symptomAnalysisApi.getCachedClinicalAnalysis(resultSessionIdFromUrl);
+        if (cachedResult) {
+          const normalizedCachedResult = normalizeSpecialtyResult(cachedResult, resultSessionIdFromUrl);
+          if (normalizedCachedResult) {
+            setHistoricalResult({
+              error: "",
+              result: normalizedCachedResult,
+              session: null,
+              sessionId: resultSessionIdFromUrl,
+              status: "ready",
+            });
+            return null;
+          }
+        }
+
+        return symptomAnalysisApi.get(resultSessionIdFromUrl);
+      })
+      .then((response) => {
+        if (!active || !response) return;
+        const detail = unwrapPayload(response) ?? response;
+        const nextResult = normalizeSpecialtyResult(detail, resultSessionIdFromUrl);
+        if (!nextResult) throw new Error("Phiên này chưa có kết quả chuyên khoa để hiển thị.");
+        setHistoricalResult({
+          error: "",
+          result: nextResult,
+          session: null,
+          sessionId: resultSessionIdFromUrl,
+          status: "ready",
+        });
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        restoringResultSessionRef.current = "";
+        setHistoricalResult({
+          error: requestError?.message || "Chưa thể mở lại kết quả chuyên khoa. Vui lòng thử lại.",
+          result: null,
+          session: null,
+          sessionId: resultSessionIdFromUrl,
+          status: "error",
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    result,
+    resultSessionIdFromUrl,
+    sessionId,
+    status,
+  ]);
+
   function openFacilities(
     completedResult = result,
     completedSessionId = sessionId,
+    options = {},
   ) {
     const normalizedResult = normalizeSpecialtyResult(completedResult, completedSessionId);
+    const stableSessionId = completedSessionId || normalizedResult?.sessionId || "";
     const completedDepartment = getRecommendedDepartment(normalizedResult);
     const completedFacilities = getRecommendedFacilities(normalizedResult);
     const topFacility = completedFacilities[0] ?? null;
     const params = new URLSearchParams();
     const facilityId = getFacilityId(topFacility);
+    const shouldUseCurrentLocation = Boolean(options.useCurrentLocation);
 
     params.set("source", "clinical");
-    if (facilityId) params.set("facilityId", facilityId);
+    if (facilityId && !shouldUseCurrentLocation) params.set("facilityId", facilityId);
     if (completedDepartment?.departmentId) params.set("departmentId", completedDepartment.departmentId);
-    if (completedSessionId) params.set("sessionId", completedSessionId);
+    if (stableSessionId) params.set("sessionId", stableSessionId);
+    if (shouldUseCurrentLocation) params.set("useLocation", "1");
+
+    rememberDashboardReturnResult({
+      result: normalizedResult,
+      session: historicalResult.session,
+      sessionId: stableSessionId,
+    });
+    rememberResultHistoryEntry(stableSessionId);
 
     const query = params.toString();
     navigate(query ? `/map?${query}` : "/map");
@@ -761,7 +985,9 @@ export default function DashboardPage() {
   }
 
   function resetSpecialtyFlow(options) {
+    if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(DASHBOARD_RETURN_RESULT_KEY);
     setHistoricalResult(EMPTY_HISTORICAL_RESULT);
+    if (resultSessionIdFromUrl) replaceRoute("/dashboard");
     resetDiagnosis(options);
   }
 

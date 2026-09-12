@@ -176,7 +176,9 @@ function createDiagnosisSnapshot(diagnosis, index = 0) {
       ?? diagnosis.Reason,
     ),
     confidenceScore: Number(
-      diagnosis.confidenceScore
+      diagnosis.paGivenB
+      ?? diagnosis.PAGivenB
+      ?? diagnosis.confidenceScore
       ?? diagnosis.ConfidenceScore
       ?? diagnosis.matchScore
       ?? diagnosis.MatchScore
@@ -192,6 +194,28 @@ function createDiagnosisSnapshot(diagnosis, index = 0) {
     icd10Code,
     rank: Number(diagnosis.rank ?? diagnosis.Rank ?? index + 1) || index + 1,
   };
+}
+
+function createSymptomDiagnosisSnapshot(symptom, index = 0) {
+  if (!isPlainObject(symptom)) return null;
+
+  return createDiagnosisSnapshot({
+    clinicalReasoning: symptom.extractedText
+      ?? symptom.ExtractedText
+      ?? symptom.clinicalReasoning
+      ?? symptom.ClinicalReasoning,
+    confidenceScore: symptom.paGivenB
+      ?? symptom.PAGivenB
+      ?? symptom.confidenceScore
+      ?? symptom.ConfidenceScore,
+    diseaseName: symptom.symptomName
+      ?? symptom.SymptomName
+      ?? symptom.diseaseName
+      ?? symptom.DiseaseName
+      ?? symptom.name,
+    icd10Code: symptom.icd10Code ?? symptom.Icd10Code ?? symptom.ICD10Code,
+    rank: index + 1,
+  }, index);
 }
 
 function createFacilitySnapshot(facility) {
@@ -257,6 +281,21 @@ function createClinicalMapSnapshot(analysis, fallbackSessionId) {
     .map(createDiagnosisSnapshot)
     .filter(Boolean)
     .sort((left, right) => left.rank - right.rank);
+  if (diagnoses.length === 0) {
+    const symptomItems = [
+      analysis.symptoms,
+      analysis.Symptoms,
+      analysis.extractedSymptoms,
+      analysis.ExtractedSymptoms,
+    ].find((items) => Array.isArray(items) && items.length > 0);
+    diagnoses.push(
+      ...(symptomItems ?? [])
+        .map(createSymptomDiagnosisSnapshot)
+        .filter(Boolean)
+        .sort((left, right) => right.confidenceScore - left.confidenceScore)
+        .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 })),
+    );
+  }
   const facilityItems = analysis.recommendedFacilities ?? analysis.RecommendedFacilities;
   const recommendedFacilities = (
     Array.isArray(facilityItems) ? facilityItems : []

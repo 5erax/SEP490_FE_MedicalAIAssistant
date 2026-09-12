@@ -612,7 +612,7 @@ export default function FacilityMap({
                 facility={facility}
                 selected={selectedFacility?.facilityId === facility.facilityId}
                 onSelect={onViewDetail}
-                showLabel={viewState.zoom >= MARKER_LABEL_MIN_ZOOM}
+                showLabel={viewState.zoom >= MARKER_LABEL_MIN_ZOOM || selectedFacility?.facilityId === facility.facilityId}
               />
             ))}
             {selectedFacility?.hasValidCoordinates && !hidePopup && (
