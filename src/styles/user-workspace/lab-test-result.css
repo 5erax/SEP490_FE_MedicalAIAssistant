@@ -467,7 +467,8 @@ html[data-theme="dark"] .lab-test-result-page {
 .lab-test-result__result-grid { display: grid; gap: 8px; }
 .lab-test-result__result-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(78px, 0.6fr) auto 14px;
+  /* Keep measurements aligned regardless of the status label's length. */
+  grid-template-columns: minmax(0, 1fr) minmax(78px, 0.6fr) 96px 14px;
   grid-template-areas:
     "identity measurement status chevron"
     "reference measurement status chevron";
@@ -517,7 +518,7 @@ html[data-theme="dark"] .lab-test-result-page {
   line-height: 1.5;
 }
 .lab-test-result__result-reference small { font: inherit; }
-.lab-test-result__result-status { grid-area: status; min-height: 26px; padding: 4px 8px; font-size: 10px; line-height: 1.35; }
+.lab-test-result__result-status { grid-area: status; justify-self: end; min-height: 26px; padding: 4px 8px; font-size: 10px; line-height: 1.35; }
 .lab-test-result__result-status[data-tone="success"] { background: var(--color-success-bg); color: var(--color-success); }
 .lab-test-result__result-status[data-tone="warning"] { background: var(--color-warning-bg); color: var(--color-warning); }
 .lab-test-result__result-status[data-tone="danger"] { background: var(--color-danger-bg); color: var(--color-danger); }

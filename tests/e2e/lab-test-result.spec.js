@@ -230,6 +230,24 @@ test("result page polls every second, stops when completed, and displays advice"
   expect(accessibility.violations).toEqual([]);
 });
 
+for (const width of [1440, 1024, 390]) {
+  test(`high and normal indicator values align at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await prepareResultPage(page, { completedOnCall: 1 });
+    await page.goto(`/records/${SESSION_ID}`);
+    await openIndicators(page);
+    const rows = page.locator(".lab-test-result__result-card");
+    await expect(rows).toHaveCount(2);
+    const values = page.locator(".lab-test-result__result-measurement");
+    const first = await values.nth(0).boundingBox();
+    const second = await values.nth(1).boundingBox();
+    expect(Math.abs(first.x - second.x)).toBeLessThanOrEqual(1);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(overflow).toBe(false);
+    await page.locator(".lab-test-result__results-panel").screenshot({ path: testInfo.outputPath("aligned-values.png") });
+  });
+}
+
 test("result page shows all recognized indicators by default", async ({ page }) => {
   await prepareResultPage(page, { completedOnCall: 1 });
   await page.goto(`/records/${SESSION_ID}`, { waitUntil: "domcontentloaded" });
