@@ -553,6 +553,69 @@
   gap: 16px;
 }
 
+.recovery-plan-current-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px dashed rgba(8, 127, 140, 0.28);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(238, 250, 247, 0.78), rgba(255, 255, 255, 0.92));
+  color: var(--color-muted);
+}
+
+.recovery-plan-current-empty svg {
+  flex: 0 0 auto;
+  color: var(--color-info-strong);
+}
+
+.recovery-plan-current-empty strong,
+.recovery-plan-current-empty span {
+  display: block;
+}
+
+.recovery-plan-current-empty strong {
+  color: var(--color-ink);
+  font-size: 0.96rem;
+}
+
+.recovery-plan-current-empty span {
+  margin-top: 3px;
+  font-size: var(--recovery-fs-sm);
+}
+
+.recovery-plan-history {
+  display: grid;
+  gap: 16px;
+  margin-top: 6px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-line);
+}
+
+.recovery-plan-history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.recovery-plan-history-heading h3 {
+  margin: 4px 0 0;
+  font-size: clamp(20px, 2.3vw, 28px);
+}
+
+.recovery-plan-history-heading > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: var(--color-info-bg);
+  color: var(--color-info-strong);
+  font-weight: 950;
+}
+
 .recovery-workspace-panel {
   border: 1px solid var(--color-line);
   border-top: 4px solid var(--color-info);

@@ -1405,12 +1405,27 @@ export default function RecoveryPlanPage() {
     setPlansLoading(true);
     setPlansError("");
     try {
-      const response = await recoveryPlansApi.listMine({ pageNumber, pageSize: PAGE_SIZE });
-      const nextPage = normalizePaged(response, pageNumber);
+      const firstResponse = await recoveryPlansApi.listMine({ pageNumber: 1, pageSize: PAGE_SIZE });
+      const firstPage = normalizePaged(firstResponse, 1);
+      const items = [...firstPage.items];
+      for (let page = 2; page <= firstPage.totalPages; page += 1) {
+        const response = await recoveryPlansApi.listMine({ pageNumber: page, pageSize: PAGE_SIZE });
+        items.push(...normalizePaged(response, page).items);
+      }
+      const nextPage = {
+        ...firstPage,
+        items,
+        pageNumber,
+        totalCount: Math.max(firstPage.totalCount, items.length),
+        totalPages: 1,
+      };
       setPlanPage(nextPage);
-      const nextSelected = nextPage.items.find((item) => item.id === preferredId)
-        ?? nextPage.items.find((item) => item.id === selectedPlan?.id)
-        ?? nextPage.items[0]
+      const activeItems = items.filter((item) => !HISTORICAL_PLAN_STATUSES.has(item.status));
+      const nextSelected = items.find((item) => item.id === preferredId)
+        ?? activeItems.find((item) => item.id === selectedPlan?.id)
+        ?? activeItems[0]
+        ?? items.find((item) => item.id === selectedPlan?.id)
+        ?? items[0]
         ?? null;
       if (nextSelected?.id) {
         await loadPlanDetail(nextSelected.id, nextSelected);
@@ -1720,6 +1735,14 @@ export default function RecoveryPlanPage() {
   }, [allRequests, requestSortDirection, requestPageNumber]);
   const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
   const planItems = useMemo(() => planPage.items, [planPage.items]);
+  const currentPlanItems = useMemo(
+    () => planItems.filter((item) => !HISTORICAL_PLAN_STATUSES.has(item.status)),
+    [planItems],
+  );
+  const historicalPlanItems = useMemo(
+    () => planItems.filter((item) => HISTORICAL_PLAN_STATUSES.has(item.status)),
+    [planItems],
+  );
 
   return (
     <div className="recovery-page" data-active-page-tab={activePageTab}>
@@ -1894,21 +1917,60 @@ export default function RecoveryPlanPage() {
                 <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có kế hoạch được xuất bản" description="Khi yêu cầu được hoàn tất, kế hoạch sẽ xuất hiện tại đây để bạn xem và bắt đầu." />
               ) : (
                 <div className="recovery-plan-list">
-                  {planItems.map((item) => {
-                    const isSelected = item.id === selectedPlan?.id;
-                    return (
-                      <PlanDetail
-                        key={item.id}
-                        plan={isSelected ? selectedPlan : item}
-                        loading={isSelected && planDetailLoading}
-                        busy={actionBusy}
-                        onStart={handleStart}
-                        onCancel={setCancelPlan}
-                        onFeedback={openFeedbackDialog}
-                        onExpand={isSelected ? undefined : () => loadPlanDetail(item.id, item)}
-                      />
-                    );
-                  })}
+                  {currentPlanItems.length > 0 ? (
+                    currentPlanItems.map((item) => {
+                      const isSelected = item.id === selectedPlan?.id;
+                      return (
+                        <PlanDetail
+                          key={item.id}
+                          plan={isSelected ? selectedPlan : item}
+                          loading={isSelected && planDetailLoading}
+                          busy={actionBusy}
+                          onStart={handleStart}
+                          onCancel={setCancelPlan}
+                          onFeedback={openFeedbackDialog}
+                          onExpand={isSelected ? undefined : () => loadPlanDetail(item.id, item)}
+                        />
+                      );
+                    })
+                  ) : (
+                    <section className="recovery-plan-current-empty">
+                      <FileText size={22} aria-hidden="true" />
+                      <div>
+                        <strong>Chưa có kế hoạch nào đang được thực hiện</strong>
+                        <span>Các kế hoạch đã hoàn thành hoặc đã hủy được lưu ở lịch sử bên dưới.</span>
+                      </div>
+                    </section>
+                  )}
+
+                  {historicalPlanItems.length > 0 && (
+                    <section className="recovery-plan-history" aria-labelledby="recovery-plan-history-title">
+                      <div className="recovery-plan-history-heading">
+                        <div>
+                          <p className="recovery-eyebrow">Lịch sử kế hoạch</p>
+                          <h3 id="recovery-plan-history-title">Kế hoạch đã hoàn thành và đã hủy</h3>
+                        </div>
+                        <span>{historicalPlanItems.length}</span>
+                      </div>
+                      <div className="recovery-plan-list">
+                        {historicalPlanItems.map((item) => {
+                          const isSelected = item.id === selectedPlan?.id;
+                          return (
+                            <PlanDetail
+                              key={item.id}
+                              plan={isSelected ? selectedPlan : item}
+                              loading={isSelected && planDetailLoading}
+                              busy={actionBusy}
+                              onStart={handleStart}
+                              onCancel={setCancelPlan}
+                              onFeedback={openFeedbackDialog}
+                              onExpand={isSelected ? undefined : () => loadPlanDetail(item.id, item)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
                 </div>
               )}
             </section>
