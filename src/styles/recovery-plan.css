@@ -1438,6 +1438,11 @@
   color: var(--color-danger);
 }
 
+.recovery-plan-detail .recovery-status-badge.is-muted {
+  background: #ffe8ec;
+  color: #b4233a;
+}
+
 .recovery-detail-card,
 .recovery-plan-detail {
   padding: 22px;
@@ -1446,8 +1451,8 @@
 
 .recovery-detail-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: flex-start;
+  grid-template-columns: minmax(0, 1fr) minmax(128px, 18vw) auto;
+  align-items: center;
   gap: 12px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--color-line);
@@ -1457,9 +1462,69 @@
   min-width: 0;
 }
 
+.recovery-plan-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  min-width: 0;
+}
+
 .recovery-detail-header .recovery-status-badge {
-  justify-self: end;
-  margin-top: 1px;
+  justify-self: center;
+}
+
+.recovery-status-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 11px 7px 9px;
+  border: 1px solid var(--color-line);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--color-surface-soft) 84%, white);
+  color: var(--color-text);
+  box-shadow: 0 10px 22px rgba(15, 83, 83, 0.07);
+  white-space: nowrap;
+}
+
+.recovery-status-time svg {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+}
+
+.recovery-status-time span {
+  display: grid;
+  gap: 1px;
+  line-height: 1.05;
+}
+
+.recovery-status-time small {
+  color: var(--color-muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.recovery-status-time strong {
+  font-size: 0.86rem;
+  font-weight: 950;
+}
+
+.recovery-status-time.is-success {
+  border-color: rgba(43, 184, 106, 0.28);
+  background: #f2fff6;
+}
+
+.recovery-status-time.is-muted {
+  border-color: rgba(180, 35, 58, 0.24);
+  background: #fff4f6;
+  color: #841b2d;
+}
+
+.recovery-status-time.is-muted svg {
+  color: #b4233a;
 }
 
 .recovery-detail-header h3 {
@@ -2154,6 +2219,11 @@
 
   .recovery-detail-header {
     grid-template-columns: 1fr;
+  }
+
+  .recovery-plan-header-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .recovery-detail-header .recovery-status-badge,

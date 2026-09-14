@@ -186,6 +186,28 @@ export function StatusBadge({ map, value }) {
   return <span className={`recovery-status-badge is-${definition.tone}`}>{definition.label}</span>;
 }
 
+function getPlanStatusTimeMeta(plan) {
+  if (plan?.status === "completed") {
+    return {
+      icon: CalendarCheck,
+      label: "Hoàn thành",
+      tone: "success",
+      value: formatDate(plan.completedAt || plan.endDate, true),
+    };
+  }
+
+  if (plan?.status === "cancelled") {
+    return {
+      icon: XCircle,
+      label: "Thời điểm hủy",
+      tone: "muted",
+      value: formatDate(plan.cancelledAt, true),
+    };
+  }
+
+  return null;
+}
+
 function createIdempotencyKey() {
   return crypto.randomUUID?.() ?? `recovery-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -890,6 +912,8 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedb
   const phases = [...(plan.phases ?? [])].sort((left, right) => Number(left.sortOrder) - Number(right.sortOrder));
   const canStart = plan.status === "readyToStart";
   const canCancel = Boolean(onCancel) && CANCELLABLE_PLAN_STATUSES.has(plan.status);
+  const statusTimeMeta = getPlanStatusTimeMeta(plan);
+  const StatusTimeIcon = statusTimeMeta?.icon ?? CalendarCheck;
 
   function toggleCollapsed() {
     if (collapsed) onExpand?.();
@@ -904,17 +928,28 @@ export function PlanDetail({ plan, loading, onStart, onCancel, onExpand, onFeedb
           <h3>{plan.planName || "Kế hoạch phục hồi"}</h3>
         </div>
         <StatusBadge map={PLAN_STATUS} value={plan.status} />
-        {isHistorical && (
-          <button
-            type="button"
-            className="recovery-plan-collapse-toggle"
-            aria-expanded={!collapsed}
-            aria-label={collapsed ? "Mở rộng kế hoạch" : "Thu gọn kế hoạch"}
-            onClick={toggleCollapsed}
-          >
-            <ChevronDown size={18} aria-hidden="true" />
-          </button>
-        )}
+        <div className="recovery-plan-header-actions">
+          {statusTimeMeta && (
+            <span className={`recovery-status-time is-${statusTimeMeta.tone}`}>
+              <StatusTimeIcon size={15} aria-hidden="true" />
+              <span>
+                <small>{statusTimeMeta.label}</small>
+                <strong>{statusTimeMeta.value}</strong>
+              </span>
+            </span>
+          )}
+          {isHistorical && (
+            <button
+              type="button"
+              className="recovery-plan-collapse-toggle"
+              aria-expanded={!collapsed}
+              aria-label={collapsed ? "Mở rộng kế hoạch" : "Thu gọn kế hoạch"}
+              onClick={toggleCollapsed}
+            >
+              <ChevronDown size={18} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </header>
 
       {(!isHistorical || !collapsed) && (
