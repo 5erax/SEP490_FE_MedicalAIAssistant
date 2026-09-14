@@ -1831,7 +1831,17 @@ export default function RecoveryPlanPage() {
                 onClick={() => setActiveTab("plans")}
               >
                 Kế hoạch của bạn
-                {planPage.totalCount > 0 && <span className="recovery-tab-count">{planPage.totalCount}</span>}
+                {currentPlanItems.length > 0 && <span className="recovery-tab-count">{currentPlanItems.length}</span>}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "history"}
+                className={activeTab === "history" ? "is-active" : ""}
+                onClick={() => setActiveTab("history")}
+              >
+                Lịch sử kế hoạch
+                {historicalPlanItems.length > 0 && <span className="recovery-tab-count">{historicalPlanItems.length}</span>}
               </button>
               <button
                 type="button"
@@ -1857,7 +1867,7 @@ export default function RecoveryPlanPage() {
                   <RefreshCw size={16} aria-hidden="true" /> Tải lại
                 </Button>
               </div>
-            ) : activeTab === "plans" ? (
+            ) : activeTab === "plans" || activeTab === "history" ? (
               <Button tone="secondary" size="sm" onClick={() => loadPlans(planPageNumber, selectedPlan?.id)} disabled={plansLoading}>
                 <RefreshCw size={16} aria-hidden="true" /> Tải lại
               </Button>
@@ -1938,40 +1948,48 @@ export default function RecoveryPlanPage() {
                       <FileText size={22} aria-hidden="true" />
                       <div>
                         <strong>Chưa có kế hoạch nào đang được thực hiện</strong>
-                        <span>Các kế hoạch đã hoàn thành hoặc đã hủy được lưu ở lịch sử bên dưới.</span>
-                      </div>
-                    </section>
-                  )}
-
-                  {historicalPlanItems.length > 0 && (
-                    <section className="recovery-plan-history" aria-labelledby="recovery-plan-history-title">
-                      <div className="recovery-plan-history-heading">
-                        <div>
-                          <p className="recovery-eyebrow">Lịch sử kế hoạch</p>
-                          <h3 id="recovery-plan-history-title">Kế hoạch đã hoàn thành và đã hủy</h3>
-                        </div>
-                        <span>{historicalPlanItems.length}</span>
-                      </div>
-                      <div className="recovery-plan-list">
-                        {historicalPlanItems.map((item) => {
-                          const isSelected = item.id === selectedPlan?.id;
-                          return (
-                            <PlanDetail
-                              key={item.id}
-                              plan={isSelected ? selectedPlan : item}
-                              loading={isSelected && planDetailLoading}
-                              busy={actionBusy}
-                              onStart={handleStart}
-                              onCancel={setCancelPlan}
-                              onFeedback={openFeedbackDialog}
-                              onExpand={isSelected ? undefined : () => loadPlanDetail(item.id, item)}
-                            />
-                          );
-                        })}
+                        <span>Các kế hoạch đã hoàn thành hoặc đã hủy được lưu trong tab Lịch sử kế hoạch.</span>
                       </div>
                     </section>
                   )}
                 </div>
+              )}
+            </section>
+          ) : activeTab === "history" ? (
+            <section className="recovery-workspace-panel" role="tabpanel" aria-label="Lịch sử kế hoạch">
+              {plansLoading && planItems.length === 0 ? (
+                <LoadingState label="Đang tải lịch sử kế hoạch…" />
+              ) : plansError ? (
+                <ErrorState title="Không thể tải lịch sử kế hoạch" description={plansError} action={<Button onClick={() => loadPlans(planPageNumber)}>Thử lại</Button>} />
+              ) : historicalPlanItems.length === 0 ? (
+                <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có lịch sử kế hoạch" description="Các kế hoạch đã hoàn thành hoặc đã hủy sẽ xuất hiện tại đây." />
+              ) : (
+                <section className="recovery-plan-history" aria-labelledby="recovery-plan-history-title">
+                  <div className="recovery-plan-history-heading">
+                    <div>
+                      <p className="recovery-eyebrow">Lịch sử kế hoạch</p>
+                      <h3 id="recovery-plan-history-title">Kế hoạch đã hoàn thành và đã hủy</h3>
+                    </div>
+                    <span>{historicalPlanItems.length}</span>
+                  </div>
+                  <div className="recovery-plan-list">
+                    {historicalPlanItems.map((item) => {
+                      const isSelected = item.id === selectedPlan?.id;
+                      return (
+                        <PlanDetail
+                          key={item.id}
+                          plan={isSelected ? selectedPlan : item}
+                          loading={isSelected && planDetailLoading}
+                          busy={actionBusy}
+                          onStart={handleStart}
+                          onCancel={setCancelPlan}
+                          onFeedback={openFeedbackDialog}
+                          onExpand={isSelected ? undefined : () => loadPlanDetail(item.id, item)}
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
               )}
             </section>
           ) : (
