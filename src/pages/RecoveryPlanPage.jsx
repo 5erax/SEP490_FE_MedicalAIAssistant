@@ -1854,21 +1854,21 @@ export default function RecoveryPlanPage() {
               <button
                 type="button"
                 role="tab"
+                aria-selected={activeTab === "timeline"}
+                className={activeTab === "timeline" ? "is-active" : ""}
+                onClick={() => setActiveTab("timeline")}
+              >
+                Lộ trình của bạn
+              </button>
+              <button
+                type="button"
+                role="tab"
                 aria-selected={activeTab === "history"}
                 className={activeTab === "history" ? "is-active" : ""}
                 onClick={() => setActiveTab("history")}
               >
                 Lịch sử kế hoạch
                 {historicalPlanItems.length > 0 && <span className="recovery-tab-count">{historicalPlanItems.length}</span>}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "timeline"}
-                className={activeTab === "timeline" ? "is-active" : ""}
-                onClick={() => setActiveTab("timeline")}
-              >
-                Lộ trình của bạn
               </button>
             </div>
             {activeTab === "requests" ? (
