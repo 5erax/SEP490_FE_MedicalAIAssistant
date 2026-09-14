@@ -67,22 +67,15 @@ function getDetailSummary(detail, sessionType) {
   const analysis = data.analysis || data.Analysis || data;
   const department = analysis.recommendedDepartment
     || analysis.RecommendedDepartment
+    || analysis.recommendedDepartments?.[0]
+    || analysis.RecommendedDepartments?.[0]
     || analysis.department
     || analysis.Department;
   const facilities = analysis.recommendedFacilities || analysis.RecommendedFacilities || [];
 
   if (sessionType === "department") {
-    const fallbackDepartment = Array.isArray(facilities)
-      ? facilities.flatMap((facility) => (
-        Array.isArray(facility?.departments)
-          ? facility.departments
-          : Array.isArray(facility?.Departments) ? facility.Departments : []
-      ))[0]
-      : null;
     const departmentName = department?.departmentName
       || department?.DepartmentName
-      || fallbackDepartment?.departmentName
-      || fallbackDepartment?.DepartmentName
       || "";
     const facilityNames = Array.isArray(facilities)
       ? facilities

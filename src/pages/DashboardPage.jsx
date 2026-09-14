@@ -326,7 +326,11 @@ function normalizeSpecialtyResult(result, fallbackSessionId = "", fallbackSessio
 
   return {
     ...analysis,
-    recommendedDepartment: analysis.recommendedDepartment ?? analysis.RecommendedDepartment ?? null,
+    recommendedDepartment: analysis.recommendedDepartment
+      ?? analysis.RecommendedDepartment
+      ?? analysis.recommendedDepartments?.[0]
+      ?? analysis.RecommendedDepartments?.[0]
+      ?? null,
     recommendedFacilities: getRecommendedFacilities(analysis),
     diagnoses: getResultDiagnoses(result),
     inputText: getResultSymptomText(result, getHistoricalSessionTitle(fallbackSession, "")),
@@ -376,20 +380,13 @@ function getRecommendedDepartment(result) {
   }
 
   const directDepartment = normalizeDepartment(
-    analysis?.recommendedDepartment ?? analysis?.RecommendedDepartment,
+    analysis?.recommendedDepartment
+      ?? analysis?.RecommendedDepartment
+      ?? analysis?.recommendedDepartments?.[0]
+      ?? analysis?.RecommendedDepartments?.[0],
   );
   if (directDepartment) return directDepartment;
-
-  const facilities = getRecommendedFacilities(analysis);
-  const departments = Array.isArray(facilities)
-    ? facilities.flatMap((facility) => (
-      Array.isArray(facility?.departments)
-        ? facility.departments
-        : Array.isArray(facility?.Departments) ? facility.Departments : []
-    ))
-    : [];
-
-  return departments.map(normalizeDepartment).find(Boolean) ?? null;
+  return null;
 }
 
 function getFacilityId(facility) {

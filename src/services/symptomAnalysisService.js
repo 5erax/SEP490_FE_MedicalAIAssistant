@@ -303,10 +303,11 @@ function createClinicalMapSnapshot(analysis, fallbackSessionId) {
     .map(createFacilitySnapshot)
     .filter(Boolean);
   const recommendedDepartment = createDepartmentSnapshot(
-    analysis.recommendedDepartment ?? analysis.RecommendedDepartment,
-  )
-    ?? recommendedFacilities[0]?.departments?.[0]
-    ?? null;
+    analysis.recommendedDepartment
+      ?? analysis.RecommendedDepartment
+      ?? analysis.recommendedDepartments?.[0]
+      ?? analysis.RecommendedDepartments?.[0],
+  );
 
   if (!recommendedDepartment && recommendedFacilities.length === 0 && diagnoses.length === 0) {
     return null;
