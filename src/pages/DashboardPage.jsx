@@ -18,6 +18,7 @@ import {
   isClinicalQuestionAnswered,
   readSymptomAnalysisQuota,
   SYMPTOM_ANALYSIS_MESSAGES,
+  medicalDepartmentsApi,
   symptomAnalysisApi,
 } from "../services/api";
 import AnalysisHistoryPanel, { ANALYSIS_HISTORY_PANEL_ID } from "../components/analysis/AnalysisHistoryPanel";
@@ -504,6 +505,7 @@ function SpecialtyResultView({
   result,
   sessionId,
   symptomText,
+  departmentDescription = "",
   loading = false,
   error = "",
   onOpenFacilities,
@@ -562,7 +564,7 @@ function SpecialtyResultView({
     : fallbackPercent ?? departmentPercent;
   const departmentName = recommendedDepartment?.departmentName || "Chưa xác định chuyên khoa";
   const reason = recommendedDepartment?.reason || "";
-  const departmentDescription = recommendedDepartment?.description || reason;
+  const displayDepartmentDescription = departmentDescription || recommendedDepartment?.description || "";
   const displayedSymptom = getResultSymptomText(result, symptomText);
   const hasFacilities = facilities.length > 0;
   const hasPriority = hasClinicalPriority(recommendedDepartment);
@@ -577,10 +579,10 @@ function SpecialtyResultView({
         </p>
         <h2 id="specialty-result-title" className="specialty-result-department">{departmentName}</h2>
 
-        {departmentDescription && (
+        {displayDepartmentDescription && (
           <div className="specialty-result-department-info">
             <h3>Chuyên khoa này điều trị những gì?</h3>
-            <p>{departmentDescription}</p>
+            <p>{displayDepartmentDescription}</p>
           </div>
         )}
 
@@ -727,6 +729,7 @@ export default function DashboardPage() {
   const [symptomQuota, setSymptomQuota] = useState(null);
   const [quotaStatus, setQuotaStatus] = useState("loading");
   const [quotaError, setQuotaError] = useState("");
+  const [departmentDescriptionCache, setDepartmentDescriptionCache] = useState({});
   const restoringResultSessionRef = useRef("");
 
   const hasHistoricalResultView = historicalResult.status === "loading"
@@ -737,6 +740,11 @@ export default function DashboardPage() {
   const displayedSymptomText = historicalResult.result
     ? getResultSymptomText(historicalResult.result, getHistoricalSessionTitle(historicalResult.session, ""))
     : input;
+  const displayedDepartment = getRecommendedDepartment(displayedResult);
+  const displayedDepartmentId = displayedDepartment?.departmentId || "";
+  const displayedDepartmentDescription = displayedDepartmentId
+    ? departmentDescriptionCache[displayedDepartmentId] || ""
+    : "";
 
   const activeStep = status === "result" || hasHistoricalResultView
     ? 2
@@ -777,6 +785,44 @@ export default function DashboardPage() {
       active = false;
     };
   }, [resultSessionIdFromUrl, showResultView]);
+
+  useEffect(() => {
+    if (
+      !displayedDepartmentId
+      || displayedDepartment?.description
+      || Object.prototype.hasOwnProperty.call(departmentDescriptionCache, displayedDepartmentId)
+    ) {
+      return undefined;
+    }
+
+    let active = true;
+    medicalDepartmentsApi.get(displayedDepartmentId)
+      .then((response) => {
+        if (!active) return;
+        const department = unwrapPayload(response);
+        setDepartmentDescriptionCache((current) => ({
+          ...current,
+          [displayedDepartmentId]: String(
+            department?.description ?? department?.Description ?? "",
+          ).trim(),
+        }));
+      })
+      .catch(() => {
+        if (!active) return;
+        setDepartmentDescriptionCache((current) => ({
+          ...current,
+          [displayedDepartmentId]: "",
+        }));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    departmentDescriptionCache,
+    displayedDepartment,
+    displayedDepartmentId,
+  ]);
 
   async function refreshSymptomQuota() {
     setQuotaStatus("loading");
@@ -1289,6 +1335,7 @@ export default function DashboardPage() {
             result={displayedResult}
             sessionId={displayedSessionId}
             symptomText={displayedSymptomText}
+            departmentDescription={displayedDepartmentDescription}
             loading={historicalResult.status === "loading"}
             error={historicalResult.status === "error" ? historicalResult.error : ""}
             onOpenFacilities={openFacilities}
