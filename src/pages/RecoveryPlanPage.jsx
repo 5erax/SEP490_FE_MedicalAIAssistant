@@ -112,6 +112,10 @@ function getCancellationReasonLabel(code) {
   return RECOVERY_PLAN_CANCELLATION_REASONS.find((item) => item.value === code)?.label ?? code ?? "Không rõ lý do";
 }
 
+function isHistoricalPlan(plan) {
+  return HISTORICAL_PLAN_STATUSES.has(plan?.status);
+}
+
 function normalizePaged(response, pageNumber) {
   const data = response?.data ?? {};
   if (Array.isArray(data)) {
@@ -1420,12 +1424,16 @@ export default function RecoveryPlanPage() {
         totalPages: 1,
       };
       setPlanPage(nextPage);
-      const activeItems = items.filter((item) => !HISTORICAL_PLAN_STATUSES.has(item.status));
-      const nextSelected = items.find((item) => item.id === preferredId)
-        ?? activeItems.find((item) => item.id === selectedPlan?.id)
-        ?? activeItems[0]
-        ?? items.find((item) => item.id === selectedPlan?.id)
-        ?? items[0]
+      const activeItems = items.filter((item) => !isHistoricalPlan(item));
+      const historicalItems = items.filter(isHistoricalPlan);
+      const primaryItems = activeTab === "history" ? historicalItems : activeItems;
+      const secondaryItems = activeTab === "history" ? activeItems : historicalItems;
+      const nextSelected = primaryItems.find((item) => item.id === preferredId)
+        ?? primaryItems.find((item) => item.id === selectedPlan?.id)
+        ?? primaryItems[0]
+        ?? secondaryItems.find((item) => item.id === preferredId)
+        ?? secondaryItems.find((item) => item.id === selectedPlan?.id)
+        ?? secondaryItems[0]
         ?? null;
       if (nextSelected?.id) {
         await loadPlanDetail(nextSelected.id, nextSelected);
@@ -1439,7 +1447,7 @@ export default function RecoveryPlanPage() {
     } finally {
       setPlansLoading(false);
     }
-  }, [planPageNumber, selectedPlan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, planPageNumber, selectedPlan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadWorkflowGuard() {
     setWorkflowGuardLoading(true);
@@ -1736,13 +1744,23 @@ export default function RecoveryPlanPage() {
   const requestItems = useMemo(() => requestPage.items, [requestPage.items]);
   const planItems = useMemo(() => planPage.items, [planPage.items]);
   const currentPlanItems = useMemo(
-    () => planItems.filter((item) => !HISTORICAL_PLAN_STATUSES.has(item.status)),
+    () => planItems.filter((item) => !isHistoricalPlan(item)),
     [planItems],
   );
   const historicalPlanItems = useMemo(
-    () => planItems.filter((item) => HISTORICAL_PLAN_STATUSES.has(item.status)),
+    () => planItems.filter(isHistoricalPlan),
     [planItems],
   );
+
+  useEffect(() => {
+    if (!["plans", "timeline"].includes(activeTab)) return;
+    const nextCurrentPlan = currentPlanItems.find((item) => item.id === selectedPlan?.id)
+      ?? currentPlanItems[0]
+      ?? null;
+    if (!nextCurrentPlan?.id) return;
+    if (selectedPlan?.id === nextCurrentPlan.id && !isHistoricalPlan(selectedPlan)) return;
+    queueMicrotask(() => void loadPlanDetail(nextCurrentPlan.id, nextCurrentPlan));
+  }, [activeTab, currentPlanItems, selectedPlan?.id, selectedPlan?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="recovery-page" data-active-page-tab={activePageTab}>
