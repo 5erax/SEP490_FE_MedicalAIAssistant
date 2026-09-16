@@ -1982,11 +1982,10 @@ export default function RecoveryPlanPage() {
               ) : historicalPlanItems.length === 0 ? (
                 <EmptyState icon={<FileText size={26} aria-hidden="true" />} title="Chưa có lịch sử kế hoạch" description="Các kế hoạch đã hoàn thành hoặc đã hủy sẽ xuất hiện tại đây." />
               ) : (
-                <section className="recovery-plan-history" aria-labelledby="recovery-plan-history-title">
+                <section className="recovery-plan-history" aria-label="Lịch sử kế hoạch">
                   <div className="recovery-plan-history-heading">
                     <div>
                       <p className="recovery-eyebrow">Lịch sử kế hoạch</p>
-                      <h3 id="recovery-plan-history-title">Kế hoạch đã hoàn thành và đã hủy</h3>
                     </div>
                     <span>{historicalPlanItems.length}</span>
                   </div>

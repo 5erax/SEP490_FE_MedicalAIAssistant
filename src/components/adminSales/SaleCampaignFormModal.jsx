@@ -15,7 +15,7 @@ function initialForm(campaign) {
     name: campaign?.name || "", description: campaign?.description || "", badgeText: campaign?.badgeText || "",
     startAt: localDateTime(campaign?.startAt), endAt: localDateTime(campaign?.endAt),
     eligibilityType: campaign?.eligibilityType || "all", maxRedemptions: campaign?.maxRedemptions ?? "",
-    maxRedemptionsPerUser: campaign?.maxRedemptionsPerUser ?? "", priority: campaign?.priority ?? 0,
+    maxRedemptionsPerUser: campaign?.eligibilityType === "firstPurchase" ? 1 : campaign?.maxRedemptionsPerUser ?? "", priority: campaign?.priority ?? 0,
     isActive: campaign?.isActive ?? true,
     announceToUsers: campaign?.announceToUsers ?? false,
   };
@@ -31,8 +31,16 @@ export default function SaleCampaignFormModal({ campaign, plans, saving, capacit
   const capacityErrors = getCapacityErrors(form, capacity);
   const hasCapacityErrors = Object.keys(capacityErrors).length > 0;
   const availablePlans = useMemo(() => plans.filter((plan) => Number(plan.price) > 0), [plans]);
+  const isFirstPurchase = form.eligibilityType === "firstPurchase";
 
   function change(key, value) { setForm((current) => ({ ...current, [key]: value })); }
+  function changeEligibilityType(value) {
+    setForm((current) => ({
+      ...current,
+      eligibilityType: value,
+      maxRedemptionsPerUser: value === "firstPurchase" ? 1 : current.maxRedemptionsPerUser,
+    }));
+  }
   function togglePlan(plan) {
     setSelectedPlans((current) => {
       const next = new Map(current);
@@ -64,6 +72,7 @@ export default function SaleCampaignFormModal({ campaign, plans, saving, capacit
     if (invalidPlan) return setError("Mỗi gói cần có mức phí ưu đãi hợp lệ hoặc ít nhất một lượt sử dụng tặng thêm.");
     const total = form.maxRedemptions === "" ? null : Number(form.maxRedemptions);
     const perUser = form.maxRedemptionsPerUser === "" ? null : Number(form.maxRedemptionsPerUser);
+    if (form.eligibilityType === "firstPurchase" && perUser !== 1) return setError("Ưu đãi mua lần đầu chỉ cho phép 1 suất mỗi người.");
     if ((total != null && (!Number.isInteger(total) || total < 1)) || (perUser != null && (!Number.isInteger(perUser) || perUser < 1)) || (total != null && perUser != null && perUser > total)) return setError("Giới hạn lượt sử dụng chưa hợp lệ.");
     setError("");
     onSave({ ...form, name: form.name.trim(), description: form.description.trim(), badgeText: form.badgeText.trim(), startAt: start.toISOString(), endAt: end.toISOString(), maxRedemptions: total, maxRedemptionsPerUser: perUser, priority: Number(form.priority), plans: campaignPlans });
@@ -78,10 +87,10 @@ export default function SaleCampaignFormModal({ campaign, plans, saving, capacit
         <label className="wide">Mô tả<textarea value={form.description} onChange={(e) => change("description", e.target.value)} /></label>
         <label>Bắt đầu<input type="datetime-local" value={form.startAt} onChange={(e) => change("startAt", e.target.value)} /></label>
         <label>Kết thúc<input type="datetime-local" value={form.endAt} onChange={(e) => change("endAt", e.target.value)} /></label>
-        <label>Đối tượng<select value={form.eligibilityType} onChange={(e) => change("eligibilityType", e.target.value)}><option value="all">Tất cả khách hàng</option><option value="firstPurchase">Mua lần đầu</option><option value="returningCustomer">Đã từng mua</option></select></label>
+        <label>Đối tượng<select value={form.eligibilityType} onChange={(e) => changeEligibilityType(e.target.value)}><option value="all">Tất cả khách hàng</option><option value="firstPurchase">Mua lần đầu</option><option value="returningCustomer">Đã từng mua</option></select></label>
         <label>Ưu tiên<input type="number" min="0" max="1000" value={form.priority} onChange={(e) => change("priority", e.target.value)} /></label>
         <label>Tổng suất<input type="number" min={Math.max(1, capacity?.occupiedRedemptions || 0)} step="1" value={form.maxRedemptions} onChange={(e) => change("maxRedemptions", e.target.value)} placeholder="Không giới hạn" aria-invalid={Boolean(capacityErrors.maxRedemptions)} aria-describedby="sale-total-capacity" /><small id="sale-total-capacity" className={capacityErrors.maxRedemptions ? "sale-form-error" : ""} aria-live="polite">{capacityErrors.maxRedemptions || `Đã sử dụng hoặc giữ chỗ: ${capacity?.occupiedRedemptions || 0} suất. Để trống nếu không giới hạn.`}</small></label>
-        <label>Suất mỗi người<input type="number" min={Math.max(1, capacity?.maxOccupiedPerUser || 0)} step="1" value={form.maxRedemptionsPerUser} onChange={(e) => change("maxRedemptionsPerUser", e.target.value)} placeholder="Không giới hạn" aria-invalid={Boolean(capacityErrors.maxRedemptionsPerUser)} aria-describedby="sale-user-capacity" /><small id="sale-user-capacity" className={capacityErrors.maxRedemptionsPerUser ? "sale-form-error" : ""} aria-live="polite">{capacityErrors.maxRedemptionsPerUser || `Mức sử dụng cao nhất mỗi người: ${capacity?.maxOccupiedPerUser || 0} suất. Để trống nếu không giới hạn.`}</small></label>
+        <label>Suất mỗi người<input type="number" min={isFirstPurchase ? 1 : Math.max(1, capacity?.maxOccupiedPerUser || 0)} max={isFirstPurchase ? 1 : undefined} step="1" value={isFirstPurchase ? 1 : form.maxRedemptionsPerUser} onChange={(e) => change("maxRedemptionsPerUser", e.target.value)} placeholder="Không giới hạn" disabled={isFirstPurchase} aria-invalid={Boolean(capacityErrors.maxRedemptionsPerUser)} aria-describedby="sale-user-capacity" /><small id="sale-user-capacity" className={capacityErrors.maxRedemptionsPerUser ? "sale-form-error" : ""} aria-live="polite">{capacityErrors.maxRedemptionsPerUser || (isFirstPurchase ? "Mua lần đầu chỉ được dùng 1 suất mỗi người." : `Mức sử dụng cao nhất mỗi người: ${capacity?.maxOccupiedPerUser || 0} suất. Để trống nếu không giới hạn.`)}</small></label>
       </div>
       <fieldset className="sale-plan-editor"><legend>Gói dịch vụ áp dụng</legend>{availablePlans.map((plan) => { const value = selectedPlans.get(plan.id); return <div className="sale-plan-editor-row" key={plan.id}><label className="sale-plan-check"><input type="checkbox" checked={Boolean(value)} onChange={() => togglePlan(plan)} /><span><strong>{plan.planName}</strong><small>Mức phí thông thường {Number(plan.price).toLocaleString("vi-VN")} ₫</small></span></label>{value && <><label>Mức phí ưu đãi<input type="number" min="1" value={value.salePrice} onChange={(e) => changePlan(plan.id, "salePrice", e.target.value)} /></label><label>Lượt tặng thêm<input type="number" min="0" value={value.bonusCredit} onChange={(e) => changePlan(plan.id, "bonusCredit", e.target.value)} /></label></>}</div>; })}</fieldset>
       <fieldset className="sale-campaign-settings">

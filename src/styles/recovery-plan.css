@@ -1911,6 +1911,10 @@
   font-size: clamp(21px, 2vw, 26px);
 }
 
+.recovery-timeline-intro .recovery-eyebrow {
+  color: var(--color-info-strong);
+}
+
 .recovery-timeline-intro p {
   max-width: 620px;
   color: var(--color-muted);

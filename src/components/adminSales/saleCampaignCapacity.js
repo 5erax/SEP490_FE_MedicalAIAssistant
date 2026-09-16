@@ -2,16 +2,19 @@ export function getCapacityErrors(form, capacity = {}) {
   const total = form.maxRedemptions === "" || form.maxRedemptions == null ? null : Number(form.maxRedemptions);
   const perUser = form.maxRedemptionsPerUser === "" || form.maxRedemptionsPerUser == null ? null : Number(form.maxRedemptionsPerUser);
   const errors = {};
+  if (form.eligibilityType === "firstPurchase" && perUser !== 1) {
+    errors.maxRedemptionsPerUser = "Ưu đãi mua lần đầu chỉ cho phép 1 suất mỗi người.";
+  }
   if (total != null && (!Number.isInteger(total) || total < 1)) {
     errors.maxRedemptions = "Tổng suất phải là số nguyên từ 1 trở lên.";
   } else if (total != null && total < capacity.occupiedRedemptions) {
     errors.maxRedemptions = `Đã có ${capacity.occupiedRedemptions} suất được sử dụng hoặc đang giữ chỗ. Tổng suất không được thấp hơn ${capacity.occupiedRedemptions}.`;
   }
-  if (perUser != null && (!Number.isInteger(perUser) || perUser < 1)) {
+  if (!errors.maxRedemptionsPerUser && perUser != null && (!Number.isInteger(perUser) || perUser < 1)) {
     errors.maxRedemptionsPerUser = "Suất mỗi người phải là số nguyên từ 1 trở lên.";
-  } else if (perUser != null && perUser < capacity.maxOccupiedPerUser) {
+  } else if (!errors.maxRedemptionsPerUser && perUser != null && perUser < capacity.maxOccupiedPerUser) {
     errors.maxRedemptionsPerUser = `Đã có người dùng sử dụng hoặc giữ chỗ ${capacity.maxOccupiedPerUser} suất. Giới hạn mỗi người không được thấp hơn ${capacity.maxOccupiedPerUser}.`;
-  } else if (total != null && perUser != null && perUser > total) {
+  } else if (!errors.maxRedemptionsPerUser && total != null && perUser != null && perUser > total) {
     errors.maxRedemptionsPerUser = "Suất mỗi người không được lớn hơn tổng suất.";
   }
   return errors;
