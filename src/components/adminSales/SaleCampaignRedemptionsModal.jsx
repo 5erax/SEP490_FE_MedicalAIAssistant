@@ -2,15 +2,64 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Dialog } from "../ui/Dialog";
 import AdminPagination from "../admin/AdminPagination";
-import { saleCampaignsApi } from "../../services/api";
+import { saleCampaignsApi, usersApi } from "../../services/api";
 import { getRedemptionDate, hasRedemptionPriceDiscount } from "../../utils/saleRedemptionPresentation";
 
 const STATUS = { reserved: "Đang giữ suất", completed: "Đã sử dụng", released: "Đã giải phóng" };
 const money = (value) => `${Number(value || 0).toLocaleString("vi-VN")} ₫`;
 
-export default function SaleCampaignRedemptionsModal({ campaign, onClose }) {
+function displayUserName(item, usersById) {
+  const directName = item.userDisplayName || item.userFullName || item.fullName || item.displayName || item.userName || item.username || item.email;
+  if (directName) return directName;
+  const user = usersById.get(item.userId);
+  return user?.displayName || user?.fullName || user?.name || user?.userName || user?.username || user?.email || "Người dùng chưa xác định";
+}
+
+function displayPlanName(item, plansById) {
+  const directName = item.planName || item.subscriptionPlanName || item.packageName;
+  if (directName) return directName;
+  const plan = plansById.get(item.planId);
+  return plan?.planName || plan?.name || "Gói chưa xác định";
+}
+
+function addUserToMap(map, user) {
+  [user.id, user.userId, user.identityId].filter(Boolean).forEach((id) => map.set(id, user));
+}
+
+async function loadUsersById() {
+  const pageSize = 100;
+  const firstResponse = await usersApi.list(1, pageSize);
+  const firstPage = firstResponse?.data || {};
+  const users = [...(firstPage.items || [])];
+  const totalPages = firstPage.totalPages || 1;
+  for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+    const response = await usersApi.list(pageNumber, pageSize);
+    users.push(...(response?.data?.items || []));
+  }
+  const usersById = new Map();
+  users.forEach((user) => addUserToMap(usersById, user));
+  return usersById;
+}
+
+export default function SaleCampaignRedemptionsModal({ campaign, plans = [], onClose }) {
   const closeRef = useRef(null);
   const [state, setState] = useState({ items: [], pageNumber: 1, totalPages: 1, loading: true, error: "" });
+  const [usersById, setUsersById] = useState(new Map());
+  const plansById = new Map([...(campaign.plans || []), ...plans].flatMap((plan) => [
+    [plan.id, plan],
+    [plan.planId, plan],
+  ].filter(([id]) => Boolean(id))));
+
+  useEffect(() => {
+    let active = true;
+    loadUsersById().then((userMap) => {
+      if (active) setUsersById(userMap);
+    }).catch(() => {
+      if (active) setState((current) => ({ ...current, error: "Không thể tải tên người dùng. Vui lòng thử lại." }));
+    });
+    return () => { active = false; };
+  }, []);
+
   useEffect(() => {
     let active = true;
     saleCampaignsApi.redemptions(campaign.id, state.pageNumber, 10).then((response) => {
@@ -26,8 +75,8 @@ export default function SaleCampaignRedemptionsModal({ campaign, onClose }) {
       {state.items.map((item) => {
         const date = getRedemptionDate(item);
         return <tr key={item.id}>
-          <td>{item.userId}</td>
-          <td>{item.planId}</td>
+          <td><strong>{displayUserName(item, usersById)}</strong></td>
+          <td><strong>{displayPlanName(item, plansById)}</strong></td>
           <td>
             {hasRedemptionPriceDiscount(item) && <span className="pricing-original-price">{money(item.originalPrice)}</span>}
             <strong>{money(item.finalPrice)}</strong>

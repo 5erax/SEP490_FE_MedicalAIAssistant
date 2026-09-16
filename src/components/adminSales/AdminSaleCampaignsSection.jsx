@@ -108,6 +108,6 @@ export default function AdminSaleCampaignsSection() {
     <SaleCampaignTable campaigns={page.items} loading={loading || openingForm} onEdit={openEdit} onRedemptions={setRedemptions} onRemove={remove} onToggle={toggle} />
     <AdminPagination currentPage={page.pageNumber} totalPages={page.totalPages} loading={loading} onPageChange={load} />
     {formOpen && <SaleCampaignFormModal campaign={editing} plans={plans} saving={saving} capacity={capacity} saveError={saveError} onClose={() => { if (saving) return; setFormOpen(false); setEditing(null); }} onSave={save} />}
-    {redemptions && <SaleCampaignRedemptionsModal campaign={redemptions} onClose={() => setRedemptions(null)} />}
+    {redemptions && <SaleCampaignRedemptionsModal campaign={redemptions} plans={plans} onClose={() => setRedemptions(null)} />}
   </section>;
 }
