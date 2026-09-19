@@ -1513,35 +1513,13 @@ function NearbyClinicPage() {
       longitude: nearestFacility.longitude,
       latitude: nearestFacility.latitude,
     };
-    const samePoint = userPoint.longitude === facilityPoint.longitude
-      && userPoint.latitude === facilityPoint.latitude;
 
-    if (samePoint) {
-      mapRef.current?.flyTo?.({
-        center: [facilityPoint.longitude, facilityPoint.latitude],
-        zoom: 15,
-        duration,
-        offset: [0, 56],
-      });
-      return () => window.clearTimeout(stateUpdateId);
-    }
-
-    const minLongitude = Math.min(userPoint.longitude, facilityPoint.longitude);
-    const maxLongitude = Math.max(userPoint.longitude, facilityPoint.longitude);
-    const minLatitude = Math.min(userPoint.latitude, facilityPoint.latitude);
-    const maxLatitude = Math.max(userPoint.latitude, facilityPoint.latitude);
-
-    mapRef.current?.fitBounds?.(
-      [
-        [minLongitude, minLatitude],
-        [maxLongitude, maxLatitude],
-      ],
-      {
-        duration,
-        maxZoom: 15,
-        padding: { top: 132, right: 96, bottom: 96, left: 96 },
-      },
-    );
+    mapRef.current?.flyTo?.({
+      center: [facilityPoint.longitude, facilityPoint.latitude],
+      zoom: 16,
+      duration,
+      offset: window.innerWidth > 760 ? [SIDEBAR_MAP_OFFSET, 0] : [0, -96],
+    });
     return () => window.clearTimeout(stateUpdateId);
   }, [
     autoLocationNearestMatch,
