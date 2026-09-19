@@ -1259,6 +1259,7 @@ function NearbyClinicPage() {
       ? getNearestFacilityFromList(userLocation, mappableFacilities)
       : null
   ), [facilityDiscoveryMode, mappableFacilities, userLocation]);
+  const shouldIncludeUserLocationInBounds = ["nearest", TOP_RATED_NEAREST_MODE].includes(facilityDiscoveryMode);
   const mapBoundsPoints = useMemo(() => {
     const points = mappableFacilities.map((facility) => ({
       id: facility.facilityId,
@@ -1266,7 +1267,7 @@ function NearbyClinicPage() {
       latitude: facility.latitude,
     }));
 
-    if (hasActiveMapFacilityFilter && userLocation) {
+    if (shouldIncludeUserLocationInBounds && userLocation) {
       points.push({
         id: "user-location",
         longitude: userLocation.lng,
@@ -1277,7 +1278,7 @@ function NearbyClinicPage() {
     return points.filter((point) => (
       Number.isFinite(point.longitude) && Number.isFinite(point.latitude)
     ));
-  }, [hasActiveMapFacilityFilter, mappableFacilities, userLocation]);
+  }, [mappableFacilities, shouldIncludeUserLocationInBounds, userLocation]);
   const mapBoundsKey = useMemo(
     () => mapBoundsPoints.map((point) => `${point.id}:${point.longitude}:${point.latitude}`).join("|"),
     [mapBoundsPoints],
