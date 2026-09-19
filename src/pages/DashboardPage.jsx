@@ -769,6 +769,7 @@ export default function DashboardPage() {
     SYMPTOM_ANALYSIS_MESSAGES.inputRequired,
     SYMPTOM_ANALYSIS_MESSAGES.inputTooLong,
   ].includes(error) ? error : "";
+  const specialtyServiceError = !showResultView && error && !symptomInputError ? error : "";
   const quotaExhausted = quotaStatus === "ready" && symptomQuota?.remainingToday <= 0;
 
   useEffect(() => {
@@ -1178,12 +1179,12 @@ export default function DashboardPage() {
           <ClinicalNote tone="warning" title={CLINICAL_NOTES.emergencyTitle}>{CLINICAL_NOTES.emergency}</ClinicalNote>
         )}
 
-        {error && !symptomInputError && (
+        {specialtyServiceError && (
           <Alert tone="danger" title="Không thể kết nối dịch vụ gợi ý chuyên khoa" live>
-            {error}
+            {specialtyServiceError}
           </Alert>
         )}
-        {error && !symptomInputError && (
+        {specialtyServiceError && (
           <div className="studio-recovery-actions">
             <Button type="button" tone="secondary" onClick={() => resetDiagnosis()}>Quay lại biểu mẫu</Button>
             <Button type="button" onClick={() => void startSpecialtyAnalysis()}>Thử lại</Button>
