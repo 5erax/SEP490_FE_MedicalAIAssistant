@@ -1,5 +1,5 @@
 import { Badge, Button, EmptyState } from "../ui";
-import { CreditCard, Gauge, Pencil, Plus, WalletCards } from "lucide-react";
+import { CreditCard, Gauge, Pencil, Plus, Tags, WalletCards } from "lucide-react";
 
 const QUOTA_LABELS = {
   SERVICE_CREDIT: "Lượt dịch vụ dùng chung",
@@ -62,6 +62,12 @@ function getRealQuotaItems(plan) {
   }));
 }
 
+function getBestSaleOffer(offers) {
+  return offers
+    .filter((offer) => Number.isFinite(offer.salePrice))
+    .sort((left, right) => left.salePrice - right.salePrice)[0] || null;
+}
+
 function QuotaChip({ item }) {
   return (
     <div className="subscription-quota-item">
@@ -82,6 +88,7 @@ export default function SubscriptionPlanTable({
   onEdit,
   onAssignDefaultQuota,
   plans,
+  saleHighlightsByPlanId,
 }) {
   if (!plans.length) {
     return (
@@ -107,15 +114,41 @@ export default function SubscriptionPlanTable({
       {plans.map((plan) => {
         const realQuotaItems = getRealQuotaItems(plan);
         const isAssigning = assigningQuotaPlanId === plan.id;
+        const saleOffers = saleHighlightsByPlanId?.get(plan.id) || [];
+        const bestSaleOffer = getBestSaleOffer(saleOffers);
+        const hasSaleOffers = saleOffers.length > 0;
 
         return (
-          <article className="subscription-plan-card" key={plan.id} role="row">
+          <article className={`subscription-plan-card${hasSaleOffers ? " has-sale-offers" : ""}`} key={plan.id} role="row">
             <div className="subscription-plan-card-main" role="cell">
               <div className="subscription-plan-primary">
                 <span className="subscription-plan-icon" aria-hidden="true"><WalletCards size={20} /></span>
-                <div>
+                <div className="subscription-plan-title-block">
                   <strong>{plan.planName || "Gói chưa đặt tên"}</strong>
-                  <span>{formatPrice(plan.price)}</span>
+                  {bestSaleOffer ? (
+                    <span className="subscription-plan-sale-price">
+                      <small>{formatPrice(plan.price)}</small>
+                      <b>{formatPrice(bestSaleOffer.salePrice)}</b>
+                    </span>
+                  ) : (
+                    <span>{formatPrice(plan.price)}</span>
+                  )}
+                  {hasSaleOffers && (
+                    <div className="subscription-plan-sale-summary" aria-label={`Gói này đang được áp ${saleOffers.length} mã khuyến mãi`}>
+                      <details>
+                        <summary><Tags size={13} aria-hidden="true" />Đang áp {saleOffers.length} mã khuyến mãi</summary>
+                        <div>
+                          {saleOffers.slice(0, 3).map((offer) => (
+                            <em key={offer.campaignId}>
+                              {offer.badgeText}
+                              {Number.isFinite(offer.salePrice) ? ` · ${formatPrice(offer.salePrice).replace(" ", "")}` : ""}
+                            </em>
+                          ))}
+                          {saleOffers.length > 3 && <em>+{saleOffers.length - 3} mã khác</em>}
+                        </div>
+                      </details>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

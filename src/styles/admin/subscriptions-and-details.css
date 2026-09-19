@@ -593,6 +593,13 @@
   transform: translateY(-1px);
 }
 
+.subscription-plan-card.has-sale-offers {
+  border-color: rgba(0, 128, 137, 0.24);
+  background:
+    linear-gradient(135deg, rgba(232, 250, 247, 0.78), rgba(255, 255, 255, 0.96) 48%, rgba(255, 251, 240, 0.76)),
+    #fff;
+}
+
 .subscription-plan-card-main,
 .subscription-plan-card-limits {
   min-width: 0;
@@ -602,6 +609,91 @@
   align-self: stretch;
   display: flex;
   align-items: center;
+}
+
+.subscription-plan-title-block {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.subscription-plan-sale-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.subscription-plan-sale-price small {
+  color: rgba(16, 20, 17, 0.48);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.subscription-plan-sale-price b {
+  color: #007782;
+  font-size: 17px;
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.subscription-plan-sale-summary {
+  display: grid;
+  gap: 7px;
+  margin-top: 4px;
+  max-width: 300px;
+}
+
+.subscription-plan-sale-summary details {
+  display: grid;
+  gap: 7px;
+}
+
+.subscription-plan-sale-summary summary {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #06666d;
+  padding: 0 0 2px;
+  border-bottom: 1.5px solid currentColor;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+  list-style: none;
+}
+
+.subscription-plan-sale-summary summary::-webkit-details-marker {
+  display: none;
+}
+
+.subscription-plan-sale-summary details[open] summary {
+  color: #008089;
+}
+
+.subscription-plan-sale-summary details > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding-top: 6px;
+}
+
+.subscription-plan-sale-summary em {
+  max-width: 100%;
+  border: 1px solid rgba(8, 127, 140, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: rgba(16, 53, 58, 0.76);
+  padding: 4px 6px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .subscription-plan-card-meta {

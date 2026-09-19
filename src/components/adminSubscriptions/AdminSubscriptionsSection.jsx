@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, RefreshCw } from "lucide-react";
-import { adminQuotasApi, adminSubscriptionPlanQuotasApi, subscriptionPlansApi } from "../../services/api";
+import { adminQuotasApi, adminSubscriptionPlanQuotasApi, saleCampaignsApi, subscriptionPlansApi } from "../../services/api";
 import { Button, ErrorState, LoadingState } from "../ui";
 import SubscriptionPlanTable from "./SubscriptionPlanTable";
 import SubscriptionPlanFormModal from "./SubscriptionPlanFormModal";
@@ -21,6 +21,42 @@ function findServiceCreditQuota(quotas) {
     || quotas.find((quota) => String(quota?.code || quota?.name || "").toLowerCase().includes("service credit"));
 }
 
+function getSaleCampaignStatus(campaign) {
+  return String(campaign?.displayStatus || "").trim().toLowerCase();
+}
+
+function isApplicableSaleCampaign(campaign) {
+  const status = getSaleCampaignStatus(campaign);
+  if (campaign?.isActive === false || ["disabled", "ended", "soldout", "scheduled"].includes(status)) return false;
+  if (status === "active") return true;
+
+  const now = Date.now();
+  const start = campaign?.startAt ? new Date(campaign.startAt).getTime() : null;
+  const end = campaign?.endAt ? new Date(campaign.endAt).getTime() : null;
+  return (!Number.isFinite(start) || start <= now) && (!Number.isFinite(end) || end >= now);
+}
+
+function buildSaleHighlightsByPlanId(campaigns) {
+  const highlights = new Map();
+  campaigns.filter(isApplicableSaleCampaign).forEach((campaign) => {
+    (campaign.plans || []).forEach((planSale) => {
+      if (planSale?.isActive === false || !planSale?.planId) return;
+      const currentItems = highlights.get(planSale.planId) || [];
+      currentItems.push({
+        campaignId: campaign.id,
+        campaignName: campaign.name || campaign.badgeText || "Khuyến mãi",
+        badgeText: campaign.badgeText || campaign.name || "Khuyến mãi",
+        bonusCredit: Number(planSale.bonusCredit) || 0,
+        displayStatus: getSaleCampaignStatus(campaign),
+        salePrice: planSale.salePrice == null ? null : Number(planSale.salePrice),
+      });
+      highlights.set(planSale.planId, currentItems);
+    });
+  });
+
+  return highlights;
+}
+
 export default function AdminSubscriptionsSection({
   activeCount,
   error,
@@ -32,12 +68,29 @@ export default function AdminSubscriptionsSection({
   const planModalTriggerRef = useRef(null);
   const [quotaCatalog, setQuotaCatalog] = useState([]);
   const [quotaMessage, setQuotaMessage] = useState(null);
+  const [saleCampaigns, setSaleCampaigns] = useState([]);
+  const [saleCampaignMessage, setSaleCampaignMessage] = useState(null);
   const [assigningQuotaPlanId, setAssigningQuotaPlanId] = useState("");
   const [planModal, setPlanModal] = useState({ open: false, mode: "edit", plan: null });
   const [savingPlan, setSavingPlan] = useState(false);
 
   const defaultServiceCreditQuota = useMemo(() => findServiceCreditQuota(quotaCatalog), [quotaCatalog]);
-  const visibleMessage = quotaMessage || message;
+  const saleHighlightsByPlanId = useMemo(() => buildSaleHighlightsByPlanId(saleCampaigns), [saleCampaigns]);
+  const visibleMessage = quotaMessage || saleCampaignMessage || message;
+
+  async function loadSaleCampaigns() {
+    const pageSize = 100;
+    const firstResponse = await saleCampaignsApi.list(1, pageSize);
+    const firstPage = firstResponse?.data || {};
+    const items = [...readApiItems(firstResponse)];
+    const totalPages = firstPage.totalPages || 1;
+    for (let pageNumber = 2; pageNumber <= totalPages; pageNumber += 1) {
+      const response = await saleCampaignsApi.list(pageNumber, pageSize);
+      items.push(...readApiItems(response));
+    }
+    setSaleCampaigns(items);
+    setSaleCampaignMessage(null);
+  }
 
   useEffect(() => {
     let active = true;
@@ -61,6 +114,31 @@ export default function AdminSubscriptionsSection({
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(() => {
+      loadSaleCampaigns().catch((err) => {
+        if (!active) return;
+        setSaleCampaigns([]);
+        setSaleCampaignMessage({
+          type: "error",
+          text: err?.message || "Không thể tải dữ liệu khuyến mãi đang áp dụng cho gói.",
+        });
+      });
+    }, 0);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  async function handleReloadAll() {
+    await Promise.allSettled([
+      onReload?.(),
+      loadSaleCampaigns(),
+    ]);
+  }
 
   async function handleAssignServiceCredit(plan) {
     if (!defaultServiceCreditQuota?.id) {
@@ -140,6 +218,7 @@ export default function AdminSubscriptionsSection({
       });
       setPlanModal({ open: false, mode: "edit", plan: null });
       await onReload?.();
+      await loadSaleCampaigns();
     } catch (err) {
       setQuotaMessage({
         type: "error",
@@ -159,7 +238,7 @@ export default function AdminSubscriptionsSection({
           <p className="muted-text">Theo dõi gói đang mở bán và hạn mức sử dụng thật cho từng gói.</p>
         </div>
         <div className="record-actions">
-          <button className="btn btn-ghost btn-small" type="button" onClick={onReload}>
+          <button className="btn btn-ghost btn-small" type="button" onClick={handleReloadAll}>
             <RefreshCw size={15} /> Đồng bộ
           </button>
           <button className="btn btn-primary btn-small" type="button" onClick={openCreatePlan}>
@@ -218,6 +297,7 @@ export default function AdminSubscriptionsSection({
           onEdit={openEditPlan}
           onAssignDefaultQuota={handleAssignServiceCredit}
           plans={plans}
+          saleHighlightsByPlanId={saleHighlightsByPlanId}
         />
       )}
 
