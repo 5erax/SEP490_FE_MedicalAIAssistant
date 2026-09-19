@@ -630,7 +630,7 @@ function NearbyClinicPage() {
   const requestedDoctorOpenedRef = useRef(false);
   const lastFittedBoundsRef = useRef("");
   const autoLocationFocusRef = useRef("");
-  const radiusNearestFocusRef = useRef("");
+  const nearestFacilityFocusRef = useRef("");
   const topRatedFacilitiesRef = useRef([]);
   const clinicalRestoreRequestRef = useRef({ sessionId: "", promise: null });
   const clinicalDepartmentAutoSelectedRef = useRef("");
@@ -1254,31 +1254,20 @@ function NearbyClinicPage() {
       ? getNearestFacilityByRadiusSteps(userLocation, mappableFacilities, AUTO_LOCATION_FOCUS_RADII_KM)
       : null
   ), [mapQuery.useLocation, mappableFacilities, userLocation]);
-  const radiusNearestFacility = useMemo(() => (
-    facilityDiscoveryMode === "nearby"
+  const focusedNearestFacility = useMemo(() => (
+    ["nearest", TOP_RATED_NEAREST_MODE].includes(facilityDiscoveryMode)
       ? getNearestFacilityFromList(userLocation, mappableFacilities)
       : null
   ), [facilityDiscoveryMode, mappableFacilities, userLocation]);
-  const shouldIncludeUserLocationInBounds = ["nearest", TOP_RATED_NEAREST_MODE].includes(facilityDiscoveryMode);
   const mapBoundsPoints = useMemo(() => {
-    const points = mappableFacilities.map((facility) => ({
+    return mappableFacilities.map((facility) => ({
       id: facility.facilityId,
       longitude: facility.longitude,
       latitude: facility.latitude,
-    }));
-
-    if (shouldIncludeUserLocationInBounds && userLocation) {
-      points.push({
-        id: "user-location",
-        longitude: userLocation.lng,
-        latitude: userLocation.lat,
-      });
-    }
-
-    return points.filter((point) => (
+    })).filter((point) => (
       Number.isFinite(point.longitude) && Number.isFinite(point.latitude)
     ));
-  }, [mappableFacilities, shouldIncludeUserLocationInBounds, userLocation]);
+  }, [mappableFacilities]);
   const mapBoundsKey = useMemo(
     () => mapBoundsPoints.map((point) => `${point.id}:${point.longitude}:${point.latitude}`).join("|"),
     [mapBoundsPoints],
@@ -1364,7 +1353,7 @@ function NearbyClinicPage() {
 
   useEffect(() => {
     if (mapStatus !== "ready" || selectedFacility || mapBoundsPoints.length === 0) return;
-    if (facilityDiscoveryMode === "nearby" && userLocation) return;
+    if (["nearest", TOP_RATED_NEAREST_MODE].includes(facilityDiscoveryMode)) return;
     if (lastFittedBoundsRef.current === mapBoundsKey) return;
     lastFittedBoundsRef.current = mapBoundsKey;
 
@@ -1412,26 +1401,26 @@ function NearbyClinicPage() {
         padding: { top: topClearance, right: 72, bottom: 72, left: leftClearance },
       },
     );
-  }, [facilityDiscoveryMode, mapBoundsKey, mapBoundsPoints, mapStatus, prefersReducedMotion, selectedFacility, userLocation]);
+  }, [facilityDiscoveryMode, mapBoundsKey, mapBoundsPoints, mapStatus, prefersReducedMotion, selectedFacility]);
 
   useEffect(() => {
-    if (facilityDiscoveryMode !== "nearby") return;
-    if (mapStatus !== "ready" || mapFacilitiesLoading || !userLocation || !radiusNearestFacility) return;
+    if (!["nearest", TOP_RATED_NEAREST_MODE].includes(facilityDiscoveryMode)) return;
+    if (mapStatus !== "ready" || mapFacilitiesLoading || !userLocation || !focusedNearestFacility) return;
 
     const focusKey = [
+      facilityDiscoveryMode,
       userLocation.lat,
       userLocation.lng,
-      nearbyRadiusKm,
       selectedDepartmentId,
       selectedType,
       debouncedSearch,
-      radiusNearestFacility.facilityId,
+      focusedNearestFacility.facilityId,
       mappableFacilities.length,
     ].join(":");
-    if (radiusNearestFocusRef.current === focusKey) return;
-    radiusNearestFocusRef.current = focusKey;
+    if (nearestFacilityFocusRef.current === focusKey) return;
+    nearestFacilityFocusRef.current = focusKey;
 
-    setSelectedFacility(radiusNearestFacility);
+    setSelectedFacility(focusedNearestFacility);
     setSidebarView("hospital-list");
     setDetailPanelOpen(false);
     setDetailFacility(null);
@@ -1440,24 +1429,23 @@ function NearbyClinicPage() {
 
     const duration = prefersReducedMotion() ? 0 : 900;
     mapRef.current?.flyTo?.({
-      center: [radiusNearestFacility.longitude, radiusNearestFacility.latitude],
+      center: [focusedNearestFacility.longitude, focusedNearestFacility.latitude],
       zoom: 16,
       duration,
       offset: window.innerWidth > 760 ? [SIDEBAR_MAP_OFFSET, 0] : [0, -96],
     });
-    cardRefs.current[radiusNearestFacility.facilityId]?.scrollIntoView?.({
+    cardRefs.current[focusedNearestFacility.facilityId]?.scrollIntoView?.({
       block: "nearest",
       behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
   }, [
     debouncedSearch,
     facilityDiscoveryMode,
+    focusedNearestFacility,
     mapFacilitiesLoading,
     mapStatus,
     mappableFacilities.length,
-    nearbyRadiusKm,
     prefersReducedMotion,
-    radiusNearestFacility,
     selectedDepartmentId,
     selectedType,
     userLocation,
@@ -1465,6 +1453,7 @@ function NearbyClinicPage() {
 
   useEffect(() => {
     if (!mapQuery.useLocation || mapStatus !== "ready" || !userLocation) return;
+    if (facilityDiscoveryMode !== "all") return;
     if (mapFacilitiesLoading && mappableFacilities.length === 0) return;
 
     const nearestFacility = autoLocationNearestMatch?.facility ?? null;
@@ -1523,6 +1512,7 @@ function NearbyClinicPage() {
     return () => window.clearTimeout(stateUpdateId);
   }, [
     autoLocationNearestMatch,
+    facilityDiscoveryMode,
     mapFacilitiesLoading,
     mapQuery.useLocation,
     mapStatus,
