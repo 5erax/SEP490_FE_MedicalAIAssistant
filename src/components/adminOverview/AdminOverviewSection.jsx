@@ -22,6 +22,7 @@ import {
   RevenueChartCard,
   UserGrowthChartCard,
 } from "./OverviewCharts";
+import SaleRevenueImpactCard from "./SaleRevenueImpactCard";
 
 const OVERVIEW_METRICS = [
   {
@@ -268,6 +269,8 @@ export default function AdminOverviewSection({
           onRetry={() => onRetryMetric("facilities")}
         />
       </div>
+
+      <SaleRevenueImpactCard />
 
       <aside className="admin-overview-scope" aria-label="Phạm vi dữ liệu tổng quan">
         <ShieldCheck size={21} aria-hidden="true" />

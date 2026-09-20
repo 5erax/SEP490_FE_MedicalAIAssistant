@@ -9,6 +9,127 @@
   gap: clamp(14px, 1.4vw, 18px);
 }
 
+.admin-operator .sale-impact-card {
+  --sale-impact-campaign: #8352b0;
+  display: grid;
+  grid-column: 1 / -1;
+  min-width: 0;
+  gap: 16px;
+  padding: clamp(16px, 1.8vw, 24px);
+  border: 1px solid var(--overview-line);
+  border-radius: 20px;
+  background: var(--overview-surface);
+  color: var(--overview-ink);
+}
+
+.admin-operator .sale-impact-header,
+.admin-operator .sale-impact-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-operator .sale-impact-header h3,
+.admin-operator .sale-impact-header p,
+.admin-operator .sale-impact-card dl,
+.admin-operator .sale-impact-card dd,
+.admin-operator .sale-impact-card p {
+  margin: 0;
+}
+
+.admin-operator .sale-impact-header h3 {
+  margin-top: 6px;
+  font-size: clamp(20px, 2vw, 26px);
+}
+
+.admin-operator .sale-impact-card button,
+.admin-operator .sale-impact-card select {
+  min-height: 44px;
+  max-width: 100%;
+  border: 1px solid var(--overview-line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--overview-surface);
+  color: var(--overview-ink);
+  font: inherit;
+}
+
+.admin-operator .sale-impact-card button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.admin-operator .sale-impact-card button:disabled { opacity: 0.6; cursor: wait; }
+.admin-operator .sale-impact-card :focus-visible { outline: 2px solid var(--overview-teal); outline-offset: 3px; }
+.admin-operator .sale-impact-selector { display: grid; gap: 8px; min-width: 0; }
+.admin-operator .sale-impact-selector label { font-weight: 650; }
+.admin-operator .sale-impact-selector select { width: 100%; min-width: 0; text-overflow: ellipsis; }
+.admin-operator .sale-impact-results { display: grid; min-width: 0; gap: 16px; }
+.admin-operator .sale-impact-meta { justify-content: flex-start; overflow-wrap: anywhere; }
+.admin-operator .sale-impact-meta button { margin-left: auto; }
+.admin-operator .sale-impact-status { border: 1px solid var(--overview-line); border-radius: 30px; padding: 6px 10px; font-size: 13px; }
+.admin-operator .sale-impact-copy,
+.admin-operator .sale-impact-footnote,
+.admin-operator .sale-impact-windows { color: var(--overview-muted); font-size: 14px; line-height: 1.6; }
+.admin-operator .sale-impact-message,
+.admin-operator .sale-impact-notice { padding: 16px; border: 1px solid var(--overview-line); border-radius: 12px; line-height: 1.6; }
+.admin-operator .sale-impact-message button { margin-top: 12px; }
+.admin-operator .sale-impact-notice { background: color-mix(in srgb, var(--overview-teal) 8%, var(--overview-surface)); }
+.admin-operator .sale-impact-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.admin-operator .sale-impact-kpi { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; padding: 16px; border: 1px solid var(--overview-line); border-radius: 14px; }
+.admin-operator .sale-impact-kpi dt { color: var(--overview-muted); font-size: 14px; line-height: 1.4; }
+.admin-operator .sale-impact-kpi dd { font-size: clamp(20px, 2vw, 27px); font-weight: 750; line-height: 1.35; overflow-wrap: anywhere; }
+.admin-operator .sale-impact-kpi .sale-impact-kpi-note { color: var(--overview-muted); font-size: 13px; font-weight: 400; line-height: 1.5; }
+.admin-operator .sale-impact-kpis.is-secondary dd { font-size: 21px; }
+.admin-operator .sale-impact-kpis > .sale-impact-kpi:nth-child(5) { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.admin-operator .sale-impact-kpis > .sale-impact-kpi:nth-child(5) dt { margin-right: auto; }
+.admin-operator .sale-impact-windows { display: grid; gap: 4px; padding-left: 20px; margin: 0; }
+.admin-operator .sale-impact-chart { min-width: 0; }
+.admin-operator .sale-impact-legend { display: flex; flex-wrap: wrap; gap: 12px 24px; list-style: none; margin: 0 0 16px; padding: 0; font-size: 14px; }
+.admin-operator .sale-impact-legend li { display: flex; align-items: center; gap: 8px; }
+.admin-operator .sale-impact-swatch { width: 30px; border-top: 3px solid var(--overview-teal); }
+.admin-operator .sale-impact-swatch.is-campaign { border-top: 3px dashed var(--sale-impact-campaign); }
+.admin-operator .sale-impact-chart-scroll { max-width: 100%; overflow-x: auto; border-radius: 8px; }
+.admin-operator .sale-impact-chart svg { display: block; width: 100%; }
+.admin-operator .sale-impact-axis { fill: var(--overview-muted); font-size: 12px; }
+.admin-operator .sale-impact-grid { stroke: var(--overview-line); stroke-width: 1; }
+.admin-operator .sale-impact-separator { stroke: var(--overview-muted); stroke-dasharray: 4 4; }
+.admin-operator .sale-impact-band { fill: var(--overview-muted); opacity: 0.04; }
+.admin-operator .sale-impact-band.is-during { fill: var(--overview-teal); opacity: 0.09; }
+.admin-operator .sale-impact-band.is-after { fill: var(--sale-impact-campaign); opacity: 0.07; }
+.admin-operator .sale-impact-line { fill: none; stroke: var(--overview-teal); stroke-width: 3; }
+.admin-operator .sale-impact-dot { stroke: var(--overview-teal); fill: var(--overview-surface); stroke-width: 2; }
+.admin-operator .sale-impact-line.is-campaign { stroke: var(--sale-impact-campaign); stroke-dasharray: 7 5; }
+.admin-operator .sale-impact-dot.is-campaign { stroke: var(--sale-impact-campaign); }
+.admin-operator .sale-impact-data summary { cursor: pointer; padding: 14px 0; color: var(--overview-teal-dark); }
+.admin-operator .sale-impact-data table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-operator .sale-impact-data caption { text-align: left; padding: 8px; color: var(--overview-muted); }
+.admin-operator .sale-impact-data th,
+.admin-operator .sale-impact-data td { text-align: left; padding: 10px; border-bottom: 1px solid var(--overview-line); white-space: nowrap; }
+
+@media (max-width: 1240px) {
+  .admin-operator .sale-impact-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .admin-operator .sale-impact-kpis { grid-template-columns: 1fr; }
+  .admin-operator .sale-impact-meta button { margin-left: 0; }
+}
+
+html[data-theme="dark"] .admin-operator .sale-impact-card { --sale-impact-campaign: #c9a0f0; }
+
+@media (forced-colors: active) {
+  .admin-operator .sale-impact-line,
+  .admin-operator .sale-impact-dot { stroke: CanvasText; }
+  .admin-operator .sale-impact-axis { fill: CanvasText; }
+  .admin-operator .sale-impact-swatch { border-color: CanvasText; }
+}
+
 .admin-operator .admin-overview-heading {
   position: relative;
   display: grid;
