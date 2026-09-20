@@ -22,7 +22,7 @@ function Metric({ label, value, note }) {
   );
 }
 
-function SaleRevenueImpactDetails({ campaignId, onMissing }) {
+function SaleRevenueImpactDetails({ campaignId, onCampaignsRefreshed }) {
   const [state, setState] = useState({ loading: true, impact: null, error: "" });
   const [revision, setRevision] = useState(0);
   useEffect(() => {
@@ -34,8 +34,18 @@ function SaleRevenueImpactDetails({ campaignId, onMissing }) {
         if (current) setState({ loading: false, impact: response.data, error: "" });
       } catch (error) {
         if (!current) return;
-        if (error?.status === 404) onMissing(campaignId);
-        else setState({ loading: false, impact: null, error: "Không thể tải phân tích doanh thu. Vui lòng thử lại." });
+        if (error?.status === 404) {
+          // A missing analytics endpoint does not imply that the campaign was deleted.
+          // Verify once without clearing the selector or automatically trying other IDs.
+          try {
+            const items = await loadAllSaleCampaigns(saleCampaignsApi);
+            if (!current) return;
+            onCampaignsRefreshed(items, campaignId);
+          } catch {
+            // Keep the existing list when deletion cannot be confirmed.
+          }
+          if (current) setState({ loading: false, impact: null, error: "Phân tích doanh thu hiện chưa khả dụng cho chương trình này. Vui lòng thử lại sau hoặc chọn chương trình khác." });
+        } else setState({ loading: false, impact: null, error: "Không thể tải phân tích doanh thu. Vui lòng thử lại." });
       }
     }
     const timer = window.setTimeout(loadImpact, 0);
@@ -43,7 +53,7 @@ function SaleRevenueImpactDetails({ campaignId, onMissing }) {
       current = false;
       window.clearTimeout(timer);
     };
-  }, [campaignId, revision, onMissing]);
+  }, [campaignId, revision, onCampaignsRefreshed]);
 
   function retry() {
     setState({ loading: true, impact: null, error: "" });
@@ -103,7 +113,7 @@ function SaleRevenueImpactDetails({ campaignId, onMissing }) {
 
 export default function SaleRevenueImpactCard() {
   const [list, setList] = useState({ loading: true, items: [], error: "" });
-  const [request, setRequest] = useState({ revision: 0, excludedIds: [] });
+  const [revision, setRevision] = useState(0);
   const [selectedId, setSelectedId] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -113,9 +123,8 @@ export default function SaleRevenueImpactCard() {
       try {
         const items = await loadAllSaleCampaigns(saleCampaignsApi);
         if (!current) return;
-        const available = items.filter((item) => !request.excludedIds.includes(item.id));
-        setList({ loading: false, items: available, error: "" });
-        setSelectedId((id) => available.some((item) => item.id === id) ? id : available[0]?.id ?? "");
+        setList({ loading: false, items, error: "" });
+        setSelectedId((id) => items.some((item) => item.id === id) ? id : items[0]?.id ?? "");
       } catch {
         if (current) setList({ loading: false, items: [], error: "Không thể tải danh sách chương trình khuyến mãi." });
       }
@@ -125,20 +134,20 @@ export default function SaleRevenueImpactCard() {
       current = false;
       window.clearTimeout(timer);
     };
-  }, [request]);
+  }, [revision]);
 
-  const handleMissing = useCallback((id) => {
-    setNotice("Chương trình đã chọn không còn khả dụng. Danh sách đã được cập nhật; hãy kiểm tra chương trình đang chọn.");
-    setSelectedId("");
-    setList({ loading: true, items: [], error: "" });
-    // Exclude deleted IDs even if a stale list response still contains them.
-    setRequest((previous) => ({ revision: previous.revision + 1, excludedIds: [...previous.excludedIds, id] }));
+  const handleCampaignsRefreshed = useCallback((items, id) => {
+    setList({ loading: false, items, error: "" });
+    if (!items.some((item) => item.id === id)) {
+      setNotice("Chương trình đã chọn không còn khả dụng. Danh sách đã được cập nhật; hãy chọn chương trình khác nếu có.");
+      setSelectedId("");
+    }
   }, []);
 
   function refreshList() {
     setNotice("");
     setList((previous) => ({ ...previous, loading: true, error: "" }));
-    setRequest((previous) => ({ revision: previous.revision + 1, excludedIds: [] }));
+    setRevision((value) => value + 1);
   }
 
   return (
@@ -154,10 +163,11 @@ export default function SaleRevenueImpactCard() {
             : <>
               <div className="sale-impact-selector"><label htmlFor="sale-impact-campaign">Chương trình khuyến mãi</label>
                 <select id="sale-impact-campaign" value={selectedId} onChange={(event) => { setNotice(""); setSelectedId(event.target.value); }}>
+                  {!selectedId && <option value="" disabled>Chọn chương trình khác</option>}
                   {list.items.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name} · {formatDateTime(campaign.startAt)}</option>)}
                 </select>
               </div>
-              {selectedId && <SaleRevenueImpactDetails key={selectedId} campaignId={selectedId} onMissing={handleMissing} />}
+              {selectedId && <SaleRevenueImpactDetails key={selectedId} campaignId={selectedId} onCampaignsRefreshed={handleCampaignsRefreshed} />}
             </>}
     </section>
   );
