@@ -24,11 +24,13 @@ export function formatCompactCurrency(value) {
 }
 
 function getYear(value) {
+  if (value == null || value === "") return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.getFullYear();
 }
 
 function getMonth(value) {
+  if (value == null || value === "") return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.getMonth();
 }
@@ -38,18 +40,22 @@ function getMonth(value) {
 // running total - so the line can rise and fall month to month. Months
 // with no revenue still get a point at 0 instead of being skipped.
 export function buildRevenueGrowth(payments) {
-  const paidPayments = payments.filter((payment) => String(payment?.status ?? "").toLowerCase() === SUCCESS_STATUS);
-  const total = paidPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+  const paidPayments = payments.filter((payment) => (
+    String(payment?.status ?? "").toLowerCase() === SUCCESS_STATUS && getYear(payment?.paidAt) !== null
+  ));
 
-  const years = paidPayments.map((payment) => getYear(payment.createdAt)).filter((year) => year !== null);
+  const years = paidPayments.map((payment) => getYear(payment.paidAt));
   const targetYear = years.length > 0 ? Math.max(...years) : new Date().getFullYear();
 
   const byMonth = new Array(12).fill(0);
+  let total = 0;
   paidPayments.forEach((payment) => {
-    if (getYear(payment.createdAt) !== targetYear) return;
-    const month = getMonth(payment.createdAt);
+    if (getYear(payment.paidAt) !== targetYear) return;
+    const month = getMonth(payment.paidAt);
     if (month === null) return;
-    byMonth[month] += Number(payment.amount) || 0;
+    const amount = Number(payment.amount) || 0;
+    byMonth[month] += amount;
+    total += amount;
   });
 
   const series = byMonth.map((value, month) => ({ label: `T${month + 1}`, value }));

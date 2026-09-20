@@ -136,6 +136,7 @@ export const ENDPOINTS = {
     BY_ID: (id) => encodedById(ADMIN_SALE_CAMPAIGNS_BASE, id),
     STATUS: (id) => `${encodedById(ADMIN_SALE_CAMPAIGNS_BASE, id)}/status`,
     REDEMPTIONS: (id) => `${encodedById(ADMIN_SALE_CAMPAIGNS_BASE, id)}/redemptions`,
+    REVENUE_IMPACT: (id) => `${encodedById(ADMIN_SALE_CAMPAIGNS_BASE, id)}/revenue-impact`,
   },
   USER_SUBSCRIPTIONS: {
     CHECKOUT: `${USER_SUBSCRIPTIONS_BASE}/checkout`,

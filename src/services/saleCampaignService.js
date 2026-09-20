@@ -10,6 +10,7 @@ function withPagination(path, pageNumber = 1, pageSize = 10) {
 }
 
 export const saleCampaignsApi = {
+  revenueImpact: (id) => apiRequest(ENDPOINTS.ADMIN_SALE_CAMPAIGNS.REVENUE_IMPACT(id), { auth: true }),
   list: (pageNumber = 1, pageSize = 10) => apiRequest(
     withPagination(ENDPOINTS.ADMIN_SALE_CAMPAIGNS.BASE, pageNumber, pageSize),
     { auth: true },
