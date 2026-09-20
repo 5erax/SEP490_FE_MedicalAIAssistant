@@ -414,20 +414,30 @@ test("empty campaign list never requests impact", async ({ page }) => {
   expect(calls.impact).toEqual([]);
 });
 
-test("404 reloads the campaign list and skips the deleted campaign even if list is stale", async ({ page }) => {
-  const calls = await mockSaleImpact(page);
-  await page.route("**/api/admin/sale-campaigns/latest/revenue-impact", (route) => route.fulfill({ status: 404, json: { success: false, message: "Deleted" } }));
+test("confirmed deletion refreshes the list and waits for a manual selection", async ({ page }) => {
+  const campaigns = [...saleCampaignFixtures];
+  const calls = await mockSaleImpact(page, { campaigns });
+  await page.route("**/api/admin/sale-campaigns/latest/revenue-impact", (route) => {
+    campaigns.splice(campaigns.findIndex((item) => item.id === "latest"), 1);
+    return route.fulfill({ status: 404, json: { success: false, message: "Deleted" } });
+  });
   await page.goto("/app/admin");
-  await expect(page.getByLabel("Chương trình khuyến mãi", { exact: true })).toHaveValue("older");
-  await expect(salePanel(page).locator(".sale-impact-point")).toHaveCount(5);
   await expect(salePanel(page).getByText(/Chương trình đã chọn không còn khả dụng/)).toBeVisible();
-  expect(calls.list).toEqual([1, 2, 1, 2]);
+  await expect(page.getByLabel("Chương trình khuyến mãi", { exact: true })).toHaveValue("");
+  expect(calls.list).toEqual([1, 2, 1]);
+  expect(calls.impact).toEqual([]);
+  await page.getByLabel("Chương trình khuyến mãi", { exact: true }).selectOption("older");
+  await expect(salePanel(page).locator(".sale-impact-point")).toHaveCount(5);
   expect(calls.impact).toEqual(["older"]);
 });
 
 test("404 on the last campaign leaves a clear empty state without retry loops", async ({ page }) => {
-  const calls = await mockSaleImpact(page, { campaigns: [saleCampaignFixtures[1]] });
-  await page.route("**/api/admin/sale-campaigns/latest/revenue-impact", (route) => route.fulfill({ status: 404, json: { success: false } }));
+  const campaigns = [saleCampaignFixtures[1]];
+  const calls = await mockSaleImpact(page, { campaigns });
+  await page.route("**/api/admin/sale-campaigns/latest/revenue-impact", (route) => {
+    campaigns.length = 0;
+    return route.fulfill({ status: 404, json: { success: false } });
+  });
   await page.goto("/app/admin");
   await expect(salePanel(page).getByText("Chưa có chương trình khuyến mãi để phân tích.")).toBeVisible();
   expect(calls.list).toEqual([1, 1]);
@@ -505,4 +515,69 @@ test("sale impact supports keyboard, responsive layouts and dark mode without pa
       expect(results.violations.filter((violation) => ["critical", "serious"].includes(violation.impact))).toEqual([]);
     }
   }
+});
+
+test("failed list verification after analytics 404 preserves the selection", async ({ page }) => {
+  await mockSaleImpact(page);
+  let verifying = false;
+  await page.route(/\/api\/admin\/sale-campaigns\?/, (route) => verifying
+    ? route.fulfill({ status: 500, json: { success: false } })
+    : route.fallback());
+  await page.route("**/api/admin/sale-campaigns/latest/revenue-impact", (route) => {
+    verifying = true;
+    return route.fulfill({ status: 404, json: { success: false } });
+  });
+  await page.goto("/app/admin");
+  await expect(salePanel(page).getByRole("alert")).toContainText("Phân tích doanh thu hiện chưa khả dụng");
+  await expect(page.getByLabel("Chương trình khuyến mãi", { exact: true })).toHaveValue("latest");
+  await page.getByLabel("Chương trình khuyến mãi", { exact: true }).selectOption("older");
+  await expect(salePanel(page).locator(".sale-impact-point")).toHaveCount(5);
+});
+
+test("late deletion verification cannot clear a newer campaign selection", async ({ page }) => {
+  await mockSaleImpact(page);
+  let verifying = false;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  await page.route(/\/api\/admin\/sale-campaigns\?/, async (route) => {
+    if (!verifying) return route.fallback();
+    await gate;
+    return route.fulfill({ json: { success: true, data: { items: [], totalPages: 1 } } });
+  });
+  await page.route("**/api/admin/sale-campaigns/latest/revenue-impact", (route) => {
+    verifying = true;
+    return route.fulfill({ status: 404, json: { success: false } });
+  });
+  const pending = page.waitForRequest((request) => verifying && /\/sale-campaigns\?/.test(request.url()));
+  await page.goto("/app/admin");
+  await pending;
+  await page.getByLabel("Chương trình khuyến mãi", { exact: true }).selectOption("older");
+  await expect(salePanel(page).locator(".sale-impact-point")).toHaveCount(5);
+  const completed = page.waitForResponse(/\/api\/admin\/sale-campaigns\?/);
+  release();
+  await completed;
+  await expect(page.getByLabel("Chương trình khuyến mãi", { exact: true })).toHaveValue("older");
+  await expect(salePanel(page).locator(".sale-impact-point")).toHaveCount(5);
+  await expect(salePanel(page).getByText(/Chương trình đã chọn không còn khả dụng/)).toHaveCount(0);
+});
+
+test("404 analytics for existing campaigns stays stable instead of cycling through the list", async ({ page }) => {
+  const calls = await mockSaleImpact(page);
+  const impacts = [];
+  await page.route("**/api/admin/sale-campaigns/*/revenue-impact", (route) => {
+    impacts.push(route.request().url());
+    return route.fulfill({ status: 404, json: { success: false } });
+  });
+  await page.goto("/app/admin");
+  await expect(salePanel(page).getByRole("alert")).toContainText("Phân tích doanh thu hiện chưa khả dụng");
+  await expect(page.getByLabel("Chương trình khuyến mãi", { exact: true })).toHaveValue("latest");
+  await expect(salePanel(page).getByText("Chưa có chương trình khuyến mãi để phân tích.")).toHaveCount(0);
+  expect(impacts).toHaveLength(1);
+  expect(calls.list).toEqual([1, 2, 1, 2]);
+  await page.waitForTimeout(1200); // Observe a quiet interval: regression is an automatic request cascade.
+  expect(impacts).toHaveLength(1);
+  expect(calls.list).toEqual([1, 2, 1, 2]);
+  await page.unroute("**/api/admin/sale-campaigns/*/revenue-impact");
+  await salePanel(page).getByRole("button", { name: "Thử lại phân tích" }).click();
+  await expect(salePanel(page).locator(".sale-impact-point")).toHaveCount(5);
 });
