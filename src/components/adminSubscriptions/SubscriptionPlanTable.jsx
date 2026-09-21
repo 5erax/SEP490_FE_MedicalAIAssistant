@@ -7,7 +7,7 @@ const QUOTA_LABELS = {
 };
 
 function formatPrice(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+  return `${Number(value || 0).toLocaleString("vi-VN")}\u00a0đ`;
 }
 
 function formatDate(value) {
@@ -145,7 +145,7 @@ export default function SubscriptionPlanTable({
                           {saleOffers.slice(0, 3).map((offer) => (
                             <em key={offer.campaignId}>
                               {offer.badgeText}
-                              {Number.isFinite(offer.salePrice) ? ` · ${formatPrice(offer.salePrice).replace(" ", "")}` : ""}
+                              {Number.isFinite(offer.salePrice) ? ` · ${formatPrice(offer.salePrice)}` : ""}
                             </em>
                           ))}
                           {saleOffers.length > 3 && <em>+{saleOffers.length - 3} mã khác</em>}

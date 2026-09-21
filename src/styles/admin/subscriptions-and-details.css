@@ -624,6 +624,11 @@
   gap: 8px;
 }
 
+.subscription-plan-title-block > span:not(.subscription-plan-sale-price),
+.subscription-plan-sale-price small {
+  white-space: nowrap;
+}
+
 .subscription-plan-sale-price small {
   color: rgba(16, 20, 17, 0.48);
   font-size: 13px;
@@ -638,6 +643,7 @@
   font-size: 17px;
   font-weight: 950;
   line-height: 1.05;
+  white-space: nowrap;
 }
 
 .subscription-plan-sale-summary {
@@ -693,7 +699,8 @@
   font-style: normal;
   font-weight: 850;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 
 .subscription-plan-card-meta {

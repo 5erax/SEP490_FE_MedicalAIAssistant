@@ -35,7 +35,9 @@ function normalizePage(response, pageNumber) {
 function formatMoney(value, currency = "VND") {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "—";
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: currency || "VND", maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: currency || "VND", maximumFractionDigits: 0 })
+    .format(amount)
+    .replace(/\s+/g, "\u00a0");
 }
 
 function formatDateTime(value) {

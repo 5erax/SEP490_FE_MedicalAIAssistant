@@ -1643,3 +1643,7 @@
 .admin-operator .admin-payment-panel .admin-payment-table .ui-table thead th:last-child {
   border-radius: 0 16px 0 0;
 }
+
+.admin-operator .admin-payment-panel .admin-payment-table .ui-table :is(th, td):nth-child(3) {
+  white-space: nowrap;
+}

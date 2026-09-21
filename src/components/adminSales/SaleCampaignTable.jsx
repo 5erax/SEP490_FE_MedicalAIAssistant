@@ -9,12 +9,24 @@ const ELIGIBILITY_LABELS = {
 };
 
 function money(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")} ₫`;
+  return `${Number(value || 0).toLocaleString("vi-VN")}\u00a0đ`;
 }
 
 function dateTime(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("vi-VN");
+}
+
+function SalePlanChip({ plan }) {
+  return (
+    <span className="sale-plan-chip" key={plan.id || plan.planId}>
+      <strong>{plan.planName}</strong>
+      <span>
+        {plan.salePrice != null ? money(plan.salePrice) : "Giữ nguyên mức phí"}
+        {plan.bonusCredit ? ` · tặng ${plan.bonusCredit} lượt` : ""}
+      </span>
+    </span>
+  );
 }
 
 export default function SaleCampaignTable({ campaigns, loading, onEdit, onRedemptions, onRemove, onToggle }) {
@@ -30,7 +42,7 @@ export default function SaleCampaignTable({ campaigns, loading, onEdit, onRedemp
               <tr key={campaign.id}>
                 <td><strong>{campaign.name}</strong><span>{campaign.badgeText || "Không có nhãn"}</span><small>Ưu tiên {campaign.priority}</small></td>
                 <td><span>{dateTime(campaign.startAt)} → {dateTime(campaign.endAt)}</span><small>{ELIGIBILITY_LABELS[campaign.eligibilityType] || campaign.eligibilityType}</small></td>
-                <td>{(campaign.plans || []).map((plan) => <span className="sale-plan-chip" key={plan.id || plan.planId}>{plan.planName}: {plan.salePrice != null ? money(plan.salePrice) : "Giữ nguyên mức phí"}{plan.bonusCredit ? ` · tặng ${plan.bonusCredit} lượt` : ""}</span>)}</td>
+                <td>{(campaign.plans || []).map((plan) => <SalePlanChip key={plan.id || plan.planId} plan={plan} />)}</td>
                 <td><strong>{campaign.occupiedRedemptions}/{campaign.maxRedemptions ?? "∞"}</strong><small>{campaign.remainingRedemptions == null ? "Không giới hạn" : `Còn ${campaign.remainingRedemptions} suất`}</small></td>
                 <td>
                   <span className={`sale-status sale-status-${status}`}>{STATUS_LABELS[status] || campaign.displayStatus}</span>
