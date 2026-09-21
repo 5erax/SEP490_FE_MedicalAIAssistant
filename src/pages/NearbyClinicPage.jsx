@@ -1725,6 +1725,15 @@ function NearbyClinicPage() {
       const nearestTopRatedFacility = getNearestFacilityFromList(userLocation, topRatedFacilities);
       setFacilityDiscoveryMode(TOP_RATED_NEAREST_MODE);
       setFacilities(nearestTopRatedFacility ? [nearestTopRatedFacility] : []);
+      nearestFacilityFocusRef.current = "";
+      if (nearestTopRatedFacility?.hasValidCoordinates && mapStatus === "ready") {
+        mapRef.current?.flyTo?.({
+          center: [nearestTopRatedFacility.longitude, nearestTopRatedFacility.latitude],
+          zoom: 16,
+          duration: prefersReducedMotion() ? 0 : 900,
+          offset: window.innerWidth > 760 ? [SIDEBAR_MAP_OFFSET, 0] : [0, -96],
+        });
+      }
       setApiNotice(nearestTopRatedFacility
         ? ""
         : "Top 5 hiện chưa có bệnh viện nào có tọa độ hợp lệ để so sánh khoảng cách.");
