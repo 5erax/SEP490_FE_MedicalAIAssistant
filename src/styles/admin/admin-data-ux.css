@@ -1039,6 +1039,194 @@
   min-width: 760px;
 }
 
+/* Final payment-history harmonization with the subscription package cards. */
+.admin-operator .admin-payment-panel {
+  display: grid;
+  gap: 18px;
+  overflow: hidden;
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.admin-operator .admin-payment-panel > .panel-title-row.admin-payment-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(24px, 5vw, 72px);
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 22px;
+  background:
+    linear-gradient(120deg, rgba(225, 243, 238, 0.82), rgba(255, 255, 255, 0.96) 62%),
+    #fff;
+  padding: clamp(24px, 3.5vw, 42px);
+}
+
+.admin-operator .admin-payment-panel > .panel-title-row.admin-payment-hero::after {
+  position: absolute;
+  right: -88px;
+  bottom: -122px;
+  width: 260px;
+  height: 260px;
+  border: 38px solid rgba(13, 119, 115, 0.055);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.admin-operator .admin-payment-panel > .panel-title-row.admin-payment-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-operator .admin-payment-panel > .panel-title-row.admin-payment-hero h2 {
+  margin-top: 8px;
+  color: #101411;
+  font-size: clamp(2rem, 4vw, 3.05rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.admin-operator .admin-payment-panel > .panel-title-row.admin-payment-hero .muted-text {
+  max-width: 680px;
+  margin: 13px 0 0;
+  color: rgba(16, 20, 17, 0.62);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.admin-operator .admin-payment-panel > .panel-title-row.admin-payment-hero .ui-button {
+  min-height: 48px;
+  border-color: rgba(8, 127, 140, 0.24);
+  border-radius: 13px;
+  background: #fff;
+  color: #073f45;
+  box-shadow: none;
+  font-weight: 900;
+}
+
+.admin-operator .admin-payment-table.ui-table-wrap {
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.admin-operator .admin-payment-table .ui-table {
+  min-width: 1060px;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+}
+
+.admin-operator .admin-payment-table .ui-table thead th {
+  position: static;
+  border: 0;
+  background: rgba(251, 252, 247, 0.92);
+  color: rgba(16, 20, 17, 0.56);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  line-height: 1.25;
+  padding: 13px 16px;
+}
+
+.admin-operator .admin-payment-table .ui-table thead th:first-child {
+  border-radius: 14px 0 0 14px;
+}
+
+.admin-operator .admin-payment-table .ui-table thead th:last-child {
+  border-radius: 0 14px 14px 0;
+}
+
+.admin-operator .admin-payment-table .ui-table tbody tr {
+  background:
+    linear-gradient(90deg, rgba(225, 251, 248, 0.92) 0%, rgba(242, 253, 249, 0.9) 34%, rgba(255, 255, 255, 0.98) 78%),
+    #fff;
+  filter: drop-shadow(0 8px 22px rgba(16, 20, 17, 0.045));
+}
+
+.admin-operator .admin-payment-table .ui-table tbody :is(th, td) {
+  border-top: 1px solid rgba(16, 20, 17, 0.1);
+  border-bottom: 1px solid rgba(16, 20, 17, 0.1);
+  background: transparent;
+  padding: 18px 16px;
+  vertical-align: middle;
+}
+
+.admin-operator .admin-payment-table .ui-table tbody th {
+  border-left: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 16px 0 0 16px;
+}
+
+.admin-operator .admin-payment-table .ui-table tbody td:last-child {
+  border-right: 1px solid rgba(16, 20, 17, 0.1);
+  border-radius: 0 16px 16px 0;
+}
+
+.admin-operator .admin-payment-table .ui-table tbody tr:hover :is(th, td) {
+  border-color: rgba(8, 127, 140, 0.18);
+  background: transparent;
+}
+
+.admin-operator .admin-payment-table .ui-table tbody tr:hover {
+  background:
+    linear-gradient(90deg, rgba(213, 249, 246, 0.98) 0%, rgba(237, 253, 248, 0.96) 38%, rgba(255, 255, 255, 0.99) 82%),
+    #fff;
+}
+
+.admin-operator .admin-payment-table .ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.46);
+}
+
+.admin-operator .admin-payment-table .ui-badge::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.admin-operator .admin-payment-table .ui-badge-success {
+  border-color: rgba(21, 128, 61, 0.16);
+  background: linear-gradient(135deg, #dff8df, #effbeb);
+  color: #177245;
+}
+
+.admin-operator .admin-payment-table .ui-badge-warning {
+  border-color: rgba(181, 116, 0, 0.18);
+  background: linear-gradient(135deg, #fff2d6, #fff9e8);
+  color: #9a6200;
+}
+
+.admin-operator .admin-payment-table .ui-badge-danger {
+  border-color: rgba(190, 18, 60, 0.18);
+  background: linear-gradient(135deg, #ffe4e9, #fff4f6);
+  color: #be123c;
+}
+
+@media (max-width: 900px) {
+  .admin-operator .admin-payment-panel > .panel-title-row.admin-payment-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
 .admin-operator .department-table-wrap .ui-table th,
 .admin-operator .department-table-wrap .ui-table td {
   padding: 13px 14px;

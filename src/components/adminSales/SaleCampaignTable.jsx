@@ -1,4 +1,4 @@
-import { Bell, BellOff, Eye, Pencil, Power, Trash2 } from "lucide-react";
+import { Eye, Pencil, Power, Trash2 } from "lucide-react";
 
 const STATUS_LABELS = {
   active: "Đang diễn ra", scheduled: "Sắp diễn ra", soldout: "Đã hết suất",
@@ -35,7 +35,6 @@ export default function SaleCampaignTable({ campaigns, loading, onEdit, onRedemp
                 <td>
                   <span className={`sale-status sale-status-${status}`}>{STATUS_LABELS[status] || campaign.displayStatus}</span>
                   <span className="sale-announcement-status" data-active={campaign.announceToUsers === true}>
-                    {campaign.announceToUsers === true ? <Bell size={14} aria-hidden="true" /> : <BellOff size={14} aria-hidden="true" />}
                     Thông báo: {campaign.announceToUsers === true ? "Đang bật" : "Đang tắt"}
                   </span>
                 </td>

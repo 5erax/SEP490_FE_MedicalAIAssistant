@@ -24,6 +24,8 @@ export default function AdminSaleCampaignsSection() {
   const [capacity, setCapacity] = useState({});
   const [saveError, setSaveError] = useState("");
   const [openingForm, setOpeningForm] = useState(false);
+  const activeCampaignCount = page.items.filter((campaign) => String(campaign.displayStatus || "").toLowerCase() === "active").length;
+  const endedCampaignCount = page.items.filter((campaign) => ["ended", "disabled"].includes(String(campaign.displayStatus || "").toLowerCase())).length;
 
   const load = useCallback(async (pageNumber = page.pageNumber) => {
     setLoading(true);
@@ -103,6 +105,11 @@ export default function AdminSaleCampaignsSection() {
 
   return <section className="admin-sale-campaigns admin-management-section">
     <header className="admin-sale-hero"><div><span><Tags size={17} />Ưu đãi dịch vụ chăm sóc</span><h2>Chương trình ưu đãi MediMate</h2><p>Thiết lập mức phí ưu đãi, lượt sử dụng tặng thêm, đối tượng áp dụng và số lượng người có thể nhận quyền lợi.</p></div><div><button type="button" onClick={() => load()}><RefreshCw size={17} />Tải lại</button><button className="primary" type="button" disabled={openingForm} onClick={() => { setEditing(null); setCapacity({}); setSaveError(""); setFormOpen(true); }}><Plus size={18} />Thêm ưu đãi</button></div></header>
+    <section className="subscription-plan-kpis sale-campaign-kpis" aria-label="Tổng quan khuyến mãi">
+      <article><span>Tổng chương trình</span><strong>{page.totalCount}</strong></article>
+      <article><span>Đang diễn ra</span><strong>{activeCampaignCount}</strong></article>
+      <article><span>Đã kết thúc/tắt</span><strong>{endedCampaignCount}</strong></article>
+    </section>
     <div className="sale-campaign-summary"><strong>{page.totalCount} chương trình</strong><span>Trạng thái và số lượng quyền lợi còn lại được hệ thống cập nhật tự động.</span></div>
     {openingForm && <p role="status">Đang kiểm tra số suất đã sử dụng…</p>}
     <SaleCampaignTable campaigns={page.items} loading={loading || openingForm} onEdit={openEdit} onRedemptions={setRedemptions} onRemove={remove} onToggle={toggle} />

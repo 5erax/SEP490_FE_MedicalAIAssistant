@@ -149,6 +149,11 @@ export default function AdminPaymentsPanel() {
   }, [appliedFilters, paymentPage.items]);
 
   const activeFilterCount = Number(Boolean(appliedFilters.search.trim())) + Number(Boolean(appliedFilters.status));
+  const paidPaymentCount = paymentPage.items.filter((payment) => String(payment?.status ?? "").toLowerCase() === "paid").length;
+  const issuePaymentCount = paymentPage.items.filter((payment) => {
+    const status = String(payment?.status ?? "").toLowerCase();
+    return ["failed", "cancelled", "canceled", "refunded"].includes(status);
+  }).length;
 
   useEffect(() => {
     let active = true;
@@ -204,7 +209,7 @@ export default function AdminPaymentsPanel() {
 
   return (
     <section className="admin-payment-panel" aria-labelledby="admin-payments-title" aria-busy={loading}>
-      <div className="panel-title-row">
+      <div className="panel-title-row admin-payment-hero">
         <div>
           <p className="eyebrow">Giao dịch</p>
           <h2 id="admin-payments-title">Lịch sử thanh toán</h2>
@@ -212,6 +217,11 @@ export default function AdminPaymentsPanel() {
         </div>
         <Button tone="secondary" size="sm" onClick={reload} disabled={loading}><RefreshCw size={16} aria-hidden="true" /> Tải lại</Button>
       </div>
+      <section className="subscription-plan-kpis admin-payment-kpis" aria-label="Tổng quan lịch sử thanh toán">
+        <article><span>Tổng giao dịch trang này</span><strong>{paymentPage.items.length}</strong></article>
+        <article><span>Đã thanh toán</span><strong>{paidPaymentCount}</strong></article>
+        <article><span>Cần đối soát</span><strong>{issuePaymentCount}</strong></article>
+      </section>
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
 
       <AdminFilterDisclosure
