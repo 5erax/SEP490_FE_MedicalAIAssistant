@@ -478,3 +478,333 @@
 .admin-operator .sale-campaign-table thead th:last-child {
   border-radius: 0 16px 0 0;
 }
+
+.sale-campaign-form-modal.sale-modal {
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  width: min(1040px, calc(100vw - 32px));
+  max-height: min(92vh, 900px);
+  border: 1px solid rgba(0, 128, 136, 0.16);
+  border-radius: 28px;
+  background: #f6faf8;
+}
+
+.sale-campaign-form-modal .sale-modal-header {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: 18px;
+  border-bottom: 1px solid rgba(0, 128, 136, 0.16);
+  background:
+    linear-gradient(135deg, rgba(216, 249, 244, 0.68), rgba(255, 255, 255, 0.96) 50%),
+    #ffffff;
+  padding: clamp(28px, 4vw, 42px) clamp(24px, 4vw, 42px);
+}
+
+.sale-campaign-form-modal .sale-modal-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 18px;
+  background: #e6f7f4;
+  color: #087f8c;
+}
+
+.sale-campaign-form-modal .sale-modal-header .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0 0 12px;
+  color: #087f8c;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sale-campaign-form-modal .sale-modal-header .eyebrow::before {
+  width: 30px;
+  height: 2px;
+  border-radius: 999px;
+  background: #087f8c;
+  content: "";
+}
+
+.sale-campaign-form-modal .sale-modal-header h2 {
+  margin: 0;
+  color: #102f35;
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 950;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.sale-campaign-form-modal .sale-modal-header p:not(.eyebrow) {
+  max-width: 680px;
+  margin: 12px 0 0;
+  color: rgba(16, 47, 53, 0.66);
+  font-size: 14px;
+  font-weight: 720;
+  line-height: 1.55;
+}
+
+.sale-campaign-form-modal .doctor-modal-close {
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  padding: 0;
+  border-radius: 16px;
+  color: #101411;
+}
+
+.sale-campaign-form {
+  display: flex;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 22px;
+  background: #f6faf8;
+  padding: 24px clamp(24px, 4vw, 36px) 0;
+  scrollbar-color: rgba(0, 128, 136, 0.38) transparent;
+  scrollbar-width: thin;
+}
+
+.sale-campaign-form::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sale-campaign-form::-webkit-scrollbar-thumb {
+  border: 2px solid #f6faf8;
+  border-radius: 999px;
+  background: rgba(0, 128, 136, 0.42);
+}
+
+.sale-modal-warning {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(214, 151, 51, 0.34);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 250, 235, 0.94), rgba(255, 246, 220, 0.72));
+  color: #815516;
+  padding: 13px 15px;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.sale-form-sections {
+  display: grid;
+  gap: 22px;
+}
+
+.sale-form-card {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  gap: 22px;
+  border: 1px solid rgba(0, 128, 136, 0.16);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(230, 247, 244, 0.62), rgba(255, 255, 255, 0.94) 44%),
+    #ffffff;
+  box-shadow: 0 20px 52px rgba(12, 58, 62, 0.08);
+  padding: 24px;
+}
+
+.sale-form-card::before {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, #008891, #6fd0c8);
+  content: "";
+}
+
+.sale-form-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-left: 8px;
+}
+
+.sale-form-card-head > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(0, 128, 136, 0.12);
+  border-radius: 14px;
+  background: #e6f7f4;
+  color: #087f8c;
+}
+
+.sale-form-card-head h3,
+.sale-form-card-head p {
+  margin: 0;
+}
+
+.sale-form-card-head h3 {
+  color: #102f35;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.sale-form-card-head p {
+  margin-top: 4px;
+  color: rgba(16, 47, 53, 0.64);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sale-campaign-form .sale-form-grid {
+  gap: 18px 20px;
+}
+
+.sale-campaign-form .clean-field,
+.sale-campaign-form .sale-modal label {
+  color: #253f40;
+  font-weight: 850;
+}
+
+.sale-campaign-form .clean-field > span:first-child {
+  font-size: 13px;
+}
+
+.sale-campaign-form :is(input, textarea, select) {
+  min-height: 48px;
+  border-color: rgba(12, 58, 62, 0.22);
+  border-radius: 14px;
+  color: #101411;
+  font-weight: 850;
+}
+
+.sale-campaign-form textarea {
+  min-height: 88px;
+}
+
+.sale-campaign-form small {
+  color: rgba(16, 47, 53, 0.64);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.sale-campaign-form .sale-form-error {
+  margin: 0;
+  color: #b3261e;
+  font-weight: 850;
+}
+
+.sale-campaign-form .sale-plan-editor,
+.sale-campaign-form .sale-campaign-settings {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  border: 1px solid rgba(0, 128, 136, 0.16);
+  border-radius: 18px;
+  background: rgba(248, 253, 252, 0.8);
+  padding: 16px;
+}
+
+.sale-campaign-form .sale-plan-editor legend,
+.sale-campaign-form .sale-campaign-settings legend {
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  clip: rect(0 0 0 0);
+}
+
+.sale-campaign-form .sale-plan-editor-row {
+  grid-template-columns: minmax(240px, 1fr) minmax(160px, 0.42fr) minmax(150px, 0.36fr);
+  gap: 14px;
+  align-items: center;
+  border-radius: 15px;
+  background: rgba(239, 248, 246, 0.78);
+  padding: 14px;
+}
+
+.sale-campaign-form .sale-plan-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sale-campaign-form .sale-plan-check input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.sale-campaign-form .sale-plan-check span {
+  display: grid;
+  gap: 3px;
+}
+
+.sale-campaign-form .sale-plan-check strong {
+  color: #315358;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.sale-campaign-form .sale-campaign-toggle {
+  grid-template-columns: auto minmax(0, 1fr);
+  border-color: rgba(12, 58, 62, 0.14);
+  border-radius: 15px;
+  background: #fff;
+  padding: 14px 16px;
+}
+
+.sale-campaign-form .sale-campaign-settings > p {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding-left: 0;
+  color: rgba(16, 47, 53, 0.66);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sale-campaign-form footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  justify-content: flex-end;
+  margin: 0 calc(clamp(24px, 4vw, 36px) * -1);
+  border-top: 1px solid rgba(0, 128, 136, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 18px clamp(24px, 4vw, 36px) 24px;
+  backdrop-filter: blur(16px);
+}
+
+.sale-campaign-form footer button {
+  min-height: 52px;
+  border-radius: 14px;
+  font-weight: 950;
+}
+
+.sale-campaign-form footer .primary {
+  border-color: #087f86;
+  background: linear-gradient(135deg, #008891, #0a777f);
+  color: #fff;
+  box-shadow: 0 14px 26px rgba(0, 128, 136, 0.22);
+}
+
+@media (max-width: 860px) {
+  .sale-campaign-form-modal .sale-modal-header,
+  .sale-campaign-form .sale-plan-editor-row {
+    grid-template-columns: 1fr;
+  }
+
+  .sale-campaign-form-modal .sale-modal-icon {
+    display: none;
+  }
+}

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { BadgePercent, CalendarClock, Check, CreditCard, Megaphone, Settings2, ShieldAlert, Tags, Users, X } from "lucide-react";
 import { Dialog } from "../ui/Dialog";
 import { getCapacityErrors } from "./saleCampaignCapacity";
 
@@ -78,39 +78,121 @@ export default function SaleCampaignFormModal({ campaign, plans, saving, capacit
     onSave({ ...form, name: form.name.trim(), description: form.description.trim(), badgeText: form.badgeText.trim(), startAt: start.toISOString(), endAt: end.toISOString(), maxRedemptions: total, maxRedemptionsPerUser: perUser, priority: Number(form.priority), plans: campaignPlans });
   }
 
-  return <Dialog backdropClassName="sale-modal-backdrop" className="sale-modal" labelledBy="sale-form-title" onClose={onClose} initialFocusRef={closeRef}>
-    <header><div><span>{campaign ? "Cập nhật quyền lợi" : "Chương trình mới"}</span><h2 id="sale-form-title">{campaign?.name || "Tạo chương trình ưu đãi"}</h2></div><button ref={closeRef} type="button" onClick={onClose} disabled={saving} aria-label="Đóng"><X /></button></header>
-    <form onSubmit={submit}>
-      <div className="sale-form-grid">
-        <label>Tên chương trình<input value={form.name} onChange={(e) => change("name", e.target.value)} /></label>
-        <label>Nhãn hiển thị<input value={form.badgeText} onChange={(e) => change("badgeText", e.target.value)} placeholder="HEALTH WEEK" /></label>
-        <label className="wide">Mô tả<textarea value={form.description} onChange={(e) => change("description", e.target.value)} /></label>
-        <label>Bắt đầu<input type="datetime-local" value={form.startAt} onChange={(e) => change("startAt", e.target.value)} /></label>
-        <label>Kết thúc<input type="datetime-local" value={form.endAt} onChange={(e) => change("endAt", e.target.value)} /></label>
-        <label>Đối tượng<select value={form.eligibilityType} onChange={(e) => changeEligibilityType(e.target.value)}><option value="all">Tất cả khách hàng</option><option value="firstPurchase">Mua lần đầu</option><option value="returningCustomer">Đã từng mua</option></select></label>
-        <label>Ưu tiên<input type="number" min="0" max="1000" value={form.priority} onChange={(e) => change("priority", e.target.value)} /></label>
-        <label>Tổng suất<input type="number" min={Math.max(1, capacity?.occupiedRedemptions || 0)} step="1" value={form.maxRedemptions} onChange={(e) => change("maxRedemptions", e.target.value)} placeholder="Không giới hạn" aria-invalid={Boolean(capacityErrors.maxRedemptions)} aria-describedby="sale-total-capacity" /><small id="sale-total-capacity" className={capacityErrors.maxRedemptions ? "sale-form-error" : ""} aria-live="polite">{capacityErrors.maxRedemptions || `Đã sử dụng hoặc giữ chỗ: ${capacity?.occupiedRedemptions || 0} suất. Để trống nếu không giới hạn.`}</small></label>
-        <label>Suất mỗi người<input type="number" min={isFirstPurchase ? 1 : Math.max(1, capacity?.maxOccupiedPerUser || 0)} max={isFirstPurchase ? 1 : undefined} step="1" value={isFirstPurchase ? 1 : form.maxRedemptionsPerUser} onChange={(e) => change("maxRedemptionsPerUser", e.target.value)} placeholder="Không giới hạn" disabled={isFirstPurchase} aria-invalid={Boolean(capacityErrors.maxRedemptionsPerUser)} aria-describedby="sale-user-capacity" /><small id="sale-user-capacity" className={capacityErrors.maxRedemptionsPerUser ? "sale-form-error" : ""} aria-live="polite">{capacityErrors.maxRedemptionsPerUser || (isFirstPurchase ? "Mua lần đầu chỉ được dùng 1 suất mỗi người." : `Mức sử dụng cao nhất mỗi người: ${capacity?.maxOccupiedPerUser || 0} suất. Để trống nếu không giới hạn.`)}</small></label>
+  return <Dialog backdropClassName="sale-modal-backdrop" className="sale-modal sale-campaign-form-modal" labelledBy="sale-form-title" onClose={onClose} initialFocusRef={closeRef}>
+    <header className="sale-modal-header">
+      <span className="sale-modal-icon" aria-hidden="true"><BadgePercent size={22} /></span>
+      <div>
+        <p className="eyebrow">{campaign ? "Cập nhật quyền lợi" : "Chương trình mới"}</p>
+        <h2 id="sale-form-title">{campaign?.name || "Tạo chương trình ưu đãi"}</h2>
+        <p>Thiết lập thời gian, đối tượng, số suất và quyền lợi áp dụng cho từng gói dịch vụ.</p>
       </div>
-      <fieldset className="sale-plan-editor"><legend>Gói dịch vụ áp dụng</legend>{availablePlans.map((plan) => { const value = selectedPlans.get(plan.id); return <div className="sale-plan-editor-row" key={plan.id}><label className="sale-plan-check"><input type="checkbox" checked={Boolean(value)} onChange={() => togglePlan(plan)} /><span><strong>{plan.planName}</strong><small>Mức phí thông thường {Number(plan.price).toLocaleString("vi-VN")} ₫</small></span></label>{value && <><label>Mức phí ưu đãi<input type="number" min="1" value={value.salePrice} onChange={(e) => changePlan(plan.id, "salePrice", e.target.value)} /></label><label>Lượt tặng thêm<input type="number" min="0" value={value.bonusCredit} onChange={(e) => changePlan(plan.id, "bonusCredit", e.target.value)} /></label></>}</div>; })}</fieldset>
-      <fieldset className="sale-campaign-settings">
-        <legend>Trạng thái chương trình</legend>
-        <label className="sale-campaign-toggle">
-          <input type="checkbox" checked={Boolean(form.isActive)} onChange={(event) => change("isActive", event.target.checked)} />
-          <span className="sale-campaign-toggle-control" aria-hidden="true"><span /></span>
-          <span><strong>Kích hoạt chương trình</strong><small>Cho phép chương trình được áp dụng trên bảng giá và khi thanh toán trong thời gian hiệu lực.</small></span>
-        </label>
-        <label className="sale-campaign-toggle">
-          <input type="checkbox" checked={Boolean(form.announceToUsers)} onChange={(event) => change("announceToUsers", event.target.checked)} />
-          <span className="sale-campaign-toggle-control" aria-hidden="true"><span /></span>
-          <span><strong>Gửi thông báo ưu đãi</strong><small>Tự động gửi Email và Mobile Push cho người dùng đủ điều kiện khi chương trình thực sự khả dụng.</small></span>
-        </label>
-        {form.announceToUsers && !form.isActive && <p>Thông báo chỉ được gửi khi chương trình đang hoạt động. Hai lựa chọn này được lưu độc lập.</p>}
-        {form.announceToUsers && <p>Thông báo không được gửi ngay khi lưu. Hệ thống sẽ tự động xét điều kiện, mức ưu tiên và số suất còn lại.</p>}
-      </fieldset>
+      <button ref={closeRef} className="doctor-modal-close" type="button" onClick={onClose} disabled={saving} aria-label="Đóng"><X size={20} aria-hidden="true" /></button>
+    </header>
+
+    <form className="sale-campaign-form" onSubmit={submit}>
+      <aside className="sale-modal-warning">
+        <ShieldAlert size={18} aria-hidden="true" />
+        <span>Kiểm tra thời gian, số suất còn lại và giá ưu đãi trước khi mở chương trình.</span>
+      </aside>
+
+      <div className="sale-form-sections">
+        <section className="sale-form-card">
+          <div className="sale-form-card-head">
+            <span aria-hidden="true"><Tags size={20} /></span>
+            <div>
+              <h3>Thông tin chương trình</h3>
+              <p>Tên, nhãn hiển thị và mô tả nội bộ của ưu đãi.</p>
+            </div>
+          </div>
+          <div className="sale-form-grid">
+            <label className="clean-field"><span>Tên chương trình</span><input value={form.name} onChange={(e) => change("name", e.target.value)} /></label>
+            <label className="clean-field"><span>Nhãn hiển thị</span><input value={form.badgeText} onChange={(e) => change("badgeText", e.target.value)} placeholder="HEALTH WEEK" /></label>
+            <label className="clean-field wide"><span>Mô tả</span><textarea value={form.description} onChange={(e) => change("description", e.target.value)} /></label>
+          </div>
+        </section>
+
+        <section className="sale-form-card">
+          <div className="sale-form-card-head">
+            <span aria-hidden="true"><CalendarClock size={20} /></span>
+            <div>
+              <h3>Hiệu lực và đối tượng</h3>
+              <p>Khoảng thời gian áp dụng, nhóm khách hàng và thứ tự ưu tiên khi có nhiều ưu đãi.</p>
+            </div>
+          </div>
+          <div className="sale-form-grid">
+            <label className="clean-field"><span>Bắt đầu</span><input type="datetime-local" value={form.startAt} onChange={(e) => change("startAt", e.target.value)} /></label>
+            <label className="clean-field"><span>Kết thúc</span><input type="datetime-local" value={form.endAt} onChange={(e) => change("endAt", e.target.value)} /></label>
+            <label className="clean-field"><span>Đối tượng</span><select value={form.eligibilityType} onChange={(e) => changeEligibilityType(e.target.value)}><option value="all">Tất cả khách hàng</option><option value="firstPurchase">Mua lần đầu</option><option value="returningCustomer">Đã từng mua</option></select></label>
+            <label className="clean-field"><span>Ưu tiên</span><input type="number" min="0" max="1000" value={form.priority} onChange={(e) => change("priority", e.target.value)} /></label>
+          </div>
+        </section>
+
+        <section className="sale-form-card">
+          <div className="sale-form-card-head">
+            <span aria-hidden="true"><Users size={20} /></span>
+            <div>
+              <h3>Giới hạn sử dụng</h3>
+              <p>Quản lý tổng số suất và số suất tối đa cho mỗi người dùng.</p>
+            </div>
+          </div>
+          <div className="sale-form-grid">
+            <label className="clean-field"><span>Tổng suất</span><input type="number" min={Math.max(1, capacity?.occupiedRedemptions || 0)} step="1" value={form.maxRedemptions} onChange={(e) => change("maxRedemptions", e.target.value)} placeholder="Không giới hạn" aria-invalid={Boolean(capacityErrors.maxRedemptions)} aria-describedby="sale-total-capacity" /><small id="sale-total-capacity" className={capacityErrors.maxRedemptions ? "sale-form-error" : ""} aria-live="polite">{capacityErrors.maxRedemptions || `Đã sử dụng hoặc giữ chỗ: ${capacity?.occupiedRedemptions || 0} suất. Để trống nếu không giới hạn.`}</small></label>
+            <label className="clean-field"><span>Suất mỗi người</span><input type="number" min={isFirstPurchase ? 1 : Math.max(1, capacity?.maxOccupiedPerUser || 0)} max={isFirstPurchase ? 1 : undefined} step="1" value={isFirstPurchase ? 1 : form.maxRedemptionsPerUser} onChange={(e) => change("maxRedemptionsPerUser", e.target.value)} placeholder="Không giới hạn" disabled={isFirstPurchase} aria-invalid={Boolean(capacityErrors.maxRedemptionsPerUser)} aria-describedby="sale-user-capacity" /><small id="sale-user-capacity" className={capacityErrors.maxRedemptionsPerUser ? "sale-form-error" : ""} aria-live="polite">{capacityErrors.maxRedemptionsPerUser || (isFirstPurchase ? "Mua lần đầu chỉ được dùng 1 suất mỗi người." : `Mức sử dụng cao nhất mỗi người: ${capacity?.maxOccupiedPerUser || 0} suất. Để trống nếu không giới hạn.`)}</small></label>
+          </div>
+        </section>
+
+        <section className="sale-form-card">
+          <div className="sale-form-card-head">
+            <span aria-hidden="true"><CreditCard size={20} /></span>
+            <div>
+              <h3>Gói dịch vụ áp dụng</h3>
+              <p>Chọn gói, nhập mức phí ưu đãi hoặc số lượt tặng thêm cho từng gói.</p>
+            </div>
+          </div>
+          <fieldset className="sale-plan-editor">
+            <legend>Gói dịch vụ áp dụng</legend>
+            {availablePlans.map((plan) => {
+              const value = selectedPlans.get(plan.id);
+              return <div className="sale-plan-editor-row" key={plan.id}>
+                <label className="sale-plan-check"><input type="checkbox" checked={Boolean(value)} onChange={() => togglePlan(plan)} /><span><strong>{plan.planName}</strong><small>Mức phí thông thường {Number(plan.price).toLocaleString("vi-VN")}&nbsp;đ</small></span></label>
+                {value && <>
+                  <label className="clean-field"><span>Mức phí ưu đãi</span><input type="number" min="1" value={value.salePrice} onChange={(e) => changePlan(plan.id, "salePrice", e.target.value)} /></label>
+                  <label className="clean-field"><span>Lượt tặng thêm</span><input type="number" min="0" value={value.bonusCredit} onChange={(e) => changePlan(plan.id, "bonusCredit", e.target.value)} /></label>
+                </>}
+              </div>;
+            })}
+          </fieldset>
+        </section>
+
+        <section className="sale-form-card">
+          <div className="sale-form-card-head">
+            <span aria-hidden="true"><Settings2 size={20} /></span>
+            <div>
+              <h3>Trạng thái chương trình</h3>
+              <p>Bật/tắt chương trình và thông báo ưu đãi cho người dùng đủ điều kiện.</p>
+            </div>
+          </div>
+          <fieldset className="sale-campaign-settings">
+            <legend>Trạng thái chương trình</legend>
+            <label className="sale-campaign-toggle">
+              <input type="checkbox" checked={Boolean(form.isActive)} onChange={(event) => change("isActive", event.target.checked)} />
+              <span className="sale-campaign-toggle-control" aria-hidden="true"><span /></span>
+              <span><strong>Kích hoạt chương trình</strong><small>Cho phép chương trình được áp dụng trên bảng giá và khi thanh toán trong thời gian hiệu lực.</small></span>
+            </label>
+            <label className="sale-campaign-toggle">
+              <input type="checkbox" checked={Boolean(form.announceToUsers)} onChange={(event) => change("announceToUsers", event.target.checked)} />
+              <span className="sale-campaign-toggle-control" aria-hidden="true"><span /></span>
+              <span><strong>Gửi thông báo ưu đãi</strong><small>Tự động gửi Email và Mobile Push cho người dùng đủ điều kiện khi chương trình thực sự khả dụng.</small></span>
+            </label>
+            {form.announceToUsers && !form.isActive && <p><Megaphone size={14} aria-hidden="true" /> Thông báo chỉ được gửi khi chương trình đang hoạt động. Hai lựa chọn này được lưu độc lập.</p>}
+            {form.announceToUsers && <p><Megaphone size={14} aria-hidden="true" /> Thông báo không được gửi ngay khi lưu. Hệ thống sẽ tự động xét điều kiện, mức ưu tiên và số suất còn lại.</p>}
+          </fieldset>
+        </section>
+      </div>
+
       {error && <p className="sale-form-error" role="alert">{error}</p>}
       {saveError && <p className="sale-form-error" role="alert">{saveError}</p>}
-      <footer><button type="button" onClick={onClose} disabled={saving}>Hủy</button><button className="primary" type="submit" disabled={saving || hasCapacityErrors}>{saving ? "Đang kiểm tra và lưu…" : campaign ? "Lưu thay đổi" : "Tạo ưu đãi"}</button></footer>
+      <footer><button type="button" onClick={onClose} disabled={saving}>Hủy</button><button className="primary" type="submit" disabled={saving || hasCapacityErrors}><Check size={16} aria-hidden="true" />{saving ? "Đang kiểm tra và lưu…" : campaign ? "Lưu thay đổi" : "Tạo ưu đãi"}</button></footer>
     </form>
   </Dialog>;
 }
