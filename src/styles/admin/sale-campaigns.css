@@ -299,29 +299,87 @@
 
 .admin-operator .sale-row-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
   min-width: 0;
 }
 
+.admin-operator .sale-row-action-menu {
+  position: relative;
+}
+
+.admin-operator .sale-row-action-menu summary,
 .admin-operator .sale-row-actions button {
+  width: 100%;
   min-height: 42px;
-  border-color: rgba(8, 127, 140, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(8, 127, 140, 0.2);
   border-radius: 12px;
   background: #fff;
   color: #073f45;
+  font: inherit;
   font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
+.admin-operator .sale-row-action-menu summary {
+  list-style: none;
+}
+
+.admin-operator .sale-row-action-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-operator .sale-row-action-menu summary:hover,
 .admin-operator .sale-row-actions button:hover {
   border-color: rgba(8, 127, 140, 0.38);
+  background: #fff;
+  color: #007782;
+  box-shadow: 0 10px 24px rgba(8, 127, 140, 0.09);
+  transform: translateY(-1px);
+}
+
+.admin-operator .sale-row-action-menu[open] summary {
+  border-color: rgba(8, 127, 140, 0.36);
   color: #007782;
 }
 
+.admin-operator .sale-row-action-menu[open] summary svg:last-child {
+  transform: rotate(180deg);
+}
+
+.admin-operator .sale-row-action-menu-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.admin-operator .sale-row-action-menu-panel button {
+  min-height: 40px;
+  background: rgba(248, 253, 252, 0.94);
+}
+
 .admin-operator .sale-row-actions .danger {
-  border-color: rgba(220, 38, 38, 0.24);
-  background: #fff7f7;
-  color: #ad2424;
+  border-color: rgba(220, 38, 38, 0.36);
+  background: #fff5f5;
+  color: #b42323;
+}
+
+.admin-operator .sale-row-actions .danger:hover {
+  border-color: rgba(220, 38, 38, 0.52);
+  background: #fff1f1;
+  color: #9f1d1d;
+  box-shadow: 0 10px 24px rgba(220, 38, 38, 0.1);
 }
 
 .admin-operator .sale-announcement-status {

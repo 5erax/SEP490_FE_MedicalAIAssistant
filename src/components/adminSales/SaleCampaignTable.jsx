@@ -1,4 +1,4 @@
-import { Eye, Pencil, Power, Trash2 } from "lucide-react";
+import { ChevronDown, Eye, MoreHorizontal, Pencil, Power, Trash2 } from "lucide-react";
 
 const STATUS_LABELS = {
   active: "Đang diễn ra", scheduled: "Sắp diễn ra", soldout: "Đã hết suất",
@@ -39,10 +39,19 @@ export default function SaleCampaignTable({ campaigns, loading, onEdit, onRedemp
                   </span>
                 </td>
                 <td><div className="sale-row-actions">
-                  <button type="button" onClick={() => onRedemptions(campaign)}><Eye size={16} />Lịch sử</button>
-                  <button type="button" onClick={() => onEdit(campaign)}><Pencil size={16} />Sửa</button>
-                  <button type="button" onClick={() => onToggle(campaign)}><Power size={16} />{campaign.isActive ? "Tắt" : "Bật"}</button>
-                  <button className="danger" type="button" onClick={() => onRemove(campaign)}><Trash2 size={16} />Xóa</button>
+                  <details className="sale-row-action-menu">
+                    <summary>
+                      <MoreHorizontal size={16} aria-hidden="true" />
+                      <span>Mở rộng</span>
+                      <ChevronDown size={15} aria-hidden="true" />
+                    </summary>
+                    <div className="sale-row-action-menu-panel">
+                      <button type="button" onClick={() => onRedemptions(campaign)}><Eye size={16} />Lịch sử</button>
+                      <button type="button" onClick={() => onEdit(campaign)}><Pencil size={16} />Sửa</button>
+                      <button type="button" onClick={() => onToggle(campaign)}><Power size={16} />{campaign.isActive ? "Tắt" : "Bật"}</button>
+                    </div>
+                  </details>
+                  <button className="danger sale-row-delete-button" type="button" onClick={() => onRemove(campaign)}><Trash2 size={16} />Xóa</button>
                 </div></td>
               </tr>
             );

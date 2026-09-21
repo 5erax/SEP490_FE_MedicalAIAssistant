@@ -73,6 +73,7 @@ export default function AdminSubscriptionsSection({
   const [assigningQuotaPlanId, setAssigningQuotaPlanId] = useState("");
   const [planModal, setPlanModal] = useState({ open: false, mode: "edit", plan: null });
   const [savingPlan, setSavingPlan] = useState(false);
+  const [planActionId, setPlanActionId] = useState("");
 
   const defaultServiceCreditQuota = useMemo(() => findServiceCreditQuota(quotaCatalog), [quotaCatalog]);
   const saleHighlightsByPlanId = useMemo(() => buildSaleHighlightsByPlanId(saleCampaigns), [saleCampaigns]);
@@ -181,6 +182,55 @@ export default function AdminSubscriptionsSection({
   function openEditPlan(plan) {
     planModalTriggerRef.current = document.activeElement;
     setPlanModal({ open: true, mode: "edit", plan });
+  }
+
+  async function handleTogglePlanStatus(plan) {
+    if (!plan?.id) return;
+    setPlanActionId(plan.id);
+    setQuotaMessage(null);
+
+    try {
+      await subscriptionPlansApi.setStatus(plan.id, !plan.isActive);
+      setQuotaMessage({
+        type: "success",
+        text: !plan.isActive ? "Đã mở bán gói dịch vụ." : "Đã tạm ẩn gói dịch vụ.",
+      });
+      await onReload?.();
+      await loadSaleCampaigns();
+    } catch (err) {
+      setQuotaMessage({
+        type: "error",
+        text: err?.message || "Không thể cập nhật trạng thái gói dịch vụ.",
+      });
+    } finally {
+      setPlanActionId("");
+    }
+  }
+
+  async function handleRemovePlan(plan) {
+    if (!plan?.id) return;
+    const planName = plan.planName || "gói dịch vụ này";
+    if (!window.confirm(`Xóa ${planName}? Thao tác này không thể hoàn tác.`)) return;
+
+    setPlanActionId(plan.id);
+    setQuotaMessage(null);
+
+    try {
+      await subscriptionPlansApi.remove(plan.id);
+      setQuotaMessage({
+        type: "success",
+        text: "Đã xóa gói dịch vụ.",
+      });
+      await onReload?.();
+      await loadSaleCampaigns();
+    } catch (err) {
+      setQuotaMessage({
+        type: "error",
+        text: err?.message || "Không thể xóa gói dịch vụ.",
+      });
+    } finally {
+      setPlanActionId("");
+    }
   }
 
   function closePlanModal() {
@@ -292,10 +342,13 @@ export default function AdminSubscriptionsSection({
         />
       ) : (
         <SubscriptionPlanTable
+          actionBusyPlanId={planActionId}
           assigningQuotaPlanId={assigningQuotaPlanId}
           defaultQuota={defaultServiceCreditQuota}
           onEdit={openEditPlan}
           onAssignDefaultQuota={handleAssignServiceCredit}
+          onRemove={handleRemovePlan}
+          onToggleStatus={handleTogglePlanStatus}
           plans={plans}
           saleHighlightsByPlanId={saleHighlightsByPlanId}
         />

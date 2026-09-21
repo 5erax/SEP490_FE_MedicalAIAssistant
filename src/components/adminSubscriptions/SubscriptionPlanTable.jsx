@@ -1,5 +1,5 @@
 import { Badge, Button, EmptyState } from "../ui";
-import { CreditCard, Gauge, Pencil, Plus, Tags, WalletCards } from "lucide-react";
+import { ChevronDown, CreditCard, Gauge, MoreHorizontal, Pencil, Plus, Power, Tags, Trash2, WalletCards } from "lucide-react";
 
 const QUOTA_LABELS = {
   SERVICE_CREDIT: "Lượt dịch vụ dùng chung",
@@ -87,8 +87,11 @@ export default function SubscriptionPlanTable({
   defaultQuota,
   onEdit,
   onAssignDefaultQuota,
+  onRemove,
+  onToggleStatus,
   plans,
   saleHighlightsByPlanId,
+  actionBusyPlanId,
 }) {
   if (!plans.length) {
     return (
@@ -117,6 +120,7 @@ export default function SubscriptionPlanTable({
         const saleOffers = saleHighlightsByPlanId?.get(plan.id) || [];
         const bestSaleOffer = getBestSaleOffer(saleOffers);
         const hasSaleOffers = saleOffers.length > 0;
+        const isActionBusy = actionBusyPlanId === plan.id;
 
         return (
           <article className={`subscription-plan-card${hasSaleOffers ? " has-sale-offers" : ""}`} key={plan.id} role="row">
@@ -190,14 +194,34 @@ export default function SubscriptionPlanTable({
             </div>
 
             <div className="subscription-plan-actions" role="cell">
-              <Button
-                className="btn-small subscription-plan-edit-button"
-                onClick={() => onEdit?.(plan)}
-                type="button"
-              >
-                <Pencil size={14} aria-hidden="true" />
-                Sửa
-              </Button>
+              <div className="subscription-plan-action-stack">
+                <details className="subscription-plan-action-menu">
+                  <summary>
+                    <MoreHorizontal size={16} aria-hidden="true" />
+                    <span>Mở rộng</span>
+                    <ChevronDown size={15} aria-hidden="true" />
+                  </summary>
+                  <div className="subscription-plan-action-menu-panel">
+                    <button disabled={isActionBusy} onClick={() => onEdit?.(plan)} type="button">
+                      <Pencil size={15} aria-hidden="true" />
+                      Sửa
+                    </button>
+                    <button disabled={isActionBusy} onClick={() => onToggleStatus?.(plan)} type="button">
+                      <Power size={15} aria-hidden="true" />
+                      {plan.isActive ? "Tắt" : "Bật"}
+                    </button>
+                  </div>
+                </details>
+                <button
+                  className="subscription-plan-delete-button"
+                  disabled={isActionBusy}
+                  onClick={() => onRemove?.(plan)}
+                  type="button"
+                >
+                  <Trash2 size={15} aria-hidden="true" />
+                  Xóa
+                </button>
+              </div>
             </div>
           </article>
         );
