@@ -413,3 +413,52 @@
     justify-content: flex-start;
   }
 }
+
+.admin-operator .sale-campaign-table-wrap {
+  max-height: min(58vh, 640px);
+  overflow: auto;
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  scrollbar-color: #0f1715 rgba(237, 245, 242, 0.86);
+  scrollbar-width: thin;
+}
+
+.admin-operator .sale-campaign-table-wrap::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.admin-operator .sale-campaign-table-wrap::-webkit-scrollbar-track {
+  background: rgba(237, 245, 242, 0.86);
+  border-radius: 999px;
+}
+
+.admin-operator .sale-campaign-table-wrap::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(237, 245, 242, 0.86);
+  border-radius: 999px;
+  background: #0f1715;
+}
+
+.admin-operator .sale-campaign-table {
+  border-spacing: 0 12px;
+}
+
+.admin-operator .sale-campaign-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border: 0;
+  background: #0f1715;
+  color: #fff;
+  font-weight: 950;
+}
+
+.admin-operator .sale-campaign-table thead th:first-child {
+  border-radius: 16px 0 0 0;
+}
+
+.admin-operator .sale-campaign-table thead th:last-child {
+  border-radius: 0 16px 0 0;
+}

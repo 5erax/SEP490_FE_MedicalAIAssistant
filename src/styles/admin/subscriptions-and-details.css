@@ -1889,3 +1889,89 @@
     max-width: 220px;
   }
 }
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list {
+  max-height: min(58vh, 640px);
+  overflow: auto;
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  scrollbar-color: #0f1715 rgba(237, 245, 242, 0.86);
+  scrollbar-width: thin;
+}
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list::-webkit-scrollbar,
+.admin-operator .admin-payment-table.ui-table-wrap::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list::-webkit-scrollbar-track,
+.admin-operator .admin-payment-table.ui-table-wrap::-webkit-scrollbar-track {
+  background: rgba(237, 245, 242, 0.86);
+  border-radius: 999px;
+}
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list::-webkit-scrollbar-thumb,
+.admin-operator .admin-payment-table.ui-table-wrap::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(237, 245, 242, 0.86);
+  border-radius: 999px;
+  background: #0f1715;
+}
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list .subscription-plan-list-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  border: 0;
+  border-radius: 16px 16px 0 0;
+  background: #0f1715;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list .subscription-plan-list-header span {
+  color: #fff;
+  font-weight: 950;
+}
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list .subscription-plan-card {
+  margin-inline: 12px;
+  box-shadow: none;
+}
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list .subscription-plan-card:first-of-type {
+  margin-top: 12px;
+}
+
+.admin-operator .subscription-plan-admin-panel .subscription-plan-card-list .subscription-plan-card:last-child {
+  margin-bottom: 12px;
+}
+
+.admin-operator .admin-payment-table.ui-table-wrap {
+  max-height: min(58vh, 640px);
+  overflow: auto;
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  scrollbar-color: #0f1715 rgba(237, 245, 242, 0.86);
+  scrollbar-width: thin;
+}
+
+.admin-operator .admin-payment-table .ui-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border: 0;
+  background: #0f1715;
+  color: #fff;
+}
+
+.admin-operator .admin-payment-table .ui-table thead th:first-child {
+  border-radius: 16px 0 0 0;
+}
+
+.admin-operator .admin-payment-table .ui-table thead th:last-child {
+  border-radius: 0 16px 0 0;
+}

@@ -1597,3 +1597,49 @@
     min-width: 112px;
   }
 }
+
+/* Payment history uses the same framed table shell as clinical admin lists. */
+.admin-operator .admin-payment-panel .admin-payment-table.ui-table-wrap {
+  max-height: min(58vh, 640px);
+  overflow: auto;
+  border: 1px solid rgba(16, 20, 17, 0.09);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(16, 20, 17, 0.045);
+  scrollbar-color: #0f1715 rgba(237, 245, 242, 0.86);
+  scrollbar-width: thin;
+}
+
+.admin-operator .admin-payment-panel .admin-payment-table.ui-table-wrap::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.admin-operator .admin-payment-panel .admin-payment-table.ui-table-wrap::-webkit-scrollbar-track {
+  background: rgba(237, 245, 242, 0.86);
+  border-radius: 999px;
+}
+
+.admin-operator .admin-payment-panel .admin-payment-table.ui-table-wrap::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(237, 245, 242, 0.86);
+  border-radius: 999px;
+  background: #0f1715;
+}
+
+.admin-operator .admin-payment-panel .admin-payment-table .ui-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border: 0;
+  background: #0f1715 !important;
+  color: #fff !important;
+  font-weight: 950;
+}
+
+.admin-operator .admin-payment-panel .admin-payment-table .ui-table thead th:first-child {
+  border-radius: 16px 0 0 0;
+}
+
+.admin-operator .admin-payment-panel .admin-payment-table .ui-table thead th:last-child {
+  border-radius: 0 16px 0 0;
+}
