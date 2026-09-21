@@ -6,7 +6,7 @@ import { saleCampaignsApi, usersApi } from "../../services/api";
 import { getRedemptionDate, hasRedemptionPriceDiscount } from "../../utils/saleRedemptionPresentation";
 
 const STATUS = { reserved: "Đang giữ suất", completed: "Đã sử dụng", released: "Đã giải phóng" };
-const money = (value) => `${Number(value || 0).toLocaleString("vi-VN")} ₫`;
+const money = (value) => `${Number(value || 0).toLocaleString("vi-VN")}\u00a0đ`;
 
 function displayUserName(item, usersById) {
   const directName = item.userDisplayName || item.userFullName || item.fullName || item.displayName || item.userName || item.username || item.email;
