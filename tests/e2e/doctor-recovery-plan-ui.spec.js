@@ -55,7 +55,7 @@ async function prepareDoctorPage(page, options = {}) {
   let openItems = [...(options.openItems ?? [])];
   let mineItems = [...(options.mineItems ?? [])];
   let plan = options.plan ?? null;
-  const calls = { labTestGets: 0, clinicalContextGets: 0, requestDetailGets: 0 };
+  const calls = { labTestGets: 0, clinicalContextGets: 0, planGets: 0, requestDetailGets: 0 };
 
   function ok(data, status = 200) {
     return { status, contentType: "application/json", body: JSON.stringify({ success: true, message: "OK", data, errors: [] }) };
@@ -185,7 +185,14 @@ async function prepareDoctorPage(page, options = {}) {
       if (id !== PLAN_ID || !plan) return route.fulfill(fail(404, "NOT_FOUND"));
 
       if (!sub && method === "GET") {
-        return route.fulfill(ok({ plan, requestId: REQUEST_ID, diseaseGroup: "respiratory", doctorId: DOCTOR_ID, clinicalSnapshot: null }));
+        calls.planGets += 1;
+        return route.fulfill(ok({
+          plan,
+          requestId: REQUEST_ID,
+          diseaseGroup: "respiratory",
+          doctorId: DOCTOR_ID,
+          clinicalSnapshot: options.clinicalSnapshot ?? null,
+        }));
       }
       if (!sub && method === "PUT") {
         plan = { ...plan, ...route.request().postDataJSON() };
@@ -277,7 +284,7 @@ test.describe("doctor recovery plan workflow", () => {
   });
 
   test("a doctor with an unresolved request is warned and blocked from accepting another", async ({ page }) => {
-    const calls = await prepareDoctorPage(page, {
+    await prepareDoctorPage(page, {
       openItems: [openRequest()],
       mineItems: [myRequest({ id: "33333333-3333-4333-8333-333333333333", status: "assigned" })],
     });
@@ -421,6 +428,51 @@ test.describe("doctor recovery plan workflow", () => {
     expect(calls.labTestGets).toBe(0);
   });
 
+  test("published requests keep the lab overview available from the clinical snapshot", async ({ page }) => {
+    const calls = await prepareDoctorPage(page, {
+      mineItems: [myRequest({
+        status: "published",
+        recoveryPlanId: PLAN_ID,
+        recoveryPlanStatus: "readyToStart",
+      })],
+      plan: { id: PLAN_ID, status: "readyToStart", phases: [] },
+      clinicalSnapshot: {
+        patientProfile: { heightCm: 170, weightKg: 68, allergyNote: null },
+        userMedications: [],
+        primaryLabTest: {
+          testSessionId: LAB_SESSION_ID,
+          createdAtUtc: "2026-08-17T01:00:00Z",
+          results: [
+            {
+              resultDetailId: "ast-result",
+              symbol: "AST",
+              fullName: "Chỉ số AST (GOT)",
+              userValue: 52,
+              minReference: 0,
+              maxReference: 37,
+              unit: "U/L",
+              status: "high",
+            },
+          ],
+        },
+        chronicDiseases: [],
+      },
+    });
+    await page.goto(`/app/staff/recovery-plan-requests/${REQUEST_ID}`, { waitUntil: "domcontentloaded" });
+
+    const labBlock = page.locator(".doctor-clinical-block", { hasText: "Xét nghiệm đính kèm" });
+    await expect(labBlock).toBeVisible();
+    await labBlock.getByRole("button", { name: /Xem kết quả xét nghiệm/ }).click();
+
+    const resultDialog = page.getByRole("dialog", { name: "Kết quả xét nghiệm" });
+    await expect(resultDialog).toBeVisible();
+    await expect(resultDialog.getByRole("heading", { name: "Có 1 chỉ số cần chú ý" })).toBeVisible();
+    await expect(resultDialog.getByText("1/1 chỉ số nằm trong khoảng tham chiếu")).toHaveCount(0);
+    expect(calls.planGets).toBeGreaterThanOrEqual(2);
+    expect(calls.clinicalContextGets).toBe(0);
+    expect(calls.labTestGets).toBe(0);
+  });
+
   test("legacy more-information requests render without the old doctor request action", async ({ page }) => {
     await prepareDoctorPage(page, { mineItems: [myRequest({ status: "needMoreInformation" })] });
     await page.goto(`/app/staff/recovery-plan-requests/${REQUEST_ID}`, { waitUntil: "domcontentloaded" });
@@ -457,7 +509,9 @@ test.describe("doctor recovery plan workflow", () => {
     await expect(page.getByText("Đang xem xét", { exact: true }).first()).toBeVisible();
 
     await page.getByRole("button", { name: "Tạo kế hoạch", exact: true }).click();
-    const planDialog = page.getByRole("dialog");
+    const methodDialog = page.getByRole("dialog", { name: "Tạo kế hoạch phục hồi" });
+    await methodDialog.getByRole("button", { name: /Tạo kế hoạch mới/ }).click();
+    const planDialog = page.getByRole("dialog", { name: "Tạo kế hoạch phục hồi" });
     await planDialog.getByLabel("Tên kế hoạch").fill("Phục hồi hô hấp 7 ngày");
     await planDialog.getByLabel("Tóm tắt").fill("Tăng dần vận động, theo dõi nhịp thở.");
     await planDialog.getByLabel("Số ngày thực hiện").fill("7");
@@ -470,7 +524,7 @@ test.describe("doctor recovery plan workflow", () => {
     await page.getByRole("button", { name: "Thêm giai đoạn" }).first().click();
     const phaseDialog = page.getByRole("dialog");
     await phaseDialog.getByLabel("Tên giai đoạn").fill("Giai đoạn 1");
-    await phaseDialog.getByLabel("Ngày bắt đầu").fill("1");
+    await expect(phaseDialog.getByLabel("Ngày bắt đầu")).toHaveValue("1");
     await phaseDialog.getByLabel("Ngày kết thúc").fill("7");
     await phaseDialog.getByLabel("Tổng giờ ngủ nghỉ / ngày").fill("10");
     await phaseDialog.getByRole("button", { name: "Thêm giai đoạn" }).click();
