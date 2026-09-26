@@ -1,5 +1,13 @@
 // Missing/null means unknown, not "profile incomplete".
 export function resolveProfileCompletion(record, previous) {
+  // Completion is durable for the lifetime of an account. Some partial
+  // responses (notably token refresh) serialize an omitted boolean as false.
+  // Do not let that stale/default value reopen onboarding after the profile
+  // has already been confirmed or saved.
+  if (previous?.isProfileCompleted === true) {
+    return true;
+  }
+
   return typeof record?.isProfileCompleted === "boolean"
     ? record.isProfileCompleted
     : previous?.isProfileCompleted;

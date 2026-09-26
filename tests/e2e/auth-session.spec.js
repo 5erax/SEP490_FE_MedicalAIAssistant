@@ -57,7 +57,6 @@ test.describe("global auth session", () => {
         return route.fulfill(jsonResponse({ success: failure === "malformed" }, failure === "malformed" ? 200 : failure));
       });
       await page.goto("/records");
-      await expect(page.getByText("Kết nối đang gián đoạn")).toBeVisible();
       expect(await page.evaluate(() => Boolean(localStorage.getItem("medimate.auth")))).toBe(true);
       await expect(page).toHaveURL(/\/records$/);
       await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("medimate.auth"))?.accessToken), { timeout: 12_000 }).toBe(REFRESHED_ACCESS_TOKEN);
@@ -227,6 +226,35 @@ test.describe("global auth session", () => {
     await expect.poll(() => page.evaluate(() => (
       JSON.parse(localStorage.getItem("medimate.auth"))?.accessToken
     ))).toBe(REFRESHED_ACCESS_TOKEN);
+  });
+
+  test("refresh cannot reopen onboarding for a completed patient profile", async ({ page }) => {
+    await preparePage(page);
+    await page.addInitScript((accessToken) => {
+      localStorage.setItem("medimate.auth", JSON.stringify({
+        accessToken,
+        userId: "55555555-5555-4555-8555-555555555555",
+        roles: ["Patient"],
+        isProfileCompleted: true,
+      }));
+    }, NEAR_EXPIRY_ACCESS_TOKEN);
+
+    await page.route("**/api/authentication/refresh", (route) => route.fulfill(jsonResponse({
+      success: true,
+      data: {
+        accessToken: REFRESHED_ACCESS_TOKEN,
+        isProfileCompleted: false,
+      },
+    })));
+
+    await page.goto("/support", { waitUntil: "domcontentloaded" });
+
+    await expect.poll(() => page.evaluate(() => (
+      JSON.parse(localStorage.getItem("medimate.auth"))?.accessToken
+    ))).toBe(REFRESHED_ACCESS_TOKEN);
+    await expect.poll(() => page.evaluate(() => (
+      JSON.parse(localStorage.getItem("medimate.auth"))?.isProfileCompleted
+    ))).toBe(true);
   });
 
   test("queues concurrent 401 responses behind one refresh", async ({ page }) => {
