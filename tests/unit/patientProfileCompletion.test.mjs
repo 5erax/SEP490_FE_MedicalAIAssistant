@@ -8,13 +8,15 @@ const verify = (overrides = {}) => verifyPatientProfileSetup({
   auth, loadUser: async () => ({ data: user }), findProfile: async () => null, ...overrides,
 });
 
-test("partial account/refresh responses preserve known completion without inventing false", () => {
+test("partial or stale account responses preserve a confirmed completion", () => {
   for (const data of [{}, { isProfileCompleted: null }, { isProfileCompleted: undefined }]) {
     assert.equal(resolveProfileCompletion(data, { isProfileCompleted: true }), true);
     assert.equal(resolveProfileCompletion(data, { isProfileCompleted: false }), false);
     assert.equal(resolveProfileCompletion(data), undefined);
   }
-  assert.equal(resolveProfileCompletion({ isProfileCompleted: false }, { isProfileCompleted: true }), false);
+  assert.equal(resolveProfileCompletion({ isProfileCompleted: false }, { isProfileCompleted: true }), true);
+  assert.equal(resolveProfileCompletion({ isProfileCompleted: false }), false);
+  assert.equal(resolveProfileCompletion({ isProfileCompleted: true }, { isProfileCompleted: false }), true);
 });
 
 test("a confirmed complete user does not need another profile lookup", async () => {

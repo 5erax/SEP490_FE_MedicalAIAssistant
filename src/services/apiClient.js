@@ -675,7 +675,7 @@ function mergeRefreshedAuth(response) {
 
     throw createApiError({
       message: payload.message,
-      status: 401,
+      status: 502,
       payload,
       originalPayload: response,
     });
@@ -716,15 +716,28 @@ async function performAuthRefresh(previousAccessToken) {
       };
     }
 
-    const response = await apiRequest(
-      ENDPOINTS.AUTH.REFRESH,
-      {
-        method: "POST",
-        credentials: "include",
-        _skipAuthRefresh: true,
-      },
-    );
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let response;
+    try {
+      response = await apiRequest(
+        ENDPOINTS.AUTH.REFRESH,
+        {
+          method: "POST",
+          credentials: "include",
+          _skipAuthRefresh: true,
+          signal: controller.signal,
+        },
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
 
+    // Do not restore a logged-out session or overwrite a newer login.
+    const latestAuth = getStoredSessionAuth();
+    if (latestAuth?.accessToken !== previousAccessToken) {
+      return { success: true, data: latestAuth };
+    }
     return mergeRefreshedAuth(response);
   };
 
@@ -754,7 +767,11 @@ export function refreshAuthSession() {
     previousAccessToken,
   )
     .catch((error) => {
-      clearStoredAuth();
+      // Transport failures do not establish that the refresh credential is invalid.
+      if ((error.status === 401 || error.status === 403) &&
+          getStoredSessionAuth()?.accessToken === previousAccessToken) {
+        clearStoredAuth();
+      }
       throw error;
     })
     .finally(() => {
