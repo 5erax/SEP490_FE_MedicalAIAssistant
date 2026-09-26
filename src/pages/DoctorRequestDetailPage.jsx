@@ -38,6 +38,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import {
   doctorRecoveryPlanRequestsApi,
+  doctorRecoveryPlansApi,
   getRecoveryPlanTemplateErrorMessage,
   normalizeDoctorPlanDetail,
 } from "../services/api";
@@ -138,10 +139,22 @@ function normalizeClinicalContext(data) {
   if (!data || typeof data !== "object") {
     return { profile: null, medications: [], primaryLabTest: null, chronicDiseases: [] };
   }
+
+  const rawProfile = data.patientProfile ?? null;
+  const rawPrimaryLabTest = data.primaryLabTest ?? null;
   return {
-    profile: data.patientProfile ?? null,
+    profile: rawProfile ? {
+      ...rawProfile,
+      height: rawProfile.height ?? rawProfile.heightCm ?? null,
+      weight: rawProfile.weight ?? rawProfile.weightKg ?? null,
+    } : null,
     medications: toArray(data.userMedications),
-    primaryLabTest: data.primaryLabTest ?? null,
+    primaryLabTest: rawPrimaryLabTest ? {
+      ...rawPrimaryLabTest,
+      testSessionId: rawPrimaryLabTest.testSessionId ?? data.primaryLabTestSessionId ?? null,
+      createdAt: rawPrimaryLabTest.createdAt ?? rawPrimaryLabTest.createdAtUtc ?? null,
+      updatedAt: rawPrimaryLabTest.updatedAt ?? rawPrimaryLabTest.updatedAtUtc ?? null,
+    } : null,
     chronicDiseases: toArray(data.chronicDiseases),
   };
 }
@@ -356,6 +369,8 @@ function DetailContent({ request, onReload }) {
   const [clinicalContext, setClinicalContext] = useState(null);
   const [clinicalLoading, setClinicalLoading] = useState(true);
   const [clinicalError, setClinicalError] = useState("");
+  const canLoadClinicalContext = ASSIGNMENT_ACTIVE_STATUSES.has(request.status)
+    || (request.status === "published" && Boolean(request.recoveryPlanId));
   const prescriptionImageError = prescriptionImageFailure.failed
     && prescriptionImageFailure.url === request.prescriptionImageUrl;
   const markPrescriptionImageFailed = () => {
@@ -363,8 +378,17 @@ function DetailContent({ request, onReload }) {
   };
 
   async function fetchClinicalContext() {
-    const response = await doctorRecoveryPlanRequestsApi.getClinicalContext(request.id);
-    return normalizeClinicalContext(response?.data);
+    if (ASSIGNMENT_ACTIVE_STATUSES.has(request.status)) {
+      const response = await doctorRecoveryPlanRequestsApi.getClinicalContext(request.id);
+      return normalizeClinicalContext(response?.data);
+    }
+
+    const response = await doctorRecoveryPlansApi.get(request.recoveryPlanId);
+    const { clinicalSnapshot } = normalizeDoctorPlanDetail(response);
+    if (!clinicalSnapshot) {
+      throw new Error("Clinical snapshot is unavailable.");
+    }
+    return normalizeClinicalContext(clinicalSnapshot);
   }
 
   async function loadClinicalContext() {
@@ -389,17 +413,13 @@ function DetailContent({ request, onReload }) {
   }
 
   useEffect(() => {
-    // The backend only allows clinical-context reads while the request is in
-    // an active review state (assigned/inReview/needMoreInformation) — it
-    // returns 409 INVALID_REQUEST_STATE once published/rejected/cancelled/
-    // expired, so don't even attempt the call outside that window.
-    if (!ASSIGNMENT_ACTIVE_STATUSES.has(request.status)) {
+    if (!canLoadClinicalContext) {
       queueMicrotask(() => setClinicalLoading(false));
       return;
     }
     queueMicrotask(() => void loadClinicalContext());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request.id, request.status]);
+  }, [request.id, request.recoveryPlanId, request.status]);
 
   const isAssignmentActive = ASSIGNMENT_ACTIVE_STATUSES.has(request.status);
   const countdown = useCountdown(
@@ -587,7 +607,7 @@ function DetailContent({ request, onReload }) {
             </section>
           )}
 
-          {ASSIGNMENT_ACTIVE_STATUSES.has(request.status) && (
+          {canLoadClinicalContext && (
             <ClinicalContextSection
               loading={clinicalLoading}
               error={clinicalError}
