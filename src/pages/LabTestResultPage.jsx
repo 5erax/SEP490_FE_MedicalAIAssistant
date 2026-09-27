@@ -17,7 +17,9 @@ import { useServiceCredit } from "../state/useServiceCredit";
 import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
 import "../styles/user-workspace/lab-test-result.css";
 
-const POLL_INTERVAL_MS = 1000;
+const POLL_INTERVAL_MS = 300;
+const POLL_TIMEOUT_MS = 3 * 60 * 1000;
+const AI_SUMMARY_TIMEOUT_MESSAGE = "AI đang xử lí vui lòng quay lại sau";
 const TERMINAL_SESSION_STATUSES = new Set([
   ASYNC_SESSION_STATUS.COMPLETED,
   ASYNC_SESSION_STATUS.FAILED,
@@ -89,6 +91,23 @@ function getSessionResults(session) {
     ?? session?.details
     ?? [];
   return Array.isArray(items) ? items : [];
+}
+
+function normalizeAiSummaryStatus(value) {
+  const normalized = String(value ?? "").trim().toLowerCase().replace(/[\s_-]/g, "");
+  if (["completed", "complete", "ready", "done", "1"].includes(normalized)) return ASYNC_SESSION_STATUS.COMPLETED;
+  if (["failed", "failure", "error", "cancelled", "canceled", "2"].includes(normalized)) return ASYNC_SESSION_STATUS.FAILED;
+  return ASYNC_SESSION_STATUS.PROCESSING;
+}
+
+function shouldKeepPollingLabSession(session) {
+  const sessionStatus = normalizeAsyncSessionStatus(session?.status);
+  if (sessionStatus === ASYNC_SESSION_STATUS.FAILED) return false;
+  if (sessionStatus !== ASYNC_SESSION_STATUS.COMPLETED) return true;
+  const summaryStatus = normalizeAiSummaryStatus(session?.aiSummaryStatus);
+  if (summaryStatus === ASYNC_SESSION_STATUS.FAILED) return false;
+  if (summaryStatus === ASYNC_SESSION_STATUS.COMPLETED && firstMeaningfulText(session?.aiSummary)) return false;
+  return true;
 }
 
 function getResultName(result) {
@@ -670,7 +689,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const [loadStatus, setLoadStatus] = useState(initialSession ? "ready" : sessionId ? "loading" : "error");
   const [error, setError] = useState(initialSession || sessionId ? "" : "Không tìm thấy mã phiên phân tích xét nghiệm.");
   const [retryKey, setRetryKey] = useState(0);
-  const [summaryRetryKey, setSummaryRetryKey] = useState(0);
   const [summaryState, setSummaryState] = useState({ sessionId: "", status: "idle", error: "" });
   const [selectedResultKey, setSelectedResultKey] = useState("");
   const [resultFilter, setResultFilter] = useState("all");
@@ -688,7 +706,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const pageHeadingRef = useRef(null);
   const responseNotifiedRef = useRef(false);
   const terminalBalanceRefreshRef = useRef("");
-  const summaryRequestedRef = useRef("");
 
   useEffect(() => {
     const node = rootRef.current;
@@ -734,38 +751,83 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
 
   useEffect(() => {
     terminalBalanceRefreshRef.current = "";
-    summaryRequestedRef.current = "";
   }, [initialSession?.sessionId, retryKey, sessionId]);
 
   useEffect(() => {
-    if (initialSession) {
-      const initialSessionTimer = window.setTimeout(() => {
-        const nextStatus = normalizeAsyncSessionStatus(initialSession?.status);
-        const resultCount = getSessionResults(initialSession).length;
-        setSession(initialSession);
-        setLoadStatus("ready");
-        setError("");
-        setAnnouncement(
-          nextStatus === ASYNC_SESSION_STATUS.COMPLETED
-            ? `Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`
-            : "Đã tải kết quả xét nghiệm đính kèm.",
-        );
-        if (typeof onSessionUpdate === "function") onSessionUpdate(initialSession);
-      }, 0);
-      return () => window.clearTimeout(initialSessionTimer);
-    }
-
-    if (!sessionId) return undefined;
+    const pollingSessionId = sessionId || initialSession?.sessionId;
+    if (!pollingSessionId) return undefined;
 
     let active = true;
     let startTimer;
     let pollTimer;
+    let pollStartedAt = 0;
+
+    const refreshBalanceForTerminalStatus = (nextStatus) => {
+      if (![ASYNC_SESSION_STATUS.COMPLETED, ASYNC_SESSION_STATUS.FAILED].includes(nextStatus)) return;
+      const terminalKey = `${pollingSessionId}:${nextStatus}`;
+      if (terminalBalanceRefreshRef.current !== terminalKey) {
+        terminalBalanceRefreshRef.current = terminalKey;
+        void refreshServiceCredit({ silent: true });
+      }
+    };
+
+    const applySession = (nextSession) => {
+      const nextStatus = normalizeAsyncSessionStatus(nextSession?.status);
+      const resultCount = getSessionResults(nextSession).length;
+      const nextSummarySessionId = nextSession?.sessionId ?? pollingSessionId;
+      const nextSummaryText = firstMeaningfulText(nextSession?.aiSummary);
+      const nextSummaryStatus = normalizeAiSummaryStatus(nextSession?.aiSummaryStatus);
+
+      if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
+      setSession(nextSession);
+      setLoadStatus("ready");
+      setError("");
+      refreshBalanceForTerminalStatus(nextStatus);
+
+      if (nextStatus === ASYNC_SESSION_STATUS.COMPLETED) {
+        setAnnouncement(`Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`);
+
+        if (nextSummaryText) {
+          setSummaryState({ sessionId: nextSummarySessionId, status: "ready", error: "" });
+        } else if (nextSummaryStatus === ASYNC_SESSION_STATUS.FAILED) {
+          setSummaryState({
+            sessionId: nextSummarySessionId,
+            status: "error",
+            error: "Chưa thể tải tóm tắt tự động. Bạn vẫn có thể xem tổng quan theo trạng thái chỉ số.",
+          });
+        } else if (resultCount > 0) {
+          setSummaryState({ sessionId: nextSummarySessionId, status: "loading", error: "" });
+        }
+      } else if (nextStatus === ASYNC_SESSION_STATUS.FAILED) {
+        setAnnouncement("Phiên phân tích xét nghiệm không hoàn tất.");
+      }
+
+      return nextStatus;
+    };
+
+    const stopForTimeout = (nextSession) => {
+      const nextStatus = normalizeAsyncSessionStatus(nextSession?.status);
+      const nextSummarySessionId = nextSession?.sessionId ?? pollingSessionId;
+
+      if (nextStatus === ASYNC_SESSION_STATUS.COMPLETED && getSessionResults(nextSession).length > 0) {
+        setSummaryState({
+          sessionId: nextSummarySessionId,
+          status: "error",
+          error: AI_SUMMARY_TIMEOUT_MESSAGE,
+        });
+        return;
+      }
+
+      setLoadStatus("error");
+      setError(AI_SUMMARY_TIMEOUT_MESSAGE);
+      setAnnouncement(AI_SUMMARY_TIMEOUT_MESSAGE);
+    };
 
     const pollSession = async () => {
-      const pollStartedAt = window.performance.now();
+      const requestStartedAt = window.performance.now();
 
       try {
-        const response = await labTestsApi.get(sessionId);
+        const response = await labTestsApi.get(pollingSessionId);
         if (!active) return;
 
         if (!responseNotifiedRef.current && typeof onResponse === "function") {
@@ -774,34 +836,18 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
         }
 
         const nextSession = unwrapData(response) ?? null;
-        const nextStatus = normalizeAsyncSessionStatus(nextSession?.status);
-        if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
-        setSession(nextSession);
-        setLoadStatus("ready");
-        setError("");
+        applySession(nextSession);
 
-        if (nextStatus === ASYNC_SESSION_STATUS.COMPLETED) {
-          const resultCount = getSessionResults(nextSession).length;
-          setAnnouncement(`Đã hoàn tất phân tích. Tìm thấy ${resultCount} chỉ số xét nghiệm.`);
-          const terminalKey = `${sessionId}:${nextStatus}`;
-          if (terminalBalanceRefreshRef.current !== terminalKey) {
-            terminalBalanceRefreshRef.current = terminalKey;
-            void refreshServiceCredit({ silent: true });
-          }
+        if (!shouldKeepPollingLabSession(nextSession)) {
           return;
         }
 
-        if (nextStatus === ASYNC_SESSION_STATUS.FAILED) {
-          setAnnouncement("Phiên phân tích xét nghiệm không hoàn tất.");
-          const terminalKey = `${sessionId}:${nextStatus}`;
-          if (terminalBalanceRefreshRef.current !== terminalKey) {
-            terminalBalanceRefreshRef.current = terminalKey;
-            void refreshServiceCredit({ silent: true });
-          }
+        if (window.performance.now() - pollStartedAt >= POLL_TIMEOUT_MS) {
+          stopForTimeout(nextSession);
           return;
         }
 
-        const requestDuration = window.performance.now() - pollStartedAt;
+        const requestDuration = window.performance.now() - requestStartedAt;
         const nextPollDelay = Math.max(0, POLL_INTERVAL_MS - requestDuration);
         pollTimer = window.setTimeout(() => void pollSession(), nextPollDelay);
       } catch (requestError) {
@@ -817,11 +863,17 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
     };
 
     startTimer = window.setTimeout(() => {
+      pollStartedAt = window.performance.now();
       responseNotifiedRef.current = false;
-      setSession(null);
-      setLoadStatus("loading");
-      setError("");
-      setAnnouncement("Đang tải kết quả xét nghiệm.");
+      if (initialSession) {
+        applySession(initialSession);
+        if (!shouldKeepPollingLabSession(initialSession)) return;
+      } else {
+        setSession(null);
+        setLoadStatus("loading");
+        setError("");
+        setAnnouncement("Đang tải kết quả xét nghiệm.");
+      }
       void pollSession();
     }, 0);
 
@@ -831,7 +883,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
       if (pollTimer) window.clearTimeout(pollTimer);
     };
   }, [initialSession, onResponse, onSessionUpdate, refreshServiceCredit, retryKey, sessionId]);
-
   const results = getSessionResults(session);
   const sessionStatus = normalizeAsyncSessionStatus(session?.status);
   const isPending = !initialSession && loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);
@@ -874,6 +925,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const showMobileDetail = compact && mobileDetail && activeView === "indicators" && Boolean(selectedResult);
   const summarySessionId = session?.sessionId ?? sessionId;
   const summaryText = firstMeaningfulText(session?.aiSummary);
+  const aiSummaryStatus = normalizeAiSummaryStatus(session?.aiSummaryStatus);
   const resultDate = formatDate(
     session?.testDate
       ?? session?.processedAt
@@ -886,69 +938,10 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
     ? "ready"
     : summaryState.sessionId === summarySessionId
       ? summaryState.status
-      : "idle";
+      : sessionStatus === ASYNC_SESSION_STATUS.COMPLETED && results.length > 0 && aiSummaryStatus === ASYNC_SESSION_STATUS.PROCESSING
+        ? "loading"
+        : "idle";
   const summaryError = summaryState.sessionId === summarySessionId ? summaryState.error : "";
-
-  useEffect(() => {
-    if (
-      initialSession
-      || sessionStatus !== ASYNC_SESSION_STATUS.COMPLETED
-      || !summarySessionId
-      || results.length === 0
-    ) return undefined;
-
-    if (summaryText) return undefined;
-
-    const requestKey = `${summarySessionId}:${summaryRetryKey}`;
-    if (summaryRequestedRef.current === requestKey) return undefined;
-    summaryRequestedRef.current = requestKey;
-
-    let active = true;
-
-    const loadSummary = async () => {
-      setSummaryState({ sessionId: summarySessionId, status: "loading", error: "" });
-      try {
-        const response = await labTestsApi.summarize(summarySessionId);
-        if (!active) return;
-
-        const generatedSummary = firstMeaningfulText(unwrapData(response));
-        if (!generatedSummary) {
-          throw new Error("API chưa trả về nội dung tóm tắt.");
-        }
-
-        const nextSession = { ...session, aiSummary: generatedSummary };
-        setSession(nextSession);
-        setSummaryState({ sessionId: summarySessionId, status: "ready", error: "" });
-        setAnnouncement("Đã hoàn thiện phần tổng quan kết quả xét nghiệm.");
-        if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
-      } catch (requestError) {
-        if (!active) return;
-        setSummaryState({
-          sessionId: summarySessionId,
-          status: "error",
-          error: getLabTestApiMessage(
-            requestError,
-            "Chưa thể tải nhận định tổng quan. Bạn vẫn có thể xem kết quả theo trạng thái chỉ số.",
-          ),
-        });
-      }
-    };
-
-    void loadSummary();
-    return () => {
-      active = false;
-    };
-  }, [
-    initialSession,
-    onSessionUpdate,
-    results.length,
-    session,
-    sessionStatus,
-    summaryRetryKey,
-    summarySessionId,
-    summaryText,
-  ]);
-
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => pageHeadingRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
@@ -1027,8 +1020,8 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   }
 
   function retrySummary() {
-    summaryRequestedRef.current = "";
-    setSummaryRetryKey((current) => current + 1);
+    setSummaryState({ sessionId: summarySessionId, status: "loading", error: "" });
+    setRetryKey((current) => current + 1);
   }
 
   function changeResultFilter(nextFilter) {
