@@ -490,12 +490,9 @@ function FormattedSummary({ value }) {
 function ResultOverview({
   results,
   summary,
-  summaryStatus,
-  summaryError,
   normalCount,
   attentionCount,
   unknownCount,
-  onRetrySummary,
   onViewResults,
 }) {
   const totalCount = results.length;
@@ -545,20 +542,6 @@ function ResultOverview({
       <div className="lab-test-result__overview-summary" data-tone={tone}>
         <span className="lab-test-result__overview-summary-label">Nhận định chung</span>
         {summary ? <FormattedSummary value={summary} /> : <p>{fallbackSummary}</p>}
-        {summaryStatus === "loading" && (
-          <span className="lab-test-result__summary-state">
-            <LoaderCircle className="lab-test-result__spinner" size={15} aria-hidden="true" />
-            Đang hoàn thiện phần tóm tắt…
-          </span>
-        )}
-        {summaryStatus === "error" && (
-          <span className="lab-test-result__summary-state is-error">
-            {summaryError || "Chưa thể tải tóm tắt tự động."}
-            <button type="button" onClick={onRetrySummary}>
-              <RefreshCw size={14} aria-hidden="true" /> Thử lại
-            </button>
-          </span>
-        )}
       </div>
 
       <p className="lab-test-result__overview-disclaimer">
@@ -670,8 +653,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const [loadStatus, setLoadStatus] = useState(initialSession ? "ready" : sessionId ? "loading" : "error");
   const [error, setError] = useState(initialSession || sessionId ? "" : "Không tìm thấy mã phiên phân tích xét nghiệm.");
   const [retryKey, setRetryKey] = useState(0);
-  const [summaryRetryKey, setSummaryRetryKey] = useState(0);
-  const [summaryState, setSummaryState] = useState({ sessionId: "", status: "idle", error: "" });
   const [selectedResultKey, setSelectedResultKey] = useState("");
   const [resultFilter, setResultFilter] = useState("all");
   const [visibleResultLimit, setVisibleResultLimit] = useState(12);
@@ -688,7 +669,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const pageHeadingRef = useRef(null);
   const responseNotifiedRef = useRef(false);
   const terminalBalanceRefreshRef = useRef("");
-  const summaryRequestedRef = useRef("");
 
   useEffect(() => {
     const node = rootRef.current;
@@ -734,7 +714,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
 
   useEffect(() => {
     terminalBalanceRefreshRef.current = "";
-    summaryRequestedRef.current = "";
   }, [initialSession?.sessionId, retryKey, sessionId]);
 
   useEffect(() => {
@@ -872,7 +851,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
   const effectiveSelectedKey = selectedEntry ? getResultKey(selectedEntry.result, selectedEntry.index) : "";
   const selectedResult = selectedEntry?.result ?? null;
   const showMobileDetail = compact && mobileDetail && activeView === "indicators" && Boolean(selectedResult);
-  const summarySessionId = session?.sessionId ?? sessionId;
   const summaryText = firstMeaningfulText(session?.aiSummary);
   const resultDate = formatDate(
     session?.testDate
@@ -882,71 +860,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
       ?? session?.createdAtUtc,
     "",
   );
-  const summaryStatus = summaryText
-    ? "ready"
-    : summaryState.sessionId === summarySessionId
-      ? summaryState.status
-      : "idle";
-  const summaryError = summaryState.sessionId === summarySessionId ? summaryState.error : "";
-
-  useEffect(() => {
-    if (
-      sessionStatus !== ASYNC_SESSION_STATUS.COMPLETED
-      || !summarySessionId
-      || results.length === 0
-    ) return undefined;
-
-    if (summaryText) return undefined;
-
-    const requestKey = `${summarySessionId}:${summaryRetryKey}`;
-    if (summaryRequestedRef.current === requestKey) return undefined;
-    summaryRequestedRef.current = requestKey;
-
-    let active = true;
-
-    const loadSummary = async () => {
-      setSummaryState({ sessionId: summarySessionId, status: "loading", error: "" });
-      try {
-        const response = await labTestsApi.summarize(summarySessionId);
-        if (!active) return;
-
-        const generatedSummary = firstMeaningfulText(unwrapData(response));
-        if (!generatedSummary) {
-          throw new Error("API chưa trả về nội dung tóm tắt.");
-        }
-
-        const nextSession = { ...session, aiSummary: generatedSummary };
-        setSession(nextSession);
-        setSummaryState({ sessionId: summarySessionId, status: "ready", error: "" });
-        setAnnouncement("Đã hoàn thiện phần tổng quan kết quả xét nghiệm.");
-        if (typeof onSessionUpdate === "function") onSessionUpdate(nextSession);
-      } catch (requestError) {
-        if (!active) return;
-        setSummaryState({
-          sessionId: summarySessionId,
-          status: "error",
-          error: getLabTestApiMessage(
-            requestError,
-            "Chưa thể tải tóm tắt tự động. Bạn vẫn có thể xem tổng quan theo trạng thái chỉ số.",
-          ),
-        });
-      }
-    };
-
-    void loadSummary();
-    return () => {
-      active = false;
-    };
-  }, [
-    onSessionUpdate,
-    results.length,
-    session,
-    sessionStatus,
-    summaryRetryKey,
-    summarySessionId,
-    summaryText,
-  ]);
-
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => pageHeadingRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
@@ -1022,11 +935,6 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
     setError("");
     setAnnouncement("Đang tải lại kết quả xét nghiệm.");
     setRetryKey((current) => current + 1);
-  }
-
-  function retrySummary() {
-    summaryRequestedRef.current = "";
-    setSummaryRetryKey((current) => current + 1);
   }
 
   function changeResultFilter(nextFilter) {
@@ -1113,9 +1021,9 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
         </nav>
 
         <div id="lab-overview-panel" role="tabpanel" aria-labelledby="lab-tab-overview" hidden={activeView !== "overview"}>
-          <ResultOverview results={results} summary={summaryText} summaryStatus={summaryStatus} summaryError={summaryError}
+          <ResultOverview results={results} summary={summaryText}
             normalCount={normalCount} attentionCount={attentionCount} unknownCount={unknownCount}
-            onRetrySummary={retrySummary} onViewResults={openResults} />
+            onViewResults={openResults} />
         </div>
 
         <div id="lab-indicators-panel" role="tabpanel" aria-labelledby="lab-tab-indicators" hidden={activeView !== "indicators"}>

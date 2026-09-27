@@ -25,6 +25,7 @@ function completedSession() {
     patientAgeAtTest: 18,
     testDate: "2026-08-07",
     processedAt: "2026-08-07T15:26:57.485Z",
+    aiSummary: FULL_OVERVIEW_SUMMARY,
     results: [
       {
         resultDetailId: "result-ast",
@@ -88,7 +89,6 @@ async function prepareResultPage(page, {
   responseDelay = 0,
   sessionData = completedSession(),
   sessionFailures = 0,
-  summaryFailures = 0,
 } = {}) {
   await page.emulateMedia({ forcedColors });
   await preparePage(page);
@@ -133,16 +133,10 @@ async function prepareResultPage(page, {
 
     if (pathname === `/api/lab-tests/${SESSION_ID}/summary`) {
       state.summaryCalls += 1;
-      if (state.summaryCalls <= summaryFailures) {
-        return route.fulfill({
-          status: 503,
-          contentType: "application/json",
-          body: JSON.stringify({ success: false, message: "Chưa thể tải tóm tắt tự động." }),
-        });
-      }
       return route.fulfill({
+        status: 500,
         contentType: "application/json",
-        body: JSON.stringify({ success: true, data: FULL_OVERVIEW_SUMMARY }),
+        body: JSON.stringify({ success: false, message: "FE không được gọi endpoint này." }),
       });
     }
 
@@ -474,20 +468,22 @@ test("tab navigation and indicator selection are usable without a mouse", async 
   await expect(page.getByRole("heading", { name: "Đánh giá tổng quan" })).toBeVisible();
 });
 
-test("a failed summary preserves results and can be retried without repeating the scan or consuming credits", async ({ page }) => {
-  const state = await prepareResultPage(page, { completedOnCall: 1, summaryFailures: 1 });
+test("uses aiSummary from the polling response without calling a separate summary endpoint", async ({ page }) => {
+  const state = await prepareResultPage(page, { completedOnCall: 1 });
   await page.goto(`/records/${SESSION_ID}`);
-  await expect(page.locator(".lab-test-result__summary-state.is-error")).toBeVisible();
+  await expect(page.getByText("Phần lớn chỉ số đang nằm trong khoảng tham chiếu, riêng AST cao hơn ngưỡng áp dụng.", { exact: true })).toBeVisible();
   expect(state.calls).toBe(1);
-  const usageCallsBeforeNavigation = state.usageCalls;
-  await openIndicators(page);
-  await expect(page.locator(".lab-test-result__result-card")).toHaveCount(2);
-  await page.getByRole("tab", { name: "Tổng quan", exact: true }).click();
-  await page.locator(".lab-test-result__summary-state.is-error").getByRole("button", { name: "Thử lại", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Đánh giá tổng quan" })).toBeVisible();
+  expect(state.summaryCalls).toBe(0);
+});
+
+test("keeps the status-based overview when a completed response has no aiSummary", async ({ page }) => {
+  const sessionData = completedSession();
+  delete sessionData.aiSummary;
+  const state = await prepareResultPage(page, { completedOnCall: 1, sessionData });
+  await page.goto(`/records/${SESSION_ID}`);
+  await expect(page.getByText("1/2 chỉ số nằm trong khoảng tham chiếu. Có 1 chỉ số nằm ngoài khoảng tham chiếu.", { exact: true })).toBeVisible();
   expect(state.calls).toBe(1);
-  expect(state.summaryCalls).toBe(2);
-  expect(state.usageCalls).toBe(usageCallsBeforeNavigation);
+  expect(state.summaryCalls).toBe(0);
 });
 
 test("a failed result request has an actionable retry instead of showing an empty completed scan", async ({ page }) => {
