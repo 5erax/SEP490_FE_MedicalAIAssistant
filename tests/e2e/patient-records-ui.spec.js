@@ -19,8 +19,6 @@ function detailSession(overrides = {}) {
     patientAgeAtTest: 35,
     testDate: "2026-08-01",
     processedAt: "2026-08-01T08:30:00Z",
-    aiSummaryStatus: 1,
-    aiSummary: "## Đánh giá tổng quan\nCác chỉ số xét nghiệm đã được đối chiếu đầy đủ.",
     results: [{
       resultDetailId: "result-hgb",
       rawExtractedName: "HGB",
@@ -70,18 +68,11 @@ async function openPatientRecords(page, options = {}) {
   const cloudinaryUploadGate = new Promise((resolve) => {
     releaseCloudinaryUpload = resolve;
   });
-  let releaseSummary;
-  const summaryGate = new Promise((resolve) => {
-    releaseSummary = resolve;
-  });
   const state = {
     requests: [],
-    analyzeCalls: 0,
     analyzePayload: null,
     cloudinaryUploads: 0,
-    detailCalls: 0,
     releaseCloudinaryUpload,
-    releaseSummary,
     usageCalls: 0,
   };
   const session = detailSession(options.detailOverrides);
@@ -100,7 +91,7 @@ async function openPatientRecords(page, options = {}) {
     });
   });
 
-  await page.route("**/api/**", async (route) => {
+  await page.route("**/api/**", (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const pathname = url.pathname;
@@ -159,7 +150,6 @@ async function openPatientRecords(page, options = {}) {
     }
 
     if (pathname === "/api/lab-tests/analyze" && request.method() === "POST") {
-      state.analyzeCalls += 1;
       state.analyzePayload = request.postDataJSON();
       if (options.analyzeError) {
         return route.fulfill({
@@ -185,23 +175,12 @@ async function openPatientRecords(page, options = {}) {
     }
 
     if (pathname === `/api/lab-tests/${SESSION_ID}`) {
-      state.detailCalls += 1;
-      const responseSession = structuredClone(session);
-      if (options.holdSummaryReady && state.detailCalls === 1) {
-        responseSession.aiSummary = null;
-        responseSession.aiSummaryStatus = 0;
-      } else if (options.summaryFailsFirst && state.detailCalls === 1) {
-        responseSession.aiSummary = null;
-        responseSession.aiSummaryStatus = 2;
-      } else if (options.holdSummaryReady && state.detailCalls === 2) {
-        await summaryGate;
-      }
       return route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
           message: options.detailMessage ?? "OK",
-          data: responseSession,
+          data: session,
         }),
       });
     }
@@ -255,7 +234,7 @@ test("patient submits the backend lab analysis payload from profile data", async
   const hemoglobinCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Hemoglobin" });
   await expect(hemoglobinCard).toBeVisible();
   await expect(hemoglobinCard).toContainText("13,8 g/dL");
-  await expect(page.locator(".toast-success")).toContainText("Kết quả và nhận định tổng quan đã sẵn sàng");
+  await expect(page.locator(".toast-success")).toContainText("Đã xếp hàng OCR xét nghiệm");
   await expect.poll(() => state.usageCalls).toBeGreaterThanOrEqual(2);
 });
 
@@ -279,50 +258,6 @@ test("patient document starts uploading on selection and is reused on analysis",
   await expect.poll(() => state.analyzePayload).not.toBeNull();
   expect(state.cloudinaryUploads).toBe(1);
   await expect(page).toHaveURL(new RegExp(`/records/${SESSION_ID}$`));
-});
-
-test("patient stays on upload page until results and AI summary are ready", async ({ page }) => {
-  const state = await openPatientRecords(page, { holdSummaryReady: true });
-
-  await page.locator('input[type="file"]').setInputFiles({
-    name: "phieu-xet-nghiem.png",
-    mimeType: "image/png",
-    buffer: Buffer.from("mock-lab-report"),
-  });
-  await page.getByRole("button", { name: "Phân tích kết quả" }).click();
-
-  await expect.poll(() => state.detailCalls).toBeGreaterThanOrEqual(2);
-  await expect(page).toHaveURL(/\/records$/);
-  await expect(page.getByRole("button", { name: "Đang hoàn thiện tổng quan…" })).toBeVisible();
-
-  state.releaseSummary();
-  await expect(page).toHaveURL(new RegExp(`/records/${SESSION_ID}$`));
-  await expect(page.getByRole("heading", { name: "Đánh giá tổng quan" })).toBeVisible();
-  await expect(page.getByText("Các chỉ số xét nghiệm đã được đối chiếu đầy đủ.", { exact: true })).toBeVisible();
-  await expect(page.getByText("ĐANG PHÂN TÍCH PHIẾU XÉT NGHIỆM", { exact: true })).toHaveCount(0);
-
-  const callsAfterNavigation = state.detailCalls;
-  await page.waitForTimeout(500);
-  expect(state.detailCalls).toBe(callsAfterNavigation);
-});
-
-test("patient can recheck a failed summary without submitting the lab scan again", async ({ page }) => {
-  const state = await openPatientRecords(page, { summaryFailsFirst: true });
-
-  await page.locator('input[type="file"]').setInputFiles({
-    name: "phieu-xet-nghiem.png",
-    mimeType: "image/png",
-    buffer: Buffer.from("mock-lab-report"),
-  });
-  await page.getByRole("button", { name: "Phân tích kết quả" }).click();
-
-  await expect(page.locator(".toast-error")).toContainText("chưa thể hoàn thiện nhận định tổng quan");
-  await expect(page.getByRole("button", { name: "Kiểm tra lại kết quả" })).toBeVisible();
-  await page.getByRole("button", { name: "Kiểm tra lại kết quả" }).click();
-
-  await expect(page).toHaveURL(new RegExp(`/records/${SESSION_ID}$`));
-  expect(state.analyzeCalls).toBe(1);
-  expect(state.detailCalls).toBe(2);
 });
 
 test("patient sees the standardized analyze error message in a toast", async ({ page }) => {

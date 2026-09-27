@@ -90,7 +90,6 @@ async function prepareResultPage(page, {
   sessionFailures = 0,
   summaryDelay = 0,
   summaryFailures = 0,
-  summaryReadyOnCall = 1,
 } = {}) {
   await page.emulateMedia({ forcedColors });
   await preparePage(page);
@@ -126,18 +125,6 @@ async function prepareResultPage(page, {
         session.status = 0;
         session.processedAt = null;
         session.results = [];
-      } else if (session.aiSummary) {
-        session.aiSummaryStatus ??= 1;
-      } else if (state.calls <= summaryFailures) {
-        session.aiSummaryStatus = 2;
-      } else if (state.calls >= summaryReadyOnCall) {
-        if (summaryDelay > 0) {
-          await new Promise((resolve) => setTimeout(resolve, summaryDelay));
-        }
-        session.aiSummary = FULL_OVERVIEW_SUMMARY;
-        session.aiSummaryStatus = 1;
-      } else {
-        session.aiSummaryStatus = 0;
       }
       return route.fulfill({
         contentType: "application/json",
@@ -209,7 +196,7 @@ async function openIndicators(page) {
   await expect(page.getByRole("tab", { name: /Chỉ số xét nghiệm/ })).toHaveAttribute("aria-selected", "true");
 }
 
-test("result page polls promptly, stops when completed, and displays advice", async ({ page }) => {
+test("result page polls every second, stops when completed, and displays advice", async ({ page }) => {
   const state = await prepareResultPage(page, { responseDelay: 300 });
   await page.goto(`/records/${SESSION_ID}`, { waitUntil: "domcontentloaded" });
 
@@ -220,8 +207,8 @@ test("result page polls promptly, stops when completed, and displays advice", as
   expect(state.calls).toBe(2);
   await expect.poll(() => state.usageCalls).toBeGreaterThanOrEqual(2);
   const pollGap = state.requestedAt[1] - state.requestedAt[0];
-  expect(pollGap).toBeGreaterThanOrEqual(250);
-  expect(pollGap).toBeLessThan(650);
+  expect(pollGap).toBeGreaterThanOrEqual(850);
+  expect(pollGap).toBeLessThan(1200);
 
   await openIndicators(page);
   const astCard = page.locator(".lab-test-result__result-card").filter({ hasText: "Chỉ số AST (GOT)" });
@@ -503,12 +490,8 @@ test("uses aiSummary already returned by the session API without generating it a
   expect(state.summaryCalls).toBe(0);
 });
 
-test("shows results immediately, then keeps polling until the session includes its AI summary", async ({ page }) => {
-  const state = await prepareResultPage(page, {
-    completedOnCall: 1,
-    summaryDelay: 500,
-    summaryReadyOnCall: 2,
-  });
+test("shows results immediately, then generates and displays a missing AI summary", async ({ page }) => {
+  const state = await prepareResultPage(page, { completedOnCall: 1, summaryDelay: 500 });
 
   await page.goto(`/records/${SESSION_ID}`);
 
@@ -516,16 +499,12 @@ test("shows results immediately, then keeps polling until the session includes i
   await expect(page.getByText("Đang hoàn thiện nhận định tổng quan…", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Đánh giá tổng quan" })).toBeVisible();
   await expect(page.getByText("Nội dung cần trao đổi với bác sĩ", { exact: true })).toBeVisible();
-  expect(state.calls).toBe(2);
-  expect(state.summaryCalls).toBe(0);
+  expect(state.calls).toBe(1);
+  expect(state.summaryCalls).toBe(1);
 });
 
-test("a failed summary preserves results and can refresh the same session without repeating the scan or consuming credits", async ({ page }) => {
-  const state = await prepareResultPage(page, {
-    completedOnCall: 1,
-    summaryFailures: 1,
-    summaryReadyOnCall: 2,
-  });
+test("a failed summary preserves results and can be retried without repeating the scan or consuming credits", async ({ page }) => {
+  const state = await prepareResultPage(page, { completedOnCall: 1, summaryFailures: 1 });
   await page.goto(`/records/${SESSION_ID}`);
   await expect(page.locator(".lab-test-result__summary-state.is-error")).toBeVisible();
   expect(state.calls).toBe(1);
@@ -535,9 +514,9 @@ test("a failed summary preserves results and can refresh the same session withou
   await page.getByRole("tab", { name: "Tổng quan", exact: true }).click();
   await page.locator(".lab-test-result__summary-state.is-error").getByRole("button", { name: "Thử lại", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Đánh giá tổng quan" })).toBeVisible();
-  expect(state.calls).toBe(2);
-  expect(state.summaryCalls).toBe(0);
-  expect(state.usageCalls).toBeGreaterThanOrEqual(usageCallsBeforeNavigation);
+  expect(state.calls).toBe(1);
+  expect(state.summaryCalls).toBe(2);
+  expect(state.usageCalls).toBe(usageCallsBeforeNavigation);
 });
 
 test("a failed result request has an actionable retry instead of showing an empty completed scan", async ({ page }) => {
