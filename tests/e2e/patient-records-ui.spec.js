@@ -64,18 +64,32 @@ async function openPatientRecords(page, options = {}) {
     }));
   }, { accessToken: PATIENT_TOKEN, isPremium: options.isPremium ?? true });
 
-  const state = { requests: [], analyzePayload: null, usageCalls: 0 };
+  let releaseCloudinaryUpload;
+  const cloudinaryUploadGate = new Promise((resolve) => {
+    releaseCloudinaryUpload = resolve;
+  });
+  const state = {
+    requests: [],
+    analyzePayload: null,
+    cloudinaryUploads: 0,
+    releaseCloudinaryUpload,
+    usageCalls: 0,
+  };
   const session = detailSession(options.detailOverrides);
   const summaries = options.summaries ?? [];
 
-  await page.route("https://api.cloudinary.com/**", (route) => route.fulfill({
-    contentType: "application/json",
-    body: JSON.stringify({
-      secure_url: "https://res.cloudinary.com/demo/image/upload/lab-tests/report.png",
-      public_id: "lab-tests/report",
-      resource_type: "image",
-    }),
-  }));
+  await page.route("https://api.cloudinary.com/**", async (route) => {
+    state.cloudinaryUploads += 1;
+    if (options.holdCloudinaryUpload) await cloudinaryUploadGate;
+    return route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        secure_url: "https://res.cloudinary.com/demo/image/upload/lab-tests/report.png",
+        public_id: "lab-tests/report",
+        resource_type: "image",
+      }),
+    });
+  });
 
   await page.route("**/api/**", (route) => {
     const request = route.request();
@@ -222,6 +236,28 @@ test("patient submits the backend lab analysis payload from profile data", async
   await expect(hemoglobinCard).toContainText("13,8 g/dL");
   await expect(page.locator(".toast-success")).toContainText("Đã xếp hàng OCR xét nghiệm");
   await expect.poll(() => state.usageCalls).toBeGreaterThanOrEqual(2);
+});
+
+test("patient document starts uploading on selection and is reused on analysis", async ({ page }) => {
+  const state = await openPatientRecords(page, { holdCloudinaryUpload: true });
+
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "phieu-xet-nghiem.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("mock-lab-report"),
+  });
+
+  await expect.poll(() => state.cloudinaryUploads).toBe(1);
+  await expect(page.locator(".records-selected-file")).toContainText("Đang chuẩn bị tài liệu");
+  expect(state.analyzePayload).toBeNull();
+
+  state.releaseCloudinaryUpload();
+  await expect(page.locator(".records-selected-file")).toContainText("Đã sẵn sàng phân tích");
+  await page.getByRole("button", { name: "Phân tích kết quả" }).click();
+
+  await expect.poll(() => state.analyzePayload).not.toBeNull();
+  expect(state.cloudinaryUploads).toBe(1);
+  await expect(page).toHaveURL(new RegExp(`/records/${SESSION_ID}$`));
 });
 
 test("patient sees the standardized analyze error message in a toast", async ({ page }) => {

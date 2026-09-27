@@ -80,7 +80,7 @@ export function validateMedicalDocument(file) {
   }
 }
 
-export async function uploadMedicalDocumentToCloudinary(file) {
+export async function uploadMedicalDocumentToCloudinary(file, { signal } = {}) {
   validateMedicalDocument(file);
   const { cloudName, uploadPreset, folder } = getCloudinaryUploadConfig();
 
@@ -96,6 +96,7 @@ export async function uploadMedicalDocumentToCloudinary(file) {
   const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
     method: "POST",
     body: formData,
+    signal,
   });
   const payload = await response.json().catch(() => ({}));
 
