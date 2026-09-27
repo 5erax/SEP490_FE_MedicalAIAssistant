@@ -93,6 +93,13 @@ async function prepareDoctorPage(page, options = {}) {
     }
     if (path === `/api/lab-tests/${LAB_SESSION_ID}`) {
       calls.labTestGets += 1;
+      if (options.labSessionError) {
+        return route.fulfill(fail(
+          options.labSessionError.status,
+          options.labSessionError.code,
+          options.labSessionError.message,
+        ));
+      }
       return route.fulfill(ok(options.labSessionDetail ?? {
         sessionId: LAB_SESSION_ID,
         status: "completed",
@@ -101,15 +108,27 @@ async function prepareDoctorPage(page, options = {}) {
         processedAt: "2026-08-17T02:00:00Z",
         patientGenderAtTest: "male",
         patientAgeAtTest: 24,
+        aiSummary: "Men gan AST đang cao hơn khoảng tham chiếu và cần được theo dõi.",
         results: [
           {
             resultDetailId: "cre-result",
+            rawExtractedName: "AST",
             indicatorSymbol: "AST",
             value: 52,
             unit: "U/L",
-            referenceMinUsed: 62,
-            referenceMaxUsed: 120,
-            status: "normal",
+            referenceMinUsed: 0,
+            referenceMaxUsed: 37,
+            status: "high",
+            indicator: {
+              symbol: "AST",
+              fullName: "Chỉ số AST (GOT)",
+              unit: "U/L",
+            },
+            advice: {
+              displayTitle: "Tình trạng men gan",
+              summary: "Men gan AST đang cao hơn khoảng tham chiếu và cần được theo dõi.",
+              lifestyleAdvice: ["Hạn chế rượu bia và các chất kích thích."],
+            },
           },
         ],
       }));
@@ -418,14 +437,19 @@ test.describe("doctor recovery plan workflow", () => {
     const resultDialog = page.getByRole("dialog", { name: "Kết quả xét nghiệm" });
     await expect(resultDialog).toBeVisible();
     await expect(resultDialog.getByRole("heading", { name: /Kết quả ngày 17\/0?8\/2026/ })).toBeVisible();
+    await expect(resultDialog.locator(".lab-test-result__overview-summary").getByText(
+      "Men gan AST đang cao hơn khoảng tham chiếu và cần được theo dõi.",
+    )).toBeVisible();
     await resultDialog.getByRole("tab", { name: "Chỉ số xét nghiệm", exact: true }).click();
     await expect(resultDialog.getByText("Tham chiếu: 0 – 37 U/L")).toBeVisible();
     await resultDialog.locator(".lab-test-result__result-card", { hasText: "Chỉ số AST (GOT)" }).click();
     await expect(resultDialog.getByRole("heading", { name: "Chỉ số AST (GOT)" })).toBeVisible();
-    await expect(resultDialog.getByText("Men gan AST đang cao hơn khoảng tham chiếu")).toBeVisible();
+    await expect(resultDialog.locator("#lab-result-advice").getByText(
+      "Men gan AST đang cao hơn khoảng tham chiếu",
+    )).toBeVisible();
     await expect(resultDialog.getByText("Chỉ số chưa nhận diện")).toHaveCount(0);
     expect(calls.clinicalContextGets).toBeGreaterThanOrEqual(2);
-    expect(calls.labTestGets).toBe(0);
+    expect(calls.labTestGets).toBe(1);
   });
 
   test("published requests keep the lab overview available from the clinical snapshot", async ({ page }) => {
@@ -457,6 +481,11 @@ test.describe("doctor recovery plan workflow", () => {
         },
         chronicDiseases: [],
       },
+      labSessionError: {
+        status: 404,
+        code: "NOT_FOUND",
+        message: "Không tìm thấy phiên xét nghiệm",
+      },
     });
     await page.goto(`/app/staff/recovery-plan-requests/${REQUEST_ID}`, { waitUntil: "domcontentloaded" });
 
@@ -467,10 +496,11 @@ test.describe("doctor recovery plan workflow", () => {
     const resultDialog = page.getByRole("dialog", { name: "Kết quả xét nghiệm" });
     await expect(resultDialog).toBeVisible();
     await expect(resultDialog.getByRole("heading", { name: "Có 1 chỉ số cần chú ý" })).toBeVisible();
+    await expect(resultDialog.getByText("Chưa thể tải nhận định tổng quan mới nhất.", { exact: false })).toBeVisible();
     await expect(resultDialog.getByText("1/1 chỉ số nằm trong khoảng tham chiếu")).toHaveCount(0);
     expect(calls.planGets).toBeGreaterThanOrEqual(2);
     expect(calls.clinicalContextGets).toBe(0);
-    expect(calls.labTestGets).toBe(0);
+    expect(calls.labTestGets).toBe(1);
   });
 
   test("legacy more-information requests render without the old doctor request action", async ({ page }) => {
