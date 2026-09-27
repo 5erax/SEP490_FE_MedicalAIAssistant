@@ -170,6 +170,13 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
         payload,
       );
       const recommendation = readResultPayload(recommendationResponse) ?? {};
+      let detail = null;
+      try {
+        const detailResponse = await symptomAnalysisApi.get(sessionId);
+        detail = readResultPayload(detailResponse) ?? null;
+      } catch {
+        detail = null;
+      }
       const diagnosisItems = [
         recommendation.diagnoses,
         recommendation.Diagnoses,
@@ -182,30 +189,59 @@ export function useSymptomIntake({ onResult, readQuestionsPayload, readResultPay
         recommendation.diagnosisSuggestions,
         recommendation.DiagnosisSuggestions,
       ].find((items) => Array.isArray(items) && items.length > 0);
+      const detailDiagnosisItems = [
+        detail?.diagnoses,
+        detail?.Diagnoses,
+        detail?.differentialDiagnoses,
+        detail?.DifferentialDiagnoses,
+        detail?.possibleDiagnoses,
+        detail?.PossibleDiagnoses,
+        detail?.suggestedDiagnoses,
+        detail?.SuggestedDiagnoses,
+        detail?.diagnosisSuggestions,
+        detail?.DiagnosisSuggestions,
+      ].find((items) => Array.isArray(items) && items.length > 0);
       const primaryDiagnosis = [
         recommendation.primaryDiagnosis,
         recommendation.PrimaryDiagnosis,
         recommendation.diagnosis,
         recommendation.Diagnosis,
+        detail?.primaryDiagnosis,
+        detail?.PrimaryDiagnosis,
+        detail?.diagnosis,
+        detail?.Diagnosis,
       ].find((item) => item && typeof item === "object");
       const symptomItems = [
+        detail?.symptoms,
+        detail?.Symptoms,
+        detail?.extractedSymptoms,
+        detail?.ExtractedSymptoms,
         recommendation.symptoms,
         recommendation.Symptoms,
         recommendation.extractedSymptoms,
         recommendation.ExtractedSymptoms,
       ].find((items) => Array.isArray(items) && items.length > 0);
       const completedResult = {
+        ...recommendation,
         inputText: input,
         sessionId,
-        diagnoses: diagnosisItems ?? (primaryDiagnosis ? [primaryDiagnosis] : []),
+        diagnoses: diagnosisItems ?? detailDiagnosisItems ?? (primaryDiagnosis ? [primaryDiagnosis] : []),
         symptoms: symptomItems ?? [],
+        rawDetail: detail,
+        rawRecommendation: recommendation,
         recommendedDepartment: recommendation.recommendedDepartment
           ?? recommendation.RecommendedDepartment
+          ?? detail?.recommendedDepartment
+          ?? detail?.RecommendedDepartment
           ?? null,
         recommendedFacilities: Array.isArray(recommendation.recommendedFacilities)
           ? recommendation.recommendedFacilities
           : Array.isArray(recommendation.RecommendedFacilities)
             ? recommendation.RecommendedFacilities
+            : Array.isArray(detail?.recommendedFacilities)
+              ? detail.recommendedFacilities
+              : Array.isArray(detail?.RecommendedFacilities)
+                ? detail.RecommendedFacilities
             : [],
       };
       writeStoredIntakeState({

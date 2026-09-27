@@ -122,13 +122,61 @@ function readResultPayload(response) {
 
 function readAnalysisSource(result) {
   if (!result || typeof result !== "object") return {};
-  return result.analysis ?? result.Analysis ?? result.result ?? result.Result ?? result;
+  const source = result.analysis
+    ?? result.Analysis
+    ?? result.result
+    ?? result.Result
+    ?? result.data?.analysis
+    ?? result.Data?.Analysis
+    ?? result.data?.result
+    ?? result.Data?.Result
+    ?? result.data
+    ?? result.Data
+    ?? result;
+
+  if (source?.analysis || source?.Analysis || source?.result || source?.Result) {
+    return source.analysis ?? source.Analysis ?? source.result ?? source.Result ?? source;
+  }
+
+  return source;
 }
 
 function getRecommendedFacilities(result) {
   const analysis = readAnalysisSource(result);
   const facilities = analysis.recommendedFacilities ?? analysis.RecommendedFacilities;
   return Array.isArray(facilities) ? facilities : [];
+}
+
+function readIcd10Code(value) {
+  if (!value || typeof value !== "object") return "";
+
+  const direct = value.icd10Code
+    ?? value.Icd10Code
+    ?? value.ICD10Code
+    ?? value.icd10
+    ?? value.ICD10
+    ?? value.icd
+    ?? value.Icd
+    ?? value.icdCode
+    ?? value.IcdCode
+    ?? value.icd?.code
+    ?? value.Icd?.Code
+    ?? value.icd10?.code
+    ?? value.ICD10?.Code;
+
+  if (direct) return String(direct).trim();
+
+  for (const [key, item] of Object.entries(value)) {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (["icd10code", "icdcode", "icd10", "icd"].includes(normalizedKey)) {
+      const code = typeof item === "object" && item !== null
+        ? item.code ?? item.Code ?? item.value ?? item.Value
+        : item;
+      if (code) return String(code).trim();
+    }
+  }
+
+  return "";
 }
 
 function normalizeDiagnosis(diagnosis, index) {
@@ -145,14 +193,7 @@ function normalizeDiagnosis(diagnosis, index) {
     ?? diagnosis.name
     ?? "",
   ).trim();
-  const icd10Code = String(
-    diagnosis.icd10Code
-    ?? diagnosis.Icd10Code
-    ?? diagnosis.ICD10Code
-    ?? diagnosis.icdCode
-    ?? diagnosis.IcdCode
-    ?? "",
-  ).trim();
+  const icd10Code = readIcd10Code(diagnosis);
   const clinicalReasoning = String(
     diagnosis.clinicalReasoning
     ?? diagnosis.ClinicalReasoning
@@ -205,9 +246,112 @@ function normalizeSymptomAsDiagnosis(symptom, index) {
       ?? symptom.diseaseName
       ?? symptom.DiseaseName
       ?? symptom.name,
-    icd10Code: symptom.icd10Code ?? symptom.Icd10Code ?? symptom.ICD10Code,
+    icd10Code: readIcd10Code(symptom),
     rank: index + 1,
   }, index);
+}
+
+function looksLikeDiagnosisItem(item) {
+  if (!item || typeof item !== "object") return false;
+  return Boolean(
+    item.diseaseName
+    || item.DiseaseName
+    || item.diagnosisName
+    || item.DiagnosisName
+    || item.symptomName
+    || item.SymptomName
+    || item.icd10Code
+    || item.Icd10Code
+    || item.ICD10Code
+    || item.icd10
+    || item.ICD10
+    || item.icd
+    || item.Icd
+    || item.icdCode
+    || item.IcdCode
+    || readIcd10Code(item)
+    || item.clinicalReasoning
+    || item.ClinicalReasoning
+    || item.extractedText
+    || item.ExtractedText
+  );
+}
+
+function findFirstDiagnosisArray(value, keys, depth = 0, seen = new Set()) {
+  if (!value || typeof value !== "object" || depth > 5 || seen.has(value)) return undefined;
+  seen.add(value);
+
+  for (const key of keys) {
+    const directValue = value[key];
+    if (Array.isArray(directValue) && directValue.some(looksLikeDiagnosisItem)) return directValue;
+  }
+
+  for (const nestedValue of Object.values(value)) {
+    if (!nestedValue || typeof nestedValue !== "object") continue;
+    const found = findFirstDiagnosisArray(nestedValue, keys, depth + 1, seen);
+    if (found) return found;
+  }
+
+  return undefined;
+}
+
+function findFirstDiagnosisObject(value, keys, depth = 0, seen = new Set()) {
+  if (!value || typeof value !== "object" || depth > 5 || seen.has(value)) return undefined;
+  seen.add(value);
+
+  for (const key of keys) {
+    const directValue = value[key];
+    if (directValue && typeof directValue === "object" && !Array.isArray(directValue) && looksLikeDiagnosisItem(directValue)) {
+      return directValue;
+    }
+  }
+
+  for (const nestedValue of Object.values(value)) {
+    if (!nestedValue || typeof nestedValue !== "object") continue;
+    const found = findFirstDiagnosisObject(nestedValue, keys, depth + 1, seen);
+    if (found) return found;
+  }
+
+  return undefined;
+}
+
+function selectDiagnosisArray(candidates, normalizeItem) {
+  const arrays = candidates.filter((items) => Array.isArray(items) && items.length > 0);
+  return arrays.find((items) => items.some((item, index) => normalizeItem(item, index)?.icd10Code))
+    ?? arrays[0];
+}
+
+function normalizeDiagnosisMatchKey(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/\s+/g, " ");
+}
+
+function mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses) {
+  if (!diagnoses.length || !symptomDiagnoses.length) return diagnoses;
+
+  const symptomIcdByName = new Map();
+  symptomDiagnoses.forEach((symptomDiagnosis) => {
+    if (!symptomDiagnosis.icd10Code) return;
+    const key = normalizeDiagnosisMatchKey(symptomDiagnosis.diseaseName);
+    if (key && !symptomIcdByName.has(key)) {
+      symptomIcdByName.set(key, symptomDiagnosis.icd10Code);
+    }
+  });
+
+  return diagnoses.map((diagnosis, index) => {
+    if (diagnosis.icd10Code) return diagnosis;
+    const nameKey = normalizeDiagnosisMatchKey(diagnosis.diseaseName);
+    const icd10Code = (
+      nameKey && symptomIcdByName.get(nameKey)
+    ) || symptomDiagnoses[index]?.icd10Code || "";
+
+    return icd10Code ? { ...diagnosis, icd10Code } : diagnosis;
+  });
 }
 
 function getDiagnosisKey(diagnosis, index) {
@@ -221,7 +365,47 @@ function getDiagnosisKey(diagnosis, index) {
 function getResultDiagnoses(result) {
   const root = result && typeof result === "object" ? result : {};
   const analysis = readAnalysisSource(result);
-  const diagnosisItems = [
+  const symptomKeys = ["symptoms", "Symptoms", "extractedSymptoms", "ExtractedSymptoms"];
+  const diagnosisKeys = [
+    "diagnoses",
+    "Diagnoses",
+    "differentialDiagnoses",
+    "DifferentialDiagnoses",
+    "possibleDiagnoses",
+    "PossibleDiagnoses",
+    "suggestedDiagnoses",
+    "SuggestedDiagnoses",
+    "diagnosisSuggestions",
+    "DiagnosisSuggestions",
+  ];
+  const primaryDiagnosisKeys = ["primaryDiagnosis", "PrimaryDiagnosis", "diagnosis", "Diagnosis"];
+  const symptomItems = selectDiagnosisArray([
+    root.symptoms,
+    root.Symptoms,
+    root.extractedSymptoms,
+    root.ExtractedSymptoms,
+    analysis.symptoms,
+    analysis.Symptoms,
+    analysis.extractedSymptoms,
+    analysis.ExtractedSymptoms,
+    findFirstDiagnosisArray(root.rawDetail, symptomKeys),
+    findFirstDiagnosisArray(root.detail, symptomKeys),
+    findFirstDiagnosisArray(root.rawSession, symptomKeys),
+    findFirstDiagnosisArray(root.session, symptomKeys),
+    findFirstDiagnosisArray(root.rawRecommendation, symptomKeys),
+    findFirstDiagnosisArray(root.recommendation, symptomKeys),
+    findFirstDiagnosisArray(root, symptomKeys),
+  ], normalizeSymptomAsDiagnosis);
+  const symptomDiagnoses = (symptomItems ?? [])
+    .map(normalizeSymptomAsDiagnosis)
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftConfidence = clinicalConfidencePercent(left.confidenceScore) ?? 0;
+      const rightConfidence = clinicalConfidencePercent(right.confidenceScore) ?? 0;
+      return rightConfidence - leftConfidence;
+    })
+    .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
+  const diagnosisItems = selectDiagnosisArray([
     root.diagnoses,
     root.Diagnoses,
     root.differentialDiagnoses,
@@ -242,7 +426,14 @@ function getResultDiagnoses(result) {
     analysis.SuggestedDiagnoses,
     analysis.diagnosisSuggestions,
     analysis.DiagnosisSuggestions,
-  ].find((items) => Array.isArray(items) && items.length > 0);
+    findFirstDiagnosisArray(root.rawRecommendation, diagnosisKeys),
+    findFirstDiagnosisArray(root.recommendation, diagnosisKeys),
+    findFirstDiagnosisArray(root.rawDetail, diagnosisKeys),
+    findFirstDiagnosisArray(root.detail, diagnosisKeys),
+    findFirstDiagnosisArray(root.rawSession, diagnosisKeys),
+    findFirstDiagnosisArray(root.session, diagnosisKeys),
+    findFirstDiagnosisArray(root, diagnosisKeys),
+  ], normalizeDiagnosis);
   const primaryDiagnosis = [
     root.primaryDiagnosis,
     root.PrimaryDiagnosis,
@@ -252,34 +443,22 @@ function getResultDiagnoses(result) {
     analysis.PrimaryDiagnosis,
     analysis.diagnosis,
     analysis.Diagnosis,
+    findFirstDiagnosisObject(root.rawRecommendation, primaryDiagnosisKeys),
+    findFirstDiagnosisObject(root.recommendation, primaryDiagnosisKeys),
+    findFirstDiagnosisObject(root.rawDetail, primaryDiagnosisKeys),
+    findFirstDiagnosisObject(root.detail, primaryDiagnosisKeys),
+    findFirstDiagnosisObject(root.rawSession, primaryDiagnosisKeys),
+    findFirstDiagnosisObject(root.session, primaryDiagnosisKeys),
+    findFirstDiagnosisObject(root, primaryDiagnosisKeys),
   ].find((item) => item && typeof item === "object");
   const source = diagnosisItems ?? (primaryDiagnosis ? [primaryDiagnosis] : []);
   const diagnoses = source
     .map(normalizeDiagnosis)
     .filter(Boolean)
     .sort((left, right) => left.rank - right.rank);
-  if (diagnoses.length > 0) return diagnoses;
+  if (diagnoses.length > 0) return mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses);
 
-  const symptomItems = [
-    root.symptoms,
-    root.Symptoms,
-    root.extractedSymptoms,
-    root.ExtractedSymptoms,
-    analysis.symptoms,
-    analysis.Symptoms,
-    analysis.extractedSymptoms,
-    analysis.ExtractedSymptoms,
-  ].find((items) => Array.isArray(items) && items.length > 0);
-
-  return (symptomItems ?? [])
-    .map(normalizeSymptomAsDiagnosis)
-    .filter(Boolean)
-    .sort((left, right) => {
-      const leftConfidence = clinicalConfidencePercent(left.confidenceScore) ?? 0;
-      const rightConfidence = clinicalConfidencePercent(right.confidenceScore) ?? 0;
-      return rightConfidence - leftConfidence;
-    })
-    .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
+  return symptomDiagnoses;
 }
 
 function firstNonEmptyText(...values) {
@@ -344,6 +523,10 @@ function normalizeSpecialtyResult(result, fallbackSessionId = "", fallbackSessio
       ?? "",
     ).trim(),
   };
+}
+
+function hasAnyDiagnosisIcd(result) {
+  return getResultDiagnoses(result).some((diagnosis) => Boolean(diagnosis.icd10Code));
 }
 
 function getRecommendedDepartment(result) {
@@ -617,14 +800,18 @@ function SpecialtyResultView({
                       <div className="specialty-result-diagnosis-main">
                         <div className="specialty-result-diagnosis-title">
                           <span className="specialty-result-diagnosis-rank">{String(index + 1).padStart(2, "0")}</span>
-                          <span className="specialty-result-diagnosis-name">{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}</span>
+                          <span className="specialty-result-diagnosis-heading">
+                            <span className="specialty-result-diagnosis-name">{diagnosis.diseaseName || diagnosis.icd10Code || "Chẩn đoán tham khảo"}</span>
+                            <span className={diagnosis.icd10Code ? "specialty-result-diagnosis-icd" : "specialty-result-diagnosis-icd is-missing"}>
+                              {diagnosis.icd10Code ? `ICD-10: ${diagnosis.icd10Code}` : "Chưa có mã ICD"}
+                            </span>
+                          </span>
                         </div>
                         <details className="specialty-result-inline-help specialty-result-diagnosis-detail" open={index === 0}>
                           <summary>Vì sao AI đề xuất kết quả này?</summary>
                           <p>
                             {diagnosis.clinicalReasoning || "Kết quả này được cân nhắc vì có điểm trùng khớp với triệu chứng đã mô tả, câu trả lời khảo sát và phạm vi thường được chuyên khoa tiếp nhận."}
                           </p>
-                          {diagnosis.icd10Code && <p>ICD-10 tham khảo: {diagnosis.icd10Code}</p>}
                         </details>
                       </div>
                       {confidence !== null && (
@@ -731,6 +918,7 @@ export default function DashboardPage() {
   const [quotaError, setQuotaError] = useState("");
   const [departmentDescriptionCache, setDepartmentDescriptionCache] = useState({});
   const restoringResultSessionRef = useRef("");
+  const icdHydrationSessionIdsRef = useRef(new Set());
 
   const hasHistoricalResultView = historicalResult.status === "loading"
     || historicalResult.status === "error"
@@ -825,6 +1013,45 @@ export default function DashboardPage() {
     displayedDepartmentId,
   ]);
 
+  useEffect(() => {
+    if (!showResultView || !displayedSessionId || !displayedResult) {
+      return undefined;
+    }
+
+    if (hasAnyDiagnosisIcd(displayedResult) || icdHydrationSessionIdsRef.current.has(displayedSessionId)) {
+      return undefined;
+    }
+
+    icdHydrationSessionIdsRef.current.add(displayedSessionId);
+    let active = true;
+    symptomAnalysisApi.get(displayedSessionId)
+      .then((response) => {
+        if (!active) return;
+        const detail = unwrapPayload(response) ?? response;
+        const hydratedResult = normalizeSpecialtyResult(detail, displayedSessionId);
+        if (!hydratedResult) return;
+        setHistoricalResult({
+          error: "",
+          result: hydratedResult,
+          session: null,
+          sessionId: displayedSessionId,
+          status: "ready",
+        });
+      })
+      .catch(() => {
+        icdHydrationSessionIdsRef.current.delete(displayedSessionId);
+        // Keep the existing result visible if the detail refresh fails.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    displayedResult,
+    displayedSessionId,
+    showResultView,
+  ]);
+
   async function refreshSymptomQuota() {
     setQuotaStatus("loading");
     setQuotaError("");
@@ -896,7 +1123,7 @@ export default function DashboardPage() {
         const cachedResult = symptomAnalysisApi.getCachedClinicalAnalysis(resultSessionIdFromUrl);
         if (cachedResult) {
           const normalizedCachedResult = normalizeSpecialtyResult(cachedResult, resultSessionIdFromUrl);
-          if (normalizedCachedResult) {
+          if (normalizedCachedResult && hasAnyDiagnosisIcd(normalizedCachedResult)) {
             setHistoricalResult({
               error: "",
               result: normalizedCachedResult,
@@ -994,7 +1221,7 @@ export default function DashboardPage() {
     const cachedResult = symptomAnalysisApi.getCachedClinicalAnalysis(historicalSessionId);
     if (cachedResult) {
       const normalizedCachedResult = normalizeSpecialtyResult(cachedResult, historicalSessionId, session);
-      if (normalizedCachedResult) {
+      if (normalizedCachedResult && hasAnyDiagnosisIcd(normalizedCachedResult)) {
         setHistoricalResult({
           error: "",
           result: normalizedCachedResult,
@@ -1009,7 +1236,11 @@ export default function DashboardPage() {
     try {
       const response = await symptomAnalysisApi.get(historicalSessionId);
       const detail = unwrapPayload(response) ?? response;
-      const nextResult = normalizeSpecialtyResult(detail, historicalSessionId, session);
+      const nextResult = normalizeSpecialtyResult({
+        ...detail,
+        rawDetail: detail,
+        rawSession: session,
+      }, historicalSessionId, session);
       if (!nextResult) throw new Error("Phiên này chưa có kết quả chuyên khoa để hiển thị.");
       setHistoricalResult({
         error: "",

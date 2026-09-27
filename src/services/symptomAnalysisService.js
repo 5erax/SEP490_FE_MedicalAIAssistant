@@ -107,6 +107,36 @@ function normalizeCoordinate(value) {
   return Number.isFinite(coordinate) ? coordinate : null;
 }
 
+function readIcd10Code(value) {
+  if (!isPlainObject(value)) return "";
+
+  const direct = value.icd10Code
+    ?? value.Icd10Code
+    ?? value.ICD10Code
+    ?? value.icd10
+    ?? value.ICD10
+    ?? value.icd
+    ?? value.Icd
+    ?? value.icdCode
+    ?? value.IcdCode
+    ?? value.icd?.code
+    ?? value.Icd?.Code
+    ?? value.icd10?.code
+    ?? value.ICD10?.Code;
+
+  if (direct) return normalizeText(direct);
+
+  for (const [key, item] of Object.entries(value)) {
+    const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (["icd10code", "icdcode", "icd10", "icd"].includes(normalizedKey)) {
+      const code = isPlainObject(item) ? item.code ?? item.Code ?? item.value ?? item.Value : item;
+      if (code) return normalizeText(code);
+    }
+  }
+
+  return "";
+}
+
 function createDepartmentSnapshot(department) {
   if (!isPlainObject(department)) return null;
 
@@ -153,13 +183,7 @@ function createDiagnosisSnapshot(diagnosis, index = 0) {
     ?? diagnosis.Title
     ?? diagnosis.name,
   );
-  const icd10Code = normalizeText(
-    diagnosis.icd10Code
-    ?? diagnosis.Icd10Code
-    ?? diagnosis.ICD10Code
-    ?? diagnosis.icdCode
-    ?? diagnosis.IcdCode,
-  );
+  const icd10Code = readIcd10Code(diagnosis);
   if (!diseaseName && !icd10Code) return null;
 
   return {
@@ -213,9 +237,41 @@ function createSymptomDiagnosisSnapshot(symptom, index = 0) {
       ?? symptom.diseaseName
       ?? symptom.DiseaseName
       ?? symptom.name,
-    icd10Code: symptom.icd10Code ?? symptom.Icd10Code ?? symptom.ICD10Code,
+    icd10Code: readIcd10Code(symptom),
     rank: index + 1,
   }, index);
+}
+
+function normalizeDiagnosisMatchKey(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/\s+/g, " ");
+}
+
+function mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses) {
+  if (!diagnoses.length || !symptomDiagnoses.length) return diagnoses;
+
+  const symptomIcdByName = new Map();
+  symptomDiagnoses.forEach((symptomDiagnosis) => {
+    if (!symptomDiagnosis.icd10Code) return;
+    const key = normalizeDiagnosisMatchKey(symptomDiagnosis.diseaseName);
+    if (key && !symptomIcdByName.has(key)) {
+      symptomIcdByName.set(key, symptomDiagnosis.icd10Code);
+    }
+  });
+
+  return diagnoses.map((diagnosis, index) => {
+    if (diagnosis.icd10Code) return diagnosis;
+    const nameKey = normalizeDiagnosisMatchKey(diagnosis.diseaseName);
+    const icd10Code = (
+      nameKey && symptomIcdByName.get(nameKey)
+    ) || symptomDiagnoses[index]?.icd10Code || "";
+
+    return icd10Code ? { ...diagnosis, icd10Code } : diagnosis;
+  });
 }
 
 function createFacilitySnapshot(facility) {
@@ -255,6 +311,17 @@ function createFacilitySnapshot(facility) {
 function createClinicalMapSnapshot(analysis, fallbackSessionId) {
   if (!isPlainObject(analysis)) return null;
 
+  const symptomItems = [
+    analysis.symptoms,
+    analysis.Symptoms,
+    analysis.extractedSymptoms,
+    analysis.ExtractedSymptoms,
+  ].find((items) => Array.isArray(items) && items.length > 0);
+  const symptomDiagnoses = (symptomItems ?? [])
+    .map(createSymptomDiagnosisSnapshot)
+    .filter(Boolean)
+    .sort((left, right) => right.confidenceScore - left.confidenceScore)
+    .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
   const diagnosisItems = [
     analysis.diagnoses,
     analysis.Diagnoses,
@@ -281,19 +348,11 @@ function createClinicalMapSnapshot(analysis, fallbackSessionId) {
     .map(createDiagnosisSnapshot)
     .filter(Boolean)
     .sort((left, right) => left.rank - right.rank);
-  if (diagnoses.length === 0) {
-    const symptomItems = [
-      analysis.symptoms,
-      analysis.Symptoms,
-      analysis.extractedSymptoms,
-      analysis.ExtractedSymptoms,
-    ].find((items) => Array.isArray(items) && items.length > 0);
+  if (diagnoses.length > 0) {
+    diagnoses.splice(0, diagnoses.length, ...mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses));
+  } else {
     diagnoses.push(
-      ...(symptomItems ?? [])
-        .map(createSymptomDiagnosisSnapshot)
-        .filter(Boolean)
-        .sort((left, right) => right.confidenceScore - left.confidenceScore)
-        .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 })),
+      ...symptomDiagnoses,
     );
   }
   const facilityItems = analysis.recommendedFacilities ?? analysis.RecommendedFacilities;
@@ -827,7 +886,7 @@ export const symptomAnalysisApi = {
     const data = unwrapApiData(response) ?? {};
     const resolvedSessionId = String(data.sessionId ?? sessionId ?? "").trim();
     const analysis = createClinicalMapSnapshot(
-      data.analysis ?? data.result ?? null,
+      data.analysis ?? data.result ?? data,
       resolvedSessionId,
     );
 
@@ -931,10 +990,20 @@ export const symptomAnalysisApi = {
     });
   },
 
-  get(sessionId) {
-    return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.BY_SESSION(sessionId), {
+  async get(sessionId) {
+    const response = await apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.BY_SESSION(sessionId), {
       auth: true,
     });
+    const data = unwrapApiData(response) ?? {};
+    const resolvedSessionId = String(data.sessionId ?? sessionId ?? "").trim();
+    const analysis = createClinicalMapSnapshot(data, resolvedSessionId);
+
+    if (resolvedSessionId && analysis) {
+      clinicalAnalysisCache.set(resolvedSessionId, analysis);
+      storeClinicalMapSnapshot(analysis);
+    }
+
+    return response;
   },
 
   // Admin-wide session listing (all users), unlike listMySessions above.
