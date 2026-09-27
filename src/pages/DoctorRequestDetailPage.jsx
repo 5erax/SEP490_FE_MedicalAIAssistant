@@ -40,6 +40,7 @@ import {
   doctorRecoveryPlanRequestsApi,
   doctorRecoveryPlansApi,
   getRecoveryPlanTemplateErrorMessage,
+  labTestsApi,
   normalizeDoctorPlanDetail,
 } from "../services/api";
 import { getApiErrorCode } from "../services/apiError";
@@ -981,15 +982,30 @@ function ClinicalContextSection({ loading, error, data, onRetry, onRefreshContex
     setActiveLabTest(primaryLabTest);
     setLabResultError("");
     setLabResultLoading(true);
-    try {
-      const latestContext = await onRefreshContext?.();
-      const latestLabTest = latestContext?.primaryLabTest ?? primaryLabTest;
+
+    const [contextResult, sessionResult] = await Promise.allSettled([
+      onRefreshContext?.(),
+      labTestsApi.get(primaryLabTestSessionId),
+    ]);
+    const latestLabTest = contextResult.status === "fulfilled"
+      ? contextResult.value?.primaryLabTest ?? primaryLabTest
+      : primaryLabTest;
+
+    if (sessionResult.status === "fulfilled") {
+      const fullSession = sessionResult.value?.data ?? sessionResult.value?.Data ?? sessionResult.value;
+      setActiveLabTest({
+        ...latestLabTest,
+        ...fullSession,
+        sessionId: fullSession?.sessionId ?? primaryLabTestSessionId,
+      });
+    } else {
       setActiveLabTest(latestLabTest);
-    } catch {
-      setLabResultError("Chưa thể tải lại kết quả xét nghiệm mới nhất. Đang hiển thị dữ liệu đã tải trước đó.");
-    } finally {
-      setLabResultLoading(false);
+      setLabResultError(
+        "Chưa thể tải nhận định tổng quan mới nhất. Đang hiển thị các chỉ số đã lưu trong hồ sơ điều trị.",
+      );
     }
+
+    setLabResultLoading(false);
   }
 
   function closePrimaryLabTestResult() {
