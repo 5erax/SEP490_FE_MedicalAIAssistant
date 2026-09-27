@@ -683,7 +683,14 @@ function ResultAdvice({ result, results = [] }) {
   );
 }
 
-export default function LabTestResultPage({ sessionId, initialSession = null, embedded = false, onResponse, onSessionUpdate }) {
+export default function LabTestResultPage({
+  sessionId,
+  initialSession = null,
+  embedded = false,
+  onResponse,
+  onSessionUpdate,
+  enablePolling = true,
+}) {
   const { refresh: refreshServiceCredit } = useServiceCredit();
   const [session, setSession] = useState(initialSession);
   const [loadStatus, setLoadStatus] = useState(initialSession ? "ready" : sessionId ? "loading" : "error");
@@ -795,7 +802,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
             status: "error",
             error: "Chưa thể tải tóm tắt tự động. Bạn vẫn có thể xem tổng quan theo trạng thái chỉ số.",
           });
-        } else if (resultCount > 0) {
+        } else if (enablePolling && resultCount > 0) {
           setSummaryState({ sessionId: nextSummarySessionId, status: "loading", error: "" });
         }
       } else if (nextStatus === ASYNC_SESSION_STATUS.FAILED) {
@@ -838,7 +845,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
         const nextSession = unwrapData(response) ?? null;
         applySession(nextSession);
 
-        if (!shouldKeepPollingLabSession(nextSession)) {
+        if (!enablePolling || !shouldKeepPollingLabSession(nextSession)) {
           return;
         }
 
@@ -867,7 +874,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
       responseNotifiedRef.current = false;
       if (initialSession) {
         applySession(initialSession);
-        if (!shouldKeepPollingLabSession(initialSession)) return;
+        if (!enablePolling || !shouldKeepPollingLabSession(initialSession)) return;
       } else {
         setSession(null);
         setLoadStatus("loading");
@@ -882,7 +889,7 @@ export default function LabTestResultPage({ sessionId, initialSession = null, em
       if (startTimer) window.clearTimeout(startTimer);
       if (pollTimer) window.clearTimeout(pollTimer);
     };
-  }, [initialSession, onResponse, onSessionUpdate, refreshServiceCredit, retryKey, sessionId]);
+  }, [enablePolling, initialSession, onResponse, onSessionUpdate, refreshServiceCredit, retryKey, sessionId]);
   const results = getSessionResults(session);
   const sessionStatus = normalizeAsyncSessionStatus(session?.status);
   const isPending = !initialSession && loadStatus === "ready" && !TERMINAL_SESSION_STATUSES.has(sessionStatus);

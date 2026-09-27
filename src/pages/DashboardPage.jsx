@@ -186,6 +186,8 @@ function normalizeDiagnosis(diagnosis, index) {
     ?? diagnosis.DiseaseName
     ?? diagnosis.diagnosisName
     ?? diagnosis.DiagnosisName
+    ?? diagnosis.symptomName
+    ?? diagnosis.SymptomName
     ?? diagnosis.disease
     ?? diagnosis.Disease
     ?? diagnosis.title
@@ -203,6 +205,8 @@ function normalizeDiagnosis(diagnosis, index) {
     ?? diagnosis.Reasoning
     ?? diagnosis.explanation
     ?? diagnosis.Explanation
+    ?? diagnosis.extractedText
+    ?? diagnosis.ExtractedText
     ?? diagnosis.reason
     ?? diagnosis.Reason
     ?? "",
@@ -346,12 +350,21 @@ function mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses) {
   return diagnoses.map((diagnosis, index) => {
     if (diagnosis.icd10Code) return diagnosis;
     const nameKey = normalizeDiagnosisMatchKey(diagnosis.diseaseName);
-    const icd10Code = (
-      nameKey && symptomIcdByName.get(nameKey)
-    ) || symptomDiagnoses[index]?.icd10Code || "";
+    const icd10Code = nameKey ? symptomIcdByName.get(nameKey) : "";
 
     return icd10Code ? { ...diagnosis, icd10Code } : diagnosis;
   });
+}
+
+function sortDiagnosesByConfidence(diagnoses) {
+  return [...diagnoses]
+    .sort((left, right) => {
+      const leftConfidence = clinicalConfidencePercent(left.confidenceScore) ?? 0;
+      const rightConfidence = clinicalConfidencePercent(right.confidenceScore) ?? 0;
+      if (rightConfidence !== leftConfidence) return rightConfidence - leftConfidence;
+      return left.rank - right.rank;
+    })
+    .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
 }
 
 function getDiagnosisKey(diagnosis, index) {
@@ -402,7 +415,8 @@ function getResultDiagnoses(result) {
     .sort((left, right) => {
       const leftConfidence = clinicalConfidencePercent(left.confidenceScore) ?? 0;
       const rightConfidence = clinicalConfidencePercent(right.confidenceScore) ?? 0;
-      return rightConfidence - leftConfidence;
+      if (rightConfidence !== leftConfidence) return rightConfidence - leftConfidence;
+      return left.rank - right.rank;
     })
     .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
   const diagnosisItems = selectDiagnosisArray([
@@ -454,9 +468,10 @@ function getResultDiagnoses(result) {
   const source = diagnosisItems ?? (primaryDiagnosis ? [primaryDiagnosis] : []);
   const diagnoses = source
     .map(normalizeDiagnosis)
-    .filter(Boolean)
-    .sort((left, right) => left.rank - right.rank);
-  if (diagnoses.length > 0) return mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses);
+    .filter(Boolean);
+  if (diagnoses.length > 0) {
+    return sortDiagnosesByConfidence(mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses));
+  }
 
   return symptomDiagnoses;
 }

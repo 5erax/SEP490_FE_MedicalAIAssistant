@@ -1154,7 +1154,12 @@ function ClinicalContextSection({ loading, error, data, onRetry, onRefreshContex
             {labResultLoading && !activeLabTest ? (
               <LoadingState label="Đang tải kết quả xét nghiệm…" />
             ) : (
-              <LabTestResultPage sessionId={activeLabSessionId} initialSession={activeLabTest} embedded />
+              <LabTestResultPage
+                sessionId={activeLabSessionId}
+                initialSession={activeLabTest}
+                embedded
+                enablePolling={false}
+              />
             )}
           </div>
         </Dialog>

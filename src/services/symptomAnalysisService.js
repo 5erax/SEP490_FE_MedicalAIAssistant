@@ -177,6 +177,8 @@ function createDiagnosisSnapshot(diagnosis, index = 0) {
     ?? diagnosis.DiseaseName
     ?? diagnosis.diagnosisName
     ?? diagnosis.DiagnosisName
+    ?? diagnosis.symptomName
+    ?? diagnosis.SymptomName
     ?? diagnosis.disease
     ?? diagnosis.Disease
     ?? diagnosis.title
@@ -196,6 +198,8 @@ function createDiagnosisSnapshot(diagnosis, index = 0) {
       ?? diagnosis.Reasoning
       ?? diagnosis.explanation
       ?? diagnosis.Explanation
+      ?? diagnosis.extractedText
+      ?? diagnosis.ExtractedText
       ?? diagnosis.reason
       ?? diagnosis.Reason,
     ),
@@ -266,12 +270,21 @@ function mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses) {
   return diagnoses.map((diagnosis, index) => {
     if (diagnosis.icd10Code) return diagnosis;
     const nameKey = normalizeDiagnosisMatchKey(diagnosis.diseaseName);
-    const icd10Code = (
-      nameKey && symptomIcdByName.get(nameKey)
-    ) || symptomDiagnoses[index]?.icd10Code || "";
+    const icd10Code = nameKey ? symptomIcdByName.get(nameKey) : "";
 
     return icd10Code ? { ...diagnosis, icd10Code } : diagnosis;
   });
+}
+
+function sortDiagnosisSnapshotsByConfidence(diagnoses) {
+  return [...diagnoses]
+    .sort((left, right) => {
+      if (right.confidenceScore !== left.confidenceScore) {
+        return right.confidenceScore - left.confidenceScore;
+      }
+      return left.rank - right.rank;
+    })
+    .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
 }
 
 function createFacilitySnapshot(facility) {
@@ -320,7 +333,12 @@ function createClinicalMapSnapshot(analysis, fallbackSessionId) {
   const symptomDiagnoses = (symptomItems ?? [])
     .map(createSymptomDiagnosisSnapshot)
     .filter(Boolean)
-    .sort((left, right) => right.confidenceScore - left.confidenceScore)
+    .sort((left, right) => {
+      if (right.confidenceScore !== left.confidenceScore) {
+        return right.confidenceScore - left.confidenceScore;
+      }
+      return left.rank - right.rank;
+    })
     .map((diagnosis, index) => ({ ...diagnosis, rank: index + 1 }));
   const diagnosisItems = [
     analysis.diagnoses,
@@ -346,10 +364,13 @@ function createClinicalMapSnapshot(analysis, fallbackSessionId) {
       : primaryDiagnosis ? [primaryDiagnosis] : []
   )
     .map(createDiagnosisSnapshot)
-    .filter(Boolean)
-    .sort((left, right) => left.rank - right.rank);
+    .filter(Boolean);
   if (diagnoses.length > 0) {
-    diagnoses.splice(0, diagnoses.length, ...mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses));
+    diagnoses.splice(
+      0,
+      diagnoses.length,
+      ...sortDiagnosisSnapshotsByConfidence(mergeDiagnosisIcdCodes(diagnoses, symptomDiagnoses)),
+    );
   } else {
     diagnoses.push(
       ...symptomDiagnoses,
@@ -874,30 +895,19 @@ export const symptomAnalysisApi = {
     return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.QUOTA, { auth: true });
   },
 
-  async submitClinicalQuestionAnswers(sessionId, answers) {
-    const response = await apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_CLINICAL_QUESTION_ANSWERS, {
+  async submitClinicalQuestionAnswers(sessionId, answers, options = {}) {
+    clinicalAnalysisCache.clear();
+    clearStoredClinicalMapSnapshot();
+
+    return apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.SUBMIT_CLINICAL_QUESTION_ANSWERS, {
       method: "POST",
       body: {
         sessionId: normalizeText(sessionId),
         answers: Array.isArray(answers) ? answers : [],
       },
       auth: true,
+      signal: options.signal,
     });
-    const data = unwrapApiData(response) ?? {};
-    const resolvedSessionId = String(data.sessionId ?? sessionId ?? "").trim();
-    const analysis = createClinicalMapSnapshot(
-      data.analysis ?? data.result ?? data,
-      resolvedSessionId,
-    );
-
-    clinicalAnalysisCache.clear();
-    clearStoredClinicalMapSnapshot();
-    if (resolvedSessionId && analysis) {
-      clinicalAnalysisCache.set(resolvedSessionId, analysis);
-      storeClinicalMapSnapshot(analysis);
-    }
-
-    return response;
   },
 
   getCachedClinicalAnalysis(sessionId) {
@@ -990,9 +1000,10 @@ export const symptomAnalysisApi = {
     });
   },
 
-  async get(sessionId) {
+  async get(sessionId, options = {}) {
     const response = await apiRequest(ENDPOINTS.SYMPTOM_ANALYSIS.BY_SESSION(sessionId), {
       auth: true,
+      signal: options.signal,
     });
     const data = unwrapApiData(response) ?? {};
     const resolvedSessionId = String(data.sessionId ?? sessionId ?? "").trim();
