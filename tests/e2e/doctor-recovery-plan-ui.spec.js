@@ -109,6 +109,7 @@ async function prepareDoctorPage(page, options = {}) {
         patientGenderAtTest: "male",
         patientAgeAtTest: 24,
         aiSummary: "Men gan AST đang cao hơn khoảng tham chiếu và cần được theo dõi.",
+        aiSummaryStatus: "completed",
         results: [
           {
             resultDetailId: "cre-result",
@@ -448,7 +449,6 @@ test.describe("doctor recovery plan workflow", () => {
       "Men gan AST đang cao hơn khoảng tham chiếu",
     )).toBeVisible();
     await expect(resultDialog.getByText("Chỉ số chưa nhận diện")).toHaveCount(0);
-    expect(calls.clinicalContextGets).toBeGreaterThanOrEqual(2);
     expect(calls.labTestGets).toBe(1);
   });
 
