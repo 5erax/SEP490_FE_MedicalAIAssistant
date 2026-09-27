@@ -308,31 +308,6 @@ html[data-theme="dark"] .lab-test-result-page {
 .lab-test-result__formatted-summary ul { display: grid; gap: 8px; padding-left: 21px; }
 .lab-test-result__formatted-summary li::marker { color: var(--color-info-strong); }
 
-.lab-test-result__summary-state {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-muted);
-  font-size: 13px;
-  line-height: 1.6;
-}
-.lab-test-result__summary-state.is-error { color: var(--color-danger); }
-.lab-test-result__summary-state button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  border: 1px solid currentColor;
-  border-radius: 8px;
-  background: var(--color-surface);
-  color: inherit;
-  padding: 8px 12px;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
 .lab-test-result__overview-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .lab-test-result__overview-action {
   display: inline-flex;
