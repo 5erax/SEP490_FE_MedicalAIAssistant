@@ -29,7 +29,7 @@ import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
 import { useServiceCredit } from "../state/useServiceCredit";
-import { normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
+import { ASYNC_SESSION_STATUS, normalizeAsyncSessionStatus } from "../utils/asyncSessionStatus";
 import {
   authApi,
   getLabTestApiMessage,
@@ -43,6 +43,8 @@ import "../styles/analysis-history-panel.css";
 import "../styles/user-workspace/medical-records.css";
 
 const HISTORY_PAGE_SIZE = 8;
+const ANALYSIS_POLL_INTERVAL_MS = 300;
+const ANALYSIS_READY_TIMEOUT_MS = 3 * 60 * 1000;
 const STATUS_LABELS = {
   processing: "Đang phân tích",
   completed: "Đã hoàn tất",
@@ -120,6 +122,27 @@ function formatFileSize(bytes) {
 
 function fileIdentity(file) {
   return file ? `${file.name}:${file.size}:${file.lastModified}` : "";
+}
+
+function firstMeaningfulText(value) {
+  const text = String(value ?? "").trim();
+  return text && text !== "-" && text !== "—" ? text : "";
+}
+
+function normalizeAiSummaryStatus(value) {
+  const normalized = String(value ?? "").trim().toLowerCase().replace(/[\s_-]/g, "");
+  if (["completed", "complete", "ready", "done", "1"].includes(normalized)) return ASYNC_SESSION_STATUS.COMPLETED;
+  if (["failed", "failure", "error", "cancelled", "canceled", "2"].includes(normalized)) return ASYNC_SESSION_STATUS.FAILED;
+  return ASYNC_SESSION_STATUS.PROCESSING;
+}
+
+function getAnalysisProgress(session) {
+  const status = normalizeAsyncSessionStatus(session?.status);
+  if (status === ASYNC_SESSION_STATUS.FAILED) return "failed";
+  if (status !== ASYNC_SESSION_STATUS.COMPLETED) return "analyzing";
+  if (firstMeaningfulText(session?.aiSummary)) return "ready";
+  if (normalizeAiSummaryStatus(session?.aiSummaryStatus) === ASYNC_SESSION_STATUS.FAILED) return "summary-failed";
+  return "summarizing";
 }
 
 function isImageFile(file) {
@@ -278,6 +301,7 @@ export default function MedicalRecordPage() {
   const [formErrors, setFormErrors] = useState({});
   const [submissionStatus, setSubmissionStatus] = useState("idle");
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const [pendingSessionId, setPendingSessionId] = useState("");
   const [creditFailure, setCreditFailure] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [historyStatus, setHistoryStatus] = useState("loading");
@@ -293,6 +317,9 @@ export default function MedicalRecordPage() {
   const errorSummaryRef = useRef(null);
   const analyzeInFlightRef = useRef(false);
   const documentUploadRef = useRef(null);
+  const analysisRunRef = useRef(0);
+  const pendingAnalysisRef = useRef(null);
+  const resultPagePreloadRef = useRef(null);
 
   const gender = normalizeGender(profile?.gender);
   const currentAge = useMemo(
@@ -300,7 +327,7 @@ export default function MedicalRecordPage() {
     [profile?.dateOfBirth],
   );
   const currentProfileProblem = profileProblem(profile, profileStatus);
-  const isSubmitting = ["uploading", "analyzing"].includes(submissionStatus);
+  const isSubmitting = ["uploading", "analyzing", "summarizing"].includes(submissionStatus);
 
   useEffect(() => {
     let active = true;
@@ -346,6 +373,7 @@ export default function MedicalRecordPage() {
   }, []);
 
   useEffect(() => () => {
+    analysisRunRef.current += 1;
     const activeUpload = documentUploadRef.current;
     documentUploadRef.current = null;
     activeUpload?.controller.abort();
@@ -432,15 +460,67 @@ export default function MedicalRecordPage() {
     return uploadTask;
   }
 
+  async function waitForReadySession(sessionId, initialSession, runId) {
+    const startedAt = window.performance.now();
+    let currentSession = initialSession;
+    let shouldDelay = false;
+
+    while (analysisRunRef.current === runId) {
+      const progress = getAnalysisProgress(currentSession);
+      if (progress === "ready") return currentSession;
+      if (progress === "failed") {
+        const failure = new Error("Phiên phân tích xét nghiệm không hoàn tất. Vui lòng thử lại với phiếu rõ hơn.");
+        failure.code = "LAB_ANALYSIS_FAILED";
+        throw failure;
+      }
+      if (progress === "summary-failed") {
+        const failure = new Error("Hệ thống chưa thể hoàn thiện nhận định tổng quan. Vui lòng kiểm tra lại sau.");
+        failure.code = "LAB_SUMMARY_FAILED";
+        throw failure;
+      }
+      if (window.performance.now() - startedAt >= ANALYSIS_READY_TIMEOUT_MS) {
+        const timeout = new Error("Quá trình phân tích vẫn đang tiếp tục. Bạn có thể kiểm tra lại phiên này mà không cần gửi lại phiếu.");
+        timeout.code = "LAB_ANALYSIS_TIMEOUT";
+        throw timeout;
+      }
+
+      setSubmissionStatus(progress);
+      setSubmissionMessage(
+        progress === "summarizing"
+          ? "Đã nhận diện các chỉ số. Đang hoàn thiện nhận định tổng quan…"
+          : "Hệ thống đang đọc và đối chiếu các chỉ số xét nghiệm…",
+      );
+
+      if (shouldDelay) {
+        await new Promise((resolve) => window.setTimeout(resolve, ANALYSIS_POLL_INTERVAL_MS));
+        if (analysisRunRef.current !== runId) return null;
+      }
+
+      const response = await labTestsApi.get(sessionId);
+      if (analysisRunRef.current !== runId) return null;
+      currentSession = unwrapData(response) ?? { sessionId, status: "processing" };
+      shouldDelay = true;
+    }
+
+    return null;
+  }
+
   function selectFile(file) {
     try {
       validateMedicalDocument(file);
+      analysisRunRef.current += 1;
+      pendingAnalysisRef.current = null;
+      setPendingSessionId("");
       setDocumentFile(file);
       setUploadedDocument(null);
       prepareDocumentUpload(file);
+      resultPagePreloadRef.current ??= import("./LabTestResultPage");
       setFormErrors((current) => ({ ...current, document: "" }));
       setSubmissionMessage("");
     } catch (error) {
+      analysisRunRef.current += 1;
+      pendingAnalysisRef.current = null;
+      setPendingSessionId("");
       documentUploadRef.current?.controller.abort();
       documentUploadRef.current = null;
       setDocumentFile(null);
@@ -479,6 +559,8 @@ export default function MedicalRecordPage() {
     if (!validateForm()) return;
 
     analyzeInFlightRef.current = true;
+    const runId = analysisRunRef.current + 1;
+    analysisRunRef.current = runId;
     setSubmissionMessage("");
     setCreditFailure(null);
     try {
@@ -502,31 +584,51 @@ export default function MedicalRecordPage() {
       }
 
       setSubmissionStatus("analyzing");
-      const response = await labTestsApi.analyze({
-        documentUrl,
-        patientGenderAtTest: gender,
-        patientAgeAtTest: currentAge,
-      });
-      const session = unwrapData(response) ?? null;
-      if (!session?.sessionId) {
-        throw new Error("Hệ thống chưa trả về mã phiên phân tích. Vui lòng thử lại.");
+      const selectedFileId = fileIdentity(documentFile);
+      let response = null;
+      let session = null;
+      const pendingAnalysis = pendingAnalysisRef.current;
+
+      if (pendingAnalysis?.fileId === selectedFileId && pendingAnalysis.sessionId) {
+        session = { sessionId: pendingAnalysis.sessionId, status: "processing" };
+      } else {
+        response = await labTestsApi.analyze({
+          documentUrl,
+          patientGenderAtTest: gender,
+          patientAgeAtTest: currentAge,
+        });
+        session = unwrapData(response) ?? null;
+        if (!session?.sessionId) {
+          throw new Error("Hệ thống chưa trả về mã phiên phân tích. Vui lòng thử lại.");
+        }
+        pendingAnalysisRef.current = { fileId: selectedFileId, sessionId: session.sessionId };
+        setPendingSessionId(session.sessionId);
+        void refreshServiceCredit({ silent: true });
       }
-      void refreshServiceCredit({ silent: true });
+
+      const readySession = await waitForReadySession(session.sessionId, session, runId);
+      if (!readySession || analysisRunRef.current !== runId) return;
+
+      pendingAnalysisRef.current = null;
+      setPendingSessionId("");
       setSubmissionStatus("success");
-      const successMessage = getLabTestApiMessage(
-        response,
-        session?.status === "completed"
-          ? "Đã nhận kết quả phân tích từ hệ thống."
-          : "Phiếu xét nghiệm đã được tiếp nhận và đang được phân tích.",
-      );
+      const successMessage = "Kết quả và nhận định tổng quan đã sẵn sàng.";
       setSubmissionMessage(successMessage);
       showToast({
         type: "success",
-        title: "Đã gửi phiếu xét nghiệm",
+        title: "Phân tích đã hoàn tất",
         message: successMessage,
       });
-      navigate(`/records/${encodeURIComponent(session.sessionId)}`);
+      await (resultPagePreloadRef.current ?? import("./LabTestResultPage"));
+      if (analysisRunRef.current !== runId) return;
+      navigate(`/records/${encodeURIComponent(session.sessionId)}`, {
+        state: { labTestSession: readySession },
+      });
     } catch (error) {
+      if (error?.code === "LAB_ANALYSIS_FAILED") {
+        pendingAnalysisRef.current = null;
+        setPendingSessionId("");
+      }
       const creditError = getServiceCreditErrorPresentation(error);
       setCreditFailure(creditError);
       const message = creditError?.message || getLabTestApiMessage(
@@ -551,6 +653,9 @@ export default function MedicalRecordPage() {
   }
 
   function clearFile() {
+    analysisRunRef.current += 1;
+    pendingAnalysisRef.current = null;
+    setPendingSessionId("");
     documentUploadRef.current?.controller.abort();
     documentUploadRef.current = null;
     setDocumentFile(null);
@@ -718,8 +823,17 @@ export default function MedicalRecordPage() {
                   <Button type="submit" disabled={isSubmitting || profileStatus === "loading"}>
                     {submissionStatus === "uploading" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
                     {submissionStatus === "analyzing" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
+                    {submissionStatus === "summarizing" && <RefreshCw className="records-spin" size={17} aria-hidden="true" />}
                     {!isSubmitting && <FileScan size={17} aria-hidden="true" />}
-                    {submissionStatus === "uploading" ? "Đang tải tài liệu…" : submissionStatus === "analyzing" ? "Đang gửi phân tích…" : "Phân tích kết quả"}
+                    {submissionStatus === "uploading"
+                      ? "Đang tải tài liệu…"
+                      : submissionStatus === "analyzing"
+                        ? "Đang phân tích chỉ số…"
+                        : submissionStatus === "summarizing"
+                          ? "Đang hoàn thiện tổng quan…"
+                          : pendingSessionId
+                            ? "Kiểm tra lại kết quả"
+                            : "Phân tích kết quả"}
                   </Button>
                 </div>
               </section>

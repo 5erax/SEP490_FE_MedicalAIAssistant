@@ -121,8 +121,15 @@ function App() {
       return lazyPage(<NearbyClinicPage />);
     case "patient.records":
       return userWorkspace(lazyPage(<MedicalRecordPage />));
-    case "patient.record-result":
-      return userWorkspace(lazyPage(<LabTestResultPage sessionId={route.params?.sessionId} />));
+    case "patient.record-result": {
+      const navigationSession = window.history.state?.labTestSession;
+      const initialSession = navigationSession?.sessionId === route.params?.sessionId
+        ? navigationSession
+        : null;
+      return userWorkspace(lazyPage(
+        <LabTestResultPage sessionId={route.params?.sessionId} initialSession={initialSession} />,
+      ));
+    }
     case "patient.pre-consultation":
       return userWorkspace(lazyPage(<PreConsultationPage />));
     case "patient.recovery":
