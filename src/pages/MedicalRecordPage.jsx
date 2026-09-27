@@ -274,6 +274,7 @@ export default function MedicalRecordPage() {
   const [profileReloadKey, setProfileReloadKey] = useState(0);
   const [documentFile, setDocumentFile] = useState(null);
   const [uploadedDocument, setUploadedDocument] = useState(null);
+  const [documentPreparationStatus, setDocumentPreparationStatus] = useState("idle");
   const [formErrors, setFormErrors] = useState({});
   const [submissionStatus, setSubmissionStatus] = useState("idle");
   const [submissionMessage, setSubmissionMessage] = useState("");
@@ -291,6 +292,7 @@ export default function MedicalRecordPage() {
   const [filePreviewUrl, setFilePreviewUrl] = useState("");
   const errorSummaryRef = useRef(null);
   const analyzeInFlightRef = useRef(false);
+  const documentUploadRef = useRef(null);
 
   const gender = normalizeGender(profile?.gender);
   const currentAge = useMemo(
@@ -329,6 +331,25 @@ export default function MedicalRecordPage() {
     setFilePreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [documentFile]);
+
+  useEffect(() => {
+    const existingLink = document.head.querySelector('link[data-medimate-cloudinary-preconnect="true"]');
+    if (existingLink) return undefined;
+
+    const link = document.createElement("link");
+    link.rel = "preconnect";
+    link.href = "https://api.cloudinary.com";
+    link.crossOrigin = "anonymous";
+    link.dataset.medimateCloudinaryPreconnect = "true";
+    document.head.appendChild(link);
+    return () => link.remove();
+  }, []);
+
+  useEffect(() => () => {
+    const activeUpload = documentUploadRef.current;
+    documentUploadRef.current = null;
+    activeUpload?.controller.abort();
+  }, []);
 
   const loadHistory = useCallback(async ({ quiet = false } = {}) => {
     if (!quiet) setHistoryStatus("loading");
@@ -369,16 +390,62 @@ export default function MedicalRecordPage() {
     navigate(`/records/${encodeURIComponent(sessionId)}`);
   }
 
+  function prepareDocumentUpload(file) {
+    const fileId = fileIdentity(file);
+    const previousUpload = documentUploadRef.current;
+    if (previousUpload?.fileId === fileId && previousUpload.status !== "error") {
+      return previousUpload;
+    }
+
+    previousUpload?.controller.abort();
+    const controller = new AbortController();
+    const uploadTask = {
+      controller,
+      fileId,
+      promise: null,
+      status: "uploading",
+    };
+    uploadTask.promise = uploadMedicalDocumentToCloudinary(file, { signal: controller.signal })
+      .then((upload) => {
+        uploadTask.status = "ready";
+        return upload;
+      })
+      .catch((error) => {
+        uploadTask.status = controller.signal.aborted ? "aborted" : "error";
+        throw error;
+      });
+    documentUploadRef.current = uploadTask;
+    setDocumentPreparationStatus("uploading");
+
+    void uploadTask.promise.then(
+      (upload) => {
+        if (documentUploadRef.current !== uploadTask) return;
+        setUploadedDocument({ fileId, secureUrl: upload.secureUrl });
+        setDocumentPreparationStatus("ready");
+      },
+      () => {
+        if (documentUploadRef.current !== uploadTask || controller.signal.aborted) return;
+        setUploadedDocument(null);
+        setDocumentPreparationStatus("error");
+      },
+    );
+    return uploadTask;
+  }
+
   function selectFile(file) {
     try {
       validateMedicalDocument(file);
       setDocumentFile(file);
       setUploadedDocument(null);
+      prepareDocumentUpload(file);
       setFormErrors((current) => ({ ...current, document: "" }));
       setSubmissionMessage("");
     } catch (error) {
+      documentUploadRef.current?.controller.abort();
+      documentUploadRef.current = null;
       setDocumentFile(null);
       setUploadedDocument(null);
+      setDocumentPreparationStatus("idle");
       setFormErrors((current) => ({ ...current, document: error.message }));
     }
   }
@@ -421,9 +488,17 @@ export default function MedicalRecordPage() {
 
       if (!documentUrl) {
         setSubmissionStatus("uploading");
-        const upload = await uploadMedicalDocumentToCloudinary(documentFile);
+        const selectedFileId = fileIdentity(documentFile);
+        let uploadTask = documentUploadRef.current;
+        if (
+          uploadTask?.fileId !== selectedFileId
+          || ["aborted", "error"].includes(uploadTask?.status)
+        ) {
+          uploadTask = prepareDocumentUpload(documentFile);
+        }
+        const upload = await uploadTask.promise;
         documentUrl = upload.secureUrl;
-        setUploadedDocument({ fileId: fileIdentity(documentFile), secureUrl: documentUrl });
+        setUploadedDocument({ fileId: selectedFileId, secureUrl: documentUrl });
       }
 
       setSubmissionStatus("analyzing");
@@ -476,8 +551,11 @@ export default function MedicalRecordPage() {
   }
 
   function clearFile() {
+    documentUploadRef.current?.controller.abort();
+    documentUploadRef.current = null;
     setDocumentFile(null);
     setUploadedDocument(null);
+    setDocumentPreparationStatus("idle");
     setFormErrors((current) => ({ ...current, document: "" }));
   }
 
@@ -581,7 +659,15 @@ export default function MedicalRecordPage() {
                 {documentFile && (
                   <div className="records-selected-file" role="status">
                     <FileCheck2 size={20} aria-hidden="true" />
-                    <span><strong>{documentFile.name}</strong><small>{formatFileSize(documentFile.size)}</small></span>
+                    <span>
+                      <strong>{documentFile.name}</strong>
+                      <small>
+                        {formatFileSize(documentFile.size)}
+                        {documentPreparationStatus === "uploading" && " · Đang chuẩn bị tài liệu…"}
+                        {documentPreparationStatus === "ready" && " · Đã sẵn sàng phân tích"}
+                        {documentPreparationStatus === "error" && " · Sẽ thử tải lại khi phân tích"}
+                      </small>
+                    </span>
                     <button type="button" onClick={clearFile} disabled={isSubmitting} aria-label={`Bỏ file ${documentFile.name}`}><X size={17} aria-hidden="true" /></button>
                   </div>
                 )}
