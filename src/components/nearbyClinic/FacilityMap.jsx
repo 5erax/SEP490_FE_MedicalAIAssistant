@@ -611,7 +611,7 @@ export default function FacilityMap({
                 }}
                 facility={facility}
                 selected={selectedFacility?.facilityId === facility.facilityId}
-                onSelect={onSelect}
+                onSelect={onViewDetail}
                 showLabel={viewState.zoom >= MARKER_LABEL_MIN_ZOOM || selectedFacility?.facilityId === facility.facilityId}
               />
             ))}

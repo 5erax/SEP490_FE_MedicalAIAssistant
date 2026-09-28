@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import LabTestTrendSection from "../components/lab-tests/LabTestTrendSection";
-import { Button, ErrorState, LoadingState, LocalImagePreview, useOverlayFocus } from "../components/ui";
+import { Button, ErrorState, LoadingState, useOverlayFocus } from "../components/ui";
 import { useFeedback } from "../components/feedback/feedbackContext";
 import { navigate } from "../router/navigation";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
@@ -123,7 +123,7 @@ function fileIdentity(file) {
 }
 
 function isImageFile(file) {
-  return Boolean(file && ["image/jpeg", "image/png"].includes(file.type));
+  return Boolean(file && /^image\//.test(file.type));
 }
 
 function profileProblem(profile, profileStatus) {
@@ -289,6 +289,7 @@ export default function MedicalRecordPage() {
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const [trendRefreshKey, setTrendRefreshKey] = useState(0);
   const [dragActive, setDragActive] = useState(false);
+  const [filePreviewUrl, setFilePreviewUrl] = useState("");
   const errorSummaryRef = useRef(null);
   const analyzeInFlightRef = useRef(false);
   const documentUploadRef = useRef(null);
@@ -320,6 +321,16 @@ export default function MedicalRecordPage() {
       window.clearTimeout(timer);
     };
   }, [profileReloadKey]);
+
+  useEffect(() => {
+    if (!isImageFile(documentFile)) {
+      setFilePreviewUrl("");
+      return undefined;
+    }
+    const url = URL.createObjectURL(documentFile);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [documentFile]);
 
   useEffect(() => {
     const existingLink = document.head.querySelector('link[data-medimate-cloudinary-preconnect="true"]');
@@ -614,8 +625,8 @@ export default function MedicalRecordPage() {
                   onDrop={handleDrop}
                 >
                   <div className="records-scan-frame" aria-hidden="true">
-                    {isImageFile(documentFile) ? (
-                      <LocalImagePreview file={documentFile} className="records-preview-image" />
+                    {filePreviewUrl ? (
+                      <img className="records-preview-image" src={filePreviewUrl} alt="" />
                     ) : (
                       <>
                         <FileScan size={64} />
