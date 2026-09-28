@@ -7,4 +7,3 @@ export { Field, Select, Textarea, TextInput } from "./Field.jsx";
 export { PAGE_SIZE_OPTIONS } from "./selectOptions.js";
 export { DataTable } from "./Table.jsx";
 export { useOverlayFocus } from "./useOverlayFocus.js";
-export { LocalImagePreview } from "./LocalImagePreview.jsx";

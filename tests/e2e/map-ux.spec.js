@@ -155,6 +155,8 @@ test("map renders and facility selection works with keyboard", async ({ page }) 
   const overviewTab = page.getByRole("tab", { name: "Tổng quan" });
   await expect(overviewTab).toHaveAttribute("aria-selected", "true");
   await overviewTab.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Bác sĩ" })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "Bác sĩ" }).press("End");
   await expect(page.getByRole("tab", { name: "Đánh giá" })).toHaveAttribute("aria-selected", "true");
 
   const skipMap = page.getByRole("link", { name: "Bỏ qua bản đồ, đến danh sách cơ sở" });
@@ -333,7 +335,7 @@ test("geolocation denial does not remove the rendered map", async ({ page, conte
   const locateButton = page.getByRole("button", { name: "Định vị tôi" });
   await locateButton.click();
 
-  await expect(page.getByText(/quyền vị trí|Location/)).toBeVisible();
+  await expect(page.getByText("Không thể lấy vị trí của bạn.", { exact: true })).toBeVisible();
   await expect(page.locator(".maplibregl-canvas")).toBeVisible();
 });
 
@@ -370,7 +372,7 @@ test("facility API failure uses safe Vietnamese recovery copy", async ({ page })
   await page.goto("/map", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByText(
-    "Chưa thể tải danh sách cơ sở y tế. Vui lòng thử lại.",
+    "Chưa thể tải danh sách cơ sở y tế. Vui lòng kiểm tra kết nối và thử lại.",
     { exact: true },
   )).toBeVisible();
   await expect(page.getByText("Failed to fetch", { exact: true })).toHaveCount(0);
