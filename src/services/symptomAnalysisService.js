@@ -656,6 +656,7 @@ export function readSymptomAnalysisQuota(response) {
     businessDate: data.businessDate ?? data.BusinessDate ?? "",
     limitPerDay: Math.max(0, Number(data.limitPerDay ?? data.LimitPerDay) || 0),
     usedToday: Math.max(0, Number(data.usedToday ?? data.UsedToday) || 0),
+    reservedToday: Math.max(0, Number(data.reservedToday ?? data.ReservedToday) || 0),
     remainingToday: Math.max(0, Number(data.remainingToday ?? data.RemainingToday) || 0),
     isFreeTier: Boolean(data.isFreeTier ?? data.IsFreeTier),
     hasServiceCredit: Boolean(data.hasServiceCredit ?? data.HasServiceCredit),
