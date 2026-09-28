@@ -9,6 +9,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    optimizeDeps: {
+      // MapLibre creates its worker from an ESM module URL. Pre-bundling it
+      // leaves Vite pointing at a worker file that is not emitted.
+      exclude: ["maplibre-gl"],
+    },
     build: {
       // MapLibre is isolated behind the nearby-clinic route lazy chunk.
       chunkSizeWarningLimit: 1100,

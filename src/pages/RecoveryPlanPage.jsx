@@ -27,7 +27,7 @@ import FormattedRecoveryNote from "../components/recovery/FormattedRecoveryNote"
 import RecoveryPlanFeedbackDialog from "../components/recovery/RecoveryPlanFeedbackDialog";
 import LabTestResultPage from "./LabTestResultPage";
 import { useFeedback } from "../components/feedback/feedbackContext";
-import { Button, CustomSelect, Dialog, EmptyState, ErrorState, Field, LoadingState, Select, Textarea } from "../components/ui";
+import { Button, CustomSelect, Dialog, EmptyState, ErrorState, Field, LoadingState, LocalImagePreview, Select, Textarea } from "../components/ui";
 import { navigate } from "../router/navigation";
 import { getApiErrorCode } from "../services/apiError";
 import { getServiceCreditErrorPresentation } from "../services/serviceCredit";
@@ -310,7 +310,6 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
   const [prescriptionImageUrl, setPrescriptionImageUrl] = useState("");
   const [prescriptionUploading, setPrescriptionUploading] = useState(false);
   const [prescriptionUploadError, setPrescriptionUploadError] = useState("");
-  const [prescriptionPreviewUrl, setPrescriptionPreviewUrl] = useState("");
   const [labSessions, setLabSessions] = useState([]);
   const [primaryLabTestSessionId, setPrimaryLabTestSessionId] = useState("");
   const [activeLabResultSessionId, setActiveLabResultSessionId] = useState("");
@@ -357,15 +356,6 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
     };
   }, []);
 
-  useEffect(() => () => {
-    if (prescriptionPreviewUrl) URL.revokeObjectURL(prescriptionPreviewUrl);
-  }, [prescriptionPreviewUrl]);
-
-  function clearPrescriptionPreview() {
-    if (prescriptionPreviewUrl) URL.revokeObjectURL(prescriptionPreviewUrl);
-    setPrescriptionPreviewUrl("");
-  }
-
   function handlePrescriptionFileChange(event) {
     const file = event.target.files?.[0] ?? null;
     setPrescriptionUploadError("");
@@ -373,7 +363,6 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
 
     if (!file) {
       setPrescriptionFile(null);
-      clearPrescriptionPreview();
       return;
     }
 
@@ -381,22 +370,18 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       validateCloudinaryImage(file);
     } catch (validationError) {
       setPrescriptionFile(null);
-      clearPrescriptionPreview();
       setPrescriptionUploadError(validationError?.message || "Vui lòng chọn file ảnh hợp lệ.");
       if (prescriptionInputRef.current) prescriptionInputRef.current.value = "";
       return;
     }
 
     setPrescriptionFile(file);
-    clearPrescriptionPreview();
-    setPrescriptionPreviewUrl(URL.createObjectURL(file));
   }
 
   function handleRemovePrescription() {
     setPrescriptionFile(null);
     setPrescriptionImageUrl("");
     setPrescriptionUploadError("");
-    clearPrescriptionPreview();
     if (prescriptionInputRef.current) prescriptionInputRef.current.value = "";
   }
 
@@ -517,7 +502,6 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
       setPrescriptionFile(null);
       setPrescriptionImageUrl("");
       setPrescriptionUploadError("");
-      clearPrescriptionPreview();
       if (prescriptionInputRef.current) prescriptionInputRef.current.value = "";
       setProfileReadinessIssues([]);
       await onCreated(response?.data);
@@ -672,7 +656,7 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
               id="recovery-prescriptionImage"
               className="recovery-prescription-native-input"
               type="file"
-              accept="image/*"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
               disabled={disabled || submitting || prescriptionUploading}
               aria-invalid={Boolean(prescriptionUploadError) || undefined}
               aria-describedby="recovery-prescriptionImage-guidance"
@@ -688,9 +672,9 @@ function CreateRequestForm({ disabled, disabledMessage, onCreated, onWorkflowCon
               </button>
               <span>{prescriptionFile ? prescriptionFile.name : "Chưa chọn ảnh"}</span>
             </div>
-            {prescriptionPreviewUrl && (
+            {prescriptionFile && (
               <div className="recovery-prescription-preview">
-                <img src={prescriptionPreviewUrl} alt="Xem trước đơn thuốc" />
+                <LocalImagePreview file={prescriptionFile} alt="Xem trước đơn thuốc" />
                 <Button type="button" tone="secondary" size="sm" disabled={disabled || prescriptionUploading} onClick={handleRemovePrescription}>
                   <X size={15} aria-hidden="true" /> Xóa ảnh
                 </Button>
