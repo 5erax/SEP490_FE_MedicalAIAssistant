@@ -1,7 +1,6 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Clock3, LocateFixed, Send, X } from "lucide-react";
 import Map, { Marker, NavigationControl, Popup } from "react-map-gl/maplibre";
-import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { consultationSessionsApi, webChatbotApi } from "../../services/api";
 import { navigate } from "../../router/navigation";
@@ -591,7 +590,6 @@ export default function FacilityMap({
           <Map
             ref={mapRef}
             mapStyle={FREE_MAP_STYLE}
-            workerUrl={maplibreWorkerUrl}
             {...viewState}
             onLoad={onMapLoad}
             onError={onError}
