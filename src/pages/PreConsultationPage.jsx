@@ -19,6 +19,7 @@ import {
   checklistItemsApi,
   consultationSessionsApi,
   medicalDepartmentsApi,
+  medicalFacilitiesApi,
   symptomAnalysisApi,
 } from "../services/api";
 import { navigate } from "../router/navigation";
@@ -119,6 +120,12 @@ function normalizeSuggestedFacilities(list) {
       address: facility?.address ?? facility?.Address ?? "",
     }))
     .filter((facility) => facility.facilityId);
+}
+
+async function loadFacilitiesByDepartment(departmentId) {
+  if (!departmentId) return [];
+  const response = await medicalFacilitiesApi.active({ departmentId });
+  return normalizeSuggestedFacilities(unwrapList(response));
 }
 
 function extractSessionRecommendation(response) {
@@ -306,9 +313,13 @@ export default function PreConsultationPage() {
       const matchedDepartmentId = departmentId && departments.some((item) => item.id === departmentId)
         ? departmentId
         : "";
+      const departmentFacilities = matchedDepartmentId
+        ? await loadFacilitiesByDepartment(matchedDepartmentId)
+        : [];
+      const baseFacilities = departmentFacilities.length > 0 ? departmentFacilities : facilities;
       const overriddenFacilityId = String(facilityOverride?.facilityId ?? "").trim();
       const matchedOverriddenFacility = overriddenFacilityId
-        ? facilities.find((facility) => facility.facilityId === overriddenFacilityId)
+        ? baseFacilities.find((facility) => facility.facilityId === overriddenFacilityId)
         : null;
       const overriddenFacility = overriddenFacilityId ? {
         ...(matchedOverriddenFacility ?? facilityOverride),
@@ -317,8 +328,8 @@ export default function PreConsultationPage() {
           || "Cơ sở đã chọn từ bản đồ",
       } : null;
       const availableFacilities = overriddenFacility
-        ? [overriddenFacility, ...facilities.filter((facility) => facility.facilityId !== overriddenFacilityId)]
-        : facilities;
+        ? [overriddenFacility, ...baseFacilities.filter((facility) => facility.facilityId !== overriddenFacilityId)]
+        : baseFacilities;
 
       setForm((current) => ({
         ...current,
