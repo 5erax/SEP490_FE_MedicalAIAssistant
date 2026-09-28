@@ -1,5 +1,10 @@
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_MEDICAL_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
+const SAFE_RASTER_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 const MEDICAL_DOCUMENT_TYPES = new Set([
   "application/pdf",
   "image/jpeg",
@@ -26,8 +31,8 @@ export function validateCloudinaryImage(file) {
     throw new Error("Hãy chọn một file ảnh để tải lên.");
   }
 
-  if (!file.type?.startsWith("image/")) {
-    throw new Error("Cloudinary chỉ nhận file ảnh ở trường này.");
+  if (!SAFE_RASTER_IMAGE_TYPES.has(file.type)) {
+    throw new Error("Ảnh phải là file JPG, PNG hoặc WEBP.");
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {

@@ -220,6 +220,8 @@ test("patient submits the backend lab analysis payload from profile data", async
     mimeType: "image/png",
     buffer: Buffer.from("mock-lab-report"),
   });
+  await expect(page.locator("canvas.records-preview-image")).toHaveCount(1);
+  await expect(page.locator("img.records-preview-image")).toHaveCount(0);
   await page.getByRole("button", { name: "Phân tích kết quả" }).click();
 
   await expect.poll(() => state.analyzePayload).toEqual({
