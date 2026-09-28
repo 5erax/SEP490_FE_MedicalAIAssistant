@@ -8,6 +8,7 @@ import Map, {
   NavigationControl,
   Popup,
 } from "react-map-gl/maplibre";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 const MAP_STYLE =
@@ -147,6 +148,7 @@ export default function LandingFacilityMap({
         <Map
           initialViewState={initialViewState}
           mapStyle={MAP_STYLE}
+          workerUrl={maplibreWorkerUrl}
           keyboard
           scrollZoom={false}
           cooperativeGestures
