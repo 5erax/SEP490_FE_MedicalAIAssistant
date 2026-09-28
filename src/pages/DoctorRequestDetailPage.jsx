@@ -407,6 +407,12 @@ function DetailContent({ request, onReload }) {
     }
   }
 
+  async function refreshClinicalContextSilently() {
+    const nextContext = await fetchClinicalContext();
+    setClinicalContext(nextContext);
+    return nextContext;
+  }
+
   useEffect(() => {
     if (!canLoadClinicalContext) {
       queueMicrotask(() => setClinicalLoading(false));
@@ -608,6 +614,7 @@ function DetailContent({ request, onReload }) {
               error={clinicalError}
               data={clinicalContext}
               onRetry={loadClinicalContext}
+              onRefreshContext={refreshClinicalContextSilently}
             />
           )}
 
@@ -935,12 +942,11 @@ function ProgressSteps({ status }) {
   );
 }
 
-function ClinicalContextSection({ loading, error, data, onRetry }) {
+function ClinicalContextSection({ loading, error, data, onRetry, onRefreshContext }) {
   const [activeLabSessionId, setActiveLabSessionId] = useState("");
   const [activeLabTest, setActiveLabTest] = useState(null);
   const [labResultLoading, setLabResultLoading] = useState(false);
   const [labResultError, setLabResultError] = useState("");
-  const [refreshLabResult, setRefreshLabResult] = useState(true);
 
   if (loading) {
     return (
@@ -973,35 +979,39 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
 
   async function openPrimaryLabTestResult() {
     setActiveLabSessionId(primaryLabTestSessionId);
-    setActiveLabTest(null);
+    setActiveLabTest(primaryLabTest);
     setLabResultError("");
-    setRefreshLabResult(true);
     setLabResultLoading(true);
 
-    try {
-      const response = await labTestsApi.get(primaryLabTestSessionId);
-      const fullSession = response?.data ?? response?.Data ?? response;
+    const [contextResult, sessionResult] = await Promise.allSettled([
+      onRefreshContext?.(),
+      labTestsApi.get(primaryLabTestSessionId),
+    ]);
+    const latestLabTest = contextResult.status === "fulfilled"
+      ? contextResult.value?.primaryLabTest ?? primaryLabTest
+      : primaryLabTest;
+
+    if (sessionResult.status === "fulfilled") {
+      const fullSession = sessionResult.value?.data ?? sessionResult.value?.Data ?? sessionResult.value;
       setActiveLabTest({
-        ...primaryLabTest,
+        ...latestLabTest,
         ...fullSession,
         sessionId: fullSession?.sessionId ?? primaryLabTestSessionId,
       });
-    } catch {
-      setActiveLabTest(primaryLabTest);
-      setRefreshLabResult(false);
+    } else {
+      setActiveLabTest(latestLabTest);
       setLabResultError(
         "Chưa thể tải nhận định tổng quan mới nhất. Đang hiển thị các chỉ số đã lưu trong hồ sơ điều trị.",
       );
-    } finally {
-      setLabResultLoading(false);
     }
+
+    setLabResultLoading(false);
   }
 
   function closePrimaryLabTestResult() {
     setActiveLabSessionId("");
     setActiveLabTest(null);
     setLabResultError("");
-    setRefreshLabResult(true);
     setLabResultLoading(false);
   }
 
@@ -1141,14 +1151,14 @@ function ClinicalContextSection({ loading, error, data, onRetry }) {
                 <Info size={16} aria-hidden="true" /> {labResultError}
               </div>
             )}
-            {labResultLoading ? (
+            {labResultLoading && !activeLabTest ? (
               <LoadingState label="Đang tải kết quả xét nghiệm…" />
             ) : (
               <LabTestResultPage
                 sessionId={activeLabSessionId}
                 initialSession={activeLabTest}
                 embedded
-                enablePolling={refreshLabResult}
+                enablePolling={false}
               />
             )}
           </div>
