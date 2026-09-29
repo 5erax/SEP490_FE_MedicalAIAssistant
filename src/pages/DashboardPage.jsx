@@ -808,6 +808,7 @@ function SpecialtyResultView({
               {diagnoses.map((diagnosis, index) => {
                 const key = getDiagnosisKey(diagnosis, index);
                 const confidence = clinicalConfidencePercent(diagnosis.confidenceScore);
+                const isLowConfidence = confidence === 0;
 
                 return (
                   <li className={index === 0 ? "is-primary" : undefined} key={key}>
@@ -831,11 +832,11 @@ function SpecialtyResultView({
                       </div>
                       {confidence !== null && (
                         <p
-                          className="specialty-result-diagnosis-score"
+                          className={`specialty-result-diagnosis-score${isLowConfidence ? " is-low" : ""}`}
                           style={{ "--match-score": `${confidence}%` }}
                         >
-                          <span>Khả năng mắc</span>
-                          <strong>{confidence}%</strong>
+                          <span>{isLowConfidence ? "Khả năng mắc thấp" : "Khả năng mắc"}</span>
+                          {!isLowConfidence && <strong>{confidence}%</strong>}
                         </p>
                       )}
                     </div>
