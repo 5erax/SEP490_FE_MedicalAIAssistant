@@ -53,7 +53,7 @@ export function ServiceCreditBadge() {
       <strong>{remainingCount}</strong>
       <span className="service-credit-badge-label">lượt</span>
       {reservedCount > 0 && (
-        <small className="service-credit-badge-reserved">{reservedCount} đang xử lý</small>
+        <small className="service-credit-badge-reserved">{reservedCount} đang giữ</small>
       )}
     </a>
   );

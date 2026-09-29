@@ -145,7 +145,7 @@ export default function AdminSubscriptionsSection({
     if (!defaultServiceCreditQuota?.id) {
       setQuotaMessage({
         type: "error",
-        text: "Chưa tìm thấy quota SERVICE_CREDIT từ backend. Vui lòng kiểm tra danh mục quota trước.",
+        text: "Chưa tìm thấy cấu hình lượt dịch vụ dùng chung. Vui lòng kiểm tra danh mục hạn mức trước.",
       });
       return;
     }
@@ -167,7 +167,7 @@ export default function AdminSubscriptionsSection({
     } catch (err) {
       setQuotaMessage({
         type: "error",
-        text: err?.message || "Không thể gán quota cho gói dịch vụ.",
+        text: err?.message || "Không thể gán hạn mức cho gói dịch vụ.",
       });
     } finally {
       setAssigningQuotaPlanId("");

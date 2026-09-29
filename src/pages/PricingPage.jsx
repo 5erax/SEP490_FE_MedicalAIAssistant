@@ -1,3 +1,4 @@
+import TermGuide from "../components/ui/TermGuide";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -554,6 +555,7 @@ function PricingPage() {
             </div>
           </header>
 
+          <TermGuide topic="credit" />
           {!plansLoading && plansError ? (
             <section className="pricing-api-message error" role="alert">
               <div>

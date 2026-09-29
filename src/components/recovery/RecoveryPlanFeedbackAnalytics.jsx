@@ -1,3 +1,4 @@
+import TermGuide from "../ui/TermGuide";
 import { useCallback, useEffect, useState } from "react";
 import {
   BarChart3,
@@ -231,6 +232,7 @@ export default function RecoveryPlanFeedbackAnalytics() {
         {filterError && <p role="alert">{filterError}</p>}
       </form>
 
+      <TermGuide topic="feedback" />
       {status === "loading" && !analytics && <LoadingState label="Đang tải thống kê phản hồi…" />}
       {status === "error" && (
         <ErrorState

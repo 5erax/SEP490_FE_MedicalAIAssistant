@@ -563,7 +563,7 @@ export default function AIConfigFormModal({
 
                 <small id="ai-config-token-help">
                   {errors.maxTokens ||
-                    "Khi nhập giá trị, số token tối đa phải lớn hơn 0."}
+                    "Giới hạn tính bằng token, đơn vị xử lý văn bản của mô hình; không tương đương cố định với một từ hay ký tự. Nhập số lớn hơn 0."}
                 </small>
               </label>
             </div>

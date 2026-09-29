@@ -297,7 +297,7 @@ export function LabIndicatorFormDialog({ indicator, saving, restoreFocusRef, onC
                 <Field id="lab-category" label="Nhóm chỉ số" optional>
                   <TextInput name="category" value={form.category} onChange={(event) => update("category", event.target.value)} />
                 </Field>
-                <Field id="lab-unit" label="Đơn vị mặc định" optional>
+                <Field id="lab-unit" label="Đơn vị mặc định" hint="Đơn vị đi kèm giá trị xét nghiệm, ví dụ mmol/L. Cần đọc giá trị cùng đúng đơn vị của chỉ số." optional>
                   <TextInput name="unit" value={form.unit} onChange={(event) => update("unit", event.target.value)} />
                 </Field>
               </div>
@@ -306,7 +306,7 @@ export function LabIndicatorFormDialog({ indicator, saving, restoreFocusRef, onC
             <fieldset className="lab-form-section">
               <legend>
                 <span>Khoảng tham chiếu mặc định</span>
-                <small>Có thể để trống nếu chỉ số dùng các range chi tiết riêng.</small>
+                <small>Khoảng giá trị dùng để đối chiếu chỉ số. Có thể để trống nếu chỉ số dùng các khoảng tham chiếu chi tiết riêng.</small>
               </legend>
               <div className="lab-form-grid">
                 <Field id="lab-minReference" label="Tham chiếu tối thiểu" optional error={errors.minReference}>
@@ -351,7 +351,7 @@ export function LabIndicatorFormDialog({ indicator, saving, restoreFocusRef, onC
 function AliasFields({ form, errors, update, firstInputRef }) {
   return (
     <div className="lab-form-grid">
-      <Field id="lab-aliasText" label="Tên bí danh" required error={errors.aliasText} className="lab-form-span-2">
+      <Field id="lab-aliasText" label="Tên bí danh" hint="Tên gọi khác hoặc cách viết tắt của cùng một chỉ số xét nghiệm." required error={errors.aliasText} className="lab-form-span-2">
         <TextInput ref={firstInputRef} name="aliasText" value={form.aliasText} onChange={(event) => update("aliasText", event.target.value)} />
       </Field>
       <Field id="lab-language" label="Ngôn ngữ" optional hint="Ví dụ: vi hoặc en.">
@@ -368,7 +368,7 @@ function AliasFields({ form, errors, update, firstInputRef }) {
 function RangeFields({ form, errors, update, firstInputRef }) {
   return (
     <div className="lab-form-grid">
-      <Field id="lab-gender" label="Giới tính" optional error={errors.gender}>
+      <Field id="lab-gender" label="Giới tính" hint="Mỗi khoảng chỉ chọn điều kiện giới tính hoặc nhóm tuổi, không chọn đồng thời cả hai." optional error={errors.gender}>
         <Select ref={firstInputRef} name="gender" value={form.gender} onChange={(event) => update("gender", event.target.value)}>
           <option value="">Chọn giới tính</option>
           {GENDER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -380,7 +380,7 @@ function RangeFields({ form, errors, update, firstInputRef }) {
           {AGE_GROUP_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </Select>
       </Field>
-      <Field id="lab-comparisonType" label="Kiểu so sánh" required error={errors.comparisonType} className="lab-form-span-2">
+      <Field id="lab-comparisonType" label="Kiểu so sánh" hint="Cách đối chiếu giá trị với ngưỡng: trong khoảng, nhỏ hơn hoặc bằng, hoặc lớn hơn hoặc bằng." required error={errors.comparisonType} className="lab-form-span-2">
         <Select name="comparisonType" value={form.comparisonType} onChange={(event) => update("comparisonType", event.target.value)}>
           <option value="">Chọn kiểu so sánh</option>
           {COMPARISON_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -411,12 +411,12 @@ function AdviceFields({ form, errors, update, firstInputRef }) {
       <Field id="lab-displayTitle" label="Tiêu đề hiển thị" optional>
         <TextInput name="displayTitle" value={form.displayTitle} onChange={(event) => update("displayTitle", event.target.value)} />
       </Field>
-      <Field id="lab-severityLevel" label="Mức độ" required>
+      <Field id="lab-severityLevel" label="Mức độ" hint="Mức cảnh báo hiển thị cùng lời khuyên: thông tin, cần chú ý hoặc khẩn cấp." required>
         <Select name="severityLevel" value={form.severityLevel} onChange={(event) => update("severityLevel", event.target.value)}>
           {SEVERITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </Select>
       </Field>
-      <Field id="lab-urgencyLevel" label="Mức ưu tiên" optional>
+      <Field id="lab-urgencyLevel" label="Mức ưu tiên" hint="Nội dung khuyến nghị về thời điểm trao đổi với bác sĩ; đây là lời hướng dẫn, không phải điểm số ưu tiên." optional>
         <TextInput
           name="urgencyLevel"
           value={form.urgencyLevel}

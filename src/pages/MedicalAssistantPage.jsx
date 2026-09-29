@@ -1,3 +1,4 @@
+import TermGuide from "../components/ui/TermGuide";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -798,6 +799,7 @@ function ResultPage({ sessionId }) {
           : "Kết quả dưới đây chỉ mang tính tham khảo, không thay thế chẩn đoán của bác sĩ."}
       </Alert>
 
+      <TermGuide topic="clinical" />
       <section className="result-grid">
         {primaryDiagnosis && (
           <article className="result-card priority diagnosis-primary-card">

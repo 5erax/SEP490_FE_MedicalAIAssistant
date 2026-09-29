@@ -1,3 +1,4 @@
+import ClinicalConfidenceGuide from "./ClinicalConfidenceGuide";
 import ClinicalNote from "./ClinicalNote";
 import ClinicalDisclosure from "./ClinicalDisclosure";
 import { CLINICAL_NOTES } from "../../content/clinicalNotes";
@@ -15,6 +16,7 @@ export default function DepartmentRecommendation({ department }) {
         <h3 className="clinical-department-name">{name || "Chưa xác định chuyên khoa"}</h3>
         {percent !== null && <span className="clinical-confidence">Độ phù hợp: {percent}%</span>}
       </header>
+      {percent !== null && <ClinicalConfidenceGuide />}
       {hasClinicalPriority(department) && (
         <ClinicalNote tone="warning" title={CLINICAL_NOTES.priorityTitle}>{CLINICAL_NOTES.priority}</ClinicalNote>
       )}

@@ -130,7 +130,7 @@ const KeywordWeightEditor = forwardRef(function KeywordWeightEditor({
       <div className="icd-keyword-editor-head">
         <div>
           <strong>Danh sách từ khóa</strong>
-          <span>Mỗi từ khóa đi kèm một trọng số nguyên.</span>
+          <span>Trọng số là giá trị cấu hình đi kèm từ khóa để hệ thống sử dụng khi xử lý; không phải tỷ lệ phần trăm. Nhập số nguyên theo quy ước cấu hình của hệ thống.</span>
         </div>
         <button className="btn btn-ghost btn-small" type="button" onClick={addRow}>
           <Plus size={15} aria-hidden="true" /> Thêm từ khóa
@@ -205,7 +205,7 @@ const KeywordWeightEditor = forwardRef(function KeywordWeightEditor({
             aria-describedby="icd-json-help"
           />
           <small id="icd-json-help">
-            {jsonError || 'Ví dụ: {"sốt": 5, "ho": 3}. Payload vẫn là đối tượng keywordWeights hiện tại.'}
+            {jsonError || 'Ví dụ: {"sốt": 5, "ho": 3}. Mỗi tên từ khóa đi kèm một số nguyên. Bạn có thể dùng danh sách phía trên nếu không quen định dạng JSON.'}
           </small>
         </label>
       </details>

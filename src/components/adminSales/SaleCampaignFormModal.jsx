@@ -123,7 +123,7 @@ export default function SaleCampaignFormModal({ campaign, plans, saving, capacit
             <label className="clean-field"><span>Bắt đầu</span><input type="datetime-local" value={form.startAt} onChange={(e) => change("startAt", e.target.value)} /></label>
             <label className="clean-field"><span>Kết thúc</span><input type="datetime-local" value={form.endAt} onChange={(e) => change("endAt", e.target.value)} /></label>
             <label className="clean-field"><span>Đối tượng</span><select value={form.eligibilityType} onChange={(e) => changeEligibilityType(e.target.value)}><option value="all">Tất cả khách hàng</option><option value="firstPurchase">Mua lần đầu</option><option value="returningCustomer">Đã từng mua</option></select></label>
-            <label className="clean-field"><span>Ưu tiên</span><input type="number" min="0" max="1000" value={form.priority} onChange={(e) => change("priority", e.target.value)} /></label>
+            <label className="clean-field"><span>Ưu tiên</span><input aria-describedby="sale-priority-help" type="number" min="0" max="1000" value={form.priority} onChange={(e) => change("priority", e.target.value)} /><small id="sale-priority-help">Dùng để xác định thứ tự xét chương trình khi có nhiều ưu đãi cùng đủ điều kiện. Đây không phải mức giảm giá hay số suất.</small></label>
           </div>
         </section>
 
@@ -132,7 +132,7 @@ export default function SaleCampaignFormModal({ campaign, plans, saving, capacit
             <span aria-hidden="true"><Users size={20} /></span>
             <div>
               <h3>Giới hạn sử dụng</h3>
-              <p>Quản lý tổng số suất và số suất tối đa cho mỗi người dùng.</p>
+              <p>Suất là giới hạn sử dụng ưu đãi, khác với số lượt dịch vụ được cấp. Bạn có thể giới hạn tổng suất và số suất mỗi người.</p>
             </div>
           </div>
           <div className="sale-form-grid">
@@ -146,7 +146,7 @@ export default function SaleCampaignFormModal({ campaign, plans, saving, capacit
             <span aria-hidden="true"><CreditCard size={20} /></span>
             <div>
               <h3>Gói dịch vụ áp dụng</h3>
-              <p>Chọn gói, nhập mức phí ưu đãi hoặc số lượt tặng thêm cho từng gói.</p>
+              <p>Chọn gói, nhập mức phí ưu đãi hoặc số lượt tặng thêm cho từng gói. Lượt tặng thêm là lượt dịch vụ ngoài quyền lợi của gói.</p>
             </div>
           </div>
           <fieldset className="sale-plan-editor">

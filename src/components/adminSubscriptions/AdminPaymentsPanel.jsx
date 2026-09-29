@@ -104,6 +104,7 @@ function PaymentDetailDialog({ paymentSummary, onClose, restoreFocusRef }) {
           <X size={18} aria-hidden="true" />
         </button>
       </header>
+      <p className="muted-text">Các số liệu trên chỉ tính giao dịch trong trang hiện tại. Đối soát là kiểm tra thông tin giao dịch và thanh toán khi cần làm rõ trạng thái.</p>
       <p className="sr-only" role="status" aria-atomic="true">{loading ? "Đang tải chi tiết giao dịch." : error || "Đã tải chi tiết giao dịch."}</p>
       {error && <p className="admin-payment-detail-error">{error}</p>}
       <dl className="admin-payment-detail-grid" aria-busy={loading}>
@@ -222,7 +223,7 @@ export default function AdminPaymentsPanel() {
       <section className="subscription-plan-kpis admin-payment-kpis" aria-label="Tổng quan lịch sử thanh toán">
         <article><span>Tổng giao dịch trang này</span><strong>{paymentPage.items.length}</strong></article>
         <article><span>Đã thanh toán</span><strong>{paidPaymentCount}</strong></article>
-        <article><span>Cần đối soát</span><strong>{issuePaymentCount}</strong></article>
+        <article><span>Thất bại, đã hủy hoặc hoàn tiền</span><strong>{issuePaymentCount}</strong></article>
       </section>
       <p className="sr-only" role="status" aria-atomic="true">{statusMessage}</p>
 
