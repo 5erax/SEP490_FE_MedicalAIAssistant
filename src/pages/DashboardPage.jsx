@@ -845,9 +845,9 @@ function SpecialtyResultView({
             </ol>
             {percent !== null && (
               <details className="specialty-result-inline-help specialty-result-confidence-help">
-                <summary>Khả năng mắc được tính như thế nào?</summary>
+                <summary>Hiểu kết quả nhận định tham khảo</summary>
                 <p>
-                  <strong>Khả năng mắc bệnh</strong> được ước tính dựa trên mức độ phổ biến của bệnh trong cộng đồng và mức độ phù hợp giữa các triệu chứng bạn cung cấp với đặc điểm của bệnh.
+                  Các tỷ lệ và gợi ý do hệ thống trả về từ thông tin bạn cung cấp. Không dùng riêng một tỷ lệ để kết luận bạn có hoặc không mắc bệnh; cần đọc cùng phần giải thích và trao đổi với bác sĩ.
                 </p>
                 <blockquote>
                   <strong>Lưu ý:</strong> Kết quả trên chỉ mang tính chất <strong>tham khảo</strong>, được tạo ra dựa trên thông tin và triệu chứng bạn cung cấp. Đây <strong>không phải là kết luận chẩn đoán bệnh</strong> và không thay thế cho việc thăm khám, xét nghiệm hoặc tư vấn từ bác sĩ.

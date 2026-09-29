@@ -1,0 +1,29 @@
+.term-guide {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin-block: 12px;
+  padding: 0 14px;
+  border: 1px solid #c8ddda;
+  border-radius: 12px;
+  background: #f4faf9;
+  color: #294b50;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.term-guide > summary {
+  padding-block: 11px;
+  cursor: pointer;
+  color: #006572;
+  font-weight: 650;
+}
+.term-guide > summary:focus-visible {
+  outline: 2px solid #007f88;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.term-guide > dl { margin: 0 0 14px; }
+.term-guide > dl > div + div { margin-top: 10px; }
+.term-guide dt { font-weight: 650; }
+.term-guide dd { margin: 2px 0 0; }

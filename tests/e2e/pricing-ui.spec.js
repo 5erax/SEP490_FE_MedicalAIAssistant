@@ -167,6 +167,14 @@ test("pricing remains usable at 320px and supports keyboard disclosure", async (
   await page.setViewportSize({ width: 320, height: 800 });
   await page.goto("/pricing", { waitUntil: "domcontentloaded" });
 
+  const termGuide = page.locator("details.term-guide");
+  await termGuide.locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(termGuide).toHaveAttribute("open", "");
+  await expect(termGuide.getByText("Lượt đang xử lý", { exact: true })).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(termGuide).not.toHaveAttribute("open", "");
+
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );

@@ -103,6 +103,8 @@ test("admin creates a campaign with an explicit announcement preference", async 
 
   await page.getByRole("button", { name: "Thêm ưu đãi" }).click();
   const dialog = page.getByRole("dialog", { name: "Tạo chương trình ưu đãi" });
+  await expect(dialog.locator("input[aria-describedby='sale-priority-help']"))
+    .toHaveAccessibleDescription(/thứ tự xét chương trình/);
   const announcementToggle = dialog.getByRole("checkbox", { name: /Gửi thông báo ưu đãi/ });
   await expect(announcementToggle).not.toBeChecked();
   await expect(dialog.getByRole("checkbox", { name: /Kích hoạt chương trình/ })).toBeChecked();

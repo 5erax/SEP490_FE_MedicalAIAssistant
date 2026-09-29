@@ -1,3 +1,4 @@
+import TermGuide from "../ui/TermGuide";
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Dialog } from "../ui/Dialog";
@@ -71,7 +72,8 @@ export default function SaleCampaignRedemptionsModal({ campaign, plans = [], onC
 
   return <Dialog backdropClassName="sale-modal-backdrop" className="sale-modal sale-redemptions-modal" labelledBy="sale-redemptions-title" onClose={onClose} initialFocusRef={closeRef}>
     <header><div><span>Lịch sử sử dụng</span><h2 id="sale-redemptions-title">{campaign.name}</h2></div><button ref={closeRef} type="button" onClick={onClose} aria-label="Đóng"><X /></button></header>
-    <div className="sale-redemption-table-wrap" aria-busy={state.loading || undefined}><table><thead><tr><th>Người dùng</th><th>Gói</th><th>Giá</th><th>Credit</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
+    <TermGuide topic="redemption" />
+    <div className="sale-redemption-table-wrap" aria-busy={state.loading || undefined}><table><thead><tr><th>Người dùng</th><th>Gói</th><th>Giá</th><th>Lượt dịch vụ được cấp</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
       {state.items.map((item) => {
         const date = getRedemptionDate(item);
         return <tr key={item.id}>

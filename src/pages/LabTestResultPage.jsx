@@ -1,3 +1,4 @@
+import TermGuide from "../components/ui/TermGuide";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -552,6 +553,7 @@ function ResultOverview({
         <div data-tone="neutral" data-active={unknownCount > 0}><span>Chỉ số chưa xác định</span><strong>{unknownCount}</strong></div>
       </div>
 
+      <TermGuide topic="lab" />
       {totalCount > 0 && <div className="lab-test-result__overview-actions">
         <button className="lab-test-result__overview-action" type="button" onClick={() => onViewResults("all")}>
           Xem {totalCount} chỉ số xét nghiệm <ArrowRight size={18} aria-hidden="true" />
@@ -562,7 +564,7 @@ function ResultOverview({
       </div>}
 
       <div className="lab-test-result__overview-summary" data-tone={tone}>
-        <span className="lab-test-result__overview-summary-label">Nhận định chung</span>
+        <span className="lab-test-result__overview-summary-label">{summary ? "Nhận định chung" : "Tóm tắt các chỉ số"}</span>
         {summary ? <FormattedSummary value={summary} /> : <p>{fallbackSummary}</p>}
         {summaryStatus === "loading" && (
           <span className="lab-test-result__summary-state">

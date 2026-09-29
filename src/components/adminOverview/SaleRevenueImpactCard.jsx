@@ -1,3 +1,4 @@
+import TermGuide from "../ui/TermGuide";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { saleCampaignsApi } from "../../services/saleCampaignService";
@@ -80,6 +81,7 @@ function SaleRevenueImpactDetails({ campaignId, onCampaignsRefreshed }) {
       </div>
       <p className="sale-impact-copy">{formatDateTime(impact.startAt)} → {formatDateTime(impact.endAt)} (giờ địa phương)</p>
       <p className="sale-impact-copy">{description}</p>
+      <TermGuide topic="revenue" />
       {partialAfter && <p className="sale-impact-notice" role="status">Dữ liệu sau Sale chưa đủ kỳ. Dữ liệu hiện mới là một phần vì chưa đủ độ dài kỳ so sánh.</p>}
       {!notStarted && (
         <>
@@ -87,12 +89,12 @@ function SaleRevenueImpactDetails({ campaignId, onCampaignsRefreshed }) {
             <Metric label="Kỳ liền trước" value={formatCurrency(metrics.revenueBefore)} note={`${count(metrics.paidOrdersBefore)} giao dịch đã thanh toán`} />
             <Metric label="Trong thời gian Sale" value={formatCurrency(metrics.revenueDuring)} note={`Toàn hệ thống · ${count(metrics.paidOrdersDuring)} giao dịch`} />
             <Metric label="Thay đổi so với kỳ liền trước" value={formatRevenueChange(metrics.revenueChangePercent)} note={`Chênh lệch: ${formatCurrency(metrics.revenueChangeAmount)}`} />
-            <Metric label="Doanh thu từ campaign" value={formatCurrency(metrics.campaignRevenue)} note="Giao dịch áp dụng campaign, kể cả thanh toán sau khi Sale kết thúc." />
+            <Metric label="Doanh thu từ chương trình" value={formatCurrency(metrics.campaignRevenue)} note="Giao dịch áp dụng campaign, kể cả thanh toán sau khi Sale kết thúc." />
             {showAfter && <Metric label="Sau Sale" value={formatCurrency(metrics.revenueAfter)} note={`${count(metrics.paidOrdersAfter)} giao dịch${partialAfter ? " · Chưa đủ kỳ" : ""}`} />}
           </dl>
           <dl className="sale-impact-kpis is-secondary">
             <Metric label="Giao dịch Sale" value={count(metrics.campaignPaidOrders)} />
-            <Metric label="Giá trị đơn TB" value={formatCurrency(metrics.averageCampaignOrderValue)} />
+            <Metric label="Giá trị đơn trung bình" value={formatCurrency(metrics.averageCampaignOrderValue)} />
             <Metric label="Tổng ưu đãi giá đã áp dụng" value={formatCurrency(metrics.campaignDiscountAmount)} />
             <Metric label="Lượt khuyến mãi đã cấp" value={`${count(metrics.campaignBonusCreditGranted)} lượt`} />
           </dl>
@@ -153,7 +155,7 @@ export default function SaleRevenueImpactCard() {
   return (
     <section className="sale-impact-card" aria-labelledby="sale-impact-title">
       <header className="sale-impact-header">
-        <div><p className="eyebrow">Phân tích khuyến mãi</p><h3 id="sale-impact-title">Doanh thu theo timeline Sale</h3></div>
+        <div><p className="eyebrow">Phân tích khuyến mãi</p><h3 id="sale-impact-title">Doanh thu theo thời gian ưu đãi</h3></div>
         <button type="button" onClick={refreshList} disabled={list.loading}><RefreshCw size={16} aria-hidden="true" />Tải lại danh sách</button>
       </header>
       {notice && <p className="sale-impact-notice" role="status">{notice}</p>}

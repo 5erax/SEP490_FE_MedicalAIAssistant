@@ -1,3 +1,4 @@
+import TermGuide from "../components/ui/TermGuide";
 import { useEffect, useRef, useState } from "react";
 import { navigate as goTo } from "../router/navigation";
 import {
@@ -416,6 +417,7 @@ export default function SymptomAnalysisPage() {
               hoặc triệu chứng nặng nhanh, hãy liên hệ cấp cứu hoặc đến cơ sở y tế gần nhất.
             </div>
 
+            <TermGuide topic="clinical" />
             <article className="symptom-card diagnosis-summary">
               <p className="mini-label">Nhận định tham khảo</p>
               <h2>{primaryDiagnosis?.diseaseName || "Chưa có nhận định chính"}</h2>

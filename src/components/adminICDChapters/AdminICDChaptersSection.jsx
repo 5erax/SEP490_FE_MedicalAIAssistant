@@ -175,7 +175,7 @@ export default function AdminICDChaptersSection({
         <div className="icd-clinical-heading-copy">
           <p className="eyebrow">Phân loại lâm sàng</p>
           <h2 id="admin-icd-title">Chương ICD trong hệ thống</h2>
-          <p>Quản lý mã chương, tên chương và trọng số từ khóa do hệ thống sử dụng trong danh mục lâm sàng.</p>
+          <p>Chương ICD là nhóm trong hệ thống phân loại bệnh. Mã chương và tên chương giúp thống nhất cách tổ chức danh mục lâm sàng; trọng số là cấu hình đi kèm từ khóa.</p>
         </div>
         <div className="icd-clinical-heading-actions">
           <div className="icd-clinical-context">
