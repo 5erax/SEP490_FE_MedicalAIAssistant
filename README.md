@@ -1,8 +1,9 @@
+<a href="https://github.com/5erax/SEP490_FE_MedicalAIAssistant">
+  <img src="https://raw.githubusercontent.com/5erax/5erax/6721a2389b660697807bf8058ca99b4ff7cf7e2a/assets/medimate-cover.svg" alt="MediMate AI — original animated cover art with a sculptural mint-glass shield and flowing silk contours." width="100%" />
+</a>
 
 # MediMate AI Frontend
-<a href="https://github.com/5erax/SEP490_FE_MedicalAIAssistant">
-  <img src="./assets/medimate-cover.svg?v=prismatic" alt="MediMate AI — original animated cover art with a sculptural mint-glass shield and flowing silk contours." width="100%" />
-</a>
+
 Frontend cho **MediMate AI**, nền tảng định hướng trước khi đi khám. Ứng dụng
 giúp người dùng mô tả triệu chứng, nhận gợi ý chuyên khoa và tìm cơ sở y tế phù
 hợp; đồng thời cung cấp workspace vận hành cho Admin.
